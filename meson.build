@@ -25,7 +25,8 @@ include_dir = include_directories('src/include')
 common_src = []
 
 linux_plugin_src = [
-  'src/plugin/yabridge.cpp',
+  'src/plugin/bridge.cpp',
+  'src/plugin/plugin.cpp',
 ]
 
 wine_host_src = [
