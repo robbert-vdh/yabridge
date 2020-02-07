@@ -18,6 +18,7 @@ the following dependencies:
 
 - gcc (tested using GCC 9.2)
 - A Wine installation with `wiengcc` and the development headers.
+- [msgpack-c](git@github.com:msgpack/msgpack-c.git)
 
 The project can then be compiled as follows:
 

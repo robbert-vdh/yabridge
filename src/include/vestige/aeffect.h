@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cinttypes>
 
 // Calling convention
 #ifndef __WINE__

@@ -2,7 +2,7 @@ project(
   'yabridge',
   'cpp',
   version : '0.1',
-  default_options : ['warning_level=3', 'cpp_std=c++17']
+  default_options : ['warning_level=3', 'cpp_std=c++17', 'build.cpp_std=c++17']
 )
 
 # Meson does not let us set a default cross compiler, which makes sense, but it
@@ -19,6 +19,8 @@ endif
 # program (yabridge-host) that can host Windows VST plugins. More information
 # about the way these two components work together can be found in the readme
 # file.
+
+msgpack_dep = dependency('msgpack')
 
 include_dir = include_directories('src/include')
 
@@ -38,7 +40,7 @@ shared_library(
   linux_plugin_src + common_src,
   native : true,
   include_directories : include_dir,
-  dependencies : [],
+  dependencies : [msgpack_dep],
   link_args : []
 )
 
