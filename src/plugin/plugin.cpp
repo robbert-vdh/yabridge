@@ -28,27 +28,28 @@ void setParameter(AEffect*, int32_t, float);
 float getParameter(AEffect*, int32_t);
 
 /**
- * Retrieve the bridge instance stored in an unused pointer from a VST plugin.
- * This is sadly needed as a workaround to avoid using globals since we need
- * free function pointers to interface with the VST API.
+ * Fetch the bridge instance stored in an unused pointer from a VST plugin. This
+ * is sadly needed as a workaround to avoid using globals since we need free
+ * function pointers to interface with the VST C API.
  */
-Bridge* get_bridge_instance(const AEffect& plugin) {
-    return static_cast<Bridge*>(plugin.ptr3);
+Bridge& get_bridge_instance(const AEffect& plugin) {
+    return *static_cast<Bridge*>(plugin.ptr3);
 }
 
 /**
- * The main VST plugin entry point. This finds the Windows VST plugin that
- * should be run, executes it in our VST host inside Wine, and sets up
- * communication between the two processes.
+ * The main VST plugin entry point. We first set up a bridge that connects to a
+ * Wine process that hosts the Windows VST plugin. We then create and return a
+ * VST plugin struct that acts as a passthrough to the bridge.
  *
- * This is a bit of a mess since we're interacting with an external C API. To
- * keep this somewhat contained this is the only place where we're doing manual
- * memory management.
+ * To keep this somewhat contained this is the only place where we're doing
+ * manual memory management. Clean up is done when we receive the `effClose`
+ * opcode from the VST host (i.e. opcode 1).`
  */
 VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback /*audioMaster*/) {
-    // TODO: Since we are returning raw pointers, how does cleanup work?
+    Bridge* bridge = new Bridge();
+
     AEffect* plugin = new AEffect();
-    plugin->ptr3 = new Bridge();
+    plugin->ptr3 = bridge;
 
     plugin->dispatcher = dispatch;
     plugin->process = process;
@@ -73,22 +74,22 @@ intptr_t dispatch(AEffect* plugin,
                   intptr_t value,
                   void* result,
                   float option) {
-    return get_bridge_instance(*plugin)->dispatch(plugin, opcode, parameter,
-                                                  value, result, option);
+    return get_bridge_instance(*plugin).dispatch(plugin, opcode, parameter,
+                                                 value, result, option);
 }
 
 void process(AEffect* plugin,
              float** inputs,
              float** outputs,
              int32_t sample_frames) {
-    return get_bridge_instance(*plugin)->process(plugin, inputs, outputs,
-                                                 sample_frames);
+    return get_bridge_instance(*plugin).process(plugin, inputs, outputs,
+                                                sample_frames);
 }
 
 void setParameter(AEffect* plugin, int32_t index, float value) {
-    return get_bridge_instance(*plugin)->set_parameter(plugin, index, value);
+    return get_bridge_instance(*plugin).set_parameter(plugin, index, value);
 }
 
 float getParameter(AEffect* plugin, int32_t index) {
-    return get_bridge_instance(*plugin)->get_parameter(plugin, index);
+    return get_bridge_instance(*plugin).get_parameter(plugin, index);
 }

@@ -17,12 +17,22 @@ intptr_t Bridge::dispatch(AEffect* /*plugin*/,
                           void* result,
                           float /*option*/) {
     switch (opcode) {
+        case effClose:
+            // TODO: Gracefully close the editor?
+
+            // The VST API does not have an explicit function for releasing
+            // resources, so we'll have to do it here. The actual plugin
+            // instance gets freed by the host, or at least I think it does.
+            delete this;
+
+            return 0;
+            break;
         case effGetEffectName:
             const std::string plugin_name("Hello, world!");
             std::copy(plugin_name.begin(), plugin_name.end(),
                       static_cast<char*>(result));
 
-            // return 1;  // TODO: Why?
+            return 1;  // TODO: Why?
             break;
     }
 
