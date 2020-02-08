@@ -20,6 +20,7 @@ endif
 # about the way these two components work together can be found in the readme
 # file.
 
+boost_dep = dependency('boost', modules : ['filesystem'])
 msgpack_dep = dependency('msgpack')
 
 include_dir = include_directories('src/include')
@@ -40,8 +41,8 @@ shared_library(
   linux_plugin_src + common_src,
   native : true,
   include_directories : include_dir,
-  dependencies : [msgpack_dep],
-  link_args : []
+  dependencies : [boost_dep, msgpack_dep],
+  link_args : ['-ldl']
 )
 
 executable(

@@ -10,6 +10,11 @@ There are a few things that should be done before making this public, including:
 - Document the project setup and the way communication works.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
+- Add proper debugging support activated using an environment variable.
+  - Write all stdout and stderr output from the plugin to a temporary file so it
+    can be inspected when using a host such as Bitwig that hides this by
+    default.
+  - Catch exceptions during initialization and print them to stderr.
 
 ## Building
 
@@ -18,6 +23,7 @@ the following dependencies:
 
 - gcc (tested using GCC 9.2)
 - A Wine installation with `wiengcc` and the development headers.
+- Boost
 - [msgpack-c](git@github.com:msgpack/msgpack-c.git)
 
 The project can then be compiled as follows:
