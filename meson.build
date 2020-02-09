@@ -25,20 +25,12 @@ msgpack_dep = dependency('msgpack')
 
 include_dir = include_directories('src/include')
 
-common_src = []
-
-linux_plugin_src = [
-  'src/plugin/bridge.cpp',
-  'src/plugin/plugin.cpp',
-]
-
-wine_host_src = [
-  'src/wine-host/vst-host.cpp',
-]
-
 shared_library(
   'yabridge',
-  linux_plugin_src + common_src,
+  [
+    'src/plugin/bridge.cpp',
+    'src/plugin/plugin.cpp',
+  ],
   native : true,
   include_directories : include_dir,
   dependencies : [boost_dep, msgpack_dep],
@@ -47,7 +39,9 @@ shared_library(
 
 executable(
   'yabridge-host',
-  wine_host_src + common_src,
+  [
+    'src/wine-host/vst-host.cpp',
+  ],
   native : false,
   include_directories : include_dir,
   dependencies : [],

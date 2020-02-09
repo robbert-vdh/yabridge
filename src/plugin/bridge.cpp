@@ -6,7 +6,7 @@
 #include <iostream>
 #include <msgpack.hpp>
 
-#include "../common/events.h"
+#include "../common/communication.h"
 
 // TODO: I should track down the VST2 SDK for clarification on some of the
 //       implementation details, such as the use of intptr_t isntead of void*
@@ -38,13 +38,10 @@ intptr_t Bridge::dispatch(AEffect* /*plugin*/,
                           intptr_t value,
                           void* result,
                           float option) {
-    // TODO: Send to the Wine process
     Event event{opcode, parameter, value, option};
-    msgpack::sbuffer buffer;
-    msgpack::pack(buffer, event);
+    write_object(vst_stdin, event);
 
-    // TODO: Read the response
-    EventResult response;
+    EventResult response = read_object(vst_stdout);
     if (response.result) {
         std::copy(response.result->begin(), response.result->end(),
                   static_cast<char*>(result));
