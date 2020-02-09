@@ -46,23 +46,30 @@ Bridge& get_bridge_instance(const AEffect& plugin) {
  * opcode from the VST host (i.e. opcode 1).`
  */
 VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback /*audioMaster*/) {
-    Bridge* bridge = new Bridge();
+    try {
+        Bridge* bridge = new Bridge();
 
-    AEffect* plugin = new AEffect();
-    plugin->ptr3 = bridge;
+        AEffect* plugin = new AEffect();
+        plugin->ptr3 = bridge;
 
-    plugin->dispatcher = dispatch;
-    plugin->process = process;
-    plugin->setParameter = setParameter;
-    plugin->getParameter = getParameter;
-    // // XXX: processReplacing?
+        plugin->dispatcher = dispatch;
+        plugin->process = process;
+        plugin->setParameter = setParameter;
+        plugin->getParameter = getParameter;
+        // // XXX: processReplacing?
 
-    // TODO: Add more and actual data
-    plugin->magic = kEffectMagic;
-    plugin->numParams = 69;
-    plugin->uniqueID = 69420;
+        // TODO: Add more and actual data
+        plugin->magic = kEffectMagic;
+        plugin->numParams = 69;
+        plugin->uniqueID = 69420;
 
-    return plugin;
+        return plugin;
+    } catch (const std::exception& error) {
+        std::cerr << "Error during initialization:" << std::endl;
+        std::cerr << error.what() << std::endl;
+
+        return nullptr;
+    }
 }
 
 // The below functions are proxy functions for the methods defined in
