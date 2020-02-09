@@ -44,6 +44,6 @@ executable(
   ],
   native : false,
   include_directories : include_dir,
-  dependencies : [],
   link_args : []
+  dependencies : [msgpack_dep],
 )

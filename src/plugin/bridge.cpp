@@ -15,7 +15,7 @@
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
-constexpr auto yabridge_wine_host_name = "yabridge-host.exeTODO";
+constexpr auto yabridge_wine_host_name = "yabridge-host.exe";
 
 fs::path find_wine_vst_host();
 
@@ -38,15 +38,6 @@ intptr_t Bridge::dispatch(AEffect* /*plugin*/,
                           intptr_t value,
                           void* result,
                           float option) {
-    Event event{opcode, parameter, value, option};
-    write_object(vst_stdin, event);
-
-    EventResult response = read_object(vst_stdout);
-    if (response.result) {
-        std::copy(response.result->begin(), response.result->end(),
-                  static_cast<char*>(result));
-    }
-
     // Some events need some extra handling
     // TODO: Handle other things such as GUI itneraction
     switch (opcode) {
@@ -62,6 +53,15 @@ intptr_t Bridge::dispatch(AEffect* /*plugin*/,
 
             return 0;
             break;
+    }
+
+    Event event{opcode, parameter, value, option};
+    write_object(vst_stdin, event);
+
+    auto response = read_object<EventResult>(vst_stdout);
+    if (response.result) {
+        std::copy(response.result->begin(), response.result->end(),
+                  static_cast<char*>(result));
     }
 
     return response.return_value;
@@ -109,7 +109,7 @@ fs::path find_wine_vst_host() {
     // Bosot will return an empty path if the file could not be found in the
     // search path
     fs::path vst_host_path = bp::search_path(yabridge_wine_host_name);
-    if (fs::is_empty(vst_host_path)) {
+    if (vst_host_path == "") {
         throw std::runtime_error("Could not locate '" +
                                  std::string(yabridge_wine_host_name) + "'");
     }

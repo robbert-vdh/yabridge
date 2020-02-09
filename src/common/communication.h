@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cinttypes>
+#include <iostream>
 #include <msgpack.hpp>
 #include <optional>
 
@@ -49,14 +50,14 @@ struct EventResult {
  *
  * @relates read_object
  */
-template <typename Stream, typename T>
+template <typename T, typename Stream>
 inline void write_object(Stream& stream, const T& object) {
     // TODO: Reuse buffers
     msgpack::sbuffer buffer;
     msgpack::pack(buffer, object);
 
     stream << buffer.size();
-    stream << buffer.data();
+    stream.write(buffer.data(), buffer.size());
     stream.flush();
 }
 
@@ -66,11 +67,12 @@ inline void write_object(Stream& stream, const T& object) {
  available.
  *
  * @param stream The stream to read from.
+ * @throw msgpack::type_error If the conversion to an object was not successful.
  *
  * @relates write_object
  */
-template <typename Stream>
-inline EventResult read_object(Stream& stream) {
+template <typename T, typename Stream>
+inline T read_object(Stream& stream) {
     size_t message_length;
     stream >> message_length;
 
