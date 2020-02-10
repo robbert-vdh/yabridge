@@ -1,6 +1,8 @@
 #include "bridge.h"
 
 #include <boost/dll/runtime_symbol_info.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/process/env.hpp>
 #include <boost/process/io.hpp>
 #include <boost/process/search_path.hpp>
 #include <iostream>
@@ -15,18 +17,23 @@
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
+/**
+ * The name of the wine VST host binary.
+ */
 constexpr auto yabridge_wine_host_name = "yabridge-host.exe";
 
 fs::path find_wine_vst_host();
+bp::environment find_wineprefix();
 
+// TODO: When adding debug information, print both the path to the VST host and
+//       the chosen wineprefix
 Bridge::Bridge()
     : vst_stdin(),
       vst_stdout(),
       vst_host(find_wine_vst_host(),
                bp::std_in = vst_stdin,
-               bp::std_out = vst_stdout) {
-    // TODO: Wineprefix detection
-}
+               bp::std_out = vst_stdout,
+               bp::env = find_wineprefix()) {}
 
 /**
  * Handle an event sent by the VST host. Most of these opcodes will be passed
@@ -115,4 +122,28 @@ fs::path find_wine_vst_host() {
     }
 
     return vst_host_path;
+}
+
+/**
+ * Locate the wineprefix and set the `WINEPREFIX` environment variable if found.
+ * This way it's also possible to run .dll files outside of a wineprefix using
+ * the user's default prefix.
+ */
+bp::environment find_wineprefix() {
+    auto env(boost::this_process::environment());
+
+    // Try to locate the wineprefix this .so file is located in by finding the
+    // first parent directory that contains a directory named `dosdevices`
+    fs::path wineprefix_path =
+        boost::dll::this_line_location().remove_filename();
+    while (wineprefix_path != "") {
+        if (fs::is_directory(fs::path(wineprefix_path).append("dosdevices"))) {
+            env["WINEPREFIX"] = wineprefix_path.string();
+            break;
+        }
+
+        wineprefix_path = wineprefix_path.parent_path();
+    }
+
+    return env;
 }
