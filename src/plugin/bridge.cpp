@@ -23,7 +23,7 @@ namespace fs = boost::filesystem;
 constexpr auto yabridge_wine_host_name = "yabridge-host.exe";
 
 fs::path find_wine_vst_host();
-bp::environment find_wineprefix();
+bp::environment set_wineprefix();
 
 // TODO: When adding debug information, print both the path to the VST host and
 //       the chosen wineprefix
@@ -33,7 +33,7 @@ Bridge::Bridge()
       vst_host(find_wine_vst_host(),
                bp::std_in = vst_stdin,
                bp::std_out = vst_stdout,
-               bp::env = find_wineprefix()) {}
+               bp::env = set_wineprefix()) {}
 
 /**
  * Handle an event sent by the VST host. Most of these opcodes will be passed
@@ -129,7 +129,7 @@ fs::path find_wine_vst_host() {
  * This way it's also possible to run .dll files outside of a wineprefix using
  * the user's default prefix.
  */
-bp::environment find_wineprefix() {
+bp::environment set_wineprefix() {
     auto env(boost::this_process::environment());
 
     // Try to locate the wineprefix this .so file is located in by finding the
