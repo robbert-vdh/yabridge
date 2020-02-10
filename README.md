@@ -13,7 +13,7 @@ There are a few things that should be done before making this public, including:
   rewrite some parts of it to make it clearer.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
-- Swap out msgpack for Bosot.Serializaton and update the architecture section.
+- Swap out msgpack for bitsery and update the architecture section.
 - Add proper debugging support activated using an environment variable.
   - Write all stdout and stderr output from the plugin to a temporary file so it
     can be inspected when using a host such as Bitwig that hides this by
@@ -103,11 +103,13 @@ follows:
      VST plugin through the Wine VST host using a single socket.
    - TODO: This is missing updates to the AEffect struct.
 
-   When communicating over these sockets, the request and corresponding response
-   objects from `src/common/communication.h` will be serialized as binary data.
-   Right now we're using `msgpack`, but this should be switched out for
-   `Bosot.Serialization` since we don't need interoperability and it allows us
-   to drop a dependency.
+   The first step when passing through any of these function calls over a socket
+   is to serialize the function's parameters as binary data. Both request and
+   the corresponding response objects for all of these function calls can be
+   found in `src/common/communication.h`, along with functions to read and write
+   these objects over streams and sockets. Right now we're using `msgpack`, but
+   this should be switched out for [bitsery](https://github.com/fraillt/bitsery)
+   for lower overhead serialization.
 
 6. The Wine VST host loads the Windows VST plugin and starts forwarding messages
    over the sockets described above.
