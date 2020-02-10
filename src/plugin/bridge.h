@@ -18,6 +18,8 @@
 
 #include <vestige/aeffect.h>
 
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/local/stream_protocol.hpp>
 #include <boost/process/child.hpp>
 
 /**
@@ -60,6 +62,15 @@ class Bridge {
     float get_parameter(AEffect* plugin, int32_t index);
 
    private:
+    boost::asio::io_context io_context;
+    boost::asio::local::stream_protocol::endpoint socket_endpoint;
+
+    // The naming convention for these sockets is `<from>_<to>_<event>`. For
+    // instance the socket named `host_vst_dispatch` forwards
+    // `AEffect.dispatch()` calls from the native VST host to the Windows VST
+    // plugin (through the Wine VST host).
+    boost::asio::local::stream_protocol::socket host_vst_dispatch;
+
     boost::process::opstream vst_stdin;
     boost::process::ipstream vst_stdout;
     boost::process::child vst_host;

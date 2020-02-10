@@ -22,6 +22,7 @@ endif
 
 boost_dep = dependency('boost', modules : ['filesystem'])
 msgpack_dep = dependency('msgpack')
+threads_dep = dependency('threads')
 
 include_dir = include_directories('src/include')
 
@@ -33,7 +34,7 @@ shared_library(
   ],
   native : true,
   include_directories : include_dir,
-  dependencies : [boost_dep, msgpack_dep],
+  dependencies : [boost_dep, msgpack_dep, threads_dep],
   link_args : ['-ldl']
 )
 

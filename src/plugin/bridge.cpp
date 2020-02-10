@@ -38,18 +38,30 @@ namespace fs = boost::filesystem;
  */
 constexpr auto yabridge_wine_host_name = "yabridge-host.exe";
 
+fs::path find_vst_plugin();
 fs::path find_wine_vst_host();
+fs::path generate_endpoint_name();
 bp::environment set_wineprefix();
 
 // TODO: When adding debug information, print both the path to the VST host and
 //       the chosen wineprefix
 Bridge::Bridge()
-    : vst_stdin(),
+    : io_context(),
+      socket_endpoint(generate_endpoint_name().string()),
+      host_vst_dispatch(io_context),
+      vst_stdin(),
       vst_stdout(),
       vst_host(find_wine_vst_host(),
                bp::std_in = vst_stdin,
                bp::std_out = vst_stdout,
-               bp::env = set_wineprefix()) {}
+               bp::env = set_wineprefix()) {
+    boost::asio::local::stream_protocol::acceptor acceptor(io_context,
+                                                           socket_endpoint);
+
+    // It's very important that these sockets are connected to in the same order
+    // in the Wine VST host
+    acceptor.accept(host_vst_dispatch);
+}
 
 /**
  * Handle an event sent by the VST host. Most of these opcodes will be passed
@@ -138,6 +150,58 @@ fs::path find_wine_vst_host() {
     }
 
     return vst_host_path;
+}
+
+/**
+ * Find the VST plugin .dll file that corresponds to this copy of
+ * `libyabridge.so`. This should be the same as the name of this file but with a
+ * `.dll` file extension instead of `.so`.
+ *
+ * @return The a path to the accompanying VST plugin .dll file.
+ * @throw std::runtime_error If no matching .dll file could be found.
+ */
+fs::path find_vst_plugin() {
+    fs::path plugin_path = boost::dll::this_line_location();
+    plugin_path.replace_extension(".dll");
+
+    // This function is used in the constructor's initializer list so we have to
+    // throw when the path could not be found
+    if (!fs::exists(plugin_path)) {
+        throw std::runtime_error(
+            "'" + plugin_path.string() +
+            "' does not exist, make sure to rename 'libyabridge.so' to match a "
+            "VST plugin .dll file.");
+    }
+
+    return plugin_path;
+}
+
+/**
+ * Generate a unique name for the Unix domain socket endpoint based on the VST
+ * plugin's name.
+ *
+ * @return A path to a not yet existing Unix domain socket endpoint.
+ * @throw std::runtime_error If no matching .dll file could be found.
+ */
+fs::path generate_endpoint_name() {
+    auto plugin_name =
+        find_vst_plugin().filename().replace_extension("").string();
+
+    fs::path candidate_endpoint;
+    do {
+        std::string random_id("TODO");
+        candidate_endpoint =
+            fs::temp_directory_path()
+                .append("yabridge")
+                .append(plugin_name + "-" + random_id + ".sock");
+    } while (fs::exists(candidate_endpoint));
+
+    // TODO: Should probably try creating the endpoint right here and catch any
+    //       exceptions since this could technically result in a race condition
+    //       when two instances of yabridge decide to use the same endpoint name
+    //       at the same time
+
+    return candidate_endpoint;
 }
 
 /**
