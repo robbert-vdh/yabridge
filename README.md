@@ -11,9 +11,9 @@ There are a few things that should be done before making this public, including:
   particular we're missing the wait void pointers in the event dispatchers are
   handled and how the AEffect struct gets synchronized. I should probably also
   rewrite some parts of it to make it clearer.
-- Swap out msgpack for Bosot.Serializaton and update the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
+- Swap out msgpack for Bosot.Serializaton and update the architecture section.
 - Add proper debugging support activated using an environment variable.
   - Write all stdout and stderr output from the plugin to a temporary file so it
     can be inspected when using a host such as Bitwig that hides this by
