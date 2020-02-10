@@ -23,6 +23,7 @@
 #include <boost/process/search_path.hpp>
 #include <iostream>
 #include <msgpack.hpp>
+#include <random>
 
 #include "../common/communication.h"
 
@@ -37,6 +38,12 @@ namespace fs = boost::filesystem;
  * The name of the wine VST host binary.
  */
 constexpr auto yabridge_wine_host_name = "yabridge-host.exe";
+
+/**
+ * Used for generating random identifiers.
+ */
+constexpr char alphanumeric_characters[] =
+    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 fs::path find_vst_plugin();
 fs::path find_wine_vst_host();
@@ -78,6 +85,8 @@ intptr_t Bridge::dispatch(AEffect* /*plugin*/,
     switch (opcode) {
         case effClose:
             // TODO: Gracefully close the editor?
+            // TODO: Check whether the sockets and the endpoint are closed
+            //       correctly
             // XXX: Boost.Process will send SIGKILL to the process for us, is
             //      there a way to manually send a SIGTERM signal instead?
 
@@ -90,10 +99,10 @@ intptr_t Bridge::dispatch(AEffect* /*plugin*/,
             break;
     }
 
-    Event event{opcode, parameter, value, option};
+    const Event event{opcode, parameter, value, option};
     write_object(vst_stdin, event);
 
-    auto response = read_object<EventResult>(vst_stdout);
+    const auto response = read_object<EventResult>(vst_stdout);
     if (response.result) {
         std::copy(response.result->begin(), response.result->end(),
                   static_cast<char*>(result));
@@ -143,7 +152,7 @@ fs::path find_wine_vst_host() {
 
     // Bosot will return an empty path if the file could not be found in the
     // search path
-    fs::path vst_host_path = bp::search_path(yabridge_wine_host_name);
+    const fs::path vst_host_path = bp::search_path(yabridge_wine_host_name);
     if (vst_host_path == "") {
         throw std::runtime_error("Could not locate '" +
                                  std::string(yabridge_wine_host_name) + "'");
@@ -178,23 +187,35 @@ fs::path find_vst_plugin() {
 
 /**
  * Generate a unique name for the Unix domain socket endpoint based on the VST
- * plugin's name.
+ * plugin's name. This will also generate the parent directory if it does not
+ * yet exist since we're using this in the constructor's initializer list.
  *
  * @return A path to a not yet existing Unix domain socket endpoint.
  * @throw std::runtime_error If no matching .dll file could be found.
  */
 fs::path generate_endpoint_name() {
-    auto plugin_name =
+    const auto plugin_name =
         find_vst_plugin().filename().replace_extension("").string();
 
+    std::random_device random_device;
+    std::mt19937 rng(random_device());
     fs::path candidate_endpoint;
     do {
-        std::string random_id("TODO");
+        std::string random_id;
+        std::sample(
+            alphanumeric_characters,
+            alphanumeric_characters + strlen(alphanumeric_characters) - 1,
+            std::back_inserter(random_id), 8, rng);
+
         candidate_endpoint =
             fs::temp_directory_path()
                 .append("yabridge")
                 .append(plugin_name + "-" + random_id + ".sock");
     } while (fs::exists(candidate_endpoint));
+
+    // Ensure that the parent directory exists so the socket endpoint can be
+    // created there
+    fs::create_directories(candidate_endpoint.parent_path());
 
     // TODO: Should probably try creating the endpoint right here and catch any
     //       exceptions since this could technically result in a race condition
