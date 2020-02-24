@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <boost/asio/buffer.hpp>
 #include <cinttypes>
 #include <iostream>
 #include <msgpack.hpp>
@@ -66,15 +67,14 @@ struct EventResult {
  *
  * @relates read_object
  */
-template <typename T, typename Stream>
-inline void write_object(Stream& stream, const T& object) {
+template <typename T, typename Socket>
+inline void write_object(Socket& socket, const T& object) {
     // TODO: Reuse buffers
+    // TODO: Use boost's buffers directly after switching to bitsery
     msgpack::sbuffer buffer;
     msgpack::pack(buffer, object);
 
-    stream << buffer.size();
-    stream.write(buffer.data(), buffer.size());
-    stream.flush();
+    socket.send(boost::asio::buffer(buffer.data(), buffer.size()));
 }
 
 /**
@@ -87,13 +87,12 @@ inline void write_object(Stream& stream, const T& object) {
  *
  * @relates write_object
  */
-template <typename T, typename Stream>
-inline T read_object(Stream& stream) {
-    size_t message_length;
-    stream >> message_length;
-
+template <typename T, typename Socket>
+inline T read_object(Socket& socket) {
     // TODO: Reuse buffers
-    std::vector<char> buffer(message_length);
-    stream.read(buffer.data(), message_length);
-    return msgpack::unpack(buffer.data(), message_length).get().convert();
+    // TODO: Use boost's buffers directly after switching to bitsery
+    char buffer[65536];
+    auto message_length = socket.receive(boost::asio::buffer(buffer));
+
+    return msgpack::unpack(buffer, message_length).get().convert();
 }

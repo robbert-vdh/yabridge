@@ -102,9 +102,9 @@ intptr_t Bridge::dispatch(AEffect* /*plugin*/,
     }
 
     const Event event{opcode, parameter, value, option};
-    write_object(vst_stdin, event);
+    write_object(host_vst_dispatch, event);
 
-    const auto response = read_object<EventResult>(vst_stdout);
+    const auto response = read_object<EventResult>(host_vst_dispatch);
     if (response.result) {
         std::copy(response.result->begin(), response.result->end(),
                   static_cast<char*>(result));

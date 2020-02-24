@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
     // TODO: Remove debug, we're just reporting the plugin's name we retrieved
     //       above
     while (true) {
-        auto event = read_object<Event>(std::cin);
+        auto event = read_object<Event>(host_vst_dispatch);
 
         EventResult response;
         if (event.opcode == effGetEffectName) {
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
             response.return_value = 0;
         }
 
-        write_object(std::cout, response);
+        write_object(host_vst_dispatch, response);
     }
 }
 
