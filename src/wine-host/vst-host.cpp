@@ -59,12 +59,6 @@ int main(int argc, char* argv[]) {
     // TODO: Check whether this returned a null pointer
     AEffect* plugin = vst_entry_point(host_callback);
 
-    // TODO: Check the spec, how large should this be?
-    std::vector<char> buffer(2048, 0);
-    plugin->dispatcher(plugin, effGetEffectName, 0, 0, buffer.data(), 0.0);
-
-    std::string plugin_title(buffer.data());
-
     // Connect to the sockets for communication once the plugin has finished
     // loading
     // TODO: The program should terminate gracefully when one of the sockets
@@ -85,18 +79,41 @@ int main(int argc, char* argv[]) {
 
     // TODO: Remove debug, we're just reporting the plugin's name we retrieved
     //       above
+    std::array<char, max_string_size> buffer;
     while (true) {
         auto event = read_object<Event>(host_vst_dispatch);
 
-        EventResult response;
-        if (event.opcode == effGetEffectName) {
-            response.result = plugin_title;
-            response.return_value = 1;
-        } else {
-            response.return_value = 0;
+        // The void pointer argument for the dispatch function is used for
+        // either:
+        //  - Not at all, in which case it will be a null pointer
+        //  - For passing strings as input to the event
+        //  - For providing a buffer for the event to write results back into
+        char* payload = nullptr;
+        if (event.data.has_value()) {
+            // If the data parameter was an empty string, then we're going to
+            // pass a larger buffer to the dispatch function instead..
+            if (!event.data->empty()) {
+                payload = const_cast<char*>(event.data->c_str());
+            } else {
+                payload = buffer.data();
+            }
         }
 
-        write_object(host_vst_dispatch, response);
+        const intptr_t return_value =
+            plugin->dispatcher(plugin, event.opcode, event.option,
+                               event.parameter, payload, event.option);
+
+        // Only write back the value from `payload` if we were passed an empty
+        // buffer to write into
+        bool is_updated = event.data.has_value() && event.data->empty();
+
+        if (is_updated) {
+            EventResult response{return_value, payload};
+            write_object(host_vst_dispatch, response);
+        } else {
+            EventResult response{return_value, std::nullopt};
+            write_object(host_vst_dispatch, response);
+        }
     }
 }
 
@@ -105,7 +122,7 @@ intptr_t VST_CALL_CONV host_callback(AEffect* plugin,
                                      int32_t opcode,
                                      int32_t parameter,
                                      intptr_t value,
-                                     void* result,
+                                     void* data,
                                      float option) {
     return 1;
 }

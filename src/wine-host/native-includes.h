@@ -34,6 +34,7 @@
 #undef __WIN32__
 #undef _WIN64
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
 #include <msgpack.hpp>

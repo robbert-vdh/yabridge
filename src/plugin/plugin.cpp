@@ -95,10 +95,10 @@ intptr_t dispatch(AEffect* plugin,
                   int32_t opcode,
                   int32_t parameter,
                   intptr_t value,
-                  void* result,
+                  void* data,
                   float option) {
     return get_bridge_instance(*plugin).dispatch(plugin, opcode, parameter,
-                                                 value, result, option);
+                                                 value, data, option);
 }
 
 void process(AEffect* plugin,

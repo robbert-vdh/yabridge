@@ -76,7 +76,7 @@ intptr_t Bridge::dispatch(AEffect* /*plugin*/,
                           int32_t opcode,
                           int32_t parameter,
                           intptr_t value,
-                          void* result,
+                          void* data,
                           float option) {
     // Some events need some extra handling
     // TODO: Handle other things such as GUI itneraction
@@ -97,13 +97,18 @@ intptr_t Bridge::dispatch(AEffect* /*plugin*/,
             break;
     }
 
-    const Event event{opcode, parameter, value, option};
+    auto payload =
+        data == nullptr
+            ? std::nullopt
+            : std::make_optional(std::string(static_cast<char*>(data)));
+
+    const Event event{opcode, parameter, value, option, payload};
     write_object(host_vst_dispatch, event);
 
     const auto response = read_object<EventResult>(host_vst_dispatch);
-    if (response.result) {
-        std::copy(response.result->begin(), response.result->end(),
-                  static_cast<char*>(result));
+    if (response.data.has_value()) {
+        std::copy(response.data->begin(), response.data->end(),
+                  static_cast<char*>(data));
     }
 
     return response.return_value;

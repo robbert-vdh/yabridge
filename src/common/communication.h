@@ -23,6 +23,13 @@
 #include <optional>
 
 /**
+ * The maximum size in bytes of a string or buffer passed through a void pointer
+ * in one of the dispatch functions. This is used as a buffer size and also as a
+ * cutoff for checking if c-style strings behind a `char*` have changed.
+ */
+constexpr size_t max_string_size = 128;
+
+/**
  * An event as dispatched by the VST host. These events will get forwarded to
  * the VST host process running under Wine. The fields here mirror those
  * arguments sent to the `AEffect::dispatch` function.
@@ -34,8 +41,15 @@ struct Event {
     //       dereferenced?
     intptr_t value;
     float option;
+    /**
+     * The event dispatch function has a void pointer parameter that's used to
+     * either send string messages to the event (e.g. for `effCanDo`) or to
+     * write a string back into. This value will contain an (empty) string if
+     * the void* parameter for the dispatch function was not a null pointer.
+     */
+    std::optional<std::string> data;
 
-    MSGPACK_DEFINE(opcode, parameter, value, option)
+    MSGPACK_DEFINE(opcode, parameter, value, option, data)
 };
 
 /**
@@ -50,11 +64,11 @@ struct EventResult {
      * If present, this should get written into the void pointer passed to the
      * dispatch function.
      */
-    std::optional<std::string> result;
+    std::optional<std::string> data;
 
     // TODO: Add missing return value fields;
 
-    MSGPACK_DEFINE(return_value, result)
+    MSGPACK_DEFINE(return_value, data)
 };
 
 /**
@@ -89,9 +103,9 @@ inline void write_object(Socket& socket, const T& object) {
  */
 template <typename T, typename Socket>
 inline T read_object(Socket& socket) {
-    // TODO: Reuse buffers
+    // TODO: Reuse buffers, also this is way too large right now
     // TODO: Use boost's buffers directly after switching to bitsery
-    char buffer[65536];
+    char buffer[4096];
     auto message_length = socket.receive(boost::asio::buffer(buffer));
 
     return msgpack::unpack(buffer, message_length).get().convert();

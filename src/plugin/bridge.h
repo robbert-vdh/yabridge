@@ -52,7 +52,7 @@ class Bridge {
                       int32_t opcode,
                       int32_t parameter,
                       intptr_t value,
-                      void* result,
+                      void* data,
                       float option);
     void process(AEffect* plugin,
                  float** inputs,
