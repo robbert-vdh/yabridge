@@ -144,8 +144,9 @@ float Bridge::get_parameter(AEffect* /*plugin*/, int32_t /*index*/
  * @throw std::runtime_error If the Wine VST host could not be found.
  */
 fs::path find_wine_vst_host() {
-    fs::path host_path = fs::canonical(boost::dll::this_line_location());
-    host_path.remove_filename().append(yabridge_wine_host_name);
+    fs::path host_path =
+        fs::canonical(boost::dll::this_line_location()).remove_filename() /
+        yabridge_wine_host_name;
     if (fs::exists(host_path)) {
         return host_path;
     }
@@ -207,10 +208,8 @@ fs::path generate_endpoint_name() {
             alphanumeric_characters + strlen(alphanumeric_characters) - 1,
             std::back_inserter(random_id), 8, rng);
 
-        candidate_endpoint =
-            fs::temp_directory_path()
-                .append("yabridge")
-                .append(plugin_name + "-" + random_id + ".sock");
+        candidate_endpoint = fs::temp_directory_path() / "yabridge" /
+                             (plugin_name + "-" + random_id + ".sock");
     } while (fs::exists(candidate_endpoint));
 
     // Ensure that the parent directory exists so the socket endpoint can be
@@ -238,7 +237,7 @@ bp::environment set_wineprefix() {
     fs::path wineprefix_path =
         boost::dll::this_line_location().remove_filename();
     while (wineprefix_path != "") {
-        if (fs::is_directory(fs::path(wineprefix_path).append("dosdevices"))) {
+        if (fs::is_directory(wineprefix_path / "dosdevices")) {
             env["WINEPREFIX"] = wineprefix_path.string();
             break;
         }
