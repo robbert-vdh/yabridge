@@ -65,7 +65,23 @@ int main(int argc, char* argv[]) {
 
     std::string plugin_title(buffer.data());
 
-    // TODO: The program should terminate automatically when stdin gets closed
+    // Connect to the sockets for communication once the plugin has finished
+    // loading
+    // TODO: The program should terminate gracefully when one of the sockets
+    //       gets closed
+    // TODO: Remove debug and move most of these things to
+    //       `wine-host/bridge.cpp`, similar to `plugin/bridge.cpp`
+
+    boost::asio::io_context io_context;
+    boost::asio::local::stream_protocol::endpoint socket_endpoint(
+        socket_endpoint_path);
+
+    // The naming convention for these sockets is `<from>_<to>_<event>`. For
+    // instance the socket named `host_vst_dispatch` forwards
+    // `AEffect.dispatch()` calls from the native VST host to the Windows VST
+    // plugin (through the Wine VST host).
+    boost::asio::local::stream_protocol::socket host_vst_dispatch(io_context);
+    host_vst_dispatch.connect(socket_endpoint);
 
     // TODO: Remove debug, we're just reporting the plugin's name we retrieved
     //       above

@@ -64,6 +64,7 @@ class Bridge {
    private:
     boost::asio::io_context io_context;
     boost::asio::local::stream_protocol::endpoint socket_endpoint;
+    boost::asio::local::stream_protocol::acceptor socket_acceptor;
 
     // The naming convention for these sockets is `<from>_<to>_<event>`. For
     // instance the socket named `host_vst_dispatch` forwards

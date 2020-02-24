@@ -23,6 +23,8 @@ endif
 boost_dep = dependency('boost', modules : ['filesystem'])
 msgpack_dep = dependency('msgpack')
 threads_dep = dependency('threads')
+# The built in threads dependency does not know how to handle winegcc
+wine_threads_dep = declare_dependency(link_args : '-lpthread')
 
 include_dir = include_directories('src/include')
 
@@ -45,6 +47,6 @@ executable(
   ],
   native : false,
   include_directories : include_dir,
-  dependencies : [msgpack_dep],
+  dependencies : [boost_dep, msgpack_dep, wine_threads_dep],
   link_args : []
 )

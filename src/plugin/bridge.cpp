@@ -55,6 +55,7 @@ bp::environment set_wineprefix();
 Bridge::Bridge()
     : io_context(),
       socket_endpoint(generate_endpoint_name().string()),
+      socket_acceptor(io_context, socket_endpoint),
       host_vst_dispatch(io_context),
       vst_stdin(),
       vst_stdout(),
@@ -66,12 +67,9 @@ Bridge::Bridge()
                bp::std_in = vst_stdin,
                bp::std_out = vst_stdout,
                bp::env = set_wineprefix()) {
-    boost::asio::local::stream_protocol::acceptor acceptor(io_context,
-                                                           socket_endpoint);
-
     // It's very important that these sockets are connected to in the same order
     // in the Wine VST host
-    acceptor.accept(host_vst_dispatch);
+    socket_acceptor.accept(host_vst_dispatch);
 }
 
 /**
@@ -187,7 +185,8 @@ fs::path find_vst_plugin() {
             "VST plugin .dll file.");
     }
 
-    return plugin_path;
+    // Also resolve symlinks here, mostly for development purposes
+    return fs::canonical(plugin_path);
 }
 
 /**
