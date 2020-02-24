@@ -34,17 +34,23 @@ using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
 intptr_t VST_CALL_CONV
 host_callback(AEffect*, int32_t, int32_t, intptr_t, void*, float);
 
-int main() {
-    // TODO: We're going to need to forward messages both from the host to the
-    //       plugin and from the plugin to the host. It might be useful to use
-    //       two sockets here so both channels can be handled independently.
+int main(int argc, char* argv[]) {
+    // We pass the name of the VST plugin .dll file to load and the Unix domain
+    // socket to connect to in plugin/bridge.cpp as the first two arguments of
+    // this process.
+    if (argc < 3) {
+        std::cerr
+            << "Usage: yabridge-host.exe <vst_plugin_dll> <unix_domain_socket>"
+            << std::endl;
+        return 1;
+    }
 
-    // TODO: Load the right VST plugin
+    const std::string plugin_dll_path(argv[1]);
+    const std::string socket_endpoint_path(argv[2]);
+
     // I sadly could not get Boost.DLL to work here, so we'll just load the VST
     // plugisn by hand
-    const auto vst_handle = LoadLibrary(
-        "/home/robbert/.wine/drive_c/Program "
-        "Files/Steinberg/VstPlugins/Serum_x64.dll");
+    const auto vst_handle = LoadLibrary(plugin_dll_path.c_str());
 
     // TODO: Fall back to the old entry points
     const auto vst_entry_point = reinterpret_cast<VstEntryPoint>(
