@@ -57,15 +57,11 @@ Bridge::Bridge()
       socket_endpoint(generate_endpoint_name().string()),
       socket_acceptor(io_context, socket_endpoint),
       host_vst_dispatch(io_context),
-      vst_stdin(),
-      vst_stdout(),
       vst_host(find_wine_vst_host(),
                // The Wine VST host needs to know which plugin to load and which
                // Unix domain socket to connect to
                find_vst_plugin(),
                socket_endpoint.path(),
-               bp::std_in = vst_stdin,
-               bp::std_out = vst_stdout,
                bp::env = set_wineprefix()) {
     // It's very important that these sockets are connected to in the same order
     // in the Wine VST host

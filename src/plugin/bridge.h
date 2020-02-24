@@ -30,8 +30,8 @@
 class Bridge {
    public:
     /**
-     * Initializes the Wine VST bridge. This sets up the STDIN/STDOUT streams
-     * for event handling and a shared memory buffer for passing audio.
+     * Initializes the Wine VST bridge. This sets up the sockets for event
+     * handling.
      *
      * TODO: Figure out whether shared memory gives us better throughput and/or
      *       lower overhead than using a Unix domain socket would.
@@ -72,7 +72,5 @@ class Bridge {
     // plugin (through the Wine VST host).
     boost::asio::local::stream_protocol::socket host_vst_dispatch;
 
-    boost::process::opstream vst_stdin;
-    boost::process::ipstream vst_stdout;
     boost::process::child vst_host;
 };
