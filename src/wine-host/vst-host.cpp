@@ -48,7 +48,7 @@ int main() {
 
     // TODO: Fall back to the old entry points
     const auto vst_entry_point = reinterpret_cast<VstEntryPoint>(
-        GetProcAddress(vst_handle, "VSTPluginMain"));
+        reinterpret_cast<size_t>(GetProcAddress(vst_handle, "VSTPluginMain")));
 
     // TODO: Check whether this returned a null pointer
     AEffect* plugin = vst_entry_point(host_callback);
