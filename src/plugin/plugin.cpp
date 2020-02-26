@@ -93,12 +93,12 @@ VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback /*audioMaster*/) {
 
 intptr_t dispatch(AEffect* plugin,
                   int32_t opcode,
-                  int32_t parameter,
+                  int32_t index,
                   intptr_t value,
                   void* data,
                   float option) {
-    return get_bridge_instance(*plugin).dispatch(plugin, opcode, parameter,
-                                                 value, data, option);
+    return get_bridge_instance(*plugin).dispatch(plugin, opcode, index, value,
+                                                 data, option);
 }
 
 void process(AEffect* plugin,

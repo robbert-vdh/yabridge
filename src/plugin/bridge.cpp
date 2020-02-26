@@ -74,7 +74,7 @@ Bridge::Bridge()
  */
 intptr_t Bridge::dispatch(AEffect* /*plugin*/,
                           int32_t opcode,
-                          int32_t parameter,
+                          int32_t index,
                           intptr_t value,
                           void* data,
                           float option) {
@@ -102,7 +102,7 @@ intptr_t Bridge::dispatch(AEffect* /*plugin*/,
             ? std::nullopt
             : std::make_optional(std::string(static_cast<char*>(data)));
 
-    const Event event{opcode, parameter, value, option, payload};
+    const Event event{opcode, index, value, option, payload};
     write_object(host_vst_dispatch, event);
 
     const auto response = read_object<EventResult>(host_vst_dispatch);

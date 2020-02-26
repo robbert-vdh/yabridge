@@ -27,7 +27,7 @@
  * in one of the dispatch functions. This is used as a buffer size and also as a
  * cutoff for checking if c-style strings behind a `char*` have changed.
  */
-constexpr size_t max_string_size = 128;
+constexpr size_t max_string_length = 128;
 
 /**
  * An event as dispatched by the VST host. These events will get forwarded to
@@ -36,7 +36,7 @@ constexpr size_t max_string_size = 128;
  */
 struct Event {
     int32_t opcode;
-    int32_t parameter;
+    int32_t index;
     // TODO: This is an intptr_t, is this actually a poitner that should be
     //       dereferenced?
     intptr_t value;
@@ -49,7 +49,7 @@ struct Event {
      */
     std::optional<std::string> data;
 
-    MSGPACK_DEFINE(opcode, parameter, value, option, data)
+    MSGPACK_DEFINE(opcode, index, value, option, data)
 };
 
 /**

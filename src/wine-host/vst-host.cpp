@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 
     // TODO: Remove debug, we're just reporting the plugin's name we retrieved
     //       above
-    std::array<char, max_string_size> buffer;
+    std::array<char, max_string_length> buffer;
     while (true) {
         auto event = read_object<Event>(host_vst_dispatch);
 
@@ -100,8 +100,8 @@ int main(int argc, char* argv[]) {
         }
 
         const intptr_t return_value =
-            plugin->dispatcher(plugin, event.opcode, event.option,
-                               event.parameter, payload, event.option);
+            plugin->dispatcher(plugin, event.opcode, event.option, event.index,
+                               payload, event.option);
 
         // Only write back the value from `payload` if we were passed an empty
         // buffer to write into
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
 // TODO: Placeholder
 intptr_t VST_CALL_CONV host_callback(AEffect* plugin,
                                      int32_t opcode,
-                                     int32_t parameter,
+                                     int32_t index,
                                      intptr_t value,
                                      void* data,
                                      float option) {
