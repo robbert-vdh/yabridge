@@ -14,6 +14,9 @@ There are a few things that should be done before making this public, including:
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
 - Swap out msgpack for bitsery and update the architecture section.
+- Forward audio events.
+- Forward host callback calls back to the native VST host.
+- Forward the values from the Windows VST plugin's `AEffect` struct.
 - Add proper debugging support activated using an environment variable.
   - Write all stdout and stderr output from the plugin to a temporary file so it
     can be inspected when using a host such as Bitwig that hides this by
@@ -113,3 +116,10 @@ follows:
 
 6. The Wine VST host loads the Windows VST plugin and starts forwarding messages
    over the sockets described above.
+7. After the Windows VST plugin has started loading we will forward all values
+   from the plugin's `AEffect` struct to the Linux native VST plugin. After this
+   point the plugin will stop blocking and has finished loading.
+
+   TODO: Do plugins update their `AEffect` struct update itself after
+   initialization? For instance to change the number of parameters. Is there any
+   way to catch this other than checking for updates ourselves?
