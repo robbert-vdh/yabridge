@@ -16,7 +16,7 @@
 
 #pragma once
 
-// Libraries like Boost and msgpack think we're compiling on Windows or using a
+// Libraries like Boost and bitsery think we're compiling on Windows or using a
 // MSVC toolchain. This will cause them to make assumptions about the way
 // certain types are defined, which headers are available and which features to
 // disable (i.e. POSIX specific features). The only way around this I could
@@ -34,10 +34,11 @@
 #undef __WIN32__
 #undef _WIN64
 
+#include <bitsery/bitsery.h>
+
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
-#include <msgpack.hpp>
 
 #pragma pop_macro("WIN32")
 #pragma pop_macro("_WIN32")

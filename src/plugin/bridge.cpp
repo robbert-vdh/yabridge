@@ -22,7 +22,6 @@
 #include <boost/process/io.hpp>
 #include <boost/process/search_path.hpp>
 #include <iostream>
-#include <msgpack.hpp>
 #include <random>
 
 #include "../common/communication.h"

@@ -13,7 +13,6 @@ There are a few things that should be done before making this public, including:
   rewrite some parts of it to make it clearer.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
-- Swap out msgpack for bitsery and update the architecture section.
 - Forward audio events.
 - Forward host callback calls back to the native VST host.
 - Forward the values from the Windows VST plugin's `AEffect` struct.
@@ -31,7 +30,10 @@ the following dependencies:
 - gcc (tested using GCC 9.2)
 - A Wine installation with `wiengcc` and the development headers.
 - Boost
-- [msgpack-c](git@github.com:msgpack/msgpack-c.git)
+
+The following dependencies are included as a Meson wrap:
+
+- bitsery
 
 The project can then be compiled as follows:
 
@@ -104,15 +106,13 @@ follows:
    - Calls from the native VST host to the plugin's `process()` and
      `processReplacing()` functions. Both functions get forwarded to the Windows
      VST plugin through the Wine VST host using a single socket.
-   - TODO: This is missing updates to the AEffect struct.
 
    The first step when passing through any of these function calls over a socket
    is to serialize the function's parameters as binary data. Both request and
    the corresponding response objects for all of these function calls can be
    found in `src/common/communication.h`, along with functions to read and write
-   these objects over streams and sockets. Right now we're using `msgpack`, but
-   this should be switched out for [bitsery](https://github.com/fraillt/bitsery)
-   for lower overhead serialization.
+   these objects over streams and sockets. The actual binary serialization is
+   handled using [bitsery](https://github.com/fraillt/bitsery).
 
 6. The Wine VST host loads the Windows VST plugin and starts forwarding messages
    over the sockets described above.

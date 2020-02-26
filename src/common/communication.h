@@ -16,10 +16,15 @@
 
 #pragma once
 
+#include <bitsery/adapter/buffer.h>
+#include <bitsery/bitsery.h>
+#include <bitsery/ext/std_optional.h>
+#include <bitsery/traits/array.h>
+#include <bitsery/traits/string.h>
+
 #include <boost/asio/buffer.hpp>
 #include <cinttypes>
 #include <iostream>
-#include <msgpack.hpp>
 #include <optional>
 
 /**
@@ -28,6 +33,25 @@
  * cutoff for checking if c-style strings behind a `char*` have changed.
  */
 constexpr size_t max_string_length = 128;
+
+/**
+ * The buffer size in bytes used for all buffers for sending and recieving
+ * messages.
+ *
+ * TODO: This should probably depend on the type. 512 bytes is way too much for
+ *       events, and probably not enough for sending audio.
+ */
+constexpr size_t buffer_size = 512;
+
+// Types used for serialization and deserialization with bitsery.
+template <std::size_t N>
+using Buffer = std::array<u_int8_t, N>;
+
+template <std::size_t N>
+using OutputAdapter = bitsery::OutputBufferAdapter<Buffer<N>>;
+
+template <std::size_t N>
+using InputAdapter = bitsery::InputBufferAdapter<Buffer<N>>;
 
 /**
  * An event as dispatched by the VST host. These events will get forwarded to
@@ -49,7 +73,18 @@ struct Event {
      */
     std::optional<std::string> data;
 
-    MSGPACK_DEFINE(opcode, index, value, option, data)
+    template <typename S>
+    void serialize(S& s) {
+        s.value4b(opcode);
+        s.value4b(index);
+        // Hard coding pointer sizes to 8 bytes should be fine, right? Even if
+        // we're hosting a 32 bit plugin the native VST plugin will still use 64
+        // bit large pointers.
+        s.value8b(value);
+        s.value4b(option);
+        s.ext(data, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.text1b(v, max_string_length); });
+    }
 };
 
 /**
@@ -68,15 +103,18 @@ struct EventResult {
 
     // TODO: Add missing return value fields;
 
-    MSGPACK_DEFINE(return_value, data)
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(return_value);
+        s.ext(data, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.text1b(v, max_string_length); });
+    }
 };
 
 /**
- * Serialize an object and write it to a stream. This function prefixes the
- * output with the length of the serialized object in bytes since msgpack
- * doesn't handle this on its own.
+ * Serialize an object using bitsery and write it to a socket.
  *
- * @param stream An ostream that can be written to.
+ * @param socket The Boost.Asio socket to write to.
  * @param object The object to write to the stream.
  *
  * @relates read_object
@@ -84,29 +122,37 @@ struct EventResult {
 template <typename T, typename Socket>
 inline void write_object(Socket& socket, const T& object) {
     // TODO: Reuse buffers
-    // TODO: Use boost's buffers directly after switching to bitsery
-    msgpack::sbuffer buffer;
-    msgpack::pack(buffer, object);
+    Buffer<buffer_size> buffer;
+    auto length =
+        bitsery::quickSerialization<OutputAdapter<buffer_size>>(buffer, object);
 
-    socket.send(boost::asio::buffer(buffer.data(), buffer.size()));
+    socket.send(boost::asio::buffer(buffer, length));
 }
 
 /**
- * Deserialize an object by reading it from a stream. This should be used
- * together with `write_object`. This will block until the object is
- available.
+ * Deserialize an object by reading it from a socket. This should be used
+ * together with `write_object`. This will block until the object is available.
  *
- * @param stream The stream to read from.
- * @throw msgpack::type_error If the conversion to an object was not successful.
+ * @param socket The Boost.Asio socket to read from.
+ * @throw std::runtime_error If the conversion to an object was not successful.
  *
  * @relates write_object
  */
 template <typename T, typename Socket>
 inline T read_object(Socket& socket) {
-    // TODO: Reuse buffers, also this is way too large right now
-    // TODO: Use boost's buffers directly after switching to bitsery
-    char buffer[4096];
+    // TODO: Reuse buffers
+    Buffer<buffer_size> buffer;
     auto message_length = socket.receive(boost::asio::buffer(buffer));
 
-    return msgpack::unpack(buffer, message_length).get().convert();
+    T object;
+    auto [_, success] =
+        bitsery::quickDeserialization<InputAdapter<buffer_size>>(
+            {buffer.begin(), message_length}, object);
+
+    if (!success) {
+        throw std::runtime_error("Deserialization failure in call:" +
+                                 std::string(__PRETTY_FUNCTION__));
+    }
+
+    return object;
 }
