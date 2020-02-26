@@ -21,6 +21,7 @@ endif
 # file.
 
 boost_dep = dependency('boost', modules : ['filesystem'])
+bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
 msgpack_dep = dependency('msgpack')
 threads_dep = dependency('threads')
 # The built in threads dependency does not know how to handle winegcc
@@ -36,7 +37,7 @@ shared_library(
   ],
   native : true,
   include_directories : include_dir,
-  dependencies : [boost_dep, msgpack_dep, threads_dep],
+  dependencies : [boost_dep, bitsery_dep, msgpack_dep, threads_dep],
   link_args : ['-ldl']
 )
 
@@ -47,6 +48,6 @@ executable(
   ],
   native : false,
   include_directories : include_dir,
-  dependencies : [boost_dep, msgpack_dep, wine_threads_dep],
+  dependencies : [boost_dep, bitsery_dep, msgpack_dep, wine_threads_dep],
   link_args : []
 )
