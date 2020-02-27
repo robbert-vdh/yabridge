@@ -43,6 +43,7 @@ shared_library(
 executable(
   'yabridge-host',
   [
+    'src/wine-host/bridge.cpp',
     'src/wine-host/vst-host.cpp',
   ],
   native : false,

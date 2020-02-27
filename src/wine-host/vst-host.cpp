@@ -25,6 +25,7 @@
 #include <windows.h>
 
 #include "../common/communication.h"
+#include "bridge.h"
 
 /**
  * A function pointer to what should be the entry point of a VST plugin.
