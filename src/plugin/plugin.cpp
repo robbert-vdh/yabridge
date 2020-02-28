@@ -38,10 +38,10 @@ VST_EXPORT AEffect* main_plugin(audioMasterCallback audioMaster) {
 }
 }
 
-intptr_t dispatch(AEffect*, int32_t, int32_t, intptr_t, void*, float);
-void process(AEffect*, float**, float**, int32_t);
-void setParameter(AEffect*, int32_t, float);
-float getParameter(AEffect*, int32_t);
+intptr_t dispatch_proxy(AEffect*, int32_t, int32_t, intptr_t, void*, float);
+void process_proxy(AEffect*, float**, float**, int32_t);
+void setParameter_proxy(AEffect*, int32_t, float);
+float getParameter_proxy(AEffect*, int32_t);
 
 /**
  * Fetch the bridge instance stored in an unused pointer from a VST plugin. This
@@ -68,10 +68,10 @@ VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback /*audioMaster*/) {
         AEffect* plugin = new AEffect();
         plugin->ptr3 = bridge;
 
-        plugin->dispatcher = dispatch;
-        plugin->process = process;
-        plugin->setParameter = setParameter;
-        plugin->getParameter = getParameter;
+        plugin->dispatcher = dispatch_proxy;
+        plugin->process = process_proxy;
+        plugin->setParameter = setParameter_proxy;
+        plugin->getParameter = getParameter_proxy;
         // // XXX: processReplacing?
 
         // TODO: Add more and actual data
@@ -91,28 +91,28 @@ VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback /*audioMaster*/) {
 // The below functions are proxy functions for the methods defined in
 // `Bridge.cpp`
 
-intptr_t dispatch(AEffect* plugin,
-                  int32_t opcode,
-                  int32_t index,
-                  intptr_t value,
-                  void* data,
-                  float option) {
+intptr_t dispatch_proxy(AEffect* plugin,
+                        int32_t opcode,
+                        int32_t index,
+                        intptr_t value,
+                        void* data,
+                        float option) {
     return get_bridge_instance(*plugin).dispatch(plugin, opcode, index, value,
                                                  data, option);
 }
 
-void process(AEffect* plugin,
-             float** inputs,
-             float** outputs,
-             int32_t sample_frames) {
+void process_proxy(AEffect* plugin,
+                   float** inputs,
+                   float** outputs,
+                   int32_t sample_frames) {
     return get_bridge_instance(*plugin).process(plugin, inputs, outputs,
                                                 sample_frames);
 }
 
-void setParameter(AEffect* plugin, int32_t index, float value) {
+void setParameter_proxy(AEffect* plugin, int32_t index, float value) {
     return get_bridge_instance(*plugin).set_parameter(plugin, index, value);
 }
 
-float getParameter(AEffect* plugin, int32_t index) {
+float getParameter_proxy(AEffect* plugin, int32_t index) {
     return get_bridge_instance(*plugin).get_parameter(plugin, index);
 }

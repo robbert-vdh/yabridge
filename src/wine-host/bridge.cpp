@@ -1,12 +1,38 @@
 #include "bridge.h"
 
+#include "../common/communication.h"
+
 /**
  * A function pointer to what should be the entry point of a VST plugin.
  */
 using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
 
+/**
+ * This ugly global is needed so we can get the instance of a `Brdige` class
+ * from an `AEffect` when it performs a host callback during its initialization.
+ */
+Bridge* current_bridge_isntance = nullptr;
+
 intptr_t VST_CALL_CONV
-host_callback(AEffect*, int32_t, int32_t, intptr_t, void*, float);
+host_callback_proxy(AEffect*, int32_t, int32_t, intptr_t, void*, float);
+
+/**
+ * Fetch the bridge instance stored in one of the two pointers reserved for the
+ * host of the hosted VST plugin. This is sadly needed as a workaround to avoid
+ * using globals since we need free function pointers to interface with the VST
+ * C API.
+ */
+Bridge& get_bridge_instance(const AEffect* plugin) {
+    // This is needed during the initialization of the plugin since we can only
+    // add our own pointer after it's done initializing
+    if (current_bridge_isntance != nullptr) {
+        // This should only be used during initialization
+        assert(plugin == nullptr || plugin->ptr1 == nullptr);
+        return *current_bridge_isntance;
+    }
+
+    return *static_cast<Bridge*>(plugin->ptr1);
+}
 
 Bridge::Bridge(std::string plugin_dll_path, std::string socket_endpoint_path)
     : plugin_handle(LoadLibrary(plugin_dll_path.c_str()), &FreeLibrary),
@@ -37,21 +63,82 @@ Bridge::Bridge(std::string plugin_dll_path, std::string socket_endpoint_path)
             "'.");
     }
 
-    plugin = vst_entry_point(host_callback);
+    host_vst_dispatch.connect(socket_endpoint);
+
+    // Initialize after communication has been set up We'll try to do the same
+    // `get_bridge_isntance` trick as in `plugin/plugin.cpp`, but since the
+    // plugin will probably call the host callback while it's initializing we
+    // sadly have to use a global here.
+    current_bridge_isntance = this;
+    plugin = vst_entry_point(host_callback_proxy);
     if (plugin == nullptr) {
         throw std::runtime_error("VST plugin at '" + plugin_dll_path +
                                  "' failed to initialize.");
     }
 
-    host_vst_dispatch.connect(socket_endpoint);
+    // We only needed this little hack during initialization
+    current_bridge_isntance = nullptr;
+    plugin->ptr1 = this;
 }
 
-// // TODO: Placeholder
-// intptr_t VST_CALL_CONV host_callback(AEffect* plugin,
-//                                      int32_t opcode,
-//                                      int32_t index,
-//                                      intptr_t value,
-//                                      void* data,
-//                                      float option) {
-//     return 1;
-// }
+// TODO: Replace blocking loop with async readers or threads for all of the
+//       sockets. Also extract this functionality somewhere since the host event
+//       callback needs to do exactly the same thing.
+void Bridge::dispatch_loop() {
+    std::array<char, max_string_length> buffer;
+    while (true) {
+        auto event = read_object<Event>(host_vst_dispatch);
+
+        // The void pointer argument for the dispatch function is used for
+        // either:
+        //  - Not at all, in which case it will be a null pointer
+        //  - For passing strings as input to the event
+        //  - For providing a buffer for the event to write results back into
+        char* payload = nullptr;
+        if (event.data.has_value()) {
+            // If the data parameter was an empty string, then we're going to
+            // pass a larger buffer to the dispatch function instead..
+            if (!event.data->empty()) {
+                payload = const_cast<char*>(event.data->c_str());
+            } else {
+                payload = buffer.data();
+            }
+        }
+
+        const intptr_t return_value =
+            plugin->dispatcher(plugin, event.opcode, event.option, event.index,
+                               payload, event.option);
+
+        // Only write back the value from `payload` if we were passed an empty
+        // buffer to write into
+        bool is_updated = event.data.has_value() && event.data->empty();
+
+        if (is_updated) {
+            EventResult response{return_value, payload};
+            write_object(host_vst_dispatch, response);
+        } else {
+            EventResult response{return_value, std::nullopt};
+            write_object(host_vst_dispatch, response);
+        }
+    }
+}
+
+intptr_t Bridge::host_callback(AEffect* plugin,
+                               int32_t opcode,
+                               int32_t index,
+                               intptr_t value,
+                               void* data,
+                               float option) {
+    // TODO
+    return 1;
+}
+
+intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,
+                                           int32_t opcode,
+                                           int32_t index,
+                                           intptr_t value,
+                                           void* data,
+                                           float option) {
+    return get_bridge_instance(effect).host_callback(effect, opcode, index,
+                                                     value, data, option);
+}

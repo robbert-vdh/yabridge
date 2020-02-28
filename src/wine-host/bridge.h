@@ -45,6 +45,11 @@ class Bridge {
      */
     Bridge(std::string plugin_dll_path, std::string socket_endpoint_path);
 
+    intptr_t host_callback(AEffect*, int32_t, int32_t, intptr_t, void*, float);
+
+    // TODO: Remove debug loop
+    void dispatch_loop();
+
     // TODO: Set up all callback handlers
 
    private:
