@@ -14,6 +14,10 @@ Bridge::Bridge(std::string plugin_dll_path, std::string socket_endpoint_path)
       socket_endpoint(socket_endpoint_path),
       host_vst_dispatch(io_context) {
     // Got to love these C APIs
+    if (plugin_handle == nullptr) {
+        throw std::runtime_error("Could not load a shared library at '" +
+                                 plugin_dll_path + "'.");
+    }
 
     // VST plugin entry point functions should be called `VSTPluginMain`, but
     // there are some older deprecated names that legacy plugins may still use
