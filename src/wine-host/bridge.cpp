@@ -85,41 +85,8 @@ Bridge::Bridge(std::string plugin_dll_path, std::string socket_endpoint_path)
 //       sockets. Also extract this functionality somewhere since the host event
 //       callback needs to do exactly the same thing.
 void Bridge::dispatch_loop() {
-    std::array<char, max_string_length> buffer;
     while (true) {
-        auto event = read_object<Event>(host_vst_dispatch);
-
-        // The void pointer argument for the dispatch function is used for
-        // either:
-        //  - Not at all, in which case it will be a null pointer
-        //  - For passing strings as input to the event
-        //  - For providing a buffer for the event to write results back into
-        char* payload = nullptr;
-        if (event.data.has_value()) {
-            // If the data parameter was an empty string, then we're going to
-            // pass a larger buffer to the dispatch function instead..
-            if (!event.data->empty()) {
-                payload = const_cast<char*>(event.data->c_str());
-            } else {
-                payload = buffer.data();
-            }
-        }
-
-        const intptr_t return_value =
-            plugin->dispatcher(plugin, event.opcode, event.option, event.index,
-                               payload, event.option);
-
-        // Only write back the value from `payload` if we were passed an empty
-        // buffer to write into
-        bool is_updated = event.data.has_value() && event.data->empty();
-
-        if (is_updated) {
-            EventResult response{return_value, payload};
-            write_object(host_vst_dispatch, response);
-        } else {
-            EventResult response{return_value, std::nullopt};
-            write_object(host_vst_dispatch, response);
-        }
+        passthrough_event(host_vst_dispatch, plugin, plugin->dispatcher);
     }
 }
 

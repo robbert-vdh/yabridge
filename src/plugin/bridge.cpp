@@ -96,21 +96,7 @@ intptr_t Bridge::dispatch(AEffect* /*plugin*/,
             break;
     }
 
-    auto payload =
-        data == nullptr
-            ? std::nullopt
-            : std::make_optional(std::string(static_cast<char*>(data)));
-
-    const Event event{opcode, index, value, option, payload};
-    write_object(host_vst_dispatch, event);
-
-    const auto response = read_object<EventResult>(host_vst_dispatch);
-    if (response.data.has_value()) {
-        std::copy(response.data->begin(), response.data->end(),
-                  static_cast<char*>(data));
-    }
-
-    return response.return_value;
+    return send_event(host_vst_dispatch, opcode, index, value, data, option);
 }
 
 void Bridge::process(AEffect* /*plugin*/,

@@ -21,8 +21,10 @@
 #include <bitsery/ext/std_optional.h>
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/string.h>
+#include <vestige/aeffect.h>
 
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/local/stream_protocol.hpp>
 #include <cinttypes>
 #include <iostream>
 #include <optional>
@@ -155,4 +157,90 @@ inline T read_object(Socket& socket) {
     }
 
     return object;
+}
+
+/**
+ * Serialize and send an event over a socket. This is used for both the host ->
+ * plugin 'dispatch' events and the plugin -> host 'audioMaster' host callbacks
+ * since they follow the same format. See one of those functions for details on
+ * the parameters and return value of this function.
+ *
+ * @relates passthrough_event
+ */
+intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
+                    int32_t opcode,
+                    int32_t index,
+                    intptr_t value,
+                    void* data,
+                    float option) {
+    auto payload =
+        data == nullptr
+            ? std::nullopt
+            : std::make_optional(std::string(static_cast<char*>(data)));
+
+    const Event event{opcode, index, value, option, payload};
+    write_object(socket, event);
+
+    const auto response = read_object<EventResult>(socket);
+    if (response.data.has_value()) {
+        std::copy(response.data->begin(), response.data->end(),
+                  static_cast<char*>(data));
+    }
+
+    return response.return_value;
+}
+
+/**
+ * Receive an event from a socket and pass it through to some callback function.
+ * This is used for both the host -> plugin 'dispatch' events and the plugin ->
+ * host 'audioMaster' host callbacks. This callback function is either one of
+ * those functions.
+ *
+ * @param socket The socket to receive on and to send the response back to.
+ * @param plugin The `AEffect` instance that should be passed to the callback
+ *   function.
+ * @param callback The function to call with the arguments received from the
+ *   socket.
+ *
+ * @relates send_event
+ */
+template <typename F>
+void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
+                       AEffect* plugin,
+                       F callback) {
+    // TODO: Reuse buffers
+    std::array<char, max_string_length> buffer;
+
+    auto event = read_object<Event>(socket);
+
+    // The void pointer argument for the dispatch function is used for
+    // either:
+    //  - Not at all, in which case it will be a null pointer
+    //  - For passing strings as input to the event
+    //  - For providing a buffer for the event to write results back into
+    char* payload = nullptr;
+    if (event.data.has_value()) {
+        // If the data parameter was an empty string, then we're going to
+        // pass a larger buffer to the dispatch function instead..
+        if (!event.data->empty()) {
+            payload = const_cast<char*>(event.data->c_str());
+        } else {
+            payload = buffer.data();
+        }
+    }
+
+    const intptr_t return_value = callback(plugin, event.opcode, event.option,
+                                           event.index, payload, event.option);
+
+    // Only write back the value from `payload` if we were passed an empty
+    // buffer to write into
+    bool is_updated = event.data.has_value() && event.data->empty();
+
+    if (is_updated) {
+        EventResult response{return_value, payload};
+        write_object(socket, response);
+    } else {
+        EventResult response{return_value, std::nullopt};
+        write_object(socket, response);
+    }
 }
