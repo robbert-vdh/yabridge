@@ -61,11 +61,13 @@ Bridge& get_bridge_instance(const AEffect& plugin) {
  * manual memory management. Clean up is done when we receive the `effClose`
  * opcode from the VST host (i.e. opcode 1).`
  */
-VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback /*audioMaster*/) {
+VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback host_callback) {
     try {
-        Bridge* bridge = new Bridge();
-
+        // TODO: Create the plugin instance in the bridge based on the received
+        //       parameters. We can then also use a smart pointer so we only
+        //       have to manually delete the bridge instance.
         AEffect* plugin = new AEffect();
+        Bridge* bridge = new Bridge(plugin, host_callback);
         plugin->ptr3 = bridge;
 
         plugin->dispatcher = dispatch_proxy;

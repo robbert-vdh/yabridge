@@ -51,20 +51,27 @@ bp::environment set_wineprefix();
 
 // TODO: When adding debug information, print both the path to the VST host and
 //       the chosen wineprefix
-Bridge::Bridge()
+Bridge::Bridge(AEffect* plugin, audioMasterCallback host_callback)
     : io_context(),
       socket_endpoint(generate_endpoint_name().string()),
       socket_acceptor(io_context, socket_endpoint),
       host_vst_dispatch(io_context),
+      vst_host_callback(io_context),
+      host_callback_function(host_callback),
       vst_host(find_wine_vst_host(),
-               // The Wine VST host needs to know which plugin to load and which
-               // Unix domain socket to connect to
+               // The Wine VST host needs to know which plugin to load and
+               // which Unix domain socket to connect to
                find_vst_plugin(),
                socket_endpoint.path(),
                bp::env = set_wineprefix()) {
     // It's very important that these sockets are connected to in the same order
     // in the Wine VST host
     socket_acceptor.accept(host_vst_dispatch);
+    socket_acceptor.accept(vst_host_callback);
+
+    // TODO: REmove
+    // After accepting the sockets
+    removeme = std::thread([&]() { return host_callback_loop(plugin); });
 }
 
 /**
@@ -211,6 +218,15 @@ fs::path generate_endpoint_name() {
     //       at the same time
 
     return candidate_endpoint;
+}
+
+// TODO: Replace blocking loop with async readers or threads for all of the
+//       sockets. Also extract this functionality somewhere since the host event
+//       callback needs to do exactly the same thing.
+void Bridge::host_callback_loop(AEffect* plugin) {
+    while (true) {
+        passthrough_event(vst_host_callback, plugin, host_callback_function);
+    }
 }
 
 /**

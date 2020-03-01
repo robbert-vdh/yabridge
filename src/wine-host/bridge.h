@@ -74,4 +74,5 @@ class Bridge {
     // `AEffect.dispatch()` calls from the native VST host to the Windows VST
     // plugin (through the Wine VST host).
     boost::asio::local::stream_protocol::socket host_vst_dispatch;
+    boost::asio::local::stream_protocol::socket vst_host_callback;
 };

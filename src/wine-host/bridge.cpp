@@ -38,7 +38,8 @@ Bridge::Bridge(std::string plugin_dll_path, std::string socket_endpoint_path)
     : plugin_handle(LoadLibrary(plugin_dll_path.c_str()), &FreeLibrary),
       io_context(),
       socket_endpoint(socket_endpoint_path),
-      host_vst_dispatch(io_context) {
+      host_vst_dispatch(io_context),
+      vst_host_callback(io_context) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
         throw std::runtime_error("Could not load a shared library at '" +
@@ -63,7 +64,10 @@ Bridge::Bridge(std::string plugin_dll_path, std::string socket_endpoint_path)
             "'.");
     }
 
+    // It's very important that these sockets are accepted to in the same order
+    // in the Linus plugin
     host_vst_dispatch.connect(socket_endpoint);
+    vst_host_callback.connect(socket_endpoint);
 
     // Initialize after communication has been set up We'll try to do the same
     // `get_bridge_isntance` trick as in `plugin/plugin.cpp`, but since the
@@ -90,14 +94,13 @@ void Bridge::dispatch_loop() {
     }
 }
 
-intptr_t Bridge::host_callback(AEffect* plugin,
+intptr_t Bridge::host_callback(AEffect* /*plugin*/,
                                int32_t opcode,
                                int32_t index,
                                intptr_t value,
                                void* data,
                                float option) {
-    // TODO
-    return 1;
+    return send_event(vst_host_callback, opcode, index, value, data, option);
 }
 
 intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,

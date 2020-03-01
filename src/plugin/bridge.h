@@ -21,6 +21,8 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
 #include <boost/process/child.hpp>
+// TODO: Remove
+#include <thread>
 
 /**
  * This handles the communication between the Linux native VST plugin and the
@@ -36,10 +38,14 @@ class Bridge {
      * TODO: Figure out whether shared memory gives us better throughput and/or
      *       lower overhead than using a Unix domain socket would.
      *
+     * @param host_callback The callback function passed to the VST plugin by
+     *   the host.
+     *
      * @throw std::runtime_error Thrown when the VST host could not be found, or
      *   if it could not locate and load a VST .dll file.
      */
-    Bridge();
+    // TODO: The plugin struct should be created here, not passed in
+    Bridge(AEffect* plugin, audioMasterCallback host_callback);
 
     // The four below functions are the handlers from the VST2 API. They are
     // called through proxy functions in `plugin.cpp`.
@@ -61,6 +67,9 @@ class Bridge {
     void set_parameter(AEffect* plugin, int32_t index, float value);
     float get_parameter(AEffect* plugin, int32_t index);
 
+    // TODO: Remove debug loop
+    void host_callback_loop(AEffect* plugin);
+
    private:
     boost::asio::io_context io_context;
     boost::asio::local::stream_protocol::endpoint socket_endpoint;
@@ -71,6 +80,16 @@ class Bridge {
     // `AEffect.dispatch()` calls from the native VST host to the Windows VST
     // plugin (through the Wine VST host).
     boost::asio::local::stream_protocol::socket host_vst_dispatch;
+    boost::asio::local::stream_protocol::socket vst_host_callback;
 
+    /**
+     * The callback function passed by the host to the VST plugin instance.
+     */
+    audioMasterCallback host_callback_function;
+    // TODO: Remove
+    std::thread removeme;
+    /**
+     * The Wine process hosting the Windows VST plugin.
+     */
     boost::process::child vst_host;
 };
