@@ -31,7 +31,7 @@ include_dir = include_directories('src/include')
 shared_library(
   'yabridge',
   [
-    'src/plugin/bridge.cpp',
+    'src/plugin/host-bridge.cpp',
     'src/plugin/plugin.cpp',
   ],
   native : true,
@@ -43,7 +43,7 @@ shared_library(
 executable(
   'yabridge-host',
   [
-    'src/wine-host/bridge.cpp',
+    'src/wine-host/plugin-bridge.cpp',
     'src/wine-host/vst-host.cpp',
   ],
   native : false,

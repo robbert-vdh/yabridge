@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "bridge.h"
+#include "host-bridge.h"
 
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>
@@ -51,7 +51,7 @@ bp::environment set_wineprefix();
 
 // TODO: When adding debug information, print both the path to the VST host and
 //       the chosen wineprefix
-Bridge::Bridge(AEffect* plugin, audioMasterCallback host_callback)
+HostBridge::HostBridge(AEffect* plugin, audioMasterCallback host_callback)
     : io_context(),
       socket_endpoint(generate_endpoint_name().string()),
       socket_acceptor(io_context, socket_endpoint),
@@ -78,12 +78,12 @@ Bridge::Bridge(AEffect* plugin, audioMasterCallback host_callback)
  * Handle an event sent by the VST host. Most of these opcodes will be passed
  * through to the winelib VST host.
  */
-intptr_t Bridge::dispatch(AEffect* /*plugin*/,
-                          int32_t opcode,
-                          int32_t index,
-                          intptr_t value,
-                          void* data,
-                          float option) {
+intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
+                              int32_t opcode,
+                              int32_t index,
+                              intptr_t value,
+                              void* data,
+                              float option) {
     // Some events need some extra handling
     // TODO: Handle other things such as GUI itneraction
     switch (opcode) {
@@ -106,20 +106,20 @@ intptr_t Bridge::dispatch(AEffect* /*plugin*/,
     return send_event(host_vst_dispatch, opcode, index, value, data, option);
 }
 
-void Bridge::process(AEffect* /*plugin*/,
-                     float** /*inputs*/,
-                     float** /*outputs*/,
-                     int32_t /*sample_frames*/) {
+void HostBridge::process(AEffect* /*plugin*/,
+                         float** /*inputs*/,
+                         float** /*outputs*/,
+                         int32_t /*sample_frames*/) {
     // TODO: Unimplmemented
 }
 
-void Bridge::set_parameter(AEffect* /*plugin*/,
-                           int32_t /*index*/,
-                           float /*value*/) {
+void HostBridge::set_parameter(AEffect* /*plugin*/,
+                               int32_t /*index*/,
+                               float /*value*/) {
     // TODO: Unimplmemented
 }
 
-float Bridge::get_parameter(AEffect* /*plugin*/, int32_t /*index*/
+float HostBridge::get_parameter(AEffect* /*plugin*/, int32_t /*index*/
 ) {
     // TODO: Unimplmemented
     return 0.0f;
@@ -223,7 +223,7 @@ fs::path generate_endpoint_name() {
 // TODO: Replace blocking loop with async readers or threads for all of the
 //       sockets. Also extract this functionality somewhere since the host event
 //       callback needs to do exactly the same thing.
-void Bridge::host_callback_loop(AEffect* plugin) {
+void HostBridge::host_callback_loop(AEffect* plugin) {
     while (true) {
         passthrough_event(vst_host_callback, plugin, host_callback_function);
     }

@@ -19,7 +19,7 @@
 #include <iostream>
 #include <memory>
 
-#include "bridge.h"
+#include "host-bridge.h"
 
 #define VST_EXPORT __attribute__((visibility("default")))
 
@@ -48,8 +48,8 @@ float getParameter_proxy(AEffect*, int32_t);
  * is sadly needed as a workaround to avoid using globals since we need free
  * function pointers to interface with the VST C API.
  */
-Bridge& get_bridge_instance(const AEffect& plugin) {
-    return *static_cast<Bridge*>(plugin.ptr3);
+HostBridge& get_bridge_instance(const AEffect& plugin) {
+    return *static_cast<HostBridge*>(plugin.ptr3);
 }
 
 /**
@@ -67,7 +67,7 @@ VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback host_callback) {
         //       parameters. We can then also use a smart pointer so we only
         //       have to manually delete the bridge instance.
         AEffect* plugin = new AEffect();
-        Bridge* bridge = new Bridge(plugin, host_callback);
+        HostBridge* bridge = new HostBridge(plugin, host_callback);
         plugin->ptr3 = bridge;
 
         plugin->dispatcher = dispatch_proxy;

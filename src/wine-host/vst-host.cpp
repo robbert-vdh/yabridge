@@ -16,7 +16,7 @@
 
 #include <iostream>
 
-#include "bridge.h"
+#include "plugin-bridge.h"
 
 int main(int argc, char* argv[]) {
     // We pass the name of the VST plugin .dll file to load and the Unix domain
@@ -33,10 +33,10 @@ int main(int argc, char* argv[]) {
     const std::string socket_endpoint_path(argv[2]);
 
     try {
-        Bridge bridge(plugin_dll_path, socket_endpoint_path);
+        PluginBridge Pluginbridge(plugin_dll_path, socket_endpoint_path);
 
         // TODO: Remove debug
-        bridge.dispatch_loop();
+        Pluginbridge.dispatch_loop();
     } catch (const std::runtime_error& error) {
         std::cerr << "Error while initializing plugin:" << std::endl;
         std::cerr << error.what() << std::endl;

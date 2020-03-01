@@ -1,4 +1,20 @@
-#include "bridge.h"
+// yabridge: a Wine VST bridge
+// Copyright (C) 2020  Robbert van der Helm
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#include "plugin-bridge.h"
 
 #include "../common/communication.h"
 
@@ -11,18 +27,18 @@ using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
  * This ugly global is needed so we can get the instance of a `Brdige` class
  * from an `AEffect` when it performs a host callback during its initialization.
  */
-Bridge* current_bridge_isntance = nullptr;
+PluginBridge* current_bridge_isntance = nullptr;
 
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int32_t, int32_t, intptr_t, void*, float);
 
 /**
- * Fetch the bridge instance stored in one of the two pointers reserved for the
- * host of the hosted VST plugin. This is sadly needed as a workaround to avoid
- * using globals since we need free function pointers to interface with the VST
- * C API.
+ * Fetch the Pluginbridge instance stored in one of the two pointers reserved
+ * for the host of the hosted VST plugin. This is sadly needed as a workaround
+ * to avoid using globals since we need free function pointers to interface with
+ * the VST C API.
  */
-Bridge& get_bridge_instance(const AEffect* plugin) {
+PluginBridge& get_bridge_instance(const AEffect* plugin) {
     // This is needed during the initialization of the plugin since we can only
     // add our own pointer after it's done initializing
     if (current_bridge_isntance != nullptr) {
@@ -31,10 +47,11 @@ Bridge& get_bridge_instance(const AEffect* plugin) {
         return *current_bridge_isntance;
     }
 
-    return *static_cast<Bridge*>(plugin->ptr1);
+    return *static_cast<PluginBridge*>(plugin->ptr1);
 }
 
-Bridge::Bridge(std::string plugin_dll_path, std::string socket_endpoint_path)
+PluginBridge::PluginBridge(std::string plugin_dll_path,
+                           std::string socket_endpoint_path)
     : plugin_handle(LoadLibrary(plugin_dll_path.c_str()), &FreeLibrary),
       io_context(),
       socket_endpoint(socket_endpoint_path),
@@ -88,18 +105,18 @@ Bridge::Bridge(std::string plugin_dll_path, std::string socket_endpoint_path)
 // TODO: Replace blocking loop with async readers or threads for all of the
 //       sockets. Also extract this functionality somewhere since the host event
 //       callback needs to do exactly the same thing.
-void Bridge::dispatch_loop() {
+void PluginBridge::dispatch_loop() {
     while (true) {
         passthrough_event(host_vst_dispatch, plugin, plugin->dispatcher);
     }
 }
 
-intptr_t Bridge::host_callback(AEffect* /*plugin*/,
-                               int32_t opcode,
-                               int32_t index,
-                               intptr_t value,
-                               void* data,
-                               float option) {
+intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
+                                     int32_t opcode,
+                                     int32_t index,
+                                     intptr_t value,
+                                     void* data,
+                                     float option) {
     return send_event(vst_host_callback, opcode, index, value, data, option);
 }
 

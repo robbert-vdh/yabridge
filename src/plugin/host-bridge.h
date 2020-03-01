@@ -29,7 +29,7 @@
  * Wine VST host. The functions below should be used as callback functions in an
  * `AEffect` object.
  */
-class Bridge {
+class HostBridge {
    public:
     /**
      * Initializes the Wine VST bridge. This sets up the sockets for event
@@ -45,7 +45,7 @@ class Bridge {
      *   if it could not locate and load a VST .dll file.
      */
     // TODO: The plugin struct should be created here, not passed in
-    Bridge(AEffect* plugin, audioMasterCallback host_callback);
+    HostBridge(AEffect* plugin, audioMasterCallback host_callback);
 
     // The four below functions are the handlers from the VST2 API. They are
     // called through proxy functions in `plugin.cpp`.

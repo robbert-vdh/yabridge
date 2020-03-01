@@ -29,7 +29,7 @@
  * Wine VST host. The functions below should be used as callback functions in an
  * `AEffect` object.
  */
-class Bridge {
+class PluginBridge {
    public:
     /**
      * Initializes the Windows VST plugin and set up communication with the
@@ -43,7 +43,7 @@ class Bridge {
      * @throw std::runtime_error Thrown when the VST plugin could not be loaded,
      *   or if communication could not be set up.
      */
-    Bridge(std::string plugin_dll_path, std::string socket_endpoint_path);
+    PluginBridge(std::string plugin_dll_path, std::string socket_endpoint_path);
 
     intptr_t host_callback(AEffect*, int32_t, int32_t, intptr_t, void*, float);
 
