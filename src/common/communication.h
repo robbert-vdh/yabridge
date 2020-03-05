@@ -39,7 +39,6 @@ constexpr size_t max_audio_channels = 32;
 /**
  * The maximum number of samples in a buffer.
  */
-
 constexpr size_t max_buffer_size = 16384;
 /**
  * The maximum size in bytes of a string or buffer passed through a void pointer
@@ -54,12 +53,6 @@ constexpr size_t max_string_length = 128;
  */
 template <std::size_t N>
 using ArrayBuffer = std::array<uint8_t, N>;
-
-/**
- * A dynamically sized buffer, useful for larger types without known sizes. In
- * other words, audio buffers.
- */
-using VectorBuffer = std::vector<uint8_t>;
 
 template <typename B>
 using OutputAdapter = bitsery::OutputBufferAdapter<B>;
@@ -168,7 +161,11 @@ struct ParameterResult {
  * processing. The number of samples is encoded in each audio buffer's length.
  */
 struct AudioBuffer {
-    using buffer_type = VectorBuffer;
+    // When sending data we could use a vector of the right size, but when
+    // receiving data we don't know how large this vector should be in advance
+    // (or without sending the message length first)
+    using buffer_type =
+        ArrayBuffer<max_audio_channels * max_buffer_size * sizeof(float)>;
 
     /**
      * An audio buffer for each of the plugin's audio channels. The number of
@@ -224,8 +221,8 @@ struct buffer_t<AEffect> {
  *
  * @param socket The Boost.Asio socket to write to.
  * @param object The object to write to the stream.
- * @param buffer The buffer to write to. Only needed for audio buffers
- *   constantly allocating huge vectors would be a waste.
+ * @param buffer The buffer to write to. Only needed for when sending audio
+ *   because their buffers might be quite large.
  *
  * @relates read_object
  */
@@ -254,8 +251,8 @@ inline void write_object(Socket& socket, const T& object) {
  * @param object The object to deserialize to, if given. This can be used to
  *   update an existing `AEffect` struct without losing the pointers set by the
  *   host and the bridge.
- * @param buffer The buffer to write to. Only needed for audio buffers
- *   constantly allocating huge vectors would be a waste.
+ * @param buffer The buffer to write to. Only needed for when sending audio
+ *   because their buffers might be quite large.
  *
  * @throw std::runtime_error If the conversion to an object was not successful.
  *
