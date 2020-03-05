@@ -176,7 +176,6 @@ void serialize(S& s, AEffect& plugin) {
  */
 template <typename T, typename Socket>
 inline void write_object(Socket& socket, const T& object) {
-    // TODO: Reuse buffers
     Buffer<buffer_size> buffer;
     auto length =
         bitsery::quickSerialization<OutputAdapter<buffer_size>>(buffer, object);
@@ -199,7 +198,6 @@ inline void write_object(Socket& socket, const T& object) {
  */
 template <typename T, typename Socket>
 inline T read_object(Socket& socket, T object = T()) {
-    // TODO: Reuse buffers
     Buffer<buffer_size> buffer;
     auto message_length = socket.receive(boost::asio::buffer(buffer));
 
@@ -239,8 +237,14 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
 
     const auto response = read_object<EventResult>(socket);
     if (response.data.has_value()) {
-        std::copy(response.data->begin(), response.data->end(),
-                  static_cast<char*>(data));
+        char* char_data = static_cast<char*>(data);
+
+        // For correctness we will copy the entire buffer and add a terminating
+        // null byte ourselves. In practice `response.data` will only ever
+        // contain C-style strings, but this would work with any other data
+        // format that can contain null bytes.
+        std::copy(response.data->begin(), response.data->end(), char_data);
+        char_data[response.data->size()] = 0;
     }
 
     return response.return_value;
@@ -264,9 +268,6 @@ template <typename F>
 void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                        AEffect* plugin,
                        F callback) {
-    // TODO: Reuse buffers
-    std::array<char, max_string_length> buffer;
-
     auto event = read_object<Event>(socket);
 
     // The void pointer argument for the dispatch function is used for
@@ -275,9 +276,11 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     //  - For passing strings as input to the event
     //  - For providing a buffer for the event to write results back into
     char* payload = nullptr;
+    std::array<char, max_string_length> buffer;
     if (event.data.has_value()) {
-        // If the data parameter was an empty string, then we're going to
-        // pass a larger buffer to the dispatch function instead..
+        // If the data parameter was an empty string, then we're going to pass a
+        // larger buffer to the dispatch function instead. Otherwise we'll pass
+        // the data passed by the host.
         if (!event.data->empty()) {
             payload = const_cast<char*>(event.data->c_str());
         } else {
