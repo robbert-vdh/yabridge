@@ -56,7 +56,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       io_context(),
       socket_endpoint(socket_endpoint_path),
       host_vst_dispatch(io_context),
-      vst_host_callback(io_context) {
+      vst_host_callback(io_context),
+      vst_host_aeffect(io_context) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
         throw std::runtime_error("Could not load a shared library at '" +
@@ -85,6 +86,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // in the Linus plugin
     host_vst_dispatch.connect(socket_endpoint);
     vst_host_callback.connect(socket_endpoint);
+    vst_host_aeffect.connect(socket_endpoint);
 
     // Initialize after communication has been set up We'll try to do the same
     // `get_bridge_isntance` trick as in `plugin/plugin.cpp`, but since the
@@ -96,6 +98,12 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
         throw std::runtime_error("VST plugin at '" + plugin_dll_path +
                                  "' failed to initialize.");
     }
+
+    // Send the plugin's information to the Linux VST plugin
+    // TODO: This is now done only once at startup, do plugins update their
+    //       parameters? In that case we should be detecting updates and pass
+    //       them along accordingly.
+    write_object(vst_host_aeffect, *plugin);
 
     // We only needed this little hack during initialization
     current_bridge_isntance = nullptr;

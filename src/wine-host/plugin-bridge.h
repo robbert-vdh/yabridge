@@ -75,4 +75,11 @@ class PluginBridge {
     // plugin (through the Wine VST host).
     boost::asio::local::stream_protocol::socket host_vst_dispatch;
     boost::asio::local::stream_protocol::socket vst_host_callback;
+
+    /**
+     * This socket only handles updates of the `AEffect` struct instead of
+     * passing through function calls. It's also used during initialization to
+     * pass the Wine plugin's information to the host.
+     */
+    boost::asio::local::stream_protocol::socket vst_host_aeffect;
 };

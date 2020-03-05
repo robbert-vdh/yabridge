@@ -35,17 +35,13 @@ class HostBridge {
      * Initializes the Wine VST bridge. This sets up the sockets for event
      * handling.
      *
-     * TODO: Figure out whether shared memory gives us better throughput and/or
-     *       lower overhead than using a Unix domain socket would.
-     *
      * @param host_callback The callback function passed to the VST plugin by
      *   the host.
      *
      * @throw std::runtime_error Thrown when the VST host could not be found, or
      *   if it could not locate and load a VST .dll file.
      */
-    // TODO: The plugin struct should be created here, not passed in
-    HostBridge(AEffect* plugin, audioMasterCallback host_callback);
+    HostBridge(audioMasterCallback host_callback);
 
     // The four below functions are the handlers from the VST2 API. They are
     // called through proxy functions in `plugin.cpp`.
@@ -68,7 +64,14 @@ class HostBridge {
     float get_parameter(AEffect* plugin, int32_t index);
 
     // TODO: Remove debug loop
-    void host_callback_loop(AEffect* plugin);
+    void host_callback_loop();
+
+    /**
+     * This AEffect struct will be populated using the data passed by the Wine
+     * VST host during initialization and then passed as a pointer to the Linux
+     * native VST host from the Linux VST plugin's entry point.
+     */
+    AEffect plugin;
 
    private:
     boost::asio::io_context io_context;
@@ -81,6 +84,13 @@ class HostBridge {
     // plugin (through the Wine VST host).
     boost::asio::local::stream_protocol::socket host_vst_dispatch;
     boost::asio::local::stream_protocol::socket vst_host_callback;
+
+    /**
+     * This socket only handles updates of the `AEffect` struct instead of
+     * passing through function calls. It's also used during initialization to
+     * pass the Wine plugin's information to the host.
+     */
+    boost::asio::local::stream_protocol::socket vst_host_aeffect;
 
     /**
      * The callback function passed by the host to the VST plugin instance.

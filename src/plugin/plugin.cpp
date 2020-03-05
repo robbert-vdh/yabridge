@@ -38,20 +38,6 @@ VST_EXPORT AEffect* main_plugin(audioMasterCallback audioMaster) {
 }
 }
 
-intptr_t dispatch_proxy(AEffect*, int32_t, int32_t, intptr_t, void*, float);
-void process_proxy(AEffect*, float**, float**, int32_t);
-void setParameter_proxy(AEffect*, int32_t, float);
-float getParameter_proxy(AEffect*, int32_t);
-
-/**
- * Fetch the bridge instance stored in an unused pointer from a VST plugin. This
- * is sadly needed as a workaround to avoid using globals since we need free
- * function pointers to interface with the VST C API.
- */
-HostBridge& get_bridge_instance(const AEffect& plugin) {
-    return *static_cast<HostBridge*>(plugin.ptr3);
-}
-
 /**
  * The main VST plugin entry point. We first set up a bridge that connects to a
  * Wine process that hosts the Windows VST plugin. We then create and return a
@@ -63,58 +49,18 @@ HostBridge& get_bridge_instance(const AEffect& plugin) {
  */
 VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback host_callback) {
     try {
-        // TODO: Create the plugin instance in the bridge based on the received
-        //       parameters. We can then also use a smart pointer so we only
-        //       have to manually delete the bridge instance.
-        AEffect* plugin = new AEffect();
-        HostBridge* bridge = new HostBridge(plugin, host_callback);
-        plugin->ptr3 = bridge;
+        // This is the only place where we have to use manual memory management.
+        // The bridge's destructor is called when the `effClose` opcode is
+        // received.
+        HostBridge* bridge = new HostBridge(host_callback);
 
-        plugin->dispatcher = dispatch_proxy;
-        plugin->process = process_proxy;
-        plugin->setParameter = setParameter_proxy;
-        plugin->getParameter = getParameter_proxy;
-        // // XXX: processReplacing?
+        // TODO: Debug print information about the loaded plugin
 
-        // TODO: Add more and actual data
-        plugin->magic = kEffectMagic;
-        plugin->numParams = 69;
-        plugin->uniqueID = 69420;
-
-        return plugin;
+        return &bridge->plugin;
     } catch (const std::exception& error) {
         std::cerr << "Error during initialization:" << std::endl;
         std::cerr << error.what() << std::endl;
 
         return nullptr;
     }
-}
-
-// The below functions are proxy functions for the methods defined in
-// `Bridge.cpp`
-
-intptr_t dispatch_proxy(AEffect* plugin,
-                        int32_t opcode,
-                        int32_t index,
-                        intptr_t value,
-                        void* data,
-                        float option) {
-    return get_bridge_instance(*plugin).dispatch(plugin, opcode, index, value,
-                                                 data, option);
-}
-
-void process_proxy(AEffect* plugin,
-                   float** inputs,
-                   float** outputs,
-                   int32_t sample_frames) {
-    return get_bridge_instance(*plugin).process(plugin, inputs, outputs,
-                                                sample_frames);
-}
-
-void setParameter_proxy(AEffect* plugin, int32_t index, float value) {
-    return get_bridge_instance(*plugin).set_parameter(plugin, index, value);
-}
-
-float getParameter_proxy(AEffect* plugin, int32_t index) {
-    return get_bridge_instance(*plugin).get_parameter(plugin, index);
 }
