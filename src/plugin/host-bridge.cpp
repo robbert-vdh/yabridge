@@ -72,6 +72,7 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
       socket_acceptor(io_context, socket_endpoint),
       host_vst_dispatch(io_context),
       vst_host_callback(io_context),
+      host_vst_parameters(io_context),
       vst_host_aeffect(io_context),
       host_callback_function(host_callback),
       vst_host(find_wine_vst_host(),
@@ -84,6 +85,7 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     // in the Wine VST host
     socket_acceptor.accept(host_vst_dispatch);
     socket_acceptor.accept(vst_host_callback);
+    socket_acceptor.accept(host_vst_parameters);
     socket_acceptor.accept(vst_host_aeffect);
 
     // Set up all pointers for our `AEffect` struct. We will fill this with data
@@ -160,15 +162,22 @@ void HostBridge::process_replacing(AEffect* /*plugin*/,
 }
 
 void HostBridge::set_parameter(AEffect* /*plugin*/,
-                               int32_t /*index*/,
-                               float /*value*/) {
-    // TODO: Unimplmemented
+                               int32_t index,
+                               float value) {
+    Parameter request{index, value};
+    write_object(host_vst_parameters, request);
+
+    // This should not contain any values and just serve as an acknowledgement
+    const auto response = read_object<ParameterResult>(host_vst_parameters);
+    assert(!response.value.has_value());
 }
 
-float HostBridge::get_parameter(AEffect* /*plugin*/, int32_t /*index*/
-) {
-    // TODO: Unimplmemented
-    return 0.0f;
+float HostBridge::get_parameter(AEffect* /*plugin*/, int32_t index) {
+    Parameter request{index, std::nullopt};
+    write_object(host_vst_parameters, request);
+
+    const auto response = read_object<ParameterResult>(host_vst_parameters);
+    return response.value.value();
 }
 
 /**

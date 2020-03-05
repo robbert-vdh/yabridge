@@ -77,6 +77,11 @@ class PluginBridge {
     // plugin (through the Wine VST host).
     boost::asio::local::stream_protocol::socket host_vst_dispatch;
     boost::asio::local::stream_protocol::socket vst_host_callback;
+    /**
+     * Used for both `getParameter` and `setParameter` since they mostly
+     * overlap.
+     */
+    boost::asio::local::stream_protocol::socket host_vst_parameters;
 
     /**
      * This socket only handles updates of the `AEffect` struct instead of
@@ -89,6 +94,10 @@ class PluginBridge {
      * The thread that handles dispatch events from the host.
      */
     std::thread dispatch_handler;
+    /**
+     * The thread that responds to `getParameter` and `setParameter` requests.
+     */
+    std::thread parameters_handler;
 
-    // TODO: Set up all other callback handlers
+    // TODO: Set up process and processReplacing callback handlers
 };

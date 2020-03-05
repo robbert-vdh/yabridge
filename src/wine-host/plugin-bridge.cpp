@@ -57,6 +57,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       socket_endpoint(socket_endpoint_path),
       host_vst_dispatch(io_context),
       vst_host_callback(io_context),
+      host_vst_parameters(io_context),
       vst_host_aeffect(io_context) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
@@ -86,6 +87,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // in the Linus plugin
     host_vst_dispatch.connect(socket_endpoint);
     vst_host_callback.connect(socket_endpoint);
+    host_vst_parameters.connect(socket_endpoint);
     vst_host_aeffect.connect(socket_endpoint);
 
     // Initialize after communication has been set up We'll try to do the same
@@ -115,6 +117,30 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     dispatch_handler = std::thread([&]() {
         while (true) {
             passthrough_event(host_vst_dispatch, plugin, plugin->dispatcher);
+        }
+    });
+
+    parameters_handler = std::thread([&]() {
+        while (true) {
+            // Both `getParameter` and `setParameter` functions are passed
+            // through on this socket since they have a lot of overlap. The
+            // presence of the `value` field tells us which one we're dealing
+            // with.
+            auto request = read_object<Parameter>(host_vst_parameters);
+            if (request.value.has_value()) {
+                // `setParameter`
+                plugin->setParameter(plugin, request.index,
+                                     request.value.value());
+
+                ParameterResult response{std::nullopt};
+                write_object(host_vst_parameters, response);
+            } else {
+                // `getParameter`
+                float value = plugin->getParameter(plugin, request.index);
+
+                ParameterResult response{value};
+                write_object(host_vst_parameters, response);
+            }
         }
     });
 }

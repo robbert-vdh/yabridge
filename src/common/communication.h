@@ -104,13 +104,42 @@ struct EventResult {
      */
     std::optional<std::string> data;
 
-    // TODO: Add missing return value fields;
-
     template <typename S>
     void serialize(S& s) {
         s.value8b(return_value);
         s.ext(data, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, max_string_length); });
+    }
+};
+
+/**
+ * Represents a call to either `getParameter` or `setParameter`, depending on
+ * whether `value` contains a value or not.
+ */
+struct Parameter {
+    int32_t index;
+    std::optional<float> value;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value4b(index);
+        s.ext(value, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.value4b(v); });
+    }
+};
+
+/**
+ * The result of a `getParameter` or a `setParameter` call. For `setParameter`
+ * this struct won't contain any values and mostly acts as an acknowledgement
+ * from the Wine VST host.
+ */
+struct ParameterResult {
+    std::optional<float> value;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.ext(value, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.value4b(v); });
     }
 };
 

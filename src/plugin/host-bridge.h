@@ -84,6 +84,14 @@ class HostBridge {
     // plugin (through the Wine VST host).
     boost::asio::local::stream_protocol::socket host_vst_dispatch;
     boost::asio::local::stream_protocol::socket vst_host_callback;
+    /**
+     * Used for both `getParameter` and `setParameter` since they mostly
+     * overlap.
+     *
+     * TODO: Verify that these 100% won't be called simultanously since that
+     *       would cause a race condition.
+     */
+    boost::asio::local::stream_protocol::socket host_vst_parameters;
 
     /**
      * This socket only handles updates of the `AEffect` struct instead of
