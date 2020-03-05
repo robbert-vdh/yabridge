@@ -60,6 +60,10 @@ class HostBridge {
                  float** inputs,
                  float** outputs,
                  int32_t sample_frames);
+    void process_replacing(AEffect* plugin,
+                           float** inputs,
+                           float** outputs,
+                           int sample_frames);
     void set_parameter(AEffect* plugin, int32_t index, float value);
     float get_parameter(AEffect* plugin, int32_t index);
 

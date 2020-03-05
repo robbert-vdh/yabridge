@@ -51,6 +51,7 @@ bp::environment set_wineprefix();
 
 intptr_t dispatch_proxy(AEffect*, int32_t, int32_t, intptr_t, void*, float);
 void process_proxy(AEffect*, float**, float**, int32_t);
+void process_replacing_proxy(AEffect*, float**, float**, int);
 void setParameter_proxy(AEffect*, int32_t, float);
 float getParameter_proxy(AEffect*, int32_t);
 
@@ -92,7 +93,7 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     plugin.process = process_proxy;
     plugin.setParameter = setParameter_proxy;
     plugin.getParameter = getParameter_proxy;
-    // TODO: Add processReplacing
+    plugin.processReplacing = process_replacing_proxy;
 
     // TODO: Replace manual thread creation with an async_read loop
     // Start accepting host callbacks after we've set up our sockets and basic
@@ -143,6 +144,13 @@ void HostBridge::process(AEffect* /*plugin*/,
                          float** /*inputs*/,
                          float** /*outputs*/,
                          int32_t /*sample_frames*/) {
+    // TODO: Unimplmemented
+}
+
+void HostBridge::process_replacing(AEffect* /*plugin*/,
+                                   float** /*inputs*/,
+                                   float** /*outputs*/,
+                                   int /*sample_frames*/) {
     // TODO: Unimplmemented
 }
 
@@ -305,6 +313,14 @@ void process_proxy(AEffect* plugin,
                    int32_t sample_frames) {
     return get_bridge_instance(*plugin).process(plugin, inputs, outputs,
                                                 sample_frames);
+}
+
+void process_replacing_proxy(AEffect* plugin,
+                             float** inputs,
+                             float** outputs,
+                             int sample_frames) {
+    return get_bridge_instance(*plugin).process_replacing(
+        plugin, inputs, outputs, sample_frames);
 }
 
 void setParameter_proxy(AEffect* plugin, int32_t index, float value) {
