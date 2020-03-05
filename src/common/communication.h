@@ -21,6 +21,7 @@
 #include <bitsery/ext/std_optional.h>
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/string.h>
+#include <bitsery/traits/vector.h>
 #include <vestige/aeffect.h>
 
 #include <boost/asio/buffer.hpp>
@@ -29,6 +30,17 @@
 #include <iostream>
 #include <optional>
 
+// These are for the serialization done by bitsery
+
+/**
+ * The maximum number of audio channels supported.
+ */
+constexpr size_t max_audio_channels = 32;
+/**
+ * The maximum number of samples in a buffer.
+ */
+
+constexpr size_t max_buffer_size = 16384;
 /**
  * The maximum size in bytes of a string or buffer passed through a void pointer
  * in one of the dispatch functions. This is used as a buffer size and also as a
@@ -140,6 +152,24 @@ struct ParameterResult {
     void serialize(S& s) {
         s.ext(value, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.value4b(v); });
+    }
+};
+
+/**
+ * A buffer of audio for the plugin to process, or the response of that
+ * processing. The number of samples is encoded in each audio buffer's length.
+ */
+struct AudioBuffer {
+    /**
+     * An audio buffer for each of the plugin's audio channels. The number of
+     * samples is equal to `buffers[0].size()`.
+     */
+    std::vector<std::vector<float>> buffers;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.container(buffers, max_audio_channels,
+                    [](S& s, auto& v) { s.container4b(v, max_buffer_size); });
     }
 };
 
