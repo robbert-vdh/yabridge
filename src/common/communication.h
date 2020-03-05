@@ -285,8 +285,8 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
         }
     }
 
-    const intptr_t return_value = callback(plugin, event.opcode, event.option,
-                                           event.index, payload, event.option);
+    const intptr_t return_value = callback(plugin, event.opcode, event.index,
+                                           event.value, payload, event.option);
 
     // Only write back the value from `payload` if we were passed an empty
     // buffer to write into
