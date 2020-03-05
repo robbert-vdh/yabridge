@@ -136,17 +136,20 @@ inline void write_object(Socket& socket, const T& object) {
  * together with `write_object`. This will block until the object is available.
  *
  * @param socket The Boost.Asio socket to read from.
+ * @param object The object to deserialize to, if given. This can be used to
+ *   update an existing `AEffect` struct without losing the pointers set by the
+ *   host and the bridge.
+ *
  * @throw std::runtime_error If the conversion to an object was not successful.
  *
  * @relates write_object
  */
 template <typename T, typename Socket>
-inline T read_object(Socket& socket) {
+inline T read_object(Socket& socket, T object = T()) {
     // TODO: Reuse buffers
     Buffer<buffer_size> buffer;
     auto message_length = socket.receive(boost::asio::buffer(buffer));
 
-    T object;
     auto [_, success] =
         bitsery::quickDeserialization<InputAdapter<buffer_size>>(
             {buffer.begin(), message_length}, object);
