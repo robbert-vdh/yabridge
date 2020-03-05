@@ -49,23 +49,23 @@ constexpr size_t max_buffer_size = 16384;
 constexpr size_t max_string_length = 128;
 
 /**
- * The buffer size in bytes used for all buffers for sending and recieving
- * messages.
- *
- * TODO: This should probably depend on the type. 512 bytes is way too much for
- *       events, and probably not enough for sending audio.
+ * A simple constant sized buffer for smaller types that can be allocated on the
+ * stack.
  */
-constexpr size_t buffer_size = 512;
-
-// Types used for serialization and deserialization with bitsery.
 template <std::size_t N>
-using Buffer = std::array<u_int8_t, N>;
+using ArrayBuffer = std::array<uint8_t, N>;
 
-template <std::size_t N>
-using OutputAdapter = bitsery::OutputBufferAdapter<Buffer<N>>;
+/**
+ * A dynamically sized buffer, useful for larger types without known sizes. In
+ * other words, audio buffers.
+ */
+using VectorBuffer = std::vector<uint8_t>;
 
-template <std::size_t N>
-using InputAdapter = bitsery::InputBufferAdapter<Buffer<N>>;
+template <typename B>
+using OutputAdapter = bitsery::OutputBufferAdapter<B>;
+
+template <typename B>
+using InputAdapter = bitsery::InputBufferAdapter<B>;
 
 /**
  * An event as dispatched by the VST host. These events will get forwarded to
@@ -73,6 +73,8 @@ using InputAdapter = bitsery::InputBufferAdapter<Buffer<N>>;
  * arguments sent to the `AEffect::dispatch` function.
  */
 struct Event {
+    using buffer_type = ArrayBuffer<max_string_length + 32>;
+
     int32_t opcode;
     int32_t index;
     // TODO: This is an intptr_t, if we want to support 32 bit Wine plugins all
@@ -106,6 +108,8 @@ struct Event {
  * AN instance of this should be sent back as a response to an incoming event.
  */
 struct EventResult {
+    using buffer_type = ArrayBuffer<max_string_length + 32>;
+
     /**
      * The result that should be returned from the dispatch function.
      */
@@ -129,6 +133,8 @@ struct EventResult {
  * whether `value` contains a value or not.
  */
 struct Parameter {
+    using buffer_type = ArrayBuffer<16>;
+
     int32_t index;
     std::optional<float> value;
 
@@ -146,6 +152,8 @@ struct Parameter {
  * from the Wine VST host.
  */
 struct ParameterResult {
+    using buffer_type = ArrayBuffer<16>;
+
     std::optional<float> value;
 
     template <typename S>
@@ -160,6 +168,8 @@ struct ParameterResult {
  * processing. The number of samples is encoded in each audio buffer's length.
  */
 struct AudioBuffer {
+    using buffer_type = VectorBuffer;
+
     /**
      * An audio buffer for each of the plugin's audio channels. The number of
      * samples is equal to `buffers[0].size()`.
@@ -196,6 +206,18 @@ void serialize(S& s, AEffect& plugin) {
     s.container1b(plugin.unknown1);
 }
 
+// I don't want to editor 'include/vestige/aeffect.h`. That's why this type
+// trait and the above serialization function are here.`
+template <typename T>
+struct buffer_type {
+    using type = typename T::buffer_type;
+};
+
+template <>
+struct buffer_type<AEffect> {
+    using type = ArrayBuffer<128>;
+};
+
 /**
  * Serialize an object using bitsery and write it to a socket.
  *
@@ -206,9 +228,9 @@ void serialize(S& s, AEffect& plugin) {
  */
 template <typename T, typename Socket>
 inline void write_object(Socket& socket, const T& object) {
-    Buffer<buffer_size> buffer;
-    auto length =
-        bitsery::quickSerialization<OutputAdapter<buffer_size>>(buffer, object);
+    typename buffer_type<T>::type buffer;
+    auto length = bitsery::quickSerialization<
+        OutputAdapter<typename buffer_type<T>::type>>(buffer, object);
 
     socket.send(boost::asio::buffer(buffer, length));
 }
@@ -228,12 +250,12 @@ inline void write_object(Socket& socket, const T& object) {
  */
 template <typename T, typename Socket>
 inline T read_object(Socket& socket, T object = T()) {
-    Buffer<buffer_size> buffer;
+    typename buffer_type<T>::type buffer;
     auto message_length = socket.receive(boost::asio::buffer(buffer));
 
-    auto [_, success] =
-        bitsery::quickDeserialization<InputAdapter<buffer_size>>(
-            {buffer.begin(), message_length}, object);
+    auto [_, success] = bitsery::quickDeserialization<
+        InputAdapter<typename buffer_type<T>::type>>(
+        {buffer.begin(), message_length}, object);
 
     if (!success) {
         throw std::runtime_error("Deserialization failure in call:" +
