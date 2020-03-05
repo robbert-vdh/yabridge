@@ -63,8 +63,9 @@ using InputAdapter = bitsery::InputBufferAdapter<Buffer<N>>;
 struct Event {
     int32_t opcode;
     int32_t index;
-    // TODO: This is an intptr_t, is this actually a poitner that should be
-    //       dereferenced?
+    // TODO: This is an intptr_t, if we want to support 32 bit Wine plugins all
+    //       of these these intptr_t types should be replace by `uint64_t` to
+    //       remain compatible with the Linux VST plugin.
     intptr_t value;
     float option;
     /**
@@ -112,6 +113,28 @@ struct EventResult {
               [](S& s, auto& v) { s.text1b(v, max_string_length); });
     }
 };
+
+/**
+ * The serialization function for `AEffect` structs. This will s serialize all
+ * of the values but it will not touch any of the pointer fields. That way you
+ * can deserialize to an existing `AEffect` instance.
+ */
+template <typename S>
+void serialize(S& s, AEffect& plugin) {
+    s.value4b(plugin.magic);
+    s.value4b(plugin.numPrograms);
+    s.value4b(plugin.numInputs);
+    s.value4b(plugin.numOutputs);
+    s.value4b(plugin.flags);
+
+    // These fields can contain some values that are rarely used and/or
+    // deprecated, but we should pass them along anyway
+    s.container1b(plugin.empty3);
+    s.value4b(plugin.unknown_float);
+
+    s.value4b(plugin.uniqueID);
+    s.container1b(plugin.unknown1);
+}
 
 /**
  * Serialize an object using bitsery and write it to a socket.
