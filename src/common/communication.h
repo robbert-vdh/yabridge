@@ -207,14 +207,15 @@ void serialize(S& s, AEffect& plugin) {
 }
 
 // I don't want to editor 'include/vestige/aeffect.h`. That's why this type
-// trait and the above serialization function are here.`
+// trait and the above serialization function are here.` Clang complains that
+// `buffer` should be qualified (and only in some cases), so `buffer_t` it is.
 template <typename T>
-struct buffer_type {
+struct buffer_t {
     using type = typename T::buffer_type;
 };
 
 template <>
-struct buffer_type<AEffect> {
+struct buffer_t<AEffect> {
     using type = ArrayBuffer<128>;
 };
 
@@ -231,16 +232,17 @@ struct buffer_type<AEffect> {
 template <typename T, typename Socket>
 inline void write_object(Socket& socket,
                          const T& object,
-                         typename buffer_type<T>::type& buffer) {
-    auto length = bitsery::quickSerialization<
-        OutputAdapter<typename buffer_type<T>::type>>(buffer, object);
+                         typename buffer_t<T>::type& buffer) {
+    auto length =
+        bitsery::quickSerialization<OutputAdapter<typename buffer_t<T>::type>>(
+            buffer, object);
 
     socket.send(boost::asio::buffer(buffer, length));
 }
 
 template <typename T, typename Socket>
 inline void write_object(Socket& socket, const T& object) {
-    typename buffer_type<T>::type buffer;
+    typename buffer_t<T>::type buffer;
     write_object(socket, object, buffer);
 }
 
@@ -262,12 +264,12 @@ inline void write_object(Socket& socket, const T& object) {
 template <typename T, typename Socket>
 inline T& read_object(Socket& socket,
                       T& object,
-                      typename buffer_type<T>::type& buffer) {
+                      typename buffer_t<T>::type& buffer) {
     auto message_length = socket.receive(boost::asio::buffer(buffer));
 
-    auto [_, success] = bitsery::quickDeserialization<
-        InputAdapter<typename buffer_type<T>::type>>(
-        {buffer.begin(), message_length}, object);
+    auto [_, success] =
+        bitsery::quickDeserialization<InputAdapter<typename buffer_t<T>::type>>(
+            {buffer.begin(), message_length}, object);
 
     if (!success) {
         throw std::runtime_error("Deserialization failure in call:" +
@@ -279,7 +281,7 @@ inline T& read_object(Socket& socket,
 
 template <typename T, typename Socket>
 inline T& read_object(Socket& socket, T& object) {
-    typename buffer_type<T>::type buffer;
+    typename buffer_t<T>::type buffer;
     return read_object(socket, object, buffer);
 }
 
