@@ -24,8 +24,6 @@
 #include <iostream>
 #include <random>
 
-#include "../common/communication.h"
-
 // TODO: I should track down the VST2 SDK for clarification on some of the
 //       implementation details, such as the use of intptr_t isntead of void*
 //       here.
@@ -73,6 +71,7 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
       host_vst_dispatch(io_context),
       vst_host_callback(io_context),
       host_vst_parameters(io_context),
+      host_vst_process_replacing(io_context),
       vst_host_aeffect(io_context),
       host_callback_function(host_callback),
       vst_host(find_wine_vst_host(),
@@ -80,12 +79,14 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
                // which Unix domain socket to connect to
                find_vst_plugin(),
                socket_endpoint.path(),
-               bp::env = set_wineprefix()) {
+               bp::env = set_wineprefix()),
+      process_buffer(std::make_unique<AudioBuffers::buffer_type>()) {
     // It's very important that these sockets are connected to in the same order
     // in the Wine VST host
     socket_acceptor.accept(host_vst_dispatch);
     socket_acceptor.accept(vst_host_callback);
     socket_acceptor.accept(host_vst_parameters);
+    socket_acceptor.accept(host_vst_process_replacing);
     socket_acceptor.accept(vst_host_aeffect);
 
     // Set up all pointers for our `AEffect` struct. We will fill this with data
@@ -147,24 +148,39 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
     return send_event(host_vst_dispatch, opcode, index, value, data, option);
 }
 
-void HostBridge::process(AEffect* /*plugin*/,
-                         float** /*inputs*/,
-                         float** /*outputs*/,
-                         int32_t /*sample_frames*/) {
-    // TODO: Unimplmemented
-}
-
 void HostBridge::process_replacing(AEffect* /*plugin*/,
-                                   float** /*inputs*/,
-                                   float** /*outputs*/,
-                                   int /*sample_frames*/) {
-    // TODO: Unimplmemented
+                                   float** inputs,
+                                   float** outputs,
+                                   int sample_frames) {
+    // The inputs and outputs arrays should be `[num_inputs][sample_frames]` and
+    // `[num_outputs][sample_frames]` floats large respectfully.
+    std::vector<std::vector<float>> input_buffers(
+        plugin.numInputs, std::vector<float>(sample_frames));
+    for (int channel = 0; channel < plugin.numInputs; channel++) {
+        std::copy(inputs[channel], inputs[channel] + sample_frames + 1,
+                  input_buffers[channel].begin());
+    }
+
+    const AudioBuffers request{input_buffers, sample_frames};
+    write_object(host_vst_process_replacing, request, *process_buffer);
+
+    // /Write the results back to the `outputs` arrays
+    AudioBuffers response;
+    response =
+        read_object(host_vst_process_replacing, response, *process_buffer);
+
+    // TODO: Doesn't quite work yet, not sure which side is causing problems
+    assert(response.buffers.size() == static_cast<size_t>(plugin.numOutputs));
+    for (int channel = 0; channel < plugin.numOutputs; channel++) {
+        std::copy(response.buffers[channel].begin(),
+                  response.buffers[channel].end(), outputs[channel]);
+    }
 }
 
 void HostBridge::set_parameter(AEffect* /*plugin*/,
                                int32_t index,
                                float value) {
-    Parameter request{index, value};
+    const Parameter request{index, value};
     write_object(host_vst_parameters, request);
 
     // This should not contain any values and just serve as an acknowledgement
@@ -173,7 +189,7 @@ void HostBridge::set_parameter(AEffect* /*plugin*/,
 }
 
 float HostBridge::get_parameter(AEffect* /*plugin*/, int32_t index) {
-    Parameter request{index, std::nullopt};
+    const Parameter request{index, std::nullopt};
     write_object(host_vst_parameters, request);
 
     const auto response = read_object<ParameterResult>(host_vst_parameters);
@@ -316,8 +332,8 @@ void process_proxy(AEffect* plugin,
                    float** inputs,
                    float** outputs,
                    int32_t sample_frames) {
-    return get_bridge_instance(*plugin).process(plugin, inputs, outputs,
-                                                sample_frames);
+    return get_bridge_instance(*plugin).process_replacing(
+        plugin, inputs, outputs, sample_frames);
 }
 
 void process_replacing_proxy(AEffect* plugin,

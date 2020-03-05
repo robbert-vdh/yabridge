@@ -26,6 +26,8 @@
 
 #include <thread>
 
+#include "../common/communication.h"
+
 /**
  * This handles the communication between the Linux native VST plugin and the
  * Wine VST host. The functions below should be used as callback functions in an
@@ -82,6 +84,7 @@ class PluginBridge {
      * overlap.
      */
     boost::asio::local::stream_protocol::socket host_vst_parameters;
+    boost::asio::local::stream_protocol::socket host_vst_process_replacing;
 
     /**
      * This socket only handles updates of the `AEffect` struct instead of
@@ -98,6 +101,14 @@ class PluginBridge {
      * The thread that responds to `getParameter` and `setParameter` requests.
      */
     std::thread parameters_handler;
+    /**
+     * The t thread that handles calls to `processReplacing` (and `process`).
+     */
+    std::thread process_replacing_handler;
 
-    // TODO: Set up process and processReplacing callback handlers
+    /**
+     * A scratch buffer for sending and receiving data during `process` and
+     * `processReplacing` calls.
+     */
+    std::unique_ptr<AudioBuffers::buffer_type> process_buffer;
 };

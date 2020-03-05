@@ -23,6 +23,8 @@
 #include <boost/process/child.hpp>
 #include <thread>
 
+#include "../common/communication.h"
+
 /**
  * This handles the communication between the Linux native VST plugin and the
  * Wine VST host. The functions below should be used as callback functions in an
@@ -55,10 +57,10 @@ class HostBridge {
                       intptr_t value,
                       void* data,
                       float option);
-    void process(AEffect* plugin,
-                 float** inputs,
-                 float** outputs,
-                 int32_t sample_frames);
+    /**
+     * Ask the VST plugin to process audio for us. This should also be used for
+     * the deprecated 'process' function.
+     */
     void process_replacing(AEffect* plugin,
                            float** inputs,
                            float** outputs,
@@ -92,6 +94,7 @@ class HostBridge {
      *       would cause a race condition.
      */
     boost::asio::local::stream_protocol::socket host_vst_parameters;
+    boost::asio::local::stream_protocol::socket host_vst_process_replacing;
 
     /**
      * This socket only handles updates of the `AEffect` struct instead of
@@ -113,4 +116,10 @@ class HostBridge {
      * The Wine process hosting the Windows VST plugin.
      */
     boost::process::child vst_host;
+
+    /**
+     * A scratch buffer for sending and receiving data during `process` and
+     * `processReplacing` calls.
+     */
+    std::unique_ptr<AudioBuffers::buffer_type> process_buffer;
 };

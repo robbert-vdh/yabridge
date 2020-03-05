@@ -16,8 +16,6 @@
 
 #include "plugin-bridge.h"
 
-#include "../common/communication.h"
-
 /**
  * A function pointer to what should be the entry point of a VST plugin.
  */
@@ -58,7 +56,9 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       host_vst_dispatch(io_context),
       vst_host_callback(io_context),
       host_vst_parameters(io_context),
-      vst_host_aeffect(io_context) {
+      host_vst_process_replacing(io_context),
+      vst_host_aeffect(io_context),
+      process_buffer(std::make_unique<AudioBuffers::buffer_type>()) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
         throw std::runtime_error("Could not load a shared library at '" +
@@ -88,6 +88,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     host_vst_dispatch.connect(socket_endpoint);
     vst_host_callback.connect(socket_endpoint);
     host_vst_parameters.connect(socket_endpoint);
+    host_vst_process_replacing.connect(socket_endpoint);
     vst_host_aeffect.connect(socket_endpoint);
 
     // Initialize after communication has been set up We'll try to do the same
@@ -143,10 +144,42 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
             }
         }
     });
+
+    process_replacing_handler = std::thread([&]() {
+        while (true) {
+            AudioBuffers request;
+            request = read_object(host_vst_process_replacing, request,
+                                  *process_buffer);
+
+            // TODO: Check if the plugin doesn't support `processReplacing` and
+            //       call the legacy `process` function instead
+            std::vector<std::vector<float>> output_buffers(
+                plugin->numOutputs, std::vector<float>(request.sample_frames));
+
+            // The process functions expect a `float**` for their inputs and
+            // their outputs
+            std::vector<float*> inputs;
+            for (auto& buffer : request.buffers) {
+                inputs.push_back(buffer.data());
+            }
+            std::vector<float*> outputs;
+            for (auto& buffer : output_buffers) {
+                outputs.push_back(buffer.data());
+            }
+
+            plugin->process(plugin, inputs.data(), outputs.data(),
+                            request.sample_frames);
+
+            AudioBuffers response{output_buffers, request.sample_frames};
+            write_object(host_vst_process_replacing, response, *process_buffer);
+        }
+    });
 }
 
 void PluginBridge::wait() {
     dispatch_handler.join();
+    parameters_handler.join();
+    process_replacing_handler.join();
 }
 
 intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,

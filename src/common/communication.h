@@ -160,23 +160,29 @@ struct ParameterResult {
  * A buffer of audio for the plugin to process, or the response of that
  * processing. The number of samples is encoded in each audio buffer's length.
  */
-struct AudioBuffer {
+struct AudioBuffers {
     // When sending data we could use a vector of the right size, but when
     // receiving data we don't know how large this vector should be in advance
     // (or without sending the message length first)
     using buffer_type =
-        ArrayBuffer<max_audio_channels * max_buffer_size * sizeof(float)>;
+        ArrayBuffer<max_audio_channels * max_buffer_size * sizeof(float) + 16>;
 
     /**
-     * An audio buffer for each of the plugin's audio channels. The number of
-     * samples is equal to `buffers[0].size()`.
+     * An audio buffer for each of the plugin's audio channels.
      */
     std::vector<std::vector<float>> buffers;
+
+    /**
+     * The number of frames in a sample. If buffers is not empty, then
+     * `buffers[0].size() == sample_frames`.
+     */
+    int sample_frames;
 
     template <typename S>
     void serialize(S& s) {
         s.container(buffers, max_audio_channels,
                     [](S& s, auto& v) { s.container4b(v, max_buffer_size); });
+        s.value4b(sample_frames);
     }
 };
 
@@ -296,12 +302,12 @@ inline T read_object(Socket& socket) {
  *
  * @relates passthrough_event
  */
-intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
-                    int32_t opcode,
-                    int32_t index,
-                    intptr_t value,
-                    void* data,
-                    float option) {
+inline intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
+                           int32_t opcode,
+                           int32_t index,
+                           intptr_t value,
+                           void* data,
+                           float option) {
     auto payload =
         data == nullptr
             ? std::nullopt
