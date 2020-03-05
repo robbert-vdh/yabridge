@@ -123,6 +123,7 @@ template <typename S>
 void serialize(S& s, AEffect& plugin) {
     s.value4b(plugin.magic);
     s.value4b(plugin.numPrograms);
+    s.value4b(plugin.numParams);
     s.value4b(plugin.numInputs);
     s.value4b(plugin.numOutputs);
     s.value4b(plugin.flags);
