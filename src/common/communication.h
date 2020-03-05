@@ -223,16 +223,25 @@ struct buffer_type<AEffect> {
  *
  * @param socket The Boost.Asio socket to write to.
  * @param object The object to write to the stream.
+ * @param buffer The buffer to write to. Only needed for audio buffers
+ *   constantly allocating huge vectors would be a waste.
  *
  * @relates read_object
  */
 template <typename T, typename Socket>
-inline void write_object(Socket& socket, const T& object) {
-    typename buffer_type<T>::type buffer;
+inline void write_object(Socket& socket,
+                         const T& object,
+                         typename buffer_type<T>::type& buffer) {
     auto length = bitsery::quickSerialization<
         OutputAdapter<typename buffer_type<T>::type>>(buffer, object);
 
     socket.send(boost::asio::buffer(buffer, length));
+}
+
+template <typename T, typename Socket>
+inline void write_object(Socket& socket, const T& object) {
+    typename buffer_type<T>::type buffer;
+    write_object(socket, object, buffer);
 }
 
 /**
@@ -243,14 +252,17 @@ inline void write_object(Socket& socket, const T& object) {
  * @param object The object to deserialize to, if given. This can be used to
  *   update an existing `AEffect` struct without losing the pointers set by the
  *   host and the bridge.
+ * @param buffer The buffer to write to. Only needed for audio buffers
+ *   constantly allocating huge vectors would be a waste.
  *
  * @throw std::runtime_error If the conversion to an object was not successful.
  *
  * @relates write_object
  */
 template <typename T, typename Socket>
-inline T read_object(Socket& socket, T object = T()) {
-    typename buffer_type<T>::type buffer;
+inline T& read_object(Socket& socket,
+                      T& object,
+                      typename buffer_type<T>::type& buffer) {
     auto message_length = socket.receive(boost::asio::buffer(buffer));
 
     auto [_, success] = bitsery::quickDeserialization<
@@ -263,6 +275,18 @@ inline T read_object(Socket& socket, T object = T()) {
     }
 
     return object;
+}
+
+template <typename T, typename Socket>
+inline T& read_object(Socket& socket, T& object) {
+    typename buffer_type<T>::type buffer;
+    return read_object(socket, object, buffer);
+}
+
+template <typename T, typename Socket>
+inline T read_object(Socket& socket) {
+    T object;
+    return read_object(socket, object);
 }
 
 /**
