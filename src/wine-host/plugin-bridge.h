@@ -24,6 +24,8 @@
 #include <vestige/aeffect.h>
 #include <windows.h>
 
+#include <thread>
+
 /**
  * This handles the communication between the Linux native VST plugin and the
  * Wine VST host. The functions below should be used as callback functions in an
@@ -45,12 +47,12 @@ class PluginBridge {
      */
     PluginBridge(std::string plugin_dll_path, std::string socket_endpoint_path);
 
+    /**
+     * Block the main thread until the plugin shuts down.
+     */
+    void wait();
+
     intptr_t host_callback(AEffect*, int32_t, int32_t, intptr_t, void*, float);
-
-    // TODO: Remove debug loop
-    void dispatch_loop();
-
-    // TODO: Set up all callback handlers
 
    private:
     /**
@@ -82,4 +84,11 @@ class PluginBridge {
      * pass the Wine plugin's information to the host.
      */
     boost::asio::local::stream_protocol::socket vst_host_aeffect;
+
+    /**
+     * The thread that handles dispatch events from the host.
+     */
+    std::thread dispatch_handler;
+
+    // TODO: Set up all other callback handlers
 };

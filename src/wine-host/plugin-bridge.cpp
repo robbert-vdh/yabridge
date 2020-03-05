@@ -108,15 +108,19 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // We only needed this little hack during initialization
     current_bridge_isntance = nullptr;
     plugin->ptr1 = this;
+
+    // For our communication we use simple threads and blocking operations
+    // instead of asynchronous IO since communication has to be handled in
+    // lockstep anyway
+    dispatch_handler = std::thread([&]() {
+        while (true) {
+            passthrough_event(host_vst_dispatch, plugin, plugin->dispatcher);
+        }
+    });
 }
 
-// TODO: Replace blocking loop with async readers or threads for all of the
-//       sockets. Also extract this functionality somewhere since the host event
-//       callback needs to do exactly the same thing.
-void PluginBridge::dispatch_loop() {
-    while (true) {
-        passthrough_event(host_vst_dispatch, plugin, plugin->dispatcher);
-    }
+void PluginBridge::wait() {
+    dispatch_handler.join();
 }
 
 intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,

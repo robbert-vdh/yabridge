@@ -21,7 +21,6 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
 #include <boost/process/child.hpp>
-// TODO: Remove
 #include <thread>
 
 /**
@@ -67,9 +66,6 @@ class HostBridge {
     void set_parameter(AEffect* plugin, int32_t index, float value);
     float get_parameter(AEffect* plugin, int32_t index);
 
-    // TODO: Remove debug loop
-    void host_callback_loop();
-
     /**
      * This AEffect struct will be populated using the data passed by the Wine
      * VST host during initialization and then passed as a pointer to the Linux
@@ -97,11 +93,14 @@ class HostBridge {
     boost::asio::local::stream_protocol::socket vst_host_aeffect;
 
     /**
+     * The thread that handles host callbacks.
+     */
+    std::thread host_callback_handler;
+
+    /**
      * The callback function passed by the host to the VST plugin instance.
      */
     audioMasterCallback host_callback_function;
-    // TODO: Remove
-    std::thread removeme;
     /**
      * The Wine process hosting the Windows VST plugin.
      */

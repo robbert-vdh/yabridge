@@ -33,10 +33,10 @@ int main(int argc, char* argv[]) {
     const std::string socket_endpoint_path(argv[2]);
 
     try {
-        PluginBridge Pluginbridge(plugin_dll_path, socket_endpoint_path);
+        PluginBridge bridge(plugin_dll_path, socket_endpoint_path);
 
-        // TODO: Remove debug
-        Pluginbridge.dispatch_loop();
+        // Block the main thread until the plugin shuts down
+        bridge.wait();
     } catch (const std::runtime_error& error) {
         std::cerr << "Error while initializing plugin:" << std::endl;
         std::cerr << error.what() << std::endl;

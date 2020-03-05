@@ -95,10 +95,15 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     plugin.getParameter = getParameter_proxy;
     plugin.processReplacing = process_replacing_proxy;
 
-    // TODO: Replace manual thread creation with an async_read loop
-    // Start accepting host callbacks after we've set up our sockets and basic
-    // `AEffect` struct.
-    removeme = std::thread([&]() { return host_callback_loop(); });
+    // For our communication we use simple threads and blocking operations
+    // instead of asynchronous IO since communication has to be handled in
+    // lockstep anyway
+    host_callback_handler = std::thread([&]() {
+        while (true) {
+            passthrough_event(vst_host_callback, &plugin,
+                              host_callback_function);
+        }
+    });
 
     // Read the plugin's information from the Wine process. This can only be
     // done after we started accepting host callbacks as the plugin might do
@@ -259,15 +264,6 @@ fs::path generate_endpoint_name() {
     //       at the same time
 
     return candidate_endpoint;
-}
-
-// TODO: Replace blocking loop with async readers or threads for all of the
-//       sockets. Also extract this functionality somewhere since the host event
-//       callback needs to do exactly the same thing.
-void HostBridge::host_callback_loop() {
-    while (true) {
-        passthrough_event(vst_host_callback, &plugin, host_callback_function);
-    }
 }
 
 /**
