@@ -40,6 +40,12 @@ constexpr char logging_verbosity_environment_variable[] =
  * plugins. This is also used to redirect the output of the Wine process
  * because DAWs like Bitwig hide this from you, making it hard to debug
  * crashing plugins.
+ *
+ * @note This does not do any synchronisation. While this should technically
+ *   be causing problems in concurrent use, writing strings to fstreams from
+ *   multiple threads at the same time doesn't seem to produce corrupted text if
+ *   you're writing an entire string at once even though the messages may be
+ *   slightly out of order.
  */
 class Logger {
    public:
