@@ -16,10 +16,12 @@
 
 #pragma once
 
-#include "native-includes.h"
+#include "boost-fix.h"
 
-// `native-includes.h` has to be included before any other files as otherwise we
-// might get the wrong version of certain libraries
+#define NOMINMAX
+#define NOSERVICE
+#define NOMCX
+#define NOIMM
 #define WIN32_LEAN_AND_MEAN
 #include <vestige/aeffect.h>
 #include <windows.h>

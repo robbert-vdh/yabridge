@@ -16,13 +16,12 @@
 
 #pragma once
 
-// Libraries like Boost and bitsery think we're compiling on Windows or using a
-// MSVC toolchain. This will cause them to make assumptions about the way
-// certain types are defined, which headers are available and which features to
-// disable (i.e. POSIX specific features). The only way around this I could
-// think of was to just temporarily undefine the macros these libraries use to
-// detect it's running under a WIN32 environment. If anyone knows a better way
-// to do this, please let me know!
+// Libraries like Boost think we're compiling on Windows or using a MSVC
+// toolchain. This will cause them to make incorrect assumptions which platform
+// specific features are available. The only way around this I could think of
+// was to just temporarily undefine the macros these libraries use to detect
+// it's running under a WIN32 environment. If anyone knows a better way to do
+// this, please let me know!
 
 #pragma push_macro("WIN32")
 #pragma push_macro("_WIN32")
@@ -34,13 +33,13 @@
 #undef __WIN32__
 #undef _WIN64
 
-#include <bitsery/bitsery.h>
+// This would be the minimal include needed to get Bosot to work. The commented
+// out include below is the actual header that would cause compile errors if not
+// included here, but including headers from the detail directory directly
+// didn't sound like a great idea.
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/local/stream_protocol.hpp>
-#include <boost/process/environment.hpp>
-#include <fstream>
+#include <boost/asio/basic_socket_streambuf.hpp>
+// #include <boost/asio/detail/timer_queue_ptime.hpp>
 
 #pragma pop_macro("WIN32")
 #pragma pop_macro("_WIN32")
