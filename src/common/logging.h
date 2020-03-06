@@ -16,6 +16,9 @@
 
 #pragma once
 
+#ifdef __WINE__
+#include "../wine-host/boost-fix.h"
+#endif
 #include <boost/process/environment.hpp>
 #include <fstream>
 #include <iostream>

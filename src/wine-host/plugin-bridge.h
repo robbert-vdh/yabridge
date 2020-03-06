@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include "boost-fix.h"
-
 #define NOMINMAX
 #define NOSERVICE
 #define NOMCX

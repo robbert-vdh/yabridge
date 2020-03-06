@@ -24,6 +24,9 @@
 #include <bitsery/traits/vector.h>
 #include <vestige/aeffect.h>
 
+#ifdef __WINE__
+#include "../wine-host/boost-fix.h"
+#endif
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
 #include <cinttypes>
