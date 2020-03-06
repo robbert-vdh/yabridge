@@ -74,9 +74,10 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
       host_vst_process_replacing(io_context),
       vst_host_aeffect(io_context),
       host_callback_function(host_callback),
+      logger(Logger::create_from_environment()),
       vst_host(find_wine_vst_host(),
-               // The Wine VST host needs to know which plugin to load and
-               // which Unix domain socket to connect to
+               // The Wine VST host needs to know which plugin to load
+               // and which Unix domain socket to connect to
                find_vst_plugin(),
                socket_endpoint.path(),
                bp::env = set_wineprefix()),

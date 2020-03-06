@@ -27,6 +27,7 @@
 #include <thread>
 
 #include "../common/communication.h"
+#include "../common/logging.h"
 
 /**
  * This handles the communication between the Linux native VST plugin and the
@@ -105,6 +106,8 @@ class PluginBridge {
      * The t thread that handles calls to `processReplacing` (and `process`).
      */
     std::thread process_replacing_handler;
+
+    Logger logger;
 
     /**
      * A scratch buffer for sending and receiving data during `process` and

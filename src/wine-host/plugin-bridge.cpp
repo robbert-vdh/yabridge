@@ -58,6 +58,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       host_vst_parameters(io_context),
       host_vst_process_replacing(io_context),
       vst_host_aeffect(io_context),
+      logger(Logger::create_from_environment("[WINE] ")),
       process_buffer(std::make_unique<AudioBuffers::buffer_type>()) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {

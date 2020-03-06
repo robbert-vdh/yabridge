@@ -39,6 +39,8 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
+#include <boost/process/environment.hpp>
+#include <fstream>
 
 #pragma pop_macro("WIN32")
 #pragma pop_macro("_WIN32")

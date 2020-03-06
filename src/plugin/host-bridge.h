@@ -24,6 +24,7 @@
 #include <thread>
 
 #include "../common/communication.h"
+#include "../common/logging.h"
 
 /**
  * This handles the communication between the Linux native VST plugin and the
@@ -112,6 +113,7 @@ class HostBridge {
      * The callback function passed by the host to the VST plugin instance.
      */
     audioMasterCallback host_callback_function;
+    Logger logger;
     /**
      * The Wine process hosting the Windows VST plugin.
      */
