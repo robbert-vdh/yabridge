@@ -25,7 +25,7 @@ constexpr char logging_file_environment_variable[] = "YABRIDGE_DEBUG_FILE";
  * @see Logger::Verbosity
  */
 constexpr char logging_verbosity_environment_variable[] =
-    "YABRIDGE_DEBUG_VERBOSITY";
+    "YABRIDGE_DEBUG_LEVEL";
 
 std::optional<std::string> opcode_to_string(int opcode, bool dispatch);
 
