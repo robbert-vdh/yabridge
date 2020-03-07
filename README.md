@@ -13,9 +13,9 @@ There are a few things that should be done before making this public, including:
   rewrite some parts of it to make it clearer.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
-- Forward audio events.
-- Forward host callback calls back to the native VST host.
-- Forward the values from the Windows VST plugin's `AEffect` struct.
+- Forward updates from the Windows VST plugin's `AEffect` struct, if that's a
+  thing.
+- Fix `processReplacing` forwarding.
 - Add proper debugging support activated using an environment variable.
   - Write all stdout and stderr output from the plugin to a temporary file so it
     can be inspected when using a host such as Bitwig that hides this by
