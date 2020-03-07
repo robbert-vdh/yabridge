@@ -16,6 +16,7 @@
 
 #include "host-bridge.h"
 
+#include <boost/asio/read_until.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/process/env.hpp>
@@ -80,12 +81,16 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
       host_callback_function(host_callback),
       logger(Logger::create_from_environment(
           create_logger_prefix(socket_endpoint.path()))),
+      wine_stdout(io_context),
+      wine_stderr(io_context),
       vst_host(vst_host_path,
                // The Wine VST host needs to know which plugin to load
                // and which Unix domain socket to connect to
                vst_plugin_path,
                socket_endpoint.path(),
-               bp::env = set_wineprefix()),
+               bp::env = set_wineprefix(),
+               bp::std_out = wine_stdout,
+               bp::std_err = wine_stderr),
       process_buffer(std::make_unique<AudioBuffers::buffer_type>()) {
     logger.log("Initializing yabridge using '" + vst_host_path.string() + "'");
     logger.log("plugin:     '" + vst_plugin_path.string() + "'");
@@ -118,6 +123,12 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
                               host_callback_function);
         }
     });
+
+    wine_io_handler = std::thread([&]() { io_context.run(); });
+
+    // Print the Wine host's STDOUT and STDERR streams to the log file
+    async_log_pipe_lines(wine_stdout, wine_stdout_buffer, "[Wine STDOUT] ");
+    async_log_pipe_lines(wine_stderr, wine_stderr_buffer, "[Wine STDERR] ");
 
     // Read the plugin's information from the Wine process. This can only be
     // done after we started accepting host callbacks as the plugin might do
@@ -205,6 +216,19 @@ float HostBridge::get_parameter(AEffect* /*plugin*/, int32_t index) {
 
     const auto response = read_object<ParameterResult>(host_vst_parameters);
     return response.value.value();
+}
+
+void HostBridge::async_log_pipe_lines(bp::async_pipe& pipe,
+                                      boost::asio::streambuf& buffer,
+                                      std::string prefix) {
+    boost::asio::async_read_until(
+        pipe, buffer, '\n', [&, prefix](const auto&, size_t) {
+            std::string line;
+            std::getline(std::istream(&buffer), line);
+            logger.log(prefix + line);
+
+            async_log_pipe_lines(pipe, buffer, prefix);
+        });
 }
 
 /**

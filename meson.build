@@ -20,7 +20,9 @@ endif
 # about the way these two components work together can be found in the readme
 # file.
 
-boost_dep = dependency('boost', modules : ['filesystem'])
+# Boost 1.72 has a known bug in Boost.Process that will cause compilation to
+# fail, see https://github.com/boostorg/process/issues/116
+boost_dep = dependency('boost', version : '!=1.72', modules : ['filesystem'])
 bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
 threads_dep = dependency('threads')
 # The built in threads dependency does not know how to handle winegcc

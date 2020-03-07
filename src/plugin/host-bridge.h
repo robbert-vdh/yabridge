@@ -20,6 +20,8 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
+#include <boost/asio/streambuf.hpp>
+#include <boost/process/async_pipe.hpp>
 #include <boost/process/child.hpp>
 #include <thread>
 
@@ -86,6 +88,18 @@ class HostBridge {
     AEffect plugin;
 
    private:
+    /**
+     * Write output from an async pipe to the log on a line by line basis.
+     * Useful for logging the Wine process's STDOUT and STDERR streams.
+     *
+     * @param pipe The pipe to read from.
+     * @param buffer The stream buffer to write to.
+     * @param prefix Text to prepend to the line before writing to the log.
+     */
+    void async_log_pipe_lines(boost::process::async_pipe& pipe,
+                              boost::asio::streambuf& buffer,
+                              std::string prefix = "");
+
     boost::asio::io_context io_context;
     boost::asio::local::stream_protocol::endpoint socket_endpoint;
     boost::asio::local::stream_protocol::acceptor socket_acceptor;
@@ -117,12 +131,28 @@ class HostBridge {
      * The thread that handles host callbacks.
      */
     std::thread host_callback_handler;
+    /**
+     * Runs the Boost.Asio `io_context` thread for logging the Wine process
+     * STDOUT and STDERR messages.
+     */
+    std::thread wine_io_handler;
 
     /**
      * The callback function passed by the host to the VST plugin instance.
      */
     audioMasterCallback host_callback_function;
     Logger logger;
+
+    boost::asio::streambuf wine_stdout_buffer;
+    boost::asio::streambuf wine_stderr_buffer;
+    /**
+     * The STDOUT stream of the Wine process we can forward to the logger.
+     */
+    boost::process::async_pipe wine_stdout;
+    /**
+     * The STDERR stream of the Wine process we can forward to the logger.
+     */
+    boost::process::async_pipe wine_stderr;
     /**
      * The Wine process hosting the Windows VST plugin.
      */
