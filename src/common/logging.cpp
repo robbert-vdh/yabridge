@@ -11,6 +11,8 @@
 #endif
 #include <boost/process/environment.hpp>
 
+#include "vestige/aeffect.h"
+
 /**
  * The environment variable indicating whether to log to a file. Will log to
  * STDERR if not specified.
@@ -24,6 +26,8 @@ constexpr char logging_file_environment_variable[] = "YABRIDGE_DEBUG_FILE";
  */
 constexpr char logging_verbosity_environment_variable[] =
     "YABRIDGE_DEBUG_VERBOSITY";
+
+std::optional<std::string> opcode_to_string(int opcode, bool dispatch);
 
 Logger::Logger(std::shared_ptr<std::ostream> stream,
                Verbosity verbosity_level,
@@ -78,4 +82,334 @@ void Logger::log(const std::string& message) {
     formatted_message << std::endl;
 
     *stream << formatted_message.str() << std::flush;
+}
+
+void Logger::log_get_parameter(int32_t index) {
+    if (verbosity >= Verbosity::events) {
+        std::ostringstream message;
+        message << "> getParameter() " << index;
+
+        log(message.str());
+    }
+}
+
+void Logger::log_get_parameter_response(int32_t index, float value) {
+    if (verbosity >= Verbosity::events) {
+        std::ostringstream message;
+        message << "< getParameter() " << index << " == " << value;
+
+        log(message.str());
+    }
+}
+
+void Logger::log_set_parameter(int32_t index, float value) {
+    if (verbosity >= Verbosity::events) {
+        std::ostringstream message;
+        message << "> setParameter() " << index << " = " << value;
+
+        log(message.str());
+    }
+}
+
+void Logger::log_set_parameter_response(int32_t index) {
+    if (verbosity >= Verbosity::events) {
+        std::ostringstream message;
+        message << "< setParameter() " << index << " OK";
+
+        log(message.str());
+    }
+}
+
+void Logger::log_event(bool dispatch,
+                       int32_t opcode,
+                       int32_t index,
+                       intptr_t value,
+                       std::optional<std::string> data,
+                       float option) {
+    if (verbosity >= Verbosity::events) {
+        std::ostringstream message;
+        if (dispatch) {
+            message << "> dispatch() ";
+        } else {
+            message << "> audioMasterCallback() ";
+        }
+
+        message
+            << opcode_to_string(opcode, dispatch).value_or("<unknown_event>");
+        message << "(index = " << index << ", value = " << value
+                << ", option = " << option << ", data = ";
+
+        if (!data.has_value()) {
+            message << "<nullptr>";
+        } else if (data->empty()) {
+            message << "<writable_buffer>";
+        } else {
+            // Might print binary data, maybe check for this?
+            message << data.value();
+        }
+
+        message << ")";
+
+        log(message.str());
+    }
+}
+
+void Logger::log_event_response(bool dispatch,
+                                intptr_t return_value,
+                                std::optional<std::string> data) {
+    if (verbosity >= Verbosity::events) {
+        std::ostringstream message;
+        if (dispatch) {
+            message << "< dispatch() ";
+        } else {
+            message << "< audioMasterCallback() ";
+        }
+
+        message << " " << return_value;
+        if (data.has_value()) {
+            message << ", " << data.value();
+        }
+    }
+}
+
+/**
+ * Convert an event opcode to a human readable string for debugging purposes.
+ * See `src/include/vestige/aeffect.h` for a complete list of these opcodes.
+ *
+ * @param opcode The opcode of the event.
+ * @param dispatch Whether to use opcodes for the `dispatch` function. Will use
+ *   the names from the host callback function if set to false.
+ *
+ * @return Either the name from `aeffect.h`, or a nullopt if it was not listed
+ *   there.
+ */
+std::optional<std::string> opcode_to_string(int opcode, bool dispatch) {
+    if (dispatch) {
+        // Opcodes for a plugin's dispatch function
+        switch (opcode) {
+            case effOpen:
+                return "effOpen";
+                break;
+            case effClose:
+                return "effClose";
+                break;
+            case effSetProgram:
+                return "effSetProgram";
+                break;
+            case effGetProgram:
+                return "effGetProgram";
+                break;
+            case effGetProgramName:
+                return "effGetProgramName";
+                break;
+            case effGetParamName:
+                return "effGetParamName";
+                break;
+            case effSetSampleRate:
+                return "effSetSampleRate";
+                break;
+            case effSetBlockSize:
+                return "effSetBlockSize";
+                break;
+            case effMainsChanged:
+                return "effMainsChanged";
+                break;
+            case effEditGetRect:
+                return "effEditGetRect";
+                break;
+            case effEditOpen:
+                return "effEditOpen";
+                break;
+            case effEditClose:
+                return "effEditClose";
+                break;
+            case effEditIdle:
+                return "effEditIdle";
+                break;
+            case effEditTop:
+                return "effEditTop";
+                break;
+            case effSetChunk:
+                return "effSetChunk";
+                break;
+            case effProcessEvents:
+                return "effProcessEvents";
+                break;
+            case effGetEffectName:
+                return "effGetEffectName";
+                break;
+            case effGetVendorString:
+                return "effGetVendorString";
+                break;
+            case effGetProductString:
+                return "effGetProductString";
+                break;
+            case effGetVendorVersion:
+                return "effGetVendorVersion";
+                break;
+            case effCanDo:
+                return "effCanDo";
+                break;
+            case effGetVstVersion:
+                return "effGetVstVersion";
+                break;
+            default:
+                return std::nullopt;
+                break;
+        }
+    } else {
+        // Opcodes for the host callback
+        switch (opcode) {
+            case audioMasterAutomate:
+                return "audioMasterAutomate";
+                break;
+            case audioMasterVersion:
+                return "audioMasterVersion";
+                break;
+            case audioMasterCurrentId:
+                return "audioMasterCurrentId";
+                break;
+            case audioMasterIdle:
+                return "audioMasterIdle";
+                break;
+            case audioMasterPinConnected:
+                return "audioMasterPinConnected";
+                break;
+            case audioMasterWantMidi:
+                return "audioMasterWantMidi";
+                break;
+            case audioMasterGetTime:
+                return "audioMasterGetTime";
+                break;
+            case audioMasterProcessEvents:
+                return "audioMasterProcessEvents";
+                break;
+            case audioMasterSetTime:
+                return "audioMasterSetTime";
+                break;
+            case audioMasterTempoAt:
+                return "audioMasterTempoAt";
+                break;
+            case audioMasterGetNumAutomatableParameters:
+                return "audioMasterGetNumAutomatableParameters";
+                break;
+            case audioMasterGetParameterQuantization:
+                return "audioMasterGetParameterQuantization";
+                break;
+            case audioMasterIOChanged:
+                return "audioMasterIOChanged";
+                break;
+            case audioMasterNeedIdle:
+                return "audioMasterNeedIdle";
+                break;
+            case audioMasterSizeWindow:
+                return "audioMasterSizeWindow";
+                break;
+            case audioMasterGetSampleRate:
+                return "audioMasterGetSampleRate";
+                break;
+            case audioMasterGetBlockSize:
+                return "audioMasterGetBlockSize";
+                break;
+            case audioMasterGetInputLatency:
+                return "audioMasterGetInputLatency";
+                break;
+            case audioMasterGetOutputLatency:
+                return "audioMasterGetOutputLatency";
+                break;
+            case audioMasterGetPreviousPlug:
+                return "audioMasterGetPreviousPlug";
+                break;
+            case audioMasterGetNextPlug:
+                return "audioMasterGetNextPlug";
+                break;
+            case audioMasterWillReplaceOrAccumulate:
+                return "audioMasterWillReplaceOrAccumulate";
+                break;
+            case audioMasterGetCurrentProcessLevel:
+                return "audioMasterGetCurrentProcessLevel";
+                break;
+            case audioMasterGetAutomationState:
+                return "audioMasterGetAutomationState";
+                break;
+            case audioMasterOfflineStart:
+                return "audioMasterOfflineStart";
+                break;
+            case audioMasterOfflineRead:
+                return "audioMasterOfflineRead";
+                break;
+            case audioMasterOfflineWrite:
+                return "audioMasterOfflineWrite";
+                break;
+            case audioMasterOfflineGetCurrentPass:
+                return "audioMasterOfflineGetCurrentPass";
+                break;
+            case audioMasterOfflineGetCurrentMetaPass:
+                return "audioMasterOfflineGetCurrentMetaPass";
+                break;
+            case audioMasterSetOutputSampleRate:
+                return "audioMasterSetOutputSampleRate";
+                break;
+            case audioMasterGetSpeakerArrangement:
+                return "audioMasterGetSpeakerArrangement";
+                break;
+            case audioMasterGetVendorString:
+                return "audioMasterGetVendorString";
+                break;
+            case audioMasterGetProductString:
+                return "audioMasterGetProductString";
+                break;
+            case audioMasterGetVendorVersion:
+                return "audioMasterGetVendorVersion";
+                break;
+            case audioMasterVendorSpecific:
+                return "audioMasterVendorSpecific";
+                break;
+            case audioMasterSetIcon:
+                return "audioMasterSetIcon";
+                break;
+            case audioMasterCanDo:
+                return "audioMasterCanDo";
+                break;
+            case audioMasterGetLanguage:
+                return "audioMasterGetLanguage";
+                break;
+            case audioMasterOpenWindow:
+                return "audioMasterOpenWindow";
+                break;
+            case audioMasterCloseWindow:
+                return "audioMasterCloseWindow";
+                break;
+            case audioMasterGetDirectory:
+                return "audioMasterGetDirectory";
+                break;
+            case audioMasterUpdateDisplay:
+                return "audioMasterUpdateDisplay";
+                break;
+            case audioMasterBeginEdit:
+                return "audioMasterBeginEdit";
+                break;
+            case audioMasterEndEdit:
+                return "audioMasterEndEdit";
+                break;
+            case audioMasterOpenFileSelector:
+                return "audioMasterOpenFileSelector";
+                break;
+            case audioMasterCloseFileSelector:
+                return "audioMasterCloseFileSelector";
+                break;
+            case audioMasterEditFile:
+                return "audioMasterEditFile";
+                break;
+            case audioMasterGetChunkFile:
+                return "audioMasterGetChunkFile";
+                break;
+            case audioMasterGetInputSpeakerArrangement:
+                return "audioMasterGetInputSpeakerArrangement";
+                break;
+            default:
+                return std::nullopt;
+                break;
+        }
+    }
 }

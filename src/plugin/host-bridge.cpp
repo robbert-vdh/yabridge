@@ -123,7 +123,6 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
                               host_callback_function);
         }
     });
-
     wine_io_handler = std::thread([&]() { io_context.run(); });
 
     // Print the Wine host's STDOUT and STDERR streams to the log file
@@ -199,6 +198,14 @@ void HostBridge::process_replacing(AEffect* /*plugin*/,
     }
 }
 
+float HostBridge::get_parameter(AEffect* /*plugin*/, int32_t index) {
+    const Parameter request{index, std::nullopt};
+    write_object(host_vst_parameters, request);
+
+    const auto response = read_object<ParameterResult>(host_vst_parameters);
+    return response.value.value();
+}
+
 void HostBridge::set_parameter(AEffect* /*plugin*/,
                                int32_t index,
                                float value) {
@@ -208,14 +215,6 @@ void HostBridge::set_parameter(AEffect* /*plugin*/,
     // This should not contain any values and just serve as an acknowledgement
     const auto response = read_object<ParameterResult>(host_vst_parameters);
     assert(!response.value.has_value());
-}
-
-float HostBridge::get_parameter(AEffect* /*plugin*/, int32_t index) {
-    const Parameter request{index, std::nullopt};
-    write_object(host_vst_parameters, request);
-
-    const auto response = read_object<ParameterResult>(host_vst_parameters);
-    return response.value.value();
 }
 
 void HostBridge::async_log_pipe_lines(bp::async_pipe& pipe,
