@@ -29,6 +29,8 @@
 //       here.
 
 namespace bp = boost::process;
+// I'd rather use std::filesystem instead, but Boost.Process depends on
+// boost::filesystem
 namespace fs = boost::filesystem;
 
 /**
@@ -42,6 +44,7 @@ constexpr auto yabridge_wine_host_name = "yabridge-host.exe";
 constexpr char alphanumeric_characters[] =
     "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
+std::string create_logger_prefix(const fs::path& socket_path);
 fs::path find_vst_plugin();
 fs::path find_wine_vst_host();
 fs::path generate_endpoint_name();
@@ -74,7 +77,8 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
       host_vst_process_replacing(io_context),
       vst_host_aeffect(io_context),
       host_callback_function(host_callback),
-      logger(Logger::create_from_environment()),
+      logger(Logger::create_from_environment(
+          create_logger_prefix(socket_endpoint.path()))),
       vst_host(find_wine_vst_host(),
                // The Wine VST host needs to know which plugin to load
                // and which Unix domain socket to connect to
@@ -227,6 +231,22 @@ fs::path find_wine_vst_host() {
     }
 
     return vst_host_path;
+}
+
+/**
+ * Create a logger prefix based on the unique socket path for easy
+ * identification. The socket path contains both the plugin's name and a unique
+ * identifier.
+ *
+ * @param socket_path The path to the socket endpoint in use.
+ *
+ * @return A prefix string for log messages.
+ */
+std::string create_logger_prefix(const fs::path& socket_path) {
+    std::ostringstream prefix;
+    prefix << "[" << socket_path.filename() << "] ";
+
+    return prefix.str();
 }
 
 /**

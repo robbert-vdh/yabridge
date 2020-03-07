@@ -16,6 +16,10 @@
 
 #include "plugin-bridge.h"
 
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
 /**
  * A function pointer to what should be the entry point of a VST plugin.
  */
@@ -26,6 +30,8 @@ using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
  * from an `AEffect` when it performs a host callback during its initialization.
  */
 PluginBridge* current_bridge_isntance = nullptr;
+
+std::string create_logger_prefix(const fs::path& socket_path);
 
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int32_t, int32_t, intptr_t, void*, float);
@@ -58,7 +64,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       host_vst_parameters(io_context),
       host_vst_process_replacing(io_context),
       vst_host_aeffect(io_context),
-      logger(Logger::create_from_environment("[WINE] ")),
+      logger(Logger::create_from_environment(
+          create_logger_prefix(socket_endpoint_path))),
       process_buffer(std::make_unique<AudioBuffers::buffer_type>()) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
@@ -190,6 +197,23 @@ intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
                                      void* data,
                                      float option) {
     return send_event(vst_host_callback, opcode, index, value, data, option);
+}
+
+/**
+ * Create a logger prefix based on the unique socket path for easy
+ * identification. The socket path contains both the plugin's name and a unique
+ * identifier.
+ *
+ * @param socket_path The path to the socket endpoint in use.
+ *
+ * @return A prefix string for log messages.
+ */
+std::string create_logger_prefix(const fs::path& socket_path) {
+    std::ostringstream prefix;
+    prefix << "[" << socket_path.filename() << "] ";
+    prefix << "[WINE] ";
+
+    return prefix.str();
 }
 
 intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,
