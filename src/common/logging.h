@@ -92,17 +92,17 @@ class Logger {
     void log_get_parameter_response(int32_t index, float vlaue);
     void log_set_parameter(int32_t index, float value);
     void log_set_parameter_response(int32_t index);
-    // If dispatch is true, then use opcode names from the plugin's dispatch
+    // If is_dispatch is true, then use opcode names from the plugin's dispatch
     // function. Otherwise use names for the host callback function opcodes.
-    void log_event(bool dispatch,
+    void log_event(bool is_dispatch,
                    int32_t opcode,
                    int32_t index,
                    intptr_t value,
-                   std::optional<std::string> data,
+                   std::optional<std::string> payload,
                    float option);
-    void log_event_response(bool dispatch,
+    void log_event_response(bool is_dispatch,
                             intptr_t return_value,
-                            std::optional<std::string> data);
+                            std::optional<std::string> payload);
 
    private:
     /**

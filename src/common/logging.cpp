@@ -27,7 +27,7 @@ constexpr char logging_file_environment_variable[] = "YABRIDGE_DEBUG_FILE";
 constexpr char logging_verbosity_environment_variable[] =
     "YABRIDGE_DEBUG_LEVEL";
 
-std::optional<std::string> opcode_to_string(int opcode, bool dispatch);
+std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode);
 
 Logger::Logger(std::shared_ptr<std::ostream> stream,
                Verbosity verbosity_level,
@@ -87,7 +87,7 @@ void Logger::log(const std::string& message) {
 void Logger::log_get_parameter(int32_t index) {
     if (verbosity >= Verbosity::events) {
         std::ostringstream message;
-        message << "> getParameter() " << index;
+        message << ">> getParameter() " << index;
 
         log(message.str());
     }
@@ -96,7 +96,7 @@ void Logger::log_get_parameter(int32_t index) {
 void Logger::log_get_parameter_response(int32_t index, float value) {
     if (verbosity >= Verbosity::events) {
         std::ostringstream message;
-        message << "< getParameter() " << index << " == " << value;
+        message << "   getParameter() :: " << index << " == " << value;
 
         log(message.str());
     }
@@ -105,7 +105,7 @@ void Logger::log_get_parameter_response(int32_t index, float value) {
 void Logger::log_set_parameter(int32_t index, float value) {
     if (verbosity >= Verbosity::events) {
         std::ostringstream message;
-        message << "> setParameter() " << index << " = " << value;
+        message << ">> setParameter() " << index << " = " << value;
 
         log(message.str());
     }
@@ -114,61 +114,66 @@ void Logger::log_set_parameter(int32_t index, float value) {
 void Logger::log_set_parameter_response(int32_t index) {
     if (verbosity >= Verbosity::events) {
         std::ostringstream message;
-        message << "< setParameter() " << index << " OK";
+        message << "  setParameter() :: " << index << " OK";
 
         log(message.str());
     }
 }
 
-void Logger::log_event(bool dispatch,
+void Logger::log_event(bool is_dispatch,
                        int32_t opcode,
                        int32_t index,
                        intptr_t value,
-                       std::optional<std::string> data,
+                       std::optional<std::string> payload,
                        float option) {
     if (verbosity >= Verbosity::events) {
         std::ostringstream message;
-        if (dispatch) {
-            message << "> dispatch() ";
+        if (is_dispatch) {
+            message << ">> dispatch() ";
         } else {
-            message << "> audioMasterCallback() ";
+            message << ">> audioMasterCallback() ";
         }
 
-        message
-            << opcode_to_string(opcode, dispatch).value_or("<unknown_event>");
+        const auto opcode_name = opcode_to_string(is_dispatch, opcode);
+        if (opcode_name.has_value()) {
+            message << opcode_name.value();
+        } else {
+            message << "<opcode = " << opcode << ">";
+        }
+
         message << "(index = " << index << ", value = " << value
                 << ", option = " << option << ", data = ";
-
-        if (!data.has_value()) {
+        if (!payload.has_value()) {
             message << "<nullptr>";
-        } else if (data->empty()) {
+        } else if (payload->empty()) {
             message << "<writable_buffer>";
         } else {
-            // Might print binary data, maybe check for this?
-            message << data.value();
+            // Might print binary payload, maybe check for this?
+            message << "\"" << payload.value() << "\"";
         }
-
         message << ")";
 
         log(message.str());
     }
 }
 
-void Logger::log_event_response(bool dispatch,
+void Logger::log_event_response(bool is_dispatch,
                                 intptr_t return_value,
-                                std::optional<std::string> data) {
+                                std::optional<std::string> payload) {
     if (verbosity >= Verbosity::events) {
         std::ostringstream message;
-        if (dispatch) {
-            message << "< dispatch() ";
+        if (is_dispatch) {
+            message << "   dispatch() :: ";
         } else {
-            message << "< audioMasterCallback() ";
+            message << "   audioMasterCallback() :: ";
         }
 
-        message << " " << return_value;
-        if (data.has_value()) {
-            message << ", " << data.value();
+        message << return_value;
+        if (payload.has_value()) {
+            message << ", \"" << payload.value() << "\"";
         }
+
+        log(message.str());
     }
 }
 
@@ -176,15 +181,15 @@ void Logger::log_event_response(bool dispatch,
  * Convert an event opcode to a human readable string for debugging purposes.
  * See `src/include/vestige/aeffect.h` for a complete list of these opcodes.
  *
+ * @param is_dispatch Whether to use opcodes for the `dispatch` function. Will
+ *   use the names from the host callback function if set to false.
  * @param opcode The opcode of the event.
- * @param dispatch Whether to use opcodes for the `dispatch` function. Will use
- *   the names from the host callback function if set to false.
  *
  * @return Either the name from `aeffect.h`, or a nullopt if it was not listed
  *   there.
  */
-std::optional<std::string> opcode_to_string(int opcode, bool dispatch) {
-    if (dispatch) {
+std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
+    if (is_dispatch) {
         // Opcodes for a plugin's dispatch function
         switch (opcode) {
             case effOpen:
