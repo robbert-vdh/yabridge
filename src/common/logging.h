@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <memory>
 #include <ostream>
 
 /**
@@ -63,7 +64,7 @@ class Logger {
      * @param prefix An optional prefix for the logger. Useful for differentiate
      *   messages coming from the Wine VST host.
      */
-    Logger(std::ostream&& stream,
+    Logger(std::shared_ptr<std::ostream> stream,
            Verbosity verbosity_level,
            std::string prefix = "");
 
@@ -92,7 +93,7 @@ class Logger {
      * The output stream to write the log messages to. Typically either STDERR
      * or a file stream.
      */
-    std::ostream& stream;
+    std::shared_ptr<std::ostream> stream;
     /**
      * The verbosity level of this logger instance. Based on this certain
      * messages may or may not be shown.

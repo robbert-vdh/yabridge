@@ -18,16 +18,14 @@
 constexpr char logging_file_environment_variable[] = "YABRIDGE_DEBUG_FILE";
 
 /**
- * The verbosity of the logging, defaults to `Logger::Verbosity::events` if
- * `logging_file_environment_variable` has been set and
- * `Logger::Verbosity::basic` otherwise.
+ * The verbosity of the logging, defaults to `Logger::Verbosity::basic`.
  *
  * @see Logger::Verbosity
  */
 constexpr char logging_verbosity_environment_variable[] =
     "YABRIDGE_DEBUG_VERBOSITY";
 
-Logger::Logger(std::ostream&& stream,
+Logger::Logger(std::shared_ptr<std::ostream> stream,
                Verbosity verbosity_level,
                std::string prefix)
     : stream(stream), verbosity(verbosity_level), prefix(prefix) {}
@@ -49,11 +47,13 @@ Logger Logger::create_from_environment(std::string prefix) {
 
     // If `file` points to a valid location then use create/truncate the
     // file and write all of the logs there, otherwise use STDERR
-    std::ofstream log_file(file_path, std::fstream::out);
-    if (log_file.is_open()) {
-        return Logger(std::move(log_file), verbosity_level, prefix);
+    auto log_file = std::make_shared<std::ofstream>(
+        file_path, std::fstream::out | std::fstream::app);
+    if (log_file->is_open()) {
+        return Logger(log_file, verbosity_level, prefix);
     } else {
-        return Logger(std::move(std::cerr), verbosity_level, prefix);
+        return Logger(std::shared_ptr<std::ostream>(&std::cerr, [](auto) {}),
+                      verbosity_level, prefix);
     }
 }
 
@@ -77,7 +77,5 @@ void Logger::log(const std::string& message) {
     // stream to prevent two messages from being put on the same row
     formatted_message << std::endl;
 
-    // No flush. Should technically be necessary, but it decreases throughput by
-    // a lot and it seems to work fine without.
-    stream << formatted_message.str();
+    *stream << formatted_message.str() << std::flush;
 }
