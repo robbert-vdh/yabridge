@@ -6,20 +6,25 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                     intptr_t value,
                     void* data,
                     float option,
-                    Logger& logger,
-                    bool is_dispatch) {
+                    std::optional<std::pair<Logger&, bool>> logging) {
     auto payload =
         data == nullptr
             ? std::nullopt
             : std::make_optional(std::string(static_cast<char*>(data)));
-    logger.log_event(is_dispatch, opcode, index, value, payload, option);
+    if (logging.has_value()) {
+        auto [logger, is_dispatch] = *logging;
+        logger.log_event(is_dispatch, opcode, index, value, payload, option);
+    }
 
     const Event event{opcode, index, value, option, payload};
     write_object(socket, event);
 
     const auto response = read_object<EventResult>(socket);
-    logger.log_event_response(is_dispatch, response.return_value,
-                              response.data);
+    if (logging.has_value()) {
+        auto [logger, is_dispatch] = *logging;
+        logger.log_event_response(is_dispatch, response.return_value,
+                                  response.data);
+    }
     if (response.data.has_value()) {
         char* char_data = static_cast<char*>(data);
 

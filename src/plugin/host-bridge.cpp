@@ -120,7 +120,8 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     host_callback_handler = std::thread([&]() {
         while (true) {
             passthrough_event(vst_host_callback, &plugin,
-                              host_callback_function, logger, false);
+                              host_callback_function,
+                              std::pair<Logger&, bool>(logger, false));
         }
     });
     wine_io_handler = std::thread([&]() { io_context.run(); });
@@ -167,7 +168,7 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
     }
 
     return send_event(host_vst_dispatch, opcode, index, value, data, option,
-                      logger, true);
+                      std::pair<Logger&, bool>(logger, true));
 }
 
 void HostBridge::process_replacing(AEffect* /*plugin*/,

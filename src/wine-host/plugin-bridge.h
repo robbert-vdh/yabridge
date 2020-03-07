@@ -111,8 +111,6 @@ class PluginBridge {
      */
     std::thread process_replacing_handler;
 
-    Logger logger;
-
     /**
      * A scratch buffer for sending and receiving data during `process` and
      * `processReplacing` calls.

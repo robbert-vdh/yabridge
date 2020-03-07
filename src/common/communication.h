@@ -305,9 +305,9 @@ inline T read_object(Socket& socket) {
  * since they follow the same format. See one of those functions for details on
  * the parameters and return value of this function.
  *
- * @param logger The logger to optionally log the event to.
- * @param id_dispatch Whether this is for sending `dispatch()` events or host
- *   callbacks, used for debug logging purposes.
+ * @param logging A pair containing a logger instance and whether or not this is
+ *   for sending `dispatch()` events or host callbacks. Optional since it
+ *   doesn't have to be done on both sides.
  *
  * @relates passthrough_event
  */
@@ -317,9 +317,7 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                     intptr_t value,
                     void* data,
                     float option,
-                    Logger& logger,
-                    bool is_dispatch);
-
+                    std::optional<std::pair<Logger&, bool>> logging);
 /**
  * Receive an event from a socket and pass it through to some callback function.
  * This is used for both the host -> plugin 'dispatch' events and the plugin ->
@@ -331,9 +329,9 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
  *   function.
  * @param callback The function to call with the arguments received from the
  *   socket.
- * @param logger The logger to optionally log the event to.
- * @param id_dispatch Whether this is for sending `dispatch()` events or host
- *   callbacks, used for debug logging purposes.
+ * @param logging A pair containing a logger instance and whether or not this is
+ *   for sending `dispatch()` events or host callbacks. Optional since it
+ *   doesn't have to be done on both sides.
  *
  * @relates send_event
  */
@@ -341,11 +339,13 @@ template <typename F>
 void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                        AEffect* plugin,
                        F callback,
-                       Logger& logger,
-                       bool is_dispatch) {
+                       std::optional<std::pair<Logger&, bool>> logging) {
     auto event = read_object<Event>(socket);
-    logger.log_event(is_dispatch, event.opcode, event.index, event.value,
-                     event.data, event.option);
+    if (logging.has_value()) {
+        auto [logger, is_dispatch] = *logging;
+        logger.log_event(is_dispatch, event.opcode, event.index, event.value,
+                         event.data, event.option);
+    }
 
     // The void pointer argument for the dispatch function is used for
     // either:
@@ -355,9 +355,9 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     char* payload = nullptr;
     std::array<char, max_string_length> buffer;
     if (event.data.has_value()) {
-        // If the data parameter was an empty string, then we're going to pass a
-        // larger buffer to the dispatch function instead. Otherwise we'll pass
-        // the data passed by the host.
+        // If the data parameter was an empty string, then we're going to
+        // pass a larger buffer to the dispatch function instead. Otherwise
+        // we'll pass the data passed by the host.
         if (!event.data->empty()) {
             payload = const_cast<char*>(event.data->c_str());
         } else {
@@ -374,7 +374,11 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     const auto response_data =
         is_updated ? std::make_optional(payload) : std::nullopt;
 
+    if (logging.has_value()) {
+        auto [logger, is_dispatch] = *logging;
+        logger.log_event_response(is_dispatch, return_value, response_data);
+    }
+
     EventResult response{return_value, response_data};
-    logger.log_event_response(is_dispatch, return_value, response_data);
     write_object(socket, response);
 }

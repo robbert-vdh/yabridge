@@ -31,8 +31,6 @@ using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
  */
 PluginBridge* current_bridge_isntance = nullptr;
 
-std::string create_logger_prefix(const fs::path& socket_path);
-
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int32_t, int32_t, intptr_t, void*, float);
 
@@ -64,16 +62,11 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       host_vst_parameters(io_context),
       host_vst_process_replacing(io_context),
       vst_host_aeffect(io_context),
-      logger(Logger::create_from_environment(
-          create_logger_prefix(socket_endpoint_path))),
       process_buffer(std::make_unique<AudioBuffers::buffer_type>()) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
-        std::string error =
-            "Could not load a shared library at '" + plugin_dll_path + "'.";
-
-        logger.log("ERROR: " + error);
-        throw std::runtime_error(error);
+        throw std::runtime_error("Could not load a shared library at '" +
+                                 plugin_dll_path + "'.");
     }
 
     // VST plugin entry point functions should be called `VSTPluginMain`, but
@@ -89,11 +82,9 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
         }
     }
     if (vst_entry_point == nullptr) {
-        std::string error = "Could not find a valid VST entry point for '" +
-                            plugin_dll_path + "'.";
-
-        logger.log("ERROR: " + error);
-        throw std::runtime_error(error);
+        throw std::runtime_error(
+            "Could not find a valid VST entry point for '" + plugin_dll_path +
+            "'.");
     }
 
     // It's very important that these sockets are accepted to in the same order
@@ -111,11 +102,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     current_bridge_isntance = this;
     plugin = vst_entry_point(host_callback_proxy);
     if (plugin == nullptr) {
-        std::string error =
-            "VST plugin at '" + plugin_dll_path + "' failed to initialize.";
-
-        logger.log("ERROR: " + error);
-        throw std::runtime_error(error);
+        throw std::runtime_error("VST plugin at '" + plugin_dll_path +
+                                 "' failed to initialize.");
     }
 
     // Send the plugin's information to the Linux VST plugin
@@ -134,7 +122,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     dispatch_handler = std::thread([&]() {
         while (true) {
             passthrough_event(host_vst_dispatch, plugin, plugin->dispatcher,
-                              logger, true);
+                              std::nullopt);
         }
     });
 
@@ -147,22 +135,16 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
             auto request = read_object<Parameter>(host_vst_parameters);
             if (request.value.has_value()) {
                 // `setParameter`
-                logger.log_set_parameter(request.index, request.value.value());
-
                 plugin->setParameter(plugin, request.index,
                                      request.value.value());
 
                 ParameterResult response{std::nullopt};
-                logger.log_set_parameter_response(request.index);
                 write_object(host_vst_parameters, response);
             } else {
                 // `getParameter`
-                logger.log_get_parameter(request.index);
-
                 float value = plugin->getParameter(plugin, request.index);
 
                 ParameterResult response{value};
-                logger.log_get_parameter_response(request.index, value);
                 write_object(host_vst_parameters, response);
             }
         }
@@ -198,7 +180,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
         }
     });
 
-    logger.log("Finished initializing '" + plugin_dll_path + "'");
+    std::cout << "Finished initializing '" << plugin_dll_path << "'";
 }
 
 void PluginBridge::wait() {
@@ -214,25 +196,7 @@ intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
                                      void* data,
                                      float option) {
     return send_event(vst_host_callback, opcode, index, value, data, option,
-                      logger, false);
-}
-
-/**
- * Create a logger prefix based on the unique socket path for easy
- * identification. The socket path contains both the plugin's name and a unique
- * identifier.
- *
- * @param socket_path The path to the socket endpoint in use.
- *
- * @return A prefix string for log messages.
- */
-std::string create_logger_prefix(const fs::path& socket_path) {
-    std::ostringstream prefix;
-    prefix << "[" << socket_path.filename().replace_extension().string()
-           << "] ";
-    prefix << "[Wine] ";
-
-    return prefix.str();
+                      std::nullopt);
 }
 
 intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,
