@@ -85,7 +85,7 @@ void Logger::log(const std::string& message) {
 }
 
 void Logger::log_get_parameter(int32_t index) {
-    if (verbosity >= Verbosity::events) {
+    if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
         std::ostringstream message;
         message << ">> getParameter() " << index;
 
@@ -94,7 +94,7 @@ void Logger::log_get_parameter(int32_t index) {
 }
 
 void Logger::log_get_parameter_response(float value) {
-    if (verbosity >= Verbosity::events) {
+    if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
         std::ostringstream message;
         message << "   getParameter() :: " << value;
 
@@ -103,7 +103,7 @@ void Logger::log_get_parameter_response(float value) {
 }
 
 void Logger::log_set_parameter(int32_t index, float value) {
-    if (verbosity >= Verbosity::events) {
+    if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
         std::ostringstream message;
         message << ">> setParameter() " << index << " = " << value;
 
@@ -112,7 +112,7 @@ void Logger::log_set_parameter(int32_t index, float value) {
 }
 
 void Logger::log_set_parameter_response() {
-    if (verbosity >= Verbosity::events) {
+    if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
         log("   setParameter() :: OK");
     }
 }
@@ -123,7 +123,7 @@ void Logger::log_event(bool is_dispatch,
                        intptr_t value,
                        std::optional<std::string> payload,
                        float option) {
-    if (verbosity >= Verbosity::events) {
+    if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
         std::ostringstream message;
         if (is_dispatch) {
             message << ">> dispatch() ";
@@ -157,7 +157,7 @@ void Logger::log_event(bool is_dispatch,
 void Logger::log_event_response(bool is_dispatch,
                                 intptr_t return_value,
                                 std::optional<std::string> payload) {
-    if (verbosity >= Verbosity::events) {
+    if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
         std::ostringstream message;
         if (is_dispatch) {
             message << "   dispatch() :: ";
