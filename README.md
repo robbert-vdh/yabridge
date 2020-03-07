@@ -16,11 +16,56 @@ There are a few things that should be done before making this public, including:
 - Forward updates from the Windows VST plugin's `AEffect` struct, if that's a
   thing.
 - Fix `processReplacing` forwarding.
+- Mention precompiled binaries and building from source in the installation section.
 - Add proper debugging support activated using an environment variable.
   - Write all stdout and stderr output from the plugin to a temporary file so it
     can be inspected when using a host such as Bitwig that hides this by
     default.
   - Catch exceptions during initialization and print them to stderr.
+
+## Usage
+
+There are two ways to use yabridge.
+
+### Symlinking (recommended)
+
+The recommended way to use yabridge is through symbolic links. This allows you
+to update yabridge for all of your plugins in one go, and it also avoids having
+to install it globally.
+
+You can either use the precompiled binaries from the GitHub releases section, or
+you could build yabridge directly from source. If you use the precompiled
+binaries, then simply extract them to `~/.local/share/yabridge` or any other
+place in your home directory. If you choose to build from source, then you can
+directly use the binaries from the `build/` directory. For the section below I'm
+going to assume you've placed the files in `~/.local/share/yabridge`.
+
+To set up yabridge for a VST plugin called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`, simply create a symlink from
+`~/.local/share/yabridge/libyabridge.so` to `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so` like so:
+
+```shell
+ln -s ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
+```
+
+For instance, if you wanted to set up yabridge for any of the VST plugins under
+`~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, you could do something
+like this:
+
+```shell
+find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.dll' -print0 \
+  | sed -z 's/\.dll$/.so/' \
+  | xargs -0 -n1 ln -sf ~/.local/share/yabridge/libyabridge.so
+```
+
+### Copying
+
+It's also possible to use yabridge by making copies of `libyabridge.so` instead
+of creating symlinks. This is not recommended as it makes updating a hassle. If
+you choose to do this, then you'll have to make sure `yabridge-host.exe` and
+`yabridge-host.exe.so` are somewhere in your search path as otherwise yabridge
+won't know where to find them. Either copy them to `/usr/local/bin` (not
+recommended) or to `~/.local/bin` and make sure that the directory is in your
+`PATH` environment variable.
 
 ## Building
 
