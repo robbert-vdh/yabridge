@@ -33,6 +33,8 @@
 #endif
 #include <boost/asio/local/stream_protocol.hpp>
 
+#include "logging.h"
+
 // These are for the serialization done by bitsery
 
 /**
@@ -303,6 +305,10 @@ inline T read_object(Socket& socket) {
  * since they follow the same format. See one of those functions for details on
  * the parameters and return value of this function.
  *
+ * @param logger The logger to optionally log the event to.
+ * @param id_dispatch Whether this is for sending `dispatch()` events or host
+ *   callbacks, used for debug logging purposes.
+ *
  * @relates passthrough_event
  */
 intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
@@ -310,7 +316,9 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                     int32_t index,
                     intptr_t value,
                     void* data,
-                    float option);
+                    float option,
+                    Logger& logger,
+                    bool is_dispatch);
 
 /**
  * Receive an event from a socket and pass it through to some callback function.
@@ -323,14 +331,21 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
  *   function.
  * @param callback The function to call with the arguments received from the
  *   socket.
+ * @param logger The logger to optionally log the event to.
+ * @param id_dispatch Whether this is for sending `dispatch()` events or host
+ *   callbacks, used for debug logging purposes.
  *
  * @relates send_event
  */
 template <typename F>
 void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                        AEffect* plugin,
-                       F callback) {
+                       F callback,
+                       Logger& logger,
+                       bool is_dispatch) {
     auto event = read_object<Event>(socket);
+    logger.log_event(is_dispatch, event.opcode, event.index, event.value,
+                     event.data, event.option);
 
     // The void pointer argument for the dispatch function is used for
     // either:
@@ -356,12 +371,10 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     // Only write back the value from `payload` if we were passed an empty
     // buffer to write into
     bool is_updated = event.data.has_value() && event.data->empty();
+    const auto response_data =
+        is_updated ? std::make_optional(payload) : std::nullopt;
 
-    if (is_updated) {
-        EventResult response{return_value, payload};
-        write_object(socket, response);
-    } else {
-        EventResult response{return_value, std::nullopt};
-        write_object(socket, response);
-    }
+    EventResult response{return_value, response_data};
+    logger.log_event_response(is_dispatch, return_value, response_data);
+    write_object(socket, response);
 }

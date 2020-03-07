@@ -133,7 +133,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // lockstep anyway
     dispatch_handler = std::thread([&]() {
         while (true) {
-            passthrough_event(host_vst_dispatch, plugin, plugin->dispatcher);
+            passthrough_event(host_vst_dispatch, plugin, plugin->dispatcher,
+                              logger, true);
         }
     });
 
@@ -146,16 +147,22 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
             auto request = read_object<Parameter>(host_vst_parameters);
             if (request.value.has_value()) {
                 // `setParameter`
+                logger.log_set_parameter(request.index, request.value.value());
+
                 plugin->setParameter(plugin, request.index,
                                      request.value.value());
 
                 ParameterResult response{std::nullopt};
+                logger.log_set_parameter_response(request.index);
                 write_object(host_vst_parameters, response);
             } else {
                 // `getParameter`
+                logger.log_get_parameter(request.index);
+
                 float value = plugin->getParameter(plugin, request.index);
 
                 ParameterResult response{value};
+                logger.log_get_parameter_response(request.index, value);
                 write_object(host_vst_parameters, response);
             }
         }
@@ -206,7 +213,8 @@ intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
                                      intptr_t value,
                                      void* data,
                                      float option) {
-    return send_event(vst_host_callback, opcode, index, value, data, option);
+    return send_event(vst_host_callback, opcode, index, value, data, option,
+                      logger, false);
 }
 
 /**

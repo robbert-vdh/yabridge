@@ -120,7 +120,7 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     host_callback_handler = std::thread([&]() {
         while (true) {
             passthrough_event(vst_host_callback, &plugin,
-                              host_callback_function);
+                              host_callback_function, logger, false);
         }
     });
     wine_io_handler = std::thread([&]() { io_context.run(); });
@@ -166,7 +166,8 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             break;
     }
 
-    return send_event(host_vst_dispatch, opcode, index, value, data, option);
+    return send_event(host_vst_dispatch, opcode, index, value, data, option,
+                      logger, true);
 }
 
 void HostBridge::process_replacing(AEffect* /*plugin*/,
@@ -199,21 +200,29 @@ void HostBridge::process_replacing(AEffect* /*plugin*/,
 }
 
 float HostBridge::get_parameter(AEffect* /*plugin*/, int32_t index) {
+    logger.log_get_parameter(index);
+
     const Parameter request{index, std::nullopt};
     write_object(host_vst_parameters, request);
 
     const auto response = read_object<ParameterResult>(host_vst_parameters);
+    logger.log_get_parameter_response(index, response.value.value());
+
     return response.value.value();
 }
 
 void HostBridge::set_parameter(AEffect* /*plugin*/,
                                int32_t index,
                                float value) {
+    logger.log_set_parameter(index, value);
+
     const Parameter request{index, value};
     write_object(host_vst_parameters, request);
 
     // This should not contain any values and just serve as an acknowledgement
     const auto response = read_object<ParameterResult>(host_vst_parameters);
+    logger.log_set_parameter_response(index);
+
     assert(!response.value.has_value());
 }
 
