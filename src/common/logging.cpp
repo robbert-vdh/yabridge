@@ -93,10 +93,10 @@ void Logger::log_get_parameter(int32_t index) {
     }
 }
 
-void Logger::log_get_parameter_response(int32_t index, float value) {
+void Logger::log_get_parameter_response(float value) {
     if (verbosity >= Verbosity::events) {
         std::ostringstream message;
-        message << "   getParameter() :: " << index << " == " << value;
+        message << "   getParameter() :: " << value;
 
         log(message.str());
     }
@@ -111,12 +111,9 @@ void Logger::log_set_parameter(int32_t index, float value) {
     }
 }
 
-void Logger::log_set_parameter_response(int32_t index) {
+void Logger::log_set_parameter_response() {
     if (verbosity >= Verbosity::events) {
-        std::ostringstream message;
-        message << "  setParameter() :: " << index << " OK";
-
-        log(message.str());
+        log("   setParameter() :: OK");
     }
 }
 

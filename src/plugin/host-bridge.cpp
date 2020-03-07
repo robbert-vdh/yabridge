@@ -207,7 +207,7 @@ float HostBridge::get_parameter(AEffect* /*plugin*/, int32_t index) {
     write_object(host_vst_parameters, request);
 
     const auto response = read_object<ParameterResult>(host_vst_parameters);
-    logger.log_get_parameter_response(index, response.value.value());
+    logger.log_get_parameter_response(response.value.value());
 
     return response.value.value();
 }
@@ -222,7 +222,7 @@ void HostBridge::set_parameter(AEffect* /*plugin*/,
 
     // This should not contain any values and just serve as an acknowledgement
     const auto response = read_object<ParameterResult>(host_vst_parameters);
-    logger.log_set_parameter_response(index);
+    logger.log_set_parameter_response();
 
     assert(!response.value.has_value());
 }

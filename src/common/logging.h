@@ -89,9 +89,9 @@ class Logger {
     // The following functions are for logging specific events, they are only
     // enabled for verbosity levels higher than 1 (i.e. `Verbosity::events`)
     void log_get_parameter(int32_t index);
-    void log_get_parameter_response(int32_t index, float vlaue);
+    void log_get_parameter_response(float vlaue);
     void log_set_parameter(int32_t index, float value);
-    void log_set_parameter_response(int32_t index);
+    void log_set_parameter_response();
     // If is_dispatch is true, then use opcode names from the plugin's dispatch
     // function. Otherwise use names for the host callback function opcodes.
     void log_event(bool is_dispatch,
