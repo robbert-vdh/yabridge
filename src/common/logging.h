@@ -76,11 +76,30 @@ class Logger {
      */
     static Logger create_from_environment(std::string prefix = "");
 
+    /**
+     * Write a message to the log, prefixing it with a timestamp and this
+     * logger's prefix string.
+     *
+     * @param message The message to write.
+     */
+    void log(const std::string& message);
+
     // TODO: Add dedicated logging functions for events and the Wine process's
     //       STDOUT and STDERR
 
    private:
+    /**
+     * The output stream to write the log messages to. Typically either STDERR
+     * or a file stream.
+     */
     std::ostream& stream;
+    /**
+     * The verbosity level of this logger instance. Based on this certain
+     * messages may or may not be shown.
+     */
     Verbosity verbosity;
+    /**
+     * A prefix that gets prepended before every message.
+     */
     std::string prefix;
 };
