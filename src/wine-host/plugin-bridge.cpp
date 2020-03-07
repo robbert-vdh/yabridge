@@ -16,9 +16,9 @@
 
 #include "plugin-bridge.h"
 
-#include <filesystem>
+#include <boost/filesystem.hpp>
 
-namespace fs = std::filesystem;
+namespace fs = boost::filesystem;
 
 /**
  * A function pointer to what should be the entry point of a VST plugin.
@@ -69,8 +69,11 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       process_buffer(std::make_unique<AudioBuffers::buffer_type>()) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
-        throw std::runtime_error("Could not load a shared library at '" +
-                                 plugin_dll_path + "'.");
+        std::string error =
+            "Could not load a shared library at '" + plugin_dll_path + "'.";
+
+        logger.log("ERROR: " + error);
+        throw std::runtime_error(error);
     }
 
     // VST plugin entry point functions should be called `VSTPluginMain`, but
@@ -86,9 +89,11 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
         }
     }
     if (vst_entry_point == nullptr) {
-        throw std::runtime_error(
-            "Could not find a valid VST entry point for '" + plugin_dll_path +
-            "'.");
+        std::string error = "Could not find a valid VST entry point for '" +
+                            plugin_dll_path + "'.";
+
+        logger.log("ERROR: " + error);
+        throw std::runtime_error(error);
     }
 
     // It's very important that these sockets are accepted to in the same order
@@ -106,8 +111,11 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     current_bridge_isntance = this;
     plugin = vst_entry_point(host_callback_proxy);
     if (plugin == nullptr) {
-        throw std::runtime_error("VST plugin at '" + plugin_dll_path +
-                                 "' failed to initialize.");
+        std::string error =
+            "VST plugin at '" + plugin_dll_path + "' failed to initialize.";
+
+        logger.log("ERROR: " + error);
+        throw std::runtime_error(error);
     }
 
     // Send the plugin's information to the Linux VST plugin
@@ -182,6 +190,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
             write_object(host_vst_process_replacing, response, *process_buffer);
         }
     });
+
+    logger.log("Finished initializing '" + plugin_dll_path + "'");
 }
 
 void PluginBridge::wait() {
@@ -210,8 +220,9 @@ intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
  */
 std::string create_logger_prefix(const fs::path& socket_path) {
     std::ostringstream prefix;
-    prefix << "[" << socket_path.filename() << "] ";
-    prefix << "[WINE] ";
+    prefix << "[" << socket_path.filename().replace_extension().string()
+           << "] ";
+    prefix << "[Wine] ";
 
     return prefix.str();
 }

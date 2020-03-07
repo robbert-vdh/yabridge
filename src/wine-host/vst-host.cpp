@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
         // Block the main thread until the plugin shuts down
         bridge.wait();
     } catch (const std::runtime_error& error) {
-        std::cerr << "Error while initializing plugin:" << std::endl;
+        std::cerr << "Error while initializing Wine VST host:" << std::endl;
         std::cerr << error.what() << std::endl;
 
         return 1;

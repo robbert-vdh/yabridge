@@ -47,6 +47,7 @@ constexpr char alphanumeric_characters[] =
 std::string create_logger_prefix(const fs::path& socket_path);
 fs::path find_vst_plugin();
 fs::path find_wine_vst_host();
+std::optional<fs::path> find_wineprefix();
 fs::path generate_endpoint_name();
 bp::environment set_wineprefix();
 
@@ -65,10 +66,10 @@ HostBridge& get_bridge_instance(const AEffect& plugin) {
     return *static_cast<HostBridge*>(plugin.ptr3);
 }
 
-// TODO: When adding debug information, print both the path to the VST host and
-//       the chosen wineprefix
 HostBridge::HostBridge(audioMasterCallback host_callback)
-    : io_context(),
+    : vst_host_path(find_wine_vst_host()),
+      vst_plugin_path(find_vst_plugin()),
+      io_context(),
       socket_endpoint(generate_endpoint_name().string()),
       socket_acceptor(io_context, socket_endpoint),
       host_vst_dispatch(io_context),
@@ -79,15 +80,20 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
       host_callback_function(host_callback),
       logger(Logger::create_from_environment(
           create_logger_prefix(socket_endpoint.path()))),
-      vst_host(find_wine_vst_host(),
+      vst_host(vst_host_path,
                // The Wine VST host needs to know which plugin to load
                // and which Unix domain socket to connect to
-               find_vst_plugin(),
+               vst_plugin_path,
                socket_endpoint.path(),
                bp::env = set_wineprefix()),
       process_buffer(std::make_unique<AudioBuffers::buffer_type>()) {
-    // It's very important that these sockets are connected to in the same order
-    // in the Wine VST host
+    logger.log("Initializing yabridge using '" + vst_host_path.string() + "'");
+    logger.log("plugin:     '" + vst_plugin_path.string() + "'");
+    logger.log("wineprefix: '" +
+               find_wineprefix().value_or("<default>").string() + "'");
+
+    // It's very important that these sockets are connected to in the same
+    // order in the Wine VST host
     socket_acceptor.accept(host_vst_dispatch);
     socket_acceptor.accept(vst_host_callback);
     socket_acceptor.accept(host_vst_parameters);
@@ -202,6 +208,23 @@ float HostBridge::get_parameter(AEffect* /*plugin*/, int32_t index) {
 }
 
 /**
+ * Create a logger prefix based on the unique socket path for easy
+ * identification. The socket path contains both the plugin's name and a unique
+ * identifier.
+ *
+ * @param socket_path The path to the socket endpoint in use.
+ *
+ * @return A prefix string for log messages.
+ */
+std::string create_logger_prefix(const fs::path& socket_path) {
+    std::ostringstream prefix;
+    prefix << "[" << socket_path.filename().replace_extension().string()
+           << "] ";
+
+    return prefix.str();
+}
+
+/**
  * Finds the Wine VST hsot (named `yabridge-host.exe`). For this we will search
  * in two places:
  *
@@ -234,19 +257,26 @@ fs::path find_wine_vst_host() {
 }
 
 /**
- * Create a logger prefix based on the unique socket path for easy
- * identification. The socket path contains both the plugin's name and a unique
- * identifier.
+ * Locate the wineprefix this file is located in, if it is inside of a wine
+ * prefix.
  *
- * @param socket_path The path to the socket endpoint in use.
- *
- * @return A prefix string for log messages.
+ * @return Either the path to the wineprefix (containing the `drive_c?`
+ *   directory), or `std::nullopt` if it is not inside of a wine prefix.
  */
-std::string create_logger_prefix(const fs::path& socket_path) {
-    std::ostringstream prefix;
-    prefix << "[" << socket_path.filename() << "] ";
+std::optional<fs::path> find_wineprefix() {
+    // Try to locate the wineprefix this .so file is located in by finding the
+    // first parent directory that contains a directory named `dosdevices`
+    fs::path wineprefix_path =
+        boost::dll::this_line_location().remove_filename();
+    while (wineprefix_path != "") {
+        if (fs::is_directory(wineprefix_path / "dosdevices")) {
+            return wineprefix_path;
+        }
 
-    return prefix.str();
+        wineprefix_path = wineprefix_path.parent_path();
+    }
+
+    return std::nullopt;
 }
 
 /**
@@ -320,17 +350,9 @@ fs::path generate_endpoint_name() {
 bp::environment set_wineprefix() {
     auto env(boost::this_process::environment());
 
-    // Try to locate the wineprefix this .so file is located in by finding the
-    // first parent directory that contains a directory named `dosdevices`
-    fs::path wineprefix_path =
-        boost::dll::this_line_location().remove_filename();
-    while (wineprefix_path != "") {
-        if (fs::is_directory(wineprefix_path / "dosdevices")) {
-            env["WINEPREFIX"] = wineprefix_path.string();
-            break;
-        }
-
-        wineprefix_path = wineprefix_path.parent_path();
+    const auto wineprefix_path = find_wineprefix();
+    if (wineprefix_path.has_value()) {
+        env["WINEPREFIX"] = wineprefix_path->string();
     }
 
     return env;

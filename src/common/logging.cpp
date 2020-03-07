@@ -34,8 +34,9 @@ Logger::Logger(std::ostream&& stream,
 
 Logger Logger::create_from_environment(std::string prefix) {
     auto env = boost::this_process::environment();
-    std::string file_path = env.get(logging_file_environment_variable);
-    std::string verbosity = env.get(logging_verbosity_environment_variable);
+    std::string file_path = env[logging_file_environment_variable].to_string();
+    std::string verbosity =
+        env[logging_verbosity_environment_variable].to_string();
 
     // Default to `Verbosity::basic` if the environment variable has not
     // been set or if it is not an integer.
@@ -68,7 +69,7 @@ void Logger::log(const std::string& message) {
     localtime_r(&timestamp, &tm);
 
     std::ostringstream formatted_message;
-    formatted_message << "[" << std::put_time(&tm, "%T") << "]";
+    formatted_message << std::put_time(&tm, "%T") << " ";
     formatted_message << prefix;
     formatted_message << message;
     // Flushing a stringstream doesn't do anything, but we need to put a

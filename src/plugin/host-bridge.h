@@ -70,6 +70,15 @@ class HostBridge {
     float get_parameter(AEffect* plugin, int32_t index);
 
     /**
+     * The path to `yabridge-host.exe`.
+     */
+    const boost::filesystem::path vst_host_path;
+    /**
+     * The path to the .dll being loaded in the Wine VST host.
+     */
+    const boost::filesystem::path vst_plugin_path;
+
+    /**
      * This AEffect struct will be populated using the data passed by the Wine
      * VST host during initialization and then passed as a pointer to the Linux
      * native VST host from the Linux VST plugin's entry point.
