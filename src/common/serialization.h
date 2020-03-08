@@ -1,4 +1,5 @@
 #include <bitsery/adapter/buffer.h>
+#include <bitsery/ext/pointer.h>
 #include <bitsery/ext/std_optional.h>
 #include <bitsery/ext/std_variant.h>
 #include <bitsery/traits/array.h>
@@ -71,13 +72,14 @@ struct NeedsBuffer {};
  *   opcode `effProcessEvents` comes with a struct containing a list of midi
  *   events.
  *
- *   TODO: A lot of these are still missing, beginning with `VstEvents`.
+ *   TODO: A lot of these are still missing
  *
  * - Some empty buffer for the plugin to write its own data to, for instance for
  *   a plugin to report its name or the label for a certain parameter. We'll
  *   assume that this is the default if none of the above options apply.
  */
-using EventPayload = std::variant<std::nullptr_t, std::string, NeedsBuffer>;
+using EventPayload =
+    std::variant<std::nullptr_t, std::string, VstEvents, NeedsBuffer>;
 
 /**
  * An event as dispatched by the VST host. These events will get forwarded to
@@ -121,11 +123,26 @@ struct Event {
         // `EventPayload` in a struct
         s.ext(payload,
               bitsery::ext::StdVariant{
-                  // TODO: Some of these oerlaods might not be necessary, check
-                  //       if this is the case
                   [](S&, std::nullptr_t&) {},
                   [](S& s, std::string& string) {
                       s.text1b(string, max_string_length);
+                  },
+                  [](S& s, VstEvents& events) {
+                      s.value4b(events.numEvents);
+
+                      // This will only ever read a single event since
+                      // that's how the `VstEvents` struct is defined,
+                      // hence the assertion. If multiple events can be
+                      // passed at once then `VstEvents` should be
+                      // modified.
+                      assert(events.numEvents <= 1);
+                      s.container(
+                          events.events, [](S& s, VstEvent*(&event_ptr)) {
+                              s.ext(event_ptr, bitsery::ext::PointerOwner(),
+                                    [](S& s, VstEvent& event) {
+                                        s.container1b(event.dump);
+                                    });
+                          });
                   },
                   [](S&, NeedsBuffer&) {}});
     }

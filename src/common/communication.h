@@ -57,9 +57,11 @@ template <typename T, typename Socket>
 inline void write_object(Socket& socket,
                          const T& object,
                          typename buffer_t<T>::type& buffer) {
+    bitsery::ext::PointerLinkingContext serializer_context{};
     auto length =
-        bitsery::quickSerialization<OutputAdapter<typename buffer_t<T>::type>>(
-            buffer, object);
+        bitsery::quickSerialization<bitsery::ext::PointerLinkingContext,
+                                    OutputAdapter<typename buffer_t<T>::type>>(
+            serializer_context, buffer, object);
 
     socket.send(boost::asio::buffer(buffer, length));
 }
@@ -91,9 +93,11 @@ inline T& read_object(Socket& socket,
                       typename buffer_t<T>::type& buffer) {
     auto message_length = socket.receive(boost::asio::buffer(buffer));
 
+    bitsery::ext::PointerLinkingContext serializer_context{};
     auto [_, success] =
-        bitsery::quickDeserialization<InputAdapter<typename buffer_t<T>::type>>(
-            {buffer.begin(), message_length}, object);
+        bitsery::quickDeserialization<bitsery::ext::PointerLinkingContext,
+                                      InputAdapter<typename buffer_t<T>::type>>(
+            serializer_context, {buffer.begin(), message_length}, object);
 
     if (!success) {
         throw std::runtime_error("Deserialization failure in call:" +
@@ -172,6 +176,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                  [&](const std::string& s) -> void* {
                      return const_cast<char*>(s.c_str());
                  },
+                 [&](VstEvents& events) -> void* { return &events; },
                  [&](NeedsBuffer&) -> void* { return buffer.data(); }},
         event.payload);
     const intptr_t return_value = callback(plugin, event.opcode, event.index,
