@@ -25,7 +25,7 @@
 
 #include <variant>
 
-#pragma once
+#include "bitsery.h"
 
 /**
  * The maximum number of audio channels supported.
