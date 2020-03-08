@@ -20,6 +20,8 @@
 #include <optional>
 #include <ostream>
 
+#include "serialization.h"
+
 /**
  * Super basic logging facility meant for debugging malfunctioning VST
  * plugins. This is also used to redirect the output of the Wine process
@@ -93,7 +95,7 @@ class Logger {
                    int opcode,
                    int index,
                    intptr_t value,
-                   std::optional<std::string> payload,
+                   EventPayload payload,
                    float option);
     void log_event_response(bool is_dispatch,
                             intptr_t return_value,

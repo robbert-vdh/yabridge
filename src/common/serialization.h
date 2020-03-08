@@ -1,9 +1,14 @@
 #include <bitsery/adapter/buffer.h>
 #include <bitsery/ext/std_optional.h>
+#include <bitsery/ext/std_variant.h>
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/string.h>
 #include <bitsery/traits/vector.h>
 #include <vestige/aeffectx.h>
+
+#include <variant>
+
+#pragma once
 
 /**
  * The maximum number of audio channels supported.
@@ -15,10 +20,10 @@ constexpr size_t max_audio_channels = 32;
 constexpr size_t max_buffer_size = 16384;
 /**
  * The maximum size in bytes of a string or buffer passed through a void pointer
- * in one of the dispatch functions. This is used as a buffer size and also as a
- * cutoff for checking if c-style strings behind a `char*` have changed.
+ * in one of the dispatch functions. This is used to create buffers for plugins
+ * to write strings to.
  */
-constexpr size_t max_string_length = 128;
+constexpr size_t max_string_length = 64;
 
 /**
  * A simple constant sized buffer for smaller types that can be allocated on the
@@ -33,12 +38,53 @@ using OutputAdapter = bitsery::OutputBufferAdapter<B>;
 template <typename B>
 using InputAdapter = bitsery::InputBufferAdapter<B>;
 
+// The cannonical overloading template for `std::visitor`, not sure why this
+// isn't part of the standard library
+template <class... Ts>
+struct overload : Ts... {
+    using Ts::operator()...;
+};
+template <class... Ts>
+overload(Ts...)->overload<Ts...>;
+
+/**
+ * VST events are passed a void pointer that can contain a variety of different
+ * data types depending on the event's opcode. This is typically either:
+ *
+ * - A null pointer, used for simple events.
+ * - A char pointer to a null terminated string, used for passing strings to the
+ *   plugin such as when renaming presets. Bitsery handles the serialization for
+ *   us.
+ *
+ *   NOTE: Bitsery does not support null terminated C-strings without a known
+ *         size. We can replace `std::string` with `char*` once it does for
+ *         clarity's sake.
+ *
+ * - Specific data structures from `aeffextx.h`. For instance an event with the
+ *   opcode `effProcessEvents` comes with a struct containing a list of midi
+ *   events.
+ *
+ *   TODO: A lot of these are still missing, beginning with `VstEvents`.
+ *
+ * - Some empty buffer for the plugin to write its own data to, for instance for
+ *   a plugin to report its name or the label for a certain parameter. We'll
+ *   assume that this is the default if none of the above options apply.
+ *
+ *   TODO: As a simple optimization we of course wouldn't have to send an entire
+ *         empty array here, this should be replaced by some kind of marker
+ *         struct. This would require some minor modifications in
+ *         `passthrough_event()`.
+ */
+using EventPayload = std::
+    variant<std::nullptr_t, std::string, std::array<char, max_string_length>>;
+
 /**
  * An event as dispatched by the VST host. These events will get forwarded to
  * the VST host process running under Wine. The fields here mirror those
  * arguments sent to the `AEffect::dispatch` function.
  */
 struct Event {
+    // TODO: Possibly update to account for VstEvents
     using buffer_type = ArrayBuffer<max_string_length + 32>;
 
     int opcode;
@@ -49,12 +95,16 @@ struct Event {
     intptr_t value;
     float option;
     /**
-     * The event dispatch function has a void pointer parameter that's used to
-     * either send string messages to the event (e.g. for `effCanDo`) or to
-     * write a string back into. This value will contain an (empty) string if
-     * the void* parameter for the dispatch function was not a null pointer.
+     * The event dispatch function has a void pointer parameter that's often
+     * used to either pass additional data for the event or to provide a buffer
+     * for the plugin to write a string into.
+     *
+     * The `VstEvents` struct passed for the `effProcessEvents` event contains
+     * an array of pointers. This requires some special handling which is why we
+     * have to use an `std::variant` instead of a simple string buffer. Luckily
+     * Bitsery can do all the hard work for us.
      */
-    std::optional<std::string> data;
+    EventPayload payload;
 
     template <typename S>
     void serialize(S& s) {
@@ -65,8 +115,20 @@ struct Event {
         // bit large pointers.
         s.value8b(value);
         s.value4b(option);
-        s.ext(data, bitsery::ext::StdOptional(),
-              [](S& s, auto& v) { s.text1b(v, max_string_length); });
+
+        // I couldn't get this serializer to work seperately without
+        // `EventPayload` in a struct
+        s.ext(payload,
+              bitsery::ext::StdVariant{
+                  // TODO: Some of these oerlaods might not be necessary, check
+                  //       if this is the case
+                  [](S&, std::nullptr_t&) {},
+                  [](S& s, std::string& string) {
+                      s.text1b(string, max_string_length);
+                  },
+                  [](S& s, std::array<char, max_string_length>& buffer) {
+                      s.container1b(buffer);
+                  }});
     }
 };
 

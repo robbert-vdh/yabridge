@@ -121,7 +121,7 @@ void Logger::log_event(bool is_dispatch,
                        int opcode,
                        int index,
                        intptr_t value,
-                       std::optional<std::string> payload,
+                       EventPayload payload,
                        float option) {
     if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
         std::ostringstream message;
@@ -140,15 +140,14 @@ void Logger::log_event(bool is_dispatch,
 
         message << "(index = " << index << ", value = " << value
                 << ", option = " << option << ", data = ";
-        if (!payload.has_value()) {
-            message << "<nullptr>";
-        } else if (payload->empty()) {
-            message << "<writable_buffer>";
-        } else {
-            // Might print binary payload, maybe check for this?
-            message << "\"" << payload.value() << "\"";
-        }
-        message << ")";
+
+        std::visit(
+            overload{[&](std::nullptr_t) { message << "<nullptr>"; },
+                     [&](std::string s) { message << "\"" << s << "\""; },
+                     [&](std::array<char, max_string_length>) {
+                         message << "<writeable_buffer>";
+                     }},
+            payload);
 
         log(message.str());
     }

@@ -7,10 +7,21 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                     void* data,
                     float option,
                     std::optional<std::pair<Logger&, bool>> logging) {
-    auto payload =
-        data == nullptr
-            ? std::nullopt
-            : std::make_optional(std::string(static_cast<char*>(data)));
+    // Encode the right payload type for this event. Check the documentation for
+    // `EventPayload` for more information.
+    EventPayload payload = nullptr;
+    if (data != nullptr) {
+        // TODO: Specific structs go here
+
+        // Assume buffers are zeroed out, this is probably not the case
+        char* c_string = static_cast<char*>(data);
+        if (c_string[0] != 0) {
+            payload = std::string(c_string);
+        } else {
+            payload = std::array<char, max_string_length>();
+        }
+    }
+
     if (logging.has_value()) {
         auto [logger, is_dispatch] = *logging;
         logger.log_event(is_dispatch, opcode, index, value, payload, option);

@@ -134,6 +134,7 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                     void* data,
                     float option,
                     std::optional<std::pair<Logger&, bool>> logging);
+
 /**
  * Receive an event from a socket and pass it through to some callback function.
  * This is used for both the host -> plugin 'dispatch' events and the plugin ->
@@ -160,35 +161,30 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     if (logging.has_value()) {
         auto [logger, is_dispatch] = *logging;
         logger.log_event(is_dispatch, event.opcode, event.index, event.value,
-                         event.data, event.option);
+                         event.payload, event.option);
     }
 
-    // The void pointer argument for the dispatch function is used for
-    // either:
-    //  - Not at all, in which case it will be a null pointer
-    //  - For passing strings as input to the event
-    //  - For providing a buffer for the event to write results back into
-    char* payload = nullptr;
-    std::array<char, max_string_length> buffer;
-    if (event.data.has_value()) {
-        // If the data parameter was an empty string, then we're going to
-        // pass a larger buffer to the dispatch function instead. Otherwise
-        // we'll pass the data passed by the host.
-        if (!event.data->empty()) {
-            payload = const_cast<char*>(event.data->c_str());
-        } else {
-            payload = buffer.data();
-        }
-    }
-
+    void* data = std::visit(
+        overload{[&](std::nullptr_t) -> void* { return nullptr; },
+                 [&](std::string s) -> void* {
+                     return const_cast<char*>(s.c_str());
+                 },
+                 [&](std::array<char, max_string_length> buffer) -> void* {
+                     return buffer.data();
+                 }},
+        event.payload);
     const intptr_t return_value = callback(plugin, event.opcode, event.index,
-                                           event.value, payload, event.option);
+                                           event.value, data, event.option);
 
-    // Only write back the value from `payload` if we were passed an empty
-    // buffer to write into
-    bool is_updated = event.data.has_value() && event.data->empty();
+    // Only write back data for empty buffers
+    // XXX: Is it possbile here that we got passed a non empty buffer (i.e.
+    //      because it was not zeroed out by the host) for an event that should
+    //      report some data back?
     const auto response_data =
-        is_updated ? std::make_optional(payload) : std::nullopt;
+        std::holds_alternative<std::array<char, max_string_length>>(
+            event.payload)
+            ? std::make_optional(static_cast<char*>(data))
+            : std::nullopt;
 
     if (logging.has_value()) {
         auto [logger, is_dispatch] = *logging;
