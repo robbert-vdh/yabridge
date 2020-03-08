@@ -18,7 +18,7 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
         if (c_string[0] != 0) {
             payload = std::string(c_string);
         } else {
-            payload = std::array<char, max_string_length>();
+            payload = NeedsBuffer{};
         }
     }
 

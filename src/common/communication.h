@@ -164,14 +164,15 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                          event.payload, event.option);
     }
 
+    // Some buffer for the event to write to if needed. We only pass around a
+    // marker struct to indicate that this is indeed the case.
+    std::array<char, max_string_length> buffer;
     void* data = std::visit(
         overload{[&](const std::nullptr_t&) -> void* { return nullptr; },
                  [&](const std::string& s) -> void* {
                      return const_cast<char*>(s.c_str());
                  },
-                 [&](std::array<char, max_string_length>& buffer) -> void* {
-                     return buffer.data();
-                 }},
+                 [&](NeedsBuffer&) -> void* { return buffer.data(); }},
         event.payload);
     const intptr_t return_value = callback(plugin, event.opcode, event.index,
                                            event.value, data, event.option);
@@ -181,8 +182,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     //      because it was not zeroed out by the host) for an event that should
     //      report some data back?
     const auto response_data =
-        std::holds_alternative<std::array<char, max_string_length>>(
-            event.payload)
+        std::holds_alternative<NeedsBuffer>(event.payload)
             ? std::optional(std::string(static_cast<char*>(data)))
             : std::nullopt;
 

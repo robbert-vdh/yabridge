@@ -48,6 +48,13 @@ template <class... Ts>
 overload(Ts...)->overload<Ts...>;
 
 /**
+ * Marker struct to indicate that that the event requires some buffer to write
+ * its results into. This is to prevent us from having to unnecessarily sending
+ * around empty arrays.
+ */
+struct NeedsBuffer {};
+
+/**
  * VST events are passed a void pointer that can contain a variety of different
  * data types depending on the event's opcode. This is typically either:
  *
@@ -69,14 +76,8 @@ overload(Ts...)->overload<Ts...>;
  * - Some empty buffer for the plugin to write its own data to, for instance for
  *   a plugin to report its name or the label for a certain parameter. We'll
  *   assume that this is the default if none of the above options apply.
- *
- *   TODO: As a simple optimization we of course wouldn't have to send an entire
- *         empty array here, this should be replaced by some kind of marker
- *         struct. This would require some minor modifications in
- *         `passthrough_event()`.
  */
-using EventPayload = std::
-    variant<std::nullptr_t, std::string, std::array<char, max_string_length>>;
+using EventPayload = std::variant<std::nullptr_t, std::string, NeedsBuffer>;
 
 /**
  * An event as dispatched by the VST host. These events will get forwarded to
@@ -126,9 +127,7 @@ struct Event {
                   [](S& s, std::string& string) {
                       s.text1b(string, max_string_length);
                   },
-                  [](S& s, std::array<char, max_string_length>& buffer) {
-                      s.container1b(buffer);
-                  }});
+                  [](S&, NeedsBuffer&) {}});
     }
 };
 

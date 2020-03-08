@@ -145,9 +145,7 @@ void Logger::log_event(bool is_dispatch,
             overload{
                 [&](const std::nullptr_t&) { message << "<nullptr>"; },
                 [&](const std::string& s) { message << "\"" << s << "\""; },
-                [&](const std::array<char, max_string_length>&) {
-                    message << "<writeable_buffer>";
-                }},
+                [&](const NeedsBuffer&) { message << "<writable_buffer>"; }},
             payload);
 
         message << ")";
