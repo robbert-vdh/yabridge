@@ -201,8 +201,17 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
             case effGetProgram:
                 return "effGetProgram";
                 break;
+            case effSetProgramName:
+                return "effSetProgramName";
+                break;
             case effGetProgramName:
                 return "effGetProgramName";
+                break;
+            case effGetParamLabel:
+                return "effGetParamLabel";
+                break;
+            case effGetParamDisplay:
+                return "effGetParamDisplay";
                 break;
             case effGetParamName:
                 return "effGetParamName";
@@ -231,14 +240,32 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
             case effEditTop:
                 return "effEditTop";
                 break;
+            case effIdentify:
+                return "effIdentify";
+                break;
+            case effGetChunk:
+                return "effGetChunk";
+                break;
             case effSetChunk:
                 return "effSetChunk";
                 break;
             case effProcessEvents:
                 return "effProcessEvents";
                 break;
+            case effCanBeAutomated:
+                return "effCanBeAutomated";
+                break;
+            case effGetProgramNameIndexed:
+                return "effGetProgramNameIndexed";
+                break;
+            case effGetPlugCategory:
+                return "effGetPlugCategory";
+                break;
             case effGetEffectName:
                 return "effGetEffectName";
+                break;
+            case effGetParameterProperties:
+                return "effGetParameterProperties";
                 break;
             case effGetVendorString:
                 return "effGetVendorString";
@@ -252,8 +279,32 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
             case effCanDo:
                 return "effCanDo";
                 break;
+            case effIdle:
+                return "effIdle";
+                break;
             case effGetVstVersion:
                 return "effGetVstVersion";
+                break;
+            case effBeginSetProgram:
+                return "effBeginSetProgram";
+                break;
+            case effEndSetProgram:
+                return "effEndSetProgram";
+                break;
+            case effShellGetNextPlugin:
+                return "effShellGetNextPlugin";
+                break;
+            case effBeginLoadBank:
+                return "effBeginLoadBank";
+                break;
+            case effBeginLoadProgram:
+                return "effBeginLoadProgram";
+                break;
+            case effStartProcess:
+                return "effStartProcess";
+                break;
+            case effStopProcess:
+                return "effStopProcess";
                 break;
             default:
                 return std::nullopt;
