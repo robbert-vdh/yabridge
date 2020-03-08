@@ -22,7 +22,7 @@
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/string.h>
 #include <bitsery/traits/vector.h>
-#include <vestige/aeffect.h>
+#include <vestige/aeffectx.h>
 
 #include <cinttypes>
 #include <iostream>
@@ -214,7 +214,7 @@ void serialize(S& s, AEffect& plugin) {
     s.container1b(plugin.unknown1);
 }
 
-// I don't want to editor 'include/vestige/aeffect.h`. That's why this type
+// I don't want to editor 'include/vestige/aeffectx.h`. That's why this type
 // trait and the above serialization function are here.` Clang complains that
 // `buffer` should be qualified (and only in some cases), so `buffer_t` it is.
 template <typename T>

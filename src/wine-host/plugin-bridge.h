@@ -25,7 +25,7 @@
 #define NOMCX
 #define NOIMM
 #define WIN32_LEAN_AND_MEAN
-#include <vestige/aeffect.h>
+#include <vestige/aeffectx.h>
 #include <windows.h>
 
 #include <thread>

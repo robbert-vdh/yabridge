@@ -11,7 +11,7 @@
 #endif
 #include <boost/process/environment.hpp>
 
-#include "vestige/aeffect.h"
+#include "vestige/aeffectx.h"
 
 /**
  * The environment variable indicating whether to log to a file. Will log to
@@ -176,13 +176,13 @@ void Logger::log_event_response(bool is_dispatch,
 
 /**
  * Convert an event opcode to a human readable string for debugging purposes.
- * See `src/include/vestige/aeffect.h` for a complete list of these opcodes.
+ * See `src/include/vestige/aeffectx.h` for a complete list of these opcodes.
  *
  * @param is_dispatch Whether to use opcodes for the `dispatch` function. Will
  *   use the names from the host callback function if set to false.
  * @param opcode The opcode of the event.
  *
- * @return Either the name from `aeffect.h`, or a nullopt if it was not listed
+ * @return Either the name from `aeffectx.h`, or a nullopt if it was not listed
  *   there.
  */
 std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
