@@ -73,8 +73,8 @@ using InputAdapter = bitsery::InputBufferAdapter<B>;
 struct Event {
     using buffer_type = ArrayBuffer<max_string_length + 32>;
 
-    int32_t opcode;
-    int32_t index;
+    int opcode;
+    int index;
     // TODO: This is an intptr_t, if we want to support 32 bit Wine plugins all
     //       of these these intptr_t types should be replace by `uint64_t` to
     //       remain compatible with the Linux VST plugin.
@@ -133,7 +133,7 @@ struct EventResult {
 struct Parameter {
     using buffer_type = ArrayBuffer<16>;
 
-    int32_t index;
+    int index;
     std::optional<float> value;
 
     template <typename S>
@@ -204,14 +204,12 @@ void serialize(S& s, AEffect& plugin) {
     s.value4b(plugin.numInputs);
     s.value4b(plugin.numOutputs);
     s.value4b(plugin.flags);
-
-    // These fields can contain some values that are rarely used and/or
-    // deprecated, but we should pass them along anyway
-    s.container1b(plugin.empty3);
-    s.value4b(plugin.unknown_float);
-
+    s.value4b(plugin.initialDelay);
+    s.value4b(plugin.empty3a);
+    s.value4b(plugin.empty3b);
+    s.value4b(plugin.unkown_float);
     s.value4b(plugin.uniqueID);
-    s.container1b(plugin.unknown1);
+    s.value4b(plugin.version);
 }
 
 // I don't want to editor 'include/vestige/aeffectx.h`. That's why this type
@@ -312,8 +310,8 @@ inline T read_object(Socket& socket) {
  * @relates passthrough_event
  */
 intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
-                    int32_t opcode,
-                    int32_t index,
+                    int opcode,
+                    int index,
                     intptr_t value,
                     void* data,
                     float option,

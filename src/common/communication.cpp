@@ -1,8 +1,8 @@
 #include "communication.h"
 
 intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
-                    int32_t opcode,
-                    int32_t index,
+                    int opcode,
+                    int index,
                     intptr_t value,
                     void* data,
                     float option,

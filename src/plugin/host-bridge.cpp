@@ -52,11 +52,11 @@ std::optional<fs::path> find_wineprefix();
 fs::path generate_endpoint_name();
 bp::environment set_wineprefix();
 
-intptr_t dispatch_proxy(AEffect*, int32_t, int32_t, intptr_t, void*, float);
-void process_proxy(AEffect*, float**, float**, int32_t);
+intptr_t dispatch_proxy(AEffect*, int, int, intptr_t, void*, float);
+void process_proxy(AEffect*, float**, float**, int);
 void process_replacing_proxy(AEffect*, float**, float**, int);
-void setParameter_proxy(AEffect*, int32_t, float);
-float getParameter_proxy(AEffect*, int32_t);
+void setParameter_proxy(AEffect*, int, float);
+float getParameter_proxy(AEffect*, int);
 
 /**
  * Fetch the bridge instance stored in an unused pointer from a VST plugin. This
@@ -143,8 +143,8 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
  * through to the winelib VST host.
  */
 intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
-                              int32_t opcode,
-                              int32_t index,
+                              int opcode,
+                              int index,
                               intptr_t value,
                               void* data,
                               float option) {
@@ -200,7 +200,7 @@ void HostBridge::process_replacing(AEffect* /*plugin*/,
     }
 }
 
-float HostBridge::get_parameter(AEffect* /*plugin*/, int32_t index) {
+float HostBridge::get_parameter(AEffect* /*plugin*/, int index) {
     logger.log_get_parameter(index);
 
     const Parameter request{index, std::nullopt};
@@ -212,9 +212,7 @@ float HostBridge::get_parameter(AEffect* /*plugin*/, int32_t index) {
     return response.value.value();
 }
 
-void HostBridge::set_parameter(AEffect* /*plugin*/,
-                               int32_t index,
-                               float value) {
+void HostBridge::set_parameter(AEffect* /*plugin*/, int index, float value) {
     logger.log_set_parameter(index, value);
 
     const Parameter request{index, value};
@@ -395,8 +393,8 @@ bp::environment set_wineprefix() {
 // `Bridge.cpp`
 
 intptr_t dispatch_proxy(AEffect* plugin,
-                        int32_t opcode,
-                        int32_t index,
+                        int opcode,
+                        int index,
                         intptr_t value,
                         void* data,
                         float option) {
@@ -407,7 +405,7 @@ intptr_t dispatch_proxy(AEffect* plugin,
 void process_proxy(AEffect* plugin,
                    float** inputs,
                    float** outputs,
-                   int32_t sample_frames) {
+                   int sample_frames) {
     return get_bridge_instance(*plugin).process_replacing(
         plugin, inputs, outputs, sample_frames);
 }
@@ -420,10 +418,10 @@ void process_replacing_proxy(AEffect* plugin,
         plugin, inputs, outputs, sample_frames);
 }
 
-void setParameter_proxy(AEffect* plugin, int32_t index, float value) {
+void setParameter_proxy(AEffect* plugin, int index, float value) {
     return get_bridge_instance(*plugin).set_parameter(plugin, index, value);
 }
 
-float getParameter_proxy(AEffect* plugin, int32_t index) {
+float getParameter_proxy(AEffect* plugin, int index) {
     return get_bridge_instance(*plugin).get_parameter(plugin, index);
 }

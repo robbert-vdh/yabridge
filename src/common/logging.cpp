@@ -84,7 +84,7 @@ void Logger::log(const std::string& message) {
     *stream << formatted_message.str() << std::flush;
 }
 
-void Logger::log_get_parameter(int32_t index) {
+void Logger::log_get_parameter(int index) {
     if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
         std::ostringstream message;
         message << ">> getParameter() " << index;
@@ -102,7 +102,7 @@ void Logger::log_get_parameter_response(float value) {
     }
 }
 
-void Logger::log_set_parameter(int32_t index, float value) {
+void Logger::log_set_parameter(int index, float value) {
     if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
         std::ostringstream message;
         message << ">> setParameter() " << index << " = " << value;
@@ -118,8 +118,8 @@ void Logger::log_set_parameter_response() {
 }
 
 void Logger::log_event(bool is_dispatch,
-                       int32_t opcode,
-                       int32_t index,
+                       int opcode,
+                       int index,
                        intptr_t value,
                        std::optional<std::string> payload,
                        float option) {

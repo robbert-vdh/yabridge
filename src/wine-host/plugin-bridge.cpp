@@ -32,7 +32,7 @@ using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
 PluginBridge* current_bridge_isntance = nullptr;
 
 intptr_t VST_CALL_CONV
-host_callback_proxy(AEffect*, int32_t, int32_t, intptr_t, void*, float);
+host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);
 
 /**
  * Fetch the Pluginbridge instance stored in one of the two pointers reserved
@@ -191,8 +191,8 @@ void PluginBridge::wait() {
 }
 
 intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
-                                     int32_t opcode,
-                                     int32_t index,
+                                     int opcode,
+                                     int index,
                                      intptr_t value,
                                      void* data,
                                      float option) {
@@ -201,8 +201,8 @@ intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
 }
 
 intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,
-                                           int32_t opcode,
-                                           int32_t index,
+                                           int opcode,
+                                           int index,
                                            intptr_t value,
                                            void* data,
                                            float option) {

@@ -55,8 +55,8 @@ class HostBridge {
      * passed through to the winelib VST host.
      */
     intptr_t dispatch(AEffect* plugin,
-                      int32_t opcode,
-                      int32_t index,
+                      int opcode,
+                      int index,
                       intptr_t value,
                       void* data,
                       float option);
@@ -68,8 +68,8 @@ class HostBridge {
                            float** inputs,
                            float** outputs,
                            int sample_frames);
-    float get_parameter(AEffect* plugin, int32_t index);
-    void set_parameter(AEffect* plugin, int32_t index, float value);
+    float get_parameter(AEffect* plugin, int index);
+    void set_parameter(AEffect* plugin, int index, float value);
 
     /**
      * The path to `yabridge-host.exe`.

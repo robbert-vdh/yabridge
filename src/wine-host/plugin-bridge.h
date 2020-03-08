@@ -59,7 +59,7 @@ class PluginBridge {
      */
     void wait();
 
-    intptr_t host_callback(AEffect*, int32_t, int32_t, intptr_t, void*, float);
+    intptr_t host_callback(AEffect*, int, int, intptr_t, void*, float);
 
    private:
     /**
