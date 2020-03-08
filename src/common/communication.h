@@ -35,7 +35,16 @@
 
 #include "logging.h"
 
-// These are for the serialization done by bitsery
+// This file can be divided into four sections:
+// - Data structures for passing events and their accompanying bitsery
+//   serializers.
+// - Serialization functions for structs from `aeffectx.h`.
+// - Convenience functions for serializing structs and sending them over
+//   sockets, and similar functions for receiving and deserializing those
+//   structs.
+// - Two functions to send and passthrough `dispatch` (host -> plugin) and
+//   `audioMasterCallback` (plugin -> host) events since those should be handled
+//   in exactly the same way.
 
 /**
  * The maximum number of audio channels supported.
