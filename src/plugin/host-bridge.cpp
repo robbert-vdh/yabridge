@@ -124,11 +124,11 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
                               std::pair<Logger&, bool>(logger, false));
         }
     });
-    wine_io_handler = std::thread([&]() { io_context.run(); });
 
     // Print the Wine host's STDOUT and STDERR streams to the log file
     async_log_pipe_lines(wine_stdout, wine_stdout_buffer, "[Wine STDOUT] ");
     async_log_pipe_lines(wine_stderr, wine_stderr_buffer, "[Wine STDERR] ");
+    wine_io_handler = std::thread([&]() { io_context.run(); });
 
     // Read the plugin's information from the Wine process. This can only be
     // done after we started accepting host callbacks as the plugin might do

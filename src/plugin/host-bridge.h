@@ -131,11 +131,6 @@ class HostBridge {
      * The thread that handles host callbacks.
      */
     std::thread host_callback_handler;
-    /**
-     * Runs the Boost.Asio `io_context` thread for logging the Wine process
-     * STDOUT and STDERR messages.
-     */
-    std::thread wine_io_handler;
 
     /**
      * The callback function passed by the host to the VST plugin instance.
@@ -153,6 +148,12 @@ class HostBridge {
      * The STDERR stream of the Wine process we can forward to the logger.
      */
     boost::process::async_pipe wine_stderr;
+    /**
+     * Runs the Boost.Asio `io_context` thread for logging the Wine process
+     * STDOUT and STDERR messages.
+     */
+    std::thread wine_io_handler;
+
     /**
      * The Wine process hosting the Windows VST plugin.
      */
