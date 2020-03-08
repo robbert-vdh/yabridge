@@ -40,8 +40,10 @@ place in your home directory. If you choose to build from source, then you can
 directly use the binaries from the `build/` directory. For the section below I'm
 going to assume you've placed the files in `~/.local/share/yabridge`.
 
-To set up yabridge for a VST plugin called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`, simply create a symlink from
-`~/.local/share/yabridge/libyabridge.so` to `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so` like so:
+To set up yabridge for a VST plugin called
+`~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`, simply create a
+symlink from `~/.local/share/yabridge/libyabridge.so` to
+`~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so` like so:
 
 ```shell
 ln -s ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
@@ -90,6 +92,33 @@ ninja -C build
 When developing or debugging yabridge you can change the build type to either
 `debug` or `debugoptimized` to enable debug symbols and optionally also disable
 optimizations.
+
+## Debugging
+
+Wine's error messages and warning are typically very helpful whenever a plugin
+doesn't work right away. Sadly this information is not always available. For
+instance Bitwig hides a plugin's STDOUT and STDERR streams from you. To make it
+easier to debug malfunctioning plugins, yabridge offers two environment
+variables:
+
+- `YABRIDGE_DEBUG_FILE=<path>` allows you to write the Wine VST host's STDOUT
+  and STDERR messages to a file. For example, you could launch your DAW with
+  `env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log <daw>`,
+  and then use `tail -F /tmp/yabridge.log` to keep track of that file. If this
+  option is not absent then yabridge will write its debug messages to STDERR
+  instead.
+- `YABRIDGE_DEBUG_LEVEL={0,1}` allows you to set the verbosity of the debug
+  information. Every level increases the verbosity of the debug information:
+
+  - A value of `0` (the default) means that yabridge will only output messages
+    from the Wine process and some basic information such as the plugin being
+    loaded and the wineprefix being used.
+  - A value of `1` will log information about all events and function calls
+    being sent between the VST host and the plugin. This can be very verbose but
+    it makes it easier to see if yabridge is handling things incorrectly.
+
+  More detailed information about these levels can be found in
+  `src/common/logging.h`.
 
 ## Rationale
 
