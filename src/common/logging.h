@@ -47,11 +47,6 @@ class Logger {
          * the plugin and the host. Every message is prefixed with a timestamp.
          */
         events = 1,
-        /**
-         * Also print information about audio buffer processing. This can be
-         * incredibly verbose and should only be used during development.
-         */
-        verbose = 2
     };
 
     /**
