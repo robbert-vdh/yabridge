@@ -16,7 +16,11 @@ There are a few things that should be done before making this public, including:
 - Forward updates from the Windows VST plugin's `AEffect` struct, if that's a
   thing.
 - Fix `processReplacing` forwarding.
-- Mention precompiled binaries and building from source in the installation section.
+- Implement GUIs.
+- Check if we need special handling for the `effGetChunk` and `effSetChunk`
+  events.
+- Mention precompiled binaries and building from source in the installation
+  section.
 - Add proper debugging support activated using an environment variable.
   - Write all stdout and stderr output from the plugin to a temporary file so it
     can be inspected when using a host such as Bitwig that hides this by
