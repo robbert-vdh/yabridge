@@ -165,11 +165,11 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     }
 
     void* data = std::visit(
-        overload{[&](std::nullptr_t) -> void* { return nullptr; },
-                 [&](std::string s) -> void* {
+        overload{[&](const std::nullptr_t&) -> void* { return nullptr; },
+                 [&](const std::string& s) -> void* {
                      return const_cast<char*>(s.c_str());
                  },
-                 [&](std::array<char, max_string_length> buffer) -> void* {
+                 [&](std::array<char, max_string_length>& buffer) -> void* {
                      return buffer.data();
                  }},
         event.payload);

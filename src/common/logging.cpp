@@ -142,12 +142,15 @@ void Logger::log_event(bool is_dispatch,
                 << ", option = " << option << ", data = ";
 
         std::visit(
-            overload{[&](std::nullptr_t) { message << "<nullptr>"; },
-                     [&](std::string s) { message << "\"" << s << "\""; },
-                     [&](std::array<char, max_string_length>) {
-                         message << "<writeable_buffer>";
-                     }},
+            overload{
+                [&](const std::nullptr_t&) { message << "<nullptr>"; },
+                [&](const std::string& s) { message << "\"" << s << "\""; },
+                [&](const std::array<char, max_string_length>&) {
+                    message << "<writeable_buffer>";
+                }},
             payload);
+
+        message << ")";
 
         log(message.str());
     }
