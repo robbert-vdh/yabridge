@@ -37,14 +37,14 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                                   response.data);
     }
     if (response.data.has_value()) {
-        char* char_data = static_cast<char*>(data);
+        char* output = static_cast<char*>(data);
 
         // For correctness we will copy the entire buffer and add a terminating
         // null byte ourselves. In practice `response.data` will only ever
         // contain C-style strings, but this would work with any other data
         // format that can contain null bytes.
-        std::copy(response.data->begin(), response.data->end(), char_data);
-        char_data[response.data->size()] = 0;
+        std::copy(response.data->begin(), response.data->end(), output);
+        output[response.data->size()] = 0;
     }
 
     return response.return_value;

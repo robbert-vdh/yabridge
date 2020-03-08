@@ -183,7 +183,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     const auto response_data =
         std::holds_alternative<std::array<char, max_string_length>>(
             event.payload)
-            ? std::make_optional(static_cast<char*>(data))
+            ? std::optional(std::string(static_cast<char*>(data)))
             : std::nullopt;
 
     if (logging.has_value()) {
