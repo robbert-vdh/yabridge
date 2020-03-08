@@ -180,7 +180,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
         }
     });
 
-    std::cout << "Finished initializing '" << plugin_dll_path << "'";
+    std::cout << "Finished initializing '" << plugin_dll_path << "'"
+              << std::endl;
 }
 
 void PluginBridge::wait() {
