@@ -125,19 +125,23 @@ inline T read_object(Socket& socket) {
  * since they follow the same format. See one of those functions for details on
  * the parameters and return value of this function.
  *
- * @param logging A pair containing a logger instance and whether or not this is
- *   for sending `dispatch()` events or host callbacks. Optional since it
- *   doesn't have to be done on both sides.
+ * @param is_dispatch whether or not this is for sending `dispatch()` events or
+ *   host callbacks. Used for the serialization of opcode specific structs in
+ *   the `dispatch()` function.
+ * @param logger A logger instance. Optional since it doesn't have to be done on
+ *   both sides. Optional references are somehow not possible in C++17 things
+ *   like `std::reference_wrapper`, so a raw pointer it is.
  *
  * @relates passthrough_event
  */
 intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
+                    bool is_dispatch,
                     int opcode,
                     int index,
                     intptr_t value,
                     void* data,
                     float option,
-                    std::optional<std::pair<Logger&, bool>> logging);
+                    Logger* logger);
 
 /**
  * Receive an event from a socket and pass it through to some callback function.
@@ -176,6 +180,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                  [&](const std::string& s) -> void* {
                      return const_cast<char*>(s.c_str());
                  },
+                 // TODO: Check if the deserialization leaks memory
                  [&](VstEvents& events) -> void* { return &events; },
                  [&](NeedsBuffer&) -> void* { return buffer.data(); }},
         event.payload);

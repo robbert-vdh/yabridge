@@ -135,6 +135,7 @@ struct Event {
                       // hence the assertion. If multiple events can be
                       // passed at once then `VstEvents` should be
                       // modified.
+                      // TODO: This is definitely not the case, somehow fix this
                       assert(events.numEvents <= 1);
                       s.container(
                           events.events, [](S& s, VstEvent*(&event_ptr)) {

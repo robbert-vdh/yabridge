@@ -167,8 +167,8 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             break;
     }
 
-    return send_event(host_vst_dispatch, opcode, index, value, data, option,
-                      std::pair<Logger&, bool>(logger, true));
+    return send_event(host_vst_dispatch, true, opcode, index, value, data,
+                      option, &logger);
 }
 
 void HostBridge::process_replacing(AEffect* /*plugin*/,
