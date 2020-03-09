@@ -87,6 +87,14 @@ class HostBridge {
      */
     AEffect plugin;
 
+    /**
+     * The VST hsot can query a plugin for arbitrary binary data such as
+     * presets. It will expect the plugin to write back a pointer that points to
+     * that data. This vector is where we store the chunk data for the last
+     * `effGetChunk` event.
+     */
+    std::vector<uint8_t> chunk_data;
+
    private:
     /**
      * Write output from an async pipe to the log on a line by line basis.

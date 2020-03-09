@@ -114,7 +114,8 @@ inline T read_object(Socket& socket) {
  * (`audioMaster()`). The `dispatch()` function will require some more specific
  * structs.
  */
-struct DefaultDataConverter {
+class DefaultDataConverter {
+   public:
     EventPayload read(const int /*opcode*/, const void* data) {
         if (data == nullptr) {
             return nullptr;

@@ -137,12 +137,18 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     plugin = read_object(vst_host_aeffect, plugin);
 }
 
-struct DispatchDataConverter : DefaultDataConverter {
+class DispatchDataConverter : DefaultDataConverter {
+   public:
+    DispatchDataConverter(std::vector<uint8_t>& chunk_data)
+        : chunk(chunk_data) {}
+
     EventPayload read(const int opcode, const void* data) {
         // There are some events that need specific structs that we can't simply
         // serialize as a string because they might contain null bytes
         // TODO: More of these structs
         switch (opcode) {
+            case effGetChunk:
+                return WantsBinaryBuffer();
             case effProcessEvents:
                 return DynamicVstEvents(*static_cast<const VstEvents*>(data));
                 break;
@@ -151,6 +157,26 @@ struct DispatchDataConverter : DefaultDataConverter {
                 break;
         }
     }
+
+    void write(const int opcode, void* data, const EventResult& response) {
+        switch (opcode) {
+            case effGetChunk:
+                // Write the chunk data to some publically accessible place in
+                // `HostBridge` and write a pointer to that struct to the data
+                // pointer
+                assert(response.data.has_value());
+                chunk.assign(response.data->begin(), response.data->end());
+
+                *static_cast<void**>(data) = chunk.data();
+                break;
+            default:
+                DefaultDataConverter::write(opcode, data, response);
+                break;
+        }
+    }
+
+   private:
+    std::vector<uint8_t>& chunk;
 };
 
 /**
@@ -183,7 +209,7 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
     }
 
     // TODO: Maybe reuse buffers here when dealing with chunk data
-    DispatchDataConverter converter;
+    DispatchDataConverter converter(chunk_data);
     return send_event(host_vst_dispatch, converter, opcode, index, value, data,
                       option, std::pair<Logger&, bool>(logger, true));
 }
