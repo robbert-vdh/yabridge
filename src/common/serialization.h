@@ -80,9 +80,9 @@ overload(Ts...)->overload<Ts...>;
  *
  * Before serialization the events are read from a C-style array into a vector
  * using this class's constructor, and after deserializing the original struct
- * can be obtained again usign the `as_c_events()` method.
+ * can be reconstructed usign the `as_c_events()` method.
  */
-class DynamicVstEvents {
+class alignas(16) DynamicVstEvents {
    public:
     DynamicVstEvents(){};
 
@@ -107,6 +107,15 @@ class DynamicVstEvents {
      * vector has been filled.
      */
     VstEvents vst_events;
+    /**
+     * The `VstEvents` struct is defined to look like it contains a one or two
+     * element array of `VstEvent` pointers. The actual truth is that the
+     * `VstEvents::event` array is actually a variable length array with length
+     * `VstEvents::numEvents`. This is probably not part of any header files
+     * because VLAs are not part of any C++ standard. This struct is here to
+     * make sure there is enough room to copy the elements into.
+     */
+    size_t dummy[max_midi_events];
 };
 
 /**

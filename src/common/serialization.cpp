@@ -16,20 +16,22 @@
 
 #include "serialization.h"
 
-#include <iostream>
-
 DynamicVstEvents::DynamicVstEvents(const VstEvents& c_events)
     : events(c_events.numEvents) {
     // Copy from the C-style array into a vector for serialization
     for (int i = 0; i < c_events.numEvents; i++) {
-        events[i] = c_events.events[0][i];
+        events[i] = *c_events.events[i];
     }
 }
 
 VstEvents& DynamicVstEvents::as_c_events() {
-    // Populate the vst_events struct with data from the vector
     vst_events.numEvents = events.size();
-    vst_events.events[0] = events.data();
+
+    // Populate the vst_events struct with data from the vector. This will
+    // overflow past the defined length of `vst_events.events` because it's
+    // actually a VLA. This is why I put some padding at the end of this struct.
+    std::transform(events.begin(), events.end(), &vst_events.events[0],
+                   [](VstEvent& event) -> VstEvent* { return &event; });
 
     return vst_events;
 }
