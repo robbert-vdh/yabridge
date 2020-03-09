@@ -33,7 +33,6 @@ include_dir = include_directories('src/include')
 shared_library(
   'yabridge',
   [
-    'src/common/communication.cpp',
     'src/common/logging.cpp',
     'src/common/serialization.cpp',
     'src/plugin/host-bridge.cpp',
@@ -48,7 +47,6 @@ shared_library(
 executable(
   'yabridge-host',
   [
-    'src/common/communication.cpp',
     'src/common/logging.cpp',
     'src/common/serialization.cpp',
     'src/wine-host/plugin-bridge.cpp',

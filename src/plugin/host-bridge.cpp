@@ -138,6 +138,22 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     plugin = read_object(vst_host_aeffect, plugin);
 }
 
+struct DispatchDataConverter : DefaultDataConverter {
+    EventPayload operator()(int opcode, void* data) {
+        // There are some events that need specific structs that we can't simply
+        // serialize as a string because they might contain null bytes
+        // TODO: More of these structs
+        switch (opcode) {
+            case effProcessEvents:
+                return DynamicVstEvents(*static_cast<VstEvents*>(data));
+                break;
+            default:
+                return DefaultDataConverter{}(opcode, data);
+                break;
+        }
+    }
+};
+
 /**
  * Handle an event sent by the VST host. Most of these opcodes will be passed
  * through to the winelib VST host.
@@ -167,8 +183,9 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             break;
     }
 
-    return send_event(host_vst_dispatch, true, opcode, index, value, data,
-                      option, &logger);
+    return send_event<DispatchDataConverter>(
+        host_vst_dispatch, opcode, index, value, data, option,
+        std::pair<Logger&, bool>(logger, true));
 }
 
 void HostBridge::process_replacing(AEffect* /*plugin*/,

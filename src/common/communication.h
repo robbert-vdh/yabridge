@@ -120,28 +120,85 @@ inline T read_object(Socket& socket) {
 }
 
 /**
+ * Encodes the base behavior for encoding the contents of the `data` argument
+ * for event dispatch functions. This is sufficient for host callbacks
+ * (`audioMaster()`). The `dispatch()` function will require some more specific
+ * structs.
+ */
+struct DefaultDataConverter {
+    EventPayload operator()(int /*opcode*/, void* data) {
+        if (data == nullptr) {
+            return nullptr;
+        }
+
+        // Assume buffers are zeroed out, this is probably not the case
+        char* c_string = static_cast<char*>(data);
+        if (c_string[0] != 0) {
+            return std::string(c_string);
+        } else {
+            return NeedsBuffer{};
+        }
+    }
+};
+
+/**
  * Serialize and send an event over a socket. This is used for both the host ->
  * plugin 'dispatch' events and the plugin -> host 'audioMaster' host callbacks
  * since they follow the same format. See one of those functions for details on
  * the parameters and return value of this function.
  *
- * @param is_dispatch whether or not this is for sending `dispatch()` events or
- *   host callbacks. Used for the serialization of opcode specific structs in
- *   the `dispatch()` function.
- * @param logger A logger instance. Optional since it doesn't have to be done on
- *   both sides. Optional references are somehow not possible in C++17 things
- *   like `std::reference_wrapper`, so a raw pointer it is.
+ * @tparam DataConverter how the `data` void pointer should be converted to a
+ *   serializable type. For host callbacks this parameter contains either a
+ *   string or a null pointer while `dispatch()` calls might contain opcode
+ *   specific structs. See the documentation for `EventPayload` for more
+ *   information. The `DefaultDataConverter` defined above handles the basic
+ *   behavior that's sufficient for hsot callbacks.
+ *
+ * @param logging A pair containing a logger instance and whether or not this is
+ *   for sending `dispatch()` events or host callbacks. Optional since it
+ *   doesn't have to be done on both sides.
  *
  * @relates passthrough_event
  */
+template <typename DataConverter>
 intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
-                    bool is_dispatch,
                     int opcode,
                     int index,
                     intptr_t value,
                     void* data,
                     float option,
-                    Logger* logger);
+                    std::optional<std::pair<Logger&, bool>> logging) {
+    // Encode the right payload type for this event. Check the documentation for
+    // `EventPayload` for more information.
+    EventPayload payload = DataConverter{}(opcode, data);
+
+    if (logging.has_value()) {
+        auto [logger, is_dispatch] = *logging;
+        logger.log_event(is_dispatch, opcode, index, value, payload, option);
+    }
+
+    const Event event{opcode, index, value, option, payload};
+    write_object(socket, event);
+
+    const auto response = read_object<EventResult>(socket);
+    if (logging.has_value()) {
+        auto [logger, is_dispatch] = *logging;
+        logger.log_event_response(is_dispatch, response.return_value,
+                                  response.data);
+    }
+    if (response.data.has_value()) {
+        char* output = static_cast<char*>(data);
+
+        // For correctness we will copy the entire buffer and add a terminating
+        // null byte ourselves. In practice `response.data` will only ever
+        // contain C-style strings, but this would work with any other data
+        // format that can contain null bytes.
+        std::copy(response.data->begin(), response.data->end(), output);
+        output[response.data->size()] = 0;
+    }
+
+    return response.return_value;
+}
 
 /**
  * Receive an event from a socket and pass it through to some callback function.
