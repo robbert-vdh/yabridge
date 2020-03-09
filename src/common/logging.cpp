@@ -164,7 +164,7 @@ void Logger::log_event(bool is_dispatch,
                 [&](const DynamicVstEvents& events) {
                     message << "<" << events.events.size() << " midi_events>";
                 },
-                [&](const WantsBinaryBuffer&) {
+                [&](const WantsChunkBuffer&) {
                     message << "<writable_buffer>";
                 },
                 [&](const WantsString&) { message << "<writable_string>"; }},

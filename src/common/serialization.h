@@ -111,11 +111,11 @@ class alignas(16) DynamicVstEvents {
 };
 
 /**
- * Marker struct to indicate that that the event needs to write arbitrary data
- * to the void pointer, with the return value indicating the amount of data
- * actually written.
+ * Marker struct to indicate that that the event writes arbitrary data into one
+ * of its own buffers and uses the void pointer to store start of that data,
+ * with the return value indicating the size of the array.
  */
-struct WantsBinaryBuffer {};
+struct WantsChunkBuffer {};
 
 /**
  * Marker struct to indicate that that the event requires some buffer to write
@@ -154,7 +154,7 @@ struct WantsString {};
 using EventPayload = std::variant<std::nullptr_t,
                                   std::string,
                                   DynamicVstEvents,
-                                  WantsBinaryBuffer,
+                                  WantsChunkBuffer,
                                   WantsString>;
 
 template <typename S>
@@ -170,7 +170,7 @@ void serialize(S& s, EventPayload& payload) {
                                            s.container1b(event.dump);
                                        });
                        },
-                       [](S&, WantsBinaryBuffer&) {}, [](S&, WantsString&) {}});
+                       [](S&, WantsChunkBuffer&) {}, [](S&, WantsString&) {}});
 }
 
 /**

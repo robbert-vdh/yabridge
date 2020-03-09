@@ -225,25 +225,18 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                          event.payload, event.option);
     }
 
-    // Some buffer for the event to write to if needed. We only pass around a
-    // marker struct to indicate that this is indeed the case.
-    std::vector<char> binary_buffer;
     std::array<char, max_string_length> string_buffer;
     void* data = std::visit(
-        overload{[&](const std::nullptr_t&) -> void* { return nullptr; },
-                 [&](const std::string& s) -> void* {
-                     return const_cast<char*>(s.c_str());
-                 },
-                 [&](DynamicVstEvents& events) -> void* {
-                     return &events.as_c_events();
-                 },
-                 [&](WantsBinaryBuffer&) -> void* {
-                     // Only allocate when we actually need this, i.e. when
-                     // we're getting a chunk from the plugin
-                     binary_buffer.resize(binary_buffer_size);
-                     return binary_buffer.data();
-                 },
-                 [&](WantsString&) -> void* { return string_buffer.data(); }},
+        overload{
+            [&](const std::nullptr_t&) -> void* { return nullptr; },
+            [&](const std::string& s) -> void* {
+                return const_cast<char*>(s.c_str());
+            },
+            [&](DynamicVstEvents& events) -> void* {
+                return &events.as_c_events();
+            },
+            [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
+            [&](WantsString&) -> void* { return string_buffer.data(); }},
         event.payload);
 
     const intptr_t return_value = callback(plugin, event.opcode, event.index,
@@ -255,10 +248,12 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     //      report some data back?
     const auto response_data = std::visit(
         overload{
-            [&](WantsBinaryBuffer&) -> std::optional<std::string> {
-                // In this case the return value from the event determines how
-                // much data the plugin has written
-                return std::string(static_cast<char*>(data), return_value);
+            [&](WantsChunkBuffer&) -> std::optional<std::string> {
+                // In this case the plugin will have written its data stored in
+                // an array to which a pointer is stored in `data`, with the
+                // return value from the event determines how much data the
+                // plugin has written
+                return std::string(*static_cast<char**>(data), return_value);
             },
             [&](WantsString&) -> std::optional<std::string> {
                 return std::string(static_cast<char*>(data));

@@ -148,7 +148,7 @@ class DispatchDataConverter : DefaultDataConverter {
         // TODO: More of these structs
         switch (opcode) {
             case effGetChunk:
-                return WantsBinaryBuffer();
+                return WantsChunkBuffer();
             case effProcessEvents:
                 return DynamicVstEvents(*static_cast<const VstEvents*>(data));
                 break;
