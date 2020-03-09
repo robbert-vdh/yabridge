@@ -28,23 +28,23 @@ template <template <typename> class TPtrManager,
           template <typename>
           class TPolymorphicContext,
           typename RTTI>
-class PointerObjectExtensionMultipleBase
+class MultiplePointerObjectExtensionBase
     : public bitsery::ext::pointer_utils::
           PointerObjectExtensionBase<TPtrManager, TPolymorphicContext, RTTI> {};
 
 template <typename RTTI>
-using PointerOwnerMultipleBase = PointerObjectExtensionMultipleBase<
+using MultiplePointerOwnerBase = MultiplePointerObjectExtensionBase<
     bitsery::ext::pointer_details::PtrOwnerManager,
     bitsery::ext::PolymorphicContext,
     RTTI>;
 
-using PointerOwnerMultiple =
-    PointerOwnerMultipleBase<bitsery::ext::StandardRTTI>;
+using MultiplePointerOwner =
+    MultiplePointerOwnerBase<bitsery::ext::StandardRTTI>;
 
 namespace bitsery {
 namespace traits {
 template <typename T, typename RTTI>
-struct ExtensionTraits<::PointerOwnerMultipleBase<RTTI>, T*> {
+struct ExtensionTraits<::MultiplePointerOwnerBase<RTTI>, T*> {
     using TValue = T;
     static constexpr bool SupportValueOverload = true;
     static constexpr bool SupportObjectOverload = true;
