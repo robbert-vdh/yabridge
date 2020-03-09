@@ -138,16 +138,16 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
 }
 
 struct DispatchDataConverter : DefaultDataConverter {
-    EventPayload operator()(int opcode, void* data) {
+    EventPayload read(const int opcode, const void* data) {
         // There are some events that need specific structs that we can't simply
         // serialize as a string because they might contain null bytes
         // TODO: More of these structs
         switch (opcode) {
             case effProcessEvents:
-                return DynamicVstEvents(*static_cast<VstEvents*>(data));
+                return DynamicVstEvents(*static_cast<const VstEvents*>(data));
                 break;
             default:
-                return DefaultDataConverter{}(opcode, data);
+                return DefaultDataConverter::read(opcode, data);
                 break;
         }
     }
@@ -183,9 +183,9 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
     }
 
     // TODO: Maybe reuse buffers here when dealing with chunk data
-    return send_event<DispatchDataConverter>(
-        host_vst_dispatch, opcode, index, value, data, option,
-        std::pair<Logger&, bool>(logger, true));
+    DispatchDataConverter converter;
+    return send_event(host_vst_dispatch, converter, opcode, index, value, data,
+                      option, std::pair<Logger&, bool>(logger, true));
 }
 
 void HostBridge::process_replacing(AEffect* /*plugin*/,

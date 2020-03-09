@@ -195,8 +195,9 @@ intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
                                      intptr_t value,
                                      void* data,
                                      float option) {
-    return send_event<DefaultDataConverter>(vst_host_callback, opcode, index,
-                                            value, data, option, std::nullopt);
+    DefaultDataConverter converter;
+    return send_event(vst_host_callback, converter, opcode, index, value, data,
+                      option, std::nullopt);
 }
 
 intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,
