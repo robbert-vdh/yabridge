@@ -182,6 +182,7 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             break;
     }
 
+    // TODO: Maybe reuse buffers here when dealing with chunk data
     return send_event<DispatchDataConverter>(
         host_vst_dispatch, opcode, index, value, data, option,
         std::pair<Logger&, bool>(logger, true));

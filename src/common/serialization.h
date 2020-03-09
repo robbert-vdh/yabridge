@@ -138,6 +138,22 @@ struct NeedsBuffer {};
 using EventPayload =
     std::variant<std::nullptr_t, std::string, DynamicVstEvents, NeedsBuffer>;
 
+template <typename S>
+void serialize(S& s, EventPayload& payload) {
+    s.ext(payload, bitsery::ext::StdVariant{
+                       [](S&, std::nullptr_t&) {},
+                       [](S& s, std::string& string) {
+                           s.text1b(string, max_string_length);
+                       },
+                       [](S& s, DynamicVstEvents& events) {
+                           s.container(events.events, max_midi_events,
+                                       [](S& s, VstEvent& event) {
+                                           s.container1b(event.dump);
+                                       });
+                       },
+                       [](S&, NeedsBuffer&) {}});
+}
+
 /**
  * An event as dispatched by the VST host. These events will get forwarded to
  * the VST host process running under Wine. The fields here mirror those
@@ -173,20 +189,7 @@ struct Event {
         s.value8b(value);
         s.value4b(option);
 
-        // I couldn't get this serializer to work seperately without
-        // `EventPayload` in a struct
-        s.ext(payload, bitsery::ext::StdVariant{
-                           [](S&, std::nullptr_t&) {},
-                           [](S& s, std::string& string) {
-                               s.text1b(string, max_string_length);
-                           },
-                           [](S& s, DynamicVstEvents& events) {
-                               s.container(events.events, max_midi_events,
-                                           [](S& s, VstEvent& event) {
-                                               s.container1b(event.dump);
-                                           });
-                           },
-                           [](S&, NeedsBuffer&) {}});
+        s.object(payload);
     }
 };
 
