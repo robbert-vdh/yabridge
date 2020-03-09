@@ -30,46 +30,35 @@
 #include "logging.h"
 #include "serialization.h"
 
-// I don't want to editor 'include/vestige/aeffectx.h`. That's why this type
-// trait and the above serialization function are here.` Clang complains that
-// `buffer` should be qualified (and only in some cases), so `buffer_t` it is.
-template <typename T>
-struct buffer_t {
-    using type = typename T::buffer_type;
-};
+template <typename B>
+using OutputAdapter = bitsery::OutputBufferAdapter<B>;
 
-template <>
-struct buffer_t<AEffect> {
-    using type = ArrayBuffer<128>;
-};
+template <typename B>
+using InputAdapter = bitsery::InputBufferAdapter<B>;
 
 /**
  * Serialize an object using bitsery and write it to a socket.
  *
  * @param socket The Boost.Asio socket to write to.
  * @param object The object to write to the stream.
- * @param buffer The buffer to write to. Only needed for when sending audio
- *   because their buffers might be quite large.
+ * @param buffer The buffer to write to. This is useful for sending audio and
+ *   chunk data since that can vary in size by a lot.
  *
  * @relates read_object
  */
 template <typename T, typename Socket>
-inline void write_object(Socket& socket,
-                         const T& object,
-                         typename buffer_t<T>::type& buffer) {
-    bitsery::ext::PointerLinkingContext serializer_context{};
-    auto length =
-        bitsery::quickSerialization<bitsery::ext::PointerLinkingContext,
-                                    OutputAdapter<typename buffer_t<T>::type>>(
-            serializer_context, buffer, object);
+inline void write_object(
+    Socket& socket,
+    const T& object,
+    std::vector<uint8_t> buffer = std::vector<uint8_t>(64)) {
+    const size_t size =
+        bitsery::quickSerialization<OutputAdapter<std::vector<uint8_t>>>(
+            buffer, object);
 
-    socket.send(boost::asio::buffer(buffer, length));
-}
-
-template <typename T, typename Socket>
-inline void write_object(Socket& socket, const T& object) {
-    typename buffer_t<T>::type buffer;
-    write_object(socket, object, buffer);
+    // Tell the other side how large the object is so it can prepare a buffer
+    // large enough before sending the data
+    socket.send(boost::asio::buffer(std::array<size_t, 1>{size}));
+    socket.send(boost::asio::buffer(buffer, size));
 }
 
 /**
@@ -80,8 +69,8 @@ inline void write_object(Socket& socket, const T& object) {
  * @param object The object to deserialize to, if given. This can be used to
  *   update an existing `AEffect` struct without losing the pointers set by the
  *   host and the bridge.
- * @param buffer The buffer to write to. Only needed for when sending audio
- *   because their buffers might be quite large.
+ * @param buffer The buffer to read into. This is useful for sending audio and
+ *   chunk data since that can vary in size by a lot.
  *
  * @throw std::runtime_error If the conversion to an object was not successful.
  *
@@ -90,27 +79,27 @@ inline void write_object(Socket& socket, const T& object) {
 template <typename T, typename Socket>
 inline T& read_object(Socket& socket,
                       T& object,
-                      typename buffer_t<T>::type& buffer) {
-    auto message_length = socket.receive(boost::asio::buffer(buffer));
+                      std::vector<uint8_t> buffer = std::vector<uint8_t>(64)) {
+    std::array<size_t, 1> message_length;
+    socket.receive(boost::asio::buffer(message_length));
 
-    bitsery::ext::PointerLinkingContext serializer_context{};
+    // Make sure the buffer is large enough
+    const size_t size = message_length[0];
+    buffer.resize(size);
+
+    const auto actual_size = socket.receive(boost::asio::buffer(buffer));
+    assert(size == actual_size);
+
     auto [_, success] =
-        bitsery::quickDeserialization<bitsery::ext::PointerLinkingContext,
-                                      InputAdapter<typename buffer_t<T>::type>>(
-            serializer_context, {buffer.begin(), message_length}, object);
+        bitsery::quickDeserialization<InputAdapter<std::vector<uint8_t>>>(
+            {buffer.begin(), size}, object);
 
-    if (!success) {
+    if (BOOST_UNLIKELY(!success)) {
         throw std::runtime_error("Deserialization failure in call:" +
                                  std::string(__PRETTY_FUNCTION__));
     }
 
     return object;
-}
-
-template <typename T, typename Socket>
-inline T& read_object(Socket& socket, T& object) {
-    typename buffer_t<T>::type buffer;
-    return read_object(socket, object, buffer);
 }
 
 template <typename T, typename Socket>

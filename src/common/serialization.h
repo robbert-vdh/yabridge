@@ -50,19 +50,6 @@ constexpr size_t max_midi_events = 32;
  */
 constexpr size_t max_string_length = 64;
 
-/**
- * A simple constant sized buffer for smaller types that can be allocated on the
- * stack.
- */
-template <std::size_t N>
-using ArrayBuffer = std::array<uint8_t, N>;
-
-template <typename B>
-using OutputAdapter = bitsery::OutputBufferAdapter<B>;
-
-template <typename B>
-using InputAdapter = bitsery::InputBufferAdapter<B>;
-
 // The cannonical overloading template for `std::visitor`, not sure why this
 // isn't part of the standard library
 template <class... Ts>
@@ -157,15 +144,6 @@ using EventPayload =
  * arguments sent to the `AEffect::dispatch` function.
  */
 struct Event {
-    // TODO: Possibly use a vector here sicne we can't know the maximum size for
-    //       certain
-    using buffer_type = ArrayBuffer<sizeof(VstMidiEvent) * max_midi_events>;
-
-    // Ensure that the buffer can be aligned correctly and that strings will fit
-    static_assert(std::tuple_size<buffer_type>::value % 16 == 0);
-    static_assert(std::tuple_size<buffer_type>::value >=
-                  max_string_length + 32);
-
     int opcode;
     int index;
     // TODO: This is an intptr_t, if we want to support 32 bit Wine plugins all
@@ -216,8 +194,6 @@ struct Event {
  * AN instance of this should be sent back as a response to an incoming event.
  */
 struct EventResult {
-    using buffer_type = ArrayBuffer<max_string_length + 32>;
-
     /**
      * The result that should be returned from the dispatch function.
      */
@@ -241,8 +217,6 @@ struct EventResult {
  * whether `value` contains a value or not.
  */
 struct Parameter {
-    using buffer_type = ArrayBuffer<16>;
-
     int index;
     std::optional<float> value;
 
@@ -260,8 +234,6 @@ struct Parameter {
  * from the Wine VST host.
  */
 struct ParameterResult {
-    using buffer_type = ArrayBuffer<16>;
-
     std::optional<float> value;
 
     template <typename S>
@@ -276,12 +248,6 @@ struct ParameterResult {
  * processing. The number of samples is encoded in each audio buffer's length.
  */
 struct AudioBuffers {
-    // When sending data we could use a vector of the right size, but when
-    // receiving data we don't know how large this vector should be in advance
-    // (or without sending the message length first)
-    using buffer_type =
-        ArrayBuffer<max_audio_channels * max_buffer_size * sizeof(float) + 16>;
-
     /**
      * An audio buffer for each of the plugin's audio channels.
      */

@@ -61,8 +61,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       vst_host_callback(io_context),
       host_vst_parameters(io_context),
       host_vst_process_replacing(io_context),
-      vst_host_aeffect(io_context),
-      process_buffer(std::make_unique<AudioBuffers::buffer_type>()) {
+      vst_host_aeffect(io_context) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
         throw std::runtime_error("Could not load a shared library at '" +
@@ -154,7 +153,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
         while (true) {
             AudioBuffers request;
             request = read_object(host_vst_process_replacing, request,
-                                  *process_buffer);
+                                  process_buffer);
 
             // TODO: Check if the plugin doesn't support `processReplacing` and
             //       call the legacy `process` function instead
@@ -176,7 +175,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
                             request.sample_frames);
 
             AudioBuffers response{output_buffers, request.sample_frames};
-            write_object(host_vst_process_replacing, response, *process_buffer);
+            write_object(host_vst_process_replacing, response, process_buffer);
         }
     });
 

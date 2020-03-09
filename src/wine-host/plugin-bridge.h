@@ -115,5 +115,5 @@ class PluginBridge {
      * A scratch buffer for sending and receiving data during `process` and
      * `processReplacing` calls.
      */
-    std::unique_ptr<AudioBuffers::buffer_type> process_buffer;
+    std::vector<uint8_t> process_buffer;
 };

@@ -90,8 +90,7 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
                socket_endpoint.path(),
                bp::env = set_wineprefix(),
                bp::std_out = wine_stdout,
-               bp::std_err = wine_stderr),
-      process_buffer(std::make_unique<AudioBuffers::buffer_type>()) {
+               bp::std_err = wine_stderr) {
     logger.log("Initializing yabridge using '" + vst_host_path.string() + "'");
     logger.log("plugin:     '" + vst_plugin_path.string() + "'");
     logger.log("wineprefix: '" +
@@ -202,12 +201,12 @@ void HostBridge::process_replacing(AEffect* /*plugin*/,
     }
 
     const AudioBuffers request{input_buffers, sample_frames};
-    write_object(host_vst_process_replacing, request, *process_buffer);
+    write_object(host_vst_process_replacing, request, process_buffer);
 
     // /Write the results back to the `outputs` arrays
     AudioBuffers response;
     response =
-        read_object(host_vst_process_replacing, response, *process_buffer);
+        read_object(host_vst_process_replacing, response, process_buffer);
 
     // TODO: Doesn't quite work yet, not sure which side is causing problems
     assert(response.buffers.size() == static_cast<size_t>(plugin.numOutputs));
