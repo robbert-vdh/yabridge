@@ -24,27 +24,37 @@
 
 // TODO: Implement
 
+namespace bitsery {
+namespace ext {
 template <template <typename> class TPtrManager,
           template <typename>
           class TPolymorphicContext,
           typename RTTI>
 class MultiplePointerObjectExtensionBase
-    : public bitsery::ext::pointer_utils::
-          PointerObjectExtensionBase<TPtrManager, TPolymorphicContext, RTTI> {};
+    : public pointer_utils::
+          PointerObjectExtensionBase<TPtrManager, TPolymorphicContext, RTTI> {
+    // explicit PointerObjectExtensionBase(
+    //     PointerType ptrType = PointerType::Nullable,
+    //     MemResourceBase* resource = nullptr,
+    //     bool resourcePropagate = false)
+    //     : _ptrType{ptrType},
+    //       _resourcePropagate{resourcePropagate},
+    //       _resource{resource} {}
+};
 
 template <typename RTTI>
-using MultiplePointerOwnerBase = MultiplePointerObjectExtensionBase<
-    bitsery::ext::pointer_details::PtrOwnerManager,
-    bitsery::ext::PolymorphicContext,
-    RTTI>;
+using MultiplePointerOwnerBase =
+    MultiplePointerObjectExtensionBase<pointer_details::PtrOwnerManager,
+                                       PolymorphicContext,
+                                       RTTI>;
 
-using MultiplePointerOwner =
-    MultiplePointerOwnerBase<bitsery::ext::StandardRTTI>;
+using MultiplePointerOwner = MultiplePointerOwnerBase<StandardRTTI>;
 
-namespace bitsery {
+}  // namespace ext
+
 namespace traits {
 template <typename T, typename RTTI>
-struct ExtensionTraits<::MultiplePointerOwnerBase<RTTI>, T*> {
+struct ExtensionTraits<ext::MultiplePointerOwnerBase<RTTI>, T*> {
     using TValue = T;
     static constexpr bool SupportValueOverload = true;
     static constexpr bool SupportObjectOverload = true;
