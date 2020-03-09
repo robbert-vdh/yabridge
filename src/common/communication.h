@@ -125,7 +125,7 @@ struct DefaultDataConverter {
         if (c_string[0] != 0) {
             return std::string(c_string);
         } else {
-            return NeedsBuffer{};
+            return WantsString{};
         }
     }
 };
@@ -220,29 +220,44 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
 
     // Some buffer for the event to write to if needed. We only pass around a
     // marker struct to indicate that this is indeed the case.
-    std::array<char, max_string_length> buffer;
+    std::vector<char> binary_buffer;
+    std::array<char, max_string_length> string_buffer;
     void* data = std::visit(
         overload{[&](const std::nullptr_t&) -> void* { return nullptr; },
                  [&](const std::string& s) -> void* {
                      return const_cast<char*>(s.c_str());
                  },
-                 // TODO: Check if the deserialization leaks memory
                  [&](DynamicVstEvents& events) -> void* {
                      return &events.as_c_events();
                  },
-                 [&](NeedsBuffer&) -> void* { return buffer.data(); }},
+                 [&](WantsBinaryBuffer&) -> void* {
+                     // Only allocate when we actually need this, i.e. when
+                     // we're getting a chunk from the plugin
+                     binary_buffer.resize(binary_buffer_size);
+                     return binary_buffer.data();
+                 },
+                 [&](WantsString&) -> void* { return string_buffer.data(); }},
         event.payload);
+
     const intptr_t return_value = callback(plugin, event.opcode, event.index,
                                            event.value, data, event.option);
 
-    // Only write back data for empty buffers
+    // Only write back data when needed, this depends on the event payload type
     // XXX: Is it possbile here that we got passed a non empty buffer (i.e.
     //      because it was not zeroed out by the host) for an event that should
     //      report some data back?
-    const auto response_data =
-        std::holds_alternative<NeedsBuffer>(event.payload)
-            ? std::optional(std::string(static_cast<char*>(data)))
-            : std::nullopt;
+    const auto response_data = std::visit(
+        overload{
+            [&](WantsBinaryBuffer&) -> std::optional<std::string> {
+                // In this case the return value from the event determines how
+                // much data the plugin has written
+                return std::string(static_cast<char*>(data), return_value);
+            },
+            [&](WantsString&) -> std::optional<std::string> {
+                return std::string(static_cast<char*>(data));
+            },
+            [&](auto) -> std::optional<std::string> { return std::nullopt; }},
+        event.payload);
 
     if (logging.has_value()) {
         auto [logger, is_dispatch] = *logging;

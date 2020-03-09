@@ -50,6 +50,11 @@ constexpr size_t max_midi_events = 32;
  */
 constexpr size_t max_string_length = 64;
 
+/**
+ * The size for a buffer in which we're receiving chunks.
+ */
+constexpr size_t binary_buffer_size = 2 << 20;
+
 // The cannonical overloading template for `std::visitor`, not sure why this
 // isn't part of the standard library
 template <class... Ts>
@@ -106,11 +111,17 @@ class alignas(16) DynamicVstEvents {
 };
 
 /**
- * Marker struct to indicate that that the event requires some buffer to write
- * its results into. This is to prevent us from having to unnecessarily sending
- * around empty arrays.
+ * Marker struct to indicate that that the event needs to write arbitrary data
+ * to the void pointer, with the return value indicating the amount of data
+ * actually written.
  */
-struct NeedsBuffer {};
+struct WantsBinaryBuffer {};
+
+/**
+ * Marker struct to indicate that that the event requires some buffer to write
+ * a C-string into.
+ */
+struct WantsString {};
 
 /**
  * VST events are passed a void pointer that can contain a variety of different
@@ -132,11 +143,19 @@ struct NeedsBuffer {};
  *   TODO: A lot of these are still missing
  *
  * - Some empty buffer for the plugin to write its own data to, for instance for
- *   a plugin to report its name or the label for a certain parameter. We'll
- *   assume that this is the default if none of the above options apply.
+ *   a plugin to report its name or the label for a certain parameter. There are
+ *   two separate cases here:
+ *
+ *   - Either the plugin writes arbitrary data and uses its return value to
+ *     indicate how much data was written (i.e. for the `effGetChunk` opcode).
+ *   - Or the plugin will write a short null terminated C-string there. We'll
+ *     assume that this is the default if none of the above options apply.
  */
-using EventPayload =
-    std::variant<std::nullptr_t, std::string, DynamicVstEvents, NeedsBuffer>;
+using EventPayload = std::variant<std::nullptr_t,
+                                  std::string,
+                                  DynamicVstEvents,
+                                  WantsBinaryBuffer,
+                                  WantsString>;
 
 template <typename S>
 void serialize(S& s, EventPayload& payload) {
@@ -151,7 +170,7 @@ void serialize(S& s, EventPayload& payload) {
                                            s.container1b(event.dump);
                                        });
                        },
-                       [](S&, NeedsBuffer&) {}});
+                       [](S&, WantsBinaryBuffer&) {}, [](S&, WantsString&) {}});
 }
 
 /**
@@ -210,8 +229,10 @@ struct EventResult {
     template <typename S>
     void serialize(S& s) {
         s.value8b(return_value);
+        // `max_chunk_buffer_size` and not `max_string_length` because we also
+        // use this to send back large chunk data
         s.ext(data, bitsery::ext::StdOptional(),
-              [](S& s, auto& v) { s.text1b(v, max_string_length); });
+              [](S& s, auto& v) { s.text1b(v, binary_buffer_size); });
     }
 };
 
