@@ -25,7 +25,6 @@
 
 #include <variant>
 
-#include "bitsery.h"
 
 /**
  * The maximum number of audio channels supported.
