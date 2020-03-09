@@ -181,7 +181,9 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                      return const_cast<char*>(s.c_str());
                  },
                  // TODO: Check if the deserialization leaks memory
-                 [&](VstEvents& events) -> void* { return &events; },
+                 [&](DynamicVstEvents& events) -> void* {
+                     return &events.as_c_events();
+                 },
                  [&](NeedsBuffer&) -> void* { return buffer.data(); }},
         event.payload);
     const intptr_t return_value = callback(plugin, event.opcode, event.index,

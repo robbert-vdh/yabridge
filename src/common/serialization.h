@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#pragma once
+
 #include <bitsery/adapter/buffer.h>
 #include <bitsery/ext/pointer.h>
 #include <bitsery/ext/std_optional.h>
@@ -25,6 +27,7 @@
 
 #include <variant>
 
+// These constants are limits used by bitsery
 
 /**
  * The maximum number of audio channels supported.
@@ -34,6 +37,12 @@ constexpr size_t max_audio_channels = 32;
  * The maximum number of samples in a buffer.
  */
 constexpr size_t max_buffer_size = 16384;
+/**
+ * The maximum number of midi events in a single `VstEvents` struct.
+ *
+ * TODO: Can this go higher?
+ */
+constexpr size_t max_midi_events = 32;
 /**
  * The maximum size in bytes of a string or buffer passed through a void pointer
  * in one of the dispatch functions. This is used to create buffers for plugins
@@ -62,6 +71,43 @@ struct overload : Ts... {
 };
 template <class... Ts>
 overload(Ts...)->overload<Ts...>;
+
+/**
+ * A wrapper around `VstEvents` that stores the data in a vector instead of a
+ * C-style array. Needed until bitsery supports C-style arrays
+ * https://github.com/fraillt/bitsery/issues/28. An advantage of this approach
+ * is that RAII will handle cleanup for us.
+ *
+ * Before serialization the events are read from a C-style array into a vector
+ * using this class's constructor, and after deserializing the original struct
+ * can be obtained again usign the `as_c_events()` method.
+ */
+class DynamicVstEvents {
+   public:
+    DynamicVstEvents(){};
+
+    explicit DynamicVstEvents(const VstEvents& c_events);
+
+    /**
+     * Construct a `VstEvents` struct from the events vector. This contains a
+     * pointer to that vector's elements, so the returned object should not
+     * outlive this struct.
+     */
+    VstEvents& as_c_events();
+
+    // XXX: The original `VstEvents` stuct hasonly one C-style array of
+    //      `VstEvent`s, but I've seen some implementation that have two. Is
+    //      this only for alignment or does this have an actual use?
+    std::vector<VstEvent> events;
+
+   private:
+    /**
+     * A `VstEvents` struct based on the `events` vector. Use the
+     * `as_c_events()` method to populate and return this after the `events`
+     * vector has been filled.
+     */
+    VstEvents vst_events;
+};
 
 /**
  * Marker struct to indicate that that the event requires some buffer to write
@@ -94,7 +140,7 @@ struct NeedsBuffer {};
  *   assume that this is the default if none of the above options apply.
  */
 using EventPayload =
-    std::variant<std::nullptr_t, std::string, VstEvents, NeedsBuffer>;
+    std::variant<std::nullptr_t, std::string, DynamicVstEvents, NeedsBuffer>;
 
 /**
  * An event as dispatched by the VST host. These events will get forwarded to
@@ -102,8 +148,14 @@ using EventPayload =
  * arguments sent to the `AEffect::dispatch` function.
  */
 struct Event {
-    // TODO: Possibly update to account for VstEvents
-    using buffer_type = ArrayBuffer<max_string_length + 32>;
+    // TODO: Possibly use a vector here sicne we can't know the maximum size for
+    //       certain
+    using buffer_type = ArrayBuffer<sizeof(VstMidiEvent) * max_midi_events>;
+
+    // Ensure that the buffer can be aligned correctly and that strings will fit
+    static_assert(std::tuple_size<buffer_type>::value % 16 == 0);
+    static_assert(std::tuple_size<buffer_type>::value >=
+                  max_string_length + 32);
 
     int opcode;
     int index;
@@ -136,31 +188,18 @@ struct Event {
 
         // I couldn't get this serializer to work seperately without
         // `EventPayload` in a struct
-        s.ext(payload,
-              bitsery::ext::StdVariant{
-                  [](S&, std::nullptr_t&) {},
-                  [](S& s, std::string& string) {
-                      s.text1b(string, max_string_length);
-                  },
-                  [](S& s, VstEvents& events) {
-                      s.value4b(events.numEvents);
-
-                      // This will only ever read a single event since
-                      // that's how the `VstEvents` struct is defined,
-                      // hence the assertion. If multiple events can be
-                      // passed at once then `VstEvents` should be
-                      // modified.
-                      // TODO: This is definitely not the case, somehow fix this
-                      assert(events.numEvents <= 1);
-                      s.container(
-                          events.events, [](S& s, VstEvent*(&event_ptr)) {
-                              s.ext(event_ptr, bitsery::ext::PointerOwner(),
-                                    [](S& s, VstEvent& event) {
-                                        s.container1b(event.dump);
-                                    });
-                          });
-                  },
-                  [](S&, NeedsBuffer&) {}});
+        s.ext(payload, bitsery::ext::StdVariant{
+                           [](S&, std::nullptr_t&) {},
+                           [](S& s, std::string& string) {
+                               s.text1b(string, max_string_length);
+                           },
+                           [](S& s, DynamicVstEvents& events) {
+                               s.container(events.events, max_midi_events,
+                                           [](S& s, VstEvent& event) {
+                                               s.container1b(event.dump);
+                                           });
+                           },
+                           [](S&, NeedsBuffer&) {}});
     }
 };
 

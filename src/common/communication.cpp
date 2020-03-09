@@ -31,7 +31,8 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
         // There are some events that need specific structs that we can't simply
         // serialize as a string because they might contain null bytes
         if (is_dispatch && opcode == effProcessEvents) {
-            payload = *static_cast<VstEvents*>(data);
+            // Move the elements into a vector for easier serialization
+            payload = DynamicVstEvents(*static_cast<VstEvents*>(data));
         } else {
             // TODO: More of these structs
 

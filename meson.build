@@ -35,6 +35,7 @@ shared_library(
   [
     'src/common/communication.cpp',
     'src/common/logging.cpp',
+    'src/common/serialization.cpp',
     'src/plugin/host-bridge.cpp',
     'src/plugin/plugin.cpp',
   ],
@@ -49,6 +50,7 @@ executable(
   [
     'src/common/communication.cpp',
     'src/common/logging.cpp',
+    'src/common/serialization.cpp',
     'src/wine-host/plugin-bridge.cpp',
     'src/wine-host/vst-host.cpp',
   ],
