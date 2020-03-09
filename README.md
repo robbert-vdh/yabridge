@@ -17,6 +17,13 @@ There are a few things that should be done before making this public, including:
   thing.
 - Fix `processReplacing` forwarding.
 - Implement GUIs.
+- Chunks. For `effSetChunk` we can now just use the strings. For `effGetChunk`
+  we need to find a clean way to 1. make the returned string exactly `n` bytes
+  long, where `n` is the value returned by the VST plugin's `dispatch()`
+  function (could be an option for `WritableBuffer`), and 2. store the returned
+  data in a `std::vector<uint8_t>` on the `HostBridge` struct and write back a
+  pointer to that instead. That might involve extending `DefaultDataConverter`
+  to also handle writing back values.
 - Check if we need special handling for the `effGetChunk` and `effSetChunk`
   events.
 - Mention precompiled binaries and building from source in the installation
