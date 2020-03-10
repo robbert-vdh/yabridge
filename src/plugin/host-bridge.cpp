@@ -93,6 +93,7 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
                bp::std_err = wine_stderr) {
     logger.log("Initializing yabridge using '" + vst_host_path.string() + "'");
     logger.log("plugin:     '" + vst_plugin_path.string() + "'");
+    logger.log("socket:     '" + socket_endpoint.path() + "'");
     logger.log("wineprefix: '" +
                find_wineprefix().value_or("<default>").string() + "'");
 
@@ -142,7 +143,9 @@ class DispatchDataConverter : DefaultDataConverter {
     DispatchDataConverter(std::vector<uint8_t>& chunk_data)
         : chunk(chunk_data) {}
 
-    std::optional<EventPayload> read(const int opcode, const intptr_t value, const void* data) {
+    std::optional<EventPayload> read(const int opcode,
+                                     const intptr_t value,
+                                     const void* data) {
         // There are some events that need specific structs that we can't simply
         // serialize as a string because they might contain null bytes
         // TODO: More of these structs
