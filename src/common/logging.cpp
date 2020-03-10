@@ -160,7 +160,15 @@ void Logger::log_event(bool is_dispatch,
         std::visit(
             overload{
                 [&](const std::nullptr_t&) { message << "<nullptr>"; },
-                [&](const std::string& s) { message << "\"" << s << "\""; },
+                [&](const std::string& s) {
+                    if (s.size() < 32) {
+                        message << "\"" << s << "\"";
+                    } else {
+                        // Long strings contain binary data that we probably
+                        // don't want to print
+                        message << "<" << s.size() << " bytes>";
+                    }
+                },
                 [&](const DynamicVstEvents& events) {
                     message << "<" << events.events.size() << " midi_events>";
                 },
