@@ -119,16 +119,31 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     // lockstep anyway
     host_callback_handler = std::thread([&]() {
         while (true) {
-            passthrough_event(vst_host_callback, &plugin,
-                              host_callback_function,
-                              std::pair<Logger&, bool>(logger, false));
+            try {
+                passthrough_event(vst_host_callback, &plugin,
+                                  host_callback_function,
+                                  std::pair<Logger&, bool>(logger, false));
+            } catch (const boost::system::system_error&) {
+                // TODO: This raises SIBABRT if not caught, fix similar issues
+                //       in the Wine VST host
+                // This happens when the sockets got closed because the plugin
+                // is being shut down
+                break;
+            }
         }
     });
 
     // Print the Wine host's STDOUT and STDERR streams to the log file
     async_log_pipe_lines(wine_stdout, wine_stdout_buffer, "[Wine STDOUT] ");
     async_log_pipe_lines(wine_stderr, wine_stderr_buffer, "[Wine STDERR] ");
-    wine_io_handler = std::thread([&]() { io_context.run(); });
+    wine_io_handler = std::thread([&]() {
+        try {
+            io_context.run();
+        } catch (const boost::system::system_error&) {
+            // This happens when the sockets got closed because the plugin is
+            // being shut down
+        }
+    });
 
     // Read the plugin's information from the Wine process. This can only be
     // done after we started accepting host callbacks as the plugin might do
@@ -210,20 +225,26 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
 
             // Allow the plugin to handle its own shutdown
             // TODO: Seems to cause segfaults in the Wine process, but doesn't
-            // seem to
-            //       cause noticable problems
-            send_event(host_vst_dispatch, converter, opcode, index, value, data,
-                       option, std::pair<Logger&, bool>(logger, true));
+            //       seem to cause noticable problems
+            const auto return_value = send_event(
+                host_vst_dispatch, converter, opcode, index, value, data,
+                option, std::pair<Logger&, bool>(logger, true));
 
             // XXX: Boost.Process will send SIGKILL to the process for us, is
             //      there a way to manually send a SIGTERM signal instead?
 
-            // The VST API does not have an explicit function for releasing
-            // resources, so we'll have to do it here. The actual plugin
-            // instance gets freed by the host, or at least I think it does.
+            // `std::thread`s are not interruptable, and since we're doing
+            // blocking synchronous reads there's no way to interrupt them. If
+            // we don't detach them then the runtime will call `std::terminate`
+            // for us. The workaround here is to simply detach the threads and
+            // then close all sockets. This will cause them to throw exceptions
+            // which we then catch and ignore. Please let me know if there's a
+            // better way to handle this.q
+            host_callback_handler.detach();
+            wine_io_handler.detach();
             delete this;
 
-            return 0;
+            return return_value;
             break;
     }
 
