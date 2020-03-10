@@ -162,9 +162,9 @@ follows:
 3. The plugin then sets up a Unix domain socket endpoint to communicate with the
    Wine VST host somewhere in a temporary directory. I chose to use Unix domain
    sockets rather than shared memory to avoid having to do manual
-   synchronization and because they have very low overhead. Since the Wine VST
-   host can't access the Linux VST host's memory we would have to copy audio
-   buffers in either case.
+   synchronization and because they have very low overhead. This also makes it
+   possible to send arbitrarily large data without having to split it into
+   chunks first, which is useful for transmitting audio and preset data.
 4. The plugin launches the Wine VST host in the detected wine prefix, passing
    the name of the `.dll` file it should be loading and the path to the Unix
    domain socket that was just created.
