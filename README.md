@@ -6,29 +6,14 @@ Yet Another way to use Windows VST2 plugins in Linux VST hosts.
 
 There are a few things that should be done before making this public, including:
 
-- Document and improve the installation and updating procedure.
-- Finish documenting the project setup and the way communication works. In
-  particular we're missing the wait void pointers in the event dispatchers are
-  handled and how the AEffect struct gets synchronized. I should probably also
-  rewrite some parts of it to make it clearer.
+- Implement missing features:
+  - GUIs.
+  - `AEffect` updates, if that's a thing.
+  - Fix `processReplacing` forwarding. The forwarding works, but plugins don't
+    write any audio.
+- Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
-- Forward updates from the Windows VST plugin's `AEffect` struct, if that's a
-  thing.
-- Fix `processReplacing` forwarding.
-- Implement GUIs.
-- The `audioMasterUpdateDisplay` and `audioMasterWantMidi` hsot callbacks
-  sometimes cause Carla to crash, but other times they do not. Not really sure
-  what the pattern here is.
-- Check if we need special handling for the `effGetChunk` and `effSetChunk`
-  events.
-- Mention precompiled binaries and building from source in the installation
-  section.
-- Add proper debugging support activated using an environment variable.
-  - Write all stdout and stderr output from the plugin to a temporary file so it
-    can be inspected when using a host such as Bitwig that hides this by
-    default.
-  - Catch exceptions during initialization and print them to stderr.
 
 ## Usage
 
