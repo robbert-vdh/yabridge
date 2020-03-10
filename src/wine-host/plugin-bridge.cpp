@@ -171,8 +171,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
                 outputs.push_back(buffer.data());
             }
 
-            plugin->process(plugin, inputs.data(), outputs.data(),
-                            request.sample_frames);
+            plugin->processReplacing(plugin, inputs.data(), outputs.data(),
+                                     request.sample_frames);
 
             AudioBuffers response{output_buffers, request.sample_frames};
             write_object(host_vst_process_replacing, response, process_buffer);
