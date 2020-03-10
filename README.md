@@ -17,6 +17,9 @@ There are a few things that should be done before making this public, including:
   thing.
 - Fix `processReplacing` forwarding.
 - Implement GUIs.
+- The `audioMasterUpdateDisplay` and `audioMasterWantMidi` hsot callbacks
+  sometimes cause Carla to crash, but other times they do not. Not really sure
+  what the pattern here is.
 - Check if we need special handling for the `effGetChunk` and `effSetChunk`
   events.
 - Mention precompiled binaries and building from source in the installation
