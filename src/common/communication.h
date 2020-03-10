@@ -110,15 +110,27 @@ inline T read_object(Socket& socket) {
 
 /**
  * Encodes the base behavior for reading from and writing to the `data` argument
- * for event dispatch functions. This is sufficient for host callbacks
- * (`audioMaster()`). The `dispatch()` function will require some more specific
+ * for event dispatch functions. This provides base functionality for these
+ * kinds of events. The `dispatch()` function will require some more specific
  * structs.
  */
 class DefaultDataConverter {
    public:
-    virtual ~DefaultDataConverter() {};
+    virtual ~DefaultDataConverter(){};
 
-    virtual EventPayload read(const int /*opcode*/, const intptr_t /*value*/, const void* data) {
+    /**
+     * Read data from the `data` void pointer into a an `EventPayload` value
+     * that can be serialized and conveys the meaning of the event.
+     *
+     * If this returns a nullopt, then the event won't be performed at all. Some
+     * plugins perform `audioMasterUpdateDisplay` host callbacks and apparently
+     * some hosts just outright crash when they receive these functions, so they
+     * have to be filtered out. Please let me know if there's some way to detect
+     * whether the host supports these callbacks before sending them!
+     */
+    virtual std::optional<EventPayload> read(const int /*opcode*/,
+                                             const intptr_t /*value*/,
+                                             const void* data) {
         if (data == nullptr) {
             return nullptr;
         }
@@ -132,7 +144,9 @@ class DefaultDataConverter {
         }
     }
 
-    virtual void write(const int /*opcode*/, void* data, const EventResult& response) {
+    virtual void write(const int /*opcode*/,
+                       void* data,
+                       const EventResult& response) {
         if (response.data.has_value()) {
             char* output = static_cast<char*>(data);
 
@@ -174,21 +188,28 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                     float option,
                     std::optional<std::pair<Logger&, bool>> logging) {
     // Encode the right payload type for this event. Check the documentation for
-    // `EventPayload` for more information.
-    const EventPayload payload = data_converter.read(opcode, value, data);
-
-    if (logging.has_value()) {
-        auto [logger, is_dispatch] = *logging;
-        logger.log_event(is_dispatch, opcode, index, value, payload, option);
+    // `EventPayload` for more information. We have to skip some opcodes because
+    // some VST hsots will outright crash if they receive them, please let me
+    // know if there's a better way to do this.
+    const std::optional<EventPayload> payload =
+        data_converter.read(opcode, value, data);
+    if (!payload.has_value()) {
+        return 1;
     }
 
-    const Event event{opcode, index, value, option, payload};
+    if (logging.has_value()) {
+        auto [logger, is_dispatch] = logging.value();
+        logger.log_event(is_dispatch, opcode, index, value, payload.value(),
+                         option);
+    }
+
+    const Event event{opcode, index, value, option, payload.value()};
     write_object(socket, event);
 
     const auto response = read_object<EventResult>(socket);
 
     if (logging.has_value()) {
-        auto [logger, is_dispatch] = *logging;
+        auto [logger, is_dispatch] = logging.value();
         logger.log_event_response(is_dispatch, response.return_value,
                                   response.data);
     }
@@ -222,7 +243,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                        std::optional<std::pair<Logger&, bool>> logging) {
     auto event = read_object<Event>(socket);
     if (logging.has_value()) {
-        auto [logger, is_dispatch] = *logging;
+        auto [logger, is_dispatch] = logging.value();
         logger.log_event(is_dispatch, event.opcode, event.index, event.value,
                          event.payload, event.option);
     }
@@ -264,7 +285,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
         event.payload);
 
     if (logging.has_value()) {
-        auto [logger, is_dispatch] = *logging;
+        auto [logger, is_dispatch] = logging.value();
         logger.log_event_response(is_dispatch, return_value, response_data);
     }
 

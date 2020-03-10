@@ -189,13 +189,40 @@ void PluginBridge::wait() {
     process_replacing_handler.join();
 }
 
+class HostCallbackDataConverter : DefaultDataConverter {
+   public:
+    std::optional<EventPayload> read(const int opcode,
+                                     const intptr_t value,
+                                     const void* data) {
+        switch (opcode) {
+            // Some hsots will outright crash if they receive this opcode, not
+            // sure why they don't just ignore it. Please let me know if there's
+            // a better way to handle this instead of just ignoring the event!
+            //
+            // TODO: Filtering these two events fixes crashes, but should this
+            //       be needed? `audioMasterWantMidi` is deprecated though.
+            case audioMasterWantMidi:
+            case audioMasterUpdateDisplay:
+                return std::nullopt;
+                break;
+            default:
+                return DefaultDataConverter::read(opcode, value, data);
+                break;
+        }
+    }
+
+    void write(const int opcode, void* data, const EventResult& response) {
+        return DefaultDataConverter::write(opcode, data, response);
+    }
+};
+
 intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
                                      int opcode,
                                      int index,
                                      intptr_t value,
                                      void* data,
                                      float option) {
-    DefaultDataConverter converter;
+    HostCallbackDataConverter converter;
     return send_event(vst_host_callback, converter, opcode, index, value, data,
                       option, std::nullopt);
 }

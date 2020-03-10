@@ -142,7 +142,7 @@ class DispatchDataConverter : DefaultDataConverter {
     DispatchDataConverter(std::vector<uint8_t>& chunk_data)
         : chunk(chunk_data) {}
 
-    EventPayload read(const int opcode, const intptr_t value, const void* data) {
+    std::optional<EventPayload> read(const int opcode, const intptr_t value, const void* data) {
         // There are some events that need specific structs that we can't simply
         // serialize as a string because they might contain null bytes
         // TODO: More of these structs
