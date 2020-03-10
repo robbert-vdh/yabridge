@@ -144,9 +144,14 @@ class DefaultDataConverter {
         }
     }
 
-    virtual void write(const int /*opcode*/,
-                       void* data,
-                       const EventResult& response) {
+    /**
+     * Write the reponse back to the data pointer. It's also possible to
+     * override the return value, this is used in one place to return a pointer
+     * to a `VstTime` object that's contantly being updated.
+     */
+    virtual std::optional<intptr_t> write(const int /*opcode*/,
+                                          void* data,
+                                          const EventResult& response) {
         if (response.data.has_value()) {
             char* output = static_cast<char*>(data);
 
@@ -157,6 +162,8 @@ class DefaultDataConverter {
             std::copy(response.data->begin(), response.data->end(), output);
             output[response.data->size()] = 0;
         }
+
+        return std::nullopt;
     }
 };
 
@@ -214,7 +221,11 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                                   response.data);
     }
 
-    data_converter.write(opcode, data, response);
+    const auto return_value_override =
+        data_converter.write(opcode, data, response);
+    if (return_value_override.has_value()) {
+        return return_value_override.value();
+    }
 
     return response.return_value;
 }
@@ -259,6 +270,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                 return &events.as_c_events();
             },
             [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
+            [&](WantsVstTimeInfo&) -> void* { return nullptr; },
             [&](WantsString&) -> void* { return string_buffer.data(); }},
         event.payload);
 
@@ -277,6 +289,17 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                 // return value from the event determines how much data the
                 // plugin has written
                 return std::string(*static_cast<char**>(data), return_value);
+            },
+            [&](WantsVstTimeInfo&) -> std::optional<std::string> {
+                // Not sure why the VST API has twenty different ways of
+                // returning structs, but in this case the value returned from
+                // the callback function is actually a pointer to a
+                // `VstTimeInfo` struct!
+                // TODO: Maybe add a variant from these return types similar to
+                //       `EventPayload`, even though this is as far as I'm aware
+                //       the only non-string/buffer being returned.
+                return std::string(reinterpret_cast<const char*>(return_value),
+                                   sizeof(VstTimeInfo));
             },
             [&](WantsString&) -> std::optional<std::string> {
                 return std::string(static_cast<char*>(data));

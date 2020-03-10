@@ -173,6 +173,7 @@ void Logger::log_event(bool is_dispatch,
                 [&](const WantsChunkBuffer&) {
                     message << "<writable_buffer>";
                 },
+                [&](const WantsVstTimeInfo&) { message << "<nullptr>"; },
                 [&](const WantsString&) { message << "<writable_string>"; }},
             payload);
 

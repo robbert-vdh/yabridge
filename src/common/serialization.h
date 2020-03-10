@@ -118,6 +118,12 @@ class alignas(16) DynamicVstEvents {
 struct WantsChunkBuffer {};
 
 /**
+ * Marker struct to indicate that the event handler will return a pointer to a
+ * `VstTiemInfo` struct that should be returned transfered.
+ */
+struct WantsVstTimeInfo {};
+
+/**
  * Marker struct to indicate that that the event requires some buffer to write
  * a C-string into.
  */
@@ -155,6 +161,7 @@ using EventPayload = std::variant<std::nullptr_t,
                                   std::string,
                                   DynamicVstEvents,
                                   WantsChunkBuffer,
+                                  WantsVstTimeInfo,
                                   WantsString>;
 
 template <typename S>
@@ -173,7 +180,8 @@ void serialize(S& s, EventPayload& payload) {
                                            s.container1b(event.dump);
                                        });
                        },
-                       [](S&, WantsChunkBuffer&) {}, [](S&, WantsString&) {}});
+                       [](S&, WantsChunkBuffer&) {},
+                       [](S&, WantsVstTimeInfo&) {}, [](S&, WantsString&) {}});
 }
 
 /**

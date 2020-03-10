@@ -191,6 +191,8 @@ void PluginBridge::wait() {
 
 class HostCallbackDataConverter : DefaultDataConverter {
    public:
+    HostCallbackDataConverter(VstTimeInfo& time_info) : time(time_info) {}
+
     std::optional<EventPayload> read(const int opcode,
                                      const intptr_t value,
                                      const void* data) {
@@ -210,15 +212,37 @@ class HostCallbackDataConverter : DefaultDataConverter {
 
                 return std::nullopt;
                 break;
+            case audioMasterGetTime:
+                return WantsVstTimeInfo{};
+                break;
             default:
                 return DefaultDataConverter::read(opcode, value, data);
                 break;
         }
     }
 
-    void write(const int opcode, void* data, const EventResult& response) {
-        return DefaultDataConverter::write(opcode, data, response);
+    std::optional<intptr_t> write(const int opcode,
+                                  void* data,
+                                  const EventResult& response) {
+        switch (opcode) {
+            case audioMasterGetTime:
+                // Write the returned `VstTimeInfo` struct into a field and make
+                // the function return a poitner to it
+                // TODO: Start a time to update this on the host bridge once
+                //       it's been requested. Not sure if this is needed though!
+                time = *static_cast<const VstTimeInfo*>(
+                    static_cast<const void*>(response.data->data()));
+
+                return reinterpret_cast<intptr_t>(&time);
+                break;
+            default:
+                return DefaultDataConverter::write(opcode, data, response);
+                break;
+        }
     }
+
+   private:
+    VstTimeInfo& time;
 };
 
 intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
@@ -227,7 +251,7 @@ intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
                                      intptr_t value,
                                      void* data,
                                      float option) {
-    HostCallbackDataConverter converter;
+    HostCallbackDataConverter converter(time_info);
     return send_event(vst_host_callback, converter, opcode, index, value, data,
                       option, std::nullopt);
 }

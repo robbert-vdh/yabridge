@@ -9,8 +9,6 @@ There are a few things that should be done before making this public, including:
 - Implement missing features:
   - GUIs.
   - `AEffect` updates, if that's a thing.
-  - Fix `processReplacing` forwarding. The forwarding works, but plugins don't
-    write any audio.
 - Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
