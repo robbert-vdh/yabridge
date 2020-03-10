@@ -203,6 +203,11 @@ class HostCallbackDataConverter : DefaultDataConverter {
             //       be needed? `audioMasterWantMidi` is deprecated though.
             case audioMasterWantMidi:
             case audioMasterUpdateDisplay:
+                std::cerr << "Got opcode "
+                          << opcode_to_string(false, opcode)
+                                 .value_or(std::to_string(opcode))
+                          << "), ignoring..." << std::endl;
+
                 return std::nullopt;
                 break;
             default:

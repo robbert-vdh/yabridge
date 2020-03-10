@@ -117,3 +117,5 @@ class Logger {
      */
     std::string prefix;
 };
+
+std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode);

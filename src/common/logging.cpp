@@ -43,8 +43,6 @@ constexpr char logging_file_environment_variable[] = "YABRIDGE_DEBUG_FILE";
 constexpr char logging_verbosity_environment_variable[] =
     "YABRIDGE_DEBUG_LEVEL";
 
-std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode);
-
 Logger::Logger(std::shared_ptr<std::ostream> stream,
                Verbosity verbosity_level,
                std::string prefix)
