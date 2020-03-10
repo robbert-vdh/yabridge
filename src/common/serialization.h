@@ -162,7 +162,10 @@ void serialize(S& s, EventPayload& payload) {
     s.ext(payload, bitsery::ext::StdVariant{
                        [](S&, std::nullptr_t&) {},
                        [](S& s, std::string& string) {
-                           s.text1b(string, max_string_length);
+                           // `binary_buffer_size` and not `max_string_length`
+                           // because we also use this to send back large chunk
+                           // data
+                           s.text1b(string, binary_buffer_size);
                        },
                        [](S& s, DynamicVstEvents& events) {
                            s.container(events.events, max_midi_events,
@@ -229,8 +232,8 @@ struct EventResult {
     template <typename S>
     void serialize(S& s) {
         s.value8b(return_value);
-        // `max_chunk_buffer_size` and not `max_string_length` because we also
-        // use this to send back large chunk data
+        // `binary_buffer_size` and not `max_string_length` because we also use
+        // this to send back large chunk data
         s.ext(data, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, binary_buffer_size); });
     }
