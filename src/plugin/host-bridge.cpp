@@ -198,6 +198,8 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
                               intptr_t value,
                               void* data,
                               float option) {
+    DispatchDataConverter converter(chunk_data);
+
     // Some events need some extra handling
     // TODO: Handle other things such as GUI itneraction
     switch (opcode) {
@@ -205,6 +207,14 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             // TODO: Gracefully close the editor?
             // TODO: Check whether the sockets and the endpoint are closed
             //       correctly
+
+            // Allow the plugin to handle its own shutdown
+            // TODO: Seems to cause segfaults in the Wine process, but doesn't
+            // seem to
+            //       cause noticable problems
+            send_event(host_vst_dispatch, converter, opcode, index, value, data,
+                       option, std::pair<Logger&, bool>(logger, true));
+
             // XXX: Boost.Process will send SIGKILL to the process for us, is
             //      there a way to manually send a SIGTERM signal instead?
 
@@ -218,7 +228,6 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
     }
 
     // TODO: Maybe reuse buffers here when dealing with chunk data
-    DispatchDataConverter converter(chunk_data);
     return send_event(host_vst_dispatch, converter, opcode, index, value, data,
                       option, std::pair<Logger&, bool>(logger, true));
 }
