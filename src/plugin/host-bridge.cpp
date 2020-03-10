@@ -142,18 +142,24 @@ class DispatchDataConverter : DefaultDataConverter {
     DispatchDataConverter(std::vector<uint8_t>& chunk_data)
         : chunk(chunk_data) {}
 
-    EventPayload read(const int opcode, const void* data) {
+    EventPayload read(const int opcode, const intptr_t value, const void* data) {
         // There are some events that need specific structs that we can't simply
         // serialize as a string because they might contain null bytes
         // TODO: More of these structs
         switch (opcode) {
             case effGetChunk:
                 return WantsChunkBuffer();
+                break;
+            case effSetChunk:
+                // When the host passes a chunk it will use the value parameter
+                // to tell us its length
+                return std::string(static_cast<const char*>(data), value);
+                break;
             case effProcessEvents:
                 return DynamicVstEvents(*static_cast<const VstEvents*>(data));
                 break;
             default:
-                return DefaultDataConverter::read(opcode, data);
+                return DefaultDataConverter::read(opcode, value, data);
                 break;
         }
     }

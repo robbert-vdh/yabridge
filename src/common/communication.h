@@ -116,7 +116,9 @@ inline T read_object(Socket& socket) {
  */
 class DefaultDataConverter {
    public:
-    EventPayload read(const int /*opcode*/, const void* data) {
+    virtual ~DefaultDataConverter() {};
+
+    virtual EventPayload read(const int /*opcode*/, const intptr_t /*value*/, const void* data) {
         if (data == nullptr) {
             return nullptr;
         }
@@ -130,7 +132,7 @@ class DefaultDataConverter {
         }
     }
 
-    void write(const int /*opcode*/, void* data, const EventResult& response) {
+    virtual void write(const int /*opcode*/, void* data, const EventResult& response) {
         if (response.data.has_value()) {
             char* output = static_cast<char*>(data);
 
@@ -173,7 +175,7 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                     std::optional<std::pair<Logger&, bool>> logging) {
     // Encode the right payload type for this event. Check the documentation for
     // `EventPayload` for more information.
-    const EventPayload payload = data_converter.read(opcode, data);
+    const EventPayload payload = data_converter.read(opcode, value, data);
 
     if (logging.has_value()) {
         auto [logger, is_dispatch] = *logging;
