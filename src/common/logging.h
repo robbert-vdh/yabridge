@@ -90,12 +90,11 @@ class Logger {
     void log_set_parameter_response();
     // If is_dispatch is true, then use opcode names from the plugin's dispatch
     // function. Otherwise use names for the host callback function opcodes.
-    // TODO: Cosnt references for both payloads
     void log_event(bool is_dispatch,
                    int opcode,
                    int index,
                    intptr_t value,
-                   EventPayload payload,
+                   const EventPayload& payload,
                    float option);
     void log_event_response(bool is_dispatch,
                             intptr_t return_value,

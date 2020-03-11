@@ -135,7 +135,7 @@ void Logger::log_event(bool is_dispatch,
                        int opcode,
                        int index,
                        intptr_t value,
-                       EventPayload payload,
+                       const EventPayload& payload,
                        float option) {
     if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
         std::ostringstream message;
