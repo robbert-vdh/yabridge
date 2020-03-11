@@ -135,14 +135,7 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     // Print the Wine host's STDOUT and STDERR streams to the log file
     async_log_pipe_lines(wine_stdout, wine_stdout_buffer, "[Wine STDOUT] ");
     async_log_pipe_lines(wine_stderr, wine_stderr_buffer, "[Wine STDERR] ");
-    wine_io_handler = std::thread([&]() {
-        try {
-            io_context.run();
-        } catch (const boost::system::system_error&) {
-            // This happens when the sockets got closed because the plugin is
-            // being shut down
-        }
-    });
+    wine_io_handler = std::thread([&]() { io_context.run(); });
 
     // Read the plugin's information from the Wine process. This can only be
     // done after we started accepting host callbacks as the plugin might do
@@ -261,6 +254,12 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             // better way to handle this.q
             host_callback_handler.detach();
             wine_io_handler.detach();
+
+            // The `stop()` method will cause the IO context to just drop all of
+            // its work and immediately and not throw any exceptions that would
+            // have been caused by pipes and sockets being closed
+            io_context.stop();
+
             delete this;
 
             return return_value;
