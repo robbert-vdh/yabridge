@@ -48,7 +48,7 @@ constexpr size_t max_midi_events = 32;
  * in one of the dispatch functions. This is used to create buffers for plugins
  * to write strings to.
  */
-constexpr size_t max_string_length = 64;
+[[maybe_unused]] constexpr size_t max_string_length = 64;
 
 /**
  * The size for a buffer in which we're receiving chunks.

@@ -16,8 +16,6 @@
 
 #pragma once
 
-// This included is redundant, but ccls will complain if this is not included
-// before windowes.h even though it will compile just fine
 #include "boost-fix.h"
 
 #define NOMINMAX
@@ -28,9 +26,9 @@
 #include <vestige/aeffectx.h>
 #include <windows.h>
 
+#include <boost/asio/local/stream_protocol.hpp>
 #include <thread>
 
-#include "../common/communication.h"
 #include "../common/logging.h"
 
 /**

@@ -17,6 +17,10 @@
 #include "plugin-bridge.h"
 
 #include <boost/filesystem.hpp>
+#include <iostream>
+
+#include "../common/communication.h"
+#include "../common/events.h"
 
 namespace fs = boost::filesystem;
 

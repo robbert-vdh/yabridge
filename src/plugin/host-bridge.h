@@ -25,7 +25,6 @@
 #include <boost/process/child.hpp>
 #include <thread>
 
-#include "../common/communication.h"
 #include "../common/logging.h"
 
 /**

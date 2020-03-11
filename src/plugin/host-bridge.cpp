@@ -25,6 +25,9 @@
 #include <iostream>
 #include <random>
 
+#include "../common/communication.h"
+#include "../common/events.h"
+
 namespace bp = boost::process;
 // I'd rather use std::filesystem instead, but Boost.Process depends on
 // boost::filesystem
