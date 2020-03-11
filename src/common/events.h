@@ -202,25 +202,25 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     //      because it was not zeroed out by the host) for an event that should
     //      report some data back?
     const auto response_data = std::visit(
-        overload{
-            [&](WantsChunkBuffer&) -> EventResposnePayload {
-                // In this case the plugin will have written its data stored in
-                // an array to which a pointer is stored in `data`, with the
-                // return value from the event determines how much data the
-                // plugin has written
-                return std::string(*static_cast<char**>(data), return_value);
-            },
-            [&](WantsVstTimeInfo&) -> EventResposnePayload {
-                // Not sure why the VST API has twenty different ways of
-                // returning structs, but in this case the value returned from
-                // the callback function is actually a pointer to a
-                // `VstTimeInfo` struct!
-                return *reinterpret_cast<const VstTimeInfo*>(return_value);
-            },
-            [&](WantsString&) -> EventResposnePayload {
-                return std::string(static_cast<char*>(data));
-            },
-            [&](auto) -> EventResposnePayload { return std::monostate(); }},
+        overload{[&](auto) -> EventResposnePayload { return std::monostate(); },
+                 [&](WantsChunkBuffer&) -> EventResposnePayload {
+                     // In this case the plugin will have written its data
+                     // stored in an array to which a pointer is stored in
+                     // `data`, with the return value from the event determines
+                     // how much data the plugin has written
+                     return std::string(*static_cast<char**>(data),
+                                        return_value);
+                 },
+                 [&](WantsVstTimeInfo&) -> EventResposnePayload {
+                     // Not sure why the VST API has twenty different ways of
+                     // returning structs, but in this case the value returned
+                     // from the callback function is actually a pointer to a
+                     // `VstTimeInfo` struct!
+                     return *reinterpret_cast<const VstTimeInfo*>(return_value);
+                 },
+                 [&](WantsString&) -> EventResposnePayload {
+                     return std::string(static_cast<char*>(data));
+                 }},
         event.payload);
 
     if (logging.has_value()) {
