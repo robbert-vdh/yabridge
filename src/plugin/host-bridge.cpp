@@ -162,8 +162,21 @@ class DispatchDataConverter : DefaultDataConverter {
                                      const void* data) {
         // There are some events that need specific structs that we can't simply
         // serialize as a string because they might contain null bytes
-        // TODO: More of these structs
         switch (opcode) {
+            // TODO: Add GUI support. These events are just disabled for now to
+            //       ensure everything else works first.
+            case effEditOpen:
+            case effEditTop:
+            case effEditIdle:
+            case effEditClose:
+            case effEditGetRect:
+                std::cerr << "Got opcode "
+                          << opcode_to_string(true, opcode)
+                                 .value_or(std::to_string(opcode))
+                          << "), ignoring..." << std::endl;
+
+                return std::nullopt;
+                break;
             case effGetChunk:
                 return WantsChunkBuffer();
                 break;
