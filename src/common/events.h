@@ -215,9 +215,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                 // returning structs, but in this case the value returned from
                 // the callback function is actually a pointer to a
                 // `VstTimeInfo` struct!
-                // TODO: Use the fancy new VstTimeInfo variant here
-                return std::string(reinterpret_cast<const char*>(return_value),
-                                   sizeof(VstTimeInfo));
+                return *reinterpret_cast<const VstTimeInfo*>(return_value);
             },
             [&](WantsString&) -> EventResposnePayload {
                 return std::string(static_cast<char*>(data));
