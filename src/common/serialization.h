@@ -65,6 +65,43 @@ template <class... Ts>
 overload(Ts...)->overload<Ts...>;
 
 /**
+ * The serialization function for `AEffect` structs. This will s serialize all
+ * of the values but it will not touch any of the pointer fields. That way you
+ * can deserialize to an existing `AEffect` instance.
+ */
+template <typename S>
+void serialize(S& s, AEffect& plugin) {
+    s.value4b(plugin.magic);
+    s.value4b(plugin.numPrograms);
+    s.value4b(plugin.numParams);
+    s.value4b(plugin.numInputs);
+    s.value4b(plugin.numOutputs);
+    s.value4b(plugin.flags);
+    s.value4b(plugin.initialDelay);
+    s.value4b(plugin.empty3a);
+    s.value4b(plugin.empty3b);
+    s.value4b(plugin.unkown_float);
+    s.value4b(plugin.uniqueID);
+    s.value4b(plugin.version);
+}
+
+template <typename S>
+void serialize(S& s, VstTimeInfo& time_info) {
+    s.value8b(time_info.samplePos);
+    s.value8b(time_info.sampleRate);
+    s.value8b(time_info.nanoSeconds);
+    s.value8b(time_info.ppqPos);
+    s.value8b(time_info.tempo);
+    s.value8b(time_info.barStartPos);
+    s.value8b(time_info.cycleStartPos);
+    s.value8b(time_info.cycleEndPos);
+    s.value4b(time_info.timeSigNumerator);
+    s.value4b(time_info.timeSigDenominator);
+    s.container1b(time_info.empty3);
+    s.value4b(time_info.flags);
+}
+
+/**
  * A wrapper around `VstEvents` that stores the data in a vector instead of a
  * C-style array. Needed until bitsery supports C-style arrays
  * https://github.com/fraillt/bitsery/issues/28. An advantage of this approach
@@ -224,6 +261,36 @@ struct Event {
 };
 
 /**
+ * The response for an event. This is usually either:
+ *
+ * - Nothing, on which case only the return value from the callback function
+ *   gets passed along.
+ * - Some buffer stored in a `std::string`. This is typically read from and
+ *   written as C-style string, but in the case of `effGetChunk` this is some
+ *   blob of binary data that should be written to `HostBridge::chunk_data`
+ *   instenad.
+ * - A specific struct in response to an event such as `audioMasterGetTime` or
+ *   `audioMasterIOChanged`.
+ */
+using EventResposnePayload =
+    std::variant<std::monostate, std::string, AEffect, VstTimeInfo>;
+
+template <typename S>
+void serialize(S& s, EventResposnePayload& payload) {
+    s.ext(payload,
+          bitsery::ext::StdVariant{
+              [](S&, std::monostate&) {},
+              [](S& s, std::string& string) {
+                  // `binary_buffer_size` and not `max_string_length`
+                  // because we also use this to send back large chunk
+                  // data
+                  s.text1b(string, binary_buffer_size);
+              },
+              [](S& s, AEffect& effect) { s.object(effect); },
+              [](S& s, VstTimeInfo& time_info) { s.object(time_info); }});
+}
+
+/**
  * AN instance of this should be sent back as a response to an incoming event.
  */
 struct EventResult {
@@ -232,18 +299,17 @@ struct EventResult {
      */
     intptr_t return_value;
     /**
-     * If present, this should get written into the void pointer passed to the
-     * dispatch function.
+     * Events typically either just return their return value or write a string
+     * into the void pointer, but sometimes an event response should forward
+     * some kind of special struct.
      */
-    std::optional<std::string> data;
+    EventResposnePayload payload;
 
     template <typename S>
     void serialize(S& s) {
         s.value8b(return_value);
-        // `binary_buffer_size` and not `max_string_length` because we also use
-        // this to send back large chunk data
-        s.ext(data, bitsery::ext::StdOptional(),
-              [](S& s, auto& v) { s.text1b(v, binary_buffer_size); });
+
+        s.object(payload);
     }
 };
 
@@ -301,24 +367,3 @@ struct AudioBuffers {
         s.value4b(sample_frames);
     }
 };
-
-/**
- * The serialization function for `AEffect` structs. This will s serialize all
- * of the values but it will not touch any of the pointer fields. That way you
- * can deserialize to an existing `AEffect` instance.
- */
-template <typename S>
-void serialize(S& s, AEffect& plugin) {
-    s.value4b(plugin.magic);
-    s.value4b(plugin.numPrograms);
-    s.value4b(plugin.numParams);
-    s.value4b(plugin.numInputs);
-    s.value4b(plugin.numOutputs);
-    s.value4b(plugin.flags);
-    s.value4b(plugin.initialDelay);
-    s.value4b(plugin.empty3a);
-    s.value4b(plugin.empty3b);
-    s.value4b(plugin.unkown_float);
-    s.value4b(plugin.uniqueID);
-    s.value4b(plugin.version);
-}

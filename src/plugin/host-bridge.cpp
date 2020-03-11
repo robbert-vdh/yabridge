@@ -187,10 +187,13 @@ class DispatchDataConverter : DefaultDataConverter {
                 // Write the chunk data to some publically accessible place in
                 // `HostBridge` and write a pointer to that struct to the data
                 // pointer
-                assert(response.data.has_value());
-                chunk.assign(response.data->begin(), response.data->end());
+                {
+                    std::string buffer =
+                        std::get<std::string>(response.payload);
+                    chunk.assign(buffer.begin(), buffer.end());
 
-                *static_cast<void**>(data) = chunk.data();
+                    *static_cast<void**>(data) = chunk.data();
+                }
                 break;
             default:
                 DefaultDataConverter::write(opcode, data, response);

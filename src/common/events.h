@@ -61,16 +61,19 @@ class DefaultDataConverter {
     virtual void write(const int /*opcode*/,
                        void* data,
                        const EventResult& response) {
-        if (response.data.has_value()) {
-            char* output = static_cast<char*>(data);
+        // The default behavior is to handle this as a null terminated C-style
+        // string
+        std::visit(overload{[&](const auto&) {},
+                            [&](const std::string& s) {
+                                char* output = static_cast<char*>(data);
 
-            // For correctness we will copy the entire buffer and add a
-            // terminating null byte ourselves. In practice `response.data` will
-            // only ever contain C-style strings, but this would work with any
-            // other data format that can contain null bytes.
-            std::copy(response.data->begin(), response.data->end(), output);
-            output[response.data->size()] = 0;
-        }
+                                // We use std::string for easy transport but in
+                                // practice we're always writing null terminated
+                                // C-style strings
+                                std::copy(s.begin(), s.end(), output);
+                                output[s.size()] = 0;
+                            }},
+                   response.payload);
     }
 
     /**
@@ -139,7 +142,7 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
         logger.log_event_response(is_dispatch, response.return_value,
-                                  response.data);
+                                  response.payload);
     }
 
     data_converter.write(opcode, data, response);
@@ -200,28 +203,26 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     //      report some data back?
     const auto response_data = std::visit(
         overload{
-            [&](WantsChunkBuffer&) -> std::optional<std::string> {
+            [&](WantsChunkBuffer&) -> EventResposnePayload {
                 // In this case the plugin will have written its data stored in
                 // an array to which a pointer is stored in `data`, with the
                 // return value from the event determines how much data the
                 // plugin has written
                 return std::string(*static_cast<char**>(data), return_value);
             },
-            [&](WantsVstTimeInfo&) -> std::optional<std::string> {
+            [&](WantsVstTimeInfo&) -> EventResposnePayload {
                 // Not sure why the VST API has twenty different ways of
                 // returning structs, but in this case the value returned from
                 // the callback function is actually a pointer to a
                 // `VstTimeInfo` struct!
-                // TODO: Maybe add a variant from these return types similar to
-                //       `EventPayload`, even though this is as far as I'm aware
-                //       the only non-string/buffer being returned.
+                // TODO: Use the fancy new VstTimeInfo variant here
                 return std::string(reinterpret_cast<const char*>(return_value),
                                    sizeof(VstTimeInfo));
             },
-            [&](WantsString&) -> std::optional<std::string> {
+            [&](WantsString&) -> EventResposnePayload {
                 return std::string(static_cast<char*>(data));
             },
-            [&](auto) -> std::optional<std::string> { return std::nullopt; }},
+            [&](auto) -> EventResposnePayload { return std::monostate(); }},
         event.payload);
 
     if (logging.has_value()) {

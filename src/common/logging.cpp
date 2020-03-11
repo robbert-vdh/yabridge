@@ -185,7 +185,7 @@ void Logger::log_event(bool is_dispatch,
 
 void Logger::log_event_response(bool is_dispatch,
                                 intptr_t return_value,
-                                std::optional<std::string> payload) {
+                                const EventResposnePayload& payload) {
     if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
         std::ostringstream message;
         if (is_dispatch) {
@@ -195,9 +195,21 @@ void Logger::log_event_response(bool is_dispatch,
         }
 
         message << return_value;
-        if (payload.has_value()) {
-            message << ", \"" << payload.value() << "\"";
-        }
+
+        std::visit(
+            overload{[&](const std::monostate&) {},
+                     [&](const std::string& s) {
+                         if (s.size() < 32) {
+                             message << ", \"" << s << "\"";
+                         } else {
+                             // Long strings contain binary data that we
+                             // probably don't want to print
+                             message << ", <" << s.size() << " bytes>";
+                         }
+                     },
+                     [&](const AEffect&) { message << ", <AEffect_object>"; },
+                     [&](const VstTimeInfo&) { message << ", <time_info>"; }},
+            payload);
 
         log(message.str());
     }

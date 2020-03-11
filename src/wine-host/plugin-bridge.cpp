@@ -230,8 +230,13 @@ class HostCallbackDataConverter : DefaultDataConverter {
             case audioMasterGetTime:
                 // Write the returned `VstTimeInfo` struct into a field and make
                 // the function return a poitner to it in the function below
-                time = *static_cast<const VstTimeInfo*>(
-                    static_cast<const void*>(response.data->data()));
+                // TODO: Use the fancy new `VstTimeINfo` variant here
+                {
+                    std::string buffer =
+                        std::get<std::string>(response.payload);
+                    time = *static_cast<const VstTimeInfo*>(
+                        static_cast<const void*>(buffer.data()));
+                }
                 break;
             default:
                 DefaultDataConverter::write(opcode, data, response);
