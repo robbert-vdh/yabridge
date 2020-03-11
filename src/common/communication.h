@@ -145,13 +145,11 @@ class DefaultDataConverter {
     }
 
     /**
-     * Write the reponse back to the data pointer. It's also possible to
-     * override the return value, this is used in one place to return a pointer
-     * to a `VstTime` object that's contantly being updated.
+     * Write the reponse back to the data pointer.
      */
-    virtual std::optional<intptr_t> write(const int /*opcode*/,
-                                          void* data,
-                                          const EventResult& response) {
+    virtual void write(const int /*opcode*/,
+                       void* data,
+                       const EventResult& response) {
         if (response.data.has_value()) {
             char* output = static_cast<char*>(data);
 
@@ -162,8 +160,20 @@ class DefaultDataConverter {
             std::copy(response.data->begin(), response.data->end(), output);
             output[response.data->size()] = 0;
         }
+    }
 
-        return std::nullopt;
+    /**
+     * This function can override a callback's return value based on the opcode.
+     * This is used in one place to return a pointer to a `VstTime` object
+     * that's contantly being updated.
+     *
+     * @param opcode The opcode for the current event.
+     * @param original The original return value as returned by the callback
+     *   function.
+     */
+    virtual intptr_t return_value(const int /*opcode*/,
+                                  const intptr_t original) {
+        return original;
     }
 };
 
@@ -221,13 +231,9 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                                   response.data);
     }
 
-    const auto return_value_override =
-        data_converter.write(opcode, data, response);
-    if (return_value_override.has_value()) {
-        return return_value_override.value();
-    }
+    data_converter.write(opcode, data, response);
 
-    return response.return_value;
+    return data_converter.return_value(opcode, response.return_value);
 }
 
 /**

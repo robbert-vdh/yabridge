@@ -221,22 +221,31 @@ class HostCallbackDataConverter : DefaultDataConverter {
         }
     }
 
-    std::optional<intptr_t> write(const int opcode,
-                                  void* data,
-                                  const EventResult& response) {
+    void write(const int opcode, void* data, const EventResult& response) {
         switch (opcode) {
             case audioMasterGetTime:
                 // Write the returned `VstTimeInfo` struct into a field and make
-                // the function return a poitner to it
+                // the function return a poitner to it in the function below
                 // TODO: Start a time to update this on the host bridge once
                 //       it's been requested. Not sure if this is needed though!
                 time = *static_cast<const VstTimeInfo*>(
                     static_cast<const void*>(response.data->data()));
+                break;
+            default:
+                DefaultDataConverter::write(opcode, data, response);
+                break;
+        }
+    }
 
+    intptr_t return_value(const int opcode, const intptr_t original) {
+        switch (opcode) {
+            case audioMasterGetTime:
+                // Return a pointer to the `VstTimeInfo` object written in the
+                // function above
                 return reinterpret_cast<intptr_t>(&time);
                 break;
             default:
-                return DefaultDataConverter::write(opcode, data, response);
+                return DefaultDataConverter::return_value(opcode, original);
                 break;
         }
     }

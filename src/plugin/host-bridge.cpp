@@ -182,9 +182,7 @@ class DispatchDataConverter : DefaultDataConverter {
         }
     }
 
-    std::optional<intptr_t> write(const int opcode,
-                                  void* data,
-                                  const EventResult& response) {
+    void write(const int opcode, void* data, const EventResult& response) {
         switch (opcode) {
             case effGetChunk:
                 // Write the chunk data to some publically accessible place in
@@ -194,12 +192,15 @@ class DispatchDataConverter : DefaultDataConverter {
                 chunk.assign(response.data->begin(), response.data->end());
 
                 *static_cast<void**>(data) = chunk.data();
-                return std::nullopt;
                 break;
             default:
-                return DefaultDataConverter::write(opcode, data, response);
+                DefaultDataConverter::write(opcode, data, response);
                 break;
         }
+    }
+
+    intptr_t return_value(const int opcode, const intptr_t original) {
+        return DefaultDataConverter::return_value(opcode, original);
     }
 
    private:
