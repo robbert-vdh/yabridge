@@ -226,8 +226,6 @@ class HostCallbackDataConverter : DefaultDataConverter {
             case audioMasterGetTime:
                 // Write the returned `VstTimeInfo` struct into a field and make
                 // the function return a poitner to it in the function below
-                // TODO: Start a time to update this on the host bridge once
-                //       it's been requested. Not sure if this is needed though!
                 time = *static_cast<const VstTimeInfo*>(
                     static_cast<const void*>(response.data->data()));
                 break;

@@ -25,10 +25,6 @@
 #include <iostream>
 #include <random>
 
-// TODO: I should track down the VST2 SDK for clarification on some of the
-//       implementation details, such as the use of intptr_t isntead of void*
-//       here.
-
 namespace bp = boost::process;
 // I'd rather use std::filesystem instead, but Boost.Process depends on
 // boost::filesystem
@@ -278,7 +274,6 @@ void HostBridge::process_replacing(AEffect* /*plugin*/,
     response =
         read_object(host_vst_process_replacing, response, process_buffer);
 
-    // TODO: Doesn't quite work yet, not sure which side is causing problems
     assert(response.buffers.size() == static_cast<size_t>(plugin.numOutputs));
     for (int channel = 0; channel < plugin.numOutputs; channel++) {
         std::copy(response.buffers[channel].begin(),

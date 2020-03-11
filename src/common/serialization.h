@@ -87,9 +87,9 @@ class alignas(16) DynamicVstEvents {
      */
     VstEvents& as_c_events();
 
-    // XXX: The original `VstEvents` stuct hasonly one C-style array of
-    //      `VstEvent`s, but I've seen some implementation that have two. Is
-    //      this only for alignment or does this have an actual use?
+    /**
+     * Midi events are sent in batches.
+     */
     std::vector<VstEvent> events;
 
    private:
