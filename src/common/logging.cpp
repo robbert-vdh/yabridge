@@ -167,6 +167,7 @@ void Logger::log_event(bool is_dispatch,
                         message << "<" << s.size() << " bytes>";
                     }
                 },
+                [&](const AEffect&) { message << "<nullptr>"; },
                 [&](const DynamicVstEvents& events) {
                     message << "<" << events.events.size() << " midi_events>";
                 },

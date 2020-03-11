@@ -186,11 +186,12 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
             [&](const std::string& s) -> void* {
                 return const_cast<char*>(s.c_str());
             },
+            [&](const AEffect&) -> void* { return nullptr; },
             [&](DynamicVstEvents& events) -> void* {
                 return &events.as_c_events();
             },
             [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
-            [&](WantsVstTimeInfo&) -> void* { return nullptr; },
+            [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
             [&](WantsString&) -> void* { return string_buffer.data(); }},
         event.payload);
 
@@ -203,6 +204,32 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     //      report some data back?
     const auto response_data = std::visit(
         overload{[&](auto) -> EventResposnePayload { return std::monostate(); },
+                 [&](const AEffect& updated_plugin) -> EventResposnePayload {
+                     // This is a bit of a special case! Instead of writing some
+                     // return value, we will update values on the native VST
+                     // plugin's `AEffect` object. This is triggered by the
+                     // `audioMasterIOChanged` callback from the hsoted VST
+                     // plugin.
+
+                     // These are the same fields written by bitsery in the
+                     // initialization of `HostBridge`. I can't think of a way t
+                     // oreuse the serializer without first having to serialize
+                     // `updated_plugin` first though.
+                     plugin->magic = updated_plugin.magic;
+                     plugin->numPrograms = updated_plugin.numPrograms;
+                     plugin->numParams = updated_plugin.numParams;
+                     plugin->numInputs = updated_plugin.numInputs;
+                     plugin->numOutputs = updated_plugin.numOutputs;
+                     plugin->flags = updated_plugin.flags;
+                     plugin->initialDelay = updated_plugin.initialDelay;
+                     plugin->empty3a = updated_plugin.empty3a;
+                     plugin->empty3b = updated_plugin.empty3b;
+                     plugin->unkown_float = updated_plugin.unkown_float;
+                     plugin->uniqueID = updated_plugin.uniqueID;
+                     plugin->version = updated_plugin.version;
+
+                     return std::monostate();
+                 },
                  [&](WantsChunkBuffer&) -> EventResposnePayload {
                      // In this case the plugin will have written its data
                      // stored in an array to which a pointer is stored in

@@ -180,10 +180,9 @@ struct WantsString {};
  *         clarity's sake.
  *
  * - Specific data structures from `aeffextx.h`. For instance an event with the
- *   opcode `effProcessEvents` comes with a struct containing a list of midi
- *   events.
- *
- *   TODO: A lot of these are still missing
+ *   opcode `effProcessEvents` the hosts passes a `VstEvents` struct containing
+ *   midi events, and `audioMasterIOChanged` lets the host know that the
+ *   `AEffect` struct has changed.
  *
  * - Some empty buffer for the plugin to write its own data to, for instance for
  *   a plugin to report its name or the label for a certain parameter. There are
@@ -196,6 +195,7 @@ struct WantsString {};
  */
 using EventPayload = std::variant<std::nullptr_t,
                                   std::string,
+                                  AEffect,
                                   DynamicVstEvents,
                                   WantsChunkBuffer,
                                   WantsVstTimeInfo,
@@ -211,6 +211,7 @@ void serialize(S& s, EventPayload& payload) {
                            // data
                            s.text1b(string, binary_buffer_size);
                        },
+                       [](S& s, AEffect& effect) { s.object(effect); },
                        [](S& s, DynamicVstEvents& events) {
                            s.container(events.events, max_midi_events,
                                        [](S& s, VstEvent& event) {

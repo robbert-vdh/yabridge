@@ -109,10 +109,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
                                  "' failed to initialize.");
     }
 
-    // Send the plugin's information to the Linux VST plugin
-    // TODO: This is now done only once at startup, do plugins update their
-    //       parameters? In that case we should be detecting updates and pass
-    //       them along accordingly.
+    // Send the plugin's information to the Linux VST plugin. Any updates during
+    // runtime are handled using the `audioMasterIOChanged` host callback.
     write_object(vst_host_aeffect, *plugin);
 
     // We only needed this little hack during initialization
@@ -195,7 +193,8 @@ void PluginBridge::wait() {
 
 class HostCallbackDataConverter : DefaultDataConverter {
    public:
-    HostCallbackDataConverter(VstTimeInfo& time_info) : time(time_info) {}
+    HostCallbackDataConverter(AEffect* plugin, VstTimeInfo& time_info)
+        : plugin(plugin), time_info(time_info) {}
 
     std::optional<EventPayload> read(const int opcode,
                                      const intptr_t value,
@@ -219,6 +218,12 @@ class HostCallbackDataConverter : DefaultDataConverter {
             case audioMasterGetTime:
                 return WantsVstTimeInfo{};
                 break;
+            case audioMasterIOChanged:
+                // This is a helpful event that indicates that the VST plugin's
+                // `AEffect` struct has changed. Writing these results back is
+                // done inside of `passthrough_event`.
+                return AEffect(*plugin);
+                break;
             default:
                 return DefaultDataConverter::read(opcode, value, data);
                 break;
@@ -230,7 +235,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
             case audioMasterGetTime:
                 // Write the returned `VstTimeInfo` struct into a field and make
                 // the function return a poitner to it in the function below
-                time = std::get<VstTimeInfo>(response.payload);
+                time_info = std::get<VstTimeInfo>(response.payload);
                 break;
             default:
                 DefaultDataConverter::write(opcode, data, response);
@@ -252,7 +257,8 @@ class HostCallbackDataConverter : DefaultDataConverter {
     }
 
    private:
-    VstTimeInfo& time;
+    AEffect* plugin;
+    VstTimeInfo& time_info;
 };
 
 intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
@@ -261,7 +267,7 @@ intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
                                      intptr_t value,
                                      void* data,
                                      float option) {
-    HostCallbackDataConverter converter(time_info);
+    HostCallbackDataConverter converter(plugin, time_info);
     return send_event(vst_host_callback, converter, opcode, index, value, data,
                       option, std::nullopt);
 }
