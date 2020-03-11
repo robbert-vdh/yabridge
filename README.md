@@ -8,7 +8,12 @@ There are a few things that should be done before making this public, including:
 
 - Implement missing features:
   - GUIs.
-  - `AEffect` updates, if that's a thing.
+  - `AEffect` updates. Apparently whenever that happens the plugin should call
+    `audioMasterIOChanged`, so that would be easy to handle.
+  - The Wine process seems to segfault on shutdown even though it doesn't seem
+    to cause any other problems. This can probably be fixed by catching
+    exceptions thrown in the threads caused by sockets being closed. It's
+    handled similarly in the native VST plugin.
 - Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
