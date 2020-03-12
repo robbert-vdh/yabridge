@@ -117,18 +117,15 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     // instead of asynchronous IO since communication has to be handled in
     // lockstep anyway
     host_callback_handler = std::thread([&]() {
-        while (true) {
-            try {
+        try {
+            while (true) {
                 passthrough_event(vst_host_callback, &plugin,
                                   host_callback_function,
                                   std::pair<Logger&, bool>(logger, false));
-            } catch (const boost::system::system_error&) {
-                // TODO: This raises SIBABRT if not caught, fix similar issues
-                //       in the Wine VST host
-                // This happens when the sockets got closed because the plugin
-                // is being shut down
-                break;
             }
+        } catch (const boost::system::system_error&) {
+            // This happens when the sockets got closed because the plugin
+            // is being shut down
         }
     });
 
@@ -236,14 +233,20 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             //       correctly
 
             // Allow the plugin to handle its own shutdown
-            // TODO: Seems to cause segfaults in the Wine process, but doesn't
-            //       seem to cause noticable problems
             const auto return_value = send_event(
                 host_vst_dispatch, converter, opcode, index, value, data,
                 option, std::pair<Logger&, bool>(logger, true));
 
-            // XXX: Boost.Process will send SIGKILL to the process for us, is
-            //      there a way to manually send a SIGTERM signal instead?
+            // Boost.Process will send SIGKILL to the Wien host for us when this
+            // class gets destroyed. Because the process is running a few
+            // threads Wine will say something about a segfault (probably
+            // related to `std::terminate`), but this doesn't seem to have any
+            // negative impact
+
+            // The `stop()` method will cause the IO context to just drop all of
+            // its work and immediately and not throw any exceptions that would
+            // have been caused by pipes and sockets being closed
+            io_context.stop();
 
             // `std::thread`s are not interruptable, and since we're doing
             // blocking synchronous reads there's no way to interrupt them. If
@@ -254,11 +257,6 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             // better way to handle this.q
             host_callback_handler.detach();
             wine_io_handler.detach();
-
-            // The `stop()` method will cause the IO context to just drop all of
-            // its work and immediately and not throw any exceptions that would
-            // have been caused by pipes and sockets being closed
-            io_context.stop();
 
             delete this;
 

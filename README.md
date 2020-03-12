@@ -9,10 +9,6 @@ There are a few things that should be done before making this public, including:
 - Implement missing features:
   - GUIs. Right now I'm just ignoring all of the opcodes related to GUIs so that
     the plugins don't crash when you open their GUI.
-  - The Wine process seems to segfault on shutdown even though it doesn't seem
-    to cause any other problems. This can probably be fixed by catching
-    exceptions thrown in the threads caused by sockets being closed. It's
-    handled similarly in the native VST plugin.
   - The initial host callback fails in Bitwig if the plugin is bridged, but it
     works if it's directly loaded into Bitwig.
   - Check whether sidechaining and MPE work since they're unofficial additions
