@@ -69,6 +69,10 @@ HostBridge& get_bridge_instance(const AEffect& plugin) {
 HostBridge::HostBridge(audioMasterCallback host_callback)
     : vst_host_path(find_wine_vst_host()),
       vst_plugin_path(find_vst_plugin()),
+      // All the fields should be zero initialized because
+      // `Vst2PluginInstance::vstAudioMasterCallback` from Bitwig's plugin
+      // bridge will crash otherwise
+      plugin(),
       io_context(),
       socket_endpoint(generate_endpoint_name().string()),
       socket_acceptor(io_context, socket_endpoint),
