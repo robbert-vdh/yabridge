@@ -15,7 +15,10 @@ There are a few things that should be done before making this public, including:
     handled similarly in the native VST plugin.
   - The initial host callback fails in Bitwig if the plugin is bridged, but it
     works if it's directly loaded into Bitwig.
-- Add missing details if any to the architecture section.
+  - Check whether sidechaining and MPE work since they're unofficial additions
+    to the VST 2.4 spec. Should either work out of the box or with a minor
+    adjustment.
+- add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
 
