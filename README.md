@@ -7,7 +7,8 @@ Yet Another way to use Windows VST2 plugins in Linux VST hosts.
 There are a few things that should be done before making this public, including:
 
 - Implement missing features:
-  - GUIs.
+  - GUIs. Right now I'm just ignoring all of the opcodes related to GUIs so that
+    the plugins don't crash when you open their GUI.
   - The Wine process seems to segfault on shutdown even though it doesn't seem
     to cause any other problems. This can probably be fixed by catching
     exceptions thrown in the threads caused by sockets being closed. It's
