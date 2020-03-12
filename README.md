@@ -127,7 +127,12 @@ instance of Carla with gdb attached:
 env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log YABRIDGE_DEBUG_LEVEL=1 carla --gdb
 ```
 
-I sadly haven't had any luck with winedbg for debugging the winelib binary.
+Doing the same thing with the Wine VST host is also possible but it's a bit
+tricky. I have not had any success with attaching winedbg to running processes.
+The only thing that seems to work is to modify `host-bridge.cpp` to not launch
+`yabridge-host.exe` normally, but to instead start a new (detached) terminal
+emulator process running the Wine host through `winedbg --gdb`. I wouldn't
+recommended doing this if you can avoid it.
 
 ## Rationale
 
