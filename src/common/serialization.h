@@ -39,10 +39,8 @@ constexpr size_t max_audio_channels = 32;
 constexpr size_t max_buffer_size = 16384;
 /**
  * The maximum number of midi events in a single `VstEvents` struct.
- *
- * TODO: Can this go higher?
  */
-constexpr size_t max_midi_events = 32;
+constexpr size_t max_midi_events = 256;
 /**
  * The maximum size in bytes of a string or buffer passed through a void pointer
  * in one of the dispatch functions. This is used to create buffers for plugins
