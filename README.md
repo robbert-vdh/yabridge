@@ -85,8 +85,7 @@ ninja -C build
 ```
 
 When developing or debugging yabridge you can change the build type to either
-`debug` or `debugoptimized` to enable debug symbols and optionally also disable
-optimizations.
+`debug` enable debug symbols and disable optimizations.
 
 ## Debugging
 
@@ -114,6 +113,17 @@ variables:
 
   More detailed information about these levels can be found in
   `src/common/logging.h`.
+
+### Attaching a debugger
+
+When needed, I found the easiest way to debug the plugin to be to load it in an
+instance of Carla with gdb attached:
+
+```shell
+env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log YABRIDGE_DEBUG_LEVEL=1 carla --gdb
+```
+
+I sadly haven't had any luck with winedbg for debugging the winelib binary.
 
 ## Rationale
 
