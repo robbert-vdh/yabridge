@@ -23,6 +23,7 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/process/async_pipe.hpp>
 #include <boost/process/child.hpp>
+#include <mutex>
 #include <thread>
 
 #include "../common/logging.h"
@@ -155,6 +156,16 @@ class HostBridge {
      * The thread that handles host callbacks.
      */
     std::thread host_callback_handler;
+
+    /**
+     * A binary semaphore for preventing the dispatch function from being called
+     * by two threads at once. This rarely happens and shouldn't event really be
+     * happening, but in Bitwig's plugin bridge sometimes calls the dispatch
+     * function with opcode 52 while it's still waiting for another dispatch
+     * call to return, which would cause two threads to write over the same
+     * socket at the same time.
+     */
+    std::mutex dispatch_semaphore;
 
     /**
      * The callback function passed by the host to the VST plugin instance.

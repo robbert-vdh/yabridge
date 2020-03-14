@@ -9,8 +9,6 @@ There are a few things that should be done before making this public, including:
 - Implement missing features:
   - GUIs. Right now I'm just ignoring all of the opcodes related to GUIs so that
     the plugins don't crash when you open their GUI.
-  - The initial host callback fails in Bitwig if the plugin is bridged, but it
-    works if it's directly loaded into Bitwig.
   - Check whether sidechaining and ~~MPE~~ work since they're unofficial additions
     to the VST 2.4 spec. Should either work out of the box or with a minor
     adjustment. MPE works!
