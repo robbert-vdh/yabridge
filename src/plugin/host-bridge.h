@@ -28,6 +28,23 @@
 #include "../common/logging.h"
 
 /**
+ * Boost 1.72 was released with a known breaking bug caused by a missing
+ * typedef: https://github.com/boostorg/process/issues/116.
+ *
+ * Luckily this is easy to fix since it's not really possible to downgrade Boost
+ * as it would break other applications.
+ *
+ * Check if this is still needed for other distros after Arch starts packaging
+ * Boost 1.73.
+ */
+class patched_async_pipe : public boost::process::async_pipe {
+   public:
+    using boost::process::async_pipe::async_pipe;
+
+    typedef typename handle_type::executor_type executor_type;
+};
+
+/**
  * This handles the communication between the Linux native VST plugin and the
  * Wine VST host. The functions below should be used as callback functions in an
  * `AEffect` object.
@@ -103,7 +120,7 @@ class HostBridge {
      * @param buffer The stream buffer to write to.
      * @param prefix Text to prepend to the line before writing to the log.
      */
-    void async_log_pipe_lines(boost::process::async_pipe& pipe,
+    void async_log_pipe_lines(patched_async_pipe& pipe,
                               boost::asio::streambuf& buffer,
                               std::string prefix = "");
 
@@ -150,11 +167,11 @@ class HostBridge {
     /**
      * The STDOUT stream of the Wine process we can forward to the logger.
      */
-    boost::process::async_pipe wine_stdout;
+    patched_async_pipe wine_stdout;
     /**
      * The STDERR stream of the Wine process we can forward to the logger.
      */
-    boost::process::async_pipe wine_stderr;
+    patched_async_pipe wine_stderr;
     /**
      * Runs the Boost.Asio `io_context` thread for logging the Wine process
      * STDOUT and STDERR messages.

@@ -326,7 +326,7 @@ void HostBridge::set_parameter(AEffect* /*plugin*/, int index, float value) {
     assert(!response.value.has_value());
 }
 
-void HostBridge::async_log_pipe_lines(bp::async_pipe& pipe,
+void HostBridge::async_log_pipe_lines(patched_async_pipe& pipe,
                                       boost::asio::streambuf& buffer,
                                       std::string prefix) {
     boost::asio::async_read_until(
