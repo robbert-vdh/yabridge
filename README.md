@@ -12,6 +12,8 @@ There are a few things that should be done before making this public, including:
   - Check whether sidechaining and ~~MPE~~ work since they're unofficial additions
     to the VST 2.4 spec. Should either work out of the box or with a minor
     adjustment. MPE works!
+  - Add a similar seaphore to the plugin's `audioMaster` callback handler to
+    prevent requests from multiple threads being sent at once.
 - add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
