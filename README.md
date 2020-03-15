@@ -4,7 +4,7 @@ Yet Another way to use Windows VST2 plugins in Linux VST hosts.
 
 ## TODOs
 
-There are a few things that should be done before making this public, including:
+There are a few things that should be done before releasing this, including:
 
 - Implement missing features:
   - GUIs. Right now I'm just ignoring all of the opcodes related to GUIs so that
@@ -14,7 +14,7 @@ There are a few things that should be done before making this public, including:
     we pass to the host callbacks during initialization? Not sure.
   - Add a similar seaphore to the plugin's `audioMaster` callback handler to
     prevent requests from multiple threads being sent at once.
-- add missing details if any to the architecture section.
+- Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
 
