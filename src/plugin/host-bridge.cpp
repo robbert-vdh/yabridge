@@ -371,7 +371,11 @@ void HostBridge::async_log_pipe_lines(patched_async_pipe& pipe,
             std::getline(std::istream(&buffer), line);
             logger.log(prefix + line);
 
-            async_log_pipe_lines(pipe, buffer, prefix);
+            // Not sure why, but this async read will keep reading a ton of
+            // empty lines after the Wine process crashes
+            if (vst_host.running()) {
+                async_log_pipe_lines(pipe, buffer, prefix);
+            }
         });
 }
 
