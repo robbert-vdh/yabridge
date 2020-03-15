@@ -15,6 +15,13 @@ if not meson.get_compiler('cpp').compiles(winelib_check)
   error('You need to set up a cross compiler, check the README for more information.')
 endif
 
+# This provides an easy way to start the Wine VST host using winedbg since it
+# can be quite a pain to set up
+compiler_options = []
+if get_option('use-winedbg')
+  compiler_options += '-DUSE_WINEDBG'
+endif
+
 # The application consists of a VST plugin (yabridge) that calls a winelib
 # program (yabridge-host) that can host Windows VST plugins. More information
 # about the way these two components work together can be found in the readme
@@ -39,6 +46,7 @@ shared_library(
   native : true,
   include_directories : include_dir,
   dependencies : [boost_dep, bitsery_dep, threads_dep],
+  cpp_args : compiler_options,
   link_args : ['-ldl']
 )
 
@@ -53,5 +61,6 @@ executable(
   native : false,
   include_directories : include_dir,
   dependencies : [boost_dep, bitsery_dep, wine_threads_dep],
+  cpp_args : compiler_options,
   link_args : []
 )

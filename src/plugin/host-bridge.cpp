@@ -25,6 +25,10 @@
 #include <iostream>
 #include <random>
 
+#ifdef USE_WINEDBG
+#include <boost/process/start_dir.hpp>
+#endif
+
 #include "../common/communication.h"
 #include "../common/events.h"
 
@@ -86,6 +90,7 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
           create_logger_prefix(socket_endpoint.path()))),
       wine_stdout(io_context),
       wine_stderr(io_context),
+#ifndef USE_WINEDBG
       vst_host(vst_host_path,
                // The Wine VST host needs to know which plugin to load
                // and which Unix domain socket to connect to
@@ -93,7 +98,26 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
                socket_endpoint.path(),
                bp::env = set_wineprefix(),
                bp::std_out = wine_stdout,
-               bp::std_err = wine_stderr) {
+               bp::std_err = wine_stderr)
+#else
+      // This is set up for KDE Plasma. Other desktop environments and window
+      // managers require some slight modifications to spawn a detached terminal
+      // emulator.
+      vst_host("/usr/bin/kstart5",
+               "konsole",
+               "--",
+               "-e",
+               "winedbg",
+               "--gdb",
+               vst_host_path.string() + ".so",
+               vst_plugin_path.filename(),
+               socket_endpoint.path(),
+               bp::env = set_wineprefix(),
+               // winedbg has no reliable way to escape spaces, so we'll start
+               // the process in the plugin's directory
+               bp::start_dir = vst_plugin_path.parent_path())
+#endif
+{
     logger.log("Initializing yabridge using '" + vst_host_path.string() + "'");
     logger.log("plugin:     '" + vst_plugin_path.string() + "'");
     logger.log("socket:     '" + socket_endpoint.path() + "'");

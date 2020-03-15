@@ -123,12 +123,16 @@ instance of Carla with gdb attached:
 env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log YABRIDGE_DEBUG_LEVEL=1 carla --gdb
 ```
 
-Doing the same thing with the Wine VST host is also possible but it's a bit
-tricky. I have not had any success with attaching winedbg to running processes.
-The only thing that seems to work is to modify `host-bridge.cpp` to not launch
-`yabridge-host.exe` normally, but to instead start a new (detached) terminal
-emulator process running the Wine host through `winedbg --gdb`. I wouldn't
-recommended doing this if you can avoid it.
+Doing the same thing for the Wine VST host can be a bit trick., You'll need to
+launch winedbg in a seperate detached terminal emulator so it doesn't with the
+plugin, and winedbg can be a bit picky in the arguments it accepts. I've already
+set this up behind a feature flag for KDE Plasma. Other desktop environments and
+window managers will require some slight modifications in
+`src/plugin/host-bridge.cpp`. To enable this, simply run:
+
+```shell
+meson configure build -Duse-winedbg=true
+```
 
 ## Rationale
 
