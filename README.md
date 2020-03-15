@@ -9,9 +9,9 @@ There are a few things that should be done before making this public, including:
 - Implement missing features:
   - GUIs. Right now I'm just ignoring all of the opcodes related to GUIs so that
     the plugins don't crash when you open their GUI.
-  - Check whether sidechaining and ~~MPE~~ work since they're unofficial additions
-    to the VST 2.4 spec. Should either work out of the box or with a minor
-    adjustment. MPE works!
+  - All effect plugins report that they have a sidechain input and multiple
+    outputs. This might be because of the initial value of the `AEffect` struct
+    we pass to the host callbacks during initialization? Not sure.
   - Add a similar seaphore to the plugin's `audioMaster` callback handler to
     prevent requests from multiple threads being sent at once.
 - add missing details if any to the architecture section.
