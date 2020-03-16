@@ -158,12 +158,9 @@ class HostBridge {
     std::thread host_callback_handler;
 
     /**
-     * A binary semaphore for preventing the dispatch function from being called
-     * by two threads at once. This rarely happens and shouldn't event really be
-     * happening, but in Bitwig's plugin bridge sometimes calls the dispatch
-     * function with opcode 52 while it's still waiting for another dispatch
-     * call to return, which would cause two threads to write over the same
-     * socket at the same time.
+     * A binary semaphore to prevent race conditions from the dispatch function
+     * being called by two threads at once. See `send_event()` for more
+     * information.
      */
     std::mutex dispatch_semaphore;
 

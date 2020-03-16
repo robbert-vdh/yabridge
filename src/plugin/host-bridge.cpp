@@ -262,8 +262,8 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
 
             // Allow the plugin to handle its own shutdown
             const auto return_value = send_event(
-                host_vst_dispatch, converter, opcode, index, value, data,
-                option, std::pair<Logger&, bool>(logger, true));
+                host_vst_dispatch, dispatch_semaphore, converter, opcode, index,
+                value, data, option, std::pair<Logger&, bool>(logger, true));
 
             // Boost.Process will send SIGKILL to the Wien host for us when this
             // class gets destroyed. Because the process is running a few
@@ -293,20 +293,9 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
     }
 
     // TODO: Maybe reuse buffers here when dealing with chunk data
-
-    // Finish message Bitwig's plugin host sometimes calls the dispatch function
-    // for opcode 52 from an off thread. This shouldn't be happening, but it
-    // does. To prevent race conditions from multiple writes over the same
-    // socket at once we'll make sure that only one thread can send sockets at
-    // once. These locks are actually only needed around the `write_object()`
-    // part of `send_event()`.
-    dispatch_semaphore.lock();
-    const auto return_value =
-        send_event(host_vst_dispatch, converter, opcode, index, value, data,
-                   option, std::pair<Logger&, bool>(logger, true));
-    dispatch_semaphore.unlock();
-
-    return return_value;
+    return send_event(host_vst_dispatch, dispatch_semaphore, converter, opcode,
+                      index, value, data, option,
+                      std::pair<Logger&, bool>(logger, true));
 }
 
 void HostBridge::process_replacing(AEffect* /*plugin*/,

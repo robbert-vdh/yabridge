@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <mutex>
+
 #include "communication.h"
 #include "logging.h"
 
@@ -97,6 +99,12 @@ class DefaultDataConverter {
  * since they follow the same format. See one of those functions for details on
  * the parameters and return value of this function.
  *
+ * @param socket The socket to write over, should be the same socket the other
+ *   endpoint is using to call `passthrough_event()`.
+ * @param write_semaphore A mutex to ensure that only one thread can write to
+ *   the socket at once. Needed because VST hosts and plugins can and sometimes
+ *   will call the `dispatch()` or `audioMaster()` functions from multiple
+ *   threads at once.
  * @param data_converter Some struct that knows how to read data from and write
  *   data back to the `data` void pointer. For host callbacks this parameter
  *   contains either a string or a null pointer while `dispatch()` calls might
@@ -111,6 +119,7 @@ class DefaultDataConverter {
  */
 template <typename D>
 intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
+                    std::mutex& write_semaphore,
                     D& data_converter,
                     int opcode,
                     int index,
@@ -135,7 +144,14 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
     }
 
     const Event event{opcode, index, value, option, payload.value()};
+
+    // Prevent two threads from writing over the socket at the same time. This
+    // should not be needed, but for instance Bitwig's plugin bridge will
+    // sometimes repeatedly send events from an off thread that may overlap with
+    // other `dispatch()` calls.
+    write_semaphore.lock();
     write_object(socket, event);
+    write_semaphore.unlock();
 
     const auto response = read_object<EventResult>(socket);
 

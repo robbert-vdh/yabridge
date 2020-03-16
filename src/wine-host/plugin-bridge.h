@@ -27,6 +27,7 @@
 #include <windows.h>
 
 #include <boost/asio/local/stream_protocol.hpp>
+#include <mutex>
 #include <thread>
 
 #include "../common/logging.h"
@@ -114,6 +115,13 @@ class PluginBridge {
      * The t thread that handles calls to `processReplacing` (and `process`).
      */
     std::thread process_replacing_handler;
+
+    /**
+     * A binary semaphore to prevent race conditions from the host callback
+     * function being called by two threads at once. See `send_event()` for more
+     * information.
+     */
+    std::mutex host_callback_semaphore;
 
     /**
      * A scratch buffer for sending and receiving data during `process` and
