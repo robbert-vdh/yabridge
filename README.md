@@ -131,7 +131,7 @@ window managers will require some slight modifications in
 `src/plugin/host-bridge.cpp`. To enable this, simply run:
 
 ```shell
-meson configure build -Duse-winedbg=true
+meson configure build --buildtype=debug -Duse-winedbg=true
 ```
 
 ## Rationale

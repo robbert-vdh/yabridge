@@ -1,1 +1,6 @@
-option('use-winedbg', type : 'boolean', value : false)
+option(
+  'use-winedbg',
+  type : 'boolean',
+  value : false,
+  description: 'Whether to run the Wien VST host with GDB attached. Might not always be reliable.'
+)
