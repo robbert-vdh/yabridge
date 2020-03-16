@@ -9,9 +9,6 @@ There are a few things that should be done before releasing this, including:
 - Implement missing features:
   - GUIs. Right now I'm just ignoring all of the opcodes related to GUIs so that
     the plugins don't crash when you open their GUI.
-  - All effect plugins report that they have a sidechain input and multiple
-    outputs. This might be because of the initial value of the `AEffect` struct
-    we pass to the host callbacks during initialization? Not sure.
 - Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
