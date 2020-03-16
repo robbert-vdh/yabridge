@@ -260,10 +260,23 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             // TODO: Check whether the sockets and the endpoint are closed
             //       correctly
 
-            // Allow the plugin to handle its own shutdown
-            const auto return_value = send_event(
-                host_vst_dispatch, dispatch_semaphore, converter, opcode, index,
-                value, data, option, std::pair<Logger&, bool>(logger, true));
+            // Allow the plugin to handle its own shutdown. I've found a few
+            // plugins that work fine except for that they crash during
+            // shutdown. This shouldn't have any negative side effects since
+            // state has already been saved before this and all resources are
+            // cleaned up properly. Still not sure if this is a good way to
+            // handle this.
+            intptr_t return_value = 1;
+            try {
+                return_value =
+                    send_event(host_vst_dispatch, dispatch_semaphore, converter,
+                               opcode, index, value, data, option,
+                               std::pair<Logger&, bool>(logger, true));
+            } catch (const boost::system::system_error& a) {
+                // Thrown when the socket gets closed because the VST plugin
+                // loaded into the Wine process crashed during shutdown
+                logger.log("The plugin crashed during shutdown, ignoring");
+            }
 
             // Boost.Process will send SIGKILL to the Wien host for us when this
             // class gets destroyed. Because the process is running a few
