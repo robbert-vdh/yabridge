@@ -57,6 +57,7 @@ executable(
     'src/common/serialization.cpp',
     'src/wine-host/plugin-bridge.cpp',
     'src/wine-host/vst-host.cpp',
+    'src/wine-host/win32-editor.cpp',
   ],
   native : false,
   include_directories : include_dir,
