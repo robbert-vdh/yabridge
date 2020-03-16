@@ -121,12 +121,12 @@ template <typename D>
 intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                     std::mutex& write_semaphore,
                     D& data_converter,
+                    std::optional<std::pair<Logger&, bool>> logging,
                     int opcode,
                     int index,
                     intptr_t value,
                     void* data,
-                    float option,
-                    std::optional<std::pair<Logger&, bool>> logging) {
+                    float option) {
     // Encode the right payload type for this event. Check the documentation for
     // `EventPayload` for more information. We have to skip some opcodes because
     // some VST hsots will outright crash if they receive them, please let me
@@ -173,21 +173,21 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
  * those functions.
  *
  * @param socket The socket to receive on and to send the response back to.
+ * @param logging A pair containing a logger instance and whether or not this is
+ *   for sending `dispatch()` events or host callbacks. Optional since it
+ *   doesn't have to be done on both sides.
  * @param plugin The `AEffect` instance that should be passed to the callback
  *   function.
  * @param callback The function to call with the arguments received from the
  *   socket.
- * @param logging A pair containing a logger instance and whether or not this is
- *   for sending `dispatch()` events or host callbacks. Optional since it
- *   doesn't have to be done on both sides.
  *
  * @relates send_event
  */
 template <typename F>
 void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
+                       std::optional<std::pair<Logger&, bool>> logging,
                        AEffect* plugin,
-                       F callback,
-                       std::optional<std::pair<Logger&, bool>> logging) {
+                       F callback) {
     auto event = read_object<Event>(socket);
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();

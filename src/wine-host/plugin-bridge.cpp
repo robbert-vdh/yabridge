@@ -65,7 +65,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       vst_host_callback(io_context),
       host_vst_parameters(io_context),
       host_vst_process_replacing(io_context),
-      vst_host_aeffect(io_context) {
+      vst_host_aeffect(io_context),
+      editor("yabridge plugin") {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
         throw std::runtime_error("Could not load a shared library at '" +
@@ -122,8 +123,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // lockstep anyway
     dispatch_handler = std::thread([&]() {
         while (true) {
-            passthrough_event(host_vst_dispatch, plugin, plugin->dispatcher,
-                              std::nullopt);
+            passthrough_event(host_vst_dispatch, std::nullopt, plugin,
+                              plugin->dispatcher);
         }
     });
 
@@ -269,7 +270,7 @@ intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
                                      float option) {
     HostCallbackDataConverter converter(plugin, time_info);
     return send_event(vst_host_callback, host_callback_semaphore, converter,
-                      opcode, index, value, data, option, std::nullopt);
+                      std::nullopt, opcode, index, value, data, option);
 }
 
 intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,

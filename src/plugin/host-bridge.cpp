@@ -147,9 +147,9 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     host_callback_handler = std::thread([&]() {
         try {
             while (true) {
-                passthrough_event(vst_host_callback, &plugin,
-                                  host_callback_function,
-                                  std::pair<Logger&, bool>(logger, false));
+                passthrough_event(vst_host_callback,
+                                  std::pair<Logger&, bool>(logger, false),
+                                  &plugin, host_callback_function);
             }
         } catch (const boost::system::system_error&) {
             // This happens when the sockets got closed because the plugin
@@ -270,8 +270,8 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             try {
                 return_value =
                     send_event(host_vst_dispatch, dispatch_semaphore, converter,
-                               opcode, index, value, data, option,
-                               std::pair<Logger&, bool>(logger, true));
+                               std::pair<Logger&, bool>(logger, true), opcode,
+                               index, value, data, option);
             } catch (const boost::system::system_error& a) {
                 // Thrown when the socket gets closed because the VST plugin
                 // loaded into the Wine process crashed during shutdown
@@ -306,9 +306,9 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
     }
 
     // TODO: Maybe reuse buffers here when dealing with chunk data
-    return send_event(host_vst_dispatch, dispatch_semaphore, converter, opcode,
-                      index, value, data, option,
-                      std::pair<Logger&, bool>(logger, true));
+    return send_event(host_vst_dispatch, dispatch_semaphore, converter,
+                      std::pair<Logger&, bool>(logger, true), opcode, index,
+                      value, data, option);
 }
 
 void HostBridge::process_replacing(AEffect* /*plugin*/,
