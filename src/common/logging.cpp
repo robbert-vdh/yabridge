@@ -175,7 +175,8 @@ void Logger::log_event(bool is_dispatch,
                     message << "<writable_buffer>";
                 },
                 [&](const WantsVstTimeInfo&) { message << "<nullptr>"; },
-                [&](const WantsString&) { message << "<writable_string>"; }},
+                [&](const WantsString&) { message << "<writable_string>"; },
+                [&](const WantsWindowHandle&) { message << "<nullptr>"; }},
             payload);
 
         message << ")";
@@ -209,7 +210,10 @@ void Logger::log_event_response(bool is_dispatch,
                          }
                      },
                      [&](const AEffect&) { message << ", <AEffect_object>"; },
-                     [&](const VstTimeInfo&) { message << ", <time_info>"; }},
+                     [&](const VstTimeInfo&) { message << ", <time_info>"; },
+                     [&](const intptr_t& window_handle) {
+                         message << ", window #" << window_handle;
+                     }},
             payload);
 
         log(message.str());

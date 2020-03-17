@@ -183,7 +183,6 @@ class DispatchDataConverter : DefaultDataConverter {
         switch (opcode) {
             // TODO: Add GUI support. These events are just disabled for now to
             //       ensure everything else works first.
-            case effEditOpen:
             case effEditTop:
             case effEditIdle:
             case effEditClose:
@@ -194,6 +193,9 @@ class DispatchDataConverter : DefaultDataConverter {
                           << "), ignoring..." << std::endl;
 
                 return std::nullopt;
+                break;
+            case effEditOpen:
+                return WantsWindowHandle();
                 break;
             case effGetChunk:
                 return WantsChunkBuffer();
@@ -214,6 +216,10 @@ class DispatchDataConverter : DefaultDataConverter {
 
     void write(const int opcode, void* data, const EventResult& response) {
         switch (opcode) {
+            case effEditOpen:
+                // TODO: Write the returned window handle somewhere
+                DefaultDataConverter::write(opcode, data, response);
+                break;
             case effGetChunk:
                 // Write the chunk data to some publically accessible place in
                 // `HostBridge` and write a pointer to that struct to the data
@@ -253,8 +259,21 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
     DispatchDataConverter converter(chunk_data);
 
     // Some events need some extra handling
-    // TODO: Handle other things such as GUI itneraction
+    // TODO: Handle GUI closing?
     switch (opcode) {
+        case effEditOpen:
+            // TODO: Should work as follows:
+            //       1. Create a window in the Wine host using the Windows APIs
+            //       2. Return the X11 window handle
+            //       4. Use XEmbed to embmed the Wine window inside the parent
+            //          window stored in the data void pointer
+            //       5. Return a handle to the X11 window
+            send_event(host_vst_dispatch, dispatch_semaphore, converter,
+                       std::pair<Logger&, bool>(logger, true), opcode, index,
+                       value, data, option);
+
+            return 0;
+            break;
         case effClose:
             // TODO: Gracefully close the editor?
             // TODO: Check whether the sockets and the endpoint are closed

@@ -123,8 +123,28 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // lockstep anyway
     dispatch_handler = std::thread([&]() {
         while (true) {
-            passthrough_event(host_vst_dispatch, std::nullopt, plugin,
-                              plugin->dispatcher);
+            passthrough_event(
+                host_vst_dispatch, std::nullopt, plugin,
+                [&](AEffect* plugin, int opcode, int index, intptr_t value,
+                    void* data, float option) -> intptr_t {
+                    // TODO: editEffClose
+                    // We have to intercept GUI open calls since we can't use
+                    // the X11 window handle passed by the host
+                    if (opcode == effEditOpen) {
+                        const auto handle = editor.open();
+                        const intptr_t return_value = plugin->dispatcher(
+                            plugin, opcode, index, value, handle, option);
+                        if (return_value == 0) {
+                            return 0;
+                        }
+
+                        // TODO: Return X11 handle
+                        return return_value;
+                    }
+
+                    return plugin->dispatcher(plugin, opcode, index, value,
+                                              data, option);
+                });
         }
     });
 

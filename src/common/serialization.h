@@ -165,6 +165,12 @@ struct WantsVstTimeInfo {};
 struct WantsString {};
 
 /**
+ * The event handler (the Wine VST host) should create a Winn32 window, pass
+ * that to the plugin, and return an X11 window handle.
+ */
+struct WantsWindowHandle {};
+
+/**
  * VST events are passed a void pointer that can contain a variety of different
  * data types depending on the event's opcode. This is typically either:
  *
@@ -197,27 +203,27 @@ using EventPayload = std::variant<std::nullptr_t,
                                   DynamicVstEvents,
                                   WantsChunkBuffer,
                                   WantsVstTimeInfo,
-                                  WantsString>;
+                                  WantsString,
+                                  WantsWindowHandle>;
 
 template <typename S>
 void serialize(S& s, EventPayload& payload) {
-    s.ext(payload, bitsery::ext::StdVariant{
-                       [](S&, std::nullptr_t&) {},
-                       [](S& s, std::string& string) {
-                           // `binary_buffer_size` and not `max_string_length`
-                           // because we also use this to send back large chunk
-                           // data
-                           s.text1b(string, binary_buffer_size);
-                       },
-                       [](S& s, AEffect& effect) { s.object(effect); },
-                       [](S& s, DynamicVstEvents& events) {
-                           s.container(events.events, max_midi_events,
-                                       [](S& s, VstEvent& event) {
-                                           s.container1b(event.dump);
-                                       });
-                       },
-                       [](S&, WantsChunkBuffer&) {},
-                       [](S&, WantsVstTimeInfo&) {}, [](S&, WantsString&) {}});
+    s.ext(payload,
+          bitsery::ext::StdVariant{
+              [](S&, std::nullptr_t&) {},
+              [](S& s, std::string& string) {
+                  // `binary_buffer_size` and not `max_string_length` because we
+                  // also use this to send back large chunk data
+                  s.text1b(string, binary_buffer_size);
+              },
+              [](S& s, AEffect& effect) { s.object(effect); },
+              [](S& s, DynamicVstEvents& events) {
+                  s.container(
+                      events.events, max_midi_events,
+                      [](S& s, VstEvent& event) { s.container1b(event.dump); });
+              },
+              [](S&, WantsChunkBuffer&) {}, [](S&, WantsVstTimeInfo&) {},
+              [](S&, WantsString&) {}, [](S&, WantsWindowHandle&) {}});
 }
 
 /**
@@ -270,9 +276,10 @@ struct Event {
  *   instenad.
  * - A specific struct in response to an event such as `audioMasterGetTime` or
  *   `audioMasterIOChanged`.
+ * - An X11 window pointer for the editor window.
  */
 using EventResposnePayload =
-    std::variant<std::monostate, std::string, AEffect, VstTimeInfo>;
+    std::variant<std::monostate, std::string, AEffect, VstTimeInfo, intptr_t>;
 
 template <typename S>
 void serialize(S& s, EventResposnePayload& payload) {
@@ -286,7 +293,8 @@ void serialize(S& s, EventResposnePayload& payload) {
                   s.text1b(string, binary_buffer_size);
               },
               [](S& s, AEffect& effect) { s.object(effect); },
-              [](S& s, VstTimeInfo& time_info) { s.object(time_info); }});
+              [](S& s, VstTimeInfo& time_info) { s.object(time_info); },
+              [](S& s, intptr_t& v) { s.value8b(v); }});
 }
 
 /**

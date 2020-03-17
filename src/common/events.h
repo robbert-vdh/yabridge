@@ -208,7 +208,8 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
             },
             [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
             [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
-            [&](WantsString&) -> void* { return string_buffer.data(); }},
+            [&](WantsString&) -> void* { return string_buffer.data(); },
+            [&](WantsWindowHandle&) -> void* { return string_buffer.data(); }},
         event.payload);
 
     const intptr_t return_value = callback(plugin, event.opcode, event.index,
@@ -263,6 +264,15 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                  },
                  [&](WantsString&) -> EventResposnePayload {
                      return std::string(static_cast<char*>(data));
+                 },
+                 [&](WantsWindowHandle&) -> EventResposnePayload {
+                     // This is a bit of a hack, but I couldn't think of a nicer
+                     // way to do this since it's only needed for the
+                     // `effEditOpen` event. We override the callback function
+                     // to create a Win32 window, pass that to the plugin, and
+                     // then write the corresponding X11 window handle to the
+                     // data pointer.
+                     return *reinterpret_cast<intptr_t*>(data);
                  }},
         event.payload);
 

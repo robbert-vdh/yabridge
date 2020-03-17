@@ -31,6 +31,7 @@
 #include <thread>
 
 #include "../common/logging.h"
+#include "win32-editor.h"
 
 /**
  * This handles the communication between the Linux native VST plugin and the
@@ -128,4 +129,6 @@ class PluginBridge {
      * `processReplacing` calls.
      */
     std::vector<uint8_t> process_buffer;
+
+    Win32Editor editor;
 };
