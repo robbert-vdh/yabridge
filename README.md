@@ -67,6 +67,7 @@ the following dependencies:
 - gcc (tested using GCC 9.2)
 - A Wine installation with `wiengcc` and the development headers.
 - Boost
+- xcb
 
 The following dependencies are included as a Meson wrap:
 

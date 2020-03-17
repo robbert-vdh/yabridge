@@ -1,3 +1,5 @@
+#include <xcb/xcb.h>
+
 #define NOMINMAX
 #define NOSERVICE
 #define NOMCX
@@ -32,7 +34,7 @@ class Win32Editor {
     /**
      * Return the X11 window handle for the window if it's currently open.
      */
-    std::optional<intptr_t> get_x11_handle();
+    std::optional<xcb_window_t> get_x11_handle();
 
    private:
     ATOM window_class;
@@ -44,4 +46,6 @@ class Win32Editor {
     std::optional<
         std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>>
         window_handle;
+
+    std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
 };
