@@ -195,7 +195,13 @@ class DispatchDataConverter : DefaultDataConverter {
                 return std::nullopt;
                 break;
             case effEditOpen:
-                return WantsWindowHandle();
+                // The host will have passed us an X11 window handle in the void
+                // pointer. In the Wine VST host we'll create a Win32 window,
+                // ask the plugin to embed itself in that and then embed that
+                // window into this X11 window handle.
+                // TODO: Check if the host passes the window handle like this,
+                //       or if the window handle is behind the pointer
+                return reinterpret_cast<size_t>(data);
                 break;
             case effGetChunk:
                 return WantsChunkBuffer();
@@ -216,10 +222,6 @@ class DispatchDataConverter : DefaultDataConverter {
 
     void write(const int opcode, void* data, const EventResult& response) {
         switch (opcode) {
-            case effEditOpen:
-                // TODO: Write the returned window handle somewhere
-                DefaultDataConverter::write(opcode, data, response);
-                break;
             case effGetChunk:
                 // Write the chunk data to some publically accessible place in
                 // `HostBridge` and write a pointer to that struct to the data
@@ -312,26 +314,6 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
                 return return_value;
             }
             break;
-        case effEditOpen:
-            // TODO: Should work as follows:
-            //       1. Create a window in the Wine host using the Windows APIs
-            //       2. Return the X11 window handle
-            //       4. Use XEmbed to embmed the Wine window inside the parent
-            //          window stored in the data void pointer
-            //       5. Return a handle to the X11 window
-            {
-                // The plugin will return 0 if it does not actually support
-                // opening a window
-                const auto return_value =
-                    send_event(host_vst_dispatch, dispatch_semaphore, converter,
-                               std::pair<Logger&, bool>(logger, true), opcode,
-                               index, value, data, option);
-                if (return_value == 0) {
-                    return 0;
-                }
-
-                return return_value;
-            }
     }
 
     // TODO: Maybe reuse buffers here when dealing with chunk data

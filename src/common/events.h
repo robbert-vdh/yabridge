@@ -202,14 +202,23 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
             [&](const std::string& s) -> void* {
                 return const_cast<char*>(s.c_str());
             },
+            [&](size_t& window_handle) -> void* {
+                // This is the X11 window handle that the editor should reparent
+                // itself to. We have a special wrapper around the dispatch
+                // function that intercepts `effEditOpen` events and creates a
+                // Win32 window and then finally embeds the X11 window Wine
+                // created into this wnidow handle.
+                // TODO: Check if the host passes the window handle like this,
+                //       or if the window handle is behind the pointer
+                return reinterpret_cast<void*>(window_handle);
+            },
             [&](const AEffect&) -> void* { return nullptr; },
             [&](DynamicVstEvents& events) -> void* {
                 return &events.as_c_events();
             },
             [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
             [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
-            [&](WantsString&) -> void* { return string_buffer.data(); },
-            [&](WantsWindowHandle&) -> void* { return string_buffer.data(); }},
+            [&](WantsString&) -> void* { return string_buffer.data(); }},
         event.payload);
 
     const intptr_t return_value = callback(plugin, event.opcode, event.index,
@@ -264,17 +273,6 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                  },
                  [&](WantsString&) -> EventResposnePayload {
                      return std::string(static_cast<char*>(data));
-                 },
-                 [&](WantsWindowHandle&) -> EventResposnePayload {
-                     // This is a bit of a hack, but I couldn't think of a nicer
-                     // way to do this since it's only needed for the
-                     // `effEditOpen` event. We override the callback function
-                     // to create a Win32 window, pass that to the plugin, and
-                     // then write the corresponding X11 window handle to the
-                     // data pointer.
-                     // TODO: I really want to build a more obvious mechanism
-                     //       for this
-                     return *reinterpret_cast<intptr_t*>(data);
                  }},
         event.payload);
 

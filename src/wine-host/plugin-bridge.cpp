@@ -131,18 +131,21 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
                     // We have to intercept GUI open calls since we can't use
                     // the X11 window handle passed by the host
                     if (opcode == effEditOpen) {
-                        const auto handle = editor.open();
+                        const auto win32_handle = editor.open();
 
                         // The plugin will return 0 if it can not open its
                         // editor window (or if it does not support it, but in
                         // that case the DAW should be hiding the option)
                         const intptr_t return_value = plugin->dispatcher(
-                            plugin, opcode, index, value, handle, option);
+                            plugin, opcode, index, value, win32_handle, option);
                         if (return_value == 0) {
                             return 0;
                         }
 
-                        // TODO: Return X11 handle
+                        // TODO: Embed the Win32 window into the X11 window
+                        // handle
+                        const auto x11_handle = reinterpret_cast<size_t>(data);
+
                         return return_value;
                     }
 
