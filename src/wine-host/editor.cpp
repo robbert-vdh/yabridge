@@ -1,4 +1,4 @@
-#include "win32-editor.h"
+#include "editor.h"
 
 ATOM register_window_class(std::string window_class_name);
 

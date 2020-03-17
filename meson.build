@@ -32,6 +32,7 @@ bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
 threads_dep = dependency('threads')
 # The built in threads dependency does not know how to handle winegcc
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
+x11_dep = dependency('x11')
 
 include_dir = include_directories('src/include')
 
@@ -57,11 +58,11 @@ executable(
     'src/common/serialization.cpp',
     'src/wine-host/plugin-bridge.cpp',
     'src/wine-host/vst-host.cpp',
-    'src/wine-host/win32-editor.cpp',
+    'src/wine-host/editor.cpp',
   ],
   native : false,
   include_directories : include_dir,
-  dependencies : [boost_dep, bitsery_dep, wine_threads_dep],
+  dependencies : [boost_dep, bitsery_dep, wine_threads_dep, x11_dep],
   cpp_args : compiler_options,
   link_args : []
 )

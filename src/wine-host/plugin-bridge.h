@@ -31,7 +31,7 @@
 #include <thread>
 
 #include "../common/logging.h"
-#include "win32-editor.h"
+#include "editor.h"
 
 /**
  * This handles the communication between the Linux native VST plugin and the
