@@ -2,11 +2,11 @@
 
 ATOM register_window_class(std::string window_class_name);
 
-Win32Editor::Win32Editor(std::string window_class_name)
+Editor::Editor(std::string window_class_name)
     : window_class(register_window_class(window_class_name)),
       x11_connection(xcb_connect(nullptr, nullptr), &xcb_disconnect) {}
 
-HWND Win32Editor::open() {
+HWND Editor::open() {
     window_handle =
         std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>(
             CreateWindowEx(WS_EX_TOOLWINDOW,
@@ -18,7 +18,7 @@ HWND Win32Editor::open() {
     return window_handle->get();
 }
 
-void Win32Editor::close() {
+void Editor::close() {
     // RAII does the rest for us
     window_handle = std::nullopt;
 
@@ -26,7 +26,7 @@ void Win32Editor::close() {
     //       everything for us?
 }
 
-std::optional<xcb_window_t> Win32Editor::get_x11_handle() {
+std::optional<xcb_window_t> Editor::get_x11_handle() {
     if (!window_handle.has_value()) {
         return std::nullopt;
     }

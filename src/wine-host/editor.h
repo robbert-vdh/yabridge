@@ -20,13 +20,13 @@
  * windows. A VST plugin can embed itself in that window, and we can then later
  * embed the window in a VST host provided X11 window.
  */
-class Win32Editor {
+class Editor {
    public:
     /**
      * @param window_class_name The name for the window class for editor
      *   windows.
      */
-    Win32Editor(std::string window_class_name);
+    Editor(std::string window_class_name);
 
     /**
      * Open a window and return a handle to the new Win32 window that can be

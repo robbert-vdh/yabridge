@@ -130,5 +130,5 @@ class PluginBridge {
      */
     std::vector<uint8_t> process_buffer;
 
-    Win32Editor editor;
+    Editor editor;
 };
