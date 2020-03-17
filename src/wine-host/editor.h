@@ -36,9 +36,20 @@ class Editor {
     void close();
 
     /**
+     * Embed the (open) window into a parent window.
+     *
+     * @param parent_window_handle The X11 window handle passed by the VST host
+     *   for the editor to embed itself into.
+     *
+     * @return Whether the embedding was succesful. Will return false if the
+     *   window is not open.
+     */
+    bool embed_into(const size_t parent_window_handle);
+
+    /**
      * Return the X11 window handle for the window if it's currently open.
      */
-    std::optional<xcb_window_t> get_x11_handle();
+    std::optional<size_t> get_x11_handle();
 
    private:
     ATOM window_class;
@@ -49,7 +60,7 @@ class Editor {
      */
     std::optional<
         std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>>
-        window_handle;
+        win32_handle;
 
     std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
 };

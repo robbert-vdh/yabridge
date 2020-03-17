@@ -142,9 +142,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
                             return 0;
                         }
 
-                        // TODO: Embed the Win32 window into the X11 window
-                        // handle
                         const auto x11_handle = reinterpret_cast<size_t>(data);
+                        editor.embed_into(x11_handle);
 
                         return return_value;
                     }
