@@ -272,6 +272,8 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                      // to create a Win32 window, pass that to the plugin, and
                      // then write the corresponding X11 window handle to the
                      // data pointer.
+                     // TODO: I really want to build a more obvious mechanism
+                     //       for this
                      return *reinterpret_cast<intptr_t*>(data);
                  }},
         event.payload);

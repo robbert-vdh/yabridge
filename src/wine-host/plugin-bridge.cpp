@@ -132,6 +132,10 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
                     // the X11 window handle passed by the host
                     if (opcode == effEditOpen) {
                         const auto handle = editor.open();
+
+                        // The plugin will return 0 if it can not open its
+                        // editor window (or if it does not support it, but in
+                        // that case the DAW should be hiding the option)
                         const intptr_t return_value = plugin->dispatcher(
                             plugin, opcode, index, value, handle, option);
                         if (return_value == 0) {
