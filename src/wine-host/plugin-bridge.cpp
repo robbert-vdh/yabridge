@@ -122,35 +122,12 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // instead of asynchronous IO since communication has to be handled in
     // lockstep anyway
     dispatch_handler = std::thread([&]() {
+        using namespace std::placeholders;
+
         while (true) {
-            passthrough_event(
-                host_vst_dispatch, std::nullopt, plugin,
-                [&](AEffect* plugin, int opcode, int index, intptr_t value,
-                    void* data, float option) -> intptr_t {
-                    // TODO: editEffClose
-                    // We have to intercept GUI open calls since we can't use
-                    // the X11 window handle passed by the host
-                    if (opcode == effEditOpen) {
-                        const auto win32_handle = editor.open();
-
-                        // The plugin will return 0 if it can not open its
-                        // editor window (or if it does not support it, but in
-                        // that case the DAW should be hiding the option)
-                        const intptr_t return_value = plugin->dispatcher(
-                            plugin, opcode, index, value, win32_handle, option);
-                        if (return_value == 0) {
-                            return 0;
-                        }
-
-                        const auto x11_handle = reinterpret_cast<size_t>(data);
-                        editor.embed_into(x11_handle);
-
-                        return return_value;
-                    }
-
-                    return plugin->dispatcher(plugin, opcode, index, value,
-                                              data, option);
-                });
+            passthrough_event(host_vst_dispatch, std::nullopt, plugin,
+                              std::bind(&PluginBridge::dispatch_wrapper, this,
+                                        _1, _2, _3, _4, _5, _6));
         }
     });
 
@@ -210,6 +187,36 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
 
     std::cout << "Finished initializing '" << plugin_dll_path << "'"
               << std::endl;
+}
+
+intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
+                                        int opcode,
+                                        int index,
+                                        intptr_t value,
+                                        void* data,
+                                        float option) {
+    // TODO: editEffClose
+    // We have to intercept GUI open calls since we can't use
+    // the X11 window handle passed by the host
+    if (opcode == effEditOpen) {
+        const auto win32_handle = editor.open();
+
+        // The plugin will return 0 if it can not open its
+        // editor window (or if it does not support it, but in
+        // that case the DAW should be hiding the option)
+        const intptr_t return_value = plugin->dispatcher(
+            plugin, opcode, index, value, win32_handle, option);
+        if (return_value == 0) {
+            return 0;
+        }
+
+        const auto x11_handle = reinterpret_cast<size_t>(data);
+        editor.embed_into(x11_handle);
+
+        return return_value;
+    }
+
+    return plugin->dispatcher(plugin, opcode, index, value, data, option);
 }
 
 void PluginBridge::wait() {

@@ -69,6 +69,17 @@ class PluginBridge {
 
    private:
     /**
+     * A wrapper around `plugin->dispatcher` that handles the opening and
+     * closing of GUIs.
+     */
+    intptr_t dispatch_wrapper(AEffect* plugin,
+                              int opcode,
+                              int index,
+                              intptr_t value,
+                              void* data,
+                              float option);
+
+    /**
      * The shared library handle of the VST plugin. I sadly could not get
      * Boost.DLL to work here, so we'll just load the VST plugisn by hand.
      */
