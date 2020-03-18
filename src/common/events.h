@@ -217,6 +217,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                 return &events.as_c_events();
             },
             [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
+            [&](const WantsVstRect&) -> void* { return string_buffer.data(); },
             [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
             [&](WantsString&) -> void* { return string_buffer.data(); }},
         event.payload);
@@ -263,6 +264,11 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                      // how much data the plugin has written
                      return std::string(*static_cast<char**>(data),
                                         return_value);
+                 },
+                 [&](WantsVstRect&) -> EventResposnePayload {
+                     // The plugin has written a pointer to a VstRect struct
+                     // into the data poitner
+                     return **static_cast<VstRect**>(data);
                  },
                  [&](WantsVstTimeInfo&) -> EventResposnePayload {
                      // Not sure why the VST API has twenty different ways of

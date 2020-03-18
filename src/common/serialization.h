@@ -84,6 +84,14 @@ void serialize(S& s, AEffect& plugin) {
 }
 
 template <typename S>
+void serialize(S& s, VstRect& rect) {
+    s.value2b(rect.top);
+    s.value2b(rect.left);
+    s.value2b(rect.right);
+    s.value2b(rect.bottom);
+}
+
+template <typename S>
 void serialize(S& s, VstTimeInfo& time_info) {
     s.value8b(time_info.samplePos);
     s.value8b(time_info.sampleRate);
@@ -153,8 +161,14 @@ class alignas(16) DynamicVstEvents {
 struct WantsChunkBuffer {};
 
 /**
+ * Marker struct to indicate that the event handler will write a pointer to a
+ * `VstRect` struct into the void pointer.
+ */
+struct WantsVstRect {};
+
+/**
  * Marker struct to indicate that the event handler will return a pointer to a
- * `VstTiemInfo` struct that should be returned transfered.
+ * `VstTimeInfo` struct that should be returned transfered.
  */
 struct WantsVstTimeInfo {};
 
@@ -198,6 +212,7 @@ using EventPayload = std::variant<std::nullptr_t,
                                   AEffect,
                                   DynamicVstEvents,
                                   WantsChunkBuffer,
+                                  WantsVstRect,
                                   WantsVstTimeInfo,
                                   WantsString>;
 
@@ -218,8 +233,8 @@ void serialize(S& s, EventPayload& payload) {
                       events.events, max_midi_events,
                       [](S& s, VstEvent& event) { s.container1b(event.dump); });
               },
-              [](S&, WantsChunkBuffer&) {}, [](S&, WantsVstTimeInfo&) {},
-              [](S&, WantsString&) {}});
+              [](S&, WantsChunkBuffer&) {}, [](S&, WantsVstRect&) {},
+              [](S&, WantsVstTimeInfo&) {}, [](S&, WantsString&) {}});
 }
 
 /**
@@ -275,7 +290,7 @@ struct Event {
  * - An X11 window pointer for the editor window.
  */
 using EventResposnePayload =
-    std::variant<std::monostate, std::string, AEffect, VstTimeInfo>;
+    std::variant<std::monostate, std::string, AEffect, VstRect, VstTimeInfo>;
 
 template <typename S>
 void serialize(S& s, EventResposnePayload& payload) {
@@ -289,6 +304,7 @@ void serialize(S& s, EventResposnePayload& payload) {
                   s.text1b(string, binary_buffer_size);
               },
               [](S& s, AEffect& effect) { s.object(effect); },
+              [](S& s, VstRect& rect) { s.object(rect); },
               [](S& s, VstTimeInfo& time_info) { s.object(time_info); }});
 }
 

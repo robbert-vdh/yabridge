@@ -172,8 +172,9 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
 
 class DispatchDataConverter : DefaultDataConverter {
    public:
-    DispatchDataConverter(std::vector<uint8_t>& chunk_data)
-        : chunk(chunk_data) {}
+    DispatchDataConverter(std::vector<uint8_t>& chunk_data,
+                          VstRect& editor_rectangle)
+        : chunk(chunk_data), rect(editor_rectangle) {}
 
     std::optional<EventPayload> read(const int opcode,
                                      const intptr_t value,
@@ -181,18 +182,8 @@ class DispatchDataConverter : DefaultDataConverter {
         // There are some events that need specific structs that we can't simply
         // serialize as a string because they might contain null bytes
         switch (opcode) {
-            // TODO: Add GUI support. These events are just disabled for now to
-            //       ensure everything else works first.
-            case effEditTop:
-            case effEditIdle:
-            case effEditClose:
             case effEditGetRect:
-                std::cerr << "Got opcode "
-                          << opcode_to_string(true, opcode)
-                                 .value_or(std::to_string(opcode))
-                          << "), ignoring..." << std::endl;
-
-                return std::nullopt;
+                return WantsVstRect();
                 break;
             case effEditOpen:
                 // The host will have passed us an X11 window handle in the void
@@ -222,18 +213,31 @@ class DispatchDataConverter : DefaultDataConverter {
 
     void write(const int opcode, void* data, const EventResult& response) {
         switch (opcode) {
-            case effGetChunk:
+            case effEditGetRect: {
+                // Write back the (hopefully) updated editor dimensions
+                const auto new_rect = std::get<VstRect>(response.payload);
+                rect = new_rect;
+
+                // TODO: Maybe the host expects this field to be always up to
+                //       date, so if the editor resizes itself then the
+                //       `VstRect` behind this pointer should change as well
+                //       without any additional dispatch calls. If that's the
+                //       case, then we can probably reuse
+                //       `audioMasterSizeWindow`.
+                *static_cast<VstRect**>(data) = &rect;
+                break;
+            }
+            case effGetChunk: {
                 // Write the chunk data to some publically accessible place in
                 // `HostBridge` and write a pointer to that struct to the data
                 // pointer
-                {
-                    std::string buffer =
-                        std::get<std::string>(response.payload);
-                    chunk.assign(buffer.begin(), buffer.end());
 
-                    *static_cast<void**>(data) = chunk.data();
-                }
+                std::string buffer = std::get<std::string>(response.payload);
+                chunk.assign(buffer.begin(), buffer.end());
+
+                *static_cast<void**>(data) = chunk.data();
                 break;
+            }
             default:
                 DefaultDataConverter::write(opcode, data, response);
                 break;
@@ -246,6 +250,7 @@ class DispatchDataConverter : DefaultDataConverter {
 
    private:
     std::vector<uint8_t>& chunk;
+    VstRect& rect;
 };
 
 /**
@@ -258,62 +263,61 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
                               intptr_t value,
                               void* data,
                               float option) {
-    DispatchDataConverter converter(chunk_data);
+    DispatchDataConverter converter(chunk_data, editor_rectangle);
 
     // Some events need some extra handling
     // TODO: Handle GUI closing?
     switch (opcode) {
         break;
-        case effClose:
+        case effClose: {
             // TODO: Gracefully close the editor?
             // TODO: Check whether the sockets and the endpoint are closed
             //       correctly
-            {
-                // Allow the plugin to handle its own shutdown. I've found a few
-                // plugins that work fine except for that they crash during
-                // shutdown. This shouldn't have any negative side effects since
-                // state has already been saved before this and all resources
-                // are cleaned up properly. Still not sure if this is a good way
-                // to handle this.
-                intptr_t return_value = 1;
-                try {
-                    return_value = send_event(
-                        host_vst_dispatch, dispatch_semaphore, converter,
-                        std::pair<Logger&, bool>(logger, true), opcode, index,
-                        value, data, option);
-                } catch (const boost::system::system_error& a) {
-                    // Thrown when the socket gets closed because the VST plugin
-                    // loaded into the Wine process crashed during shutdown
-                    logger.log("The plugin crashed during shutdown, ignoring");
-                }
 
-                // Boost.Process will send SIGKILL to the Wien host for us when
-                // this class gets destroyed. Because the process is running a
-                // few threads Wine will say something about a segfault
-                // (probably related to `std::terminate`), but this doesn't seem
-                // to have any negative impact
-
-                // The `stop()` method will cause the IO context to just drop
-                // all of its work and immediately and not throw any exceptions
-                // that would have been caused by pipes and sockets being closed
-                io_context.stop();
-
-                // `std::thread`s are not interruptable, and since we're doing
-                // blocking synchronous reads there's no way to interrupt them.
-                // If we don't detach them then the runtime will call
-                // `std::terminate` for us. The workaround here is to simply
-                // detach the threads and then close all sockets. This will
-                // cause them to throw exceptions which we then catch and
-                // ignore. Please let me know if there's a better way to handle
-                // this.q
-                host_callback_handler.detach();
-                wine_io_handler.detach();
-
-                delete this;
-
-                return return_value;
+            // Allow the plugin to handle its own shutdown. I've found a few
+            // plugins that work fine except for that they crash during
+            // shutdown. This shouldn't have any negative side effects since
+            // state has already been saved before this and all resources are
+            // cleaned up properly. Still not sure if this is a good way to
+            // handle this.
+            intptr_t return_value = 1;
+            try {
+                return_value =
+                    send_event(host_vst_dispatch, dispatch_semaphore, converter,
+                               std::pair<Logger&, bool>(logger, true), opcode,
+                               index, value, data, option);
+            } catch (const boost::system::system_error& a) {
+                // Thrown when the socket gets closed because the VST plugin
+                // loaded into the Wine process crashed during shutdown
+                logger.log("The plugin crashed during shutdown, ignoring");
             }
+
+            // Boost.Process will send SIGKILL to the Wien host for us when this
+            // class gets destroyed. Because the process is running a few
+            // threads Wine will say something about a segfault (probably
+            // related to `std::terminate`), but this doesn't seem to have any
+            // negative impact
+
+            // The `stop()` method will cause the IO context to just drop
+            // all of its work and immediately and not throw any exceptions
+            // that would have been caused by pipes and sockets being closed
+            io_context.stop();
+
+            // `std::thread`s are not interruptable, and since we're doing
+            // blocking synchronous reads there's no way to interrupt them. If
+            // we don't detach them then the runtime will call `std::terminate`
+            // for us. The workaround here is to simply detach the threads and
+            // then close all sockets. This will cause them to throw exceptions
+            // which we then catch and ignore. Please let me know if there's a
+            // better way to handle this.q
+            host_callback_handler.detach();
+            wine_io_handler.detach();
+
+            delete this;
+
+            return return_value;
             break;
+        };
     }
 
     // TODO: Maybe reuse buffers here when dealing with chunk data

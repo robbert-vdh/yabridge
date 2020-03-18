@@ -175,6 +175,7 @@ void Logger::log_event(bool is_dispatch,
                 [&](const WantsChunkBuffer&) {
                     message << "<writable_buffer>";
                 },
+                [&](const WantsVstRect&) { message << "<writable_buffer>"; },
                 [&](const WantsVstTimeInfo&) { message << "<nullptr>"; },
                 [&](const WantsString&) { message << "<writable_string>"; }},
             payload);
@@ -210,6 +211,11 @@ void Logger::log_event_response(bool is_dispatch,
                          }
                      },
                      [&](const AEffect&) { message << ", <AEffect_object>"; },
+                     [&](const VstRect& rect) {
+                         message << ", {l: " << rect.left << ", t: " << rect.top
+                                 << ", r: " << rect.right
+                                 << ", b: " << rect.bottom << "}";
+                     },
                      [&](const VstTimeInfo&) { message << ", <time_info>"; }},
             payload);
 

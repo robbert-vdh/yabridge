@@ -195,28 +195,41 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
                                         intptr_t value,
                                         void* data,
                                         float option) {
-    // TODO: editEffClose
     // We have to intercept GUI open calls since we can't use
     // the X11 window handle passed by the host
-    if (opcode == effEditOpen) {
-        const auto win32_handle = editor.open();
+    switch (opcode) {
+        case effEditOpen: {
+            const auto win32_handle = editor.open();
 
-        // The plugin will return 0 if it can not open its
-        // editor window (or if it does not support it, but in
-        // that case the DAW should be hiding the option)
-        const intptr_t return_value = plugin->dispatcher(
-            plugin, opcode, index, value, win32_handle, option);
-        if (return_value == 0) {
-            return 0;
+            // The plugin will return 0 if it can not open its
+            // editor window (or if it does not support it, but in
+            // that case the DAW should be hiding the option)
+            const intptr_t return_value = plugin->dispatcher(
+                plugin, opcode, index, value, win32_handle, option);
+            if (return_value == 0) {
+                return 0;
+            }
+
+            const auto x11_handle = reinterpret_cast<size_t>(data);
+            editor.embed_into(x11_handle);
+
+            return return_value;
+            break;
         }
+        case effEditClose: {
+            const intptr_t return_value =
+                plugin->dispatcher(plugin, opcode, index, value, data, option);
 
-        const auto x11_handle = reinterpret_cast<size_t>(data);
-        editor.embed_into(x11_handle);
+            editor.close();
 
-        return return_value;
+            return return_value;
+            break;
+        }
+        default:
+            return plugin->dispatcher(plugin, opcode, index, value, data,
+                                      option);
+            break;
     }
-
-    return plugin->dispatcher(plugin, opcode, index, value, data, option);
 }
 
 void PluginBridge::wait() {

@@ -111,6 +111,11 @@ class HostBridge {
      * `effGetChunk` event.
      */
     std::vector<uint8_t> chunk_data;
+    /**
+     * The VST host will expect to be returned a pointer to a struct that stores
+     * the dimensions of the editor window.
+     */
+    VstRect editor_rectangle;
 
    private:
     /**
