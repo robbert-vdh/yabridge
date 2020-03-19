@@ -42,6 +42,7 @@ class DefaultDataConverter {
      * whether the host supports these callbacks before sending them!
      */
     virtual std::optional<EventPayload> read(const int /*opcode*/,
+                                             const int /*index*/,
                                              const intptr_t /*value*/,
                                              const void* data) {
         if (data == nullptr) {
@@ -132,7 +133,7 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
     // some VST hsots will outright crash if they receive them, please let me
     // know if there's a better way to do this.
     const std::optional<EventPayload> payload =
-        data_converter.read(opcode, value, data);
+        data_converter.read(opcode, index, value, data);
     if (!payload.has_value()) {
         return 1;
     }

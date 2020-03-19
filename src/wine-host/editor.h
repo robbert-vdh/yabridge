@@ -9,6 +9,7 @@
 #define NOMCX
 #define NOIMM
 #define WIN32_LEAN_AND_MEAN
+#include <vestige/aeffectx.h>
 #include <windows.h>
 
 #include <memory>
@@ -34,6 +35,20 @@ class Editor {
      */
     HWND open();
     void close();
+
+    /**
+     * Resize the window to match the given size, if open.
+     *
+     * @param new_size The rectangle with the plugin's current position.
+     *
+     * @return Whether the resizing was succesful. Will return false if the
+     *   editor isn't open.
+     */
+    bool resize(const VstRect& new_size);
+
+    // TODO: This should not be needed, and is just a test to see if this works
+    //       at all
+    bool update();
 
     /**
      * Embed the (open) window into a parent window.

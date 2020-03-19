@@ -198,6 +198,14 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
     // We have to intercept GUI open calls since we can't use
     // the X11 window handle passed by the host
     switch (opcode) {
+        case effEditIdle:
+            // TODO: Hack, shouldn't be needed. We'll just have to process
+            //       events somewhere else.
+            editor.update();
+
+            return plugin->dispatcher(plugin, opcode, index, value, data,
+                                      option);
+            break;
         case effEditOpen: {
             const auto win32_handle = editor.open();
 
@@ -240,10 +248,13 @@ void PluginBridge::wait() {
 
 class HostCallbackDataConverter : DefaultDataConverter {
    public:
-    HostCallbackDataConverter(AEffect* plugin, VstTimeInfo& time_info)
-        : plugin(plugin), time_info(time_info) {}
+    HostCallbackDataConverter(AEffect* plugin,
+                              Editor& editor,
+                              VstTimeInfo& time_info)
+        : plugin(plugin), editor(editor), time_info(time_info) {}
 
     std::optional<EventPayload> read(const int opcode,
+                                     const int index,
                                      const intptr_t value,
                                      const void* data) {
         switch (opcode) {
@@ -271,8 +282,18 @@ class HostCallbackDataConverter : DefaultDataConverter {
                 // done inside of `passthrough_event`.
                 return AEffect(*plugin);
                 break;
+            case audioMasterSizeWindow:
+                // TODO: Do all plugins send this? Or should we also use
+                //       effEditGetRect`or add hooks int oresize events.
+                // The plugin sends it's own width and hieght in the index and
+                // value parameters
+                editor.resize(VstRect{0, 0, static_cast<short>(value),
+                                      static_cast<short>(index)});
+
+                return DefaultDataConverter::read(opcode, index, value, data);
+                break;
             default:
-                return DefaultDataConverter::read(opcode, value, data);
+                return DefaultDataConverter::read(opcode, index, value, data);
                 break;
         }
     }
@@ -305,6 +326,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
 
    private:
     AEffect* plugin;
+    Editor& editor;
     VstTimeInfo& time_info;
 };
 
@@ -314,7 +336,7 @@ intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
                                      intptr_t value,
                                      void* data,
                                      float option) {
-    HostCallbackDataConverter converter(plugin, time_info);
+    HostCallbackDataConverter converter(plugin, editor, time_info);
     return send_event(vst_host_callback, host_callback_semaphore, converter,
                       std::nullopt, opcode, index, value, data, option);
 }

@@ -177,6 +177,7 @@ class DispatchDataConverter : DefaultDataConverter {
         : chunk(chunk_data), rect(editor_rectangle) {}
 
     std::optional<EventPayload> read(const int opcode,
+                                     const int index,
                                      const intptr_t value,
                                      const void* data) {
         // There are some events that need specific structs that we can't simply
@@ -206,7 +207,7 @@ class DispatchDataConverter : DefaultDataConverter {
                 return DynamicVstEvents(*static_cast<const VstEvents*>(data));
                 break;
             default:
-                return DefaultDataConverter::read(opcode, value, data);
+                return DefaultDataConverter::read(opcode, index, value, data);
                 break;
         }
     }
