@@ -199,13 +199,23 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
     // the X11 window handle passed by the host
     switch (opcode) {
         case effEditIdle:
-            // TODO: Hack, shouldn't be needed. We'll just have to process
-            //       events somewhere else.
-            editor.update();
+            // Because of the way the Win32 APi works we have to process events
+            // on the same thread the window was created, and that thread is the
+            // `dispatch_handler` thread
+            editor.handle_events();
 
             return plugin->dispatcher(plugin, opcode, index, value, data,
                                       option);
             break;
+        case effClose: {
+            // Closing the editor will also shut down the thread that's
+            // currently handling events
+            editor.close();
+
+            return plugin->dispatcher(plugin, opcode, index, value, data,
+                                      option);
+            break;
+        }
         case effEditOpen: {
             const auto win32_handle = editor.open();
 

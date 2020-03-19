@@ -46,9 +46,12 @@ class Editor {
      */
     bool resize(const VstRect& new_size);
 
-    // TODO: This should not be needed, and is just a test to see if this works
-    //       at all
-    bool update();
+    /**
+     * Pump messages from the editor GUI's event loop until all events are
+     * process. Must be run from the same thread the GUI was created in because
+     * of Win32 limitations. I guess that's what `effEditIdle` is for.
+     */
+    void handle_events();
 
     /**
      * Embed the (open) window into a parent window.
@@ -61,12 +64,15 @@ class Editor {
      */
     bool embed_into(const size_t parent_window_handle);
 
+   private:
     /**
      * Return the X11 window handle for the window if it's currently open.
      */
     std::optional<size_t> get_x11_handle();
 
-   private:
+    /**
+     * The Win32 window class registered for the window window.
+     */
     ATOM window_class;
 
     /**
