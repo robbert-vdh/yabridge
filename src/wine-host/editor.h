@@ -84,4 +84,5 @@ class Editor {
         win32_handle;
 
     std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
+    xcb_atom_t xcb_xembed_info;
 };
