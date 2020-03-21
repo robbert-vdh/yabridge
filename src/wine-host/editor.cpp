@@ -5,6 +5,15 @@
 constexpr char xembed_proeprty[] = "_XEMBED";
 constexpr char xembed_info_proeprty[] = "_XEMBED_INFO";
 
+// Constants from the XEmbed spec
+constexpr uint32_t xembed_protocol_version = 0;
+
+constexpr uint32_t xembed_embedded_notify_msg = 0;
+constexpr uint32_t xembed_window_activate_msg = 1;
+constexpr uint32_t xembed_focus_in_msg = 4;
+
+constexpr uint32_t xembed_focus_first = 1;
+
 ATOM register_window_class(std::string window_class_name);
 
 Editor::Editor(std::string window_class_name)
@@ -69,6 +78,10 @@ bool Editor::embed_into(const size_t parent_window_handle) {
         return false;
     }
 
+    // TODO: Right now the child's child windows are not anchored to the window
+    //       and do not receive keyboard focus. THis affects things like
+    //       dropdowns.
+
     // This follows the embedding procedure specified in the XEmbed sped:
     // https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html
     // under 'Embedding life cycle
@@ -79,11 +92,13 @@ bool Editor::embed_into(const size_t parent_window_handle) {
     xcb_reparent_window(x11_connection.get(), child_window_handle,
                         parent_window_handle, 0, 0);
 
+    // Honestly, I'm not sure if all of this XEmbed stuff is even doing anything
+
     // This tells the WM that the parent window embedding and mapping/uumapping
     // a child window. Requires the PROPERTY_NOTIFY event.
-    std::array<int, 2> xembed_info_values{0, 1};
+    std::array<int, 2> xembed_info_values{xembed_protocol_version, 1};
     xcb_change_property(x11_connection.get(), XCB_PROP_MODE_REPLACE,
-                        parent_window_handle, xcb_xembed_info, xcb_xembed_info,
+                        child_window_handle, xcb_xembed_info, xcb_xembed_info,
                         32, 2, xembed_info_values.data());
 
     const int parent_events = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
@@ -98,15 +113,18 @@ bool Editor::embed_into(const size_t parent_window_handle) {
     xcb_change_window_attributes(x11_connection.get(), child_window_handle,
                                  XCB_CW_EVENT_MASK, &child_events);
 
-    // TODO: Send XEMBED_EMBEDDED_NOTIFY XEMBED_FOCUS_IN, XEMBED_WINDOW_ACTIVATE
-    //       and XEMBED_MODALITY_ON from the parent window Before or after
-    //       embedding?
+    // Tell the window from Wine it's embedded into the window provided by the
+    // host
+    send_xembed_event(child_window_handle, xembed_embedded_notify_msg, 0,
+                      parent_window_handle, xembed_protocol_version);
 
-    // TODO: Is this map needed?
+    send_xembed_event(child_window_handle, xembed_focus_in_msg,
+                      xembed_focus_first, 0, 0);
+    send_xembed_event(child_window_handle, xembed_window_activate_msg, 0, 0, 0);
+
     xcb_map_window(x11_connection.get(), child_window_handle);
     xcb_flush(x11_connection.get());
 
-    // TODO: Should this be done before reparenting and mapping?
     ShowWindow(win32_handle->get(), SW_SHOW);
 
     return true;
