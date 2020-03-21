@@ -33,6 +33,7 @@ threads_dep = dependency('threads')
 # The built in threads dependency does not know how to handle winegcc
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
+xcb_ewmh_dep = dependency('xcb-ewmh')
 
 include_dir = include_directories('src/include')
 
@@ -62,7 +63,7 @@ executable(
   ],
   native : false,
   include_directories : include_dir,
-  dependencies : [boost_dep, bitsery_dep, wine_threads_dep, xcb_dep],
+  dependencies : [boost_dep, bitsery_dep, wine_threads_dep, xcb_dep, xcb_ewmh_dep],
   cpp_args : compiler_options,
   link_args : []
 )

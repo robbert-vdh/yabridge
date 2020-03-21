@@ -71,6 +71,17 @@ class Editor {
     std::optional<size_t> get_x11_handle();
 
     /**
+     * Send an XEmbed message to a window. See the spec for more information.
+     *
+     * https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html#lifecycle
+     */
+    void send_xembed_event(const xcb_window_t& window,
+                           const uint32_t message,
+                           const uint32_t detail,
+                           const uint32_t data1,
+                           const uint32_t data2);
+
+    /**
      * The Win32 window class registered for the window window.
      */
     ATOM window_class;
@@ -84,5 +95,6 @@ class Editor {
         win32_handle;
 
     std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
+    xcb_atom_t xcb_xembed;
     xcb_atom_t xcb_xembed_info;
 };

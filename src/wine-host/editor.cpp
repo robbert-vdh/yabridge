@@ -1,5 +1,8 @@
 #include "editor.h"
 
+#include <xcb/xcb_ewmh.h>
+
+constexpr char xembed_proeprty[] = "_XEMBED";
 constexpr char xembed_info_proeprty[] = "_XEMBED_INFO";
 
 ATOM register_window_class(std::string window_class_name);
@@ -10,10 +13,14 @@ Editor::Editor(std::string window_class_name)
     // We need a bunch of property atoms for the XEmbed protocol
     xcb_generic_error_t* err;
 
+    const auto xembed_cookie = xcb_intern_atom(
+        x11_connection.get(), 0, strlen(xembed_proeprty), xembed_proeprty);
     const auto xembed_info_cookie =
         xcb_intern_atom(x11_connection.get(), 0, strlen(xembed_info_proeprty),
                         xembed_info_proeprty);
 
+    xcb_xembed =
+        xcb_intern_atom_reply(x11_connection.get(), xembed_cookie, &err)->atom;
     xcb_xembed_info =
         xcb_intern_atom_reply(x11_connection.get(), xembed_info_cookie, &err)
             ->atom;
@@ -124,6 +131,19 @@ std::optional<size_t> Editor::get_x11_handle() {
 
     return reinterpret_cast<size_t>(
         GetProp(win32_handle.value().get(), "__wine_x11_whole_window"));
+}
+
+void Editor::send_xembed_event(const xcb_window_t& window,
+                               const uint32_t message,
+                               const uint32_t detail,
+                               const uint32_t data1,
+                               const uint32_t data2) {
+    const std::array<uint32_t, 5> event_data{XCB_TIME_CURRENT_TIME, message,
+                                             detail, data1, data2};
+
+    xcb_ewmh_send_client_message(x11_connection.get(), window, window,
+                                 xcb_xembed, event_data.size(),
+                                 event_data.data());
 }
 
 ATOM register_window_class(std::string window_class_name) {
