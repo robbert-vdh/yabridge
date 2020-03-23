@@ -55,9 +55,13 @@ class PluginBridge {
     PluginBridge(std::string plugin_dll_path, std::string socket_endpoint_path);
 
     /**
-     * Block the main thread until the plugin shuts down.
+     * Handle events on the main thread until the plugin quits. This can't be
+     * done on another thread since some plugins (e.g. Melda) expect certain
+     * (but for some reason not all) events to be passed from the same thread it
+     * was initiated from. This is then also the same thread that should handle
+     * Win32 GUI events.
      */
-    void wait();
+    void handle_dispatch();
 
     intptr_t host_callback(AEffect*, int, int, intptr_t, void*, float);
 
@@ -115,10 +119,6 @@ class PluginBridge {
      */
     boost::asio::local::stream_protocol::socket vst_host_aeffect;
 
-    /**
-     * The thread that handles dispatch events from the host.
-     */
-    std::thread dispatch_handler;
     /**
      * The thread that responds to `getParameter` and `setParameter` requests.
      */

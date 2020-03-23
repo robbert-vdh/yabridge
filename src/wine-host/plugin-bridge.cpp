@@ -118,19 +118,6 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     current_bridge_isntance = nullptr;
     plugin->ptr1 = this;
 
-    // For our communication we use simple threads and blocking operations
-    // instead of asynchronous IO since communication has to be handled in
-    // lockstep anyway
-    dispatch_handler = std::thread([&]() {
-        using namespace std::placeholders;
-
-        while (true) {
-            passthrough_event(host_vst_dispatch, std::nullopt, plugin,
-                              std::bind(&PluginBridge::dispatch_wrapper, this,
-                                        _1, _2, _3, _4, _5, _6));
-        }
-    });
-
     parameters_handler = std::thread([&]() {
         while (true) {
             // Both `getParameter` and `setParameter` functions are passed
@@ -189,6 +176,26 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
               << std::endl;
 }
 
+void PluginBridge::handle_dispatch() {
+    using namespace std::placeholders;
+
+    // For our communication we use simple threads and blocking operations
+    // instead of asynchronous IO since communication has to be handled in
+    // lockstep anyway
+    try {
+        while (true) {
+            passthrough_event(host_vst_dispatch, std::nullopt, plugin,
+                              std::bind(&PluginBridge::dispatch_wrapper, this,
+                                        _1, _2, _3, _4, _5, _6));
+        }
+    } catch (const boost::system::system_error&) {
+        // This happens when the sockets got closed because the plugin is being
+        // shut down. In that case we can just let the whole host terminate.
+        parameters_handler.detach();
+        process_replacing_handler.detach();
+    }
+}
+
 intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
                                         int opcode,
                                         int index,
@@ -199,9 +206,9 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
     // the X11 window handle passed by the host
     switch (opcode) {
         case effEditIdle:
-            // Because of the way the Win32 APi works we have to process events
+            // Because of the way the Win32 API works we have to process events
             // on the same thread the window was created, and that thread is the
-            // `dispatch_handler` thread
+            // thread that's handling dispatcher calls
             editor.handle_events();
 
             return plugin->dispatcher(plugin, opcode, index, value, data,
@@ -259,12 +266,6 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
                                       option);
             break;
     }
-}
-
-void PluginBridge::wait() {
-    dispatch_handler.join();
-    parameters_handler.join();
-    process_replacing_handler.join();
 }
 
 class HostCallbackDataConverter : DefaultDataConverter {

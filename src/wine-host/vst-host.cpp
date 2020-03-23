@@ -35,8 +35,8 @@ int main(int argc, char* argv[]) {
     try {
         PluginBridge bridge(plugin_dll_path, socket_endpoint_path);
 
-        // Block the main thread until the plugin shuts down
-        bridge.wait();
+        // Blocks the main thread until the plugin shuts down
+        bridge.handle_dispatch();
     } catch (const std::runtime_error& error) {
         std::cerr << "Error while initializing Wine VST host:" << std::endl;
         std::cerr << error.what() << std::endl;
