@@ -124,7 +124,7 @@ class PluginBridge {
      */
     std::thread parameters_handler;
     /**
-     * The t thread that handles calls to `processReplacing` (and `process`).
+     * The thread that handles calls to `processReplacing` (and `process`).
      */
     std::thread process_replacing_handler;
 

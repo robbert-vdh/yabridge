@@ -7,8 +7,9 @@ Yet Another way to use Windows VST2 plugins in Linux VST hosts.
 There are a few things that should be done before releasing this, including:
 
 - Implement missing features:
-  - GUIs. It mostly works right now, but there are a few small problems
-    remaining regarding window placement and child windows (i.e. droopdowns).
+  - GUIs. The only problem remaining is that child windows (such as dropdowns)
+    don't appear anchored to the reparented editor and will still appear in the
+    top left corner of the screen.
 - Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.

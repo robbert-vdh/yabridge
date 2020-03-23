@@ -78,10 +78,6 @@ bool Editor::embed_into(const size_t parent_window_handle) {
         return false;
     }
 
-    // TODO: Right now the child's child windows are not anchored to the window
-    //       and do not receive keyboard focus. THis affects things like
-    //       dropdowns.
-
     // This follows the embedding procedure specified in the XEmbed sped:
     // https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html
     // under 'Embedding life cycle
@@ -89,18 +85,7 @@ bool Editor::embed_into(const size_t parent_window_handle) {
     // a library
     const size_t child_window_handle = get_x11_handle().value();
 
-    xcb_reparent_window(x11_connection.get(), child_window_handle,
-                        parent_window_handle, 0, 0);
-
     // Honestly, I'm not sure if all of this XEmbed stuff is even doing anything
-
-    // This tells the WM that the parent window embedding and mapping/uumapping
-    // a child window. Requires the PROPERTY_NOTIFY event.
-    std::array<int, 2> xembed_info_values{xembed_protocol_version, 1};
-    xcb_change_property(x11_connection.get(), XCB_PROP_MODE_REPLACE,
-                        child_window_handle, xcb_xembed_info, xcb_xembed_info,
-                        32, 2, xembed_info_values.data());
-
     const int parent_events = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
                               XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
                               XCB_EVENT_MASK_STRUCTURE_NOTIFY;
@@ -112,6 +97,16 @@ bool Editor::embed_into(const size_t parent_window_handle) {
                                  XCB_CW_EVENT_MASK, &parent_events);
     xcb_change_window_attributes(x11_connection.get(), child_window_handle,
                                  XCB_CW_EVENT_MASK, &child_events);
+
+    xcb_reparent_window(x11_connection.get(), child_window_handle,
+                        parent_window_handle, 0, 0);
+
+    // This tells the WM that the parent window embedding and mapping/uumapping
+    // a child window. Requires the PROPERTY_NOTIFY event.
+    std::array<int, 2> xembed_info_values{xembed_protocol_version, 1};
+    xcb_change_property(x11_connection.get(), XCB_PROP_MODE_REPLACE,
+                        child_window_handle, xcb_xembed_info, xcb_xembed_info,
+                        32, 2, xembed_info_values.data());
 
     // Tell the window from Wine it's embedded into the window provided by the
     // host
@@ -125,7 +120,7 @@ bool Editor::embed_into(const size_t parent_window_handle) {
     xcb_map_window(x11_connection.get(), child_window_handle);
     xcb_flush(x11_connection.get());
 
-    ShowWindow(win32_handle->get(), SW_SHOW);
+    ShowWindow(win32_handle->get(), SW_SHOWNORMAL);
 
     return true;
 }
@@ -135,7 +130,10 @@ void Editor::handle_events() {
     // the window
     if (win32_handle.has_value()) {
         MSG msg;
-        while (PeekMessage(&msg, win32_handle->get(), 0, 0, PM_REMOVE)) {
+        // The second argument has to be null since we not only want to handle
+        // events for this window but also for all child windows (i.e.
+        // dropdowns). I spent way longer debugging this than I want to admit.
+        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
