@@ -146,15 +146,14 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
 
     const Event event{opcode, index, value, option, payload.value()};
 
-    // Prevent two threads from writing over the socket at the same time. This
-    // should not be needed, but for instance Bitwig's plugin bridge will
-    // sometimes repeatedly send events from an off thread that may overlap with
-    // other `dispatch()` calls.
+    // Prevent two threads from writing over the socket at the same time and
+    // messages getting out of order. This is needed because we can't prevent
+    // the plugin or the host from calling `dispatch()` or `audioMaster()` from
+    // multiple threads.
     write_semaphore.lock();
     write_object(socket, event);
-    write_semaphore.unlock();
-
     const auto response = read_object<EventResult>(socket);
+    write_semaphore.unlock();
 
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
