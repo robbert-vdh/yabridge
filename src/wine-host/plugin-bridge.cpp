@@ -350,13 +350,13 @@ class HostCallbackDataConverter : DefaultDataConverter {
     VstTimeInfo& time_info;
 };
 
-intptr_t PluginBridge::host_callback(AEffect* /*plugin*/,
+intptr_t PluginBridge::host_callback(AEffect* effect,
                                      int opcode,
                                      int index,
                                      intptr_t value,
                                      void* data,
                                      float option) {
-    HostCallbackDataConverter converter(plugin, editor, time_info);
+    HostCallbackDataConverter converter(effect, editor, time_info);
     return send_event(vst_host_callback, host_callback_semaphore, converter,
                       std::nullopt, opcode, index, value, data, option);
 }
