@@ -243,6 +243,17 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
             return return_value;
             break;
         }
+        case effEditGetRect: {
+            const intptr_t return_value =
+                plugin->dispatcher(plugin, opcode, index, value, data, option);
+
+            // Intercept these calls to make sure that the window (embedded
+            // within the X11 window) is large enough.
+            const auto size = **static_cast<VstRect**>(data);
+            editor.resize(size);
+
+            return return_value;
+        }
         default:
             return plugin->dispatcher(plugin, opcode, index, value, data,
                                       option);
@@ -293,10 +304,9 @@ class HostCallbackDataConverter : DefaultDataConverter {
                 return AEffect(*plugin);
                 break;
             case audioMasterSizeWindow:
-                // TODO: Do all plugins send this? Or should we also use
-                //       effEditGetRect`or add hooks int oresize events.
-                // The plugin sends it's own width and hieght in the index and
-                // value parameters
+                // TODO: Does the plugin not do this automatically? Check Some
+                //       plugins will the host that their size has changed, so
+                //       we'll have to change the window for it.
                 editor.resize(VstRect{0, 0, static_cast<short>(value),
                                       static_cast<short>(index)});
 

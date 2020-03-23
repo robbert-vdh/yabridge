@@ -45,7 +45,7 @@ HWND Editor::open() {
             CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_ACCEPTFILES,
                            reinterpret_cast<LPCSTR>(window_class),
                            "yabridge plugin", WS_POPUP, CW_USEDEFAULT,
-                           CW_USEDEFAULT, 256, 256, nullptr, nullptr,
+                           CW_USEDEFAULT, 2048, 2048, nullptr, nullptr,
                            GetModuleHandle(nullptr), nullptr),
             &DestroyWindow);
 
