@@ -1,7 +1,5 @@
 #include "editor.h"
 
-#include <xcb/xcb_ewmh.h>
-
 constexpr char xembed_proeprty[] = "_XEMBED";
 constexpr char xembed_info_proeprty[] = "_XEMBED_INFO";
 
@@ -154,12 +152,19 @@ void Editor::send_xembed_event(const xcb_window_t& window,
                                const uint32_t detail,
                                const uint32_t data1,
                                const uint32_t data2) {
-    const std::array<uint32_t, 5> event_data{XCB_TIME_CURRENT_TIME, message,
-                                             detail, data1, data2};
+    xcb_client_message_event_t event;
+    event.response_type = XCB_CLIENT_MESSAGE;
+    event.type = xcb_xembed;
+    event.window = window;
+    event.format = 32;
+    event.data.data32[0] = XCB_CURRENT_TIME;
+    event.data.data32[1] = message;
+    event.data.data32[2] = detail;
+    event.data.data32[3] = data1;
+    event.data.data32[4] = data2;
 
-    xcb_ewmh_send_client_message(x11_connection.get(), window, window,
-                                 xcb_xembed, event_data.size(),
-                                 event_data.data());
+    xcb_send_event(x11_connection.get(), false, window, XCB_EVENT_MASK_NO_EVENT,
+                   reinterpret_cast<char*>(&event));
 }
 
 ATOM register_window_class(std::string window_class_name) {
