@@ -83,28 +83,8 @@ bool Editor::embed_into(const size_t parent_window_handle) {
     // a library
     const size_t child_window_handle = get_x11_handle().value();
 
-    // Honestly, I'm not sure if all of this XEmbed stuff is even doing anything
-    const int parent_events = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
-                              XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
-                              XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-    const int child_events =
-        XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
-        XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-        XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_PROPERTY_CHANGE;
-    xcb_change_window_attributes(x11_connection.get(), parent_window_handle,
-                                 XCB_CW_EVENT_MASK, &parent_events);
-    xcb_change_window_attributes(x11_connection.get(), child_window_handle,
-                                 XCB_CW_EVENT_MASK, &child_events);
-
     xcb_reparent_window(x11_connection.get(), child_window_handle,
                         parent_window_handle, 0, 0);
-
-    // This tells the WM that the parent window embedding and mapping/uumapping
-    // a child window. Requires the PROPERTY_NOTIFY event.
-    std::array<int, 2> xembed_info_values{xembed_protocol_version, 1};
-    xcb_change_property(x11_connection.get(), XCB_PROP_MODE_REPLACE,
-                        child_window_handle, xcb_xembed_info, xcb_xembed_info,
-                        32, 2, xembed_info_values.data());
 
     // Tell the window from Wine it's embedded into the window provided by the
     // host
