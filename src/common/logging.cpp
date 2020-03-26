@@ -177,6 +177,7 @@ void Logger::log_event(bool is_dispatch,
                 [&](const WantsChunkBuffer&) {
                     message << "<writable_buffer>";
                 },
+                [&](const VstIOProperties&) { message << "<io_properties>"; },
                 [&](const WantsVstRect&) { message << "<writable_buffer>"; },
                 [&](const WantsVstTimeInfo&) { message << "<nullptr>"; },
                 [&](const WantsString&) { message << "<writable_string>"; }},
@@ -202,23 +203,25 @@ void Logger::log_event_response(bool is_dispatch,
         message << return_value;
 
         std::visit(
-            overload{[&](const std::monostate&) {},
-                     [&](const std::string& s) {
-                         if (s.size() < 32) {
-                             message << ", \"" << s << "\"";
-                         } else {
-                             // Long strings contain binary data that we
-                             // probably don't want to print
-                             message << ", <" << s.size() << " bytes>";
-                         }
-                     },
-                     [&](const AEffect&) { message << ", <AEffect_object>"; },
-                     [&](const VstRect& rect) {
-                         message << ", {l: " << rect.left << ", t: " << rect.top
-                                 << ", r: " << rect.right
-                                 << ", b: " << rect.bottom << "}";
-                     },
-                     [&](const VstTimeInfo&) { message << ", <time_info>"; }},
+            overload{
+                [&](const std::monostate&) {},
+                [&](const std::string& s) {
+                    if (s.size() < 32) {
+                        message << ", \"" << s << "\"";
+                    } else {
+                        // Long strings contain binary data that we probably
+                        // don't want to print
+                        message << ", <" << s.size() << " bytes>";
+                    }
+                },
+                [&](const AEffect&) { message << ", <AEffect_object>"; },
+                [&](const VstIOProperties&) { message << ", <io_properties>"; },
+                [&](const VstRect& rect) {
+                    message << ", {l: " << rect.left << ", t: " << rect.top
+                            << ", r: " << rect.right << ", b: " << rect.bottom
+                            << "}";
+                },
+                [&](const VstTimeInfo&) { message << ", <time_info>"; }},
             payload);
 
         log(message.str());

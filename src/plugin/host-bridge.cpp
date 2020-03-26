@@ -206,6 +206,13 @@ class DispatchDataConverter : DefaultDataConverter {
             case effProcessEvents:
                 return DynamicVstEvents(*static_cast<const VstEvents*>(data));
                 break;
+            case effGetInputProperties:
+            case effGetOutputProperties:
+                // In this case we can't simply pass an empty marker struct
+                // because the host can have already populated this field with
+                // data (or at least Bitwig does this)
+                return *static_cast<const VstIOProperties*>(data);
+                break;
             default:
                 return DefaultDataConverter::read(opcode, index, value, data);
                 break;
@@ -232,10 +239,20 @@ class DispatchDataConverter : DefaultDataConverter {
                 // `HostBridge` and write a pointer to that struct to the data
                 // pointer
 
-                std::string buffer = std::get<std::string>(response.payload);
+                const auto buffer = std::get<std::string>(response.payload);
                 chunk.assign(buffer.begin(), buffer.end());
 
                 *static_cast<void**>(data) = chunk.data();
+            } break;
+            case effGetInputProperties:
+            case effGetOutputProperties: {
+                // These opcodes pass the plugin some empty struct through the
+                // data parameter that the plugin then fills with flags and
+                // other data to describe an input or output channel.
+                const auto properties =
+                    std::get<VstIOProperties>(response.payload);
+
+                *static_cast<VstIOProperties*>(data) = properties;
             } break;
             default:
                 DefaultDataConverter::write(opcode, data, response);

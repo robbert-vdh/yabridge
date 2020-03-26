@@ -135,6 +135,7 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
     const std::optional<EventPayload> payload =
         data_converter.read(opcode, index, value, data);
     if (!payload.has_value()) {
+        // A 1 usually means that the event was processed succesfully
         return 1;
     }
 
@@ -217,7 +218,8 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                 return &events.as_c_events();
             },
             [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
-            [&](const WantsVstRect&) -> void* { return string_buffer.data(); },
+            [&](VstIOProperties& props) -> void* { return &props; },
+            [&](WantsVstRect&) -> void* { return string_buffer.data(); },
             [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
             [&](WantsString&) -> void* { return string_buffer.data(); }},
         event.payload);
@@ -264,6 +266,11 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                      // how much data the plugin has written
                      return std::string(*static_cast<char**>(data),
                                         return_value);
+                 },
+                 [&](VstIOProperties& props) -> EventResposnePayload {
+                     // The plugin has written a pointer to a VstRect struct
+                     // into the data poitner
+                     return props;
                  },
                  [&](WantsVstRect&) -> EventResposnePayload {
                      // The plugin has written a pointer to a VstRect struct

@@ -27,6 +27,8 @@
 
 #include <variant>
 
+#include "vst24.h"
+
 // These constants are limits used by bitsery
 
 /**
@@ -81,6 +83,11 @@ void serialize(S& s, AEffect& plugin) {
     s.value4b(plugin.unkown_float);
     s.value4b(plugin.uniqueID);
     s.value4b(plugin.version);
+}
+
+template <typename S>
+void serialize(S& s, VstIOProperties& props) {
+    s.container1b(props.data);
 }
 
 template <typename S>
@@ -212,6 +219,7 @@ using EventPayload = std::variant<std::nullptr_t,
                                   AEffect,
                                   DynamicVstEvents,
                                   WantsChunkBuffer,
+                                  VstIOProperties,
                                   WantsVstRect,
                                   WantsVstTimeInfo,
                                   WantsString>;
@@ -233,6 +241,7 @@ void serialize(S& s, EventPayload& payload) {
                       events.events, max_midi_events,
                       [](S& s, VstEvent& event) { s.container1b(event.dump); });
               },
+              [](S& s, VstIOProperties& props) { s.object(props); },
               [](S&, WantsChunkBuffer&) {}, [](S&, WantsVstRect&) {},
               [](S&, WantsVstTimeInfo&) {}, [](S&, WantsString&) {}});
 }
@@ -289,8 +298,12 @@ struct Event {
  *   `audioMasterIOChanged`.
  * - An X11 window pointer for the editor window.
  */
-using EventResposnePayload =
-    std::variant<std::monostate, std::string, AEffect, VstRect, VstTimeInfo>;
+using EventResposnePayload = std::variant<std::monostate,
+                                          std::string,
+                                          AEffect,
+                                          VstIOProperties,
+                                          VstRect,
+                                          VstTimeInfo>;
 
 template <typename S>
 void serialize(S& s, EventResposnePayload& payload) {
@@ -304,6 +317,7 @@ void serialize(S& s, EventResposnePayload& payload) {
                   s.text1b(string, binary_buffer_size);
               },
               [](S& s, AEffect& effect) { s.object(effect); },
+              [](S& s, VstIOProperties& props) { s.object(props); },
               [](S& s, VstRect& rect) { s.object(rect); },
               [](S& s, VstTimeInfo& time_info) { s.object(time_info); }});
 }
