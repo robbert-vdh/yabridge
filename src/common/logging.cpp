@@ -16,18 +16,20 @@
 
 #include "logging.h"
 
+#ifdef __WINE__
+#include "../wine-host/boost-fix.h"
+#endif
+
+#include <vestige/aeffectx.h>
+
+#include <boost/process/environment.hpp>
 #include <chrono>
 #include <ctime>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 
-#ifdef __WINE__
-#include "../wine-host/boost-fix.h"
-#endif
-#include <boost/process/environment.hpp>
-
-#include "vestige/aeffectx.h"
+#include "vst24.h"
 
 /**
  * The environment variable indicating whether to log to a file. Will log to
@@ -354,6 +356,12 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
                 break;
             case effStopProcess:
                 return "effStopProcess";
+                break;
+            case effGetInputProperties:
+                return "effGetInputProperties";
+                break;
+            case effGetOutputProperties:
+                return "effGetOutputProperties";
                 break;
             default:
                 return std::nullopt;
