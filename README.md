@@ -7,9 +7,19 @@ Yet Another way to use Windows VST2 plugins in Linux VST hosts.
 There are a few things that should be done before releasing this, including:
 
 - Implement missing features:
-  - GUIs. The only problem remaining is that child windows (such as dropdowns)
-    don't appear anchored to the reparented editor and will still appear in the
-    top left corner of the screen.
+  - GUIs. Wine's XEmbed implementation is causing X11 draw calls to fail so
+    there's probably something right. Right now GUIs do work if you disable the
+    XEmbed messages or skip reparenting altogether, but that's of course not
+    ideal.
+- Fix implementation bugs:
+  - KiloHearts plugins fail during initialization.
+  - Serum (and probably other plugins too) can't process midi events while dialogs
+    are open.
+  - Serum crashes when closing bitwig (but otherwise exits just fine).
+  - Serum crashes if you keep playing midi notes while the GUI is blocked.
+    Related to the above, and probably because of the current limit of 512 midi
+    events.
+  - Melda plugins crash when opening their GUI.
 - Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
