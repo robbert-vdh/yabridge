@@ -221,8 +221,7 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
 
             return plugin->dispatcher(plugin, opcode, index, value, data,
                                       option);
-            break;
-        }
+        } break;
         case effEditOpen: {
             const auto win32_handle = editor.open();
 
@@ -239,8 +238,7 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
             editor.embed_into(x11_handle);
 
             return return_value;
-            break;
-        }
+        } break;
         case effEditClose: {
             const intptr_t return_value =
                 plugin->dispatcher(plugin, opcode, index, value, data, option);
@@ -248,8 +246,7 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
             editor.close();
 
             return return_value;
-            break;
-        }
+        } break;
         case effEditGetRect: {
             const intptr_t return_value =
                 plugin->dispatcher(plugin, opcode, index, value, data, option);
@@ -260,7 +257,7 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
             editor.resize(size);
 
             return return_value;
-        }
+        } break;
         default:
             return plugin->dispatcher(plugin, opcode, index, value, data,
                                       option);

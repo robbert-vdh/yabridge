@@ -226,8 +226,7 @@ class DispatchDataConverter : DefaultDataConverter {
                 //       case, then we can probably reuse
                 //       `audioMasterSizeWindow`.
                 *static_cast<VstRect**>(data) = &rect;
-                break;
-            }
+            } break;
             case effGetChunk: {
                 // Write the chunk data to some publically accessible place in
                 // `HostBridge` and write a pointer to that struct to the data
@@ -237,8 +236,7 @@ class DispatchDataConverter : DefaultDataConverter {
                 chunk.assign(buffer.begin(), buffer.end());
 
                 *static_cast<void**>(data) = chunk.data();
-                break;
-            }
+            } break;
             default:
                 DefaultDataConverter::write(opcode, data, response);
                 break;
@@ -317,8 +315,7 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             delete this;
 
             return return_value;
-            break;
-        };
+        }; break;
     }
 
     // TODO: Maybe reuse buffers here when dealing with chunk data
