@@ -13,8 +13,6 @@ There are a few things that should be done before releasing this, including:
     ideal.
 - Fix implementation bugs:
   - KiloHearts plugins fail during initialization.
-  - Serum (and probably other plugins too) can't process midi events while dialogs
-    are open.
   - Serum crashes when closing bitwig (but otherwise exits just fine).
   - Serum crashes if you keep playing midi notes while the GUI is blocked.
     Related to the above, and probably because of the current limit of 512 midi
@@ -140,6 +138,19 @@ window managers will require some slight modifications in
 ```shell
 meson configure build --buildtype=debug -Duse-winedbg=true
 ```
+
+## Known issues
+
+- Plugins can't receive MIDI events while they have an open dropdown menu. This
+  is a limitation of the Win32 API which requires all GUI interaction to be done
+  from a single thread. Dropdowns and similar GUI elements are implemented in
+  such a way that they will block the thread until the user selects an item.
+  Most plugins will make the assumption that the GUI thread is the same thread
+  on which the plugin was created and also that this is also the same thread
+  from which `dispatch()` calls are being sent. Because of these limitations we
+  can't just move all GUI interaction to a different thread. A decent solution
+  for this would be to just create another pair of sockets and threads to
+  specifically handle the `effProcessEvents` opcode.
 
 ## Rationale
 

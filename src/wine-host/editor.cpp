@@ -98,6 +98,8 @@ bool Editor::embed_into(const size_t parent_window_handle) {
     xcb_map_window(x11_connection.get(), child_window_handle);
     xcb_flush(x11_connection.get());
 
+    // TODO: Add a timer after adding a seperate thread for midi events so that
+    //       the GUI can redraw even while dropdowns are open.
     ShowWindow(win32_handle->get(), SW_SHOWNORMAL);
 
     return true;
@@ -152,7 +154,6 @@ ATOM register_window_class(std::string window_class_name) {
 
     window_class.cbSize = sizeof(WNDCLASSEX);
     window_class.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
-    // TODO: Probably do something here to handle resizes
     window_class.lpfnWndProc = DefWindowProc;
     window_class.hInstance = GetModuleHandle(nullptr);
     window_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
