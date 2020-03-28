@@ -25,13 +25,25 @@ DynamicVstEvents::DynamicVstEvents(const VstEvents& c_events)
 }
 
 VstEvents& DynamicVstEvents::as_c_events() {
-    vst_events.numEvents = events.size();
+    // As explained in `vst_events_buffer`'s docstring we have to build the
+    // `VstEvents` struct by hand on the heap since it's actually a dynamically
+    // sized object
 
-    // Populate the vst_events struct with data from the vector. This will
-    // overflow past the defined length of `vst_events.events` because it's
-    // actually a VLA. This is why I put some padding at the end of this struct.
-    std::transform(events.begin(), events.end(), &vst_events.events[0],
+    // First we need to allocate enough memory for the entire object. The events
+    // are stored as pointers to objects in the `events` vector that we sent
+    // over the socket.
+    static_assert(std::extent<decltype(VstEvents::events)>::value == 1);
+    const size_t buffer_size =
+        sizeof(VstEvents) + (events.size() - 1) * sizeof(VstEvent*);
+    vst_events_buffer.resize(buffer_size);
+
+    // Now we can populate the VLA with pointers to the objects in the `events`
+    // vector
+    VstEvents* vst_events =
+        reinterpret_cast<VstEvents*>(vst_events_buffer.data());
+    vst_events->numEvents = events.size();
+    std::transform(events.begin(), events.end(), vst_events->events,
                    [](VstEvent& event) -> VstEvent* { return &event; });
 
-    return vst_events;
+    return *vst_events;
 }

@@ -14,9 +14,6 @@ There are a few things that should be done before releasing this, including:
 - Fix implementation bugs:
   - KiloHearts plugins fail during initialization.
   - Serum crashes when closing bitwig (but otherwise exits just fine).
-  - Serum crashes if you keep playing midi notes while the GUI is blocked.
-    Related to the above, and probably because of the current limit of 512 midi
-    events.
   - Melda plugins crash when opening their GUI.
 - Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.

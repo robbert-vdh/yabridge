@@ -42,7 +42,7 @@ constexpr size_t max_buffer_size = 16384;
 /**
  * The maximum number of midi events in a single `VstEvents` struct.
  */
-constexpr size_t max_midi_events = 256;
+constexpr size_t max_midi_events = max_buffer_size / sizeof(size_t);
 /**
  * The maximum size in bytes of a string or buffer passed through a void pointer
  * in one of the dispatch functions. This is used to create buffers for plugins
@@ -122,7 +122,7 @@ void serialize(S& s, VstTimeInfo& time_info) {
  *
  * Before serialization the events are read from a C-style array into a vector
  * using this class's constructor, and after deserializing the original struct
- * can be reconstructed usign the `as_c_events()` method.
+ * can be reconstructed using the `as_c_events()` method.
  */
 class alignas(16) DynamicVstEvents {
    public:
@@ -144,20 +144,18 @@ class alignas(16) DynamicVstEvents {
 
    private:
     /**
-     * A `VstEvents` struct based on the `events` vector. Use the
-     * `as_c_events()` method to populate and return this after the `events`
-     * vector has been filled.
+     * Some buffer we can build a `VstEvents`. This object can be populated with
+     * contents of the `VstEvents` vector using the `as_c_events()` method.
+     *
+     * The reason why this is necessary is because the `VstEvents` struct is
+     * actually a variable size object. In the definition in
+     * `vestige/aeffectx.h` the struct contains a single element `VstEvent`
+     * pointer array, but the actual length of this array is
+     * `VstEvents::numEvents`. Because there is no real limit on the number of
+     * midi events the host can send at once we have to build this object on the
+     * heap by hand.
      */
-    VstEvents vst_events;
-    /**
-     * The `VstEvents` struct is defined to look like it contains a one or two
-     * element array of `VstEvent` pointers. The actual truth is that the
-     * `VstEvents::event` array is actually a variable length array with length
-     * `VstEvents::numEvents`. This is probably not part of any header files
-     * because VLAs are not part of any C++ standard. This struct is here to
-     * make sure there is enough room to copy the elements into.
-     */
-    size_t dummy[max_midi_events];
+    std::vector<uint8_t> vst_events_buffer;
 };
 
 /**
