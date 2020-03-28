@@ -32,8 +32,11 @@ class Editor {
     /**
      * Open a window and return a handle to the new Win32 window that can be
      * used by the hosted VST plugin.
+     *
+     * @param effect The plugin this window is being created for. Used to send
+     *   `effEditIdle` messages on a timer.
      */
-    HWND open();
+    HWND open(AEffect* effect);
     void close();
 
     /**
@@ -63,6 +66,9 @@ class Editor {
      *   window is not open.
      */
     bool embed_into(const size_t parent_window_handle);
+
+    // Needed to handle idle updates through a timer
+    AEffect* plugin;
 
    private:
     /**

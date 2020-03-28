@@ -222,10 +222,12 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
             // Because of the way the Win32 API works we have to process events
             // on the same thread the window was created, and that thread is the
             // thread that's handling dispatcher calls
+            // To allow the GUI to update even when this thread gets blocked
+            // (e.g. when a dropdown is open), the actual `effEditIdle` event
+            // gets sent to the plugin on a timer.
             editor.handle_events();
 
-            return plugin->dispatcher(plugin, opcode, index, value, data,
-                                      option);
+            return 1;
             break;
         case effClose: {
             // Closing the editor will also shut down the thread that's
@@ -236,7 +238,7 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
                                       option);
         } break;
         case effEditOpen: {
-            const auto win32_handle = editor.open();
+            const auto win32_handle = editor.open(plugin);
 
             // The plugin will return 0 if it can not open its
             // editor window (or if it does not support it, but in
