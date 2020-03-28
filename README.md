@@ -12,7 +12,6 @@ There are a few things that should be done before releasing this, including:
     XEmbed messages or skip reparenting altogether, but that's of course not
     ideal.
 - Fix implementation bugs:
-  - KiloHearts plugins fail during initialization.
   - Serum crashes when closing bitwig (but otherwise exits just fine).
   - Melda plugins crash when opening their GUI.
 - Add missing details if any to the architecture section.
