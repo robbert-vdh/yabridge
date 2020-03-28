@@ -19,6 +19,14 @@ There are a few things that should be done before releasing this, including:
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
 
+There are also some features that would be nice to implement but that I haven't
+had the need to implement yet. Let me know if any of these features are required
+for a plugin to run:
+
+- Double precision audio (`processDoubleReplacing`).
+- Vendor specific extensions (for instance, for
+  [Reaper](https://www.reaper.fm/sdk/vst/vst_ext.php)).
+
 ## Usage
 
 There are two ways to use yabridge.
