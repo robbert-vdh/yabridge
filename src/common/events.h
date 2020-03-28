@@ -199,7 +199,8 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     // This buffer is used to write strings and small objects to. We'll
     // initialize it with a single null to prevent it from being read as some
     // arbitrary C-style string.
-    std::array<char, max_string_length> string_buffer{0};
+    std::array<char, max_string_length> string_buffer;
+    string_buffer[0] = 0;
     void* data = std::visit(
         overload{
             [&](const std::nullptr_t&) -> void* { return nullptr; },
