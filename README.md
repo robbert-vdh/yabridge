@@ -13,7 +13,6 @@ There are a few things that should be done before releasing this, including:
     ideal.
 - Fix implementation bugs:
   - Serum crashes when closing bitwig (but otherwise exits just fine).
-  - Melda plugins crash when opening their GUI.
 - Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
