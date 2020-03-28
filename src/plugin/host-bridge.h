@@ -139,6 +139,13 @@ class HostBridge {
     // `AEffect.dispatch()` calls from the native VST host to the Windows VST
     // plugin (through the Wine VST host).
     boost::asio::local::stream_protocol::socket host_vst_dispatch;
+    /**
+     * Used specifically for the `effProcessEvents` opcode. This is needed
+     * because the Win32 API is designed to block during certain GUI
+     * interactions such as resizing a window or opening a dropdown. Without
+     * this midi input would just stop working at times.
+     */
+    boost::asio::local::stream_protocol::socket host_vst_dispatch_midi_events;
     boost::asio::local::stream_protocol::socket vst_host_callback;
     /**
      * Used for both `getParameter` and `setParameter` since they mostly
@@ -168,6 +175,7 @@ class HostBridge {
      * information.
      */
     std::mutex dispatch_semaphore;
+    std::mutex dispatch_midi_events_semaphore;
 
     /**
      * The callback function passed by the host to the VST plugin instance.

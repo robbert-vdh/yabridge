@@ -81,6 +81,7 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
       socket_endpoint(generate_endpoint_name().string()),
       socket_acceptor(io_context, socket_endpoint),
       host_vst_dispatch(io_context),
+      host_vst_dispatch_midi_events(io_context),
       vst_host_callback(io_context),
       host_vst_parameters(io_context),
       host_vst_process_replacing(io_context),
@@ -127,6 +128,7 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     // It's very important that these sockets are connected to in the same
     // order in the Wine VST host
     socket_acceptor.accept(host_vst_dispatch);
+    socket_acceptor.accept(host_vst_dispatch_midi_events);
     socket_acceptor.accept(vst_host_callback);
     socket_acceptor.accept(host_vst_parameters);
     socket_acceptor.accept(host_vst_process_replacing);
@@ -281,10 +283,7 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
                               float option) {
     DispatchDataConverter converter(chunk_data, editor_rectangle);
 
-    // Some events need some extra handling
-    // TODO: Handle GUI closing?
     switch (opcode) {
-        break;
         case effClose: {
             // TODO: Gracefully close the editor?
             // TODO: Check whether the sockets and the endpoint are closed
@@ -333,6 +332,16 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
 
             return return_value;
         }; break;
+        case effProcessEvents:
+            // Because of limitations of the Win32 API we have to use a seperate
+            // thread and socket to pass midi events. Otherwise plugins will
+            // stop receiving midi data when they have an open dropdowns or
+            // message box.
+            return send_event(host_vst_dispatch_midi_events,
+                              dispatch_midi_events_semaphore, converter,
+                              std::pair<Logger&, bool>(logger, true), opcode,
+                              index, value, data, option);
+            break;
     }
 
     // TODO: Maybe reuse buffers here when dealing with chunk data

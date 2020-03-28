@@ -136,19 +136,6 @@ window managers will require some slight modifications in
 meson configure build --buildtype=debug -Duse-winedbg=true
 ```
 
-## Known issues
-
-- Plugins can't receive MIDI events while they have an open dropdown menu. This
-  is a limitation of the Win32 API which requires all GUI interaction to be done
-  from a single thread. Dropdowns and similar GUI elements are implemented in
-  such a way that they will block the thread until the user selects an item.
-  Most plugins will make the assumption that the GUI thread is the same thread
-  on which the plugin was created and also that this is also the same thread
-  from which `dispatch()` calls are being sent. Because of these limitations we
-  can't just move all GUI interaction to a different thread. A decent solution
-  for this would be to just create another pair of sockets and threads to
-  specifically handle the `effProcessEvents` opcode.
-
 ## Rationale
 
 I started this project because the alternatives were either unmaintained, not
@@ -201,6 +188,12 @@ process works as follows:
 
    - Calls from the native VST host to the plugin's `dispatch()` function. These
      get forwarded to the Windows VST plugin through the Wine VST host.
+   - Calls from the native VST host to the plugin's `dispatch()` function with
+     `opcode=effProcessEvents`. These get forwarded to the Windows VST plugin
+     through the Wine VST host. This has to be handled separately from all other
+     events because of limitations of the Win32 API. Otherwise the plugin would
+     not receive any midi events while the GUI is being resized or a dropdown
+     menu or message box is open.
    - Host callback calls from the Windows VST plugin loaded into the Wine VST
      host through the `audioMasterCallback` function. These get forwarded to the
      native VST host through the plugin.

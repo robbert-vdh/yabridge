@@ -62,6 +62,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       io_context(),
       socket_endpoint(socket_endpoint_path),
       host_vst_dispatch(io_context),
+      host_vst_dispatch_midi_events(io_context),
       vst_host_callback(io_context),
       host_vst_parameters(io_context),
       host_vst_process_replacing(io_context),
@@ -94,6 +95,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // It's very important that these sockets are accepted to in the same order
     // in the Linus plugin
     host_vst_dispatch.connect(socket_endpoint);
+    host_vst_dispatch_midi_events.connect(socket_endpoint);
     vst_host_callback.connect(socket_endpoint);
     host_vst_parameters.connect(socket_endpoint);
     host_vst_process_replacing.connect(socket_endpoint);
@@ -117,6 +119,16 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // We only needed this little hack during initialization
     current_bridge_isntance = nullptr;
     plugin->ptr1 = this;
+
+    // This works functionally identically to the `handle_dispatch()` function
+    // below, but this socket will only handle midi events. This is needed
+    // because of Win32 API limitations.
+    dispatch_midi_events_handler = std::thread([&]() {
+        while (true) {
+            passthrough_event(host_vst_dispatch_midi_events, std::nullopt,
+                              plugin, plugin->dispatcher);
+        }
+    });
 
     parameters_handler = std::thread([&]() {
         while (true) {
@@ -191,6 +203,7 @@ void PluginBridge::handle_dispatch() {
     } catch (const boost::system::system_error&) {
         // This happens when the sockets got closed because the plugin is being
         // shut down. In that case we can just let the whole host terminate.
+        dispatch_midi_events_handler.detach();
         parameters_handler.detach();
         process_replacing_handler.detach();
     }
