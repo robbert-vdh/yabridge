@@ -7,10 +7,11 @@ Yet Another way to use Windows VST2 plugins in Linux VST hosts.
 There are a few things that should be done before releasing this, including:
 
 - Implement missing features:
-  - GUIs. Wine's XEmbed implementation is causing X11 draw calls to fail so
-    there's probably something right. Right now GUIs do work if you disable the
-    XEmbed messages or skip reparenting altogether, but that's of course not
-    ideal.
+  - GUIs. The current basic implementation with XEmbed suffers from flickering
+    during redrwas (in Serum, depends on the plugin) and it has the usual
+    problems with resizing. Reparenting without XEmbed works great, but it
+    breaks a lot of GUI elements because the plugin still thinks it's in the top
+    left corner of the screen. If that could be fixed that would be ideal.
 - Fix implementation bugs:
   - Closing Serum's editor takes a full second to execute `DestroyWindow`. After
     fixing XEmbed it might be possible to at least make it feel responsive by

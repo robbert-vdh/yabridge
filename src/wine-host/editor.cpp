@@ -36,7 +36,7 @@ Editor::Editor(std::string window_class_name)
             ->atom;
 }
 
-HWND Editor::open(AEffect* effect) {
+HWND Editor::open(AEffect* effect, xcb_window_t parent_window_handle) {
     // Create a window without any decoratiosn for easy embedding. The
     // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to be
     // drawn without any decorations (making resizes behave as you'd expect) and
@@ -52,6 +52,22 @@ HWND Editor::open(AEffect* effect) {
 
     // Needed to send update messages on a timer
     plugin = effect;
+    parent_window = parent_window_handle;
+
+    // The Win32 API will block the `DispatchMessage` call when opening e.g. a
+    // dropdown, but it will still allow timers to be run so the GUI can still
+    // update in the background. Because of this we send `effEditIdle` to the
+    // plugin on a timer. The refresh rate is purposely fairly low since we
+    // we'll also trigger this manually in `Editor::handle_events()` whenever
+    // the plugin is not busy.
+    SetTimer(win32_handle->get(), idle_timer_id, 100, nullptr);
+
+    // We'll only start the xembed procedure after the host has givne the window
+    // the correct size, otherwise Wine can't draw correctly
+    const uint32_t event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+    xcb_change_window_attributes(x11_connection.get(), parent_window,
+                                 XCB_CW_EVENT_MASK, &event_mask);
+    xcb_flush(x11_connection.get());
 
     return win32_handle->get();
 }
@@ -64,7 +80,7 @@ void Editor::close() {
     //       everything for us?
 }
 
-// TODO: I feel like this should only have to be done once
+// TODO: I feel like this shouldn't necessary with xembed
 bool Editor::resize(const VstRect& new_size) {
     if (!win32_handle.has_value()) {
         return false;
@@ -77,7 +93,7 @@ bool Editor::resize(const VstRect& new_size) {
     return true;
 }
 
-bool Editor::embed_into(const size_t parent_window_handle) {
+bool Editor::xembed() {
     if (!win32_handle.has_value()) {
         return false;
     }
@@ -87,31 +103,24 @@ bool Editor::embed_into(const size_t parent_window_handle) {
     // under 'Embedding life cycle
     // Sadly there's doesn't seem to be any implementation of this available as
     // a library
-    const size_t child_window_handle = get_x11_handle().value();
+    const size_t child_window = get_x11_handle().value();
 
-    xcb_reparent_window(x11_connection.get(), child_window_handle,
-                        parent_window_handle, 0, 0);
+    xcb_reparent_window(x11_connection.get(), child_window, parent_window, 0,
+                        0);
 
     // Tell the window from Wine it's embedded into the window provided by the
     // host
-    send_xembed_event(child_window_handle, xembed_embedded_notify_msg, 0,
-                      parent_window_handle, xembed_protocol_version);
+    send_xembed_event(child_window, xembed_embedded_notify_msg, 0,
+                      parent_window, xembed_protocol_version);
 
-    send_xembed_event(child_window_handle, xembed_focus_in_msg,
-                      xembed_focus_first, 0, 0);
-    send_xembed_event(child_window_handle, xembed_window_activate_msg, 0, 0, 0);
+    send_xembed_event(child_window, xembed_focus_in_msg, xembed_focus_first, 0,
+                      0);
+    send_xembed_event(child_window, xembed_window_activate_msg, 0, 0, 0);
 
-    xcb_map_window(x11_connection.get(), child_window_handle);
+    xcb_map_window(x11_connection.get(), child_window);
     xcb_flush(x11_connection.get());
 
     ShowWindow(win32_handle->get(), SW_SHOWNORMAL);
-    // The Win32 API will block the `DispatchMessage` call when opening e.g. a
-    // dropdown, but it will still allow timers to be run so the GUI can still
-    // update in the background. Because of this we send `effEditIdle` to the
-    // plugin on a timer. The refresh rate is purposely fairly low since we
-    // we'll also trigger this manually in `Editor::handle_events()` whenever
-    // the plugin is not busy.
-    SetTimer(win32_handle->get(), idle_timer_id, 100, nullptr);
 
     return true;
 }
@@ -140,6 +149,21 @@ void Editor::handle_events() {
         // the GUI isn't being blocked.
         if (!gui_was_updated) {
             SendMessage(win32_handle->get(), WM_TIMER, idle_timer_id, 0);
+        }
+
+        // Handle X11 events
+        xcb_generic_event_t* event;
+        while ((event = xcb_poll_for_event(x11_connection.get())) != nullptr) {
+            if ((event->response_type & ~0x80) == XCB_CONFIGURE_NOTIFY) {
+                xcb_configure_notify_event_t configuration =
+                    *reinterpret_cast<xcb_configure_notify_event_t*>(event);
+
+                // TODO: Only has to be done once, and the problems mentioned in
+                //       the readme are still here.
+                xembed();
+            }
+
+            free(event);
         }
     }
 }

@@ -35,8 +35,10 @@ class Editor {
      *
      * @param effect The plugin this window is being created for. Used to send
      *   `effEditIdle` messages on a timer.
+     * @param parent_window_handle The X11 window handle passed by the VST host
+     *   for the editor to embed itself into.
      */
-    HWND open(AEffect* effect);
+    HWND open(AEffect* effect, xcb_window_t parent_window_handle);
     void close();
 
     /**
@@ -57,18 +59,20 @@ class Editor {
     void handle_events();
 
     /**
-     * Embed the (open) window into a parent window.
-     *
-     * @param parent_window_handle The X11 window handle passed by the VST host
-     *   for the editor to embed itself into.
+     * Embed the (open) window into the parent window.
      *
      * @return Whether the embedding was succesful. Will return false if the
      *   window is not open.
      */
-    bool embed_into(const size_t parent_window_handle);
+    bool xembed();
 
     // Needed to handle idle updates through a timer
     AEffect* plugin;
+
+    /**
+     * The window handle of the editor window created by the DAW.
+     */
+    xcb_window_t parent_window;
 
    private:
     /**

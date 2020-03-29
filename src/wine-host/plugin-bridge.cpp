@@ -238,21 +238,13 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
                                       option);
         } break;
         case effEditOpen: {
-            const auto win32_handle = editor.open(plugin);
-
-            // The plugin will return 0 if it can not open its
-            // editor window (or if it does not support it, but in
-            // that case the DAW should be hiding the option)
-            const intptr_t return_value = plugin->dispatcher(
-                plugin, opcode, index, value, win32_handle, option);
-            if (return_value == 0) {
-                return 0;
-            }
-
             const auto x11_handle = reinterpret_cast<size_t>(data);
-            editor.embed_into(x11_handle);
+            const auto win32_handle = editor.open(plugin, x11_handle);
 
-            return return_value;
+            // The actual XEmbed handling is done after the host's window has
+            // been set to the correct size, in `Editor::handle_events()`
+            return plugin->dispatcher(plugin, opcode, index, value,
+                                      win32_handle, option);
         } break;
         case effEditClose: {
             const intptr_t return_value =
