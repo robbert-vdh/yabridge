@@ -12,7 +12,9 @@ There are a few things that should be done before releasing this, including:
     XEmbed messages or skip reparenting altogether, but that's of course not
     ideal.
 - Fix implementation bugs:
-  - Serum crashes when closing bitwig (but otherwise exits just fine).
+  - Closing Serum's editor takes a full second to execute `DestroyWindow`. After
+    fixing XEmbed it might be possible to at least make it feel responsive by
+    just hiding the window first.
 - Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
