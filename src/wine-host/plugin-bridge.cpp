@@ -82,7 +82,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
             reinterpret_cast<VstEntryPoint>(reinterpret_cast<size_t>(
                 GetProcAddress(plugin_handle.get(), name)));
 
-        if (name != nullptr) {
+        if (vst_entry_point != nullptr) {
             break;
         }
     }
