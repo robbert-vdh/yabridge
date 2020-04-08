@@ -93,7 +93,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     }
 
     // It's very important that these sockets are accepted to in the same order
-    // in the Linus plugin
+    // in the Linux plugin
     host_vst_dispatch.connect(socket_endpoint);
     host_vst_dispatch_midi_events.connect(socket_endpoint);
     vst_host_callback.connect(socket_endpoint);

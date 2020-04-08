@@ -70,7 +70,7 @@ class Logger {
      * constants in `logging.cpp` for more information.
      *
      * @param prefix A message to prepend for every log message, useful to
-     *   differentiate between the Wine process and the Linus VST plugin.
+     *   differentiate between the Wine process and the Linux VST plugin.
      */
     static Logger create_from_environment(std::string prefix = "");
 
