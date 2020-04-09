@@ -101,10 +101,10 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     host_vst_process_replacing.connect(socket_endpoint);
     vst_host_aeffect.connect(socket_endpoint);
 
-    // Initialize after communication has been set up We'll try to do the same
-    // `get_bridge_isntance` trick as in `plugin/plugin.cpp`, but since the
-    // plugin will probably call the host callback while it's initializing we
-    // sadly have to use a global here.
+    // Initialize after communication has been set up
+    // We'll try to do the same `get_bridge_isntance` trick as in
+    // `plugin/plugin.cpp`, but since the plugin will probably call the host
+    // callback while it's initializing we sadly have to use a global here.
     current_bridge_isntance = this;
     plugin = vst_entry_point(host_callback_proxy);
     if (plugin == nullptr) {
@@ -112,13 +112,13 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
                                  "' failed to initialize.");
     }
 
-    // Send the plugin's information to the Linux VST plugin. Any updates during
-    // runtime are handled using the `audioMasterIOChanged` host callback.
-    write_object(vst_host_aeffect, *plugin);
-
     // We only needed this little hack during initialization
     current_bridge_isntance = nullptr;
     plugin->ptr1 = this;
+
+    // Send the plugin's information to the Linux VST plugin. Any updates during
+    // runtime are handled using the `audioMasterIOChanged` host callback.
+    write_object(vst_host_aeffect, *plugin);
 
     // This works functionally identically to the `handle_dispatch()` function
     // below, but this socket will only handle midi events. This is needed
@@ -254,17 +254,6 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
 
             return return_value;
         } break;
-        case effEditGetRect: {
-            const intptr_t return_value =
-                plugin->dispatcher(plugin, opcode, index, value, data, option);
-
-            // Intercept these calls to make sure that the window (embedded
-            // within the X11 window) is large enough.
-            const auto size = **static_cast<VstRect**>(data);
-            editor.resize(size);
-
-            return return_value;
-        } break;
         default:
             return plugin->dispatcher(plugin, opcode, index, value, data,
                                       option);
@@ -307,15 +296,6 @@ class HostCallbackDataConverter : DefaultDataConverter {
                 // `AEffect` struct has changed. Writing these results back is
                 // done inside of `passthrough_event`.
                 return AEffect(*plugin);
-                break;
-            case audioMasterSizeWindow:
-                // TODO: Does the plugin not do this automatically? Check Some
-                //       plugins will the host that their size has changed, so
-                //       we'll have to change the window for it.
-                editor.resize(VstRect{0, 0, static_cast<short>(value),
-                                      static_cast<short>(index)});
-
-                return DefaultDataConverter::read(opcode, index, value, data);
                 break;
             default:
                 return DefaultDataConverter::read(opcode, index, value, data);

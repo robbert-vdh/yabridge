@@ -62,9 +62,7 @@ HWND Editor::open(AEffect* effect, xcb_window_t parent_window_handle) {
     // the plugin is not busy.
     SetTimer(win32_handle->get(), idle_timer_id, 100, nullptr);
 
-    // We'll only start the xembed procedure after the host has givne the window
-    // the correct size, otherwise Wine can't draw correctly
-    const uint32_t event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+    const uint32_t event_mask = XCB_EVENT_MASK_VISIBILITY_CHANGE;
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &event_mask);
     xcb_flush(x11_connection.get());
@@ -78,19 +76,6 @@ void Editor::close() {
 
     // TODO: Do we need to do something on the X11 side or does the host do
     //       everything for us?
-}
-
-// TODO: I feel like this shouldn't necessary with xembed
-bool Editor::resize(const VstRect& new_size) {
-    if (!win32_handle.has_value()) {
-        return false;
-    }
-
-    SetWindowPos(win32_handle->get(), HWND_TOP, new_size.left, new_size.top,
-                 new_size.right - new_size.left, new_size.bottom - new_size.top,
-                 0);
-
-    return true;
 }
 
 bool Editor::xembed() {
@@ -152,15 +137,33 @@ void Editor::handle_events() {
         }
 
         // Handle X11 events
+        // TODO: We don't listen for XEmbed property changes for mapping and
+        //       unmapping the window as described in the spec. Is this
+        //       something we should do?
+        // TODO: Also, increasing window size does not work reliably, any way we
+        //       could make this work better?
         xcb_generic_event_t* event;
         while ((event = xcb_poll_for_event(x11_connection.get())) != nullptr) {
-            if ((event->response_type & ~0x80) == XCB_CONFIGURE_NOTIFY) {
-                xcb_configure_notify_event_t configuration =
-                    *reinterpret_cast<xcb_configure_notify_event_t*>(event);
+            // The most significant bit in an event's response type is used to
+            // indicate whether the event source
+            switch (event->response_type & ((1 << 7) - 1)) {
+                case XCB_VISIBILITY_NOTIFY: {
+                    xcb_visibility_notify_event_t visibility_event =
+                        *reinterpret_cast<xcb_visibility_notify_event_t*>(
+                            event);
 
-                // TODO: Only has to be done once, and the problems mentioned in
-                //       the readme are still here.
-                xembed();
+                    // Wine's XEmbed implementation is a bit iffy when it comes
+                    // to window size changes, including editor windows being
+                    // increased in size by the DAW when first opening the
+                    // editor. Restarting the XEmbed protocol on visibility and
+                    // size changes is an easy workaround, but it's not 100%
+                    // reliable.
+                    if (visibility_event.window == parent_window &&
+                        visibility_event.state !=
+                            XCB_VISIBILITY_FULLY_OBSCURED) {
+                        xembed();
+                    }
+                } break;
             }
 
             free(event);
