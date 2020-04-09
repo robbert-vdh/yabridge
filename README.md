@@ -11,6 +11,12 @@ There are a few things that should be done before releasing this, including:
     doesn't always update the reparented window's client area when the window
     gets resized. The current workaround works much better than not doing
     anything at all, but it isn't fully reliably yet.
+- Fix implementation bugs:
+  - Serum's GUI has redrawing issues when using XEmbed, even though it doesn't
+    have this issue when running in a standalone window or when simply
+    reparenting the window without XEmbed. None of the other plugin's I've tried
+    have this issue, so it might have something to do with d2d1 or the way Serum
+    uses it.
 - Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
