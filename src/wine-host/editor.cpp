@@ -246,7 +246,6 @@ ATOM register_window_class(std::string window_class_name) {
     window_class.lpfnWndProc = window_proc;
     window_class.hInstance = GetModuleHandle(nullptr);
     window_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    window_class.hbrBackground = CreateHatchBrush(HS_CROSS, RGB(255, 0, 255));
     window_class.lpszClassName = window_class_name.c_str();
 
     return RegisterClassEx(&window_class);
