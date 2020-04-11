@@ -241,8 +241,8 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
             const auto x11_handle = reinterpret_cast<size_t>(data);
             const auto win32_handle = editor.open(plugin, x11_handle);
 
-            // The actual XEmbed handling is done after the host's window has
-            // been set to the correct size, in `Editor::handle_events()`
+            // The created Win32 window has already been reparented to the host
+            // provided window
             return plugin->dispatcher(plugin, opcode, index, value,
                                       win32_handle, option);
         } break;
