@@ -48,6 +48,16 @@ HWND Editor::open(AEffect* effect) {
     return win32_handle->get();
 }
 
+bool Editor::resize(const int width, const int height) {
+    if (!win32_handle.has_value()) {
+        return false;
+    }
+
+    SetWindowPos(win32_handle->get(), HWND_TOP, 0, 0, width, height, 0);
+
+    return true;
+}
+
 void Editor::close() {
     // RAII will destroy the window and tiemrs for us
     win32_handle = std::nullopt;
@@ -129,10 +139,6 @@ void Editor::handle_events() {
                         break;
                     }
 
-                    // The client area of the Win32 window doesn't expand
-                    // automatically
-                    SetWindowPos(win32_handle->get(), HWND_TOP, 0, 0,
-                                 event.width, event.height, 0);
 
                     // We're purposely not using XEmbed. This has the
                     // consequence that wine still thinks that any X and Y
@@ -156,6 +162,10 @@ void Editor::handle_events() {
                                        XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
                                    reinterpret_cast<char*>(&translated_event));
                     xcb_flush(x11_connection.get());
+
+                    // The client area of the Win32 window doesn't expand
+                    // automatically
+                    resize(event.width, event.height);
                 } break;
             }
             free(generic_event);

@@ -298,6 +298,17 @@ class HostCallbackDataConverter : DefaultDataConverter {
             case audioMasterGetTime:
                 return WantsVstTimeInfo{};
                 break;
+            case audioMasterSizeWindow:
+                // Plugins use this opcode to indicate that their editor should
+                // be resized. This is handled implicitly when handling the
+                // ConfigureNotify X11 events but handling this here as well
+                // makes the resizing look much smoother.
+                // TODO: Check if this actually makes drag resizing feel better,
+                //       otherwise just remove this
+                editor.resize(value, index);
+
+                return DefaultDataConverter::read(opcode, index, value, data);
+                break;
             case audioMasterIOChanged:
                 // This is a helpful event that indicates that the VST plugin's
                 // `AEffect` struct has changed. Writing these results back is
