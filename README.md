@@ -6,17 +6,11 @@ Yet Another way to use Windows VST2 plugins in Linux VST hosts.
 
 There are a few things that should be done before releasing this, including:
 
-- Implement missing features:
-  - Small quality of life related GUI fixes. Wine's XEmbed implementation
-    doesn't always update the reparented window's client area when the window
-    gets resized. The current workaround works much better than not doing
-    anything at all, but it isn't fully reliably yet.
 - Fix implementation bugs:
-  - Serum's GUI has redrawing issues when using XEmbed, even though it doesn't
-    have this issue when running in a standalone window or when simply
-    reparenting the window without XEmbed. None of the other plugin's I've tried
-    have this issue, so it might have something to do with d2d1 or the way Serum
-    uses it.
+  - Valhalla DSP plugins have a GUI where either the dropdowns appear in the
+    wrong place or all mouse based events are calculated with incorrect
+    coordinates. This definitely has to do with the way embedding is handled but
+    none of the other plugins I've tested have this issue.
 - Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.
