@@ -238,13 +238,20 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
                                       option);
         } break;
         case effEditOpen: {
-            const auto x11_handle = reinterpret_cast<size_t>(data);
-            const auto win32_handle = editor.open(plugin, x11_handle);
+            const auto win32_handle = editor.open(plugin);
 
-            // The created Win32 window has already been reparented to the host
-            // provided window
-            return plugin->dispatcher(plugin, opcode, index, value,
-                                      win32_handle, option);
+            const auto return_value = plugin->dispatcher(
+                plugin, opcode, index, value, win32_handle, option);
+            if (return_value == 0) {
+                return 0;
+            }
+
+            // If opening the editor was succesful, reparent it to the window
+            // provided by the DAW
+            const auto x11_handle = reinterpret_cast<size_t>(data);
+            editor.embed_into(x11_handle);
+
+            return return_value;
         } break;
         case effEditClose: {
             const intptr_t return_value =
@@ -290,6 +297,17 @@ class HostCallbackDataConverter : DefaultDataConverter {
                 break;
             case audioMasterGetTime:
                 return WantsVstTimeInfo{};
+                break;
+            case audioMasterSizeWindow:
+                // Plugins use this opcode to indicate that their editor should
+                // be resized, so we'll have to update the Wine window
+                // accordingly
+                // TODO: Can we just do this when handling XCB_CONFIGURE_NOTIFY
+                //       instead?
+                editor.resize(VstRect{0, 0, static_cast<short>(value),
+                                      static_cast<short>(index)});
+
+                return DefaultDataConverter::read(opcode, index, value, data);
                 break;
             case audioMasterIOChanged:
                 // This is a helpful event that indicates that the VST plugin's

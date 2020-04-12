@@ -22,7 +22,7 @@
  * embed the window in a VST host provided X11 window.
  *
  * This was originally implemented using XEmbed. While that sounded like the
- * right thing to do, there were a few minor issues with Wine's XEmbed
+ * right thing to do, there were a few small issues with Wine's XEmbed
  * implementation. The most important of which is that resizing GUIs sometimes
  * works fine, but often fails to expand the embedded window's client area
  * leaving part of the window inaccessible. There are also some a small number
@@ -32,6 +32,9 @@
  * issues, please let me know and I'll switch to using XEmbed again.
  *
  * This workaround was inspired by LinVST.
+ *
+ * TODO: Refactor this so we don't need to stage initialization and just add an
+ *       `std::optional<Editor>` to `PluginBridge` instead
  */
 class Editor {
    public:
@@ -47,11 +50,33 @@ class Editor {
      *
      * @param effect The plugin this window is being created for. Used to send
      *   `effEditIdle` messages on a timer.
+     *
+     * @return The Win32 window handle of the newly created window.
+     */
+    HWND open(AEffect* effect);
+
+    void close();
+
+    /**
+     * Resize the window to match the given size, if open.
+     *
+     * @param new_size The rectangle with the plugin's current position.
+     *
+     * @return Whether the resizing was succesful. Will return false if the
+     *   editor isn't open.
+     */
+    bool resize(const VstRect& new_size);
+
+    /**
+     * Embed the (open) window into a parent window.
+     *
      * @param parent_window_handle The X11 window handle passed by the VST host
      *   for the editor to embed itself into.
+     *
+     * @return Whether the embedding was succesful. Will return false if the
+     *   window is not open.
      */
-    HWND open(AEffect* effect, xcb_window_t parent_window_handle);
-    void close();
+    bool embed_into(const size_t parent_window_handle);
 
     /**
      * Pump messages from the editor GUI's event loop until all events are
@@ -63,16 +88,15 @@ class Editor {
     // Needed to handle idle updates through a timer
     AEffect* plugin;
 
+   private:
     /**
      * The window handle of the editor window created by the DAW.
      */
     xcb_window_t parent_window;
-
-   private:
     /**
-     * Return the X11 window handle for the window if it's currently open.
+     * The X11 window handle of the window belonging to  `win32_handle`.
      */
-    std::optional<size_t> get_x11_handle();
+    xcb_window_t child_window;
 
     /**
      * The Win32 window class registered for the windows window.
