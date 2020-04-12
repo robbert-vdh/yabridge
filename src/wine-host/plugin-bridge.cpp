@@ -238,13 +238,20 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
                                       option);
         } break;
         case effEditOpen: {
-            const auto x11_handle = reinterpret_cast<size_t>(data);
-            const auto win32_handle = editor.open(plugin, x11_handle);
+            const auto win32_handle = editor.open(plugin);
 
-            // The actual XEmbed handling is done after the host's window has
-            // been set to the correct size, in `Editor::handle_events()`
-            return plugin->dispatcher(plugin, opcode, index, value,
-                                      win32_handle, option);
+            const auto return_value = plugin->dispatcher(
+                plugin, opcode, index, value, win32_handle, option);
+            if (return_value == 0) {
+                return 0;
+            }
+
+            // If opening the editor was succesful, reparent it to the window
+            // provided by the DAW
+            const auto x11_handle = reinterpret_cast<size_t>(data);
+            editor.embed_into(x11_handle);
+
+            return return_value;
         } break;
         case effEditClose: {
             const intptr_t return_value =
@@ -290,6 +297,17 @@ class HostCallbackDataConverter : DefaultDataConverter {
                 break;
             case audioMasterGetTime:
                 return WantsVstTimeInfo{};
+                break;
+            case audioMasterSizeWindow:
+                // Plugins use this opcode to indicate that their editor should
+                // be resized. This is handled implicitly when handling the
+                // ConfigureNotify X11 events but handling this here as well
+                // makes the resizing look much smoother.
+                // TODO: Check if this actually makes drag resizing feel better,
+                //       otherwise just remove this
+                editor.resize(value, index);
+
+                return DefaultDataConverter::read(opcode, index, value, data);
                 break;
             case audioMasterIOChanged:
                 // This is a helpful event that indicates that the VST plugin's

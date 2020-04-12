@@ -3,40 +3,24 @@
 // The Win32 API requires you to hardcode identifiers for tiemrs
 constexpr size_t idle_timer_id = 1337;
 
-constexpr char xembed_proeprty[] = "_XEMBED";
-constexpr char xembed_info_proeprty[] = "_XEMBED_INFO";
+/**
+ * The most significant bit in an event's response type is used to indicate
+ * whether the event source.
+ */
+constexpr uint16_t event_type_mask = ((1 << 7) - 1);
 
-// Constants from the XEmbed spec
-constexpr uint32_t xembed_protocol_version = 0;
-
-constexpr uint32_t xembed_embedded_notify_msg = 0;
-constexpr uint32_t xembed_window_activate_msg = 1;
-constexpr uint32_t xembed_focus_in_msg = 4;
-
-constexpr uint32_t xembed_focus_first = 1;
+/**
+ * Return the X11 window handle for the window if it's currently open.
+ */
+xcb_window_t get_x11_handle(HWND win32_handle);
 
 ATOM register_window_class(std::string window_class_name);
 
 Editor::Editor(std::string window_class_name)
     : window_class(register_window_class(window_class_name)),
-      x11_connection(xcb_connect(nullptr, nullptr), &xcb_disconnect) {
-    // We need a bunch of property atoms for the XEmbed protocol
-    xcb_generic_error_t* err;
+      x11_connection(xcb_connect(nullptr, nullptr), &xcb_disconnect) {}
 
-    const auto xembed_cookie = xcb_intern_atom(
-        x11_connection.get(), 0, strlen(xembed_proeprty), xembed_proeprty);
-    const auto xembed_info_cookie =
-        xcb_intern_atom(x11_connection.get(), 0, strlen(xembed_info_proeprty),
-                        xembed_info_proeprty);
-
-    xcb_xembed =
-        xcb_intern_atom_reply(x11_connection.get(), xembed_cookie, &err)->atom;
-    xcb_xembed_info =
-        xcb_intern_atom_reply(x11_connection.get(), xembed_info_cookie, &err)
-            ->atom;
-}
-
-HWND Editor::open(AEffect* effect, xcb_window_t parent_window_handle) {
+HWND Editor::open(AEffect* effect) {
     // Create a window without any decoratiosn for easy embedding. The
     // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to be
     // drawn without any decorations (making resizes behave as you'd expect) and
@@ -46,13 +30,12 @@ HWND Editor::open(AEffect* effect, xcb_window_t parent_window_handle) {
             CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_ACCEPTFILES,
                            reinterpret_cast<LPCSTR>(window_class),
                            "yabridge plugin", WS_POPUP, CW_USEDEFAULT,
-                           CW_USEDEFAULT, 2048, 2048, nullptr, nullptr,
+                           CW_USEDEFAULT, 2560, 1440, nullptr, nullptr,
                            GetModuleHandle(nullptr), this),
             &DestroyWindow);
 
     // Needed to send update messages on a timer
     plugin = effect;
-    parent_window = parent_window_handle;
 
     // The Win32 API will block the `DispatchMessage` call when opening e.g. a
     // dropdown, but it will still allow timers to be run so the GUI can still
@@ -62,12 +45,17 @@ HWND Editor::open(AEffect* effect, xcb_window_t parent_window_handle) {
     // the plugin is not busy.
     SetTimer(win32_handle->get(), idle_timer_id, 100, nullptr);
 
-    const uint32_t event_mask = XCB_EVENT_MASK_VISIBILITY_CHANGE;
-    xcb_change_window_attributes(x11_connection.get(), parent_window,
-                                 XCB_CW_EVENT_MASK, &event_mask);
-    xcb_flush(x11_connection.get());
-
     return win32_handle->get();
+}
+
+bool Editor::resize(const int width, const int height) {
+    if (!win32_handle.has_value()) {
+        return false;
+    }
+
+    SetWindowPos(win32_handle->get(), HWND_TOP, 0, 0, width, height, 0);
+
+    return true;
 }
 
 void Editor::close() {
@@ -78,30 +66,29 @@ void Editor::close() {
     //       everything for us?
 }
 
-bool Editor::xembed() {
+bool Editor::embed_into(const size_t parent_window_handle) {
     if (!win32_handle.has_value()) {
         return false;
     }
 
-    // This follows the embedding procedure specified in the XEmbed sped:
-    // https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html
-    // under 'Embedding life cycle
-    // Sadly there's doesn't seem to be any implementation of this available as
-    // a library
-    const size_t child_window = get_x11_handle().value();
+    child_window = get_x11_handle(win32_handle->get());
+    parent_window = parent_window_handle;
 
+    // See the X11 events part of `Editor::handle_events`.
+    // const uint32_t child_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+    // xcb_change_window_attributes(x11_connection.get(), child_window,
+    //                              XCB_CW_EVENT_MASK, &child_event_mask);
+    const uint32_t parent_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+    xcb_change_window_attributes(x11_connection.get(), parent_window,
+                                 XCB_CW_EVENT_MASK, &parent_event_mask);
+    xcb_flush(x11_connection.get());
+
+    // Embed the Win32 window into the window provided by the host. Instead of
+    // using the XEmbed protocol, we'll register a few events and manage the
+    // child window ourselves. This is a hack to work around the issue's
+    // described in `Editor`'s docstring'.
     xcb_reparent_window(x11_connection.get(), child_window, parent_window, 0,
                         0);
-
-    // Tell the window from Wine it's embedded into the window provided by the
-    // host
-    send_xembed_event(child_window, xembed_embedded_notify_msg, 0,
-                      parent_window, xembed_protocol_version);
-
-    send_xembed_event(child_window, xembed_focus_in_msg, xembed_focus_first, 0,
-                      0);
-    send_xembed_event(child_window, xembed_window_activate_msg, 0, 0, 0);
-
     xcb_map_window(x11_connection.get(), child_window);
     xcb_flush(x11_connection.get());
 
@@ -137,67 +124,53 @@ void Editor::handle_events() {
         }
 
         // Handle X11 events
-        // TODO: We don't listen for XEmbed property changes for mapping and
-        //       unmapping the window as described in the spec. Is this
-        //       something we should do?
-        // TODO: Also, increasing window size does not work reliably, any way we
-        //       could make this work better?
-        xcb_generic_event_t* event;
-        while ((event = xcb_poll_for_event(x11_connection.get())) != nullptr) {
-            // The most significant bit in an event's response type is used to
-            // indicate whether the event source
-            switch (event->response_type & ((1 << 7) - 1)) {
-                case XCB_VISIBILITY_NOTIFY: {
-                    xcb_visibility_notify_event_t visibility_event =
-                        *reinterpret_cast<xcb_visibility_notify_event_t*>(
-                            event);
-
-                    // Wine's XEmbed implementation is a bit iffy when it comes
-                    // to window size changes, including editor windows being
-                    // increased in size by the DAW when first opening the
-                    // editor. Restarting the XEmbed protocol on visibility and
-                    // size changes is an easy workaround, but it's not 100%
-                    // reliable.
-                    if (visibility_event.window == parent_window &&
-                        visibility_event.state !=
-                            XCB_VISIBILITY_FULLY_OBSCURED) {
-                        xembed();
+        // TODO: Check if we should forward other events mostly to prevent
+        //       unnecessary GUI processing in the background
+        // TODO: Check whether drag and drop works out of the box
+        xcb_generic_event_t* generic_event;
+        while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
+               nullptr) {
+            switch (generic_event->response_type & event_type_mask) {
+                case XCB_CONFIGURE_NOTIFY: {
+                    xcb_configure_notify_event_t event =
+                        *reinterpret_cast<xcb_configure_notify_event_t*>(
+                            generic_event);
+                    if (event.window != parent_window) {
+                        break;
                     }
+
+
+                    // We're purposely not using XEmbed. This has the
+                    // consequence that wine still thinks that any X and Y
+                    // coordinates are relative to the x11 window root instead
+                    // of the parent window provided by the DAW, causing all
+                    // sorts of GUI interactions to break. To alleviate this
+                    // we'll just lie to Wine and tell it that it's located at
+                    // the parent window's location. We'll only send the event
+                    // instead of actually configuring the window.
+                    xcb_configure_notify_event_t translated_event{};
+                    translated_event.response_type = XCB_CONFIGURE_NOTIFY;
+                    translated_event.event = child_window;
+                    translated_event.window = child_window;
+                    translated_event.width = event.width;
+                    translated_event.height = event.height;
+                    translated_event.x = event.x;
+                    translated_event.y = event.y;
+
+                    xcb_send_event(x11_connection.get(), false, child_window,
+                                   XCB_EVENT_MASK_STRUCTURE_NOTIFY |
+                                       XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
+                                   reinterpret_cast<char*>(&translated_event));
+                    xcb_flush(x11_connection.get());
+
+                    // The client area of the Win32 window doesn't expand
+                    // automatically
+                    resize(event.width, event.height);
                 } break;
             }
-
-            free(event);
+            free(generic_event);
         }
     }
-}
-
-std::optional<size_t> Editor::get_x11_handle() {
-    if (!win32_handle.has_value()) {
-        return std::nullopt;
-    }
-
-    return reinterpret_cast<size_t>(
-        GetProp(win32_handle.value().get(), "__wine_x11_whole_window"));
-}
-
-void Editor::send_xembed_event(const xcb_window_t& window,
-                               const uint32_t message,
-                               const uint32_t detail,
-                               const uint32_t data1,
-                               const uint32_t data2) {
-    xcb_client_message_event_t event;
-    event.response_type = XCB_CLIENT_MESSAGE;
-    event.type = xcb_xembed;
-    event.window = window;
-    event.format = 32;
-    event.data.data32[0] = XCB_CURRENT_TIME;
-    event.data.data32[1] = message;
-    event.data.data32[2] = detail;
-    event.data.data32[3] = data1;
-    event.data.data32[4] = data2;
-
-    xcb_send_event(x11_connection.get(), false, window, XCB_EVENT_MASK_NO_EVENT,
-                   reinterpret_cast<char*>(&event));
 }
 
 LRESULT CALLBACK window_proc(HWND handle,
@@ -239,6 +212,11 @@ LRESULT CALLBACK window_proc(HWND handle,
     }
 
     return DefWindowProc(handle, message, wParam, lParam);
+}
+
+xcb_window_t get_x11_handle(HWND win32_handle) {
+    return reinterpret_cast<size_t>(
+        GetProp(win32_handle, "__wine_x11_whole_window"));
 }
 
 ATOM register_window_class(std::string window_class_name) {
