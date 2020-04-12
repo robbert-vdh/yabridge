@@ -58,16 +58,6 @@ class Editor {
     void close();
 
     /**
-     * Resize the window to match the given size, if open.
-     *
-     * @param new_size The rectangle with the plugin's current position.
-     *
-     * @return Whether the resizing was succesful. Will return false if the
-     *   editor isn't open.
-     */
-    bool resize(const VstRect& new_size);
-
-    /**
      * Embed the (open) window into a parent window.
      *
      * @param parent_window_handle The X11 window handle passed by the VST host

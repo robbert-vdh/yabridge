@@ -48,18 +48,6 @@ HWND Editor::open(AEffect* effect) {
     return win32_handle->get();
 }
 
-bool Editor::resize(const VstRect& new_size) {
-    if (!win32_handle.has_value()) {
-        return false;
-    }
-
-    SetWindowPos(win32_handle->get(), HWND_TOP, new_size.left, new_size.top,
-                 new_size.right - new_size.left, new_size.bottom - new_size.top,
-                 0);
-
-    return true;
-}
-
 void Editor::close() {
     // RAII will destroy the window and tiemrs for us
     win32_handle = std::nullopt;
@@ -128,6 +116,7 @@ void Editor::handle_events() {
         // Handle X11 events
         // TODO: Check if we should forward other events mostly to prevent
         //       unnecessary GUI processing in the background
+        // TODO: Check whether drag and drop works out of the box
         xcb_generic_event_t* generic_event;
         while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
                nullptr) {
@@ -139,6 +128,11 @@ void Editor::handle_events() {
                     if (event.window != parent_window) {
                         break;
                     }
+
+                    // The client area of the Win32 window doesn't expand
+                    // automatically
+                    SetWindowPos(win32_handle->get(), HWND_TOP, 0, 0,
+                                 event.width, event.height, 0);
 
                     // We're purposely not using XEmbed. This has the
                     // consequence that wine still thinks that any X and Y

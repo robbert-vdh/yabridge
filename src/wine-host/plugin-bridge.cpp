@@ -298,17 +298,6 @@ class HostCallbackDataConverter : DefaultDataConverter {
             case audioMasterGetTime:
                 return WantsVstTimeInfo{};
                 break;
-            case audioMasterSizeWindow:
-                // Plugins use this opcode to indicate that their editor should
-                // be resized, so we'll have to update the Wine window
-                // accordingly
-                // TODO: Can we just do this when handling XCB_CONFIGURE_NOTIFY
-                //       instead?
-                editor.resize(VstRect{0, 0, static_cast<short>(value),
-                                      static_cast<short>(index)});
-
-                return DefaultDataConverter::read(opcode, index, value, data);
-                break;
             case audioMasterIOChanged:
                 // This is a helpful event that indicates that the VST plugin's
                 // `AEffect` struct has changed. Writing these results back is
