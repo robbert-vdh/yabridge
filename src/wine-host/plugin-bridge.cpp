@@ -328,6 +328,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
             case audioMasterGetTime:
                 // Return a pointer to the `VstTimeInfo` object written in the
                 // function above
+                // TODO: This is incorrect!
                 return reinterpret_cast<intptr_t>(&time);
                 break;
             default:
@@ -338,6 +339,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
 
    private:
     AEffect* plugin;
+    // TODO: Clean up
     Editor& editor;
     VstTimeInfo& time_info;
 };

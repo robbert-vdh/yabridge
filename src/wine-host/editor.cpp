@@ -66,8 +66,9 @@ void Editor::close() {
     // RAII will destroy the window and tiemrs for us
     win32_handle = std::nullopt;
 
-    // TODO: Do we need to do something on the X11 side or does the host do
-    //       everything for us?
+    // TODO: We might want to manually unmap the X11 window instead of having
+    //       the host do it. Right now the window editor window stays open for a
+    //       second when removing a plugin.
 }
 
 bool Editor::embed_into(const size_t parent_window_handle) {
