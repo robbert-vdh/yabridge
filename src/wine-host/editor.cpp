@@ -25,6 +25,10 @@ HWND Editor::open(AEffect* effect) {
     // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to be
     // drawn without any decorations (making resizes behave as you'd expect) and
     // also causes mouse coordinates to be relative to the window itself.
+    // TODO: The (maximum) client area is now set at 1440p, to prevent
+    //       unnecessary overhead and to support fullscreen windows at 4k
+    //       resolutions we should just use the dimensions of the X11 root
+    //       window instead.
     win32_handle =
         std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>(
             CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_ACCEPTFILES,
@@ -46,16 +50,6 @@ HWND Editor::open(AEffect* effect) {
     SetTimer(win32_handle->get(), idle_timer_id, 100, nullptr);
 
     return win32_handle->get();
-}
-
-bool Editor::resize(const int width, const int height) {
-    if (!win32_handle.has_value()) {
-        return false;
-    }
-
-    SetWindowPos(win32_handle->get(), HWND_TOP, 0, 0, width, height, 0);
-
-    return true;
 }
 
 void Editor::close() {
@@ -139,7 +133,6 @@ void Editor::handle_events() {
                         break;
                     }
 
-
                     // We're purposely not using XEmbed. This has the
                     // consequence that wine still thinks that any X and Y
                     // coordinates are relative to the x11 window root instead
@@ -148,6 +141,16 @@ void Editor::handle_events() {
                     // we'll just lie to Wine and tell it that it's located at
                     // the parent window's location. We'll only send the event
                     // instead of actually configuring the window.
+                    // NOTE: We're not actually using `SetWindowPos()` to resize
+                    //       the window. The editor's client area will likely
+                    //       always be big enough Since we specified the Window
+                    //       to be 2560x1440 pixels large at the time of its
+                    //       creation. This works because the embedding
+                    //       hierarchy is DAW window -> Win32 window (created in
+                    //       this class) -> VST plugin window created by the
+                    //       plugin itself. This makes the drag-to-resize
+                    //       functionality many plugin editors have feel smooth
+                    //       and native.
                     xcb_configure_notify_event_t translated_event{};
                     translated_event.response_type = XCB_CONFIGURE_NOTIFY;
                     translated_event.event = child_window;
@@ -162,10 +165,6 @@ void Editor::handle_events() {
                                        XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
                                    reinterpret_cast<char*>(&translated_event));
                     xcb_flush(x11_connection.get());
-
-                    // The client area of the Win32 window doesn't expand
-                    // automatically
-                    resize(event.width, event.height);
                 } break;
             }
             free(generic_event);
