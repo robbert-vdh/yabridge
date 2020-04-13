@@ -7,10 +7,7 @@ Yet Another way to use Windows VST2 plugins in Linux VST hosts.
 There are a few things that should be done before releasing this, including:
 
 - Fix implementation bugs:
-  - Valhalla DSP plugins have a GUI where either the dropdowns appear in the
-    wrong place or all mouse based events are calculated with incorrect
-    coordinates. This definitely has to do with the way embedding is handled but
-    none of the other plugins I've tested have this issue.
+  - There are likely some minor issues left.
 - Add missing details if any to the architecture section.
 - Document what this has been tested on and what does or does not work.
 - Document wine32 support.

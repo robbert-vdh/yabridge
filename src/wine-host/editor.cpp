@@ -9,6 +9,20 @@ constexpr size_t idle_timer_id = 1337;
  */
 constexpr uint16_t event_type_mask = ((1 << 7) - 1);
 
+// TODO: The (maximum) client area is now set at 1440p, to prevent unnecessary
+//       overhead and to support fullscreen windows at 4k resolutions we should
+//       just use the dimensions of the X11 root window instead.
+/**
+ * The initial and maximum width of the Wine window hosting the plugin's editor
+ * window. This is set at a fixed size to make window resizing feel native.
+ */
+constexpr uint16_t client_area_width = 2560;
+/**
+ * The initial and maximum width of the Wine window hosting the plugin's editor
+ * window. This is set at a fixed size to make window resizing feel native.
+ */
+constexpr uint16_t client_area_height = 1440;
+
 /**
  * Return the X11 window handle for the window if it's currently open.
  */
@@ -25,17 +39,13 @@ HWND Editor::open(AEffect* effect) {
     // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to be
     // drawn without any decorations (making resizes behave as you'd expect) and
     // also causes mouse coordinates to be relative to the window itself.
-    // TODO: The (maximum) client area is now set at 1440p, to prevent
-    //       unnecessary overhead and to support fullscreen windows at 4k
-    //       resolutions we should just use the dimensions of the X11 root
-    //       window instead.
     win32_handle =
         std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>(
             CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_ACCEPTFILES,
                            reinterpret_cast<LPCSTR>(window_class),
                            "yabridge plugin", WS_POPUP, CW_USEDEFAULT,
-                           CW_USEDEFAULT, 2560, 1440, nullptr, nullptr,
-                           GetModuleHandle(nullptr), this),
+                           CW_USEDEFAULT, client_area_width, client_area_height,
+                           nullptr, nullptr, GetModuleHandle(nullptr), this),
             &DestroyWindow);
 
     // Needed to send update messages on a timer
@@ -155,8 +165,8 @@ void Editor::handle_events() {
                     translated_event.response_type = XCB_CONFIGURE_NOTIFY;
                     translated_event.event = child_window;
                     translated_event.window = child_window;
-                    translated_event.width = event.width;
-                    translated_event.height = event.height;
+                    translated_event.width = client_area_width;
+                    translated_event.height = client_area_height;
                     translated_event.x = event.x;
                     translated_event.y = event.y;
 
