@@ -156,5 +156,10 @@ class PluginBridge {
      */
     std::vector<uint8_t> process_buffer;
 
-    Editor editor;
+    /**
+     * The plugin editor window. Allows embedding the plugin's editor into a
+     * Wine window, and embedding that Wine window into a window provided by the
+     * host. Should be empty when the editor is not open.
+     */
+    std::optional<Editor> editor;
 };

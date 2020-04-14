@@ -30,59 +30,42 @@ xcb_window_t get_x11_handle(HWND win32_handle);
 
 ATOM register_window_class(std::string window_class_name);
 
-Editor::Editor(std::string window_class_name)
-    : window_class(register_window_class(window_class_name)),
-      x11_connection(xcb_connect(nullptr, nullptr), &xcb_disconnect) {}
-
-HWND Editor::open(AEffect* effect) {
-    // Create a window without any decoratiosn for easy embedding. The
-    // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to be
-    // drawn without any decorations (making resizes behave as you'd expect) and
-    // also causes mouse coordinates to be relative to the window itself.
-    win32_handle =
-        std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>(
-            CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_ACCEPTFILES,
-                           reinterpret_cast<LPCSTR>(window_class),
-                           "yabridge plugin", WS_POPUP, CW_USEDEFAULT,
-                           CW_USEDEFAULT, client_area_width, client_area_height,
-                           nullptr, nullptr, GetModuleHandle(nullptr), this),
-            &DestroyWindow);
-
-    // Needed to send update messages on a timer
-    plugin = effect;
-
+Editor::Editor(const std::string& window_class_name,
+               AEffect* effect,
+               const size_t parent_window_handle)
+    :  // Needed to send update messages on a timer
+      plugin(effect),
+      window_class(register_window_class(window_class_name)),
+      // Create a window without any decoratiosn for easy embedding. The
+      // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to
+      // be drawn without any decorations (making resizes behave as you'd
+      // expect) and also causes mouse coordinates to be relative to the window
+      // itself.
+      win32_handle(CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_ACCEPTFILES,
+                                  reinterpret_cast<LPCSTR>(window_class),
+                                  "yabridge plugin",
+                                  WS_POPUP,
+                                  CW_USEDEFAULT,
+                                  CW_USEDEFAULT,
+                                  client_area_width,
+                                  client_area_height,
+                                  nullptr,
+                                  nullptr,
+                                  GetModuleHandle(nullptr),
+                                  this),
+                   &DestroyWindow),
+      parent_window(parent_window_handle),
+      child_window(get_x11_handle(win32_handle.get())),
+      x11_connection(xcb_connect(nullptr, nullptr), &xcb_disconnect) {
     // The Win32 API will block the `DispatchMessage` call when opening e.g. a
     // dropdown, but it will still allow timers to be run so the GUI can still
     // update in the background. Because of this we send `effEditIdle` to the
     // plugin on a timer. The refresh rate is purposely fairly low since we
     // we'll also trigger this manually in `Editor::handle_events()` whenever
     // the plugin is not busy.
-    SetTimer(win32_handle->get(), idle_timer_id, 100, nullptr);
+    SetTimer(win32_handle.get(), idle_timer_id, 100, nullptr);
 
-    return win32_handle->get();
-}
-
-void Editor::close() {
-    // RAII will destroy the window and tiemrs for us
-    win32_handle = std::nullopt;
-
-    // TODO: We might want to manually unmap the X11 window instead of having
-    //       the host do it. Right now the window editor window stays open for a
-    //       second when removing a plugin.
-}
-
-bool Editor::embed_into(const size_t parent_window_handle) {
-    if (!win32_handle.has_value()) {
-        return false;
-    }
-
-    child_window = get_x11_handle(win32_handle->get());
-    parent_window = parent_window_handle;
-
-    // See the X11 events part of `Editor::handle_events`.
-    // const uint32_t child_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-    // xcb_change_window_attributes(x11_connection.get(), child_window,
-    //                              XCB_CW_EVENT_MASK, &child_event_mask);
+    // see the x11 events part of `editor::handle_events`
     const uint32_t parent_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
@@ -97,91 +80,85 @@ bool Editor::embed_into(const size_t parent_window_handle) {
     xcb_map_window(x11_connection.get(), child_window);
     xcb_flush(x11_connection.get());
 
-    ShowWindow(win32_handle->get(), SW_SHOWNORMAL);
-
-    return true;
+    ShowWindow(win32_handle.get(), SW_SHOWNORMAL);
 }
 
 void Editor::handle_events() {
     // Process any remaining events, otherwise we won't be able to interact with
     // the window
-    if (win32_handle.has_value()) {
-        bool gui_was_updated = false;
-        MSG msg;
+    bool gui_was_updated = false;
+    MSG msg;
 
-        // The second argument has to be null since we not only want to handle
-        // events for this window but also for all child windows (i.e.
-        // dropdowns). I spent way longer debugging this than I want to admit.
-        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+    // The second argument has to be null since we not only want to handle
+    // events for this window but also for all child windows (i.e. dropdowns). I
+    // spent way longer debugging this than I want to admit.
+    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
 
-            if (msg.message == WM_TIMER && msg.wParam == idle_timer_id) {
-                gui_was_updated = true;
-            }
+        if (msg.message == WM_TIMER && msg.wParam == idle_timer_id) {
+            gui_was_updated = true;
         }
+    }
 
-        // Make sure that the GUI always gets updated at least once for every
-        // `effEditIdle` call the host has sent to improve responsiveness when
-        // the GUI isn't being blocked.
-        if (!gui_was_updated) {
-            SendMessage(win32_handle->get(), WM_TIMER, idle_timer_id, 0);
+    // Make sure that the GUI always gets updated at least once for every
+    // `effEditIdle` call the host has sent to improve responsiveness when the
+    // GUI isn't being blocked.
+    if (!gui_was_updated) {
+        SendMessage(win32_handle.get(), WM_TIMER, idle_timer_id, 0);
+    }
+
+    // Handle X11 events
+    // TODO: Check if we should forward other events mostly to prevent
+    //       unnecessary GUI processing in the background. Since `effEditIdle`
+    //       should only be called when the plugin's editor is open this should
+    //       not cause any different in CPU though.
+    // TODO: Check whether drag and drop works out of the box
+    xcb_generic_event_t* generic_event;
+    while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
+           nullptr) {
+        switch (generic_event->response_type & event_type_mask) {
+            case XCB_CONFIGURE_NOTIFY: {
+                xcb_configure_notify_event_t event =
+                    *reinterpret_cast<xcb_configure_notify_event_t*>(
+                        generic_event);
+                if (event.window != parent_window) {
+                    break;
+                }
+
+                // We're purposely not using XEmbed. This has the consequence
+                // that wine still thinks that any X and Y coordinates are
+                // relative to the x11 window root instead of the parent window
+                // provided by the DAW, causing all sorts of GUI interactions to
+                // break. To alleviate this we'll just lie to Wine and tell it
+                // that it's located at the parent window's location. We'll only
+                // send the event instead of actually configuring the window.
+                // NOTE: We're not actually using `SetWindowPos()` to resize the
+                //       window. The editor's client area will likely always be
+                //       big enough Since we specified the Window to be
+                //       2560x1440 pixels large at the time of its creation.
+                //       This works because the embedding hierarchy is DAW
+                //       window -> Win32 window (created in this class) -> VST
+                //       plugin window created by the plugin itself. This makes
+                //       the drag-to-resize functionality many plugin editors
+                //       have feel smooth and native.
+                xcb_configure_notify_event_t translated_event{};
+                translated_event.response_type = XCB_CONFIGURE_NOTIFY;
+                translated_event.event = child_window;
+                translated_event.window = child_window;
+                translated_event.width = client_area_width;
+                translated_event.height = client_area_height;
+                translated_event.x = event.x;
+                translated_event.y = event.y;
+
+                xcb_send_event(x11_connection.get(), false, child_window,
+                               XCB_EVENT_MASK_STRUCTURE_NOTIFY |
+                                   XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
+                               reinterpret_cast<char*>(&translated_event));
+                xcb_flush(x11_connection.get());
+            } break;
         }
-
-        // Handle X11 events
-        // TODO: Check if we should forward other events mostly to prevent
-        //       unnecessary GUI processing in the background. Since
-        //       `effEditIdle` should only be called when the plugin's editor is
-        //       open this should not cause any different in CPU though.
-        // TODO: Check whether drag and drop works out of the box
-        xcb_generic_event_t* generic_event;
-        while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
-               nullptr) {
-            switch (generic_event->response_type & event_type_mask) {
-                case XCB_CONFIGURE_NOTIFY: {
-                    xcb_configure_notify_event_t event =
-                        *reinterpret_cast<xcb_configure_notify_event_t*>(
-                            generic_event);
-                    if (event.window != parent_window) {
-                        break;
-                    }
-
-                    // We're purposely not using XEmbed. This has the
-                    // consequence that wine still thinks that any X and Y
-                    // coordinates are relative to the x11 window root instead
-                    // of the parent window provided by the DAW, causing all
-                    // sorts of GUI interactions to break. To alleviate this
-                    // we'll just lie to Wine and tell it that it's located at
-                    // the parent window's location. We'll only send the event
-                    // instead of actually configuring the window.
-                    // NOTE: We're not actually using `SetWindowPos()` to resize
-                    //       the window. The editor's client area will likely
-                    //       always be big enough Since we specified the Window
-                    //       to be 2560x1440 pixels large at the time of its
-                    //       creation. This works because the embedding
-                    //       hierarchy is DAW window -> Win32 window (created in
-                    //       this class) -> VST plugin window created by the
-                    //       plugin itself. This makes the drag-to-resize
-                    //       functionality many plugin editors have feel smooth
-                    //       and native.
-                    xcb_configure_notify_event_t translated_event{};
-                    translated_event.response_type = XCB_CONFIGURE_NOTIFY;
-                    translated_event.event = child_window;
-                    translated_event.window = child_window;
-                    translated_event.width = client_area_width;
-                    translated_event.height = client_area_height;
-                    translated_event.x = event.x;
-                    translated_event.y = event.y;
-
-                    xcb_send_event(x11_connection.get(), false, child_window,
-                                   XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-                                       XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
-                                   reinterpret_cast<char*>(&translated_event));
-                    xcb_flush(x11_connection.get());
-                } break;
-            }
-            free(generic_event);
-        }
+        free(generic_event);
     }
 }
 

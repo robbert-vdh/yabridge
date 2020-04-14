@@ -7,6 +7,8 @@ Yet Another way to use Windows VST2 plugins in Linux VST hosts.
 There are a few things that should be done before releasing this, including:
 
 - Fix implementation bugs:
+  - Fix hiding and showing of editor windows, closing a window with alt+f4
+    freezes the editor,
   - Polish GUIs even further. There are some todos left in
     `src/wine-host/editor.{h,cpp}`.
   - There are likely some minor issues left.

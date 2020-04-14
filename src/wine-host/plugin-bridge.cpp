@@ -66,8 +66,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       vst_host_callback(io_context),
       host_vst_parameters(io_context),
       host_vst_process_replacing(io_context),
-      vst_host_aeffect(io_context),
-      editor("yabridge plugin") {
+      vst_host_aeffect(io_context) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
         throw std::runtime_error("Could not load a shared library at '" +
@@ -225,39 +224,29 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
             // To allow the GUI to update even when this thread gets blocked
             // (e.g. when a dropdown is open), the actual `effEditIdle` event
             // gets sent to the plugin on a timer.
-            editor.handle_events();
+            editor->handle_events();
 
             return 1;
             break;
-        case effClose: {
-            // Closing the editor will also shut down the thread that's
-            // currently handling events
-            editor.close();
-
-            return plugin->dispatcher(plugin, opcode, index, value, data,
-                                      option);
-        } break;
         case effEditOpen: {
-            const auto win32_handle = editor.open(plugin);
-
-            const auto return_value = plugin->dispatcher(
-                plugin, opcode, index, value, win32_handle, option);
-            if (return_value == 0) {
-                return 0;
-            }
-
-            // If opening the editor was succesful, reparent it to the window
-            // provided by the DAW
+            // Create a Win32 window through Wine, embed it into the window
+            // provided by the host, and let the plugin embed itself into the
+            // Wine window
             const auto x11_handle = reinterpret_cast<size_t>(data);
-            editor.embed_into(x11_handle);
+            editor.emplace("yabridge plugin", plugin, x11_handle);
 
-            return return_value;
+            return plugin->dispatcher(plugin, opcode, index, value,
+                                      editor->win32_handle.get(), option);
         } break;
         case effEditClose: {
             const intptr_t return_value =
                 plugin->dispatcher(plugin, opcode, index, value, data, option);
 
-            editor.close();
+            // Cleanup is handled through RAII
+            // TODO: We might want to manually unmap the X11 window instead of
+            //       having the host do it. Right now the window editor window
+            //       stays open for a second when removing a plugin.
+            editor = std::nullopt;
 
             return return_value;
         } break;
