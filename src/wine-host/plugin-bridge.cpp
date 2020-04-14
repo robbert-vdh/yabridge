@@ -272,7 +272,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
    public:
     HostCallbackDataConverter(AEffect* plugin,
                               Editor& editor,
-                              VstTimeInfo& time_info)
+                              std::optional<VstTimeInfo>& time_info)
         : plugin(plugin), editor(editor), time_info(time_info) {}
 
     std::optional<EventPayload> read(const int opcode,
@@ -314,8 +314,15 @@ class HostCallbackDataConverter : DefaultDataConverter {
         switch (opcode) {
             case audioMasterGetTime:
                 // Write the returned `VstTimeInfo` struct into a field and make
-                // the function return a poitner to it in the function below
-                time_info = std::get<VstTimeInfo>(response.payload);
+                // the function return a poitner to it in the function below.
+                // Depending on whether the host supported the requested time
+                // information this operations returns either a null pointer or
+                // a pointer to a `VstTimeInfo` object.
+                if (std::holds_alternative<std::monostate>(response.payload)) {
+                    time_info = std::nullopt;
+                } else {
+                    time_info = std::get<VstTimeInfo>(response.payload);
+                }
                 break;
             default:
                 DefaultDataConverter::write(opcode, data, response);
@@ -325,12 +332,16 @@ class HostCallbackDataConverter : DefaultDataConverter {
 
     intptr_t return_value(const int opcode, const intptr_t original) {
         switch (opcode) {
-            case audioMasterGetTime:
+            case audioMasterGetTime: {
                 // Return a pointer to the `VstTimeInfo` object written in the
                 // function above
-                // TODO: This is incorrect!
-                return reinterpret_cast<intptr_t>(&time);
-                break;
+                VstTimeInfo* time_info_pointer = nullptr;
+                if (time_info.has_value()) {
+                    time_info_pointer = &time_info.value();
+                }
+
+                return reinterpret_cast<intptr_t>(time_info_pointer);
+            } break;
             default:
                 return DefaultDataConverter::return_value(opcode, original);
                 break;
@@ -341,7 +352,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
     AEffect* plugin;
     // TODO: Clean up
     Editor& editor;
-    VstTimeInfo& time_info;
+    std::optional<VstTimeInfo>& time_info;
 };
 
 intptr_t PluginBridge::host_callback(AEffect* effect,

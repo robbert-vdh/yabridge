@@ -130,7 +130,9 @@ void Editor::handle_events() {
 
         // Handle X11 events
         // TODO: Check if we should forward other events mostly to prevent
-        //       unnecessary GUI processing in the background
+        //       unnecessary GUI processing in the background. Since
+        //       `effEditIdle` should only be called when the plugin's editor is
+        //       open this should not cause any different in CPU though.
         // TODO: Check whether drag and drop works out of the box
         xcb_generic_event_t* generic_event;
         while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=

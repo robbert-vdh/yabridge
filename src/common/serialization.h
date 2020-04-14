@@ -295,6 +295,9 @@ struct Event {
  * - A specific struct in response to an event such as `audioMasterGetTime` or
  *   `audioMasterIOChanged`.
  * - An X11 window pointer for the editor window.
+ *
+ * TODO: Replace `std::monostate` with `std::nullptr_t` as it's more expressive
+ *       in what it actually represents.
  */
 using EventResposnePayload = std::variant<std::monostate,
                                           std::string,

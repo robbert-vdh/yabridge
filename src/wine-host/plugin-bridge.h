@@ -67,9 +67,11 @@ class PluginBridge {
 
     /**
      * With the `audioMasterGetTime` host callback the plugin expects the return
-     * value from the calblack to be a pointer to a VstTimeInfo struct.
+     * value from the calblack to be a pointer to a VstTimeInfo struct. If the
+     * host did not support a certain time info query, than we'll store the
+     * returned null pointer as a nullopt.
      */
-    VstTimeInfo time_info;
+    std::optional<VstTimeInfo> time_info;
 
    private:
     /**

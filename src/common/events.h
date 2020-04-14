@@ -285,8 +285,15 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                      // Not sure why the VST API has twenty different ways of
                      // returning structs, but in this case the value returned
                      // from the callback function is actually a pointer to a
-                     // `VstTimeInfo` struct!
-                     return *reinterpret_cast<const VstTimeInfo*>(return_value);
+                     // `VstTimeInfo` struct! It can also be a null pointer if
+                     // the host doesn't support this.
+                     const auto time_info =
+                         reinterpret_cast<const VstTimeInfo*>(return_value);
+                     if (time_info == nullptr) {
+                         return std::monostate{};
+                     } else {
+                         return *time_info;
+                     }
                  },
                  [&](WantsString&) -> EventResposnePayload {
                      return std::string(static_cast<char*>(data));
