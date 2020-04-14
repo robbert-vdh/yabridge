@@ -561,7 +561,12 @@ fs::path generate_endpoint_name() {
  * the user's default prefix.
  */
 bp::environment set_wineprefix() {
-    auto env(boost::this_process::environment());
+    auto env = boost::this_process::environment();
+
+    // Allow the wine prefix to be overridden manually
+    if (!env["WINEPREFIX"].empty()) {
+        return env;
+    }
 
     const auto wineprefix_path = find_wineprefix();
     if (wineprefix_path.has_value()) {
