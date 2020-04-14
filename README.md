@@ -70,6 +70,14 @@ won't know where to find them. Either copy them to `/usr/local/bin` (not
 recommended) or to `~/.local/bin` and make sure that the directory is in your
 `PATH` environment variable.
 
+## Runtime dependencies
+
+Some VST plugins might require you to manually install some dependencies. The
+most common of these are listed below:
+
+- **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
+  `gdiplus` through `winetricks`.
+
 ## Building
 
 To compile yabridge, you'll need [Meson](https://mesonbuild.com/index.html) and
