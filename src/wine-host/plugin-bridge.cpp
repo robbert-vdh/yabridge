@@ -271,9 +271,8 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
 class HostCallbackDataConverter : DefaultDataConverter {
    public:
     HostCallbackDataConverter(AEffect* plugin,
-                              Editor& editor,
                               std::optional<VstTimeInfo>& time_info)
-        : plugin(plugin), editor(editor), time_info(time_info) {}
+        : plugin(plugin), time_info(time_info) {}
 
     std::optional<EventPayload> read(const int opcode,
                                      const int index,
@@ -350,8 +349,6 @@ class HostCallbackDataConverter : DefaultDataConverter {
 
    private:
     AEffect* plugin;
-    // TODO: Clean up
-    Editor& editor;
     std::optional<VstTimeInfo>& time_info;
 };
 
@@ -361,7 +358,7 @@ intptr_t PluginBridge::host_callback(AEffect* effect,
                                      intptr_t value,
                                      void* data,
                                      float option) {
-    HostCallbackDataConverter converter(effect, editor, time_info);
+    HostCallbackDataConverter converter(effect, time_info);
     return send_event(vst_host_callback, host_callback_semaphore, converter,
                       std::nullopt, opcode, index, value, data, option);
 }
