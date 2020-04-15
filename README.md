@@ -51,11 +51,13 @@ ln -s ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/
 ```
 
 For instance, if you wanted to set up yabridge for any of the VST plugins under
-`~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, you could do something
-like this:
+`~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, you could run this
+oneliner in Bash. This will also skip any `.dll` files that are not actually VST
+plugins.
 
 ```shell
 find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.dll' -print0 \
+  | xargs -0 -P8 -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" \
   | sed -z 's/\.dll$/.so/' \
   | xargs -0 -n1 ln -sf ~/.local/share/yabridge/libyabridge.so
 ```
