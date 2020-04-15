@@ -29,7 +29,7 @@
 extern "C" {
 extern VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback);
 
-VST_EXPORT AEffect* MAIN(audioMasterCallback audioMaster) {
+VST_EXPORT AEffect* main(audioMasterCallback audioMaster) {
     return VSTPluginMain(audioMaster);
 }
 
