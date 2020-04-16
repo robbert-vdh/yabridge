@@ -24,15 +24,14 @@
 #define VST_EXPORT __attribute__((visibility("default")))
 
 // The main entry point for VST plugins should be called `VSTPluginMain``. The
-// other two exist for legacy reasons since some old hosts might still use
+// other one exist for legacy reasons since some old hosts might still use
 // them.`
 extern "C" {
 extern VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback);
 
-VST_EXPORT AEffect* main(audioMasterCallback audioMaster) {
-    return VSTPluginMain(audioMaster);
-}
-
+// There's also another possible legacy entry point just called `main`, but GCC
+// will refuse to compile a function called `main` that's not a regular C++ main
+// function
 VST_EXPORT AEffect* main_plugin(audioMasterCallback audioMaster) {
     return VSTPluginMain(audioMaster);
 }
