@@ -86,26 +86,28 @@ Editor::Editor(const std::string& window_class_name,
 void Editor::handle_events() {
     // Process any remaining events, otherwise we won't be able to interact with
     // the window
-    bool gui_was_updated = false;
     MSG msg;
+
+    // This timer triggers the `effEditIdle` event, causing the plugin to update
+    // its internal state. THis has to be done before any `WM_PAINT` events are
+    // fired as that might cause issues with certain plugins. This is
+    // implemented as a timer event so the GUI can still update while it's being
+    // blocked by a dropdown or a message box.
+    SendMessage(win32_handle.get(), WM_TIMER, idle_timer_id, 0);
 
     // The second argument has to be null since we not only want to handle
     // events for this window but also for all child windows (i.e. dropdowns). I
     // spent way longer debugging this than I want to admit.
     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        // We already fired the idle timer event above. This timer will still be
+        // run implicitely by the child window when the event loop gets blocked.
+        if (msg.message == WM_TIMER && msg.wParam == idle_timer_id &&
+            msg.hwnd == win32_handle.get()) {
+            continue;
+        }
+
         TranslateMessage(&msg);
         DispatchMessage(&msg);
-
-        if (msg.message == WM_TIMER && msg.wParam == idle_timer_id) {
-            gui_was_updated = true;
-        }
-    }
-
-    // Make sure that the GUI always gets updated at least once for every
-    // `effEditIdle` call the host has sent to improve responsiveness when the
-    // GUI isn't being blocked.
-    if (!gui_was_updated) {
-        SendMessage(win32_handle.get(), WM_TIMER, idle_timer_id, 0);
     }
 
     // Handle X11 events
