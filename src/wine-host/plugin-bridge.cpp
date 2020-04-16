@@ -76,7 +76,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // VST plugin entry point functions should be called `VSTPluginMain`, but
     // there are some older deprecated names that legacy plugins may still use
     VstEntryPoint vst_entry_point = nullptr;
-    for (auto name : {"VSTPluginMain", "main", "main_plugin"}) {
+    for (auto name : {"VSTPluginMain", "main_plugin", "main"}) {
         vst_entry_point =
             reinterpret_cast<VstEntryPoint>(reinterpret_cast<size_t>(
                 GetProcAddress(plugin_handle.get(), name)));
