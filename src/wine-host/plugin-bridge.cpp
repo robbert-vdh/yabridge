@@ -279,7 +279,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
                 std::cerr << "Got opcode "
                           << opcode_to_string(false, opcode)
                                  .value_or(std::to_string(opcode))
-                          << "), ignoring..." << std::endl;
+                          << "(), ignoring..." << std::endl;
 
                 return std::nullopt;
                 break;
