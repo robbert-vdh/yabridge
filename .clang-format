@@ -3,4 +3,4 @@ IndentWidth: 4
 Standard: Cpp11
 
 # Don't reflow nested comments
-CommentPragmas: '^ //'
+CommentPragmas: '^ *//'
