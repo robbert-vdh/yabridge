@@ -151,10 +151,12 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
     // messages getting out of order. This is needed because we can't prevent
     // the plugin or the host from calling `dispatch()` or `audioMaster()` from
     // multiple threads.
-    write_semaphore.lock();
-    write_object(socket, event);
-    const auto response = read_object<EventResult>(socket);
-    write_semaphore.unlock();
+    EventResult response;
+    {
+        std::lock_guard lock(write_semaphore);
+        write_object(socket, event);
+        response = read_object<EventResult>(socket);
+    }
 
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
