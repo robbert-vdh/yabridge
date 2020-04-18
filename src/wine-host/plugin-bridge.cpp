@@ -268,21 +268,6 @@ class HostCallbackDataConverter : DefaultDataConverter {
                                      const intptr_t value,
                                      const void* data) {
         switch (opcode) {
-            // Some hsots will outright crash if they receive this opcode, not
-            // sure why they don't just ignore it. Please let me know if there's
-            // a better way to handle this instead of just ignoring the event!
-            //
-            // TODO: Filtering these two events fixes crashes, but should this
-            //       be needed? `audioMasterWantMidi` is deprecated though.
-            case audioMasterWantMidi:
-            case audioMasterUpdateDisplay:
-                std::cerr << "Got opcode "
-                          << opcode_to_string(false, opcode)
-                                 .value_or(std::to_string(opcode))
-                          << "(), ignoring..." << std::endl;
-
-                return std::nullopt;
-                break;
             case audioMasterGetTime:
                 return WantsVstTimeInfo{};
                 break;
