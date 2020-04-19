@@ -154,6 +154,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     });
 
     process_replacing_handler = std::thread([&]() {
+        std::vector<std::vector<float>> output_buffers(plugin->numOutputs);
+
         while (true) {
             AudioBuffers request;
             request = read_object(host_vst_process_replacing, request,
@@ -161,25 +163,26 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
 
             // TODO: Check if the plugin doesn't support `processReplacing` and
             //       call the legacy `process` function instead
-            // TODO: Reuse the output_buffers and resize if necessary to avoid
-            //       unnecessary allocations
-            std::vector<std::vector<float>> output_buffers(
-                plugin->numOutputs, std::vector<float>(request.sample_frames));
-
             // The process functions expect a `float**` for their inputs and
             // their outputs
             std::vector<float*> inputs;
             for (auto& buffer : request.buffers) {
                 inputs.push_back(buffer.data());
             }
+
+            // We reuse the buffers to avoid some unnecessary heap allocations,
+            // so we need to make sure the buffers are large enough since
+            // plugins can change their output configuration
             std::vector<float*> outputs;
+            output_buffers.resize(plugin->numOutputs);
             for (auto& buffer : output_buffers) {
+                buffer.resize(request.sample_frames);
                 outputs.push_back(buffer.data());
             }
 
+            // Some plugins (e.g. Serum) don't allow audio processing while the
+            // GUI is being updated
             {
-                // Some plugins (e.g. Serum) don't allow audio processing while
-                // the GUI is being updated
                 std::lock_guard lock(processing_mutex);
                 plugin->processReplacing(plugin, inputs.data(), outputs.data(),
                                          request.sample_frames);
