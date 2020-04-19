@@ -236,7 +236,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     //      because it was not zeroed out by the host) for an event that should
     //      report some data back?
     const auto response_data = std::visit(
-        overload{[&](auto) -> EventResposnePayload { return std::monostate(); },
+        overload{[&](auto) -> EventResposnePayload { return nullptr; },
                  [&](const AEffect& updated_plugin) -> EventResposnePayload {
                      // This is a bit of a special case! Instead of writing some
                      // return value, we will update values on the native VST
@@ -261,7 +261,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                      plugin->uniqueID = updated_plugin.uniqueID;
                      plugin->version = updated_plugin.version;
 
-                     return std::monostate();
+                     return nullptr;
                  },
                  [&](WantsChunkBuffer&) -> EventResposnePayload {
                      // In this case the plugin will have written its data
@@ -290,7 +290,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                      const auto time_info =
                          reinterpret_cast<const VstTimeInfo*>(return_value);
                      if (time_info == nullptr) {
-                         return std::monostate{};
+                         return nullptr;
                      } else {
                          return *time_info;
                      }

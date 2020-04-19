@@ -302,7 +302,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
                 // Depending on whether the host supported the requested time
                 // information this operations returns either a null pointer or
                 // a pointer to a `VstTimeInfo` object.
-                if (std::holds_alternative<std::monostate>(response.payload)) {
+                if (std::holds_alternative<std::nullptr_t>(response.payload)) {
                     time_info = std::nullopt;
                 } else {
                     time_info = std::get<VstTimeInfo>(response.payload);

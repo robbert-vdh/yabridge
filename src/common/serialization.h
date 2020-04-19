@@ -295,11 +295,8 @@ struct Event {
  * - A specific struct in response to an event such as `audioMasterGetTime` or
  *   `audioMasterIOChanged`.
  * - An X11 window pointer for the editor window.
- *
- * TODO: Replace `std::monostate` with `std::nullptr_t` as it's more expressive
- *       in what it actually represents.
  */
-using EventResposnePayload = std::variant<std::monostate,
+using EventResposnePayload = std::variant<std::nullptr_t,
                                           std::string,
                                           AEffect,
                                           VstIOProperties,
@@ -310,7 +307,7 @@ template <typename S>
 void serialize(S& s, EventResposnePayload& payload) {
     s.ext(payload,
           bitsery::ext::StdVariant{
-              [](S&, std::monostate&) {},
+              [](S&, std::nullptr_t&) {},
               [](S& s, std::string& string) {
                   // `binary_buffer_size` and not `max_string_length`
                   // because we also use this to send back large chunk

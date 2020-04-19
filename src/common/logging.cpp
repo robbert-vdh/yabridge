@@ -204,7 +204,7 @@ void Logger::log_event_response(bool is_dispatch,
 
         std::visit(
             overload{
-                [&](const std::monostate&) {},
+                [&](const std::nullptr_t&) {},
                 [&](const std::string& s) {
                     if (s.size() < 32) {
                         message << ", \"" << s << "\"";
