@@ -161,6 +161,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
 
             // TODO: Check if the plugin doesn't support `processReplacing` and
             //       call the legacy `process` function instead
+            // TODO: Reuse the output_buffers and resize if necessary to avoid
+            //       unnecessary allocations
             std::vector<std::vector<float>> output_buffers(
                 plugin->numOutputs, std::vector<float>(request.sample_frames));
 
@@ -175,8 +177,13 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
                 outputs.push_back(buffer.data());
             }
 
-            plugin->processReplacing(plugin, inputs.data(), outputs.data(),
-                                     request.sample_frames);
+            {
+                // Some plugins (e.g. Serum) don't allow audio processing while
+                // the GUI is being updated
+                std::lock_guard lock(processing_mutex);
+                plugin->processReplacing(plugin, inputs.data(), outputs.data(),
+                                         request.sample_frames);
+            }
 
             AudioBuffers response{output_buffers, request.sample_frames};
             write_object(host_vst_process_replacing, response, process_buffer);
@@ -233,7 +240,8 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
             // provided by the host, and let the plugin embed itself into the
             // Wine window
             const auto x11_handle = reinterpret_cast<size_t>(data);
-            editor.emplace("yabridge plugin", plugin, x11_handle);
+            editor.emplace("yabridge plugin", plugin, processing_mutex,
+                           x11_handle);
 
             return plugin->dispatcher(plugin, opcode, index, value,
                                       editor->win32_handle.get(), option);
