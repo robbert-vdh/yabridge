@@ -188,7 +188,8 @@ LRESULT CALLBACK window_proc(HWND handle,
             }
 
             // We'll send idle messages on a timer. This way the plugin will get
-            // keep periodically updating its editor while the GUI is being
+            // keep periodically updating its editor either when the host sends
+            // `effEditIdle` themself, or periodically when the GUI is being
             // blocked by a dropdown or a message box.
             editor->send_idle_event();
             return 0;

@@ -131,6 +131,11 @@ variables:
   More detailed information about these levels can be found in
   `src/common/logging.h`.
 
+Wine's own [logging facilities](https://wiki.winehq.org/Debug_Channels) enabled
+through the `WINEDEBUG` environment variable can also be very helpful when
+diagnosing problems. In particular the `message` and `relay` channels are very
+useful to trace the execution path within the loading VST plugin itself.
+
 ### Attaching a debugger
 
 When needed, I found the easiest way to debug the plugin to be to load it in an
@@ -140,12 +145,12 @@ instance of Carla with gdb attached:
 env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log YABRIDGE_DEBUG_LEVEL=1 carla --gdb
 ```
 
-Doing the same thing for the Wine VST host can be a bit trick., You'll need to
-launch winedbg in a seperate detached terminal emulator so it doesn't with the
-plugin, and winedbg can be a bit picky in the arguments it accepts. I've already
-set this up behind a feature flag for KDE Plasma. Other desktop environments and
-window managers will require some slight modifications in
-`src/plugin/host-bridge.cpp`. To enable this, simply run:
+Doing the same thing for the Wine VST host can be a bit tricky. You'll need to
+launch winedbg in a seperate detached terminal emulator so it doesn't terminate
+together with the plugin, and winedbg can be a bit picky in the arguments it
+accepts. I've already set this up behind a feature flag for KDE Plasma. Other
+desktop environments and window managers will require some slight modifications
+in `src/plugin/host-bridge.cpp`. To enable this, simply run:
 
 ```shell
 meson configure build --buildtype=debug -Duse-winedbg=true
