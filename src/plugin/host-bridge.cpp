@@ -134,6 +134,11 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     socket_acceptor.accept(host_vst_process_replacing);
     socket_acceptor.accept(vst_host_aeffect);
 
+    // There's no need to keep the socket endpoint file around after accepting
+    // all the sockets, and RAII won't clean these files up for us
+    socket_acceptor.close();
+    fs::remove(socket_endpoint.path());
+
     // Set up all pointers for our `AEffect` struct. We will fill this with data
     // from the VST plugin loaded in Wine at the end of this constructor.
     plugin.ptr3 = this;
@@ -275,10 +280,6 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
 
     switch (opcode) {
         case effClose: {
-            // TODO: Gracefully close the editor?
-            // TODO: Check whether the sockets and the endpoint are closed
-            //       correctly
-
             // Allow the plugin to handle its own shutdown. I've found a few
             // plugins that work fine except for that they crash during
             // shutdown. This shouldn't have any negative side effects since
