@@ -215,8 +215,6 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                 // function that intercepts `effEditOpen` events and creates a
                 // Win32 window and then finally embeds the X11 window Wine
                 // created into this wnidow handle.
-                // TODO: Check if the host passes the window handle like this,
-                //       or if the window handle is behind the pointer
                 return reinterpret_cast<void*>(window_handle);
             },
             [&](const AEffect&) -> void* { return nullptr; },

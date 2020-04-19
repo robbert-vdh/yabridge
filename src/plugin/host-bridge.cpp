@@ -193,8 +193,6 @@ class DispatchDataConverter : DefaultDataConverter {
                 // pointer. In the Wine VST host we'll create a Win32 window,
                 // ask the plugin to embed itself in that and then embed that
                 // window into this X11 window handle.
-                // TODO: Check if the host passes the window handle like this,
-                //       or if the window handle is behind the pointer
                 return reinterpret_cast<size_t>(data);
                 break;
             case effGetChunk:
@@ -228,12 +226,6 @@ class DispatchDataConverter : DefaultDataConverter {
                 const auto new_rect = std::get<VstRect>(response.payload);
                 rect = new_rect;
 
-                // TODO: Maybe the host expects this field to be always up to
-                //       date, so if the editor resizes itself then the
-                //       `VstRect` behind this pointer should change as well
-                //       without any additional dispatch calls. If that's the
-                //       case, then we can probably reuse
-                //       `audioMasterSizeWindow`.
                 *static_cast<VstRect**>(data) = &rect;
             } break;
             case effGetChunk: {
