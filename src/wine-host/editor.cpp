@@ -30,18 +30,25 @@ xcb_window_t get_x11_handle(HWND win32_handle);
 
 ATOM register_window_class(std::string window_class_name);
 
+WindowClass::WindowClass(std::string name)
+    : atom(register_window_class(name)) {}
+
+WindowClass::~WindowClass() {
+    UnregisterClass(reinterpret_cast<LPCSTR>(atom), GetModuleHandle(nullptr));
+}
+
 Editor::Editor(const std::string& window_class_name,
                AEffect* effect,
                std::mutex& effect_mutex,
                const size_t parent_window_handle)
-    : window_class(register_window_class(window_class_name)),
+    : window_class(window_class_name),
       // Create a window without any decoratiosn for easy embedding. The
       // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to
       // be drawn without any decorations (making resizes behave as you'd
       // expect) and also causes mouse coordinates to be relative to the window
       // itself.
       win32_handle(CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_ACCEPTFILES,
-                                  reinterpret_cast<LPCSTR>(window_class),
+                                  reinterpret_cast<LPCSTR>(window_class.atom),
                                   "yabridge plugin",
                                   WS_POPUP,
                                   CW_USEDEFAULT,
