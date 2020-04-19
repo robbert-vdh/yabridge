@@ -543,13 +543,15 @@ fs::path generate_endpoint_name() {
             alphanumeric_characters + strlen(alphanumeric_characters) - 1,
             std::back_inserter(random_id), 8, rng);
 
-        candidate_endpoint = fs::temp_directory_path() / "yabridge" /
-                             (plugin_name + "-" + random_id + ".sock");
-    } while (fs::exists(candidate_endpoint));
+        // We'll get rid of the file descriptors immediately after accepting the
+        // sockets, so putting them inside of a subdirectory would only leave
+        // behind an empty directory
+        std::ostringstream socket_name;
+        socket_name << "yabridge-" << plugin_name << "-" << random_id
+                    << ".sock";
 
-    // Ensure that the parent directory exists so the socket endpoint can be
-    // created there
-    fs::create_directories(candidate_endpoint.parent_path());
+        candidate_endpoint = fs::temp_directory_path() / socket_name.str();
+    } while (fs::exists(candidate_endpoint));
 
     // TODO: Should probably try creating the endpoint right here and catch any
     //       exceptions since this could technically result in a race condition
