@@ -94,11 +94,11 @@ void Editor::handle_events() {
 
     {
         // Always send the `effEditIdle` event manually instead of relying on
-        // the timer to match the update frequency with the native VST host.
-        // Because some plugins, such as those using GDI+ like Serum, have data
-        // race issues when drawing at the same time as we're processing sound,
-        // we'll update the GUI and process the resulting `WM_PAINT` event while
-        // temporarily blocking the processing thread.
+        // the timer to match the update frequency with that of the native VST
+        // host. Because some plugins, such as those using GDI+ like Serum, have
+        // data race issues when drawing at the same time as we're processing
+        // sound, we'll update the GUI and process the resulting `WM_PAINT`
+        // event while temporarily blocking the processing thread.
         std::lock_guard lock(processing_mutex);
 
         send_idle_event();
@@ -188,9 +188,8 @@ LRESULT CALLBACK window_proc(HWND handle,
             }
 
             // We'll send idle messages on a timer. This way the plugin will get
-            // these either when the host sends `effEditIdle` themself, or
-            // periodically when the GUI is being blocked by a dropdown or a
-            // message box.
+            // keep periodically updating its editor while the GUI is being
+            // blocked by a dropdown or a message box.
             editor->send_idle_event();
             return 0;
         } break;
