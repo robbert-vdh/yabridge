@@ -167,8 +167,6 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     // Read the plugin's information from the Wine process. This can only be
     // done after we started accepting host callbacks as the plugin might do
     // this during initialization.
-    // XXX: If the plugin has crashed then this read should fail instead of
-    //      blocking indefinitely, check if this is the case
     plugin = read_object(vst_host_aeffect, plugin);
 }
 

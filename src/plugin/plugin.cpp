@@ -53,8 +53,6 @@ VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback host_callback) {
         // received.
         HostBridge* bridge = new HostBridge(host_callback);
 
-        // TODO: Debug print information about the loaded plugin
-
         return &bridge->plugin;
     } catch (const std::exception& error) {
         std::cerr << "Error during initialization:" << std::endl;
