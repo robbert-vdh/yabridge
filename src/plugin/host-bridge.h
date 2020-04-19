@@ -150,9 +150,6 @@ class HostBridge {
     /**
      * Used for both `getParameter` and `setParameter` since they mostly
      * overlap.
-     *
-     * TODO: Verify that these 100% won't be called simultanously since that
-     *       would cause a race condition.
      */
     boost::asio::local::stream_protocol::socket host_vst_parameters;
     boost::asio::local::stream_protocol::socket host_vst_process_replacing;
@@ -174,8 +171,14 @@ class HostBridge {
      * being called by two threads at once. See `send_event()` for more
      * information.
      */
-    std::mutex dispatch_semaphore;
-    std::mutex dispatch_midi_events_semaphore;
+    std::mutex dispatch_mutex;
+    std::mutex dispatch_midi_events_mutex;
+    /**
+     * A similar semaphore as the `dispatch_*` semaphores in the rare case that
+     * `getParameter()` and `setParameter()` are being called at the same time
+     * since they use the same socket.
+     */
+    std::mutex parameters_mutex;
 
     /**
      * The callback function passed by the host to the VST plugin instance.

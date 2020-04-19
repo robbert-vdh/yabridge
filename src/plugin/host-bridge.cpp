@@ -290,7 +290,7 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             intptr_t return_value = 1;
             try {
                 return_value =
-                    send_event(host_vst_dispatch, dispatch_semaphore, converter,
+                    send_event(host_vst_dispatch, dispatch_mutex, converter,
                                std::pair<Logger&, bool>(logger, true), opcode,
                                index, value, data, option);
             } catch (const boost::system::system_error& a) {
@@ -330,14 +330,14 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             // stop receiving midi data when they have an open dropdowns or
             // message box.
             return send_event(host_vst_dispatch_midi_events,
-                              dispatch_midi_events_semaphore, converter,
+                              dispatch_midi_events_mutex, converter,
                               std::pair<Logger&, bool>(logger, true), opcode,
                               index, value, data, option);
             break;
     }
 
     // TODO: Maybe reuse buffers here when dealing with chunk data
-    return send_event(host_vst_dispatch, dispatch_semaphore, converter,
+    return send_event(host_vst_dispatch, dispatch_mutex, converter,
                       std::pair<Logger&, bool>(logger, true), opcode, index,
                       value, data, option);
 }
@@ -374,9 +374,16 @@ float HostBridge::get_parameter(AEffect* /*plugin*/, int index) {
     logger.log_get_parameter(index);
 
     const Parameter request{index, std::nullopt};
-    write_object(host_vst_parameters, request);
+    ParameterResult response;
 
-    const auto response = read_object<ParameterResult>(host_vst_parameters);
+    // Prevent race conditions from `getParameter()` and `setParameter()` being
+    // called at the same time since  they share the same socket
+    {
+        std::lock_guard lock(parameters_mutex);
+        write_object(host_vst_parameters, request);
+        response = read_object<ParameterResult>(host_vst_parameters);
+    }
+
     logger.log_get_parameter_response(response.value.value());
 
     return response.value.value();
@@ -386,12 +393,18 @@ void HostBridge::set_parameter(AEffect* /*plugin*/, int index, float value) {
     logger.log_set_parameter(index, value);
 
     const Parameter request{index, value};
-    write_object(host_vst_parameters, request);
+    ParameterResult response;
 
-    // This should not contain any values and just serve as an acknowledgement
-    const auto response = read_object<ParameterResult>(host_vst_parameters);
+    {
+        std::lock_guard lock(parameters_mutex);
+        write_object(host_vst_parameters, request);
+
+        response = read_object<ParameterResult>(host_vst_parameters);
+    }
+
     logger.log_set_parameter_response();
 
+    // This should not contain any values and just serve as an acknowledgement
     assert(!response.value.has_value());
 }
 

@@ -102,7 +102,7 @@ class DefaultDataConverter {
  *
  * @param socket The socket to write over, should be the same socket the other
  *   endpoint is using to call `passthrough_event()`.
- * @param write_semaphore A mutex to ensure that only one thread can write to
+ * @param write_mutex A mutex to ensure that only one thread can write to
  *   the socket at once. Needed because VST hosts and plugins can and sometimes
  *   will call the `dispatch()` or `audioMaster()` functions from multiple
  *   threads at once.
@@ -120,7 +120,7 @@ class DefaultDataConverter {
  */
 template <typename D>
 intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
-                    std::mutex& write_semaphore,
+                    std::mutex& write_mutex,
                     D& data_converter,
                     std::optional<std::pair<Logger&, bool>> logging,
                     int opcode,
@@ -153,7 +153,7 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
     // multiple threads.
     EventResult response;
     {
-        std::lock_guard lock(write_semaphore);
+        std::lock_guard lock(write_mutex);
         write_object(socket, event);
         response = read_object<EventResult>(socket);
     }
