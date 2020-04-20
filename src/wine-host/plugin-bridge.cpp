@@ -33,7 +33,7 @@ using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
  * This ugly global is needed so we can get the instance of a `Brdige` class
  * from an `AEffect` when it performs a host callback during its initialization.
  */
-PluginBridge* current_bridge_isntance = nullptr;
+PluginBridge* current_bridge_instance = nullptr;
 
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);
@@ -54,10 +54,10 @@ uint32_t WINAPI handle_process_replacing_proxy(void*);
 PluginBridge& get_bridge_instance(const AEffect* plugin) {
     // This is needed during the initialization of the plugin since we can only
     // add our own pointer after it's done initializing
-    if (current_bridge_isntance != nullptr) {
+    if (current_bridge_instance != nullptr) {
         // This should only be used during initialization
         assert(plugin == nullptr || plugin->ptr1 == nullptr);
-        return *current_bridge_isntance;
+        return *current_bridge_instance;
     }
 
     return *static_cast<PluginBridge*>(plugin->ptr1);
@@ -111,7 +111,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // We'll try to do the same `get_bridge_isntance` trick as in
     // `plugin/plugin.cpp`, but since the plugin will probably call the host
     // callback while it's initializing we sadly have to use a global here.
-    current_bridge_isntance = this;
+    current_bridge_instance = this;
     plugin = vst_entry_point(host_callback_proxy);
     if (plugin == nullptr) {
         throw std::runtime_error("VST plugin at '" + plugin_dll_path +
@@ -119,7 +119,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     }
 
     // We only needed this little hack during initialization
-    current_bridge_isntance = nullptr;
+    current_bridge_instance = nullptr;
     plugin->ptr1 = this;
 
     // Send the plugin's information to the Linux VST plugin. Any updates during
