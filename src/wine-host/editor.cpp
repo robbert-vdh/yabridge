@@ -39,7 +39,6 @@ WindowClass::~WindowClass() {
 
 Editor::Editor(const std::string& window_class_name,
                AEffect* effect,
-               std::mutex& effect_mutex,
                const size_t parent_window_handle)
     : window_class(window_class_name),
       // Create a window without any decoratiosn for easy embedding. The
@@ -64,7 +63,6 @@ Editor::Editor(const std::string& window_class_name,
       child_window(get_x11_handle(win32_handle.get())),
       // Needed to send update messages on a timer
       plugin(effect),
-      processing_mutex(effect_mutex),
       x11_connection(xcb_connect(nullptr, nullptr), &xcb_disconnect) {
     // The Win32 API will block the `DispatchMessage` call when opening e.g. a
     // dropdown, but it will still allow timers to be run so the GUI can still
@@ -97,19 +95,25 @@ void Editor::send_idle_event() {
 }
 
 void Editor::handle_events() {
-    win32_event_loop();
+    send_idle_event();
 
-    {
-        // Always send the `effEditIdle` event manually instead of relying on
-        // the timer to match the update frequency with that of the native VST
-        // host. Because some plugins, such as those using GDI+ like Serum, have
-        // data race issues when drawing at the same time as we're processing
-        // sound, we'll update the GUI and process the resulting `WM_PAINT`
-        // event while temporarily blocking the processing thread.
-        std::lock_guard lock(processing_mutex);
+    // The null value for the second argument is needed to handle interaction
+    // with child GUI components
+    MSG msg;
+    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        // This timer would periodically send `effEditIdle` events so the editor
+        // remains responsive even during blocking GUI operations such as open
+        // dropdowns or message boxes. We filter it out here because we will
+        // send sent the event manually every time the host calls
+        // `effEditIdle()`. It will still be fired implicitely when the GUI
+        // thread gets blocked.
+        if (msg.message == WM_TIMER && msg.wParam == idle_timer_id &&
+            msg.hwnd == win32_handle.get()) {
+            continue;
+        }
 
-        send_idle_event();
-        win32_event_loop();
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
     }
 
     // Handle X11 events
@@ -204,28 +208,6 @@ LRESULT CALLBACK window_proc(HWND handle,
     }
 
     return DefWindowProc(handle, message, wParam, lParam);
-}
-
-void Editor::win32_event_loop() {
-    MSG msg;
-
-    // The null value for the second argument is needed to handle interaction
-    // with child GUI components
-    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-        // This timer would periodically send `effEditIdle` events so the editor
-        // remains responsive even during blocking GUI operations such as open
-        // dropdowns or message boxes. We filter it out here because we will
-        // send sent the event manually every time the host calls
-        // `effEditIdle()`. It will still be fired implicitely when the GUI
-        // thread gets blocked.
-        if (msg.message == WM_TIMER && msg.wParam == idle_timer_id &&
-            msg.hwnd == win32_handle.get()) {
-            continue;
-        }
-
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
 }
 
 xcb_window_t get_x11_handle(HWND win32_handle) {

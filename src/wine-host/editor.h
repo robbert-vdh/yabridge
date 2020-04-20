@@ -13,7 +13,6 @@
 #include <windows.h>
 
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <string>
 
@@ -59,8 +58,6 @@ class Editor {
      *   windows.
      * @param effect The plugin this window is being created for. Used to send
      *   `effEditIdle` messages on a timer.
-     * @param processing_mutex The mutex belonging to `effect` audio processing
-     *   routine.
      * @param parent_window_handle The X11 window handle passed by the VST host
      *   for the editor to embed itself into.
      *
@@ -68,7 +65,6 @@ class Editor {
      */
     Editor(const std::string& window_class_name,
            AEffect* effect,
-           std::mutex& processing_mutex,
            const size_t parent_window_handle);
 
     /**
@@ -101,14 +97,6 @@ class Editor {
 
    private:
     /**
-     * Run the win32 message handling loop, filtering out the events generated
-     * by the `effEditIdle` timer since those are sent manually on every
-     * invocation of `handle_events()` to match the `effEditIdle` events sent by
-     * the DAW.
-     */
-    void win32_event_loop();
-
-    /**
      * The window handle of the editor window created by the DAW.
      */
     xcb_window_t parent_window;
@@ -121,11 +109,6 @@ class Editor {
      *Needed to handle idle updates through a timer
      */
     AEffect* plugin;
-    /**
-     * The mutex belonging to `plugin`'s audio processing routine, see
-     * `PluginBridge::processing_mutex`'s docstring for more information.
-     */
-    std::mutex& processing_mutex;
 
     /**
      * A pointer to the currently active window. Will be a null pointer if no

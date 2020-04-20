@@ -108,17 +108,6 @@ class PluginBridge {
      * handle.
      */
     AEffect* plugin;
-    /**
-     * A mutex to prevent certain operations from being performed
-     * simultaneously. The VST specification does not specify which operations
-     * have to be thread safe and which do not. Most plugins don't have any
-     * issues as long as all editor related events are sent from the GUI thread.
-     * At the moment this mutex is only used to prevent GUI updates (through the
-     * `effEditIdle()` event and the `WM_PAINT` message that follows) and audio
-     * processing from being performed at the same time. This prevents data
-     * races within Serum.
-     */
-    std::mutex processing_mutex;
 
     boost::asio::io_context io_context;
     boost::asio::local::stream_protocol::endpoint socket_endpoint;
