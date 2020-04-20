@@ -1,6 +1,9 @@
 # yabridge
 
-Yet Another way to use Windows VST2 plugins in Linux VST hosts.
+Yet Another way to use Windows VST2 plugins in Linux VST hosts. The main
+motivation behind this project was to create a VST bridge that is easy to debug
+while providing the best possible plugin compatibility by being as transparent
+as possible.
 
 ## TODOs
 
