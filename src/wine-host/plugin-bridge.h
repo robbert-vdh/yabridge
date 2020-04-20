@@ -28,7 +28,6 @@
 
 #include <boost/asio/local/stream_protocol.hpp>
 #include <mutex>
-#include <thread>
 
 #include "../common/logging.h"
 #include "editor.h"
@@ -63,6 +62,18 @@ class PluginBridge {
      */
     void handle_dispatch();
 
+    // These functions are the entry points for the `*_handler` threads defined
+    // below. They're defined here because we can't use lambdas with WinAPI's
+    // `CreateThread` which is needed to support the proper call conventions the
+    // VST plugins expect.
+    [[noreturn]] void handle_dispatch_midi_events();
+    [[noreturn]] void handle_parameters();
+    [[noreturn]] void handle_process_replacing();
+
+    /**
+     * Forward the host callback made by the plugin to the host and return the
+     * results.
+     */
     intptr_t host_callback(AEffect*, int, int, intptr_t, void*, float);
 
     /**
@@ -139,20 +150,25 @@ class PluginBridge {
      */
     boost::asio::local::stream_protocol::socket vst_host_aeffect;
 
+    // These threads are implemented using `CreateThread` rather than
+    // `std::thread` because in some cases `std::thread` in winelib causes very
+    // hard to debug data races within plugins such as Serum. This might be
+    // caused by calling conventions being handled differently.
+
     /**
      * The thread that specifically handles `effProcessEvents` opcodes so the
      * plugin can still receive midi during GUI interaction to work around Win32
      * API limitations.
      */
-    std::thread dispatch_midi_events_handler;
+    HANDLE dispatch_midi_events_handler;
     /**
      * The thread that responds to `getParameter` and `setParameter` requests.
      */
-    std::thread parameters_handler;
+    HANDLE parameters_handler;
     /**
      * The thread that handles calls to `processReplacing` (and `process`).
      */
-    std::thread process_replacing_handler;
+    HANDLE process_replacing_handler;
 
     /**
      * A binary semaphore to prevent race conditions from the host callback

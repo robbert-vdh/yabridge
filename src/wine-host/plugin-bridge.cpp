@@ -38,6 +38,13 @@ PluginBridge* current_bridge_isntance = nullptr;
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);
 
+// We need to use the `CreateThread` WinAPI functions instead of `std::thread`
+// to use the correct calling conventions within threads. Otherwise we'll get
+// some rare and impossible to debug data races in some particular plugins.
+uint32_t WINAPI handle_dispatch_midi_events_proxy(void*);
+uint32_t WINAPI handle_parameters_proxy(void*);
+uint32_t WINAPI handle_process_replacing_proxy(void*);
+
 /**
  * Fetch the Pluginbridge instance stored in one of the two pointers reserved
  * for the host of the hosted VST plugin. This is sadly needed as a workaround
@@ -122,76 +129,14 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // This works functionally identically to the `handle_dispatch()` function
     // below, but this socket will only handle midi events. This is needed
     // because of Win32 API limitations.
-    dispatch_midi_events_handler = std::thread([&]() {
-        while (true) {
-            passthrough_event(host_vst_dispatch_midi_events, std::nullopt,
-                              plugin, plugin->dispatcher);
-        }
-    });
+    dispatch_midi_events_handler = CreateThread(
+        nullptr, 0, handle_dispatch_midi_events_proxy, this, 0, nullptr);
 
-    parameters_handler = std::thread([&]() {
-        while (true) {
-            // Both `getParameter` and `setParameter` functions are passed
-            // through on this socket since they have a lot of overlap. The
-            // presence of the `value` field tells us which one we're dealing
-            // with.
-            auto request = read_object<Parameter>(host_vst_parameters);
-            if (request.value.has_value()) {
-                // `setParameter`
-                plugin->setParameter(plugin, request.index,
-                                     request.value.value());
+    parameters_handler =
+        CreateThread(nullptr, 0, handle_parameters_proxy, this, 0, nullptr);
 
-                ParameterResult response{std::nullopt};
-                write_object(host_vst_parameters, response);
-            } else {
-                // `getParameter`
-                float value = plugin->getParameter(plugin, request.index);
-
-                ParameterResult response{value};
-                write_object(host_vst_parameters, response);
-            }
-        }
-    });
-
-    process_replacing_handler = std::thread([&]() {
-        std::vector<std::vector<float>> output_buffers(plugin->numOutputs);
-
-        while (true) {
-            AudioBuffers request;
-            request = read_object(host_vst_process_replacing, request,
-                                  process_buffer);
-
-            // TODO: Check if the plugin doesn't support `processReplacing` and
-            //       call the legacy `process` function instead
-            // The process functions expect a `float**` for their inputs and
-            // their outputs
-            std::vector<float*> inputs;
-            for (auto& buffer : request.buffers) {
-                inputs.push_back(buffer.data());
-            }
-
-            // We reuse the buffers to avoid some unnecessary heap allocations,
-            // so we need to make sure the buffers are large enough since
-            // plugins can change their output configuration
-            std::vector<float*> outputs;
-            output_buffers.resize(plugin->numOutputs);
-            for (auto& buffer : output_buffers) {
-                buffer.resize(request.sample_frames);
-                outputs.push_back(buffer.data());
-            }
-
-            // Some plugins (e.g. Serum) don't allow audio processing while the
-            // GUI is being updated
-            {
-                std::lock_guard lock(processing_mutex);
-                plugin->processReplacing(plugin, inputs.data(), outputs.data(),
-                                         request.sample_frames);
-            }
-
-            AudioBuffers response{output_buffers, request.sample_frames};
-            write_object(host_vst_process_replacing, response, process_buffer);
-        }
-    });
+    process_replacing_handler = CreateThread(
+        nullptr, 0, handle_process_replacing_proxy, this, 0, nullptr);
 
     std::cout << "Finished initializing '" << plugin_dll_path << "'"
               << std::endl;
@@ -210,11 +155,81 @@ void PluginBridge::handle_dispatch() {
                                         _1, _2, _3, _4, _5, _6));
         }
     } catch (const boost::system::system_error&) {
-        // This happens when the sockets got closed because the plugin is being
-        // shut down. In that case we can just let the whole host terminate.
-        dispatch_midi_events_handler.detach();
-        parameters_handler.detach();
-        process_replacing_handler.detach();
+        // TODO: Implement this with a simple RAII wrapper just like we did for
+        //       Win32 window classes
+        CloseHandle(dispatch_midi_events_handler);
+        CloseHandle(parameters_handler);
+        CloseHandle(process_replacing_handler);
+    }
+}
+
+[[noreturn]] void PluginBridge::handle_dispatch_midi_events() {
+    while (true) {
+        passthrough_event(host_vst_dispatch_midi_events, std::nullopt, plugin,
+                          plugin->dispatcher);
+    }
+}
+
+[[noreturn]] void PluginBridge::handle_parameters() {
+    while (true) {
+        // Both `getParameter` and `setParameter` functions are passed
+        // through on this socket since they have a lot of overlap. The
+        // presence of the `value` field tells us which one we're dealing
+        // with.
+        auto request = read_object<Parameter>(host_vst_parameters);
+        if (request.value.has_value()) {
+            // `setParameter`
+            plugin->setParameter(plugin, request.index, request.value.value());
+
+            ParameterResult response{std::nullopt};
+            write_object(host_vst_parameters, response);
+        } else {
+            // `getParameter`
+            float value = plugin->getParameter(plugin, request.index);
+
+            ParameterResult response{value};
+            write_object(host_vst_parameters, response);
+        }
+    }
+}
+
+[[noreturn]] void PluginBridge::handle_process_replacing() {
+    std::vector<std::vector<float>> output_buffers(plugin->numOutputs);
+
+    while (true) {
+        AudioBuffers request;
+        request =
+            read_object(host_vst_process_replacing, request, process_buffer);
+
+        // TODO: Check if the plugin doesn't support `processReplacing` and
+        //       call the legacy `process` function instead
+        // The process functions expect a `float**` for their inputs and
+        // their outputs
+        std::vector<float*> inputs;
+        for (auto& buffer : request.buffers) {
+            inputs.push_back(buffer.data());
+        }
+
+        // We reuse the buffers to avoid some unnecessary heap allocations,
+        // so we need to make sure the buffers are large enough since
+        // plugins can change their output configuration
+        std::vector<float*> outputs;
+        output_buffers.resize(plugin->numOutputs);
+        for (auto& buffer : output_buffers) {
+            buffer.resize(request.sample_frames);
+            outputs.push_back(buffer.data());
+        }
+
+        // Some plugins (e.g. Serum) don't allow audio processing while the GUI
+        // is being updated
+        {
+            std::lock_guard lock(processing_mutex);
+            plugin->processReplacing(plugin, inputs.data(), outputs.data(),
+                                     request.sample_frames);
+        }
+
+        AudioBuffers response{output_buffers, request.sample_frames};
+        write_object(host_vst_process_replacing, response, process_buffer);
     }
 }
 
@@ -356,4 +371,16 @@ intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,
                                            float option) {
     return get_bridge_instance(effect).host_callback(effect, opcode, index,
                                                      value, data, option);
+}
+
+uint32_t WINAPI handle_dispatch_midi_events_proxy(void* instance) {
+    static_cast<PluginBridge*>(instance)->handle_dispatch_midi_events();
+}
+
+uint32_t WINAPI handle_parameters_proxy(void* instance) {
+    static_cast<PluginBridge*>(instance)->handle_parameters();
+}
+
+uint32_t WINAPI handle_process_replacing_proxy(void* instance) {
+    static_cast<PluginBridge*>(instance)->handle_process_replacing();
 }
