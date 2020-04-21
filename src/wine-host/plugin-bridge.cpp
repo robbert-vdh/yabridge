@@ -263,9 +263,6 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
                 plugin->dispatcher(plugin, opcode, index, value, data, option);
 
             // Cleanup is handled through RAII
-            // TODO: We might want to manually unmap the X11 window instead of
-            //       having the host do it. Right now the window editor window
-            //       stays open for a second when removing a plugin.
             editor = std::nullopt;
 
             return return_value;

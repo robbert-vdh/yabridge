@@ -67,6 +67,8 @@ class Editor {
            AEffect* effect,
            const size_t parent_window_handle);
 
+    ~Editor();
+
     /**
      * Send a single `effEditIdle` event to the plugin to allow it to update its
      * GUI state. This is called periodically from a timer while the GUI is
@@ -92,7 +94,7 @@ class Editor {
      * The handle for the window created through Wine that the plugin uses to
      * embed itself in.
      */
-    const std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>
+    std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>
         win32_handle;
 
    private:

@@ -10,7 +10,6 @@ as possible.
 There are a few things that should be done before releasing this, including:
 
 - Fix implementation bugs:
-  - Closing editor windows is slow, this can be improved,
   - Polish GUIs even further. There are some todos left in
     `src/wine-host/editor.{h,cpp}`.
   - There are likely some minor issues left.

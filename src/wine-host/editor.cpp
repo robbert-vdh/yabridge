@@ -58,12 +58,12 @@ Editor::Editor(const std::string& window_class_name,
                                   nullptr,
                                   GetModuleHandle(nullptr),
                                   this),
-                   &DestroyWindow),
+                   DestroyWindow),
       parent_window(parent_window_handle),
       child_window(get_x11_handle(win32_handle.get())),
       // Needed to send update messages on a timer
       plugin(effect),
-      x11_connection(xcb_connect(nullptr, nullptr), &xcb_disconnect) {
+      x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect) {
     // The Win32 API will block the `DispatchMessage` call when opening e.g. a
     // dropdown, but it will still allow timers to be run so the GUI can still
     // update in the background. Because of this we send `effEditIdle` to the
@@ -88,6 +88,26 @@ Editor::Editor(const std::string& window_class_name,
     xcb_flush(x11_connection.get());
 
     ShowWindow(win32_handle.get(), SW_SHOWNORMAL);
+}
+
+Editor::~Editor() {
+    // Wine will wait for the parent window to properly delete the window during
+    // `DestroyWindow()`. Instead of implementing this behavior ourselves we
+    // just reparent the window back to the window root and let the WM handle
+    // it.
+    xcb_window_t root =
+        xcb_setup_roots_iterator(xcb_get_setup(x11_connection.get()))
+            .data->root;
+
+    xcb_reparent_window(x11_connection.get(), child_window, root, 0, 0);
+    xcb_flush(x11_connection.get());
+
+    // FIXME: I have no idea why, but for some reason the window still hangs
+    //        some of the times without manually resetting the
+    //        `std::unique_ptr`` to the window handle` (which calls
+    //        `DestroyWindow()`), even though the behavior should be identical
+    //        without this line.
+    win32_handle.reset();
 }
 
 void Editor::send_idle_event() {
