@@ -164,7 +164,7 @@ class PluginBridge {
      * function being called by two threads at once. See `send_event()` for more
      * information.
      */
-    std::mutex host_callback_semaphore;
+    std::mutex host_callback_mutex;
 
     /**
      * A scratch buffer for sending and receiving data during `process` and
