@@ -35,11 +35,7 @@ class DefaultDataConverter {
      * Read data from the `data` void pointer into a an `EventPayload` value
      * that can be serialized and conveys the meaning of the event.
      *
-     * If this returns a nullopt, then the event won't be performed at all. Some
-     * plugins perform `audioMasterUpdateDisplay` host callbacks and apparently
-     * some hosts just outright crash when they receive these functions, so they
-     * have to be filtered out. Please let me know if there's some way to detect
-     * whether the host supports these callbacks before sending them!
+     * If this returns a nullopt, then the event will be skipped.
      */
     virtual std::optional<EventPayload> read(const int /*opcode*/,
                                              const int /*index*/,
@@ -135,8 +131,9 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
     const std::optional<EventPayload> payload =
         data_converter.read(opcode, index, value, data);
     if (!payload.has_value()) {
-        // A 1 usually means that the event was processed succesfully
-        return 1;
+        // A 0 usually means that the event was not supported by the other
+        // rendpoint
+        return 0;
     }
 
     if (logging.has_value()) {
