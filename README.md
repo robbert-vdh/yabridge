@@ -14,7 +14,6 @@ There are a few things that should be done before releasing this, including:
     `src/wine-host/editor.{h,cpp}`.
   - There are likely some minor issues left.
 - Add missing details if any to the architecture section.
-- Document what this has been tested on and what does or does not work.
 - Document wine32 support.
 
 There are also some features that would be nice to implement but that I haven't
@@ -24,6 +23,16 @@ for a plugin to run:
 - Double precision audio (`processDoubleReplacing`).
 - Vendor specific extensions (for instance, for
   [Reaper](https://www.reaper.fm/sdk/vst/vst_ext.php)).
+
+## Tested with
+
+yabridge has been primarily tested under and verified to work correctly with:
+
+- Bitwig Studio 3.1 and the beta releases of 3.2
+- Carla 2.1
+- Wine Staging 5.5
+
+Please let me know if there are any issues with other VST hosts.
 
 ## Usage
 
@@ -73,7 +82,7 @@ won't know where to find them. Either copy them to `/usr/local/bin` (not
 recommended) or to `~/.local/bin` and make sure that the directory is in your
 `PATH` environment variable.
 
-## Runtime dependencies
+## Runtime dependencies and known issues
 
 Some VST plugins might require you to manually install some dependencies. The
 most common of these are listed below:
