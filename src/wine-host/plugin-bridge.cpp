@@ -201,8 +201,6 @@ void PluginBridge::handle_dispatch() {
         request =
             read_object(host_vst_process_replacing, request, process_buffer);
 
-        // TODO: Check if the plugin doesn't support `processReplacing` and
-        //       call the legacy `process` function instead
         // The process functions expect a `float**` for their inputs and
         // their outputs
         std::vector<float*> inputs;
@@ -220,8 +218,22 @@ void PluginBridge::handle_dispatch() {
             outputs.push_back(buffer.data());
         }
 
-        plugin->processReplacing(plugin, inputs.data(), outputs.data(),
-                                 request.sample_frames);
+        // Any plugin made in the last fifteen years or so should support
+        // `processReplacing`. In the off chance it does not we can just emulate
+        // this behavior ourselves.
+        if (plugin->processReplacing != nullptr) {
+            plugin->processReplacing(plugin, inputs.data(), outputs.data(),
+                                     request.sample_frames);
+        } else {
+            // If we zero out this buffer then the behavior is the same as
+            // `processReplacing``
+            for (std::vector<float>& buffer : output_buffers) {
+                std::fill(buffer.begin(), buffer.end(), 0.0);
+            }
+
+            plugin->process(plugin, inputs.data(), outputs.data(),
+                            request.sample_frames);
+        }
 
         AudioBuffers response{output_buffers, request.sample_frames};
         write_object(host_vst_process_replacing, response, process_buffer);

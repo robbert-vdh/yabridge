@@ -357,7 +357,7 @@ void HostBridge::process_replacing(AEffect* /*plugin*/,
     const AudioBuffers request{input_buffers, sample_frames};
     write_object(host_vst_process_replacing, request, process_buffer);
 
-    // /Write the results back to the `outputs` arrays
+    // Write the results back to the `outputs` arrays
     AudioBuffers response;
     response =
         read_object(host_vst_process_replacing, response, process_buffer);
