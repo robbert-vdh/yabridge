@@ -12,7 +12,6 @@ There are a few things that should be done before releasing this, including:
 - Fix implementation bugs:
   - Polish GUIs even further. There are some todos left in
     `src/wine-host/editor.{h,cpp}`.
-  - There are likely some minor issues left.
 - Add missing details if any to the architecture section.
 - Document wine32 support.
 
@@ -84,11 +83,21 @@ recommended) or to `~/.local/bin` and make sure that the directory is in your
 
 ## Runtime dependencies and known issues
 
-Some VST plugins might require you to manually install some dependencies. The
-most common of these are listed below:
+Any VST2 plugin should function out of the box, although some plugins will need
+some additional dependencies for their editor GUIs to work correctly. Notable
+examples include:
 
 - **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
   `gdiplus` through `winetricks`.
+
+Aside from that, these are some known caveats:
+
+- Most recent **iZotope** plugins don't have a functional GUI in a typical Wine
+  setup. This is sadly something that can't be fixed on yabridge's side and I
+  have not yet been able to figure out a way to reliably make these plugins
+  work.
+- Dragging and dropping files onto plugin editors works, but the editor does not
+  always show visual updates while dragging. This needs further investigation.
 
 ## Building
 
