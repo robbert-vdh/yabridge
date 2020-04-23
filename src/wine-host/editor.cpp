@@ -46,7 +46,7 @@ Editor::Editor(const std::string& window_class_name,
       // be drawn without any decorations (making resizes behave as you'd
       // expect) and also causes mouse coordinates to be relative to the window
       // itself.
-      win32_handle(CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_ACCEPTFILES,
+      win32_handle(CreateWindowEx(WS_EX_TOOLWINDOW,
                                   reinterpret_cast<LPCSTR>(window_class.atom),
                                   "yabridge plugin",
                                   WS_POPUP,
@@ -72,7 +72,7 @@ Editor::Editor(const std::string& window_class_name,
     // the plugin is not busy.
     SetTimer(win32_handle.get(), idle_timer_id, 100, nullptr);
 
-    // see the x11 events part of `editor::handle_events`
+    // See the x11 events part of `editor::handle_events`
     const uint32_t parent_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
