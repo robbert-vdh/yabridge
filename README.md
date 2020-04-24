@@ -13,15 +13,8 @@ There are a few things that should be done before releasing this, including:
   - Polish GUIs even further. There are some todos left in
     `src/wine-host/editor.{h,cpp}`.
 - Add missing details if any to the architecture section.
+- Rewrite parts of this readme.
 - Document wine32 support.
-
-There are also some features that would be nice to implement but that I haven't
-had the need to implement yet. Let me know if any of these features are required
-for a plugin to run:
-
-- Double precision audio (`processDoubleReplacing`).
-- Vendor specific extensions (for instance, for
-  [Reaper](https://www.reaper.fm/sdk/vst/vst_ext.php)).
 
 ## Tested with
 
@@ -98,6 +91,14 @@ Aside from that, these are some known caveats:
   work.
 - Dragging and dropping files onto plugin editors works, but the editor does not
   always show visual updates while dragging. This needs further investigation.
+
+There are also some VST2.4 extension features that haven't implemented yet
+because I haven't needed them myself. Let me know if any of these features are
+required for a certain plugin or plugin host:
+
+- Double precision audio (`processDoubleReplacing`).
+- Vendor specific extensions (for instance, for
+  [Reaper](https://www.reaper.fm/sdk/vst/vst_ext.php)).
 
 ## Building
 
