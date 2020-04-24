@@ -56,9 +56,11 @@ executable(
   [
     'src/common/logging.cpp',
     'src/common/serialization.cpp',
+    'src/wine-host/editor.cpp',
+    'src/wine-host/editor.cpp',
     'src/wine-host/plugin-bridge.cpp',
     'src/wine-host/vst-host.cpp',
-    'src/wine-host/editor.cpp',
+    'src/wine-host/utils.cpp',
   ],
   native : false,
   include_directories : include_dir,

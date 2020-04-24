@@ -31,6 +31,7 @@
 
 #include "../common/logging.h"
 #include "editor.h"
+#include "utils.h"
 
 /**
  * This handles the communication between the Linux native VST plugin and the
@@ -139,25 +140,20 @@ class PluginBridge {
      */
     boost::asio::local::stream_protocol::socket vst_host_aeffect;
 
-    // These threads are implemented using `CreateThread` rather than
-    // `std::thread` because in some cases `std::thread` in winelib causes very
-    // hard to debug data races within plugins such as Serum. This might be
-    // caused by calling conventions being handled differently.
-
     /**
      * The thread that specifically handles `effProcessEvents` opcodes so the
      * plugin can still receive midi during GUI interaction to work around Win32
      * API limitations.
      */
-    HANDLE dispatch_midi_events_handler;
+    Win32Thread dispatch_midi_events_handler;
     /**
      * The thread that responds to `getParameter` and `setParameter` requests.
      */
-    HANDLE parameters_handler;
+    Win32Thread parameters_handler;
     /**
      * The thread that handles calls to `processReplacing` (and `process`).
      */
-    HANDLE process_replacing_handler;
+    Win32Thread process_replacing_handler;
 
     /**
      * A binary semaphore to prevent race conditions from the host callback

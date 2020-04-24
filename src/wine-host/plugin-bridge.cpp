@@ -129,14 +129,13 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     // This works functionally identically to the `handle_dispatch()` function
     // below, but this socket will only handle midi events. This is needed
     // because of Win32 API limitations.
-    dispatch_midi_events_handler = CreateThread(
-        nullptr, 0, handle_dispatch_midi_events_proxy, this, 0, nullptr);
+    dispatch_midi_events_handler =
+        Win32Thread(handle_dispatch_midi_events_proxy, this);
 
-    parameters_handler =
-        CreateThread(nullptr, 0, handle_parameters_proxy, this, 0, nullptr);
+    parameters_handler = Win32Thread(handle_parameters_proxy, this);
 
-    process_replacing_handler = CreateThread(
-        nullptr, 0, handle_process_replacing_proxy, this, 0, nullptr);
+    process_replacing_handler =
+        Win32Thread(handle_process_replacing_proxy, this);
 
     std::cout << "Finished initializing '" << plugin_dll_path << "'"
               << std::endl;
@@ -155,11 +154,8 @@ void PluginBridge::handle_dispatch() {
                                         _1, _2, _3, _4, _5, _6));
         }
     } catch (const boost::system::system_error&) {
-        // TODO: Implement this with a simple RAII wrapper just like we did for
-        //       Win32 window classes
-        CloseHandle(dispatch_midi_events_handler);
-        CloseHandle(parameters_handler);
-        CloseHandle(process_replacing_handler);
+        // The plugin has cut off communications, so we can shut down this host
+        // application
     }
 }
 
