@@ -64,7 +64,7 @@ PluginBridge& get_bridge_instance(const AEffect* plugin) {
 
 PluginBridge::PluginBridge(std::string plugin_dll_path,
                            std::string socket_endpoint_path)
-    : plugin_handle(LoadLibrary(plugin_dll_path.c_str()), &FreeLibrary),
+    : plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
       io_context(),
       socket_endpoint(socket_endpoint_path),
       host_vst_dispatch(io_context),

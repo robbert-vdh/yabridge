@@ -51,9 +51,11 @@ constexpr size_t max_midi_events = max_buffer_size / sizeof(size_t);
 [[maybe_unused]] constexpr size_t max_string_length = 64;
 
 /**
- * The size for a buffer in which we're receiving chunks.
+ * The size for a buffer in which we're receiving chunks. Allow for up to 1 GB
+ * chunks. Hopefully no plugin will come anywhere near this limit, but it will
+ * add up when plugins start to audio samples in their presets.
  */
-constexpr size_t binary_buffer_size = 2 << 20;
+constexpr size_t binary_buffer_size = 1 << 30;
 
 // The cannonical overloading template for `std::visitor`, not sure why this
 // isn't part of the standard library
@@ -62,7 +64,7 @@ struct overload : Ts... {
     using Ts::operator()...;
 };
 template <class... Ts>
-overload(Ts...)->overload<Ts...>;
+overload(Ts...) -> overload<Ts...>;
 
 /**
  * The serialization function for `AEffect` structs. This will s serialize all
