@@ -27,6 +27,10 @@ endif
 # about the way these two components work together can be found in the readme
 # file.
 
+# Generate header files for configuration variables such as the current git tag
+# and the last commit hash
+subdir('src/common/config')
+
 boost_dep = dependency('boost', modules : ['filesystem'])
 bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
 threads_dep = dependency('threads')
