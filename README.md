@@ -17,8 +17,10 @@ There are a few things that should be done before releasing this, including:
     since other plugins don't have this issue.
   - Serum crashed and audio engine froze while browsing through Serum presets in
     the browser?
-  - There seems to be an issue with wineserver not closing file descriptors. Not
-    sure if this is something we can fix.
+  - No midi input in Kontakt.
+  - There seems to be an issue with wineserver not closing file descriptors,
+    this can happen when indexing a lot of VST plugins. Not sure if this is
+    something we can fix.
   - Polish GUIs even further. There are some todos left in
     `src/wine-host/editor.{h,cpp}`.
 - Add missing details if any to the architecture section.
