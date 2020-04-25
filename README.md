@@ -15,12 +15,12 @@ There are a few things that should be done before releasing this, including:
     situation triggers this.
   - Phase plant can't load large chunks. Seems to be a problem with Phase Plant
     since other plugins don't have this issue.
+  - KiloHearts plugins create a ridiculous amount of file descriptor leaks in
+    wineserver when esync is enabled. I haven't come across any other plugins
+    that do this. Not sure if this is fixable in yabridge.
   - Serum crashed and audio engine froze while browsing through Serum presets in
     the browser?
   - No midi input in Kontakt.
-  - There seems to be an issue with wineserver not closing file descriptors,
-    this can happen when indexing a lot of VST plugins. Not sure if this is
-    something we can fix.
   - Polish GUIs even further. There are some todos left in
     `src/wine-host/editor.{h,cpp}`.
 - Add missing details if any to the architecture section.
