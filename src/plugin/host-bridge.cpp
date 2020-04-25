@@ -291,8 +291,9 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             // state has already been saved before this and all resources are
             // cleaned up properly. Still not sure if this is a good way to
             // handle this.
-            intptr_t return_value = 1;
+            intptr_t return_value = 0;
             try {
+                // TODO: Add some kind of timeout?
                 return_value =
                     send_event(host_vst_dispatch, dispatch_mutex, converter,
                                std::pair<Logger&, bool>(logger, true), opcode,
