@@ -16,6 +16,9 @@
 
 #include <iostream>
 
+// Generated inside of build directory
+#include <src/common/config/version.h>
+
 #include "plugin-bridge.h"
 
 int main(int argc, char* argv[]) {
@@ -32,8 +35,12 @@ int main(int argc, char* argv[]) {
     const std::string plugin_dll_path(argv[1]);
     const std::string socket_endpoint_path(argv[2]);
 
+    std::cerr << "Initializing yabridge host version " << yabridge_git_version
+              << std::endl;
     try {
         PluginBridge bridge(plugin_dll_path, socket_endpoint_path);
+        std::cerr << "Finished initializing '" << plugin_dll_path << "'"
+                  << std::endl;
 
         // Blocks the main thread until the plugin shuts down
         bridge.handle_dispatch();

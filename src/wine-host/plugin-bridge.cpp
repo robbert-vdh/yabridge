@@ -17,7 +17,6 @@
 #include "plugin-bridge.h"
 
 #include <boost/filesystem.hpp>
-#include <iostream>
 
 #include "../common/communication.h"
 #include "../common/events.h"
@@ -136,9 +135,6 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
 
     process_replacing_handler =
         Win32Thread(handle_process_replacing_proxy, this);
-
-    std::cout << "Finished initializing '" << plugin_dll_path << "'"
-              << std::endl;
 }
 
 void PluginBridge::handle_dispatch() {

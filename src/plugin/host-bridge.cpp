@@ -29,6 +29,9 @@
 #include <boost/process/start_dir.hpp>
 #endif
 
+// Generated inside of build directory
+#include <src/common/config/version.h>
+
 #include "../common/communication.h"
 #include "../common/events.h"
 
@@ -119,7 +122,9 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
                bp::start_dir = vst_plugin_path.parent_path())
 #endif
 {
-    logger.log("Initializing yabridge using '" + vst_host_path.string() + "'");
+    logger.log("Initializing yabridge version " +
+               std::string(yabridge_git_version));
+    logger.log("host:       '" + vst_host_path.string() + "'");
     logger.log("plugin:     '" + vst_plugin_path.string() + "'");
     logger.log("socket:     '" + socket_endpoint.path() + "'");
     logger.log("wineprefix: '" +
