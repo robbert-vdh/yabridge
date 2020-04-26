@@ -33,7 +33,9 @@ yabridge has been primarily tested under and verified to work correctly with:
 
 - Bitwig Studio 3.1 and the beta releases of 3.2
 - Carla 2.1
-- Wine Staging 5.7
+- Wine Staging 5.5 and 5.6 (the wine-staging-5.7-1 package currently in Arch and
+  Manjaro's repositories is broken because of a regression in application
+  startup behavior)
 
 Please let me know if there are any issues with other VST hosts.
 
