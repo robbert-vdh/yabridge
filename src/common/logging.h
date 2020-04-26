@@ -45,9 +45,17 @@ class Logger {
         basic = 0,
         /**
          * Also print information about callbacks and functions being called by
-         * the plugin and the host. Every message is prefixed with a timestamp.
+         * the plugin and the host. This excludes the `effEditIdle()` and
+         * `audioMasterGetTime()` events since those events are typically sent
+         * tens of times per second. Every message is prefixed with a timestamp.
          */
-        events = 1,
+        most_events = 1,
+        /**
+         * The same as the above but without filtering out any events. This is
+         * very chatty but it can be crucial for debugging plugin-specific
+         * problems.
+         */
+        all_events = 2,
     };
 
     /**
@@ -97,10 +105,17 @@ class Logger {
                    const EventPayload& payload,
                    float option);
     void log_event_response(bool is_dispatch,
+                            int opcode,
                             intptr_t return_value,
                             const EventResposnePayload& payload);
 
    private:
+    /**
+     * Determine whether an event should be filtered based on the current
+     * verbosity level.
+     */
+    bool should_filter_event(bool is_dispatch, int opcode);
+
     /**
      * The output stream to write the log messages to. Typically either STDERR
      * or a file stream.

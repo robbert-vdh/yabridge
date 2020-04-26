@@ -157,9 +157,13 @@ variables:
   - A value of `0` (the default) means that yabridge will only output messages
     from the Wine process and some basic information such as the plugin being
     loaded and the wineprefix being used.
-  - A value of `1` will log information about all events and function calls
-    being sent between the VST host and the plugin. This can be very verbose but
-    it makes it easier to see if yabridge is handling things incorrectly.
+  - A value of `1` will log information about most events and function calls
+    being sent between the VST host and the plugin. This filters out the
+    `effEditIdle()` and `audioMasterGetTime()` calls since those are sent tens
+    of times per second by for every plugin.
+  - A value of `2` will cause all of the events to be logged, including
+    `effEditIdle()` and `audioMasterGettime()`. This can be very verbose but it
+    can be crucial for debugging plugin-specific problems.
 
   More detailed information about these levels can be found in
   `src/common/logging.h`.

@@ -157,7 +157,7 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
 
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
-        logger.log_event_response(is_dispatch, response.return_value,
+        logger.log_event_response(is_dispatch, opcode, response.return_value,
                                   response.payload);
     }
 
@@ -299,7 +299,8 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
 
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
-        logger.log_event_response(is_dispatch, return_value, response_data);
+        logger.log_event_response(is_dispatch, event.opcode, return_value,
+                                  response_data);
     }
 
     EventResult response{return_value, response_data};

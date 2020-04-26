@@ -101,7 +101,7 @@ void Logger::log(const std::string& message) {
 }
 
 void Logger::log_get_parameter(int index) {
-    if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
+    if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
         std::ostringstream message;
         message << ">> getParameter() " << index;
 
@@ -110,7 +110,7 @@ void Logger::log_get_parameter(int index) {
 }
 
 void Logger::log_get_parameter_response(float value) {
-    if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
+    if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
         std::ostringstream message;
         message << "   getParameter() :: " << value;
 
@@ -119,7 +119,7 @@ void Logger::log_get_parameter_response(float value) {
 }
 
 void Logger::log_set_parameter(int index, float value) {
-    if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
+    if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
         std::ostringstream message;
         message << ">> setParameter() " << index << " = " << value;
 
@@ -128,7 +128,7 @@ void Logger::log_set_parameter(int index, float value) {
 }
 
 void Logger::log_set_parameter_response() {
-    if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
+    if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
         log("   setParameter() :: OK");
     }
 }
@@ -139,7 +139,11 @@ void Logger::log_event(bool is_dispatch,
                        intptr_t value,
                        const EventPayload& payload,
                        float option) {
-    if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
+    if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
+        if (should_filter_event(is_dispatch, opcode)) {
+            return;
+        }
+
         std::ostringstream message;
         if (is_dispatch) {
             message << ">> dispatch() ";
@@ -190,9 +194,14 @@ void Logger::log_event(bool is_dispatch,
 }
 
 void Logger::log_event_response(bool is_dispatch,
+                                int opcode,
                                 intptr_t return_value,
                                 const EventResposnePayload& payload) {
-    if (BOOST_UNLIKELY(verbosity >= Verbosity::events)) {
+    if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
+        if (should_filter_event(is_dispatch, opcode)) {
+            return;
+        }
+
         std::ostringstream message;
         if (is_dispatch) {
             message << "   dispatch() :: ";
@@ -226,6 +235,21 @@ void Logger::log_event_response(bool is_dispatch,
 
         log(message.str());
     }
+}
+
+bool Logger::should_filter_event(bool is_dispatch, int opcode) {
+    if (verbosity >= Verbosity::all_events) {
+        return false;
+    }
+
+    // Filter out log messages related to these events by default since they are
+    // called tens of times per second
+    if ((is_dispatch && opcode == effEditIdle) ||
+        (!is_dispatch && opcode == audioMasterGetTime)) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
