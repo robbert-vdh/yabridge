@@ -221,6 +221,9 @@ class DispatchDataConverter : DefaultDataConverter {
                 // data (or at least Bitwig does this)
                 return *static_cast<const VstIOProperties*>(data);
                 break;
+            case effGetParameterProperties:
+                return *static_cast<const VstParameterProperties*>(data);
+                break;
             default:
                 return DefaultDataConverter::read(opcode, index, value, data);
                 break;
@@ -255,6 +258,13 @@ class DispatchDataConverter : DefaultDataConverter {
                     std::get<VstIOProperties>(response.payload);
 
                 *static_cast<VstIOProperties*>(data) = properties;
+            } break;
+            case effGetParameterProperties: {
+                // Same as the above
+                const auto properties =
+                    std::get<VstParameterProperties>(response.payload);
+
+                *static_cast<VstParameterProperties*>(data) = properties;
             } break;
             default:
                 DefaultDataConverter::write(opcode, data, response);

@@ -93,6 +93,26 @@ void serialize(S& s, VstIOProperties& props) {
 }
 
 template <typename S>
+void serialize(S& s, VstParameterProperties& props) {
+    s.value4b(props.stepFloat);
+    s.value4b(props.smallStepFloat);
+    s.value4b(props.largeStepFloat);
+    s.container1b(props.label);
+    s.value4b(props.flags);
+    s.value4b(props.minInteger);
+    s.value4b(props.maxInteger);
+    s.value4b(props.stepInteger);
+    s.value4b(props.largeStepInteger);
+    s.container1b(props.shortLabel);
+    s.value2b(props.displayIndex);
+    s.value2b(props.category);
+    s.value2b(props.numParametersInCategory);
+    s.value2b(props.reserved);
+    s.container1b(props.categoryLabel);
+    s.container1b(props.future);
+}
+
+template <typename S>
 void serialize(S& s, VstRect& rect) {
     s.value2b(rect.top);
     s.value2b(rect.left);
@@ -220,6 +240,7 @@ using EventPayload = std::variant<std::nullptr_t,
                                   DynamicVstEvents,
                                   WantsChunkBuffer,
                                   VstIOProperties,
+                                  VstParameterProperties,
                                   WantsVstRect,
                                   WantsVstTimeInfo,
                                   WantsString>;
@@ -242,6 +263,7 @@ void serialize(S& s, EventPayload& payload) {
                       [](S& s, VstEvent& event) { s.container1b(event.dump); });
               },
               [](S& s, VstIOProperties& props) { s.object(props); },
+              [](S& s, VstParameterProperties& props) { s.object(props); },
               [](S&, WantsChunkBuffer&) {}, [](S&, WantsVstRect&) {},
               [](S&, WantsVstTimeInfo&) {}, [](S&, WantsString&) {}});
 }
@@ -302,6 +324,7 @@ using EventResposnePayload = std::variant<std::nullptr_t,
                                           std::string,
                                           AEffect,
                                           VstIOProperties,
+                                          VstParameterProperties,
                                           VstRect,
                                           VstTimeInfo>;
 
@@ -318,6 +341,7 @@ void serialize(S& s, EventResposnePayload& payload) {
               },
               [](S& s, AEffect& effect) { s.object(effect); },
               [](S& s, VstIOProperties& props) { s.object(props); },
+              [](S& s, VstParameterProperties& props) { s.object(props); },
               [](S& s, VstRect& rect) { s.object(rect); },
               [](S& s, VstTimeInfo& time_info) { s.object(time_info); }});
 }

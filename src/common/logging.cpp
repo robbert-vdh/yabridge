@@ -182,6 +182,9 @@ void Logger::log_event(bool is_dispatch,
                     message << "<writable_buffer>";
                 },
                 [&](const VstIOProperties&) { message << "<io_properties>"; },
+                [&](const VstParameterProperties&) {
+                    message << "<writable_buffer>";
+                },
                 [&](const WantsVstRect&) { message << "<writable_buffer>"; },
                 [&](const WantsVstTimeInfo&) { message << "<nullptr>"; },
                 [&](const WantsString&) { message << "<writable_string>"; }},
@@ -225,6 +228,10 @@ void Logger::log_event_response(bool is_dispatch,
                 },
                 [&](const AEffect&) { message << ", <AEffect_object>"; },
                 [&](const VstIOProperties&) { message << ", <io_properties>"; },
+                [&](const VstParameterProperties& props) {
+                    message << ", <parameter_properties for '" << props.label
+                            << "'>";
+                },
                 [&](const VstRect& rect) {
                     message << ", {l: " << rect.left << ", t: " << rect.top
                             << ", r: " << rect.right << ", b: " << rect.bottom

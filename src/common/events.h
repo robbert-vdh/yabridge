@@ -210,6 +210,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
             },
             [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
             [&](VstIOProperties& props) -> void* { return &props; },
+            [&](VstParameterProperties& props) -> void* { return &props; },
             [&](WantsVstRect&) -> void* { return string_buffer.data(); },
             [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
             [&](WantsString&) -> void* { return string_buffer.data(); }},
@@ -259,8 +260,9 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                                         return_value);
                  },
                  [&](VstIOProperties& props) -> EventResposnePayload {
-                     // The plugin has written a pointer to a VstRect struct
-                     // into the data poitner
+                     return props;
+                 },
+                 [&](VstParameterProperties& props) -> EventResposnePayload {
                      return props;
                  },
                  [&](WantsVstRect&) -> EventResposnePayload {
