@@ -284,10 +284,10 @@ class HostCallbackDataConverter : DefaultDataConverter {
                               std::optional<VstTimeInfo>& time_info)
         : plugin(plugin), time_info(time_info) {}
 
-    std::optional<EventPayload> read(const int opcode,
-                                     const int index,
-                                     const intptr_t value,
-                                     const void* data) {
+    EventPayload read(const int opcode,
+                      const int index,
+                      const intptr_t value,
+                      const void* data) {
         switch (opcode) {
             case audioMasterGetTime:
                 return WantsVstTimeInfo{};

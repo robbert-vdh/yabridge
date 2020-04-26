@@ -34,13 +34,11 @@ class DefaultDataConverter {
     /**
      * Read data from the `data` void pointer into a an `EventPayload` value
      * that can be serialized and conveys the meaning of the event.
-     *
-     * If this returns a nullopt, then the event will be skipped.
      */
-    virtual std::optional<EventPayload> read(const int /*opcode*/,
-                                             const int /*index*/,
-                                             const intptr_t /*value*/,
-                                             const void* data) {
+    virtual EventPayload read(const int /*opcode*/,
+                              const int /*index*/,
+                              const intptr_t /*value*/,
+                              const void* data) {
         if (data == nullptr) {
             return nullptr;
         }
@@ -125,24 +123,16 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                     void* data,
                     float option) {
     // Encode the right payload type for this event. Check the documentation for
-    // `EventPayload` for more information. We have to skip some opcodes because
-    // some VST hsots will outright crash if they receive them, please let me
-    // know if there's a better way to do this.
-    const std::optional<EventPayload> payload =
+    // `EventPayload` for more information
+    const EventPayload payload =
         data_converter.read(opcode, index, value, data);
-    if (!payload.has_value()) {
-        // A 0 usually means that the event was not supported by the other
-        // rendpoint
-        return 0;
-    }
 
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
-        logger.log_event(is_dispatch, opcode, index, value, payload.value(),
-                         option);
+        logger.log_event(is_dispatch, opcode, index, value, payload, option);
     }
 
-    const Event event{opcode, index, value, option, payload.value()};
+    const Event event{opcode, index, value, option, payload};
 
     // Prevent two threads from writing over the socket at the same time and
     // messages getting out of order. This is needed because we can't prevent

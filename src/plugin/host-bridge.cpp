@@ -186,10 +186,10 @@ class DispatchDataConverter : DefaultDataConverter {
                           VstRect& editor_rectangle)
         : chunk(chunk_data), rect(editor_rectangle) {}
 
-    std::optional<EventPayload> read(const int opcode,
-                                     const int index,
-                                     const intptr_t value,
-                                     const void* data) {
+    EventPayload read(const int opcode,
+                      const int index,
+                      const intptr_t value,
+                      const void* data) {
         // There are some events that need specific structs that we can't simply
         // serialize as a string because they might contain null bytes
         switch (opcode) {
