@@ -51,11 +51,11 @@ constexpr size_t max_midi_events = max_buffer_size / sizeof(size_t);
 [[maybe_unused]] constexpr size_t max_string_length = 64;
 
 /**
- * The size for a buffer in which we're receiving chunks. Allow for up to 1 GB
+ * The size for a buffer in which we're receiving chunks. Allow for up to 50 MB
  * chunks. Hopefully no plugin will come anywhere near this limit, but it will
  * add up when plugins start to audio samples in their presets.
  */
-constexpr size_t binary_buffer_size = 1 << 30;
+constexpr size_t binary_buffer_size = 50 << 20;
 
 // The cannonical overloading template for `std::visitor`, not sure why this
 // isn't part of the standard library
@@ -218,6 +218,10 @@ struct WantsString {};
  *         size. We can replace `std::string` with `char*` once it does for
  *         clarity's sake.
  *
+ * - A byte vector for handling chunk data during `effSetChunk()`. We can't
+     reuse the regular string handling here since the data may contain null
+     bytes and `std::string::as_c_str()` might cut off everything after the
+     first null byte.
  * - An X11 window handle.
  * - Specific data structures from `aeffextx.h`. For instance an event with the
  *   opcode `effProcessEvents` the hosts passes a `VstEvents` struct containing
@@ -226,15 +230,19 @@ struct WantsString {};
  *
  * - Some empty buffer for the plugin to write its own data to, for instance for
  *   a plugin to report its name or the label for a certain parameter. There are
- *   two separate cases here:
+ *   two separate cases here. This is typically a short null terminated
+ *   C-string. We'll assume this as the default case when none of the above
+ *   options apply.
  *
  *   - Either the plugin writes arbitrary data and uses its return value to
  *     indicate how much data was written (i.e. for the `effGetChunk` opcode).
+ *     For this we use a vector of bytes instead of a string since
  *   - Or the plugin will write a short null terminated C-string there. We'll
  *     assume that this is the default if none of the above options apply.
  */
 using EventPayload = std::variant<std::nullptr_t,
                                   std::string,
+                                  std::vector<uint8_t>,
                                   size_t,
                                   AEffect,
                                   DynamicVstEvents,
@@ -251,9 +259,10 @@ void serialize(S& s, EventPayload& payload) {
           bitsery::ext::StdVariant{
               [](S&, std::nullptr_t&) {},
               [](S& s, std::string& string) {
-                  // `binary_buffer_size` and not `max_string_length` because we
-                  // also use this to send back large chunk data
-                  s.text1b(string, binary_buffer_size);
+                  s.text1b(string, max_string_length);
+              },
+              [](S& s, std::vector<uint8_t>& buffer) {
+                  s.container1b(buffer, binary_buffer_size);
               },
               [](S& s, size_t& window_handle) { s.value8b(window_handle); },
               [](S& s, AEffect& effect) { s.object(effect); },
@@ -312,16 +321,16 @@ struct Event {
  *
  * - Nothing, on which case only the return value from the callback function
  *   gets passed along.
- * - Some buffer stored in a `std::string`. This is typically read from and
- *   written as C-style string, but in the case of `effGetChunk` this is some
- *   blob of binary data that should be written to `HostBridge::chunk_data`
- *   instenad.
+ * - A (short) string.
+ * - Some binary blob stored as a byte vector. During `effGetChunk` this will
+     contain some chunk data that should be written to `HostBridge::chunk_data`.
  * - A specific struct in response to an event such as `audioMasterGetTime` or
  *   `audioMasterIOChanged`.
  * - An X11 window pointer for the editor window.
  */
 using EventResposnePayload = std::variant<std::nullptr_t,
                                           std::string,
+                                          std::vector<uint8_t>,
                                           AEffect,
                                           VstIOProperties,
                                           VstParameterProperties,
@@ -334,10 +343,10 @@ void serialize(S& s, EventResposnePayload& payload) {
           bitsery::ext::StdVariant{
               [](S&, std::nullptr_t&) {},
               [](S& s, std::string& string) {
-                  // `binary_buffer_size` and not `max_string_length`
-                  // because we also use this to send back large chunk
-                  // data
-                  s.text1b(string, binary_buffer_size);
+                  s.text1b(string, max_string_length);
+              },
+              [](S& s, std::vector<uint8_t>& buffer) {
+                  s.container1b(buffer, binary_buffer_size);
               },
               [](S& s, AEffect& effect) { s.object(effect); },
               [](S& s, VstIOProperties& props) { s.object(props); },

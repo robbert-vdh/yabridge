@@ -11,15 +11,13 @@ There are a few things that should be done before releasing this, including:
 
 - Fix implementation bugs:
   - Phase Plant doesn't play any sound until the editor has been opened?
-  - Phase Plant sometimes crashes during `effEditIdle()`, not sure what
-    situation triggers this.
-  - Phase plant can't load large chunks. Seems to be a problem with Phase Plant
-    since other plugins don't have this issue.
+  - Large chunk buffers can't be sent over the socket in one go, this causes
+    issues with presets that are multiple megabytes in size.
+  - Serum crashed and audio engine froze while browsing through Serum presets in
+    the browser?
   - KiloHearts plugins create a ridiculous amount of file descriptor leaks in
     wineserver when esync is enabled. I haven't come across any other plugins
     that do this. Not sure if this is fixable in yabridge.
-  - Serum crashed and audio engine froze while browsing through Serum presets in
-    the browser?
   - Polish GUIs even further. There are some todos left in
     `src/wine-host/editor.{h,cpp}`.
 - Add missing details if any to the architecture section.

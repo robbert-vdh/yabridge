@@ -173,6 +173,7 @@ void Logger::log_event(bool is_dispatch,
                         message << "<" << s.size() << " bytes>";
                     }
                 },
+                [&](const std::vector<uint8_t>&) { message << "<chunk>"; },
                 [&](const intptr_t&) { message << "<nullptr>"; },
                 [&](const AEffect&) { message << "<nullptr>"; },
                 [&](const DynamicVstEvents& events) {
@@ -225,6 +226,9 @@ void Logger::log_event_response(bool is_dispatch,
                         // don't want to print
                         message << ", <" << s.size() << " bytes>";
                     }
+                },
+                [&](const std::vector<uint8_t>& buffer) {
+                    message << "<" << buffer.size() << "byte chunk>";
                 },
                 [&](const AEffect&) { message << ", <AEffect_object>"; },
                 [&](const VstIOProperties&) { message << ", <io_properties>"; },

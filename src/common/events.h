@@ -190,30 +190,39 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     // arbitrary C-style string.
     std::array<char, max_string_length> string_buffer;
     string_buffer[0] = 0;
+    // This buffer is only used for retrieving chunk data and will be allocated
+    // as needed
+    std::vector<uint8_t> binary_buffer;
+
     void* data = std::visit(
-        overload{
-            [&](const std::nullptr_t&) -> void* { return nullptr; },
-            [&](const std::string& s) -> void* {
-                return const_cast<char*>(s.c_str());
-            },
-            [&](size_t& window_handle) -> void* {
-                // This is the X11 window handle that the editor should reparent
-                // itself to. We have a special wrapper around the dispatch
-                // function that intercepts `effEditOpen` events and creates a
-                // Win32 window and then finally embeds the X11 window Wine
-                // created into this wnidow handle.
-                return reinterpret_cast<void*>(window_handle);
-            },
-            [&](const AEffect&) -> void* { return nullptr; },
-            [&](DynamicVstEvents& events) -> void* {
-                return &events.as_c_events();
-            },
-            [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
-            [&](VstIOProperties& props) -> void* { return &props; },
-            [&](VstParameterProperties& props) -> void* { return &props; },
-            [&](WantsVstRect&) -> void* { return string_buffer.data(); },
-            [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
-            [&](WantsString&) -> void* { return string_buffer.data(); }},
+        overload{[&](const std::nullptr_t&) -> void* { return nullptr; },
+                 [&](const std::string& s) -> void* {
+                     return const_cast<char*>(s.c_str());
+                 },
+                 [&](const std::vector<uint8_t>& buffer) -> void* {
+                     return const_cast<uint8_t*>(buffer.data());
+                 },
+                 [&](size_t& window_handle) -> void* {
+                     // This is the X11 window handle that the editor should
+                     // reparent itself to. We have a special wrapper around the
+                     // dispatch function that intercepts `effEditOpen` events
+                     // and creates a Win32 window and then finally embeds the
+                     // X11 window Wine created into this wnidow handle.
+                     return reinterpret_cast<void*>(window_handle);
+                 },
+                 [&](const AEffect&) -> void* { return nullptr; },
+                 [&](DynamicVstEvents& events) -> void* {
+                     return &events.as_c_events();
+                 },
+                 [&](WantsChunkBuffer&) -> void* {
+                     binary_buffer.resize(binary_buffer_size);
+                     return binary_buffer.data();
+                 },
+                 [&](VstIOProperties& props) -> void* { return &props; },
+                 [&](VstParameterProperties& props) -> void* { return &props; },
+                 [&](WantsVstRect&) -> void* { return string_buffer.data(); },
+                 [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
+                 [&](WantsString&) -> void* { return string_buffer.data(); }},
         event.payload);
 
     const intptr_t return_value = callback(plugin, event.opcode, event.index,
@@ -256,8 +265,9 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                      // stored in an array to which a pointer is stored in
                      // `data`, with the return value from the event determines
                      // how much data the plugin has written
-                     return std::string(*static_cast<char**>(data),
-                                        return_value);
+                     const uint8_t* chunk_data = *static_cast<uint8_t**>(data);
+                     return std::vector<uint8_t>(chunk_data,
+                                                 chunk_data + return_value);
                  },
                  [&](VstIOProperties& props) -> EventResposnePayload {
                      return props;

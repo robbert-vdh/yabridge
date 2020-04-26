@@ -206,11 +206,13 @@ class DispatchDataConverter : DefaultDataConverter {
             case effGetChunk:
                 return WantsChunkBuffer();
                 break;
-            case effSetChunk:
+            case effSetChunk: {
+                const uint8_t* chunk_data = static_cast<const uint8_t*>(data);
+
                 // When the host passes a chunk it will use the value parameter
                 // to tell us its length
-                return std::string(static_cast<const char*>(data), value);
-                break;
+                return std::vector<uint8_t>(chunk_data, chunk_data + value);
+            } break;
             case effProcessEvents:
                 return DynamicVstEvents(*static_cast<const VstEvents*>(data));
                 break;
@@ -243,8 +245,8 @@ class DispatchDataConverter : DefaultDataConverter {
                 // Write the chunk data to some publically accessible place in
                 // `HostBridge` and write a pointer to that struct to the data
                 // pointer
-
-                const auto buffer = std::get<std::string>(response.payload);
+                const auto buffer =
+                    std::get<std::vector<uint8_t>>(response.payload);
                 chunk.assign(buffer.begin(), buffer.end());
 
                 *static_cast<void**>(data) = chunk.data();
