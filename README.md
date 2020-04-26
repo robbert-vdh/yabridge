@@ -33,7 +33,7 @@ yabridge has been primarily tested under and verified to work correctly with:
 
 - Bitwig Studio 3.1 and the beta releases of 3.2
 - Carla 2.1
-- Wine Staging 5.5
+- Wine Staging 5.7
 
 Please let me know if there are any issues with other VST hosts.
 
