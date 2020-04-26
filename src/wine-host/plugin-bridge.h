@@ -122,7 +122,7 @@ class PluginBridge {
      * Used specifically for the `effProcessEvents` opcode. This is needed
      * because the Win32 API is designed to block during certain GUI
      * interactions such as resizing a window or opening a dropdown. Without
-     * this midi input would just stop working at times.
+     * this MIDI input would just stop working at times.
      */
     boost::asio::local::stream_protocol::socket host_vst_dispatch_midi_events;
     boost::asio::local::stream_protocol::socket vst_host_callback;
@@ -142,7 +142,7 @@ class PluginBridge {
 
     /**
      * The thread that specifically handles `effProcessEvents` opcodes so the
-     * plugin can still receive midi during GUI interaction to work around Win32
+     * plugin can still receive MIDI during GUI interaction to work around Win32
      * API limitations.
      */
     Win32Thread dispatch_midi_events_handler;

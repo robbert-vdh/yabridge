@@ -341,8 +341,8 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
         }; break;
         case effProcessEvents:
             // Because of limitations of the Win32 API we have to use a seperate
-            // thread and socket to pass midi events. Otherwise plugins will
-            // stop receiving midi data when they have an open dropdowns or
+            // thread and socket to pass MIDI events. Otherwise plugins will
+            // stop receiving MIDI data when they have an open dropdowns or
             // message box.
             return send_event(host_vst_dispatch_midi_events,
                               dispatch_midi_events_mutex, converter,

@@ -248,7 +248,7 @@ process works as follows:
      `opcode=effProcessEvents`. These get forwarded to the Windows VST plugin
      through the Wine VST host. This has to be handled separately from all other
      events because of limitations of the Win32 API. Otherwise the plugin would
-     not receive any midi events while the GUI is being resized or a dropdown
+     not receive any MIDI events while the GUI is being resized or a dropdown
      menu or message box is open.
    - Host callback calls from the Windows VST plugin loaded into the Wine VST
      host through the `audioMasterCallback` function. These get forwarded to the

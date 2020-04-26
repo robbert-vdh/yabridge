@@ -40,7 +40,7 @@ constexpr size_t max_audio_channels = 32;
  */
 constexpr size_t max_buffer_size = 16384;
 /**
- * The maximum number of midi events in a single `VstEvents` struct.
+ * The maximum number of MIDI events in a single `VstEvents` struct.
  */
 constexpr size_t max_midi_events = max_buffer_size / sizeof(size_t);
 /**
@@ -160,7 +160,7 @@ class alignas(16) DynamicVstEvents {
     VstEvents& as_c_events();
 
     /**
-     * Midi events are sent in batches.
+     * MIDI events are sent in batches.
      */
     std::vector<VstEvent> events;
 
@@ -174,7 +174,7 @@ class alignas(16) DynamicVstEvents {
      * `vestige/aeffectx.h` the struct contains a single element `VstEvent`
      * pointer array, but the actual length of this array is
      * `VstEvents::numEvents`. Because there is no real limit on the number of
-     * midi events the host can send at once we have to build this object on the
+     * MIDI events the host can send at once we have to build this object on the
      * heap by hand.
      */
     std::vector<uint8_t> vst_events_buffer;
@@ -221,7 +221,7 @@ struct WantsString {};
  * - An X11 window handle.
  * - Specific data structures from `aeffextx.h`. For instance an event with the
  *   opcode `effProcessEvents` the hosts passes a `VstEvents` struct containing
- *   midi events, and `audioMasterIOChanged` lets the host know that the
+ *   MIDI events, and `audioMasterIOChanged` lets the host know that the
  *   `AEffect` struct has changed.
  *
  * - Some empty buffer for the plugin to write its own data to, for instance for

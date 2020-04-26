@@ -128,7 +128,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
     write_object(vst_host_aeffect, *plugin);
 
     // This works functionally identically to the `handle_dispatch()` function
-    // below, but this socket will only handle midi events. This is needed
+    // below, but this socket will only handle MIDI events. This is needed
     // because of Win32 API limitations.
     dispatch_midi_events_handler =
         Win32Thread(handle_dispatch_midi_events_proxy, this);
@@ -188,8 +188,8 @@ void PluginBridge::handle_dispatch() {
                     return plugin->dispatcher(plugin, opcode, index, value,
                                               &events->as_c_events(), option);
                 } else {
-                    std::cerr << "[Warning] Received non-midi "
-                                 "event on midi processing thread"
+                    std::cerr << "[Warning] Received non-MIDI "
+                                 "event on MIDI processing thread"
                               << std::endl;
 
                     return dispatch_wrapper(plugin, opcode, index, value, data,
@@ -247,7 +247,7 @@ void PluginBridge::handle_dispatch() {
             outputs.push_back(buffer.data());
         }
 
-        // Let the plugin process the midi events that were received since the
+        // Let the plugin process the MIDI events that were received since the
         // last buffer, and then clean up those events. This approach should not
         // be needed but Kontakt only stores pointers to rather than copies of
         // the events.
