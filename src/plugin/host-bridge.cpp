@@ -450,9 +450,16 @@ void HostBridge::async_log_pipe_lines(patched_async_pipe& pipe,
  * @return A prefix string for log messages.
  */
 std::string create_logger_prefix(const fs::path& socket_path) {
+    // Use the socket filename as the logger prefix, but strip the `yabridge-`
+    // part since that's redundant
+    std::string socket_name =
+        socket_path.filename().replace_extension().string();
+    const std::string socket_prefix("yabridge-");
+    assert(socket_name.find(socket_prefix) == 0);
+    socket_name = socket_name.substr(socket_prefix.size());
+
     std::ostringstream prefix;
-    prefix << "[" << socket_path.filename().replace_extension().string()
-           << "] ";
+    prefix << "[" << socket_name << "] ";
 
     return prefix.str();
 }
