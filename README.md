@@ -20,7 +20,6 @@ There are a few things that should be done before releasing this, including:
     that do this. Not sure if this is fixable in yabridge.
   - Serum crashed and audio engine froze while browsing through Serum presets in
     the browser?
-  - No midi input in Kontakt.
   - Polish GUIs even further. There are some todos left in
     `src/wine-host/editor.{h,cpp}`.
 - Add missing details if any to the architecture section.

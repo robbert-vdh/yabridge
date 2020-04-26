@@ -169,6 +169,20 @@ class PluginBridge {
     std::vector<uint8_t> process_buffer;
 
     /**
+     * The MIDI events that have been received **and processed** since the last
+     * call to `processReplacing()`. 99% of plugins make a copy of the MIDI
+     * events they receive but some plugins such as Kontakt only store pointers
+     * to these events, which means that the actual `VstEvent` objects must live
+     * at least until the next audio buffer gets processed.
+     */
+    std::vector<DynamicVstEvents> next_audio_buffer_midi_events;
+    /**
+     * Mutex for locking the above event queue, since recieving and processing
+     * now happens in two different threads.
+     */
+    std::mutex next_buffer_midi_events_mutex;
+
+    /**
      * The plugin editor window. Allows embedding the plugin's editor into a
      * Wine window, and embedding that Wine window into a window provided by the
      * host. Should be empty when the editor is not open.

@@ -16,6 +16,8 @@
 
 #include "plugin-bridge.h"
 
+#include <iostream>
+
 #include <boost/filesystem.hpp>
 
 #include "../common/communication.h"
@@ -157,8 +159,43 @@ void PluginBridge::handle_dispatch() {
 
 [[noreturn]] void PluginBridge::handle_dispatch_midi_events() {
     while (true) {
-        passthrough_event(host_vst_dispatch_midi_events, std::nullopt, plugin,
-                          plugin->dispatcher);
+        // TODO: Refactor `passthrough_event()` to factor out the data
+        //       conversion specifically for this case so we don't have to do
+        //       this `DynamicVstEvents -> VstEvents -> void* ->
+        //       DynamicVstEvents -> VstEvents -> void*` conversion dance
+        passthrough_event(
+            host_vst_dispatch_midi_events, std::nullopt, plugin,
+            [&](AEffect* plugin, int opcode, int index, intptr_t value,
+                void* data, float option) {
+                if (BOOST_LIKELY(opcode == effProcessEvents)) {
+                    // For 99% of the plugins we can just call
+                    // `effProcessReplacing()` and be done with it, but a select
+                    // few plugins (I could only find Kontakt that does this)
+                    // don't actually make copies of the events they receive and
+                    // only store pointers, meaning that they have to live at
+                    // least until the next audio buffer gets processed. This
+                    // does mean that we have to reconstruct the
+                    // `DynamicVstEvents` object first.
+                    // HACK: Is there a cleaner way to do this, or a way to
+                    //       avoid having to store temporary copies of this?
+                    DynamicVstEvents* events;
+                    {
+                        std::lock_guard lock(next_buffer_midi_events_mutex);
+                        events = &next_audio_buffer_midi_events.emplace_back(
+                            *static_cast<const VstEvents*>(data));
+                    }
+
+                    return plugin->dispatcher(plugin, opcode, index, value,
+                                              &events->as_c_events(), option);
+                } else {
+                    std::cerr << "[Warning] Received non-midi "
+                                 "event on midi processing thread"
+                              << std::endl;
+
+                    return dispatch_wrapper(plugin, opcode, index, value, data,
+                                            option);
+                }
+            });
     }
 }
 
@@ -210,21 +247,31 @@ void PluginBridge::handle_dispatch() {
             outputs.push_back(buffer.data());
         }
 
-        // Any plugin made in the last fifteen years or so should support
-        // `processReplacing`. In the off chance it does not we can just emulate
-        // this behavior ourselves.
-        if (plugin->processReplacing != nullptr) {
-            plugin->processReplacing(plugin, inputs.data(), outputs.data(),
-                                     request.sample_frames);
-        } else {
-            // If we zero out this buffer then the behavior is the same as
-            // `processReplacing``
-            for (std::vector<float>& buffer : output_buffers) {
-                std::fill(buffer.begin(), buffer.end(), 0.0);
+        // Let the plugin process the midi events that were received since the
+        // last buffer, and then clean up those events. This approach should not
+        // be needed but Kontakt only stores pointers to rather than copies of
+        // the events.
+        {
+            std::lock_guard lock(next_buffer_midi_events_mutex);
+
+            // Any plugin made in the last fifteen years or so should support
+            // `processReplacing`. In the off chance it does not we can just
+            // emulate this behavior ourselves.
+            if (plugin->processReplacing != nullptr) {
+                plugin->processReplacing(plugin, inputs.data(), outputs.data(),
+                                         request.sample_frames);
+            } else {
+                // If we zero out this buffer then the behavior is the same as
+                // `processReplacing``
+                for (std::vector<float>& buffer : output_buffers) {
+                    std::fill(buffer.begin(), buffer.end(), 0.0);
+                }
+
+                plugin->process(plugin, inputs.data(), outputs.data(),
+                                request.sample_frames);
             }
 
-            plugin->process(plugin, inputs.data(), outputs.data(),
-                            request.sample_frames);
+            next_audio_buffer_midi_events.clear();
         }
 
         AudioBuffers response{output_buffers, request.sample_frames};
