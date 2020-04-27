@@ -1,9 +1,8 @@
 # yabridge
 
-Yet Another way to use Windows VST2 plugins in Linux VST hosts. The main
-motivation behind this project was to create a VST bridge that is easy to debug
-while providing the best possible plugin compatibility by being as transparent
-as possible.
+Yet Another way to use Windows VST2 plugins in Linux VST hosts. This project
+aims to be as transparent as possible to achieve the best possible plugin
+compatibility while also being easy to debug and maintain.
 
 ## TODOs
 
@@ -14,6 +13,7 @@ There are a few things that should be done before releasing this, including:
     `src/wine-host/editor.{h,cpp}`.
 - Add missing details if any to the architecture section.
 - Rewrite parts of this readme.
+- Briefly verify that this also works fine in Reaper and Ardour.
 - Document wine32 support.
 
 ## Tested with
