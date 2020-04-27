@@ -10,9 +10,6 @@ as possible.
 There are a few things that should be done before releasing this, including:
 
 - Fix implementation bugs:
-  - KiloHearts plugins create a ridiculous amount of file descriptor leaks in
-    wineserver when esync is enabled. I haven't come across any other plugins
-    that do this. Not sure if this is fixable in yabridge.
   - Polish GUIs even further. There are some todos left in
     `src/wine-host/editor.{h,cpp}`.
 - Add missing details if any to the architecture section.
@@ -90,6 +87,9 @@ examples include:
 
 Aside from that, these are some known caveats:
 
+- Plugins by **KiloHearts** have file descriptor leaks while esync is enabled,
+  or at least they have on my machine. This sadly cannot be fixed in yabridge.
+  Simply unset `WINEESYNC` while using yabridge if this is an issue.
 - Most recent **iZotope** plugins don't have a functional GUI in a typical Wine
   setup. This is sadly something that can't be fixed on yabridge's side and I
   have not yet been able to figure out a way to reliably make these plugins
