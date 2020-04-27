@@ -353,7 +353,11 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
             break;
     }
 
-    // TODO: Maybe reuse buffers here when dealing with chunk data
+    // We don't reuse any buffers here like we do for audio processing. This
+    // would be useful for chunk data, but since that's only needed when saving
+    // and loading plugin state it's much better to have bitsery or our
+    // receiving function temporarily allocate a large enough buffer rather than
+    // to have a bunch of allocated memory sitting around doing nothing.
     return send_event(host_vst_dispatch, dispatch_mutex, converter,
                       std::pair<Logger&, bool>(logger, true), opcode, index,
                       value, data, option);

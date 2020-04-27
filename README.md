@@ -11,8 +11,6 @@ There are a few things that should be done before releasing this, including:
 
 - Fix implementation bugs:
   - Phase Plant doesn't play any sound until the editor has been opened?
-  - Large chunk buffers can't be sent over the socket in one go, this causes
-    issues with presets that are multiple megabytes in size.
   - Serum crashed and audio engine froze while browsing through Serum presets in
     the browser?
   - KiloHearts plugins create a ridiculous amount of file descriptor leaks in

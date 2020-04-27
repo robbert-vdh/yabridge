@@ -23,6 +23,8 @@
 #include "../wine-host/boost-fix.h"
 #endif
 #include <boost/asio/local/stream_protocol.hpp>
+#include <boost/asio/read.hpp>
+#include <boost/asio/write.hpp>
 
 template <typename B>
 using OutputAdapter = bitsery::OutputBufferAdapter<B>;
@@ -51,8 +53,9 @@ inline void write_object(
 
     // Tell the other side how large the object is so it can prepare a buffer
     // large enough before sending the data
-    socket.send(boost::asio::buffer(std::array<size_t, 1>{size}));
-    socket.send(boost::asio::buffer(buffer, size));
+    boost::asio::write(socket,
+                       boost::asio::buffer(std::array<size_t, 1>{size}));
+    boost::asio::write(socket, boost::asio::buffer(buffer, size));
 }
 
 /**
@@ -75,13 +78,17 @@ inline T& read_object(Socket& socket,
                       T& object,
                       std::vector<uint8_t> buffer = std::vector<uint8_t>(64)) {
     std::array<size_t, 1> message_length;
-    socket.receive(boost::asio::buffer(message_length));
+    boost::asio::read(socket, boost::asio::buffer(message_length));
 
     // Make sure the buffer is large enough
     const size_t size = message_length[0];
     buffer.resize(size);
 
-    const auto actual_size = socket.receive(boost::asio::buffer(buffer));
+    // `boost::asio::read/write` will handle all the packet splitting and
+    // merging for us, since local domain sockets have packet limits somewhere
+    // in the hundreds of kilobytes
+    const auto actual_size =
+        boost::asio::read(socket, boost::asio::buffer(buffer));
     assert(size == actual_size);
 
     auto [_, success] =
