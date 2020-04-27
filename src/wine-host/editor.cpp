@@ -131,18 +131,18 @@ void Editor::send_idle_event() {
 }
 
 void Editor::handle_events() {
-    send_idle_event();
+    MSG msg;
 
     // The null value for the second argument is needed to handle interaction
     // with child GUI components
-    MSG msg;
     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
         // This timer would periodically send `effEditIdle` events so the editor
         // remains responsive even during blocking GUI operations such as open
-        // dropdowns or message boxes. We filter it out here because we will
-        // send sent the event manually every time the host calls
-        // `effEditIdle()`. It will still be fired implicitely when the GUI
-        // thread gets blocked.
+        // dropdowns or message boxes. This is only needed when the GUI is
+        // actually blocked and it will be dispatched by the messaging loop of
+        // the blocking GUI component. Since we're not touching the
+        // `effEditIdle` event sent by the host we can always filter this timer
+        // event out in this event loop.
         if (msg.message == WM_TIMER && msg.wParam == idle_timer_id &&
             msg.hwnd == win32_handle.get()) {
             continue;
@@ -201,6 +201,7 @@ void Editor::handle_events() {
                 xcb_flush(x11_connection.get());
             } break;
         }
+
         free(generic_event);
     }
 }

@@ -150,6 +150,26 @@ void PluginBridge::handle_dispatch() {
             passthrough_event(host_vst_dispatch, std::nullopt, plugin,
                               std::bind(&PluginBridge::dispatch_wrapper, this,
                                         _1, _2, _3, _4, _5, _6));
+
+            // Because of the way the Win32 API works we have to process events
+            // on the same thread as the one the window was created on, and that
+            // thread is the thread that's handling dispatcher calls.
+            if (editor.has_value()) {
+                // This will handle Win32 events similar to the loop below, and
+                // it will also handle any X11 events.
+                editor->handle_events();
+            } else {
+                MSG msg;
+
+                // Since some plugins rely on the Win32 message API even for
+                // non-editor related tasks (such as deferring the loading of
+                // presets using a timer), we have to run a message loop even
+                // when the editor is closed.
+                while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+                    TranslateMessage(&msg);
+                    DispatchMessage(&msg);
+                }
+            }
         }
     } catch (const boost::system::system_error&) {
         // The plugin has cut off communications, so we can shut down this host
@@ -286,17 +306,6 @@ intptr_t PluginBridge::dispatch_wrapper(AEffect* plugin,
     // We have to intercept GUI open calls since we can't use
     // the X11 window handle passed by the host
     switch (opcode) {
-        case effEditIdle:
-            // Because of the way the Win32 API works we have to process events
-            // on the same thread the window was created, and that thread is the
-            // thread that's handling dispatcher calls
-            // To allow the GUI to update even when this thread gets blocked
-            // (e.g. when a dropdown is open), the actual `effEditIdle` event
-            // gets sent to the plugin on a timer.
-            editor->handle_events();
-
-            return 1;
-            break;
         case effEditOpen: {
             // Create a Win32 window through Wine, embed it into the window
             // provided by the host, and let the plugin embed itself into the

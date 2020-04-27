@@ -12,8 +12,6 @@ There are a few things that should be done before releasing this, including:
 - Fix implementation bugs:
   - Serum crashed and audio engine froze while browsing through Serum presets in
     the browser?
-  - Plugins from certain manufacturers, such as KiloHearts or Image-Line, don't
-    do any audio processing until the editor has been opened.
   - KiloHearts plugins create a ridiculous amount of file descriptor leaks in
     wineserver when esync is enabled. I haven't come across any other plugins
     that do this. Not sure if this is fixable in yabridge.

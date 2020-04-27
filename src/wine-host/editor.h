@@ -88,14 +88,14 @@ class Editor {
     /**
      * Send a single `effEditIdle` event to the plugin to allow it to update its
      * GUI state. This is called periodically from a timer while the GUI is
-     * being blocked.
+     * being blocked, and also called explicitly by the host on a timer.
      */
     void send_idle_event();
 
     /**
      * Pump messages from the editor GUI's event loop until all events are
      * process. Must be run from the same thread the GUI was created in because
-     * of Win32 limitations. I guess that's what `effEditIdle` is for.
+     * of Win32 limitations.
      */
     void handle_events();
 
