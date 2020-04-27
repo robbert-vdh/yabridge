@@ -55,7 +55,9 @@ inline void write_object(
     // large enough before sending the data
     boost::asio::write(socket,
                        boost::asio::buffer(std::array<size_t, 1>{size}));
-    boost::asio::write(socket, boost::asio::buffer(buffer, size));
+    const size_t bytes_written =
+        boost::asio::write(socket, boost::asio::buffer(buffer, size));
+    assert(bytes_written == size);
 }
 
 /**
