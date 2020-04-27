@@ -10,8 +10,6 @@ as possible.
 There are a few things that should be done before releasing this, including:
 
 - Fix implementation bugs:
-  - Serum crashed and audio engine froze while browsing through Serum presets in
-    the browser?
   - KiloHearts plugins create a ridiculous amount of file descriptor leaks in
     wineserver when esync is enabled. I haven't come across any other plugins
     that do this. Not sure if this is fixable in yabridge.
