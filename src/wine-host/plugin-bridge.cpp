@@ -178,15 +178,13 @@ void PluginBridge::handle_dispatch() {
                     // `DynamicVstEvents` object first.
                     // HACK: Is there a cleaner way to do this, or a way to
                     //       avoid having to store temporary copies of this?
-                    DynamicVstEvents* events;
-                    {
-                        std::lock_guard lock(next_buffer_midi_events_mutex);
-                        events = &next_audio_buffer_midi_events.emplace_back(
+                    std::lock_guard lock(next_buffer_midi_events_mutex);
+                    DynamicVstEvents& events =
+                        next_audio_buffer_midi_events.emplace_back(
                             *static_cast<const VstEvents*>(data));
-                    }
 
                     return plugin->dispatcher(plugin, opcode, index, value,
-                                              &events->as_c_events(), option);
+                                              &events.as_c_events(), option);
                 } else {
                     std::cerr << "[Warning] Received non-MIDI "
                                  "event on MIDI processing thread"
