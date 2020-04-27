@@ -44,6 +44,13 @@ class DefaultDataConverter {
         }
 
         // Assume buffers are zeroed out, this is probably not the case
+        // FIXME: Some plugins, such as Fabfilter plugins, don't zero out their
+        //        string buffers (such as when calling
+        //        `audioMasterGetVendorString` and
+        //        `audioMasterGetProductString`). We'll have to either manually
+        //        specify which opcodes are expected to be strings or always
+        //        write back changed strings. I think the first choice is
+        //        cleaner.
         const char* c_string = static_cast<const char*>(data);
         if (c_string[0] != 0) {
             return std::string(c_string);
@@ -229,9 +236,6 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                                            event.value, data, event.option);
 
     // Only write back data when needed, this depends on the event payload type
-    // XXX: Is it possbile here that we got passed a non empty buffer (i.e.
-    //      because it was not zeroed out by the host) for an event that should
-    //      report some data back?
     const auto response_data = std::visit(
         overload{[&](auto) -> EventResposnePayload { return nullptr; },
                  [&](const AEffect& updated_plugin) -> EventResposnePayload {
