@@ -10,9 +10,13 @@ as possible.
 There are a few things that should be done before releasing this, including:
 
 - Fix implementation bugs:
-  - Phase Plant doesn't play any sound until the editor has been opened?
   - Serum crashed and audio engine froze while browsing through Serum presets in
     the browser?
+  - KiloHearts plugins don't always initialize their state correctly until the
+    editor gets opened. For instance Phase Plant doesn't load external samples
+    samples until the editor is open, and Disperser doesn't do any signal
+    processing before opening the editor.
+  - Phase Plant doesn't play any sound until the editor has been opened?
   - KiloHearts plugins create a ridiculous amount of file descriptor leaks in
     wineserver when esync is enabled. I haven't come across any other plugins
     that do this. Not sure if this is fixable in yabridge.
