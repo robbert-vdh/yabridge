@@ -269,9 +269,9 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                      // stored in an array to which a pointer is stored in
                      // `data`, with the return value from the event determines
                      // how much data the plugin has written
-                     const uint8_t* chunk_data = *static_cast<uint8_t**>(data);
-                     return std::vector<uint8_t>(chunk_data,
-                                                 chunk_data + return_value);
+                     return std::vector<uint8_t>(
+                         binary_buffer.begin(),
+                         binary_buffer.begin() + return_value);
                  },
                  [&](VstIOProperties& props) -> EventResposnePayload {
                      return props;
