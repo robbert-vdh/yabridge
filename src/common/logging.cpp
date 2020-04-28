@@ -185,6 +185,7 @@ void Logger::log_event(bool is_dispatch,
                     message << "<writable_buffer>";
                 },
                 [&](const VstIOProperties&) { message << "<io_properties>"; },
+                [&](const VstMidiKeyName&) { message << "<key_name>"; },
                 [&](const VstParameterProperties&) {
                     message << "<writable_buffer>";
                 },
@@ -234,6 +235,7 @@ void Logger::log_event_response(bool is_dispatch,
                 },
                 [&](const AEffect&) { message << ", <AEffect_object>"; },
                 [&](const VstIOProperties&) { message << ", <io_properties>"; },
+                [&](const VstMidiKeyName&) { message << ", <key_name>"; },
                 [&](const VstParameterProperties& props) {
                     message << ", <parameter_properties for '" << props.label
                             << "'>";
@@ -403,6 +405,9 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
                 break;
             case effGetOutputProperties:
                 return "effGetOutputProperties";
+                break;
+            case effGetMidiKeyName:
+                return "effGetMidiKeyName";
                 break;
             default:
                 return std::nullopt;

@@ -226,6 +226,7 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                      return binary_buffer.data();
                  },
                  [&](VstIOProperties& props) -> void* { return &props; },
+                 [&](VstMidiKeyName& key_name) -> void* { return &key_name; },
                  [&](VstParameterProperties& props) -> void* { return &props; },
                  [&](WantsVstRect&) -> void* { return string_buffer.data(); },
                  [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
@@ -275,6 +276,9 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                  },
                  [&](VstIOProperties& props) -> EventResposnePayload {
                      return props;
+                 },
+                 [&](VstMidiKeyName& key_name) -> EventResposnePayload {
+                     return key_name;
                  },
                  [&](VstParameterProperties& props) -> EventResposnePayload {
                      return props;

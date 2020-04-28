@@ -29,6 +29,12 @@
 constexpr int effGetInputProperties = 33;
 constexpr int effGetOutputProperties = 34;
 
+// Found on
+// https://github.com/falkTX/Carla/blob/07e876a743c5e15c358be170af2e523eadc7dbfa/source/utils/CarlaVstUtils.hpp#L75
+// Used to assign names to MIDI keys, for some reason uses the `VstMidiKeyName`
+// struct defined below rather than a simple string.
+constexpr int effGetMidiKeyName = 66;
+
 /**
  * The struct that's being passed through the data parameter during the
  * `effGetInputProperties` and `effGetOutputProperties` opcodes. Reverse
@@ -37,4 +43,14 @@ constexpr int effGetOutputProperties = 34;
  */
 struct VstIOProperties {
     char data[128];
+};
+
+/**
+ * The struct that's passed during `effGetMidiKeyName`. Will be used to write
+ * the name of a key to (i.e. the name of a sample for drum machines). Again,
+ * not sure about the exact contents of this struct, but at least the size is
+ * right!
+ */
+struct VstMidiKeyName {
+    char data[80];
 };

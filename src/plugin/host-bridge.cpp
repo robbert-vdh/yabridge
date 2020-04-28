@@ -226,6 +226,8 @@ class DispatchDataConverter : DefaultDataConverter {
             case effGetParameterProperties:
                 return *static_cast<const VstParameterProperties*>(data);
                 break;
+            case effGetMidiKeyName:
+                return *static_cast<const VstMidiKeyName*>(data);
             default:
                 return DefaultDataConverter::read(opcode, index, value, data);
                 break;
@@ -267,6 +269,13 @@ class DispatchDataConverter : DefaultDataConverter {
                     std::get<VstParameterProperties>(response.payload);
 
                 *static_cast<VstParameterProperties*>(data) = properties;
+            } break;
+            case effGetMidiKeyName: {
+                // Ditto
+                const auto properties =
+                    std::get<VstMidiKeyName>(response.payload);
+
+                *static_cast<VstMidiKeyName*>(data) = properties;
             } break;
             default:
                 DefaultDataConverter::write(opcode, data, response);

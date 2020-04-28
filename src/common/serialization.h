@@ -93,6 +93,11 @@ void serialize(S& s, VstIOProperties& props) {
 }
 
 template <typename S>
+void serialize(S& s, VstMidiKeyName& key_name) {
+    s.container1b(key_name.data);
+}
+
+template <typename S>
 void serialize(S& s, VstParameterProperties& props) {
     s.value4b(props.stepFloat);
     s.value4b(props.smallStepFloat);
@@ -248,6 +253,7 @@ using EventPayload = std::variant<std::nullptr_t,
                                   DynamicVstEvents,
                                   WantsChunkBuffer,
                                   VstIOProperties,
+                                  VstMidiKeyName,
                                   VstParameterProperties,
                                   WantsVstRect,
                                   WantsVstTimeInfo,
@@ -272,6 +278,7 @@ void serialize(S& s, EventPayload& payload) {
                       [](S& s, VstEvent& event) { s.container1b(event.dump); });
               },
               [](S& s, VstIOProperties& props) { s.object(props); },
+              [](S& s, VstMidiKeyName& key_name) { s.object(key_name); },
               [](S& s, VstParameterProperties& props) { s.object(props); },
               [](S&, WantsChunkBuffer&) {}, [](S&, WantsVstRect&) {},
               [](S&, WantsVstTimeInfo&) {}, [](S&, WantsString&) {}});
@@ -333,6 +340,7 @@ using EventResposnePayload = std::variant<std::nullptr_t,
                                           std::vector<uint8_t>,
                                           AEffect,
                                           VstIOProperties,
+                                          VstMidiKeyName,
                                           VstParameterProperties,
                                           VstRect,
                                           VstTimeInfo>;
@@ -350,6 +358,7 @@ void serialize(S& s, EventResposnePayload& payload) {
               },
               [](S& s, AEffect& effect) { s.object(effect); },
               [](S& s, VstIOProperties& props) { s.object(props); },
+              [](S& s, VstMidiKeyName& key_name) { s.object(key_name); },
               [](S& s, VstParameterProperties& props) { s.object(props); },
               [](S& s, VstRect& rect) { s.object(rect); },
               [](S& s, VstTimeInfo& time_info) { s.object(time_info); }});
