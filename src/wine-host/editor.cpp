@@ -251,12 +251,12 @@ Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection) {
     // do such a thing?)
     Size maximum_screen_size{};
     while (iter.rem > 0) {
-        xcb_screen_next(&iter);
-
         maximum_screen_size.width =
             std::max(maximum_screen_size.width, iter.data->width_in_pixels);
         maximum_screen_size.height =
             std::max(maximum_screen_size.height, iter.data->height_in_pixels);
+
+        xcb_screen_next(&iter);
     }
 
     return maximum_screen_size;
