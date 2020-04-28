@@ -33,6 +33,14 @@
 #include <string>
 
 /**
+ * Used to store the maximum width and height of a screen.
+ */
+struct Size {
+    uint16_t width;
+    uint16_t height;
+};
+
+/**
  * A basic RAII wrapper around the Win32 window class system, for use in the
  * Editor class below.
  */
@@ -101,9 +109,26 @@ class Editor {
 
    private:
     /**
+     * A pointer to the currently active window. Will be a null pointer if no
+     * window is active.
+     */
+    std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
+
+    /**
+     * The Wine window's client area, or the maximum size of that window. This
+     * will be set to a size that's large enough to be able to enter full screen
+     * on a single display. This is more of a theoretical maximum size, as the
+     * plugin will only use a portion of this window to draw to. Because we're
+     * not changing the size of the Wine window and simply letting the user or
+     * the host resize the X11 parent window it's been embedded in instead,
+     * resizing will feel smooth and native.
+     */
+    const Size client_area;
+
+    /**
      * The Win32 window class registered for the windows window.
      */
-    WindowClass window_class;
+    const WindowClass window_class;
 
    public:
     /**
@@ -117,20 +142,14 @@ class Editor {
     /**
      * The window handle of the editor window created by the DAW.
      */
-    xcb_window_t parent_window;
+    const xcb_window_t parent_window;
     /**
      * The X11 window handle of the window belonging to  `win32_handle`.
      */
-    xcb_window_t child_window;
+    const xcb_window_t child_window;
 
     /**
      *Needed to handle idle updates through a timer
      */
     AEffect* plugin;
-
-    /**
-     * A pointer to the currently active window. Will be a null pointer if no
-     * window is active.
-     */
-    std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
 };

@@ -25,25 +25,15 @@ constexpr size_t idle_timer_id = 1337;
  */
 constexpr uint16_t event_type_mask = ((1 << 7) - 1);
 
-// TODO: The (maximum) client area is now set at 1440p, to prevent unnecessary
-//       overhead and to support fullscreen windows at 4k resolutions we should
-//       just use the dimensions of the X11 root window instead.
 /**
- * The initial and maximum width of the Wine window hosting the plugin's editor
- * window. This is set at a fixed size to make window resizing feel native.
+ * Compute the size a window would have to be to be allowed to fullscreened on
+ * any of the connected screens.
  */
-constexpr uint16_t client_area_width = 2560;
-/**
- * The initial and maximum width of the Wine window hosting the plugin's editor
- * window. This is set at a fixed size to make window resizing feel native.
- */
-constexpr uint16_t client_area_height = 1440;
-
+Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection);
 /**
  * Return the X11 window handle for the window if it's currently open.
  */
 xcb_window_t get_x11_handle(HWND win32_handle);
-
 ATOM register_window_class(std::string window_class_name);
 
 WindowClass::WindowClass(std::string name)
@@ -56,7 +46,9 @@ WindowClass::~WindowClass() {
 Editor::Editor(const std::string& window_class_name,
                AEffect* effect,
                const size_t parent_window_handle)
-    : window_class(window_class_name),
+    : x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
+      client_area(get_maximum_screen_dimensions(*x11_connection)),
+      window_class(window_class_name),
       // Create a window without any decoratiosn for easy embedding. The
       // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to
       // be drawn without any decorations (making resizes behave as you'd
@@ -68,8 +60,8 @@ Editor::Editor(const std::string& window_class_name,
                                   WS_POPUP,
                                   CW_USEDEFAULT,
                                   CW_USEDEFAULT,
-                                  client_area_width,
-                                  client_area_height,
+                                  client_area.width,
+                                  client_area.height,
                                   nullptr,
                                   nullptr,
                                   GetModuleHandle(nullptr),
@@ -78,8 +70,7 @@ Editor::Editor(const std::string& window_class_name,
       parent_window(parent_window_handle),
       child_window(get_x11_handle(win32_handle.get())),
       // Needed to send update messages on a timer
-      plugin(effect),
-      x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect) {
+      plugin(effect) {
     // The Win32 API will block the `DispatchMessage` call when opening e.g. a
     // dropdown, but it will still allow timers to be run so the GUI can still
     // update in the background. Because of this we send `effEditIdle` to the
@@ -153,10 +144,9 @@ void Editor::handle_events() {
     }
 
     // Handle X11 events
-    // TODO: Initiating drag-and-drop _sometimes_ causes the GUI to update while
-    //       dragging while other times it does not. Not sure why this is
-    //       happening. Forwarding XDND requests manually is very clunky and
-    //       causes different problems.
+    // TODO: Initiating drag-and-drop in Serum _sometimes_ causes the GUI to
+    //       update while dragging while other times it does not. From all the
+    //       plugins I've tested this only happens in Serum though.
     xcb_generic_event_t* generic_event;
     while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
            nullptr) {
@@ -189,8 +179,13 @@ void Editor::handle_events() {
                 translated_event.response_type = XCB_CONFIGURE_NOTIFY;
                 translated_event.event = child_window;
                 translated_event.window = child_window;
-                translated_event.width = client_area_width;
-                translated_event.height = client_area_height;
+                // This should be set to the same sizes the window was created
+                // on. Since we're not using `SetWindowPos` to resize the
+                // Window, Wine can get a bit confused when we suddenly report a
+                // different client area size. Without this certain plugins
+                // (such as those by Valhalla DSP) would break.
+                translated_event.width = client_area.width;
+                translated_event.height = client_area.height;
                 translated_event.x = event.x;
                 translated_event.y = event.y;
 
@@ -244,6 +239,27 @@ LRESULT CALLBACK window_proc(HWND handle,
     }
 
     return DefWindowProc(handle, message, wParam, lParam);
+}
+
+Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection) {
+    xcb_screen_iterator_t iter =
+        xcb_setup_roots_iterator(xcb_get_setup(&x11_connection));
+
+    // Find the maximum dimensions the window would have to be to be able to be
+    // fullscreened on any screen, disregarding the possibility that someone
+    // would try to stretch the window accross all displays (because who would
+    // do such a thing?)
+    Size maximum_screen_size{};
+    while (iter.rem > 0) {
+        xcb_screen_next(&iter);
+
+        maximum_screen_size.width =
+            std::max(maximum_screen_size.width, iter.data->width_in_pixels);
+        maximum_screen_size.height =
+            std::max(maximum_screen_size.height, iter.data->height_in_pixels);
+    }
+
+    return maximum_screen_size;
 }
 
 xcb_window_t get_x11_handle(HWND win32_handle) {

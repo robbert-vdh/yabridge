@@ -8,9 +8,8 @@ compatibility while also being easy to debug and maintain.
 
 There are a few things that should be done before releasing this, including:
 
-- Fix implementation bugs:
-  - Polish GUIs even further. There are some todos left in
-    `src/wine-host/editor.{h,cpp}`.
+- Do some final refactoring/clean up. There are a few small todos left for
+  things that could be a made little bit prettier.
 - Add missing details if any to the architecture section.
 - Rewrite parts of this readme.
 - Briefly verify that this also works fine in Reaper and Ardour.
