@@ -255,8 +255,8 @@ bool Logger::should_filter_event(bool is_dispatch, int opcode) {
 
     // Filter out log messages related to these events by default since they are
     // called tens of times per second
-    // TODO: Figure out what opcode 52 is and filter that out as well
-    if ((is_dispatch && opcode == effEditIdle) ||
+    // TODO: Figure out what opcode 52 is
+    if ((is_dispatch && (opcode == effEditIdle || opcode == 52)) ||
         (!is_dispatch && opcode == audioMasterGetTime)) {
         return true;
     }

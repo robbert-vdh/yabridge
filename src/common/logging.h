@@ -46,8 +46,9 @@ class Logger {
         /**
          * Also print information about callbacks and functions being called by
          * the plugin and the host. This excludes the `effEditIdle()` and
-         * `audioMasterGetTime()` events since those events are typically sent
-         * tens of times per second. Every message is prefixed with a timestamp.
+         * `audioMasterGetTime()` events and the event with opcode 52 since
+         * those events are typically sent tens of times per second. Every
+         * message is prefixed with a timestamp.
          */
         most_events = 1,
         /**

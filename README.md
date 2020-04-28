@@ -149,12 +149,12 @@ variables:
     from the Wine process and some basic information such as the plugin being
     loaded and the wineprefix being used.
   - A value of `1` will log information about most events and function calls
-    being sent between the VST host and the plugin. This filters out the
-    `effEditIdle()` and `audioMasterGetTime()` calls since those are sent tens
+    being sent between the VST host and the plugin. This filters out some events
+    such as `effEditIdle()` and `audioMasterGetTime()` since those are sent tens
     of times per second by for every plugin.
-  - A value of `2` will cause all of the events to be logged, including
-    `effEditIdle()` and `audioMasterGettime()`. This can be very verbose but it
-    can be crucial for debugging plugin-specific problems.
+  - A value of `2` will cause all of the events to be logged, including the
+    events mentioned above. This can be very verbose but it can be crucial for
+    debugging plugin-specific problems.
 
   More detailed information about these levels can be found in
   `src/common/logging.h`.
