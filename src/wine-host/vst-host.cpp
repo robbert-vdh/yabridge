@@ -17,6 +17,7 @@
 #include <iostream>
 
 // Generated inside of build directory
+#include <src/common/config/config.h>
 #include <src/common/config/version.h>
 
 #include "plugin-bridge.h"
@@ -26,9 +27,14 @@ int main(int argc, char* argv[]) {
     // socket to connect to in plugin/bridge.cpp as the first two arguments of
     // this process.
     if (argc < 3) {
-        std::cerr
-            << "Usage: yabridge-host.exe <vst_plugin_dll> <unix_domain_socket>"
-            << std::endl;
+        std::cerr << "Usage: "
+#ifdef USE_BITBRIDGE
+                  << yabridge_wine_host_name_32bit
+#else
+                  << yabridge_wine_host_name
+#endif
+                  << " <vst_plugin_dll> <unix_domain_socket>" << std::endl;
+
         return 1;
     }
 
@@ -36,6 +42,9 @@ int main(int argc, char* argv[]) {
     const std::string socket_endpoint_path(argv[2]);
 
     std::cerr << "Initializing yabridge host version " << yabridge_git_version
+#ifdef USE_BITBRIDGE
+              << " (32-bit compatibility mode)"
+#endif
               << std::endl;
     try {
         PluginBridge bridge(plugin_dll_path, socket_endpoint_path);
