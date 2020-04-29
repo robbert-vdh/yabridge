@@ -36,7 +36,9 @@ endif
 # and the name of the host binary
 subdir('src/common/config')
 
-boost_dep = dependency('boost', modules : ['filesystem'])
+# Statically link against Boost.Filesystem, otherwise it becomes impossible to
+# distribute a prebuilt version of yabridge
+boost_dep = dependency('boost', modules : ['filesystem'], static : true)
 bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
 threads_dep = dependency('threads')
 # The built in threads dependency does not know how to handle winegcc
@@ -88,9 +90,18 @@ executable(
 )
 
 if get_option('use-bitbridge')
+  message('Bitbridge enabled, configuring a 32-bit host application')
+
+  # Only used to add a notice when the host starts to indicate that we're
+  # running in 32-bit compatibility mode
   compiler_options += '-DUSE_BITBRIDGE'
 
-  # TODO: Use 32 bit libraries
+  # I honestly have no idea what the correct way to have `find_dependency()` use
+  # `/usr/lib32` instead of `/usr/lib` is. If anyone does know, please tell me!
+  winegcc = meson.get_compiler('cpp', native : false)
+  boost_dep = [winegcc.find_library('boost_filesystem')]
+  xcb_dep = [winegcc.find_library('xcb')]
+
   executable(
     host_name_32bit,
     host_sources,
