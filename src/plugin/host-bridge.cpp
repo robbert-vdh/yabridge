@@ -30,6 +30,7 @@
 #endif
 
 // Generated inside of build directory
+#include <src/common/config/config.h>
 #include <src/common/config/version.h>
 
 #include "../common/communication.h"
@@ -39,11 +40,6 @@ namespace bp = boost::process;
 // I'd rather use std::filesystem instead, but Boost.Process depends on
 // boost::filesystem
 namespace fs = boost::filesystem;
-
-/**
- * The name of the wine VST host binary.
- */
-constexpr auto yabridge_wine_host_name = "yabridge-host.exe";
 
 /**
  * Used for generating random identifiers.
@@ -500,6 +496,8 @@ fs::path find_wine_vst_host() {
         return host_path;
     }
 
+    // TODO: First, check whether the plugin is 32-bit or 64-bit, and then
+    //       search for the correct binary accordingly
     // Bosot will return an empty path if the file could not be found in the
     // search path
     const fs::path vst_host_path = bp::search_path(yabridge_wine_host_name);
