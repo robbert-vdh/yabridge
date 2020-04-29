@@ -57,6 +57,23 @@ constexpr size_t max_midi_events = max_buffer_size / sizeof(size_t);
  */
 constexpr size_t binary_buffer_size = 50 << 20;
 
+// The plugin should always be compiled to a 64-bit version, but the host
+// application can also be 32-bit to allow using 32-bit legacy Windows VST in a
+// modern Linux VST host. Because of this we have to make sure to always use
+// 64-bit integers in places where we would otherwise use `size_t` and
+// `intptr_t`. Otherwise the binary serialization would break. The 64 <-> 32 bit
+// conversion for the 32-bit host application won't cause any issues for us
+// since we can't directly pass pointers between the plugin and the host anyway.
+
+#ifndef __WINE__
+// Sanity check for the plugin, both the 64 and 32 bit hosts should follow these
+// conventions
+static_assert(std::is_same_v<size_t, uint64_t>);
+static_assert(std::is_same_v<intptr_t, int64_t>);
+#endif
+using native_size_t = uint64_t;
+using native_intptr_t = int64_t;
+
 // The cannonical overloading template for `std::visitor`, not sure why this
 // isn't part of the standard library
 template <class... Ts>
@@ -248,7 +265,7 @@ struct WantsString {};
 using EventPayload = std::variant<std::nullptr_t,
                                   std::string,
                                   std::vector<uint8_t>,
-                                  size_t,
+                                  native_size_t,
                                   AEffect,
                                   DynamicVstEvents,
                                   WantsChunkBuffer,
@@ -270,7 +287,9 @@ void serialize(S& s, EventPayload& payload) {
               [](S& s, std::vector<uint8_t>& buffer) {
                   s.container1b(buffer, binary_buffer_size);
               },
-              [](S& s, size_t& window_handle) { s.value8b(window_handle); },
+              [](S& s, native_size_t& window_handle) {
+                  s.value8b(window_handle);
+              },
               [](S& s, AEffect& effect) { s.object(effect); },
               [](S& s, DynamicVstEvents& events) {
                   s.container(
@@ -292,10 +311,7 @@ void serialize(S& s, EventPayload& payload) {
 struct Event {
     int opcode;
     int index;
-    // TODO: This is an intptr_t, if we want to support 32 bit Wine plugins all
-    //       of these these intptr_t types should be replace by `uint64_t` to
-    //       remain compatible with the Linux VST plugin.
-    intptr_t value;
+    native_intptr_t value;
     float option;
     /**
      * The event dispatch function has a void pointer parameter that's often
@@ -371,7 +387,7 @@ struct EventResult {
     /**
      * The result that should be returned from the dispatch function.
      */
-    intptr_t return_value;
+    native_intptr_t return_value;
     /**
      * Events typically either just return their return value or write a string
      * into the void pointer, but sometimes an event response should forward

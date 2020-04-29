@@ -209,13 +209,16 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                  [&](const std::vector<uint8_t>& buffer) -> void* {
                      return const_cast<uint8_t*>(buffer.data());
                  },
-                 [&](size_t& window_handle) -> void* {
+                 [&](native_size_t& window_handle) -> void* {
                      // This is the X11 window handle that the editor should
                      // reparent itself to. We have a special wrapper around the
                      // dispatch function that intercepts `effEditOpen` events
                      // and creates a Win32 window and then finally embeds the
                      // X11 window Wine created into this wnidow handle.
-                     return reinterpret_cast<void*>(window_handle);
+                     // Make sure to convert the window ID first to `size_t` in
+                     // case this is the 32-bit host.
+                     return reinterpret_cast<void*>(
+                         static_cast<size_t>(window_handle));
                  },
                  [&](const AEffect&) -> void* { return nullptr; },
                  [&](DynamicVstEvents& events) -> void* {
