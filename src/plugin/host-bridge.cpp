@@ -627,12 +627,15 @@ PluginArchitecture find_plugin_architecture(fs::path plugin_path) {
         case 0x0000:  // IMAGE_FILE_MACHINE_UNKNOWN
             return PluginArchitecture::vst_64;
             break;
-        default:
-            throw std::runtime_error(
-                "'" + plugin_path.string() +
-                "' does not have a supported architecture: " +
-                std::to_string(machine_type));
-            break;
+        default: {
+            std::ostringstream error_msg;
+            error_msg << "'" << plugin_path
+                      << "' is neither a x86 nor a x86_64 PE32 file. Actual "
+                         "architecture: 0x"
+                      << std::hex << machine_type;
+
+            throw std::runtime_error(error_msg.str());
+        } break;
     }
 }
 
