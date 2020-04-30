@@ -7,4 +7,4 @@ source_hash = 1a3219e0818db6fa95677deb29087ddccf99087c0777c9313719122062186ae7
 
 patch_url = file:../subprojects/bitsery-patch.tar.xz
 patch_filename = bitsery-patch.tar.xz
-patch_hash = d33edb5c4f9128831b0b70944c1b29239a97d6b8a2c36a43aada2b4a48eb9a51
+patch_hash = bdbd46d6be1c3ecf7b8b48f43ab0bd7837458e49ddeef81fee3ac0bdc89767ea
