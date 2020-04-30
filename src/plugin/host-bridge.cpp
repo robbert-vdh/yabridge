@@ -241,6 +241,21 @@ class DispatchDataConverter : DefaultDataConverter {
                 break;
             case effGetMidiKeyName:
                 return *static_cast<const VstMidiKeyName*>(data);
+            // Any VST host I've encountered has properly zeroed out these their
+            // string buffers, but we'll add a list of opcodes that should
+            // return a string just in case `DefaultDataConverter::read()` can't
+            // figure it out.
+            case effGetProgramName:
+            case effGetParamLabel:
+            case effGetParamDisplay:
+            case effGetParamName:
+            case effGetProgramNameIndexed:
+            case effGetEffectName:
+            case effGetVendorString:
+            case effGetProductString:
+            case effShellGetNextPlugin:
+                return WantsString{};
+                break;
             default:
                 return DefaultDataConverter::read(opcode, index, value, data);
                 break;

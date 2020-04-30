@@ -43,14 +43,10 @@ class DefaultDataConverter {
             return nullptr;
         }
 
-        // Assume buffers are zeroed out, this is probably not the case
-        // FIXME: Some plugins, such as Fabfilter plugins, don't zero out their
-        //        string buffers (such as when calling
-        //        `audioMasterGetVendorString` and
-        //        `audioMasterGetProductString`). We'll have to either manually
-        //        specify which opcodes are expected to be strings or always
-        //        write back changed strings. I think the first choice is
-        //        cleaner.
+        // This is a simple fallback that will work in almost every case.
+        // Because some plugins don't zero out their string buffers when sending
+        // host callbacks, we will explicitely list all callbacks that expect a
+        // string in `DispatchDataConverter` adn `HostCallbackDataConverter`.
         const char* c_string = static_cast<const char*>(data);
         if (c_string[0] != 0) {
             return std::string(c_string);
