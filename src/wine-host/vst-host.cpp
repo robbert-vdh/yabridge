@@ -28,10 +28,10 @@ int main(int argc, char* argv[]) {
     // this process.
     if (argc < 3) {
         std::cerr << "Usage: "
-#ifdef _WIN64
-                  << yabridge_wine_host_name
-#else
+#ifdef __i386__
                   << yabridge_wine_host_name_32bit
+#else
+                  << yabridge_wine_host_name
 #endif
                   << " <vst_plugin_dll> <unix_domain_socket>" << std::endl;
 
@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
     const std::string socket_endpoint_path(argv[2]);
 
     std::cerr << "Initializing yabridge host version " << yabridge_git_version
-#ifndef _WIN64
+#ifdef __i386__
               << " (32-bit compatibility mode)"
 #endif
               << std::endl;
