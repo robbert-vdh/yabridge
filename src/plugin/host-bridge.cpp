@@ -596,14 +596,14 @@ PluginArchitecture find_plugin_architecture(fs::path plugin_path) {
     std::ifstream file(plugin_path, std::ifstream::binary | std::ifstream::in);
 
     // The linker will place the offset where the PE signature is placed at the
-    // end of the MS-DOS stub, at this offset
+    // end of the MS-DOS stub, at offset 0x3c
     uint32_t pe_signature_offset;
     file.seekg(0x3c);
     file.read(reinterpret_cast<char*>(&pe_signature_offset),
               sizeof(pe_signature_offset));
 
-    // The PE32 signature will be followed by a magic number.
-    // file >> pe_signature_offset;
+    // The PE32 signature will be followed by a magic number that indicates the
+    // target architecture of the binary
     uint32_t pe_signature;
     uint16_t machine_type;
     file.seekg(pe_signature_offset);
