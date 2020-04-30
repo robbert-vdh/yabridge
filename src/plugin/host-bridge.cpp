@@ -118,6 +118,8 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
                bp::start_dir = vst_plugin_path.parent_path())
 #endif
 {
+    // TODO: Add a notice here for whether yabridge has been compiled with
+    //       bitbridge support or not
     logger.log("Initializing yabridge version " +
                std::string(yabridge_git_version));
     logger.log("host:       '" + vst_host_path.string() + "'");

@@ -1,8 +1,9 @@
 # yabridge
 
-Yet Another way to use Windows VST2 plugins in Linux VST hosts. This project
-aims to be as transparent as possible to achieve the best possible plugin
-compatibility while also being easy to debug and maintain.
+Yet Another way to use Windows VST2 plugins in Linux VST hosts, including an
+optional bitbridge to run 32-bit Windows plugins in 64-bit Linux hosts. This
+project aims to be as transparent as possible to achieve the best possible
+plugin compatibility while also being easy to debug and maintain.
 
 ## TODOs
 
@@ -13,7 +14,8 @@ There are a few things that should be done before releasing this, including:
 - Add missing details if any to the architecture section.
 - Rewrite parts of this readme.
 - Briefly verify that this also works fine in Reaper and Ardour.
-- Document wine32 support.
+- Finish 32-bit bitbridge.
+  - Upstream the updated `lib32-boost-libs` PKGBUILD.
 
 ## Tested with
 
@@ -114,19 +116,39 @@ the following dependencies:
 - Boost
 - xcb
 
-The following dependencies are included as a Meson wrap:
+The following dependencies are included in the repository as a Meson wrap:
 
 - bitsery
 
 The project can then be compiled as follows:
 
 ```shell
-meson setup --buildtype=release --cross-file cross-wine64.conf build
+meson setup --buildtype=release --cross-file cross-wine.conf build
 ninja -C build
 ```
 
-When developing or debugging yabridge you can change the build type to either
-`debug` enable debug symbols and disable optimizations.
+### 32-bit bitbridge
+
+It's also possible to compile a 32-bit host application for yabridge that's
+compatible with 32 bit plugins such as old SynthEdit plugins. This will allow
+yabridge to act as a bitbirdge, allowing you to run old 32-bit only Windows VST2
+plugins in a modern 64-bit Linux VST host. For this you'll need to have
+installed the 32 bit versions of the Boost and XCB libraries. This can be
+enabled as follows:
+
+```shell
+# On an existing build
+meson configure build -Duse-bitbridge=true
+# Configure a new build from scratch
+meson setup --buildtype=release --cross-file cross-wine.conf -Duse-bitbridge=true build
+
+ninja -C build
+```
+
+This will produce two files called `yabridge-host-32.exe` and
+`yabridge-host-32.exe.so`. Yabridge will detect whether the plugin you're trying
+to load is 32-bit or 64-bit, and will run either `yabridge-host.exe` or
+`yabridge-host-32.exe` accordingly.
 
 ## Debugging
 
