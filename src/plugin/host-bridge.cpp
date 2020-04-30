@@ -120,34 +120,25 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
 {
     logger.log("Initializing yabridge version " +
                std::string(yabridge_git_version));
+    logger.log("host:       '" + vst_host_path.string() + "'");
+    logger.log("plugin:     '" + vst_plugin_path.string() + "'");
+    logger.log("socket:     '" + socket_endpoint.path() + "'");
+    logger.log("wineprefix: '" +
+               find_wineprefix().value_or("<default>").string() + "'");
 
     // Include a list of enabled compile-tiem features, mostly to make debug
     // logs more useful
-    std::string features_str = "<none>";
-    std::vector<std::string> enabled_features;
+    logger.log("");
+    logger.log("Enabled features:");
 #ifdef USE_BITBRIDGE
-    enabled_features.push_back("bitbrige");
+    logger.log("- bitbridge support");
 #endif
 #ifdef USE_WINEDBG
-    enabled_features.push_back("winedbg");
+    logger.log("- winedbg");
 #endif
-    if (!enabled_features.empty()) {
-        std::ostringstream features;
-        features << enabled_features[0];
-        for (auto feature = std::next(enabled_features.begin());
-             feature != enabled_features.end(); feature++) {
-            features << ", " << *feature;
-        }
-
-        features_str = features.str();
-    }
-    logger.log("enabled features: " + features_str);
-    logger.log("");
-    logger.log("host:             '" + vst_host_path.string() + "'");
-    logger.log("plugin:           '" + vst_plugin_path.string() + "'");
-    logger.log("socket:           '" + socket_endpoint.path() + "'");
-    logger.log("wineprefix:       '" +
-               find_wineprefix().value_or("<default>").string() + "'");
+#if !(defined(USE_BITBRIDGE) || defined(USE_WINEDBG))
+    logger.log("  <none>");
+#endif
     logger.log("");
 
     // It's very important that these sockets are connected to in the same
