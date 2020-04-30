@@ -31,6 +31,9 @@ compiler_options = []
 if get_option('use-winedbg')
   compiler_options += '-DUSE_WINEDBG'
 endif
+if get_option('use-bitbridge')
+  compiler_options += '-DUSE_BITBRIDGE'
+endif
 
 # Generate header files for configuration variables such as the current git tag
 # and the name of the host binary
@@ -91,10 +94,6 @@ executable(
 
 if get_option('use-bitbridge')
   message('Bitbridge enabled, configuring a 32-bit host application')
-
-  # Only used to add a notice when the host starts to indicate that we're
-  # running in 32-bit compatibility mode
-  compiler_options += '-DUSE_BITBRIDGE'
 
   # I honestly have no idea what the correct way to have `find_dependency()` use
   # `/usr/lib32` instead of `/usr/lib` is. If anyone does know, please tell me!

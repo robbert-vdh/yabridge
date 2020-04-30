@@ -28,10 +28,10 @@ int main(int argc, char* argv[]) {
     // this process.
     if (argc < 3) {
         std::cerr << "Usage: "
-#ifdef USE_BITBRIDGE
-                  << yabridge_wine_host_name_32bit
-#else
+#ifdef _WIN64
                   << yabridge_wine_host_name
+#else
+                  << yabridge_wine_host_name_32bit
 #endif
                   << " <vst_plugin_dll> <unix_domain_socket>" << std::endl;
 
@@ -41,10 +41,8 @@ int main(int argc, char* argv[]) {
     const std::string plugin_dll_path(argv[1]);
     const std::string socket_endpoint_path(argv[2]);
 
-    // TODO: Maybe just check one of macros defined by Wine when compiling for
-    //       32-bit instead
     std::cerr << "Initializing yabridge host version " << yabridge_git_version
-#ifdef USE_BITBRIDGE
+#ifndef _WIN64
               << " (32-bit compatibility mode)"
 #endif
               << std::endl;
