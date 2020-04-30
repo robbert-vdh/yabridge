@@ -46,6 +46,12 @@ class patched_async_pipe : public boost::process::async_pipe {
 };
 
 /**
+ * A tag to differentiate between 32 and 64-bit plugins, used to determine which
+ * host application to use.
+ */
+enum class PluginArchitecture { vst_32, vst_64 };
+
+/**
  * This handles the communication between the Linux native VST plugin and the
  * Wine VST host. The functions below should be used as callback functions in an
  * `AEffect` object.
@@ -91,13 +97,19 @@ class HostBridge {
     void set_parameter(AEffect* plugin, int index, float value);
 
     /**
-     * The path to `yabridge-host.exe`.
-     */
-    const boost::filesystem::path vst_host_path;
-    /**
      * The path to the .dll being loaded in the Wine VST host.
      */
     const boost::filesystem::path vst_plugin_path;
+    /**
+     * Whether the plugin is 64-bit or 32-bit.
+     */
+    const PluginArchitecture vst_plugin_arch;
+    /**
+     * The path to the host application (i.e. a path to either
+     * `yabridge-host.exe` or `yabridge-host-32.exe`). The host application will
+     * be chosen depending on the architecture of the VST plugin .dll file.
+     */
+    const boost::filesystem::path vst_host_path;
 
     /**
      * This AEffect struct will be populated using the data passed by the Wine
