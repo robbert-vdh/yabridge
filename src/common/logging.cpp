@@ -176,7 +176,9 @@ void Logger::log_event(bool is_dispatch,
                 [&](const std::vector<uint8_t>& buffer) {
                     message << "<" << buffer.size() << " byte chunk>";
                 },
-                [&](const intptr_t&) { message << "<nullptr>"; },
+                [&](const native_size_t& window_id) {
+                    message << "<window " << window_id << ">";
+                },
                 [&](const AEffect&) { message << "<nullptr>"; },
                 [&](const DynamicVstEvents& events) {
                     message << "<" << events.events.size() << " midi_events>";

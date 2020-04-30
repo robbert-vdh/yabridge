@@ -30,6 +30,7 @@
 #endif
 
 // Generated inside of build directory
+#include <src/common/config/config.h>
 #include <src/common/config/version.h>
 
 #include "../common/communication.h"
@@ -41,11 +42,6 @@ namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
 /**
- * The name of the wine VST host binary.
- */
-constexpr auto yabridge_wine_host_name = "yabridge-host.exe";
-
-/**
  * Used for generating random identifiers.
  */
 constexpr char alphanumeric_characters[] =
@@ -53,7 +49,8 @@ constexpr char alphanumeric_characters[] =
 
 std::string create_logger_prefix(const fs::path& socket_path);
 fs::path find_vst_plugin();
-fs::path find_wine_vst_host();
+PluginArchitecture find_plugin_architecture(fs::path);
+fs::path find_wine_vst_host(PluginArchitecture plugin_arch);
 std::optional<fs::path> find_wineprefix();
 fs::path generate_endpoint_name();
 bp::environment set_wineprefix();
@@ -74,8 +71,9 @@ HostBridge& get_bridge_instance(const AEffect& plugin) {
 }
 
 HostBridge::HostBridge(audioMasterCallback host_callback)
-    : vst_host_path(find_wine_vst_host()),
-      vst_plugin_path(find_vst_plugin()),
+    : vst_plugin_path(find_vst_plugin()),
+      vst_plugin_arch(find_plugin_architecture(vst_plugin_path)),
+      vst_host_path(find_wine_vst_host(vst_plugin_arch)),
       // All the fields should be zero initialized because
       // `Vst2PluginInstance::vstAudioMasterCallback` from Bitwig's plugin
       // bridge will crash otherwise
@@ -129,6 +127,21 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     logger.log("socket:     '" + socket_endpoint.path() + "'");
     logger.log("wineprefix: '" +
                find_wineprefix().value_or("<default>").string() + "'");
+
+    // Include a list of enabled compile-tiem features, mostly to make debug
+    // logs more useful
+    logger.log("");
+    logger.log("Enabled features:");
+#ifdef USE_BITBRIDGE
+    logger.log("- bitbridge support");
+#endif
+#ifdef USE_WINEDBG
+    logger.log("- winedbg");
+#endif
+#if !(defined(USE_BITBRIDGE) || defined(USE_WINEDBG))
+    logger.log("  <none>");
+#endif
+    logger.log("");
 
     // It's very important that these sockets are connected to in the same
     // order in the Wine VST host
@@ -480,8 +493,8 @@ std::string create_logger_prefix(const fs::path& socket_path) {
 }
 
 /**
- * Finds the Wine VST hsot (named `yabridge-host.exe`). For this we will search
- * in two places:
+ * Finds the Wine VST hsot (either `yabridge-host.exe` or `yabridge-host.exe`
+ * depending on the plugin). For this we will search in two places:
  *
  *   1. Alongside libyabridge.so if the file got symlinked. This is useful
  *      when developing, as you can simply symlink the the libyabridge.so
@@ -489,23 +502,31 @@ std::string create_logger_prefix(const fs::path& socket_path) {
  *      /usr.
  *   2. In the regular search path.
  *
+ * @param plugin_arch The architecture of the plugin, either 64-bit or 32-bit.
+ *   Used to determine which host application to use, if available.
+ *
  * @return The a path to the VST host, if found.
  * @throw std::runtime_error If the Wine VST host could not be found.
  */
-fs::path find_wine_vst_host() {
+fs::path find_wine_vst_host(PluginArchitecture plugin_arch) {
+    auto host_name = yabridge_wine_host_name;
+    if (plugin_arch == PluginArchitecture::vst_32) {
+        host_name = yabridge_wine_host_name_32bit;
+    }
+
     fs::path host_path =
         fs::canonical(boost::dll::this_line_location()).remove_filename() /
-        yabridge_wine_host_name;
+        host_name;
     if (fs::exists(host_path)) {
         return host_path;
     }
 
     // Bosot will return an empty path if the file could not be found in the
     // search path
-    const fs::path vst_host_path = bp::search_path(yabridge_wine_host_name);
+    const fs::path vst_host_path = bp::search_path(host_name);
     if (vst_host_path == "") {
-        throw std::runtime_error("Could not locate '" +
-                                 std::string(yabridge_wine_host_name) + "'");
+        throw std::runtime_error("Could not locate '" + std::string(host_name) +
+                                 "'");
     }
 
     return vst_host_path;
@@ -555,8 +576,64 @@ fs::path find_vst_plugin() {
             "VST plugin .dll file.");
     }
 
-    // Also resolve symlinks here, mostly for development purposes
+    // Also resolve symlinks here
     return fs::canonical(plugin_path);
+}
+
+/**
+ * Determine the architecture of a VST plugin (or rather, a .dll file) based on
+ * it's header values.
+ *
+ * See https://docs.microsoft.com/en-us/windows/win32/debug/pe-format for more
+ * information on the PE32 format.
+ *
+ * @param plugin_path The path to the .dll file we're going to check.
+ *
+ * @return The detected architecture.
+ * @throw std::runtime_error If the file is not a .dll file.
+ */
+PluginArchitecture find_plugin_architecture(fs::path plugin_path) {
+    std::ifstream file(plugin_path, std::ifstream::binary | std::ifstream::in);
+
+    // The linker will place the offset where the PE signature is placed at the
+    // end of the MS-DOS stub, at this offset
+    uint32_t pe_signature_offset;
+    file.seekg(0x3c);
+    file.read(reinterpret_cast<char*>(&pe_signature_offset),
+              sizeof(pe_signature_offset));
+
+    // The PE32 signature will be followed by a magic number.
+    // file >> pe_signature_offset;
+    uint32_t pe_signature;
+    uint16_t machine_type;
+    file.seekg(pe_signature_offset);
+    file.read(reinterpret_cast<char*>(&pe_signature), sizeof(pe_signature));
+    file.read(reinterpret_cast<char*>(&machine_type), sizeof(machine_type));
+
+    constexpr char expected_pe_signature[4] = {'P', 'E', '\0', '\0'};
+    if (pe_signature !=
+        *reinterpret_cast<const uint32_t*>(expected_pe_signature)) {
+        throw std::runtime_error("'" + plugin_path.string() +
+                                 "' is not a valid .dll file");
+    }
+
+    // These constants are specified in
+    // https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#machine-types
+    switch (machine_type) {
+        case 0x014c:  // IMAGE_FILE_MACHINE_I386
+            return PluginArchitecture::vst_32;
+            break;
+        case 0x8664:  // IMAGE_FILE_MACHINE_AMD64
+        case 0x0000:  // IMAGE_FILE_MACHINE_UNKNOWN
+            return PluginArchitecture::vst_64;
+            break;
+        default:
+            throw std::runtime_error(
+                "'" + plugin_path.string() +
+                "' does not have a supported architecture: " +
+                std::to_string(machine_type));
+            break;
+    }
 }
 
 /**

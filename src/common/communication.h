@@ -33,7 +33,8 @@ template <typename B>
 using InputAdapter = bitsery::InputBufferAdapter<B>;
 
 /**
- * Serialize an object using bitsery and write it to a socket.
+ * Serialize an object using bitsery and write it to a socket. This will write
+ * both the size of the serialized object and the object itself over the socket.
  *
  * @param socket The Boost.Asio socket to write to.
  * @param object The object to write to the stream.
@@ -53,8 +54,13 @@ inline void write_object(
 
     // Tell the other side how large the object is so it can prepare a buffer
     // large enough before sending the data
+    // NOTE: We're writing these sizes as a 64 bit integers, **not** as pointer
+    //       sized integers. This is to provide compatibility with the 32-bit
+    //       bit bridge. This won't make any function difference aside from the
+    //       32-bit host application having to convert between 64 and 32 bit
+    //       integers.
     boost::asio::write(socket,
-                       boost::asio::buffer(std::array<size_t, 1>{size}));
+                       boost::asio::buffer(std::array<uint64_t, 1>{size}));
     const size_t bytes_written =
         boost::asio::write(socket, boost::asio::buffer(buffer, size));
     assert(bytes_written == size);
@@ -79,7 +85,8 @@ template <typename T, typename Socket>
 inline T& read_object(Socket& socket,
                       T& object,
                       std::vector<uint8_t> buffer = std::vector<uint8_t>(64)) {
-    std::array<size_t, 1> message_length;
+    // See the note above on the use of `uint64_t` instead of `size_t`
+    std::array<uint64_t, 1> message_length;
     boost::asio::read(socket, boost::asio::buffer(message_length));
 
     // Make sure the buffer is large enough
