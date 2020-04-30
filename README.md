@@ -1,9 +1,10 @@
 # yabridge
 
-Yet Another way to use Windows VST2 plugins in Linux VST hosts, including an
-optional bitbridge to run 32-bit Windows plugins in 64-bit Linux hosts. This
-project aims to be as transparent as possible to achieve the best possible
-plugin compatibility while also being easy to debug and maintain.
+Yet Another way to use Windows VST plugins in Linux VST hosts. Yabridge
+seamlessly supports running both 64-bit Windows VST2 plugins as well as 32-bit
+Windows VST2 plugins in a 64-bit Linux VST host. This project aims to be as
+transparent as possible to achieve the best possible plugin compatibility while
+also staying easy to debug and maintain.
 
 ## TODOs
 
@@ -14,8 +15,8 @@ There are a few things that should be done before releasing this, including:
 - Add missing details if any to the architecture section.
 - Rewrite parts of this readme.
 - Briefly verify that this also works fine in Reaper and Ardour.
-- Finish 32-bit bitbridge.
-  - Upstream the updated `lib32-boost-libs` PKGBUILD.
+- Upstream the updated `lib32-boost-libs` PKGBUILD needed for building the
+  bitbridge.
 
 ## Tested with
 
@@ -36,15 +37,16 @@ There are two ways to use yabridge.
 ### Symlinking (recommended)
 
 The recommended way to use yabridge is through symbolic links. This allows you
-to update yabridge for all of your plugins in one go, and it also avoids having
+to update yabridge for all of your plugins in one go, as well as avoiding having
 to install it globally.
 
 You can either use the precompiled binaries from the GitHub releases section, or
 you could build yabridge directly from source. If you use the precompiled
-binaries, then simply extract them to `~/.local/share/yabridge` or any other
-place in your home directory. If you choose to build from source, then you can
-directly use the binaries from the `build/` directory. For the section below I'm
-going to assume you've placed the files in `~/.local/share/yabridge`.
+binaries, then you can simply extract them to `~/.local/share/yabridge` or to
+any other location in your home directory. If you choose to build from source,
+then you can use the compiled binaries directly from the `build/` directory. For
+the section below I'm going to assume you've placed the files in
+`~/.local/share/yabridge`.
 
 To set up yabridge for a VST plugin called
 `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`, simply create a
@@ -55,10 +57,10 @@ symlink from `~/.local/share/yabridge/libyabridge.so` to
 ln -s ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
 ```
 
-For instance, if you wanted to set up yabridge for any of the VST plugins under
-`~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, you could run this
-oneliner in Bash. This will also skip any `.dll` files that are not actually VST
-plugins.
+As an example, if you wanted to set up yabridge for any of the VST plugins under
+`~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, you could run the
+following script in Bash. This will also skip any `.dll` files that are not
+actually VST plugins.
 
 ```shell
 find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.dll' -print0 |
@@ -69,19 +71,20 @@ find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.
 
 ### Copying
 
-It's also possible to use yabridge by making copies of `libyabridge.so` instead
-of creating symlinks. This is not recommended as it makes updating a hassle. If
-you choose to do this, then you'll have to make sure `yabridge-host.exe` and
+It is also possible to use yabridge by creating copies of `libyabridge.so`
+instead of making symlinks. This is not recommended as it makes updating a
+hassle, but it may be required if your host has issues using symlinks. If you
+choose to do this, then you'll have to make sure `yabridge-host.exe` and
 `yabridge-host.exe.so` are somewhere in your search path as otherwise yabridge
-won't know where to find them. Either copy them to `/usr/local/bin` (not
+won't be able to find them. Either copy them to `/usr/local/bin` (not
 recommended) or to `~/.local/bin` and make sure that the directory is in your
 `PATH` environment variable.
 
 ## Runtime dependencies and known issues
 
 Any VST2 plugin should function out of the box, although some plugins will need
-some additional dependencies for their editor GUIs to work correctly. Notable
-examples include:
+some additional dependencies for their GUIs to work correctly. Notable examples
+include:
 
 - **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
   `gdiplus` through `winetricks`.
@@ -152,9 +155,9 @@ to load is 32-bit or 64-bit, and will run either `yabridge-host.exe` or
 
 ## Debugging
 
-Wine's error messages and warning are typically very helpful whenever a plugin
-doesn't work right away. Sadly this information is not always available. For
-instance Bitwig hides a plugin's STDOUT and STDERR streams from you. To make it
+Wine's error messages and warning are generally very helpful whenever a plugin
+doesn't work right away. Sadly this information is not always available. Bitwig,
+for instance, hides a plugin's STDOUT and STDERR streams from you. To make it
 easier to debug malfunctioning plugins, yabridge offers two environment
 variables:
 
@@ -167,13 +170,13 @@ variables:
 - `YABRIDGE_DEBUG_LEVEL={0,1}` allows you to set the verbosity of the debug
   information. Every level increases the verbosity of the debug information:
 
-  - A value of `0` (the default) means that yabridge will only output messages
+  - A value of `0` (the default) means that yabridge will only write messages
     from the Wine process and some basic information such as the plugin being
     loaded and the wineprefix being used.
   - A value of `1` will log information about most events and function calls
-    being sent between the VST host and the plugin. This filters out some events
-    such as `effEditIdle()` and `audioMasterGetTime()` since those are sent tens
-    of times per second by for every plugin.
+    sent between the VST host and the plugin. This filters out some events such
+    as `effEditIdle()` and `audioMasterGetTime()` since those are sent tens of
+    times per second by for every plugin.
   - A value of `2` will cause all of the events to be logged, including the
     events mentioned above. This can be very verbose but it can be crucial for
     debugging plugin-specific problems.
@@ -181,10 +184,10 @@ variables:
   More detailed information about these levels can be found in
   `src/common/logging.h`.
 
-Wine's own [logging facilities](https://wiki.winehq.org/Debug_Channels) enabled
-through the `WINEDEBUG` environment variable can also be very helpful when
-diagnosing problems. In particular the `message` and `relay` channels are very
-useful to trace the execution path within the loading VST plugin itself.
+Wine's own [logging facilities](https://wiki.winehq.org/Debug_Channels) can also
+be very helpful when diagnosing problems. In particular the `message` and
+`relay` channels are very useful to trace the execution path within the loading
+VST plugin itself.
 
 ### Attaching a debugger
 
@@ -198,21 +201,13 @@ env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log YABRIDGE_DEBUG_LEVEL=1 carla --gdb
 Doing the same thing for the Wine VST host can be a bit tricky. You'll need to
 launch winedbg in a seperate detached terminal emulator so it doesn't terminate
 together with the plugin, and winedbg can be a bit picky in the arguments it
-accepts. I've already set this up behind a feature flag for KDE Plasma. Other
-desktop environments and window managers will require some slight modifications
-in `src/plugin/host-bridge.cpp`. To enable this, simply run:
+accepts. I've already set this up behind a feature flag for use in KDE Plasma.
+Other desktop environments and window managers will require some slight
+modifications in `src/plugin/host-bridge.cpp`. To enable this, simply run:
 
 ```shell
 meson configure build --buildtype=debug -Duse-winedbg=true
 ```
-
-## Rationale
-
-I started this project because the alternatives were either unmaintained, not
-self-contained or very difficult to work with. With this implementation I'd like
-to prioritize maintainability and correctness, with performance being a
-secondary goal. Please let me know if you have any suggestions on how to improve
-this!
 
 ## Architecture
 
