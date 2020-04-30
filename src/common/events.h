@@ -193,43 +193,37 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
     // arbitrary C-style string.
     std::array<char, max_string_length> string_buffer;
     string_buffer[0] = 0;
-    // This buffer is only used for retrieving chunk data and will be allocated
-    // as needed
-    std::vector<uint8_t> binary_buffer;
 
     void* data = std::visit(
-        overload{[&](const std::nullptr_t&) -> void* { return nullptr; },
-                 [&](const std::string& s) -> void* {
-                     return const_cast<char*>(s.c_str());
-                 },
-                 [&](const std::vector<uint8_t>& buffer) -> void* {
-                     return const_cast<uint8_t*>(buffer.data());
-                 },
-                 [&](native_size_t& window_handle) -> void* {
-                     // This is the X11 window handle that the editor should
-                     // reparent itself to. We have a special wrapper around the
-                     // dispatch function that intercepts `effEditOpen` events
-                     // and creates a Win32 window and then finally embeds the
-                     // X11 window Wine created into this wnidow handle.
-                     // Make sure to convert the window ID first to `size_t` in
-                     // case this is the 32-bit host.
-                     return reinterpret_cast<void*>(
-                         static_cast<size_t>(window_handle));
-                 },
-                 [&](const AEffect&) -> void* { return nullptr; },
-                 [&](DynamicVstEvents& events) -> void* {
-                     return &events.as_c_events();
-                 },
-                 [&](WantsChunkBuffer&) -> void* {
-                     binary_buffer.resize(binary_buffer_size);
-                     return binary_buffer.data();
-                 },
-                 [&](VstIOProperties& props) -> void* { return &props; },
-                 [&](VstMidiKeyName& key_name) -> void* { return &key_name; },
-                 [&](VstParameterProperties& props) -> void* { return &props; },
-                 [&](WantsVstRect&) -> void* { return string_buffer.data(); },
-                 [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
-                 [&](WantsString&) -> void* { return string_buffer.data(); }},
+        overload{
+            [&](const std::nullptr_t&) -> void* { return nullptr; },
+            [&](const std::string& s) -> void* {
+                return const_cast<char*>(s.c_str());
+            },
+            [&](const std::vector<uint8_t>& buffer) -> void* {
+                return const_cast<uint8_t*>(buffer.data());
+            },
+            [&](native_size_t& window_handle) -> void* {
+                // This is the X11 window handle that the editor should reparent
+                // itself to. We have a special wrapper around the dispatch
+                // function that intercepts `effEditOpen` events and creates a
+                // Win32 window and then finally embeds the X11 window Wine
+                // created into this wnidow handle. Make sure to convert the
+                // window ID first to `size_t` in case this is the 32-bit host.
+                return reinterpret_cast<void*>(
+                    static_cast<size_t>(window_handle));
+            },
+            [&](const AEffect&) -> void* { return nullptr; },
+            [&](DynamicVstEvents& events) -> void* {
+                return &events.as_c_events();
+            },
+            [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
+            [&](VstIOProperties& props) -> void* { return &props; },
+            [&](VstMidiKeyName& key_name) -> void* { return &key_name; },
+            [&](VstParameterProperties& props) -> void* { return &props; },
+            [&](WantsVstRect&) -> void* { return string_buffer.data(); },
+            [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
+            [&](WantsString&) -> void* { return string_buffer.data(); }},
         event.payload);
 
     const intptr_t return_value = callback(plugin, event.opcode, event.index,

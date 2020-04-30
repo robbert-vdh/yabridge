@@ -279,7 +279,7 @@ class DispatchDataConverter : DefaultDataConverter {
                     std::get<std::vector<uint8_t>>(response.payload);
                 chunk.assign(buffer.begin(), buffer.end());
 
-                *static_cast<void**>(data) = chunk.data();
+                *static_cast<uint8_t**>(data) = chunk.data();
             } break;
             case effGetInputProperties:
             case effGetOutputProperties: {
