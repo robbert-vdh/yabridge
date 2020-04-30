@@ -118,15 +118,37 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
                bp::start_dir = vst_plugin_path.parent_path())
 #endif
 {
-    // TODO: Add a notice here for whether yabridge has been compiled with
-    //       bitbridge support or not
     logger.log("Initializing yabridge version " +
                std::string(yabridge_git_version));
-    logger.log("host:       '" + vst_host_path.string() + "'");
-    logger.log("plugin:     '" + vst_plugin_path.string() + "'");
-    logger.log("socket:     '" + socket_endpoint.path() + "'");
-    logger.log("wineprefix: '" +
+
+    // Include a list of enabled compile-tiem features, mostly to make debug
+    // logs more useful
+    std::string features_str = "<none>";
+    std::vector<std::string> enabled_features;
+#ifdef USE_BITBRIDGE
+    enabled_features.push_back("bitbrige");
+#endif
+#ifdef USE_WINEDBG
+    enabled_features.push_back("winedbg");
+#endif
+    if (!enabled_features.empty()) {
+        std::ostringstream features;
+        features << enabled_features[0];
+        for (auto feature = std::next(enabled_features.begin());
+             feature != enabled_features.end(); feature++) {
+            features << ", " << *feature;
+        }
+
+        features_str = features.str();
+    }
+    logger.log("enabled features: " + features_str);
+    logger.log("");
+    logger.log("host:             '" + vst_host_path.string() + "'");
+    logger.log("plugin:           '" + vst_plugin_path.string() + "'");
+    logger.log("socket:           '" + socket_endpoint.path() + "'");
+    logger.log("wineprefix:       '" +
                find_wineprefix().value_or("<default>").string() + "'");
+    logger.log("");
 
     // It's very important that these sockets are connected to in the same
     // order in the Wine VST host
