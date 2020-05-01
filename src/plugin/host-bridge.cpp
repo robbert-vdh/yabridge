@@ -172,9 +172,9 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     host_callback_handler = std::thread([&]() {
         try {
             while (true) {
-                passthrough_event(vst_host_callback,
-                                  std::pair<Logger&, bool>(logger, false),
-                                  &plugin, host_callback_function);
+                receive_event(
+                    vst_host_callback, std::pair<Logger&, bool>(logger, false),
+                    passthrough_event(&plugin, host_callback_function));
             }
         } catch (const boost::system::system_error&) {
             // This happens when the sockets got closed because the plugin

@@ -98,7 +98,7 @@ class DefaultDataConverter {
  * the parameters and return value of this function.
  *
  * @param socket The socket to write over, should be the same socket the other
- *   endpoint is using to call `passthrough_event()`.
+ *   endpoint is using to call `receive_event()`.
  * @param write_mutex A mutex to ensure that only one thread can write to
  *   the socket at once. Needed because VST hosts and plugins can and sometimes
  *   will call the `dispatch()` or `audioMaster()` functions from multiple
@@ -113,6 +113,7 @@ class DefaultDataConverter {
  *   for sending `dispatch()` events or host callbacks. Optional since it
  *   doesn't have to be done on both sides.
  *
+ * @relates receive_event
  * @relates passthrough_event
  */
 template <typename D>
@@ -160,27 +161,29 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
 }
 
 /**
- * Receive an event from a socket and pass it through to some callback function.
- * This is used for both the host -> plugin 'dispatch' events and the plugin ->
- * host 'audioMaster' host callbacks. This callback function is either one of
- * those functions.
+ * Receive an event from a socket, call a function to generate a response, and
+ * write the response back over the socket. This is usually used together with
+ * `passthrough_event()` which passes the event data through to an event
+ * dispatcher function. This behaviour is split into two functions to avoid
+ * redundant data conversions when handling MIDI data, as some plugins require
+ * the received data to be temporarily stored until the next event audio buffer
+ * gets processed.
  *
  * @param socket The socket to receive on and to send the response back to.
  * @param logging A pair containing a logger instance and whether or not this is
  *   for sending `dispatch()` events or host callbacks. Optional since it
  *   doesn't have to be done on both sides.
- * @param plugin The `AEffect` instance that should be passed to the callback
- *   function.
- * @param callback The function to call with the arguments received from the
- *   socket.
+ * @param callback The function used to generate a response out of an event.
+ *
+ * @tparam F A function type in the form of `EventResponse(Event)`.
  *
  * @relates send_event
+ * @relates passthrough_event
  */
 template <typename F>
-void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
-                       std::optional<std::pair<Logger&, bool>> logging,
-                       AEffect* plugin,
-                       F callback) {
+void receive_event(boost::asio::local::stream_protocol::socket& socket,
+                   std::optional<std::pair<Logger&, bool>> logging,
+                   F callback) {
     auto event = read_object<Event>(socket);
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
@@ -188,124 +191,161 @@ void passthrough_event(boost::asio::local::stream_protocol::socket& socket,
                          event.payload, event.option);
     }
 
-    // This buffer is used to write strings and small objects to. We'll
-    // initialize it with a single null to prevent it from being read as some
-    // arbitrary C-style string.
-    std::array<char, max_string_length> string_buffer;
-    string_buffer[0] = 0;
-
-    void* data = std::visit(
-        overload{
-            [&](const std::nullptr_t&) -> void* { return nullptr; },
-            [&](const std::string& s) -> void* {
-                return const_cast<char*>(s.c_str());
-            },
-            [&](const std::vector<uint8_t>& buffer) -> void* {
-                return const_cast<uint8_t*>(buffer.data());
-            },
-            [&](native_size_t& window_handle) -> void* {
-                // This is the X11 window handle that the editor should reparent
-                // itself to. We have a special wrapper around the dispatch
-                // function that intercepts `effEditOpen` events and creates a
-                // Win32 window and then finally embeds the X11 window Wine
-                // created into this wnidow handle. Make sure to convert the
-                // window ID first to `size_t` in case this is the 32-bit host.
-                return reinterpret_cast<void*>(
-                    static_cast<size_t>(window_handle));
-            },
-            [&](const AEffect&) -> void* { return nullptr; },
-            [&](DynamicVstEvents& events) -> void* {
-                return &events.as_c_events();
-            },
-            [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
-            [&](VstIOProperties& props) -> void* { return &props; },
-            [&](VstMidiKeyName& key_name) -> void* { return &key_name; },
-            [&](VstParameterProperties& props) -> void* { return &props; },
-            [&](WantsVstRect&) -> void* { return string_buffer.data(); },
-            [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
-            [&](WantsString&) -> void* { return string_buffer.data(); }},
-        event.payload);
-
-    const intptr_t return_value = callback(plugin, event.opcode, event.index,
-                                           event.value, data, event.option);
-
-    // Only write back data when needed, this depends on the event payload type
-    const auto response_data = std::visit(
-        overload{[&](auto) -> EventResposnePayload { return nullptr; },
-                 [&](const AEffect& updated_plugin) -> EventResposnePayload {
-                     // This is a bit of a special case! Instead of writing some
-                     // return value, we will update values on the native VST
-                     // plugin's `AEffect` object. This is triggered by the
-                     // `audioMasterIOChanged` callback from the hsoted VST
-                     // plugin.
-
-                     // These are the same fields written by bitsery in the
-                     // initialization of `HostBridge`. I can't think of a way t
-                     // oreuse the serializer without first having to serialize
-                     // `updated_plugin` first though.
-                     plugin->magic = updated_plugin.magic;
-                     plugin->numPrograms = updated_plugin.numPrograms;
-                     plugin->numParams = updated_plugin.numParams;
-                     plugin->numInputs = updated_plugin.numInputs;
-                     plugin->numOutputs = updated_plugin.numOutputs;
-                     plugin->flags = updated_plugin.flags;
-                     plugin->initialDelay = updated_plugin.initialDelay;
-                     plugin->empty3a = updated_plugin.empty3a;
-                     plugin->empty3b = updated_plugin.empty3b;
-                     plugin->unkown_float = updated_plugin.unkown_float;
-                     plugin->uniqueID = updated_plugin.uniqueID;
-                     plugin->version = updated_plugin.version;
-
-                     return nullptr;
-                 },
-                 [&](WantsChunkBuffer&) -> EventResposnePayload {
-                     // In this case the plugin will have written its data
-                     // stored in an array to which a pointer is stored in
-                     // `data`, with the return value from the event determines
-                     // how much data the plugin has written
-                     const uint8_t* chunk_data = *static_cast<uint8_t**>(data);
-                     return std::vector<uint8_t>(chunk_data,
-                                                 chunk_data + return_value);
-                 },
-                 [&](VstIOProperties& props) -> EventResposnePayload {
-                     return props;
-                 },
-                 [&](VstMidiKeyName& key_name) -> EventResposnePayload {
-                     return key_name;
-                 },
-                 [&](VstParameterProperties& props) -> EventResposnePayload {
-                     return props;
-                 },
-                 [&](WantsVstRect&) -> EventResposnePayload {
-                     // The plugin has written a pointer to a VstRect struct
-                     // into the data poitner
-                     return **static_cast<VstRect**>(data);
-                 },
-                 [&](WantsVstTimeInfo&) -> EventResposnePayload {
-                     // Not sure why the VST API has twenty different ways of
-                     // returning structs, but in this case the value returned
-                     // from the callback function is actually a pointer to a
-                     // `VstTimeInfo` struct! It can also be a null pointer if
-                     // the host doesn't support this.
-                     const auto time_info =
-                         reinterpret_cast<const VstTimeInfo*>(return_value);
-                     if (time_info == nullptr) {
-                         return nullptr;
-                     } else {
-                         return *time_info;
-                     }
-                 },
-                 [&](WantsString&) -> EventResposnePayload {
-                     return std::string(static_cast<char*>(data));
-                 }},
-        event.payload);
-
+    EventResult response = callback(event);
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
-        logger.log_event_response(is_dispatch, event.opcode, return_value,
-                                  response_data);
+        logger.log_event_response(is_dispatch, event.opcode,
+                                  response.return_value, response.payload);
     }
 
-    EventResult response{return_value, response_data};
     write_object(socket, response);
+}
+
+/**
+ * Create a callback function that takes an `Event` object, decodes the data
+ * into the expected format for VST2 function calls, calls the given function
+ * (either `AEffect::dispatcher()` for host -> plugin events or `audioMaster()`
+ * for plugin -> host events), and serializes the results back into an
+ * `EventResult` object. I'd rather not get too Haskell-y in my C++, but this is
+ * the cleanest solution for this problem.
+ *
+ * This is the receiving analogue of the `*DataCovnerter` objects.
+ *
+ * @param plugin The `AEffect` instance that should be passed to the callback
+ *   function.
+ * @param callback The function to call with the arguments received from the
+ *   socket.
+ *
+ * @tparam A function with the same signature as `AEffect::dispatcher` or
+ *   `audioMasterCallback`.
+ *
+ * @return A `EventResult(Event)` callback function that can be passed to
+ * `receive_event`.
+ *
+ * @relates receive_event
+ */
+template <typename F>
+auto passthrough_event(AEffect* plugin, F callback) {
+    return [=](Event& event) -> EventResult {
+        // This buffer is used to write strings and small objects to. We'll
+        // initialize it with a single null to prevent it from being read as
+        // some arbitrary C-style string.
+        std::array<char, max_string_length> string_buffer;
+        string_buffer[0] = 0;
+
+        void* data = std::visit(
+            overload{
+                [&](const std::nullptr_t&) -> void* { return nullptr; },
+                [&](const std::string& s) -> void* {
+                    return const_cast<char*>(s.c_str());
+                },
+                [&](const std::vector<uint8_t>& buffer) -> void* {
+                    return const_cast<uint8_t*>(buffer.data());
+                },
+                [&](native_size_t& window_handle) -> void* {
+                    // This is the X11 window handle that the editor should
+                    // reparent itself to. We have a special wrapper around the
+                    // dispatch function that intercepts `effEditOpen` events
+                    // and creates a Win32 window and then finally embeds the
+                    // X11 window Wine created into this wnidow handle. Make
+                    // sure to convert the window ID first to `size_t` in case
+                    // this is the 32-bit host.
+                    return reinterpret_cast<void*>(
+                        static_cast<size_t>(window_handle));
+                },
+                [&](const AEffect&) -> void* { return nullptr; },
+                [&](DynamicVstEvents& events) -> void* {
+                    return &events.as_c_events();
+                },
+                [&](WantsChunkBuffer&) -> void* {
+                    return string_buffer.data();
+                },
+                [&](VstIOProperties& props) -> void* { return &props; },
+                [&](VstMidiKeyName& key_name) -> void* { return &key_name; },
+                [&](VstParameterProperties& props) -> void* { return &props; },
+                [&](WantsVstRect&) -> void* { return string_buffer.data(); },
+                [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
+                [&](WantsString&) -> void* { return string_buffer.data(); }},
+            event.payload);
+
+        const intptr_t return_value = callback(
+            plugin, event.opcode, event.index, event.value, data, event.option);
+
+        // Only write back data when needed, this depends on the event payload
+        // type
+        const auto response_data = std::visit(
+            overload{
+                [&](auto) -> EventResposnePayload { return nullptr; },
+                [&](const AEffect& updated_plugin) -> EventResposnePayload {
+                    // This is a bit of a special case! Instead of writing some
+                    // return value, we will update values on the native VST
+                    // plugin's `AEffect` object. This is triggered by the
+                    // `audioMasterIOChanged` callback from the hsoted VST
+                    // plugin.
+
+                    // These are the same fields written by bitsery in the
+                    // initialization of `HostBridge`. I can't think of a way t
+                    // oreuse the serializer without first having to serialize
+                    // `updated_plugin` first though.
+                    plugin->magic = updated_plugin.magic;
+                    plugin->numPrograms = updated_plugin.numPrograms;
+                    plugin->numParams = updated_plugin.numParams;
+                    plugin->numInputs = updated_plugin.numInputs;
+                    plugin->numOutputs = updated_plugin.numOutputs;
+                    plugin->flags = updated_plugin.flags;
+                    plugin->initialDelay = updated_plugin.initialDelay;
+                    plugin->empty3a = updated_plugin.empty3a;
+                    plugin->empty3b = updated_plugin.empty3b;
+                    plugin->unkown_float = updated_plugin.unkown_float;
+                    plugin->uniqueID = updated_plugin.uniqueID;
+                    plugin->version = updated_plugin.version;
+
+                    return nullptr;
+                },
+                [&](WantsChunkBuffer&) -> EventResposnePayload {
+                    // In this case the plugin will have written its data
+                    // stored in an array to which a pointer is stored in
+                    // `data`, with the return value from the event determines
+                    // how much data the plugin has written
+                    const uint8_t* chunk_data = *static_cast<uint8_t**>(data);
+                    return std::vector<uint8_t>(chunk_data,
+                                                chunk_data + return_value);
+                },
+                [&](VstIOProperties& props) -> EventResposnePayload {
+                    return props;
+                },
+                [&](VstMidiKeyName& key_name) -> EventResposnePayload {
+                    return key_name;
+                },
+                [&](VstParameterProperties& props) -> EventResposnePayload {
+                    return props;
+                },
+                [&](WantsVstRect&) -> EventResposnePayload {
+                    // The plugin has written a pointer to a VstRect struct
+                    // into the data poitner
+                    return **static_cast<VstRect**>(data);
+                },
+                [&](WantsVstTimeInfo&) -> EventResposnePayload {
+                    // Not sure why the VST API has twenty different ways of
+                    // returning structs, but in this case the value returned
+                    // from the callback function is actually a pointer to a
+                    // `VstTimeInfo` struct! It can also be a null pointer if
+                    // the host doesn't support this.
+                    const auto time_info =
+                        reinterpret_cast<const VstTimeInfo*>(return_value);
+                    if (time_info == nullptr) {
+                        return nullptr;
+                    } else {
+                        return *time_info;
+                    }
+                },
+                [&](WantsString&) -> EventResposnePayload {
+                    return std::string(static_cast<char*>(data));
+                }},
+            event.payload);
+
+        EventResult response{return_value, response_data};
+
+        return response;
+    };
 }

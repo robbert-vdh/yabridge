@@ -289,16 +289,19 @@ process works as follows:
    sockets. The actual binary serialization is handled using
    [bitsery](https://github.com/fraillt/bitsery).
 
-   Sending and receiving events happen in the `send_event()` and
-   `passthrough_event()` functions. The `passthrough_event()` function calls the
-   callback functions and handles the marshalling between our data types and the
-   VST API's different pointer types. Reading data and writing the results back
-   for host-to-plugin `dispatcher()` calls and for plugin-to-host
+   Sending and receiving host -> plugin and plugin -> host events happen in the
+   `send_event()` and `receive_event()` functions. Reading data and writing the
+   results back for host-to-plugin `dispatcher()` calls and for plugin-to-host
    `audioMaster()` callbacks happen in the `DispatchDataConverter` and
    `HostCallbackDataConverter` classes respectively, with a bit of extra glue
-   for GUI related operations in `PluginBridge::dispatch_wrapper`. Rewriting all
-   of this tightly coupled logic to be all in one place sadly only makes things
-   even more complicated.
+   for GUI related operations in `PluginBridge::dispatch_wrapper`. On the
+   receiving end, the `passthrough_event()` function calls the callback
+   functions and handles the marshalling between our data types and the VST
+   API's different pointer types. This behaviour is separated from
+   `receive_event()` so we can some special handling for MIDI events, since a
+   select few plugins only store pointers to the received events rather than
+   copies of the objects. This requires the received event data to live at least
+   until the next audio buffer gets processed.
 
 6. The Wine VST host loads the Windows VST plugin and starts forwarding messages
    over the sockets described above.

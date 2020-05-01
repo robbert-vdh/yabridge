@@ -147,9 +147,10 @@ void PluginBridge::handle_dispatch() {
     // lockstep anyway
     try {
         while (true) {
-            passthrough_event(host_vst_dispatch, std::nullopt, plugin,
-                              std::bind(&PluginBridge::dispatch_wrapper, this,
-                                        _1, _2, _3, _4, _5, _6));
+            receive_event(host_vst_dispatch, std::nullopt,
+                          passthrough_event(
+                              plugin, std::bind(&PluginBridge::dispatch_wrapper,
+                                                this, _1, _2, _3, _4, _5, _6)));
 
             // Because of the way the Win32 API works we have to process events
             // on the same thread as the one the window was created on, and that
@@ -179,39 +180,47 @@ void PluginBridge::handle_dispatch() {
 
 [[noreturn]] void PluginBridge::handle_dispatch_midi_events() {
     while (true) {
-        // TODO: Refactor `passthrough_event()` to factor out the data
-        //       conversion specifically for this case so we don't have to do
-        //       this `DynamicVstEvents -> VstEvents -> void* ->
-        //       DynamicVstEvents -> VstEvents -> void*` conversion dance
-        passthrough_event(
-            host_vst_dispatch_midi_events, std::nullopt, plugin,
-            [&](AEffect* plugin, int opcode, int index, intptr_t value,
-                void* data, float option) {
-                if (BOOST_LIKELY(opcode == effProcessEvents)) {
+        receive_event(
+            host_vst_dispatch_midi_events, std::nullopt, [&](Event& event) {
+                if (BOOST_LIKELY(event.opcode == effProcessEvents)) {
                     // For 99% of the plugins we can just call
                     // `effProcessReplacing()` and be done with it, but a select
                     // few plugins (I could only find Kontakt that does this)
                     // don't actually make copies of the events they receive and
                     // only store pointers, meaning that they have to live at
-                    // least until the next audio buffer gets processed. This
-                    // does mean that we have to reconstruct the
-                    // `DynamicVstEvents` object first.
-                    // HACK: Is there a cleaner way to do this, or a way to
-                    //       avoid having to store temporary copies of this?
+                    // least until the next audio buffer gets processed. We're
+                    // not using `passhtourhg_events()` here directly because we
+                    // need to store a copy of the `DynamicVstEvents` struct
+                    // before passing the generated `VstEvents` object to the
+                    // plugin.
                     std::lock_guard lock(next_buffer_midi_events_mutex);
-                    DynamicVstEvents& events =
-                        next_audio_buffer_midi_events.emplace_back(
-                            *static_cast<const VstEvents*>(data));
 
-                    return plugin->dispatcher(plugin, opcode, index, value,
-                                              &events.as_c_events(), option);
+                    next_audio_buffer_midi_events.push_back(
+                        std::get<DynamicVstEvents>(event.payload));
+                    DynamicVstEvents& events =
+                        next_audio_buffer_midi_events.back();
+
+                    // Exact same handling as in `passthrough_event`, apart from
+                    // making a copy of the events first
+                    const intptr_t return_value = plugin->dispatcher(
+                        plugin, event.opcode, event.index, event.value,
+                        &events.as_c_events(), event.option);
+
+                    EventResult response{return_value, nullptr};
+
+                    return response;
                 } else {
+                    using namespace std::placeholders;
+
                     std::cerr << "[Warning] Received non-MIDI "
                                  "event on MIDI processing thread"
                               << std::endl;
 
-                    return dispatch_wrapper(plugin, opcode, index, value, data,
-                                            option);
+                    // Maybe this should just be a hard error instead, since it
+                    // should never happen
+                    return passthrough_event(
+                        plugin, std::bind(&PluginBridge::dispatch_wrapper, this,
+                                          _1, _2, _3, _4, _5, _6))(event);
                 }
             });
     }
