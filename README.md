@@ -15,8 +15,6 @@ There are a few things that should be done before releasing this, including:
 - Add missing details if any to the architecture section.
 - Rewrite parts of this readme.
 - Briefly verify that this also works fine in Reaper and Ardour.
-- Upstream the updated `lib32-boost-libs` PKGBUILD needed for building the
-  bitbridge.
 
 ## Tested with
 
@@ -137,7 +135,7 @@ compatible with 32 bit plugins such as old SynthEdit plugins. This will allow
 yabridge to act as a bitbirdge, allowing you to run old 32-bit only Windows VST2
 plugins in a modern 64-bit Linux VST host. For this you'll need to have
 installed the 32 bit versions of the Boost and XCB libraries. This can be
-enabled as follows:
+set up as follows:
 
 ```shell
 # On an existing build
