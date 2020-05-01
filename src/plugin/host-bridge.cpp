@@ -330,6 +330,22 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
                               intptr_t value,
                               void* data,
                               float option) {
+    // HACK: Ardour 5.X has a bug in its VST implementation where it calls the
+    //       plugin's dispatcher before the plugin has even finished
+    //       initializing. This has been fixed back in 2018, but there has not
+    //       been a release that contains the fix yet. This should be removed
+    //       once Ardour 6.0 gets released.
+    //       https://tracker.ardour.org/view.php?id=7668
+    if (BOOST_UNLIKELY(plugin.magic == 0)) {
+        logger.log_event(true, opcode, index, value, nullptr, option);
+        logger.log(
+            "   WARNING: The host has dispatched an event before the plugin "
+            "has finished initializing, ignoring the event. (are we running "
+            "Ardour 5.X?)");
+        logger.log_event_response(true, opcode, 0, nullptr);
+        return 0;
+    }
+
     DispatchDataConverter converter(chunk_data, editor_rectangle);
 
     switch (opcode) {

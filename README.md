@@ -10,18 +10,17 @@ also staying easy to debug and maintain.
 
 There are a few things that should be done before releasing this, including:
 
-- Do some final refactoring/clean up. There are a few small todos left for
-  things that could be a made little bit prettier.
 - Add missing details if any to the architecture section.
 - Rewrite parts of this readme.
 - Briefly verify that this also works fine in Reaper and Ardour.
 
 ## Tested with
 
-yabridge has been primarily tested under and verified to work correctly with:
+Yabridge has been verified to work correctly with:
 
 - Bitwig Studio 3.1 and the beta releases of 3.2
 - Carla 2.1
+- Ardour 5.12
 - Wine Staging 5.5 and 5.6 (the wine-staging-5.7-1 package currently in Arch and
   Manjaro's repositories is broken because of a regression in application
   startup behavior)
@@ -70,8 +69,8 @@ find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.
 ### Copying
 
 It is also possible to use yabridge by creating copies of `libyabridge.so`
-instead of making symlinks. This is not recommended as it makes updating a
-hassle, but it may be required if your host has issues using symlinks. If you
+instead of making symlinks. This is not recommended as it makes updating more
+difficult, but it may be required if your host has issues using symlinks. If you
 choose to do this, then you'll have to make sure `yabridge-host.exe` and
 `yabridge-host.exe.so` are somewhere in your search path as otherwise yabridge
 won't be able to find them. Either copy them to `/usr/local/bin` (not
