@@ -26,6 +26,18 @@ constexpr size_t idle_timer_id = 1337;
 constexpr uint16_t event_type_mask = ((1 << 7) - 1);
 
 /**
+ * Find the topmost window (i.e. the window before the root window in the window
+ * tree) starting from a certain window.
+ *
+ * @param x11_connection The X11 connection to use.
+ * @param starting_at The window we want to know the topmost window of.
+ *
+ * @return Either `starting_at`, if its parent is already the root window, or
+ *   another another window that has `starting_at` as its descendent.
+ */
+xcb_window_t find_topmost_window(xcb_connection_t& x11_connection,
+                                 xcb_window_t starting_at);
+/**
  * Compute the size a window would have to be to be allowed to fullscreened on
  * any of the connected screens.
  */
@@ -69,6 +81,7 @@ Editor::Editor(const std::string& window_class_name,
                    DestroyWindow),
       parent_window(parent_window_handle),
       child_window(get_x11_handle(win32_handle.get())),
+      topmost_window(find_topmost_window(*x11_connection, parent_window)),
       // Needed to send update messages on a timer
       plugin(effect) {
     // The Win32 API will block the `DispatchMessage` call when opening e.g. a
@@ -79,10 +92,13 @@ Editor::Editor(const std::string& window_class_name,
     // the plugin is not busy.
     SetTimer(win32_handle.get(), idle_timer_id, 100, nullptr);
 
-    // See the x11 events part of `editor::handle_events`
-    const uint32_t parent_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-    xcb_change_window_attributes(x11_connection.get(), parent_window,
-                                 XCB_CW_EVENT_MASK, &parent_event_mask);
+    // We need to tell the Wine window it has been moved whenever the window
+    // it's been embedded in gets moved around. In most cases this is
+    // `parent_window`, but for instance REAPER reparents `parent_window` in
+    // another window so we'll have to find the correct window first.
+    const uint32_t topmost_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+    xcb_change_window_attributes(x11_connection.get(), topmost_window,
+                                 XCB_CW_EVENT_MASK, &topmost_event_mask);
     xcb_flush(x11_connection.get());
 
     // Embed the Win32 window into the window provided by the host. Instead of
@@ -151,30 +167,40 @@ void Editor::handle_events() {
     while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
            nullptr) {
         switch (generic_event->response_type & event_type_mask) {
+            // We're listening for ConfigureNotify events on the topmost window
+            // before the root window, i.e. the window that's actually going to
+            // get dragged around the by the user. In most cases this is the
+            // same as `parent_window`.
             case XCB_CONFIGURE_NOTIFY: {
-                xcb_configure_notify_event_t event =
-                    *reinterpret_cast<xcb_configure_notify_event_t*>(
-                        generic_event);
-                if (event.window != parent_window) {
-                    break;
-                }
-
                 // We're purposely not using XEmbed. This has the consequence
                 // that wine still thinks that any X and Y coordinates are
                 // relative to the x11 window root instead of the parent window
                 // provided by the DAW, causing all sorts of GUI interactions to
                 // break. To alleviate this we'll just lie to Wine and tell it
-                // that it's located at the parent window's location. We'll only
-                // send the event instead of actually configuring the window.
-                // NOTE: We're not actually using `SetWindowPos()` to resize the
-                //       window. The editor's client area will likely always be
-                //       big enough Since we specified the Window to be
-                //       2560x1440 pixels large at the time of its creation.
-                //       This works because the embedding hierarchy is DAW
-                //       window -> Win32 window (created in this class) -> VST
-                //       plugin window created by the plugin itself. This makes
-                //       the drag-to-resize functionality many plugin editors
-                //       have feel smooth and native.
+                // that it's located at the parent window's location on the root
+                // window. We also will keep the child window at its largest
+                // possible size to allow for smooth resizing. This works
+                // because the embedding hierarchy is DAW window -> Win32 window
+                // (created in this class) -> VST plugin window created by the
+                // plugin itself. In this case it doesn't matter that the Win32
+                // window is larger than the part of the client area the plugin
+                // draws to since any excess will be clipped off by the parent
+                // window.
+                const auto query_cookie =
+                    xcb_query_tree(x11_connection.get(), parent_window);
+                xcb_window_t root = xcb_query_tree_reply(x11_connection.get(),
+                                                         query_cookie, nullptr)
+                                        ->root;
+
+                // We can't directly use the `event.x` and `event.y` coordinates
+                // because the parent window may also be embedded inside another
+                // window.
+                const auto translate_cookie = xcb_translate_coordinates(
+                    x11_connection.get(), parent_window, root, 0, 0);
+                const xcb_translate_coordinates_reply_t*
+                    translated_coordiantes = xcb_translate_coordinates_reply(
+                        x11_connection.get(), translate_cookie, nullptr);
+
                 xcb_configure_notify_event_t translated_event{};
                 translated_event.response_type = XCB_CONFIGURE_NOTIFY;
                 translated_event.event = child_window;
@@ -186,8 +212,8 @@ void Editor::handle_events() {
                 // (such as those by Valhalla DSP) would break.
                 translated_event.width = client_area.width;
                 translated_event.height = client_area.height;
-                translated_event.x = event.x;
-                translated_event.y = event.y;
+                translated_event.x = translated_coordiantes->dst_x;
+                translated_event.y = translated_coordiantes->dst_y;
 
                 xcb_send_event(x11_connection.get(), false, child_window,
                                XCB_EVENT_MASK_STRUCTURE_NOTIFY |
@@ -239,6 +265,26 @@ LRESULT CALLBACK window_proc(HWND handle,
     }
 
     return DefWindowProc(handle, message, wParam, lParam);
+}
+
+xcb_window_t find_topmost_window(xcb_connection_t& x11_connection,
+                                 xcb_window_t starting_at) {
+    xcb_window_t current_window = starting_at;
+
+    xcb_query_tree_cookie_t query_cookie =
+        xcb_query_tree(&x11_connection, starting_at);
+    xcb_query_tree_reply_t* query_reply =
+        xcb_query_tree_reply(&x11_connection, query_cookie, nullptr);
+    xcb_window_t root = query_reply->root;
+    while (query_reply->parent != root) {
+        current_window = query_reply->parent;
+
+        query_cookie = xcb_query_tree(&x11_connection, current_window);
+        query_reply =
+            xcb_query_tree_reply(&x11_connection, query_cookie, nullptr);
+    }
+
+    return current_window;
 }
 
 Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection) {

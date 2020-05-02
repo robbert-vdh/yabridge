@@ -147,6 +147,15 @@ class Editor {
      * The X11 window handle of the window belonging to  `win32_handle`.
      */
     const xcb_window_t child_window;
+    /**
+     * The X11 window that's at the top of the window tree starting from
+     * `parent_window`, i.e. a direct child of the root window. In most cases
+     * this is going to be the same as `parent_window`, but some DAWs (such as
+     * REAPER) embed `parent_window` into another window. We have to listen for
+     * configuration changes on this topmost window to know when the window is
+     * being dragged around.
+     */
+    const xcb_window_t topmost_window;
 
     /**
      *Needed to handle idle updates through a timer

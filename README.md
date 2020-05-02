@@ -8,19 +8,21 @@ also staying easy to debug and maintain.
 
 ## TODOs
 
-There are a few things that should be done before releasing this, including:
+Everything is implemented and ready for release after a few documentation
+updates:
 
 - Add missing details if any to the architecture section.
 - Rewrite parts of this readme.
-- Briefly verify that this also works fine in Reaper and Ardour.
+- Add a screenshot, because why not?
 
 ## Tested with
 
 Yabridge has been verified to work correctly with:
 
 - Bitwig Studio 3.1 and the beta releases of 3.2
-- Carla 2.1
+- Carla 2.1 (does not support opening multiple symlinked plugins)
 - Ardour 5.12
+- REAPER 6.09 (does not support symlinks)
 - Wine Staging 5.5 and 5.6 (the wine-staging-5.7-1 package currently in Arch and
   Manjaro's repositories is broken because of a regression in application
   startup behavior)
@@ -103,8 +105,9 @@ because I haven't needed them myself. Let me know if any of these features are
 required for a certain plugin or plugin host:
 
 - Double precision audio (`processDoubleReplacing`).
-- Vendor specific extensions (for instance, for
-  [Reaper](https://www.reaper.fm/sdk/vst/vst_ext.php)).
+- Vendor specific extension (for instance, for
+  [REAPER](https://www.reaper.fm/sdk/vst/vst_ext.php), though most of these
+  extension functions will work out of the box without any modifications).
 
 ## Building
 
