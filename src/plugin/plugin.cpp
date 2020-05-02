@@ -27,6 +27,15 @@
 // other one exist for legacy reasons since some old hosts might still use
 // them.`
 extern "C" {
+/**
+ * The main VST plugin entry point. We first set up a bridge that connects to a
+ * Wine process that hosts the Windows VST plugin. We then create and return a
+ * VST plugin struct that acts as a passthrough to the bridge.
+ *
+ * To keep this somewhat contained this is the only place where we're doing
+ * manual memory management. Clean up is done when we receive the `effClose`
+ * opcode from the VST host (i.e. opcode 1).`
+ */
 extern VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback);
 
 // There's also another possible legacy entry point just called `main`, but GCC
@@ -37,15 +46,6 @@ VST_EXPORT AEffect* main_plugin(audioMasterCallback audioMaster) {
 }
 }
 
-/**
- * The main VST plugin entry point. We first set up a bridge that connects to a
- * Wine process that hosts the Windows VST plugin. We then create and return a
- * VST plugin struct that acts as a passthrough to the bridge.
- *
- * To keep this somewhat contained this is the only place where we're doing
- * manual memory management. Clean up is done when we receive the `effClose`
- * opcode from the VST host (i.e. opcode 1).`
- */
 VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback host_callback) {
     try {
         // This is the only place where we have to use manual memory management.

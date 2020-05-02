@@ -270,17 +270,6 @@ bool Logger::should_filter_event(bool is_dispatch, int opcode) {
     return false;
 }
 
-/**
- * Convert an event opcode to a human readable string for debugging purposes.
- * See `src/include/vestige/aeffectx.h` for a complete list of these opcodes.
- *
- * @param is_dispatch Whether to use opcodes for the `dispatch` function. Will
- *   use the names from the host callback function if set to false.
- * @param opcode The opcode of the event.
- *
- * @return Either the name from `aeffectx.h`, or a nullopt if it was not listed
- *   there.
- */
 std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
     if (is_dispatch) {
         // Opcodes for a plugin's dispatch function

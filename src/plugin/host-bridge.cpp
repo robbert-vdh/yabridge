@@ -47,19 +47,90 @@ namespace fs = boost::filesystem;
 constexpr char alphanumeric_characters[] =
     "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-std::string create_logger_prefix(const fs::path& socket_path);
-fs::path find_vst_plugin();
-PluginArchitecture find_plugin_architecture(fs::path);
-fs::path find_wine_vst_host(PluginArchitecture plugin_arch);
-std::optional<fs::path> find_wineprefix();
-fs::path generate_endpoint_name();
-bp::environment set_wineprefix();
-
 intptr_t dispatch_proxy(AEffect*, int, int, intptr_t, void*, float);
 void process_proxy(AEffect*, float**, float**, int);
 void process_replacing_proxy(AEffect*, float**, float**, int);
 void setParameter_proxy(AEffect*, int, float);
 float getParameter_proxy(AEffect*, int);
+
+/**
+ * Create a logger prefix based on the unique socket path for easy
+ * identification. The socket path contains both the plugin's name and a unique
+ * identifier.
+ *
+ * @param socket_path The path to the socket endpoint in use.
+ *
+ * @return A prefix string for log messages.
+ */
+std::string create_logger_prefix(const fs::path& socket_path);
+
+/**
+ * Find the VST plugin .dll file that corresponds to this copy of
+ * `libyabridge.so`. This should be the same as the name of this file but with a
+ * `.dll` file extension instead of `.so`.
+ *
+ * @return The a path to the accompanying VST plugin .dll file.
+ * @throw std::runtime_error If no matching .dll file could be found.
+ */
+fs::path find_vst_plugin();
+
+/**
+ * Determine the architecture of a VST plugin (or rather, a .dll file) based on
+ * it's header values.
+ *
+ * See https://docs.microsoft.com/en-us/windows/win32/debug/pe-format for more
+ * information on the PE32 format.
+ *
+ * @param plugin_path The path to the .dll file we're going to check.
+ *
+ * @return The detected architecture.
+ * @throw std::runtime_error If the file is not a .dll file.
+ */
+PluginArchitecture find_plugin_architecture(fs::path);
+
+/**
+ * Finds the Wine VST hsot (either `yabridge-host.exe` or `yabridge-host.exe`
+ * depending on the plugin). For this we will search in two places:
+ *
+ *   1. Alongside libyabridge.so if the file got symlinked. This is useful
+ *      when developing, as you can simply symlink the the libyabridge.so
+ *      file in the build directory without having to install anything to
+ *      /usr.
+ *   2. In the regular search path.
+ *
+ * @param plugin_arch The architecture of the plugin, either 64-bit or 32-bit.
+ *   Used to determine which host application to use, if available.
+ *
+ * @return The a path to the VST host, if found.
+ * @throw std::runtime_error If the Wine VST host could not be found.
+ */
+fs::path find_wine_vst_host(PluginArchitecture plugin_arch);
+
+/**
+ * Locate the wineprefix this file is located in, if it is inside of a wine
+ * prefix.
+ *
+ * @return Either the path to the wineprefix (containing the `drive_c?`
+ *   directory), or `std::nullopt` if it is not inside of a wine prefix.
+ */
+std::optional<fs::path> find_wineprefix();
+
+/**
+ * Generate a unique name for the Unix domain socket endpoint based on the VST
+ * plugin's name. This will also generate the parent directory if it does not
+ * yet exist since we're using this in the constructor's initializer list.
+ *
+ * @return A path to a not yet existing Unix domain socket endpoint.
+ * @throw std::runtime_error If no matching .dll file could be found.
+ */
+fs::path generate_endpoint_name();
+
+/**
+ * Locate the wineprefix and set the `WINEPREFIX` environment variable if found.
+ * This way it's also possible to run .dll files outside of a wineprefix using
+ * the user's default prefix.
+ */
+bp::environment set_wineprefix();
 
 /**
  * Fetch the bridge instance stored in an unused pointer from a VST plugin. This
@@ -320,10 +391,6 @@ class DispatchDataConverter : DefaultDataConverter {
     VstRect& rect;
 };
 
-/**
- * Handle an event sent by the VST host. Most of these opcodes will be passed
- * through to the winelib VST host.
- */
 intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
                               int opcode,
                               int index,
@@ -404,6 +471,22 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
                               std::pair<Logger&, bool>(logger, true), opcode,
                               index, value, data, option);
             break;
+        case effCanDo: {
+            const std::string query(static_cast<const char*>(data));
+
+            // NOTE: If the plugins returns `0xbeefXXXX` to this query, then
+            //       REAPER will pass a libSwell handle rather than an X11
+            //       window ID to `effEditOpen`. This is of course not going to
+            //       work when the GUI is handled using Wine so we'll ignore it.
+            if (query == "hasCockosViewAsConfig") {
+                logger.log_event(true, opcode, index, value, query, option);
+                logger.log(
+                    "   The host requests libSwell GUI support which is not "
+                    "supported using Wine, ignoring the request.");
+                logger.log_event_response(true, opcode, -1, nullptr);
+                return -1;
+            }
+        } break;
     }
 
     // We don't reuse any buffers here like we do for audio processing. This
@@ -499,15 +582,6 @@ void HostBridge::async_log_pipe_lines(patched_async_pipe& pipe,
         });
 }
 
-/**
- * Create a logger prefix based on the unique socket path for easy
- * identification. The socket path contains both the plugin's name and a unique
- * identifier.
- *
- * @param socket_path The path to the socket endpoint in use.
- *
- * @return A prefix string for log messages.
- */
 std::string create_logger_prefix(const fs::path& socket_path) {
     // Use the socket filename as the logger prefix, but strip the `yabridge-`
     // part since that's redundant
@@ -523,22 +597,6 @@ std::string create_logger_prefix(const fs::path& socket_path) {
     return prefix.str();
 }
 
-/**
- * Finds the Wine VST hsot (either `yabridge-host.exe` or `yabridge-host.exe`
- * depending on the plugin). For this we will search in two places:
- *
- *   1. Alongside libyabridge.so if the file got symlinked. This is useful
- *      when developing, as you can simply symlink the the libyabridge.so
- *      file in the build directory without having to install anything to
- *      /usr.
- *   2. In the regular search path.
- *
- * @param plugin_arch The architecture of the plugin, either 64-bit or 32-bit.
- *   Used to determine which host application to use, if available.
- *
- * @return The a path to the VST host, if found.
- * @throw std::runtime_error If the Wine VST host could not be found.
- */
 fs::path find_wine_vst_host(PluginArchitecture plugin_arch) {
     auto host_name = yabridge_wine_host_name;
     if (plugin_arch == PluginArchitecture::vst_32) {
@@ -563,13 +621,6 @@ fs::path find_wine_vst_host(PluginArchitecture plugin_arch) {
     return vst_host_path;
 }
 
-/**
- * Locate the wineprefix this file is located in, if it is inside of a wine
- * prefix.
- *
- * @return Either the path to the wineprefix (containing the `drive_c?`
- *   directory), or `std::nullopt` if it is not inside of a wine prefix.
- */
 std::optional<fs::path> find_wineprefix() {
     // Try to locate the wineprefix this .so file is located in by finding the
     // first parent directory that contains a directory named `dosdevices`
@@ -586,14 +637,6 @@ std::optional<fs::path> find_wineprefix() {
     return std::nullopt;
 }
 
-/**
- * Find the VST plugin .dll file that corresponds to this copy of
- * `libyabridge.so`. This should be the same as the name of this file but with a
- * `.dll` file extension instead of `.so`.
- *
- * @return The a path to the accompanying VST plugin .dll file.
- * @throw std::runtime_error If no matching .dll file could be found.
- */
 fs::path find_vst_plugin() {
     fs::path plugin_path = boost::dll::this_line_location();
     plugin_path.replace_extension(".dll");
@@ -611,18 +654,6 @@ fs::path find_vst_plugin() {
     return fs::canonical(plugin_path);
 }
 
-/**
- * Determine the architecture of a VST plugin (or rather, a .dll file) based on
- * it's header values.
- *
- * See https://docs.microsoft.com/en-us/windows/win32/debug/pe-format for more
- * information on the PE32 format.
- *
- * @param plugin_path The path to the .dll file we're going to check.
- *
- * @return The detected architecture.
- * @throw std::runtime_error If the file is not a .dll file.
- */
 PluginArchitecture find_plugin_architecture(fs::path plugin_path) {
     std::ifstream file(plugin_path, std::ifstream::binary | std::ifstream::in);
 
@@ -670,14 +701,6 @@ PluginArchitecture find_plugin_architecture(fs::path plugin_path) {
     }
 }
 
-/**
- * Generate a unique name for the Unix domain socket endpoint based on the VST
- * plugin's name. This will also generate the parent directory if it does not
- * yet exist since we're using this in the constructor's initializer list.
- *
- * @return A path to a not yet existing Unix domain socket endpoint.
- * @throw std::runtime_error If no matching .dll file could be found.
- */
 fs::path generate_endpoint_name() {
     const auto plugin_name =
         find_vst_plugin().filename().replace_extension("").string();
@@ -710,11 +733,6 @@ fs::path generate_endpoint_name() {
     return candidate_endpoint;
 }
 
-/**
- * Locate the wineprefix and set the `WINEPREFIX` environment variable if found.
- * This way it's also possible to run .dll files outside of a wineprefix using
- * the user's default prefix.
- */
 bp::environment set_wineprefix() {
     auto env = boost::this_process::environment();
 
