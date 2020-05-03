@@ -83,7 +83,7 @@ VST plugins.
 yabridge_home=~/.local/share/yabridge
 
 find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.dll' -print0 |
-  xargs -0 -P8 -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
+  xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
   sed -z 's/\.dll$/.so/' |
   xargs -0 -n1 ln -sf "$yabridge_home/libyabridge.so"
 ```
@@ -119,7 +119,7 @@ previous section to install yabridge for all of you VST plugins at once:
 yabridge_home=~/.local/share/yabridge
 
 find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.dll' -print0 |
-  xargs -0 -P8 -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
+  xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
   sed -z 's/\.dll$/.so/' |
   xargs -0 -n1 cp "$yabridge_home/libyabridge.so"
 ```
