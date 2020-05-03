@@ -41,7 +41,7 @@ subdir('src/common/config')
 
 # Statically link against Boost.Filesystem, otherwise it becomes impossible to
 # distribute a prebuilt version of yabridge
-boost_dep = dependency('boost', modules : ['filesystem'], static : true)
+boost_dep = dependency('boost', version : '>=1.66', modules : ['filesystem'], static : true)
 bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
 threads_dep = dependency('threads')
 # The built in threads dependency does not know how to handle winegcc
