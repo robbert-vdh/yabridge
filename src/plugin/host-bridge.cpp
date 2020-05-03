@@ -312,6 +312,7 @@ class DispatchDataConverter : DefaultDataConverter {
                 break;
             case effGetMidiKeyName:
                 return *static_cast<const VstMidiKeyName*>(data);
+                break;
             // Any VST host I've encountered has properly zeroed out these their
             // string buffers, but we'll add a list of opcodes that should
             // return a string just in case `DefaultDataConverter::read()` can't
@@ -436,7 +437,7 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
                 logger.log("The plugin crashed during shutdown, ignoring");
             }
 
-            // Boost.Process will send SIGKILL to the Wien host for us when this
+            // Boost.Process will send SIGKILL to the Wine host for us when this
             // class gets destroyed. Because the process is running a few
             // threads Wine will say something about a segfault (probably
             // related to `std::terminate`), but this doesn't seem to have any
