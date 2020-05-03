@@ -137,6 +137,12 @@ Aside from that, these are some known caveats:
 - Most recent **iZotope** plugins don't have a functional GUI in a typical out
   of the box Wine setup because of missing dependencies. Please let me know if
   you know which dependencies are needed for these plugins to render correctly.
+- Some plugins, such as **Fabfilter Pro-Q 3**, are able to communicate between
+  different instances of the same plugin by relying on the fact that they're all
+  loaded into the same process. Right now this is something that yabridge does
+  not do as it would break any form of sandboxing, meaning that if one plugin
+  were to crash, all other plugins would go down with it. If this is something
+  you need for your workflow, please let me know.
 
 There are also some VST2.X extension features that have not been implemented yet
 because I haven't needed them myself. Let me know if you need any of these
