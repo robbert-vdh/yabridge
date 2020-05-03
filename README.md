@@ -6,12 +6,7 @@ plugins in a 64-bit Linux VST host. This project aims to be as transparent as
 possible to achieve the best possible plugin compatibility while also staying
 easy to debug and maintain.
 
-## TODOs
-
-Everything is implemented and ready for release after a few documentation
-updates:
-
-- Add a screenshot, because why not?
+![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
 ## Tested with
 
