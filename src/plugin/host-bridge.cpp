@@ -107,10 +107,10 @@ PluginArchitecture find_plugin_architecture(fs::path);
 fs::path find_wine_vst_host(PluginArchitecture plugin_arch);
 
 /**
- * Locate the wineprefix this file is located in, if it is inside of a wine
+ * Locate the Wine prefix this file is located in, if it is inside of a wine
  * prefix.
  *
- * @return Either the path to the wineprefix (containing the `drive_c?`
+ * @return Either the path to the Wine prefix (containing the `drive_c?`
  *   directory), or `std::nullopt` if it is not inside of a wine prefix.
  */
 std::optional<fs::path> find_wineprefix();
@@ -126,9 +126,9 @@ std::optional<fs::path> find_wineprefix();
 fs::path generate_endpoint_name();
 
 /**
- * Locate the wineprefix and set the `WINEPREFIX` environment variable if found.
- * This way it's also possible to run .dll files outside of a wineprefix using
- * the user's default prefix.
+ * Locate the Wine prefix and set the `WINEPREFIX` environment variable if
+ * found. This way it's also possible to run .dll files outside of a Wine prefix
+ * using the user's default prefix.
  */
 bp::environment set_wineprefix();
 
@@ -622,7 +622,7 @@ fs::path find_wine_vst_host(PluginArchitecture plugin_arch) {
 }
 
 std::optional<fs::path> find_wineprefix() {
-    // Try to locate the wineprefix this .so file is located in by finding the
+    // Try to locate the Wine prefix this .so file is located in by finding the
     // first parent directory that contains a directory named `dosdevices`
     fs::path wineprefix_path =
         boost::dll::this_line_location().remove_filename();

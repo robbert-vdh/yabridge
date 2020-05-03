@@ -1,10 +1,10 @@
 # yabridge
 
-Yet Another way to use Windows VST plugins in Linux VST hosts. Yabridge
-seamlessly supports running both 64-bit Windows VST2 plugins as well as 32-bit
-Windows VST2 plugins in a 64-bit Linux VST host. This project aims to be as
-transparent as possible to achieve the best possible plugin compatibility while
-also staying easy to debug and maintain.
+Yet Another way to use Windows VST plugins on Linux. Yabridge seamlessly
+supports running both 64-bit Windows VST2 plugins as well as 32-bit Windows VST2
+plugins in a 64-bit Linux VST host. This project aims to be as transparent as
+possible to achieve the best possible plugin compatibility while also staying
+easy to debug and maintain.
 
 ## TODOs
 
@@ -12,72 +12,118 @@ Everything is implemented and ready for release after a few documentation
 updates:
 
 - Add missing details if any to the architecture section.
-- Rewrite parts of this readme.
 - Add a screenshot, because why not?
 
 ## Tested with
 
-Yabridge has been verified to work correctly with:
+Yabridge has been verified to work correctly in the following VST hosts using
+Wine Staging 5.5 and 5.6:
 
 - Bitwig Studio 3.1 and the beta releases of 3.2
-- Carla 2.1 (does not support opening multiple symlinked plugins)
+- Carla 2.1 (does not support opening multiple symlinked plugins in the same
+  session)
 - Ardour 5.12
 - REAPER 6.09 (does not support symlinks)
-- Wine Staging 5.5 and 5.6 (the wine-staging-5.7-1 package currently in Arch and
-  Manjaro's repositories is broken because of a regression in application
-  startup behavior)
 
-Please let me know if there are any issues with other VST hosts.
+At the moment there is a regression in Wine 5.7 that breaks application startup
+behavior, so you'll have to temporarily downgrade to an earlier version of Wine
+if you're got Wine 5.7 isntalled. Please let me know if there are any issues
+with other VST hosts.
 
 ## Usage
 
-There are two ways to use yabridge.
+You can either download a prebuilt version of yabridge through the GitHub
+[releases](https://github.com/robbert-vdh/yabridge/releases) section, or you can
+compile it from source using the instructions in the [build](#Building) section
+below.
+
+There are two ways to use yabridge. The recommended way is to use symbolic
+links. The main advantage here is that you will be able to update yabridge for
+all of your plugins in one go, and it avoids having to install anything outside
+of your home directory. Sadly, not all hosts support this behavior. See the list
+above for hosts that don't.
+
+If you have downloaded the prebuilt version of yabridge or if have followed the
+isntructions from the [bitbridge](#32-bit-bitbridge) section below, then
+yabridge is also able to load 32-bit VST plugins. The installation procedure for
+32-bit plugins is exactly the same as for 64-bit plugins. Yabridge will detect
+whether a plugin is 32-bit or 64-bit on startup and it will handle it
+accordingly.
+
+It's also possible to use yabridge with multiple Wine prefixes. Yabridge will
+automatically detect and use the Wine prefix the plugin's `.dll` file is located
+in. Alternatively you could set the `WINEPREFIX` environment variable to
+override the Wine prefix for all instances of yabridge.
 
 ### Symlinking (recommended)
 
-The recommended way to use yabridge is through symbolic links. This allows you
-to update yabridge for all of your plugins in one go, as well as avoiding having
-to install it globally.
-
-You can either use the precompiled binaries from the GitHub releases section, or
-you could build yabridge directly from source. If you use the precompiled
-binaries, then you can simply extract them to `~/.local/share/yabridge` or to
-any other location in your home directory. If you choose to build from source,
+This is the recommended way to use yabridge if you're using Bitwig Studio or
+Ardour. You can either use the prebuilt binaries from the GitHub releases
+section, or you could build yabridge directly from source. If you use the
+prebuilt binaries, then you can simply extract them to `~/.local/share/yabridge`
+or to anywhere else in your home directory. If you choose to build from source,
 then you can use the compiled binaries directly from the `build/` directory. For
-the section below I'm going to assume you've placed the files in
+the section below I'm going to assume you've extracted the files to
 `~/.local/share/yabridge`.
 
 To set up yabridge for a VST plugin called
-`~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`, simply create a
-symlink from `~/.local/share/yabridge/libyabridge.so` to
+`~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`,
+simply create a symlink from `~/.local/share/yabridge/libyabridge.so` to
 `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so` like so:
 
 ```shell
 ln -s ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
 ```
 
-As an example, if you wanted to set up yabridge for any of the VST plugins under
+As an example, if you wanted to set up yabridge for all VST plugins under
 `~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, you could run the
-following script in Bash. This will also skip any `.dll` files that are not
-actually VST plugins.
+following script in Bash. This will skip any `.dll` files that are not actually
+VST plugins.
 
 ```shell
+yabridge_home=~/.local/share/yabridge
+
 find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.dll' -print0 |
   xargs -0 -P8 -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
   sed -z 's/\.dll$/.so/' |
-  xargs -0 -n1 ln -sf ~/.local/share/yabridge/libyabridge.so
+  xargs -0 -n1 ln -sf "$yabridge_home/libyabridge.so"
 ```
 
 ### Copying
 
-It is also possible to use yabridge by creating copies of `libyabridge.so`
-instead of making symlinks. This is not recommended as it makes updating more
-difficult, but it may be required if your host has issues using symlinks. If you
-choose to do this, then you'll have to make sure `yabridge-host.exe` and
-`yabridge-host.exe.so` are somewhere in your search path as otherwise yabridge
-won't be able to find them. Either copy them to `/usr/local/bin` (not
-recommended) or to `~/.local/bin` and make sure that the directory is in your
-`PATH` environment variable.
+If your VST host does not have support for symlinked VST plugins, then you can
+also install yabridge by creating copies of the `libyabridge.so` file instead of
+using symlinks. For this you will have to make sure that all four of the
+`yabridge-host*` files from the downloaded archive are somewhere in the search
+path. The recommended way to do this is to download yabridge from the GitHub
+[releases](https://github.com/robbert-vdh/yabridge/releases) section, extract
+all the files to `~/.local/share/yabridge`, and then add that directory to your
+`$PATH` environment variable. Alternatively there's an [AUR
+package](https://aur.archlinux.org/packages/lib32-boost-libs/) available if
+you're running Arch or Manjaro.
+
+The installation process for a plugin is the same as the procedure described
+above, but instead of creating a symlink from `libyabridge.so` to `plugin.so`,
+you'll now have to create a copy. Using the same example, if you have extracted
+yabridge's files to `~/.local/share/yabridge` and you want to set up yabridge
+for a VST plugin called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`, then you should copy
+`~/.local/share/yabridge/libyabridge.so` to `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so` like so:
+
+```shell
+cp ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
+```
+
+You could also use a modified version of the installation script from the
+previous section to install yabridge for all of you VST plugins at once:
+
+```shell
+yabridge_home=~/.local/share/yabridge
+
+find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.dll' -print0 |
+  xargs -0 -P8 -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
+  sed -z 's/\.dll$/.so/' |
+  xargs -0 -n1 cp "$yabridge_home/libyabridge.so"
+```
 
 ## Runtime dependencies and known issues
 
@@ -90,19 +136,17 @@ include:
 
 Aside from that, these are some known caveats:
 
-- Plugins by **KiloHearts** have file descriptor leaks while esync is enabled,
-  or at least they have on my machine. This sadly cannot be fixed in yabridge.
-  Simply unset `WINEESYNC` while using yabridge if this is an issue.
-- Most recent **iZotope** plugins don't have a functional GUI in a typical Wine
-  setup. This is sadly something that can't be fixed on yabridge's side and I
-  have not yet been able to figure out a way to reliably make these plugins
-  work.
-- Dragging and dropping files onto plugin editors works, but the editor does not
-  always show visual updates while dragging. This needs further investigation.
+- Plugins by **KiloHearts** have file descriptor leaks when esync is enabled,
+  causing Wine and yabridge to eventually stop working after the system hits the
+  open file limit. This sadly cannot be fixed in yabridge. Simply unset
+  `WINEESYNC` while using yabridge if this is an issue.
+- Most recent **iZotope** plugins don't have a functional GUI in a typical out
+  of the box Wine setup because of missing dependencies. Please let me know if
+  you know which dependencies are needed for these plugins to render correctly.
 
-There are also some VST2.4 extension features that haven't implemented yet
-because I haven't needed them myself. Let me know if any of these features are
-required for a certain plugin or plugin host:
+There are also some VST2.X extension features that have not been implemented yet
+because I haven't needed them myself. Let me know if you need any of these
+features for a certain plugin or VST host:
 
 - Double precision audio (`processDoubleReplacing`).
 - Vendor specific extension (for instance, for
@@ -132,17 +176,16 @@ ninja -C build
 
 ### 32-bit bitbridge
 
-It's also possible to compile a 32-bit host application for yabridge that's
-compatible with 32 bit plugins such as old SynthEdit plugins. This will allow
-yabridge to act as a bitbirdge, allowing you to run old 32-bit only Windows VST2
-plugins in a modern 64-bit Linux VST host. For this you'll need to have
-installed the 32 bit versions of the Boost and XCB libraries. This can be
-set up as follows:
+It is also possible to compile a host application for yabridge that's compatible
+with 32-bit plugins such as old SynthEdit plugins. This will allow yabridge to
+act as a bitbirdge, allowing you to run old 32-bit only Windows VST2 plugins in
+a modern 64-bit Linux VST host. For this you'll need to have installed the 32
+bit versions of the Boost and XCB libraries. This can then be set up as follows:
 
 ```shell
-# On an existing build
+# Enable the bitbridge on an existing build
 meson configure build -Duse-bitbridge=true
-# Configure a new build from scratch
+# Or configure a new build from scratch
 meson setup --buildtype=release --cross-file cross-wine.conf -Duse-bitbridge=true build
 
 ninja -C build
@@ -155,39 +198,38 @@ to load is 32-bit or 64-bit, and will run either `yabridge-host.exe` or
 
 ## Debugging
 
-Wine's error messages and warning are generally very helpful whenever a plugin
+Wine's error messages and warning are usually very helpful whenever a plugin
 doesn't work right away. Sadly this information is not always available. Bitwig,
 for instance, hides a plugin's STDOUT and STDERR streams from you. To make it
-easier to debug malfunctioning plugins, yabridge offers two environment
+easier to debug malfunctioning plugins, yabridge offers these two environment
 variables:
 
 - `YABRIDGE_DEBUG_FILE=<path>` allows you to write the Wine VST host's STDOUT
-  and STDERR messages to a file. For example, you could launch your DAW with
-  `env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log <daw>`,
-  and then use `tail -F /tmp/yabridge.log` to keep track of that file. If this
-  option is not absent then yabridge will write its debug messages to STDERR
-  instead.
-- `YABRIDGE_DEBUG_LEVEL={0,1}` allows you to set the verbosity of the debug
-  information. Every level increases the verbosity of the debug information:
+  and STDERR messages to a file. For instance, you could launch your DAW with
+  `env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log <daw>`, and then use `tail -F /tmp/yabridge.log`
+  to keep track of that file. If this option is not present then yabridge will
+  write all of its debug messages to STDERR instead.
+- `YABRIDGE_DEBUG_LEVEL={0,1,2}` allows you to set the verbosity of the debug
+  information. Each level increases the amount of debug information printed:
 
   - A value of `0` (the default) means that yabridge will only write messages
-    from the Wine process and some basic information such as the plugin being
-    loaded and the wineprefix being used.
+    from the Wine process and some basic information such about the plugin being
+    loaded and the Wine prefix being used.
   - A value of `1` will log information about most events and function calls
-    sent between the VST host and the plugin. This filters out some events such
-    as `effEditIdle()` and `audioMasterGetTime()` since those are sent tens of
-    times per second by for every plugin.
+    sent between the VST host and the plugin. This filters out some noisy events
+    such as `effEditIdle()` and `audioMasterGetTime()` since those are sent tens
+    of times per second by for every plugin.
   - A value of `2` will cause all of the events to be logged, including the
-    events mentioned above. This can be very verbose but it can be crucial for
+    events mentioned above. This is very verbose but it can be crucial for
     debugging plugin-specific problems.
 
-  More detailed information about these levels can be found in
+  More detailed information about these debug levels can be found in
   `src/common/logging.h`.
 
 Wine's own [logging facilities](https://wiki.winehq.org/Debug_Channels) can also
-be very helpful when diagnosing problems. In particular the `message` and
-`relay` channels are very useful to trace the execution path within the loading
-VST plugin itself.
+be very helpful when diagnosing problems. In particular the `+message` and
+`+relay` channels are very useful to trace the execution path within loaded VST
+plugin itself.
 
 ### Attaching a debugger
 
@@ -195,12 +237,12 @@ When needed, I found the easiest way to debug the plugin to be to load it in an
 instance of Carla with gdb attached:
 
 ```shell
-env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log YABRIDGE_DEBUG_LEVEL=1 carla --gdb
+env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log YABRIDGE_DEBUG_LEVEL=2 carla --gdb
 ```
 
 Doing the same thing for the Wine VST host can be a bit tricky. You'll need to
 launch winedbg in a seperate detached terminal emulator so it doesn't terminate
-together with the plugin, and winedbg can be a bit picky in the arguments it
+together with the plugin, and winedbg can be a bit picky about the arguments it
 accepts. I've already set this up behind a feature flag for use in KDE Plasma.
 Other desktop environments and window managers will require some slight
 modifications in `src/plugin/host-bridge.cpp`. To enable this, simply run:
