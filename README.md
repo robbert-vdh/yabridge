@@ -93,8 +93,8 @@ path. The recommended way to do this is to download yabridge from the GitHub
 [releases](https://github.com/robbert-vdh/yabridge/releases) section, extract
 all the files to `~/.local/share/yabridge`, and then add that directory to your
 `$PATH` environment variable. Alternatively there's an [AUR
-package](https://aur.archlinux.org/packages/lib32-boost-libs/) available if
-you're running Arch or Manjaro.
+package](https://aur.archlinux.org/packages/yabridge/) available if you're
+running Arch or Manjaro.
 
 The installation process for a plugin is the same as the procedure described
 above, but instead of creating a symlink from `libyabridge.so` to `plugin.so`,
