@@ -21,7 +21,7 @@ Wine Staging 5.5 and 5.6:
 
 At the moment there is a regression in Wine 5.7 that breaks application startup
 behavior, so you'll have to temporarily downgrade to an earlier version of Wine
-if you're got Wine 5.7 isntalled. Please let me know if there are any issues
+if you're got Wine 5.7 installed. Please let me know if there are any issues
 with other VST hosts.
 
 ## Usage
@@ -38,7 +38,7 @@ of your home directory. Sadly, not all hosts support this behavior. See the list
 above for hosts that don't.
 
 If you have downloaded the prebuilt version of yabridge or if have followed the
-isntructions from the [bitbridge](#32-bit-bitbridge) section below, then
+instructions from the [bitbridge](#32-bit-bitbridge) section below, then
 yabridge is also able to load 32-bit VST plugins. The installation procedure for
 32-bit plugins is exactly the same as for 64-bit plugins. Yabridge will detect
 whether a plugin is 32-bit or 64-bit on startup and it will handle it
@@ -257,7 +257,7 @@ The project consists of two components: a Linux native VST plugin
 (`libyabridge.so`) and a VST host that runs under Wine
 (`yabridge-host.exe`/`yabridge-host.exe.so`, and
 `yabridge-host-32.exe`/`yabridge-host-32.exe.so` if the bitbirdge is enabled).
-I'll refer to the copy of or lthe symlink to `libyabridge.so` as _the plugin_,
+I'll refer to the copy of or the symlink to `libyabridge.so` as _the plugin_,
 the native Linux VST host that's hosting the plugin as _the native VST host_,
 the Wine VST host application that's hosting a Windows `.dll` file as _the Wine
 VST host_, and the Windows VST plugin that's being loaded in the Wine VST host
@@ -276,9 +276,9 @@ as the _Windows VST plugin_. The whole process works as follows:
      headers if the `.dll` file.
 
    - The location of the Wine VST host. This will depend on the architecture
-     detected for the plugin. If the plugin was copmiled for the `x86_64`
+     detected for the plugin. If the plugin was compiled for the `x86_64`
      architecture or the 'Any CPU' target, then we will look for
-     `yabridge-host.exe`. If the plugin was copmiled for the `x86` architecture,
+     `yabridge-host.exe`. If the plugin was compiled for the `x86` architecture,
      when we'll search for `yabridge-host-32.exe`.
 
      We will first search for this file alongside the actual location of
