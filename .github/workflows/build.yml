@@ -49,9 +49,10 @@ jobs:
           set -e
 
           cd /tmp
-          wget --max-redirect 3 https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.bz2
-          tar -xf boost_1_72_0.tar.bz2
-          rm boost_1_72_0.tar.bz2
+          wget --max-redirect 3 https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.gz
+          sha256sum -c <<<"c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f  boost_1_72_0.tar.gz"
+          tar -xf boost_1_72_0.tar.gz
+          rm boost_1_72_0.tar.gc
 
           cd boost_1_72_0
           ./bootstrap.sh --with-toolset=gcc --with-icu --with-python=
