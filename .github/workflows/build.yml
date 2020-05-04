@@ -31,7 +31,10 @@ jobs:
           # in the winehq repos
           add-apt-repository -y ppa:cybermax-dexter/sdl2-backport
 
-          apt-get install -y --install-recommends winehq-staging wine-staging-dev
+          # Winelib is broken in Wine 5.7, so we'll explicitly install Wine 5.6.
+          # The last three wine-staging-* packages are needed because apt will
+          # otherwise try to install 5.7 anyway
+          apt-get install -y --install-recommends winehq-staging=5.6~bionic wine-staging-dev=5.6~bionic wine-staging=5.6~bionic wine-staging-amd64=5.6~bionic wine-staging-i386=5.6~bionic
           apt-get install -y build-essential gcc-8 gcc-8-multilib g++-8 g++-8-multilib pkg-config python3-pip nodejs
           apt-get install -y libxcb1-dev libxcb1-dev:i386
 
