@@ -1,0 +1,119 @@
+name: Build artifacts
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  # TODO: Add another job for Ubuntu 20.04
+  build-bionic:
+    name: Build on Ubuntu 18.04
+    container:
+      # I just could not get all dependencies installed on the default runner in
+      # GitHub actions because they have to many PPAs and conflicting packages
+      # installed
+      # TODO: Create a docker image that already has all of the dependencies
+      #       minus Boost already installed
+      image: ubuntu:bionic
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install build tools and depdencies
+        run: |
+          set -e
+
+          apt-get update
+          apt-get install -y software-properties-common git wget
+
+          dpkg --add-architecture i386
+          wget -O - https://dl.winehq.org/wine-builds/winehq.key | apt-key add -
+          add-apt-repository 'deb https://dl.winehq.org/wine-builds/ubuntu/ bionic main'
+          # Needed for faudio, which is needed for Wine but somehow not packaged
+          # in the winehq repos
+          add-apt-repository -y ppa:cybermax-dexter/sdl2-backport
+
+          apt-get install -y --install-recommends winehq-staging wine-staging-dev
+          apt-get install -y build-essential gcc-8 gcc-8-multilib g++-8 g++-8-multilib pkg-config python3-pip nodejs
+          apt-get install -y libxcb1-dev libxcb1-dev:i386
+
+          pip3 install meson ninja
+
+          # Default to GCC 8, since GCC 7.5 that's installed by default is
+          # missing some feature in its C++17 implementation
+          update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
+      - name: Compile Bosot
+        # There does not seem to be an up to date build available for Boost on
+        # Ubuntu 18.04 that also provide static libraries. This means that we
+        # will have to build from source. Luckily we only have to build the
+        # filesystem library for yabridge.
+        run: |
+          set -e
+
+          cd /tmp
+          wget --max-redirect 3 https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.bz2
+          tar -xf boost_1_72_0.tar.bz2
+          rm boost_1_72_0.tar.bz2
+
+          cd boost_1_72_0
+          ./bootstrap.sh --with-toolset=gcc --with-icu --with-python=
+
+          # 32-bit build
+          ./b2 \
+            variant=release \
+            debug-symbols=off \
+            threading=multi \
+            runtime-link=shared \
+            link=shared,static \
+            toolset=gcc \
+            address-model=32 \
+            cflags="${CPPFLAGS} ${CFLAGS} -m32 -fPIC -O3" \
+            cxxflags="${CPPFLAGS} ${CXXFLAGS} -m32 -std=c++14 -fPIC -O3" \
+            linkflags="${LDFLAGS} -m32" \
+            --with-filesystem \
+            --libdir=/usr/local/lib/i386-linux-gnu \
+            -j $(nproc) \
+            \
+            install
+
+          # 64-bit build
+          ./b2 \
+            variant=release \
+            debug-symbols=off \
+            threading=multi \
+            runtime-link=shared \
+            link=shared,static \
+            toolset=gcc \
+            address-model=64 \
+            cflags="${CPPFLAGS} ${CFLAGS} -fPIC -O3" \
+            cxxflags="${CPPFLAGS} ${CXXFLAGS} -std=c++14 -fPIC -O3" \
+            --with-filesystem \
+            -j $(nproc) \
+            \
+            install
+      - name: Build the binaries
+        run: |
+          # I'm not sure why, but on Ubuntu 18.04 the path to the wrap patch
+          # files is relative to the current working directory rather than the
+          # build directory
+          sed -i 's#file:\.\./subprojects#file:./subprojects#' subprojects/*.wrap
+
+          meson setup --buildtype=release --cross-file cross-wine.conf -Duse-bitbridge=true build
+          ninja -C build
+      - name: Create an archive for the binaries
+        run: |
+          set -e
+
+          mkdir yabridge
+          cp build/{libyabridge.so,yabridge-host.exe{,.so},yabridge-host-32.exe{,.so}} yabridge
+          cp README.md yabridge
+
+          export ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz
+          tar -caf "$ARCHIVE_NAME" yabridge
+          rm -rf yabridge
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{ env.ARCHIVE_NAME }}
+          asset_name: ${{ env.ARCHIVE_NAME }}
+          asset_content_type: application/x-compressed-tar
