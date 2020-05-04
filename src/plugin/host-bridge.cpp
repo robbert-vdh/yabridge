@@ -85,7 +85,10 @@ fs::path find_vst_host(PluginArchitecture plugin_arch);
 /**
  * Find the VST plugin .dll file that corresponds to this copy of
  * `libyabridge.so`. This should be the same as the name of this file but with a
- * `.dll` file extension instead of `.so`.
+ * `.dll` file extension instead of `.so`. In case this file does not exist and
+ * the `.so` file is a symlink, we'll also repeat this check for the file it
+ * links to. This is to support the workflow described in issue #3 where you use
+ * symlinks to copies of `libyabridge.so`.
  *
  * @return The a path to the accompanying VST plugin .dll file.
  * @throw std::runtime_error If no matching .dll file could be found.
@@ -639,20 +642,30 @@ fs::path find_vst_host(PluginArchitecture plugin_arch) {
 }
 
 fs::path find_vst_plugin() {
-    fs::path plugin_path = boost::dll::this_line_location();
+    const fs::path this_plugin_path = boost::dll::this_line_location();
+
+    fs::path plugin_path(this_plugin_path);
     plugin_path.replace_extension(".dll");
+    if (fs::exists(plugin_path)) {
+        // Also resolve symlinks here, to support symlinked .dll files
+        return fs::canonical(plugin_path);
+    }
+
+    // In case this files does not exist and our `.so` file is a symlink, we'll
+    // also repeat this check after resolving that symlink to support links to
+    // copies of `libyabridge.so` as described in issue #3
+    fs::path alternative_plugin_path = fs::canonical(this_plugin_path);
+    alternative_plugin_path.replace_extension(".dll");
+    if (fs::exists(alternative_plugin_path)) {
+        return fs::canonical(alternative_plugin_path);
+    }
 
     // This function is used in the constructor's initializer list so we have to
     // throw when the path could not be found
-    if (!fs::exists(plugin_path)) {
-        throw std::runtime_error(
-            "'" + plugin_path.string() +
-            "' does not exist, make sure to rename 'libyabridge.so' to match a "
-            "VST plugin .dll file.");
-    }
-
-    // Also resolve symlinks here
-    return fs::canonical(plugin_path);
+    throw std::runtime_error("'" + plugin_path.string() +
+                             "' does not exist, make sure to rename "
+                             "'libyabridge.so' to match a "
+                             "VST plugin .dll file.");
 }
 
 PluginArchitecture find_plugin_architecture(fs::path plugin_path) {
