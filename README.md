@@ -75,7 +75,7 @@ following script in Bash. This will skip any `.dll` files that are not actually
 VST plugins.
 
 ```shell
-yabridge_home=~/.local/share/yabridge
+yabridge_home=$HOME/.local/share/yabridge
 
 find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.dll' -print0 |
   xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
@@ -111,7 +111,7 @@ You could also use a modified version of the installation script from the
 previous section to install yabridge for all of you VST plugins at once:
 
 ```shell
-yabridge_home=~/.local/share/yabridge
+yabridge_home=$HOME/.local/share/yabridge
 
 find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.dll' -print0 |
   xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
