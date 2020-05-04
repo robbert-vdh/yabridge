@@ -19,10 +19,10 @@ Wine Staging 5.5 and 5.6:
 - Ardour 5.12
 - REAPER 6.09 (does not support symlinks)
 
-At the moment there is a regression in Wine 5.7 that breaks application startup
-behavior, so you'll have to temporarily downgrade to an earlier version of Wine
-if you're got Wine 5.7 installed. Please let me know if there are any issues
-with other VST hosts.
+At the moment there is a regression in **Wine 5.7** that breaks application
+startup behavior, so you'll have to temporarily downgrade to an earlier version
+of Wine if you're got Wine 5.7 installed. Please let me know if there are any
+issues with other VST hosts.
 
 ## Usage
 
