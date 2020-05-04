@@ -65,6 +65,24 @@ float getParameter_proxy(AEffect*, int);
 std::string create_logger_prefix(const fs::path& socket_path);
 
 /**
+ * Finds the Wine VST hsot (either `yabridge-host.exe` or `yabridge-host.exe`
+ * depending on the plugin). For this we will search in two places:
+ *
+ *   1. Alongside libyabridge.so if the file got symlinked. This is useful
+ *      when developing, as you can simply symlink the the libyabridge.so
+ *      file in the build directory without having to install anything to
+ *      /usr.
+ *   2. In the regular search path.
+ *
+ * @param plugin_arch The architecture of the plugin, either 64-bit or 32-bit.
+ *   Used to determine which host application to use, if available.
+ *
+ * @return The a path to the VST host, if found.
+ * @throw std::runtime_error If the Wine VST host could not be found.
+ */
+fs::path find_vst_host(PluginArchitecture plugin_arch);
+
+/**
  * Find the VST plugin .dll file that corresponds to this copy of
  * `libyabridge.so`. This should be the same as the name of this file but with a
  * `.dll` file extension instead of `.so`.
@@ -87,24 +105,6 @@ fs::path find_vst_plugin();
  * @throw std::runtime_error If the file is not a .dll file.
  */
 PluginArchitecture find_plugin_architecture(fs::path);
-
-/**
- * Finds the Wine VST hsot (either `yabridge-host.exe` or `yabridge-host.exe`
- * depending on the plugin). For this we will search in two places:
- *
- *   1. Alongside libyabridge.so if the file got symlinked. This is useful
- *      when developing, as you can simply symlink the the libyabridge.so
- *      file in the build directory without having to install anything to
- *      /usr.
- *   2. In the regular search path.
- *
- * @param plugin_arch The architecture of the plugin, either 64-bit or 32-bit.
- *   Used to determine which host application to use, if available.
- *
- * @return The a path to the VST host, if found.
- * @throw std::runtime_error If the Wine VST host could not be found.
- */
-fs::path find_wine_vst_host(PluginArchitecture plugin_arch);
 
 /**
  * Locate the Wine prefix this file is located in, if it is inside of a wine
@@ -144,7 +144,7 @@ HostBridge& get_bridge_instance(const AEffect& plugin) {
 HostBridge::HostBridge(audioMasterCallback host_callback)
     : vst_plugin_path(find_vst_plugin()),
       vst_plugin_arch(find_plugin_architecture(vst_plugin_path)),
-      vst_host_path(find_wine_vst_host(vst_plugin_arch)),
+      vst_host_path(find_vst_host(vst_plugin_arch)),
       // All the fields should be zero initialized because
       // `Vst2PluginInstance::vstAudioMasterCallback` from Bitwig's plugin
       // bridge will crash otherwise
@@ -598,7 +598,23 @@ std::string create_logger_prefix(const fs::path& socket_path) {
     return prefix.str();
 }
 
-fs::path find_wine_vst_host(PluginArchitecture plugin_arch) {
+std::optional<fs::path> find_wineprefix() {
+    // Try to locate the Wine prefix this .so file is located in by finding the
+    // first parent directory that contains a directory named `dosdevices`
+    fs::path wineprefix_path =
+        boost::dll::this_line_location().remove_filename();
+    while (wineprefix_path != "") {
+        if (fs::is_directory(wineprefix_path / "dosdevices")) {
+            return wineprefix_path;
+        }
+
+        wineprefix_path = wineprefix_path.parent_path();
+    }
+
+    return std::nullopt;
+}
+
+fs::path find_vst_host(PluginArchitecture plugin_arch) {
     auto host_name = yabridge_wine_host_name;
     if (plugin_arch == PluginArchitecture::vst_32) {
         host_name = yabridge_wine_host_name_32bit;
@@ -620,22 +636,6 @@ fs::path find_wine_vst_host(PluginArchitecture plugin_arch) {
     }
 
     return vst_host_path;
-}
-
-std::optional<fs::path> find_wineprefix() {
-    // Try to locate the Wine prefix this .so file is located in by finding the
-    // first parent directory that contains a directory named `dosdevices`
-    fs::path wineprefix_path =
-        boost::dll::this_line_location().remove_filename();
-    while (wineprefix_path != "") {
-        if (fs::is_directory(wineprefix_path / "dosdevices")) {
-            return wineprefix_path;
-        }
-
-        wineprefix_path = wineprefix_path.parent_path();
-    }
-
-    return std::nullopt;
 }
 
 fs::path find_vst_plugin() {
