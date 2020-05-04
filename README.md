@@ -159,7 +159,7 @@ To compile yabridge, you'll need [Meson](https://mesonbuild.com/index.html) and
 the following dependencies:
 
 - gcc (tested using GCC 9.2)
-- A Wine installation with `wiengcc` and the development headers.
+- A Wine installation with `winegcc` and the development headers.
 - Boost
 - xcb
 
