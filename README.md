@@ -14,10 +14,9 @@ Yabridge has been verified to work correctly in the following VST hosts using
 Wine Staging 5.5 and 5.6:
 
 - Bitwig Studio 3.1 and the beta releases of 3.2
-- Carla 2.1 (does not support opening multiple symlinked plugins in the same
-  session)
+- Carla 2.1
 - Ardour 5.12
-- REAPER 6.09 (does not support symlinks)
+- REAPER 6.09
 
 At the moment there is a regression in **Wine 5.7** that breaks application
 startup behavior, so you'll have to temporarily downgrade to an earlier version
@@ -31,11 +30,12 @@ You can either download a prebuilt version of yabridge through the GitHub
 compile it from source using the instructions in the [build](#Building) section
 below.
 
-There are two ways to use yabridge. The recommended way is to use symbolic
-links. The main advantage here is that you will be able to update yabridge for
-all of your plugins in one go, and it avoids having to install anything outside
-of your home directory. Sadly, not all hosts support this behavior. See the list
-above for hosts that don't.
+There are two ways to use yabridge. If you're using Bitwig Studio, then the
+recommended installation method is to use symbolic links. The main advantage
+here is that you will be able to update yabridge for all of your plugins in one
+go, and it avoids having to install anything outside of your home directory.
+Sadly, not all hosts support this behavior. The copy-based installation will
+work for all hosts.
 
 If you have downloaded the prebuilt version of yabridge or if have followed the
 instructions from the [bitbridge](#32-bit-bitbridge) section below, then
@@ -49,16 +49,15 @@ automatically detect and use the Wine prefix the plugin's `.dll` file is located
 in. Alternatively you could set the `WINEPREFIX` environment variable to
 override the Wine prefix for all instances of yabridge.
 
-### Symlinking (recommended)
+### Symlinking (recommended with Bitwig Studio)
 
-This is the recommended way to use yabridge if you're using Bitwig Studio or
-Ardour. You can either use the prebuilt binaries from the GitHub releases
-section, or you could build yabridge directly from source. If you use the
-prebuilt binaries, then you can simply extract them to `~/.local/share/yabridge`
-or to anywhere else in your home directory. If you choose to build from source,
-then you can use the compiled binaries directly from the `build/` directory. For
-the section below I'm going to assume you've extracted the files to
-`~/.local/share/yabridge`.
+This is the recommended way to use yabridge if you're using Bitwig Studio You
+can either use the prebuilt binaries from the GitHub releases section, or you
+can build yabridge directly from source. If you use the prebuilt binaries, then
+you can simply extract them to `~/.local/share/yabridge` or to anywhere else in
+your home directory. If you choose to build from source, then you can use the
+compiled binaries directly from the `build/` directory. For the section below
+I'm going to assume you've extracted the files to `~/.local/share/yabridge`.
 
 To set up yabridge for a VST plugin called
 `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`,
@@ -107,8 +106,7 @@ for a VST plugin called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plug
 cp ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
 ```
 
-You could also use a modified version of the installation script from the
-previous section to install yabridge for all of you VST plugins at once:
+To install yabridge for all VST2 plugins under `~/.wine/drive_c/Program Files/Steinberg/VstPlugins` you could use the following script:
 
 ```shell
 yabridge_home=$HOME/.local/share/yabridge
