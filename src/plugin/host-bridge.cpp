@@ -217,6 +217,13 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
 #endif
     logger.log("");
 
+    // Print the Wine host's STDOUT and STDERR streams to the log file. This
+    // should be done before trying to accept the sockets as otherwise we will
+    // miss all output.
+    async_log_pipe_lines(wine_stdout, wine_stdout_buffer, "[Wine STDOUT] ");
+    async_log_pipe_lines(wine_stderr, wine_stderr_buffer, "[Wine STDERR] ");
+    wine_io_handler = std::thread([&]() { io_context.run(); });
+
     // It's very important that these sockets are connected to in the same
     // order in the Wine VST host
     socket_acceptor.accept(host_vst_dispatch);
@@ -255,11 +262,6 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
             // is being shut down
         }
     });
-
-    // Print the Wine host's STDOUT and STDERR streams to the log file
-    async_log_pipe_lines(wine_stdout, wine_stdout_buffer, "[Wine STDOUT] ");
-    async_log_pipe_lines(wine_stderr, wine_stderr_buffer, "[Wine STDERR] ");
-    wine_io_handler = std::thread([&]() { io_context.run(); });
 
     // Read the plugin's information from the Wine process. This can only be
     // done after we started accepting host callbacks as the plugin might do

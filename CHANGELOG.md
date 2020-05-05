@@ -15,6 +15,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   that's installed for a plugin in another directory. This is not recommended
   though. Fixes #3.
 
+### Fixed
+
+- Redirect the output from the Wine host process earlier in the startup.
+  Otherwise errors printed startup won't be visible, making it very hard to
+  diagnose problems.
+
 ## [1.0.0] - 2020-05-03
 
 ### Added
