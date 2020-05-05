@@ -117,6 +117,10 @@ find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.
   xargs -0 -n1 cp "$yabridge_home/libyabridge.so"
 ```
 
+### Running plugins
+
+Finally, select and open the plugin in your desired wine prefix from your DAW.
+
 ## Runtime dependencies and known issues
 
 Any VST2 plugin should function out of the box, although some plugins will need
