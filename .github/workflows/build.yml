@@ -9,45 +9,13 @@ jobs:
   build-bionic:
     name: Build on Ubuntu 18.04
     container:
-      # I just could not get all dependencies installed on the default runner in
-      # GitHub actions because they have to many PPAs and conflicting packages
-      # installed
-      # TODO: Create a docker image that already has all of the dependencies
-      #       minus Boost already installed
-      image: ubuntu:bionic
+      # This container contains everything needed to build yabridge except for
+      # Boost since that's not easily available and it the parts we need are
+      # quick to compile anyway
+      image: robbert/docker-yabridge:bionic
     steps:
       - uses: actions/checkout@v2
-      - name: Install build tools and depdencies
-        run: |
-          set -e
-
-          apt-get update
-          apt-get install -y software-properties-common git wget
-
-          dpkg --add-architecture i386
-          wget -O - https://dl.winehq.org/wine-builds/winehq.key | apt-key add -
-          add-apt-repository 'deb https://dl.winehq.org/wine-builds/ubuntu/ bionic main'
-          # Needed for faudio, which is needed for Wine but somehow not packaged
-          # in the winehq repos
-          add-apt-repository -y ppa:cybermax-dexter/sdl2-backport
-
-          # Winelib is broken in Wine 5.7, so we'll explicitly install Wine 5.6.
-          # The last three wine-staging-* packages are needed because apt will
-          # otherwise try to install 5.7 anyway
-          apt-get install -y --install-recommends winehq-staging=5.6~bionic wine-staging-dev=5.6~bionic wine-staging=5.6~bionic wine-staging-amd64=5.6~bionic wine-staging-i386=5.6~bionic
-          apt-get install -y build-essential gcc-8 gcc-8-multilib g++-8 g++-8-multilib pkg-config python3-pip nodejs
-          apt-get install -y libxcb1-dev libxcb1-dev:i386
-
-          pip3 install meson ninja
-
-          # Default to GCC 8, since GCC 7.5 that's installed by default is
-          # missing some feature in its C++17 implementation
-          update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
       - name: Compile Bosot
-        # There does not seem to be an up to date build available for Boost on
-        # Ubuntu 18.04 that also provide static libraries. This means that we
-        # will have to build from source. Luckily we only have to build the
-        # filesystem library for yabridge.
         run: |
           set -e
 
@@ -105,12 +73,12 @@ jobs:
       - name: Create an archive for the binaries
         run: |
           set -e
+          export ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz
 
           mkdir yabridge
           cp build/{libyabridge.so,yabridge-host.exe{,.so},yabridge-host-32.exe{,.so}} yabridge
           cp README.md yabridge
 
-          export ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz
           tar -caf "$ARCHIVE_NAME" yabridge
           rm -rf yabridge
       - uses: actions/upload-release-asset@v1
