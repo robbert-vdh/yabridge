@@ -178,26 +178,6 @@ meson setup --buildtype=release --cross-file cross-wine.conf build
 ninja -C build
 ```
 
-If you're getting an error similar to this:
-
-```shell
-meson.build:45:0: ERROR: could not get file:../subprojects/bitsery-patch.tar.xz is the internet available?
-```
-
-Then you could try to start the build from the build directory. This seems to be
-caused by Meson resolving relative paths differently on different distributions.
-
-```shell
-# Remove any already downloaded and Meson subprojects, since this will otherwise
-# cause a conflict
-git clean -Xf subprojects/
-
-mkdir -p build
-cd build
-meson setup --buildtype=release --cross-file ../cross-wine.conf
-ninja
-```
-
 ### 32-bit bitbridge
 
 It is also possible to compile a host application for yabridge that's compatible

@@ -5,6 +5,6 @@ source_url = https://github.com/fraillt/bitsery/archive/d24dfe14f5a756c0f8ad3d56
 source_filename = bitsery-d24dfe14f5a756c0f8ad3d56ae6949ecc2c99b2e.zip
 source_hash = 1a3219e0818db6fa95677deb29087ddccf99087c0777c9313719122062186ae7
 
-patch_url = file:../subprojects/bitsery-patch.tar.xz
+patch_url = file:./subprojects/bitsery-patch.tar.xz
 patch_filename = bitsery-patch.tar.xz
 patch_hash = bdbd46d6be1c3ecf7b8b48f43ab0bd7837458e49ddeef81fee3ac0bdc89767ea

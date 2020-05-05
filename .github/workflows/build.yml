@@ -63,13 +63,8 @@ jobs:
             install
       - name: Build the binaries
         run: |
-          # Ubuntu resolves the relative paths used in the meson wrap files
-          # relatively to the current working directory, so we have to setup the
-          # project directly from the build directory
-          mkdir build
-          cd build
-          meson setup --buildtype=release --cross-file ../cross-wine.conf -Duse-bitbridge=true
-          ninja
+          meson setup --buildtype=release --cross-file cross-wine.conf -Duse-bitbridge=true build
+          ninja -C build
       - name: Create an archive for the binaries
         run: |
           set -e
