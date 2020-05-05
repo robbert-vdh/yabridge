@@ -77,7 +77,7 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       vst_host_aeffect(io_context) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
-        throw std::runtime_error("Could not load a shared library at '" +
+        throw std::runtime_error("Could not load the Windows .DLL file at'" +
                                  plugin_dll_path + "'.");
     }
 

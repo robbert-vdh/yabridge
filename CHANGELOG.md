@@ -14,6 +14,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   symlinking plugins. Now you can use a symlink to a copy of `libyabridge.so`
   that's installed for a plugin in another directory. This is not recommended
   though. Fixes #3.
+- Clarified the error that appears when we're unable to load the `.dll`.
 
 ### Fixed
 
