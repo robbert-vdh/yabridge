@@ -253,9 +253,30 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
     host_callback_handler = std::thread([&]() {
         try {
             while (true) {
+                // TODO: Think of a nicer way to structure this and the similar
+                //       handler in `PluginBridge::handle_dispatch_midi_events`
                 receive_event(
-                    vst_host_callback, std::pair<Logger&, bool>(logger, false),
-                    passthrough_event(&plugin, host_callback_function));
+                    vst_host_callback, std::nullopt, [&](Event& event) {
+                        // MIDI events sent from the plugin back to the host are
+                        // a special case here. They have to sent during the
+                        // `processReplacing()` function or else the host will
+                        // ignore them. Because of this we'll temporarily save
+                        // any MIDI events we receive here, and then we'll
+                        // actually send them to the host at the end of the
+                        // `process_replacing()` function.
+                        if (event.opcode == audioMasterProcessEvents) {
+                            std::lock_guard lock(incoming_midi_events_mutex);
+
+                            incoming_midi_events.push_back(
+                                std::get<DynamicVstEvents>(event.payload));
+                            EventResult response{1, nullptr};
+
+                            return response;
+                        } else {
+                            return passthrough_event(
+                                &plugin, host_callback_function)(event);
+                        }
+                    });
             }
         } catch (const boost::system::system_error&) {
             // This happens when the sockets got closed because the plugin
@@ -531,6 +552,20 @@ void HostBridge::process_replacing(AEffect* /*plugin*/,
         std::copy(response.buffers[channel].begin(),
                   response.buffers[channel].end(), outputs[channel]);
     }
+
+    // Plugins are allowed to send MIDI events during processing using a host
+    // callback. These have to be processed during the actual
+    // `processReplacing()` function or else the hsot will ignore them. To
+    // prevent these events from getting delayed by a sample we'll process them
+    // after the plugin is done processing audio rather than during the time
+    // we're still waiting on the plugin.
+    std::lock_guard lock(incoming_midi_events_mutex);
+    for (DynamicVstEvents& events : incoming_midi_events) {
+        host_callback_function(&plugin, audioMasterProcessEvents, 0, 0,
+                               &events.as_c_events(), 0.0);
+    }
+
+    incoming_midi_events.clear();
 }
 
 float HostBridge::get_parameter(AEffect* /*plugin*/, int index) {

@@ -226,4 +226,20 @@ class HostBridge {
      * `processReplacing` calls.
      */
     std::vector<uint8_t> process_buffer;
+
+    /**
+     * Sending MIDI events sent to the host by the plugin using
+     * `audioMasterProcessEvents` function has to be done during the processing
+     * function. If they are sent during any other time or from another thread,
+     * then the host will just discard them. Because we're receiving our host
+     * callbacks on a separate thread, we have to temporarily store any events
+     * we receive so we can send them to the host at the end of
+     * `process_replacing()`.
+     */
+    std::vector<DynamicVstEvents> incoming_midi_events;
+    /**
+     * Mutex for locking the above event queue, since recieving and processing
+     * now happens in two different threads.
+     */
+    std::mutex incoming_midi_events_mutex;
 };

@@ -361,6 +361,9 @@ class HostCallbackDataConverter : DefaultDataConverter {
                 // done inside of `passthrough_event`.
                 return AEffect(*plugin);
                 break;
+            case audioMasterProcessEvents:
+                return DynamicVstEvents(*static_cast<const VstEvents*>(data));
+                break;
             // We detect whether an opcode should return a string by checking
             // whether there's a zeroed out buffer behind the void pointer. This
             // works for any host, but not all plugins zero out their buffers.
