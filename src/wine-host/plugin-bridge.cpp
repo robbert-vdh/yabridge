@@ -77,8 +77,8 @@ PluginBridge::PluginBridge(std::string plugin_dll_path,
       vst_host_aeffect(io_context) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
-        throw std::runtime_error("Could not load the Windows .DLL file at'" +
-                                 plugin_dll_path + "'.");
+        throw std::runtime_error("Could not load the Windows .dll file at '" +
+                                 plugin_dll_path + "'");
     }
 
     // VST plugin entry point functions should be called `VSTPluginMain`, but
