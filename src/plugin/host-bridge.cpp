@@ -256,7 +256,8 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
                 // TODO: Think of a nicer way to structure this and the similar
                 //       handler in `PluginBridge::handle_dispatch_midi_events`
                 receive_event(
-                    vst_host_callback, std::nullopt, [&](Event& event) {
+                    vst_host_callback, std::pair<Logger&, bool>(logger, false),
+                    [&](Event& event) {
                         // MIDI events sent from the plugin back to the host are
                         // a special case here. They have to sent during the
                         // `processReplacing()` function or else the host will
