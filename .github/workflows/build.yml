@@ -13,11 +13,11 @@ on:
 jobs:
   build-bionic:
     name: Build on Ubuntu 18.04
-    container:
-      # This container contains everything needed to build yabridge except for
-      # Boost since that's not easily available and it the parts we need are
-      # quick to compile anyway
-      image: robbert/docker-yabridge:bionic
+    runs-on: ubuntu-latest
+    # This container contains everything needed to build yabridge except for
+    # Boost since that's not easily available and it the parts we need are
+    # quick to compile anyway
+    container: robbert/docker-yabridge:bionic
     outputs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
     steps:
@@ -97,11 +97,11 @@ jobs:
 
   build-focal:
     name: Build on Ubuntu 20.04
-    container:
-      # This container contains everything needed to build yabridge except for
-      # Boost since that's not easily available and it the parts we need are
-      # quick to compile anyway
-      image: robbert/docker-yabridge:focal
+    runs-on: ubuntu-latest
+    # This container contains everything needed to build yabridge except for
+    # Boost since that's not easily available and it the parts we need are
+    # quick to compile anyway
+    container: robbert/docker-yabridge:focal
     outputs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
     steps:
