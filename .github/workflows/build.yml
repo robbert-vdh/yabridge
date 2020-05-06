@@ -2,12 +2,11 @@ name: Automated builds
 
 on:
   push:
-    # TODO: Uncomment these before squashing and merging
-    # branches:
-    #   - master
+    branches:
+      - master
   pull_request:
-    # branches:
-    #   - master
+    branches:
+      - master
   release:
     types: [created]
 
