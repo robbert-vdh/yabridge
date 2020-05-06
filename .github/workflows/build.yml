@@ -10,11 +10,6 @@ on:
   release:
     types: [created]
 
-env:
-  BOOST_URL: https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.gz
-  BOOST_CHECKSUM: c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f  boost_1_72_0.tar.gz
-  BOOST_VERSION: 1_72_0
-
 jobs:
   build-bionic:
     name: Build on Ubuntu 18.04
