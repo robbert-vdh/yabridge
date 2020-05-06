@@ -1,5 +1,7 @@
 # yabridge
 
+[![Automated builds](https://github.com/robbert-vdh/yabridge/workflows/Automated%20builds/badge.svg?branch=master&event=push)](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22)
+
 Yet Another way to use Windows VST plugins on Linux. Yabridge seamlessly
 supports running both 64-bit Windows VST2 plugins as well as 32-bit Windows VST2
 plugins in a 64-bit Linux VST host. This project aims to be as transparent as

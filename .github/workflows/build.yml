@@ -1,14 +1,20 @@
-name: Build artifacts
+name: Automated builds
 
 on:
   push:
-    branches:
-      - master
+    # TODO: Uncomment these before squashing and merging
+    # branches:
+    #   - master
   pull_request:
-    branches:
-      - master
+    # branches:
+    #   - master
   release:
     types: [created]
+
+env:
+  BOOST_URL: https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.gz
+  BOOST_CHECKSUM: c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f  boost_1_72_0.tar.gz
+  BOOST_VERSION: 1_72_0
 
 jobs:
   build-bionic:
@@ -20,27 +26,30 @@ jobs:
     container: robbert/docker-yabridge:bionic
     outputs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
+    # GitHub actions does not allow you to share steps between jobs and their
+    # yaml parser does not support anchors, so we'll have to duplicate all of
+    # these steps
+    # https://github.community/t5/GitHub-Actions/reusing-sharing-inheriting-steps-between-jobs-declarations/td-p/37849
     steps:
-      # GitHub actions does not allow you to share steps between jobs and their
-      # yaml parser does not support anchors, so we'll have to duplicate all of
-      # these steps
-      # https://github.community/t5/GitHub-Actions/reusing-sharing-inheriting-steps-between-jobs-declarations/td-p/37849
       - uses: actions/checkout@v2
+      # Needed for git-describe to do anything useful
+      - name: Fetch all git history
+        run: git fetch --prune --tags --unshallow
       - name: Determine build archive name
         run: |
           export ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz
           echo ::set-env "name=ARCHIVE_NAME::$ARCHIVE_NAME"
-      - name: Compile Bosot
+      - name: Compile Boost
         run: |
           set -e
 
           cd /tmp
-          wget --max-redirect 3 https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.gz
-          sha256sum -c <<<"c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f  boost_1_72_0.tar.gz"
-          tar -xf boost_1_72_0.tar.gz
-          rm boost_1_72_0.tar.gz
+          wget --quiet --max-redirect 3 "$BOOST_URL"
+          echo "$BOOST_CHECKSUM" | sha256sum -c
+          tar -xf "boost_${BOOST_VERSION}.tar.gz"
+          rm "boost_${BOOST_VERSION}.tar.gz"
 
-          cd boost_1_72_0
+          cd boost_${BOOST_VERSION}
           ./bootstrap.sh --with-toolset=gcc --with-icu --with-python=
 
           # 32-bit build
@@ -78,6 +87,11 @@ jobs:
             install
       - name: Build the binaries
         run: |
+          # Wine won't create a Wine prefix in ~/.wine because /github/home is
+          # not owned by the user that's executing this job
+          mkdir -p /tmp/prefix
+          export WINEPREFIX=/tmp/prefix
+
           meson setup --buildtype=release --cross-file cross-wine.conf -Duse-bitbridge=true build
           ninja -C build
       - name: Create an archive for the binaries
@@ -85,7 +99,8 @@ jobs:
           set -e
 
           mkdir yabridge
-          cp build/{libyabridge.so,yabridge-host.exe{,.so},yabridge-host-32.exe{,.so}} yabridge
+          # This is ran under dash which does not support brace expansion
+          cp build/libyabridge.so build/yabridge-host.exe build/yabridge-host.exe.so build/yabridge-host-32.exe build/yabridge-host-32.exe.so yabridge
           cp README.md yabridge
 
           tar -caf "$ARCHIVE_NAME" yabridge
@@ -106,21 +121,27 @@ jobs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
     steps:
       - uses: actions/checkout@v2
+      # Needed for git-describe to do anything useful
+      - name: Fetch all git history
+        run: git fetch --prune --tags --unshallow
       - name: Determine build archive name
         run: |
-          export ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz
+          export ARCHIVE_NAME=yabridge-$(git describe --always).tar.gz
           echo ::set-env "name=ARCHIVE_NAME::$ARCHIVE_NAME"
-      - name: Compile Bosot
+      # TODO: Maybe we should move this to the Docker image. Compiling and
+      #       copying took only a few seconds on my machine, but the disk IO
+      #       is killing GitHub Actions.
+      - name: Compile Boost
         run: |
           set -e
 
           cd /tmp
-          wget --max-redirect 3 https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.gz
-          sha256sum -c <<<"c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f  boost_1_72_0.tar.gz"
-          tar -xf boost_1_72_0.tar.gz
-          rm boost_1_72_0.tar.gz
+          wget --quiet --max-redirect 3 "$BOOST_URL"
+          echo "$BOOST_CHECKSUM" | sha256sum -c
+          tar -xf "boost_${BOOST_VERSION}.tar.gz"
+          rm "boost_${BOOST_VERSION}.tar.gz"
 
-          cd boost_1_72_0
+          cd boost_${BOOST_VERSION}
           ./bootstrap.sh --with-toolset=gcc --with-icu --with-python=
 
           # 32-bit build
@@ -158,6 +179,11 @@ jobs:
             install
       - name: Build the binaries
         run: |
+          # Wine won't create a Wine prefix in ~/.wine because /github/home is
+          # not owned by the user that's executing this job
+          mkdir -p /tmp/prefix
+          export WINEPREFIX=/tmp/prefix
+
           meson setup --buildtype=release --cross-file cross-wine.conf -Duse-bitbridge=true build
           ninja -C build
       - name: Create an archive for the binaries
@@ -165,7 +191,8 @@ jobs:
           set -e
 
           mkdir yabridge
-          cp build/{libyabridge.so,yabridge-host.exe{,.so},yabridge-host-32.exe{,.so}} yabridge
+          # This is ran under dash which does not support brace expansion
+          cp build/libyabridge.so build/yabridge-host.exe build/yabridge-host.exe.so build/yabridge-host-32.exe build/yabridge-host-32.exe.so yabridge
           cp README.md yabridge
 
           tar -caf "$ARCHIVE_NAME" yabridge
