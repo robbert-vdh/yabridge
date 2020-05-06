@@ -32,9 +32,11 @@
 // These constants are limits used by bitsery
 
 /**
- * The maximum number of audio channels supported.
+ * The maximum number of audio channels supported. Some plugins report a huge
+ * amount of input channels, even though they don't even process any incoming
+ * audio.
  */
-constexpr size_t max_audio_channels = 32;
+constexpr size_t max_audio_channels = 256;
 /**
  * The maximum number of samples in a buffer.
  */

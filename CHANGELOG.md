@@ -24,6 +24,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   though. Fixes #3.
 - Changed Wine prefix detection to be relative to the plugin's `.dll` file,
   rather than the loaded `.so` file.
+- Increased the maximum number of audio channels from 32 to 256.
 - Clarified the error that appears when we're unable to load the `.dll`.
 
 ### Fixed
