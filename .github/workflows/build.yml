@@ -1,11 +1,16 @@
 name: Build artifacts
 
 on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
   release:
     types: [created]
 
 jobs:
-  # TODO: Add another job for Ubuntu 20.04
   build-bionic:
     name: Build on Ubuntu 18.04
     container:
@@ -13,8 +18,18 @@ jobs:
       # Boost since that's not easily available and it the parts we need are
       # quick to compile anyway
       image: robbert/docker-yabridge:bionic
+    outputs:
+      artifact-name: ${{ env.ARCHIVE_NAME }}
     steps:
+      # GitHub actions does not allow you to share steps between jobs and their
+      # yaml parser does not support anchors, so we'll have to duplicate all of
+      # these steps
+      # https://github.community/t5/GitHub-Actions/reusing-sharing-inheriting-steps-between-jobs-declarations/td-p/37849
       - uses: actions/checkout@v2
+      - name: Determine build archive name
+        run: |
+          export ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz
+          echo ::set-env "name=ARCHIVE_NAME::$ARCHIVE_NAME"
       - name: Compile Bosot
         run: |
           set -e
@@ -23,7 +38,7 @@ jobs:
           wget --max-redirect 3 https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.gz
           sha256sum -c <<<"c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f  boost_1_72_0.tar.gz"
           tar -xf boost_1_72_0.tar.gz
-          rm boost_1_72_0.tar.gc
+          rm boost_1_72_0.tar.gz
 
           cd boost_1_72_0
           ./bootstrap.sh --with-toolset=gcc --with-icu --with-python=
@@ -68,7 +83,6 @@ jobs:
       - name: Create an archive for the binaries
         run: |
           set -e
-          export ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz
 
           mkdir yabridge
           cp build/{libyabridge.so,yabridge-host.exe{,.so},yabridge-host-32.exe{,.so}} yabridge
@@ -76,11 +90,117 @@ jobs:
 
           tar -caf "$ARCHIVE_NAME" yabridge
           rm -rf yabridge
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.ARCHIVE_NAME }}
+          path: ${{ env.ARCHIVE_NAME }}
+
+  build-focal:
+    name: Build on Ubuntu 20.04
+    container:
+      # This container contains everything needed to build yabridge except for
+      # Boost since that's not easily available and it the parts we need are
+      # quick to compile anyway
+      image: robbert/docker-yabridge:focal
+    outputs:
+      artifact-name: ${{ env.ARCHIVE_NAME }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Determine build archive name
+        run: |
+          export ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz
+          echo ::set-env "name=ARCHIVE_NAME::$ARCHIVE_NAME"
+      - name: Compile Bosot
+        run: |
+          set -e
+
+          cd /tmp
+          wget --max-redirect 3 https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.gz
+          sha256sum -c <<<"c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f  boost_1_72_0.tar.gz"
+          tar -xf boost_1_72_0.tar.gz
+          rm boost_1_72_0.tar.gz
+
+          cd boost_1_72_0
+          ./bootstrap.sh --with-toolset=gcc --with-icu --with-python=
+
+          # 32-bit build
+          ./b2 \
+            variant=release \
+            debug-symbols=off \
+            threading=multi \
+            runtime-link=shared \
+            link=shared,static \
+            toolset=gcc \
+            address-model=32 \
+            cflags="${CPPFLAGS} ${CFLAGS} -m32 -fPIC -O3" \
+            cxxflags="${CPPFLAGS} ${CXXFLAGS} -m32 -std=c++14 -fPIC -O3" \
+            linkflags="${LDFLAGS} -m32" \
+            --with-filesystem \
+            --libdir=/usr/local/lib/i386-linux-gnu \
+            -j $(nproc) \
+            \
+            install
+
+          # 64-bit build
+          ./b2 \
+            variant=release \
+            debug-symbols=off \
+            threading=multi \
+            runtime-link=shared \
+            link=shared,static \
+            toolset=gcc \
+            address-model=64 \
+            cflags="${CPPFLAGS} ${CFLAGS} -fPIC -O3" \
+            cxxflags="${CPPFLAGS} ${CXXFLAGS} -std=c++14 -fPIC -O3" \
+            --with-filesystem \
+            -j $(nproc) \
+            \
+            install
+      - name: Build the binaries
+        run: |
+          meson setup --buildtype=release --cross-file cross-wine.conf -Duse-bitbridge=true build
+          ninja -C build
+      - name: Create an archive for the binaries
+        run: |
+          set -e
+
+          mkdir yabridge
+          cp build/{libyabridge.so,yabridge-host.exe{,.so},yabridge-host-32.exe{,.so}} yabridge
+          cp README.md yabridge
+
+          tar -caf "$ARCHIVE_NAME" yabridge
+          rm -rf yabridge
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.ARCHIVE_NAME }}
+          path: ${{ env.ARCHIVE_NAME }}
+
+  upload-releases:
+    name: Upload the created artifacts to the releases page
+    runs-on: ubuntu-latest
+    needs: [build-bionic, build-focal]
+    if: ${{ github.event_name == 'release }}
+    steps:
+      # They don't allow you to specify multiple file names for these actions
+      - uses: actions/download-artifact@v2
+        with:
+          name: ${{ needs.build-bionic.outputs.artifact-name }}
+      - uses: actions/download-artifact@v2
+        with:
+          name: ${{ needs.build-focal.outputs.artifact-name }}
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ env.ARCHIVE_NAME }}
-          asset_name: ${{ env.ARCHIVE_NAME }}
+          asset_path: ./${{ needs.build-bionic.outputs.artifact-name }}
+          asset_name: $${{ needs.build-bionic.outputs.artifact-name }}
+          asset_content_type: application/x-compressed-tar
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{ needs.build-focal.outputs.artifact-name }}
+          asset_name: $${{ needs.build-focal.outputs.artifact-name }}
           asset_content_type: application/x-compressed-tar
