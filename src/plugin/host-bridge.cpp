@@ -129,6 +129,12 @@ std::optional<fs::path> find_wineprefix();
 fs::path generate_endpoint_name();
 
 /**
+ * Return a path to this `.so` file. This can be used to find out from where
+ * this link to or copy of `libyabridge.so` was loaded.
+ */
+fs::path get_this_file_location();
+
+/**
  * Locate the Wine prefix and set the `WINEPREFIX` environment variable if
  * found. This way it's also possible to run .dll files outside of a Wine prefix
  * using the user's default prefix.
@@ -642,8 +648,7 @@ std::string create_logger_prefix(const fs::path& socket_path) {
 std::optional<fs::path> find_wineprefix() {
     // Try to locate the Wine prefix this .so file is located in by finding the
     // first parent directory that contains a directory named `dosdevices`
-    fs::path wineprefix_path =
-        boost::dll::this_line_location().remove_filename();
+    fs::path wineprefix_path = get_this_file_location().remove_filename();
     while (wineprefix_path != "") {
         if (fs::is_directory(wineprefix_path / "dosdevices")) {
             return wineprefix_path;
@@ -709,8 +714,7 @@ fs::path find_vst_host(PluginArchitecture plugin_arch) {
     }
 
     fs::path host_path =
-        fs::canonical(boost::dll::this_line_location()).remove_filename() /
-        host_name;
+        fs::canonical(get_this_file_location()).remove_filename() / host_name;
     if (fs::exists(host_path)) {
         return host_path;
     }
@@ -728,7 +732,7 @@ fs::path find_vst_host(PluginArchitecture plugin_arch) {
 
 fs::path find_vst_plugin() {
     const fs::path this_plugin_path =
-        "/" / fs::path("/" + boost::dll::this_line_location().string());
+        "/" / fs::path("/" + get_this_file_location().string());
 
     fs::path plugin_path(this_plugin_path);
     plugin_path.replace_extension(".dll");
@@ -784,6 +788,17 @@ fs::path generate_endpoint_name() {
     //       at the same time
 
     return candidate_endpoint;
+}
+
+fs::path get_this_file_location() {
+    // HACK: Not sure why, but `boost::dll::this_line_location()` returns a path
+    //       starting with a double slash on some systems. I've seen this happen
+    //       on both Ubuntu 18.04 and 20.04, but not on Arch based distros.
+    //       Under Linux a path starting with two slashes is treated the same as
+    //       a path starting with only a single slash, but Wine will refuse to
+    //       load any files when the path starts with two slashes. Prepending
+    //       `/` to a pad coerces theses two slashes into a single slash.
+    return "/" / boost::dll::this_line_location();
 }
 
 bp::environment set_wineprefix() {

@@ -26,6 +26,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed plugins failing to load on certain Debian based distros because of paths
+  starting with two forward slashes.
 - Redirect the output from the Wine host process earlier in the startup.
   Otherwise errors printed startup won't be visible, making it very hard to
   diagnose problems.
