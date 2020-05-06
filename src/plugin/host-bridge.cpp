@@ -65,6 +65,20 @@ float getParameter_proxy(AEffect*, int);
 std::string create_logger_prefix(const fs::path& socket_path);
 
 /**
+ * Determine the architecture of a VST plugin (or rather, a .dll file) based on
+ * it's header values.
+ *
+ * See https://docs.microsoft.com/en-us/windows/win32/debug/pe-format for more
+ * information on the PE32 format.
+ *
+ * @param plugin_path The path to the .dll file we're going to check.
+ *
+ * @return The detected architecture.
+ * @throw std::runtime_error If the file is not a .dll file.
+ */
+PluginArchitecture find_vst_architecture(fs::path);
+
+/**
  * Finds the Wine VST hsot (either `yabridge-host.exe` or `yabridge-host.exe`
  * depending on the plugin). For this we will search in two places:
  *
@@ -94,20 +108,6 @@ fs::path find_vst_host(PluginArchitecture plugin_arch);
  * @throw std::runtime_error If no matching .dll file could be found.
  */
 fs::path find_vst_plugin();
-
-/**
- * Determine the architecture of a VST plugin (or rather, a .dll file) based on
- * it's header values.
- *
- * See https://docs.microsoft.com/en-us/windows/win32/debug/pe-format for more
- * information on the PE32 format.
- *
- * @param plugin_path The path to the .dll file we're going to check.
- *
- * @return The detected architecture.
- * @throw std::runtime_error If the file is not a .dll file.
- */
-PluginArchitecture find_plugin_architecture(fs::path);
 
 /**
  * Locate the Wine prefix this file is located in, if it is inside of a wine
@@ -146,7 +146,7 @@ HostBridge& get_bridge_instance(const AEffect& plugin) {
 
 HostBridge::HostBridge(audioMasterCallback host_callback)
     : vst_plugin_path(find_vst_plugin()),
-      vst_plugin_arch(find_plugin_architecture(vst_plugin_path)),
+      vst_plugin_arch(find_vst_architecture(vst_plugin_path)),
       vst_host_path(find_vst_host(vst_plugin_arch)),
       // All the fields should be zero initialized because
       // `Vst2PluginInstance::vstAudioMasterCallback` from Bitwig's plugin
@@ -655,58 +655,7 @@ std::optional<fs::path> find_wineprefix() {
     return std::nullopt;
 }
 
-fs::path find_vst_host(PluginArchitecture plugin_arch) {
-    auto host_name = yabridge_wine_host_name;
-    if (plugin_arch == PluginArchitecture::vst_32) {
-        host_name = yabridge_wine_host_name_32bit;
-    }
-
-    fs::path host_path =
-        fs::canonical(boost::dll::this_line_location()).remove_filename() /
-        host_name;
-    if (fs::exists(host_path)) {
-        return host_path;
-    }
-
-    // Bosot will return an empty path if the file could not be found in the
-    // search path
-    const fs::path vst_host_path = bp::search_path(host_name);
-    if (vst_host_path == "") {
-        throw std::runtime_error("Could not locate '" + std::string(host_name) +
-                                 "'");
-    }
-
-    return vst_host_path;
-}
-
-fs::path find_vst_plugin() {
-    const fs::path this_plugin_path = boost::dll::this_line_location();
-
-    fs::path plugin_path(this_plugin_path);
-    plugin_path.replace_extension(".dll");
-    if (fs::exists(plugin_path)) {
-        // Also resolve symlinks here, to support symlinked .dll files
-        return fs::canonical(plugin_path);
-    }
-
-    // In case this files does not exist and our `.so` file is a symlink, we'll
-    // also repeat this check after resolving that symlink to support links to
-    // copies of `libyabridge.so` as described in issue #3
-    fs::path alternative_plugin_path = fs::canonical(this_plugin_path);
-    alternative_plugin_path.replace_extension(".dll");
-    if (fs::exists(alternative_plugin_path)) {
-        return fs::canonical(alternative_plugin_path);
-    }
-
-    // This function is used in the constructor's initializer list so we have to
-    // throw when the path could not be found
-    throw std::runtime_error("'" + plugin_path.string() +
-                             "' does not exist, make sure to rename "
-                             "'libyabridge.so' to match a "
-                             "VST plugin .dll file.");
-}
-
-PluginArchitecture find_plugin_architecture(fs::path plugin_path) {
+PluginArchitecture find_vst_architecture(fs::path plugin_path) {
     std::ifstream file(plugin_path, std::ifstream::binary | std::ifstream::in);
 
     // The linker will place the offset where the PE signature is placed at the
@@ -751,6 +700,58 @@ PluginArchitecture find_plugin_architecture(fs::path plugin_path) {
             throw std::runtime_error(error_msg.str());
         } break;
     }
+}
+
+fs::path find_vst_host(PluginArchitecture plugin_arch) {
+    auto host_name = yabridge_wine_host_name;
+    if (plugin_arch == PluginArchitecture::vst_32) {
+        host_name = yabridge_wine_host_name_32bit;
+    }
+
+    fs::path host_path =
+        fs::canonical(boost::dll::this_line_location()).remove_filename() /
+        host_name;
+    if (fs::exists(host_path)) {
+        return host_path;
+    }
+
+    // Bosot will return an empty path if the file could not be found in the
+    // search path
+    const fs::path vst_host_path = bp::search_path(host_name);
+    if (vst_host_path == "") {
+        throw std::runtime_error("Could not locate '" + std::string(host_name) +
+                                 "'");
+    }
+
+    return vst_host_path;
+}
+
+fs::path find_vst_plugin() {
+    const fs::path this_plugin_path =
+        "/" / fs::path("/" + boost::dll::this_line_location().string());
+
+    fs::path plugin_path(this_plugin_path);
+    plugin_path.replace_extension(".dll");
+    if (fs::exists(plugin_path)) {
+        // Also resolve symlinks here, to support symlinked .dll files
+        return fs::canonical(plugin_path);
+    }
+
+    // In case this files does not exist and our `.so` file is a symlink, we'll
+    // also repeat this check after resolving that symlink to support links to
+    // copies of `libyabridge.so` as described in issue #3
+    fs::path alternative_plugin_path = fs::canonical(this_plugin_path);
+    alternative_plugin_path.replace_extension(".dll");
+    if (fs::exists(alternative_plugin_path)) {
+        return fs::canonical(alternative_plugin_path);
+    }
+
+    // This function is used in the constructor's initializer list so we have to
+    // throw when the path could not be found
+    throw std::runtime_error("'" + plugin_path.string() +
+                             "' does not exist, make sure to rename "
+                             "'libyabridge.so' to match a "
+                             "VST plugin .dll file.");
 }
 
 fs::path generate_endpoint_name() {
