@@ -646,9 +646,10 @@ std::string create_logger_prefix(const fs::path& socket_path) {
 }
 
 std::optional<fs::path> find_wineprefix() {
-    // Try to locate the Wine prefix this .so file is located in by finding the
-    // first parent directory that contains a directory named `dosdevices`
-    fs::path wineprefix_path = get_this_file_location().remove_filename();
+    // Try to locate the Wine prefix the plugin's .dll file is located in by
+    // finding the first parent directory that contains a directory named
+    // `dosdevices`
+    fs::path wineprefix_path = find_vst_plugin();
     while (wineprefix_path != "") {
         if (fs::is_directory(wineprefix_path / "dosdevices")) {
             return wineprefix_path;
