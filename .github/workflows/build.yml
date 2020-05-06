@@ -38,52 +38,6 @@ jobs:
         run: |
           export ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz
           echo ::set-env "name=ARCHIVE_NAME::$ARCHIVE_NAME"
-      - name: Compile Boost
-        run: |
-          set -e
-
-          cd /tmp
-          wget --quiet --max-redirect 3 "$BOOST_URL"
-          echo "$BOOST_CHECKSUM" | sha256sum -c
-          tar -xf "boost_${BOOST_VERSION}.tar.gz"
-          rm "boost_${BOOST_VERSION}.tar.gz"
-
-          cd boost_${BOOST_VERSION}
-          ./bootstrap.sh --with-toolset=gcc --with-icu --with-python=
-
-          # 32-bit build
-          ./b2 \
-            variant=release \
-            debug-symbols=off \
-            threading=multi \
-            runtime-link=shared \
-            link=shared,static \
-            toolset=gcc \
-            address-model=32 \
-            cflags="${CPPFLAGS} ${CFLAGS} -m32 -fPIC -O3" \
-            cxxflags="${CPPFLAGS} ${CXXFLAGS} -m32 -std=c++14 -fPIC -O3" \
-            linkflags="${LDFLAGS} -m32" \
-            --with-filesystem \
-            --libdir=/usr/local/lib/i386-linux-gnu \
-            -j $(nproc) \
-            \
-            install
-
-          # 64-bit build
-          ./b2 \
-            variant=release \
-            debug-symbols=off \
-            threading=multi \
-            runtime-link=shared \
-            link=shared,static \
-            toolset=gcc \
-            address-model=64 \
-            cflags="${CPPFLAGS} ${CFLAGS} -fPIC -O3" \
-            cxxflags="${CPPFLAGS} ${CXXFLAGS} -std=c++14 -fPIC -O3" \
-            --with-filesystem \
-            -j $(nproc) \
-            \
-            install
       - name: Build the binaries
         run: |
           # Wine won't create a Wine prefix in ~/.wine because /github/home is
@@ -127,55 +81,6 @@ jobs:
         run: |
           export ARCHIVE_NAME=yabridge-$(git describe --always).tar.gz
           echo ::set-env "name=ARCHIVE_NAME::$ARCHIVE_NAME"
-      # TODO: Maybe we should move this to the Docker image. Compiling and
-      #       copying took only a few seconds on my machine, but the disk IO
-      #       is killing GitHub Actions.
-      - name: Compile Boost
-        run: |
-          set -e
-
-          cd /tmp
-          wget --quiet --max-redirect 3 "$BOOST_URL"
-          echo "$BOOST_CHECKSUM" | sha256sum -c
-          tar -xf "boost_${BOOST_VERSION}.tar.gz"
-          rm "boost_${BOOST_VERSION}.tar.gz"
-
-          cd boost_${BOOST_VERSION}
-          ./bootstrap.sh --with-toolset=gcc --with-icu --with-python=
-
-          # 32-bit build
-          ./b2 \
-            variant=release \
-            debug-symbols=off \
-            threading=multi \
-            runtime-link=shared \
-            link=shared,static \
-            toolset=gcc \
-            address-model=32 \
-            cflags="${CPPFLAGS} ${CFLAGS} -m32 -fPIC -O3" \
-            cxxflags="${CPPFLAGS} ${CXXFLAGS} -m32 -std=c++14 -fPIC -O3" \
-            linkflags="${LDFLAGS} -m32" \
-            --with-filesystem \
-            --libdir=/usr/local/lib/i386-linux-gnu \
-            -j $(nproc) \
-            \
-            install
-
-          # 64-bit build
-          ./b2 \
-            variant=release \
-            debug-symbols=off \
-            threading=multi \
-            runtime-link=shared \
-            link=shared,static \
-            toolset=gcc \
-            address-model=64 \
-            cflags="${CPPFLAGS} ${CFLAGS} -fPIC -O3" \
-            cxxflags="${CPPFLAGS} ${CXXFLAGS} -std=c++14 -fPIC -O3" \
-            --with-filesystem \
-            -j $(nproc) \
-            \
-            install
       - name: Build the binaries
         run: |
           # Wine won't create a Wine prefix in ~/.wine because /github/home is
