@@ -257,6 +257,9 @@ auto passthrough_event(AEffect* plugin, F callback) {
                 [&](DynamicVstEvents& events) -> void* {
                     return &events.as_c_events();
                 },
+                [&](DynamicSpeakerArrangement& speaker_arrangement) -> void* {
+                    return &speaker_arrangement.as_c_speaker_arrangement();
+                },
                 [&](WantsChunkBuffer&) -> void* {
                     return string_buffer.data();
                 },

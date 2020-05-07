@@ -183,6 +183,10 @@ void Logger::log_event(bool is_dispatch,
                 [&](const DynamicVstEvents& events) {
                     message << "<" << events.events.size() << " midi_events>";
                 },
+                [&](const DynamicSpeakerArrangement& speaker_arrangement) {
+                    message << "<" << speaker_arrangement.speakers.size()
+                            << " speakers>";
+                },
                 [&](const WantsChunkBuffer&) {
                     message << "<writable_buffer>";
                 },

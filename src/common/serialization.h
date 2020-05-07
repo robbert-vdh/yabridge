@@ -333,6 +333,7 @@ using EventPayload = std::variant<std::nullptr_t,
                                   native_size_t,
                                   AEffect,
                                   DynamicVstEvents,
+                                  DynamicSpeakerArrangement,
                                   WantsChunkBuffer,
                                   VstIOProperties,
                                   VstMidiKeyName,
@@ -357,6 +358,9 @@ void serialize(S& s, EventPayload& payload) {
               },
               [](S& s, AEffect& effect) { s.object(effect); },
               [](S& s, DynamicVstEvents& events) { s.object(events); },
+              [](S& s, DynamicSpeakerArrangement& speaker_arrangement) {
+                  s.object(speaker_arrangement);
+              },
               [](S& s, VstIOProperties& props) { s.object(props); },
               [](S& s, VstMidiKeyName& key_name) { s.object(key_name); },
               [](S& s, VstParameterProperties& props) { s.object(props); },
