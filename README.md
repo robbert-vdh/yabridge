@@ -21,10 +21,7 @@ Wine Staging 5.5 and 5.6:
 - REAPER 6.09
 - Renoise 3.2.1
 
-At the moment there is a regression in **Wine 5.7** that breaks application
-startup behavior, so you'll have to temporarily downgrade to an earlier version
-of Wine if you're got Wine 5.7 installed. Please let me know if there are any
-issues with other VST hosts.
+Please let me know if there are any issues with other VST hosts.
 
 ## Usage
 
@@ -166,7 +163,10 @@ To compile yabridge, you'll need [Meson](https://mesonbuild.com/index.html) and
 the following dependencies:
 
 - gcc (tested using GCC 9.2)
-- A Wine installation with `winegcc` and the development headers.
+- A Wine installation with `winegcc` and the development headers. At the moment
+  there's a regression in **Wine 5.7** causing compiled winelib applications to
+  break. You'll have to temporarily downgrade to an earlier version of Wine if
+  you've got Wine 5.7 installed and you're trying to compile yabridge.
 - Boost
 - xcb
 
