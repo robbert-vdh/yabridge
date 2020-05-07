@@ -161,6 +161,7 @@ void Logger::log_event(bool is_dispatch,
         message << "(index = " << index << ", value = " << value
                 << ", option = " << option << ", data = ";
 
+        // TODO: Print value payload
         std::visit(
             overload{
                 [&](const std::nullptr_t&) { message << "<nullptr>"; },
@@ -185,7 +186,7 @@ void Logger::log_event(bool is_dispatch,
                 },
                 [&](const DynamicSpeakerArrangement& speaker_arrangement) {
                     message << "<" << speaker_arrangement.speakers.size()
-                            << " speakers>";
+                            << " output_speakers>";
                 },
                 [&](const WantsChunkBuffer&) {
                     message << "<writable_buffer>";
@@ -224,6 +225,7 @@ void Logger::log_event_response(bool is_dispatch,
 
         message << return_value;
 
+        // TODO: Print value payload
         std::visit(
             overload{
                 [&](const std::nullptr_t&) {},
@@ -240,6 +242,10 @@ void Logger::log_event_response(bool is_dispatch,
                     message << ", <" << buffer.size() << " byte chunk>";
                 },
                 [&](const AEffect&) { message << ", <AEffect_object>"; },
+                [&](const DynamicSpeakerArrangement& speaker_arrangement) {
+                    message << ", <" << speaker_arrangement.speakers.size()
+                            << " output_speakers>";
+                },
                 [&](const VstIOProperties&) { message << ", <io_properties>"; },
                 [&](const VstMidiKeyName&) { message << ", <key_name>"; },
                 [&](const VstParameterProperties& props) {

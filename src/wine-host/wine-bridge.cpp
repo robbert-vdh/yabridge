@@ -206,7 +206,7 @@ void WineBridge::handle_dispatch() {
                         plugin, event.opcode, event.index, event.value,
                         &events.as_c_events(), event.option);
 
-                    EventResult response{return_value, nullptr};
+                    EventResult response{return_value, nullptr, std::nullopt};
 
                     return response;
                 } else {

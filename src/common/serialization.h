@@ -426,6 +426,7 @@ using EventResposnePayload = std::variant<std::nullptr_t,
                                           std::string,
                                           std::vector<uint8_t>,
                                           AEffect,
+                                          DynamicSpeakerArrangement,
                                           VstIOProperties,
                                           VstMidiKeyName,
                                           VstParameterProperties,
@@ -444,6 +445,9 @@ void serialize(S& s, EventResposnePayload& payload) {
                   s.container1b(buffer, binary_buffer_size);
               },
               [](S& s, AEffect& effect) { s.object(effect); },
+              [&](DynamicSpeakerArrangement& speaker_arrangement) -> void* {
+                  return &speaker_arrangement.as_c_speaker_arrangement();
+              },
               [](S& s, VstIOProperties& props) { s.object(props); },
               [](S& s, VstMidiKeyName& key_name) { s.object(key_name); },
               [](S& s, VstParameterProperties& props) { s.object(props); },
@@ -464,13 +468,22 @@ struct EventResult {
      * into the void pointer, but sometimes an event response should forward
      * some kind of special struct.
      */
+    // TODO: Fix typo and rename to `EventResultPayload` for consistency
     EventResposnePayload payload;
+    /**
+     * The same as the above value, but for returning values written to the
+     * `intptr_t` value parameter. This is only used during
+     * `effGetSpeakerArrangement`.
+     */
+    std::optional<EventResposnePayload> value_payload;
 
     template <typename S>
     void serialize(S& s) {
         s.value8b(return_value);
 
         s.object(payload);
+        s.ext(value_payload, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.object(v); });
     }
 };
 
