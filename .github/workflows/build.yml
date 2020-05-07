@@ -32,7 +32,7 @@ jobs:
       - uses: actions/checkout@v2
       # Needed for git-describe to do anything useful
       - name: Fetch all git history
-        run: git fetch --prune --tags --unshallow
+        run: git fetch --force --prune --tags --unshallow
       - name: Determine build archive name
         run: |
           export ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz
@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@v2
       # Needed for git-describe to do anything useful
       - name: Fetch all git history
-        run: git fetch --prune --tags --unshallow
+        run: git fetch --force --prune --tags --unshallow
       - name: Determine build archive name
         run: |
           export ARCHIVE_NAME=yabridge-$(git describe --always).tar.gz
