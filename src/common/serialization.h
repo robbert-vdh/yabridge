@@ -389,18 +389,23 @@ struct Event {
      * Bitsery can do all the hard work for us.
      */
     EventPayload payload;
+    /**
+     * The same as the above value, but for values passed through the `intptr_t`
+     * value parameter. `effGetSpeakerArrangement` and
+     * `effSetSpeakerArrangement` are the only events that use this.
+     */
+    std::optional<EventPayload> value_payload;
 
     template <typename S>
     void serialize(S& s) {
         s.value4b(opcode);
         s.value4b(index);
-        // Hard coding pointer sizes to 8 bytes should be fine, right? Even if
-        // we're hosting a 32 bit plugin the native VST plugin will still use 64
-        // bit large pointers.
         s.value8b(value);
         s.value4b(option);
 
         s.object(payload);
+        s.ext(value_payload, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.object(v); });
     }
 };
 
