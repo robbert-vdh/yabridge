@@ -19,6 +19,7 @@ Wine Staging 5.5 and 5.6:
 - Carla 2.1
 - Ardour 5.12
 - REAPER 6.09
+- Renoise 3.2.1
 
 At the moment there is a regression in **Wine 5.7** that breaks application
 startup behavior, so you'll have to temporarily downgrade to an earlier version
