@@ -282,8 +282,8 @@ auto passthrough_event(AEffect* plugin, F callback) {
         // Only write back data when needed, this depends on the event payload
         // type
         auto write_payload_fn = overload{
-            [&](auto) -> EventResposnePayload { return nullptr; },
-            [&](const AEffect& updated_plugin) -> EventResposnePayload {
+            [&](auto) -> EventResultPayload { return nullptr; },
+            [&](const AEffect& updated_plugin) -> EventResultPayload {
                 // This is a bit of a special case! Instead of writing some
                 // return value, we will update values on the native VST
                 // plugin's `AEffect` object. This is triggered by the
@@ -308,7 +308,7 @@ auto passthrough_event(AEffect* plugin, F callback) {
 
                 return nullptr;
             },
-            [&](WantsChunkBuffer&) -> EventResposnePayload {
+            [&](WantsChunkBuffer&) -> EventResultPayload {
                 // In this case the plugin will have written its data stored in
                 // an array to which a pointer is stored in `data`, with the
                 // return value from the event determines how much data the
@@ -317,21 +317,19 @@ auto passthrough_event(AEffect* plugin, F callback) {
                 return std::vector<uint8_t>(chunk_data,
                                             chunk_data + return_value);
             },
-            [&](VstIOProperties& props) -> EventResposnePayload {
-                return props;
-            },
-            [&](VstMidiKeyName& key_name) -> EventResposnePayload {
+            [&](VstIOProperties& props) -> EventResultPayload { return props; },
+            [&](VstMidiKeyName& key_name) -> EventResultPayload {
                 return key_name;
             },
-            [&](VstParameterProperties& props) -> EventResposnePayload {
+            [&](VstParameterProperties& props) -> EventResultPayload {
                 return props;
             },
-            [&](WantsVstRect&) -> EventResposnePayload {
+            [&](WantsVstRect&) -> EventResultPayload {
                 // The plugin has written a pointer to a VstRect struct into the
                 // data poitner
                 return **static_cast<VstRect**>(data);
             },
-            [&](WantsVstTimeInfo&) -> EventResposnePayload {
+            [&](WantsVstTimeInfo&) -> EventResultPayload {
                 // Not sure why the VST API has twenty different ways of
                 // returning structs, but in this case the value returned from
                 // the callback function is actually a pointer to a
@@ -345,7 +343,7 @@ auto passthrough_event(AEffect* plugin, F callback) {
                     return *time_info;
                 }
             },
-            [&](WantsString&) -> EventResposnePayload {
+            [&](WantsString&) -> EventResultPayload {
                 return std::string(static_cast<char*>(data));
             }};
 
@@ -355,9 +353,9 @@ auto passthrough_event(AEffect* plugin, F callback) {
         // `effGetSpeakerArrangement` expects the plugin to write its own data
         // to this value. Hence why we need to encode the response here
         // separately.
-        const EventResposnePayload response_data =
+        const EventResultPayload response_data =
             std::visit(write_payload_fn, event.payload);
-        std::optional<EventResposnePayload> value_response_data = std::nullopt;
+        std::optional<EventResultPayload> value_response_data = std::nullopt;
         if (event.value_payload.has_value()) {
             value_response_data =
                 std::visit(write_payload_fn, event.value_payload.value());

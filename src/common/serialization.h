@@ -422,19 +422,19 @@ struct Event {
  *   `audioMasterIOChanged`.
  * - An X11 window pointer for the editor window.
  */
-using EventResposnePayload = std::variant<std::nullptr_t,
-                                          std::string,
-                                          std::vector<uint8_t>,
-                                          AEffect,
-                                          DynamicSpeakerArrangement,
-                                          VstIOProperties,
-                                          VstMidiKeyName,
-                                          VstParameterProperties,
-                                          VstRect,
-                                          VstTimeInfo>;
+using EventResultPayload = std::variant<std::nullptr_t,
+                                        std::string,
+                                        std::vector<uint8_t>,
+                                        AEffect,
+                                        DynamicSpeakerArrangement,
+                                        VstIOProperties,
+                                        VstMidiKeyName,
+                                        VstParameterProperties,
+                                        VstRect,
+                                        VstTimeInfo>;
 
 template <typename S>
-void serialize(S& s, EventResposnePayload& payload) {
+void serialize(S& s, EventResultPayload& payload) {
     s.ext(payload,
           bitsery::ext::StdVariant{
               [](S&, std::nullptr_t&) {},
@@ -468,14 +468,13 @@ struct EventResult {
      * into the void pointer, but sometimes an event response should forward
      * some kind of special struct.
      */
-    // TODO: Fix typo and rename to `EventResultPayload` for consistency
-    EventResposnePayload payload;
+    EventResultPayload payload;
     /**
      * The same as the above value, but for returning values written to the
      * `intptr_t` value parameter. This is only used during
      * `effGetSpeakerArrangement`.
      */
-    std::optional<EventResposnePayload> value_payload;
+    std::optional<EventResultPayload> value_payload;
 
     template <typename S>
     void serialize(S& s) {

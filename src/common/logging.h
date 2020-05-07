@@ -108,7 +108,7 @@ class Logger {
     void log_event_response(bool is_dispatch,
                             int opcode,
                             intptr_t return_value,
-                            const EventResposnePayload& payload);
+                            const EventResultPayload& payload);
 
    private:
     /**

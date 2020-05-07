@@ -210,7 +210,7 @@ void Logger::log_event(bool is_dispatch,
 void Logger::log_event_response(bool is_dispatch,
                                 int opcode,
                                 intptr_t return_value,
-                                const EventResposnePayload& payload) {
+                                const EventResultPayload& payload) {
     if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
         if (should_filter_event(is_dispatch, opcode)) {
             return;
