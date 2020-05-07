@@ -104,11 +104,14 @@ class Logger {
                    int index,
                    intptr_t value,
                    const EventPayload& payload,
-                   float option);
-    void log_event_response(bool is_dispatch,
-                            int opcode,
-                            intptr_t return_value,
-                            const EventResultPayload& payload);
+                   float option,
+                   const std::optional<EventPayload>& value_payload);
+    void log_event_response(
+        bool is_dispatch,
+        int opcode,
+        intptr_t return_value,
+        const EventResultPayload& payload,
+        const std::optional<EventResultPayload>& value_payload);
 
    private:
     /**

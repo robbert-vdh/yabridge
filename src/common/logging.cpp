@@ -138,7 +138,8 @@ void Logger::log_event(bool is_dispatch,
                        int index,
                        intptr_t value,
                        const EventPayload& payload,
-                       float option) {
+                       float option,
+                       const std::optional<EventPayload>& value_payload) {
     if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
         if (should_filter_event(is_dispatch, opcode)) {
             return;
@@ -161,7 +162,19 @@ void Logger::log_event(bool is_dispatch,
         message << "(index = " << index << ", value = " << value
                 << ", option = " << option << ", data = ";
 
-        // TODO: Print value payload
+        // Only used during `effSetSpeakerArrangement` and
+        // `effGetSpeakerArrangement`
+        if (value_payload.has_value()) {
+            std::visit(
+                overload{
+                    [&](auto) {},
+                    [&](const DynamicSpeakerArrangement& speaker_arrangement) {
+                        message << "<" << speaker_arrangement.speakers.size()
+                                << " input_speakers>, ";
+                    }},
+                value_payload.value());
+        }
+
         std::visit(
             overload{
                 [&](const std::nullptr_t&) { message << "<nullptr>"; },
@@ -207,10 +220,12 @@ void Logger::log_event(bool is_dispatch,
     }
 }
 
-void Logger::log_event_response(bool is_dispatch,
-                                int opcode,
-                                intptr_t return_value,
-                                const EventResultPayload& payload) {
+void Logger::log_event_response(
+    bool is_dispatch,
+    int opcode,
+    intptr_t return_value,
+    const EventResultPayload& payload,
+    const std::optional<EventResultPayload>& value_payload) {
     if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
         if (should_filter_event(is_dispatch, opcode)) {
             return;
@@ -225,7 +240,19 @@ void Logger::log_event_response(bool is_dispatch,
 
         message << return_value;
 
-        // TODO: Print value payload
+        // Only used during `effSetSpeakerArrangement` and
+        // `effGetSpeakerArrangement`
+        if (value_payload.has_value()) {
+            std::visit(
+                overload{
+                    [&](auto) {},
+                    [&](const DynamicSpeakerArrangement& speaker_arrangement) {
+                        message << ", <" << speaker_arrangement.speakers.size()
+                                << " input_speakers>";
+                    }},
+                value_payload.value());
+        }
+
         std::visit(
             overload{
                 [&](const std::nullptr_t&) {},

@@ -523,12 +523,13 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
     //       once Ardour 6.0 gets released.
     //       https://tracker.ardour.org/view.php?id=7668
     if (BOOST_UNLIKELY(plugin.magic == 0)) {
-        logger.log_event(true, opcode, index, value, nullptr, option);
+        logger.log_event(true, opcode, index, value, nullptr, option,
+                         std::nullopt);
         logger.log(
             "   WARNING: The host has dispatched an event before the plugin "
             "has finished initializing, ignoring the event. (are we running "
             "Ardour 5.X?)");
-        logger.log_event_response(true, opcode, 0, nullptr);
+        logger.log_event_response(true, opcode, 0, nullptr, std::nullopt);
         return 0;
     }
 
@@ -598,11 +599,13 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
             //       window ID to `effEditOpen`. This is of course not going to
             //       work when the GUI is handled using Wine so we'll ignore it.
             if (query == "hasCockosViewAsConfig") {
-                logger.log_event(true, opcode, index, value, query, option);
+                logger.log_event(true, opcode, index, value, query, option,
+                                 std::nullopt);
                 logger.log(
                     "   The host requests libSwell GUI support which is not "
                     "supported using Wine, ignoring the request.");
-                logger.log_event_response(true, opcode, -1, nullptr);
+                logger.log_event_response(true, opcode, -1, nullptr,
+                                          std::nullopt);
                 return -1;
             }
         } break;

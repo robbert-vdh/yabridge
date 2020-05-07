@@ -155,7 +155,8 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
 
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
-        logger.log_event(is_dispatch, opcode, index, value, payload, option);
+        logger.log_event(is_dispatch, opcode, index, value, payload, option,
+                         value_payload);
     }
 
     const Event event{opcode, index, value, option, payload, value_payload};
@@ -174,7 +175,7 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
         logger.log_event_response(is_dispatch, opcode, response.return_value,
-                                  response.payload);
+                                  response.payload, response.value_payload);
     }
 
     data_converter.write(opcode, data, response);
@@ -211,14 +212,15 @@ void receive_event(boost::asio::local::stream_protocol::socket& socket,
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
         logger.log_event(is_dispatch, event.opcode, event.index, event.value,
-                         event.payload, event.option);
+                         event.payload, event.option, event.value_payload);
     }
 
     EventResult response = callback(event);
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
         logger.log_event_response(is_dispatch, event.opcode,
-                                  response.return_value, response.payload);
+                                  response.return_value, response.payload,
+                                  response.value_payload);
     }
 
     write_object(socket, response);
