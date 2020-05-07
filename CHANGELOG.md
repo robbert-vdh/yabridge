@@ -15,7 +15,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   with.
 - Added support for querying and setting detailed information about speaker
   configurations for use in advanced surround setups. This indirectly allowed
-  yabridge to work under **Renoise**.
+  yabridge to work under _Renoise_.
 - Added automated development builds for yabridge, available by clicking on the
   'Automated builds' badge in the project readme.
 
@@ -34,7 +34,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed plugins failing to load on certain versions of **Ubuntu** because of
+- Fixed plugins failing to load on certain versions of _Ubuntu_ because of
   paths starting with two forward slashes.
 - Redirect the output from the Wine host process earlier in the startup.
   Otherwise errors printed startup won't be visible, making it very hard to
