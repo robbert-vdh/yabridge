@@ -26,6 +26,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   rather than the loaded `.so` file.
 - Increased the maximum number of audio channels from 32 to 256.
 - Clarified the error that appears when we're unable to load the `.dll`.
+- Yabridge will now print the used version of Wine during startup. This can be
+  useful for diagnosing startup problems.
 
 ### Fixed
 
