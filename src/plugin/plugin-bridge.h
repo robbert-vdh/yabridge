@@ -198,7 +198,14 @@ class PluginBridge {
      * The callback function passed by the host to the VST plugin instance.
      */
     audioMasterCallback host_callback_function;
+
     Logger logger;
+
+    /**
+     * The version of Wine currently in use. Used in the debug output on plugin
+     * startup.
+     */
+    const std::string wine_version;
 
     boost::asio::streambuf wine_stdout_buffer;
     boost::asio::streambuf wine_stderr_buffer;
