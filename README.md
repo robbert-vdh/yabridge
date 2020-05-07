@@ -369,7 +369,7 @@ as the _Windows VST plugin_. The whole process works as follows:
    in the `DispatchDataConverter` and `HostCallbackDataCovnerter` classes for
    the `dispatcher()` and `audioMaster()` functions respectively. For operations
    involving the plugin editor there is also some extra glue in
-   `PluginBridge::dispatch_wrapper`. On the receiving end of the function calls,
+   `WineBridge::dispatch_wrapper`. On the receiving end of the function calls,
    the `passthrough_event()` function calls the callback functions and handles
    the marshalling between our data types created by the `*DataConverter`
    classes and the VST API's different pointer types. This behaviour is

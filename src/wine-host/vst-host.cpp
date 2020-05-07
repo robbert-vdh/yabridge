@@ -20,7 +20,7 @@
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
 
-#include "plugin-bridge.h"
+#include "wine-bridge.h"
 
 int main(int argc, char* argv[]) {
     // We pass the name of the VST plugin .dll file to load and the Unix domain
@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
 #endif
               << std::endl;
     try {
-        PluginBridge bridge(plugin_dll_path, socket_endpoint_path);
+        WineBridge bridge(plugin_dll_path, socket_endpoint_path);
         std::cerr << "Finished initializing '" << plugin_dll_path << "'"
                   << std::endl;
 

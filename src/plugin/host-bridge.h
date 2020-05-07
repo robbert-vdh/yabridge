@@ -87,7 +87,7 @@ class HostBridge {
      * Ask the VST plugin to process audio for us. If the plugin somehow does
      * not support `processReplacing()` and only supports the old `process()`
      * function, then this will be handled implicitely in
-     * `PluginBridge::handle_process_replacing()`.
+     * `WineBridge::handle_process_replacing()`.
      */
     void process_replacing(AEffect* plugin,
                            float** inputs,

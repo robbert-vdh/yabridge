@@ -76,8 +76,8 @@ host_sources = [
   'src/common/serialization.cpp',
   'src/wine-host/editor.cpp',
   'src/wine-host/editor.cpp',
-  'src/wine-host/plugin-bridge.cpp',
   'src/wine-host/vst-host.cpp',
+  'src/wine-host/wine-bridge.cpp',
   'src/wine-host/utils.cpp',
   version_header,
 ]

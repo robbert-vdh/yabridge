@@ -260,7 +260,7 @@ HostBridge::HostBridge(audioMasterCallback host_callback)
         try {
             while (true) {
                 // TODO: Think of a nicer way to structure this and the similar
-                //       handler in `PluginBridge::handle_dispatch_midi_events`
+                //       handler in `WineBridge::handle_dispatch_midi_events`
                 receive_event(
                     vst_host_callback, std::pair<Logger&, bool>(logger, false),
                     [&](Event& event) {
