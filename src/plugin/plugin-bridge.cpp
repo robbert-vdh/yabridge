@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "host-bridge.h"
+#include "plugin-bridge.h"
 
 #include <boost/asio/read_until.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
@@ -146,11 +146,11 @@ bp::environment set_wineprefix();
  * is sadly needed as a workaround to avoid using globals since we need free
  * function pointers to interface with the VST C API.
  */
-HostBridge& get_bridge_instance(const AEffect& plugin) {
-    return *static_cast<HostBridge*>(plugin.ptr3);
+PluginBridge& get_bridge_instance(const AEffect& plugin) {
+    return *static_cast<PluginBridge*>(plugin.ptr3);
 }
 
-HostBridge::HostBridge(audioMasterCallback host_callback)
+PluginBridge::PluginBridge(audioMasterCallback host_callback)
     : vst_plugin_path(find_vst_plugin()),
       vst_plugin_arch(find_vst_architecture(vst_plugin_path)),
       vst_host_path(find_vst_host(vst_plugin_arch)),
@@ -378,7 +378,7 @@ class DispatchDataConverter : DefaultDataConverter {
             } break;
             case effGetChunk: {
                 // Write the chunk data to some publically accessible place in
-                // `HostBridge` and write a pointer to that struct to the data
+                // `PluginBridge` and write a pointer to that struct to the data
                 // pointer
                 const auto buffer =
                     std::get<std::vector<uint8_t>>(response.payload);
@@ -425,12 +425,12 @@ class DispatchDataConverter : DefaultDataConverter {
     VstRect& rect;
 };
 
-intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
-                              int opcode,
-                              int index,
-                              intptr_t value,
-                              void* data,
-                              float option) {
+intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
+                                int opcode,
+                                int index,
+                                intptr_t value,
+                                void* data,
+                                float option) {
     // HACK: Ardour 5.X has a bug in its VST implementation where it calls the
     //       plugin's dispatcher before the plugin has even finished
     //       initializing. This has been fixed back in 2018, but there has not
@@ -533,10 +533,10 @@ intptr_t HostBridge::dispatch(AEffect* /*plugin*/,
                       value, data, option);
 }
 
-void HostBridge::process_replacing(AEffect* /*plugin*/,
-                                   float** inputs,
-                                   float** outputs,
-                                   int sample_frames) {
+void PluginBridge::process_replacing(AEffect* /*plugin*/,
+                                     float** inputs,
+                                     float** outputs,
+                                     int sample_frames) {
     // The inputs and outputs arrays should be `[num_inputs][sample_frames]` and
     // `[num_outputs][sample_frames]` floats large respectfully.
     std::vector<std::vector<float>> input_buffers(
@@ -575,7 +575,7 @@ void HostBridge::process_replacing(AEffect* /*plugin*/,
     incoming_midi_events.clear();
 }
 
-float HostBridge::get_parameter(AEffect* /*plugin*/, int index) {
+float PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
     logger.log_get_parameter(index);
 
     const Parameter request{index, std::nullopt};
@@ -594,7 +594,7 @@ float HostBridge::get_parameter(AEffect* /*plugin*/, int index) {
     return response.value.value();
 }
 
-void HostBridge::set_parameter(AEffect* /*plugin*/, int index, float value) {
+void PluginBridge::set_parameter(AEffect* /*plugin*/, int index, float value) {
     logger.log_set_parameter(index, value);
 
     const Parameter request{index, value};
@@ -613,9 +613,9 @@ void HostBridge::set_parameter(AEffect* /*plugin*/, int index, float value) {
     assert(!response.value.has_value());
 }
 
-void HostBridge::async_log_pipe_lines(patched_async_pipe& pipe,
-                                      boost::asio::streambuf& buffer,
-                                      std::string prefix) {
+void PluginBridge::async_log_pipe_lines(patched_async_pipe& pipe,
+                                        boost::asio::streambuf& buffer,
+                                        std::string prefix) {
     boost::asio::async_read_until(
         pipe, buffer, '\n', [&, prefix](const auto&, size_t) {
             std::string line;

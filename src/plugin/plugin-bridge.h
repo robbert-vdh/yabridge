@@ -56,7 +56,7 @@ enum class PluginArchitecture { vst_32, vst_64 };
  * Wine VST host. The functions below should be used as callback functions in an
  * `AEffect` object.
  */
-class HostBridge {
+class PluginBridge {
    public:
     /**
      * Initializes the Wine VST bridge. This sets up the sockets for event
@@ -68,7 +68,7 @@ class HostBridge {
      * @throw std::runtime_error Thrown when the VST host could not be found, or
      *   if it could not locate and load a VST .dll file.
      */
-    HostBridge(audioMasterCallback host_callback);
+    PluginBridge(audioMasterCallback host_callback);
 
     // The four below functions are the handlers from the VST2 API. They are
     // called through proxy functions in `plugin.cpp`.

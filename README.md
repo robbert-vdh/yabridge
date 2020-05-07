@@ -254,7 +254,7 @@ launch winedbg in a seperate detached terminal emulator so it doesn't terminate
 together with the plugin, and winedbg can be a bit picky about the arguments it
 accepts. I've already set this up behind a feature flag for use in KDE Plasma.
 Other desktop environments and window managers will require some slight
-modifications in `src/plugin/host-bridge.cpp`. To enable this, simply run:
+modifications in `src/plugin/plugin-bridge.cpp`. To enable this, simply run:
 
 ```shell
 meson configure build --buildtype=debug -Duse-winedbg=true

@@ -284,8 +284,8 @@ auto passthrough_event(AEffect* plugin, F callback) {
                     // plugin.
 
                     // These are the same fields written by bitsery in the
-                    // initialization of `HostBridge`. I can't think of a way t
-                    // oreuse the serializer without first having to serialize
+                    // initialization of `PluginBridge`. I can't think of a way
+                    // to reuse the serializer without first having to serialize
                     // `updated_plugin` first though.
                     plugin->magic = updated_plugin.magic;
                     plugin->numPrograms = updated_plugin.numPrograms;

@@ -60,8 +60,8 @@ shared_library(
   [
     'src/common/logging.cpp',
     'src/common/serialization.cpp',
-    'src/plugin/host-bridge.cpp',
     'src/plugin/plugin.cpp',
+    'src/plugin/plugin-bridge.cpp',
     version_header,
   ],
   native : true,

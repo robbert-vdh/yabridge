@@ -19,7 +19,7 @@
 #include <iostream>
 #include <memory>
 
-#include "host-bridge.h"
+#include "plugin-bridge.h"
 
 #define VST_EXPORT __attribute__((visibility("default")))
 
@@ -51,7 +51,7 @@ VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback host_callback) {
         // This is the only place where we have to use manual memory management.
         // The bridge's destructor is called when the `effClose` opcode is
         // received.
-        HostBridge* bridge = new HostBridge(host_callback);
+        PluginBridge* bridge = new PluginBridge(host_callback);
 
         return &bridge->plugin;
     } catch (const std::exception& error) {

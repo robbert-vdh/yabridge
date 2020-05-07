@@ -348,7 +348,8 @@ struct Event {
  *   gets passed along.
  * - A (short) string.
  * - Some binary blob stored as a byte vector. During `effGetChunk` this will
-     contain some chunk data that should be written to `HostBridge::chunk_data`.
+     contain some chunk data that should be written to
+     `PluginBridge::chunk_data`.
  * - A specific struct in response to an event such as `audioMasterGetTime` or
  *   `audioMasterIOChanged`.
  * - An X11 window pointer for the editor window.
