@@ -180,6 +180,9 @@ meson setup --buildtype=release --cross-file cross-wine.conf build
 ninja -C build
 ```
 
+After you've finished building you can follow the instructions under the
+[usage](#Usage) section on how to set up yabridge.
+
 ### 32-bit bitbridge
 
 It is also possible to compile a host application for yabridge that's compatible
