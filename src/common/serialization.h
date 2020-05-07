@@ -230,10 +230,17 @@ class alignas(16) DynamicSpeakerArrangement {
         const VstSpeakerArrangement& speaker_arrangement);
 
     /**
-     * Construct a dynamically sized `VstSpeakerArrangement` struct based on
+     * Construct a dynamically sized `VstSpeakerArrangement` object based on
      * this object.
      */
     VstSpeakerArrangement& as_c_speaker_arrangement();
+
+    /**
+     * Reconstruct the dynamically sized `VstSpeakerArrangement` object and
+     * return the raw data buffer. Needed to write the results back to the host
+     * since we can't just reassign the object.
+     */
+    std::vector<uint8_t>& as_raw_data();
 
     /**
      * The flags field from `VstSpeakerArrangement`

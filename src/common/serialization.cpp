@@ -84,3 +84,10 @@ VstSpeakerArrangement& DynamicSpeakerArrangement::as_c_speaker_arrangement() {
 
     return *speaker_arrangement;
 }
+
+std::vector<uint8_t>& DynamicSpeakerArrangement::as_raw_data() {
+    // This will populate the buffer for us with the struct data
+    as_c_speaker_arrangement();
+
+    return speaker_arrangement_buffer;
+}

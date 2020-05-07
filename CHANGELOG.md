@@ -13,6 +13,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added support for plugins that send MIDI events back to the host. This plugins
   such as Cthulhu and Scaler to output notes and CC for another plugin to work
   with.
+- Added support for querying and setting detailed information about speaker
+  configurations for use in advanced surround setups. This indirectly allowed
+  yabridge to work under **Renoise**.
 - Added automated development builds for yabridge, available by clicking on the
   'Automated builds' badge in the project readme.
 

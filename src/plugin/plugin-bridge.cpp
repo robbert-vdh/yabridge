@@ -359,6 +359,13 @@ class DispatchDataConverter : DefaultDataConverter {
             case effGetMidiKeyName:
                 return *static_cast<const VstMidiKeyName*>(data);
                 break;
+            case effSetSpeakerArrangement:
+            case effGetSpeakerArrangement:
+                // This is the output speaker configuration, the `read_value()`
+                // method below reads the input speaker configuration
+                return DynamicSpeakerArrangement(
+                    *static_cast<const VstSpeakerArrangement*>(data));
+                break;
             // Any VST host I've encountered has properly zeroed out these their
             // string buffers, but we'll add a list of opcodes that should
             // return a string just in case `DefaultDataConverter::read()` can't
@@ -376,6 +383,26 @@ class DispatchDataConverter : DefaultDataConverter {
                 break;
             default:
                 return DefaultDataConverter::read(opcode, index, value, data);
+                break;
+        }
+    }
+
+    std::optional<EventPayload> read_value(const int opcode,
+                                           const intptr_t value) {
+        switch (opcode) {
+            case effSetSpeakerArrangement:
+            case effGetSpeakerArrangement:
+                // These two events are special in that they pass a pointer to
+                // the output speaker configuration through the `data`
+                // parameter, but then they also pass a pointer to the input
+                // speaker configuration through the `value` parameter. This is
+                // the only event that does this.
+                return DynamicSpeakerArrangement(
+                    *static_cast<const VstSpeakerArrangement*>(
+                        reinterpret_cast<void*>(value)));
+                break;
+            default:
+                return DefaultDataConverter::read_value(opcode, value);
                 break;
         }
     }
@@ -423,6 +450,25 @@ class DispatchDataConverter : DefaultDataConverter {
 
                 *static_cast<VstMidiKeyName*>(data) = properties;
             } break;
+            case effGetSpeakerArrangement: {
+                // The plugin will have updated the objects passed by the host
+                // with its preferred output speaker configuration if it
+                // supports this. The same thing happens for the input speaker
+                // configuration in `write_value()`.
+                auto speaker_arrangement =
+                    std::get<DynamicSpeakerArrangement>(response.payload);
+
+                // Reconstruct a dynamically sized `VstSpeakerArrangement`
+                // object to a buffer, and write back the results to the data
+                // parameter.
+                VstSpeakerArrangement* output =
+                    static_cast<VstSpeakerArrangement*>(data);
+                std::vector<uint8_t> reconstructed_object =
+                    speaker_arrangement.as_raw_data();
+                std::copy(reconstructed_object.begin(),
+                          reconstructed_object.end(),
+                          reinterpret_cast<uint8_t*>(output));
+            } break;
             default:
                 DefaultDataConverter::write(opcode, data, response);
                 break;
@@ -431,6 +477,32 @@ class DispatchDataConverter : DefaultDataConverter {
 
     intptr_t return_value(const int opcode, const intptr_t original) {
         return DefaultDataConverter::return_value(opcode, original);
+    }
+
+    void write_value(const int opcode,
+                     intptr_t value,
+                     const EventResult& response) {
+        switch (opcode) {
+            case effGetSpeakerArrangement: {
+                // Same as the above, but now for the input speaker
+                // configuration object under the `value` pointer
+                auto speaker_arrangement =
+                    std::get<DynamicSpeakerArrangement>(response.payload);
+
+                VstSpeakerArrangement* output =
+                    static_cast<VstSpeakerArrangement*>(
+                        reinterpret_cast<void*>(value));
+                std::vector<uint8_t> reconstructed_object =
+                    speaker_arrangement.as_raw_data();
+                std::copy(reconstructed_object.begin(),
+                          reconstructed_object.end(),
+                          reinterpret_cast<uint8_t*>(output));
+            } break;
+            default:
+                return DefaultDataConverter::write_value(opcode, value,
+                                                         response);
+                break;
+        }
     }
 
    private:

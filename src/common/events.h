@@ -56,7 +56,17 @@ class DefaultDataConverter {
     }
 
     /**
-     * Write the reponse back to the data pointer.
+     * Read data from the `value` pointer into a an `EventPayload` value that
+     * can be serialized and conveys the meaning of the event. This is only used
+     * for the `effSetSpeakerArrangement` and `effGetSpeakerArrangement` events.
+     */
+    virtual std::optional<EventPayload> read_value(const int /*opcode*/,
+                                                   const intptr_t /*value*/) {
+        return std::nullopt;
+    }
+
+    /**
+     * Write the reponse back to the `data` pointer.
      */
     virtual void write(const int /*opcode*/,
                        void* data,
@@ -75,6 +85,14 @@ class DefaultDataConverter {
                             }},
                    response.payload);
     }
+
+    /**
+     * Write the reponse back to the `value` pointer. This is only used during
+     * the `effGetSpeakerArrangement` event.
+     */
+    virtual void write_value(const int /*opcode*/,
+                             intptr_t /*value*/,
+                             const EventResult& /*response*/) {}
 
     /**
      * This function can override a callback's return value based on the opcode.
@@ -126,17 +144,21 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                     intptr_t value,
                     void* data,
                     float option) {
-    // Encode the right payload type for this event. Check the documentation for
-    // `EventPayload` for more information
+    // Encode the right payload types for this event. Check the documentation
+    // for `EventPayload` for more information. These types are converted to
+    // C-style data structures in `passthrough_event()` so they can be passed to
+    // a plugin or callback function.
     const EventPayload payload =
         data_converter.read(opcode, index, value, data);
+    const std::optional<EventPayload> value_payload =
+        data_converter.read_value(opcode, value);
 
     if (logging.has_value()) {
         auto [logger, is_dispatch] = logging.value();
         logger.log_event(is_dispatch, opcode, index, value, payload, option);
     }
 
-    const Event event{opcode, index, value, option, payload};
+    const Event event{opcode, index, value, option, payload, value_payload};
 
     // Prevent two threads from writing over the socket at the same time and
     // messages getting out of order. This is needed because we can't prevent
@@ -156,6 +178,7 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
     }
 
     data_converter.write(opcode, data, response);
+    data_converter.write_value(opcode, value, response);
 
     return data_converter.return_value(opcode, response.return_value);
 }
@@ -308,6 +331,8 @@ auto passthrough_event(AEffect* plugin, F callback) {
 
                 return nullptr;
             },
+            [&](DynamicSpeakerArrangement& speaker_arrangement)
+                -> EventResultPayload { return speaker_arrangement; },
             [&](WantsChunkBuffer&) -> EventResultPayload {
                 // In this case the plugin will have written its data stored in
                 // an array to which a pointer is stored in `data`, with the

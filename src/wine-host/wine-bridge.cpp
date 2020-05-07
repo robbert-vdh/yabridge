@@ -377,6 +377,11 @@ class HostCallbackDataConverter : DefaultDataConverter {
         }
     }
 
+    std::optional<EventPayload> read_value(const int opcode,
+                                           const intptr_t value) {
+        return DefaultDataConverter::read_value(opcode, value);
+    }
+
     void write(const int opcode, void* data, const EventResult& response) {
         switch (opcode) {
             case audioMasterGetTime:
@@ -413,6 +418,12 @@ class HostCallbackDataConverter : DefaultDataConverter {
                 return DefaultDataConverter::return_value(opcode, original);
                 break;
         }
+    }
+
+    void write_value(const int opcode,
+                     intptr_t value,
+                     const EventResult& response) {
+        return DefaultDataConverter::write_value(opcode, value, response);
     }
 
    private:
