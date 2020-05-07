@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2020-05-07
 
 ### Added
 
@@ -34,8 +34,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed plugins failing to load on certain Debian based distros because of paths
-  starting with two forward slashes.
+- Fixed plugins failing to load on certain versions of **Ubuntu** because of
+  paths starting with two forward slashes.
 - Redirect the output from the Wine host process earlier in the startup.
   Otherwise errors printed startup won't be visible, making it very hard to
   diagnose problems.
