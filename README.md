@@ -129,6 +129,11 @@ Any VST2 plugin should function out of the box, although some plugins will need
 some additional dependencies for their GUIs to work correctly. Notable examples
 include:
 
+- **Native Instruments** plugins work, but Native Access is unable to finish
+  installing the plugins. To work around this you can open the .iso file
+  downloaded to your downloads directory and run the installer directly. When
+  activating the plugins you may have to cancel the self-updating in NI Service
+  Center.
 - **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
   `gdiplus` through `winetricks`.
 
