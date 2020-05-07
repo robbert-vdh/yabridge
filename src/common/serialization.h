@@ -246,6 +246,14 @@ class alignas(16) DynamicSpeakerArrangement {
      */
     std::vector<VstSpeaker> speakers;
 
+    template <typename S>
+    void serialize(S& s) {
+        s.value4b(flags);
+        s.container(
+            speakers, max_audio_channels,
+            [](S& s, VstSpeaker& speaker) { s.container1b(speaker.data); });
+    }
+
    private:
     /**
      * Some buffer we can build a `VstSpeakerArrangement` object in. This object
@@ -298,9 +306,9 @@ struct WantsString {};
  *         clarity's sake.
  *
  * - A byte vector for handling chunk data during `effSetChunk()`. We can't
-     reuse the regular string handling here since the data may contain null
-     bytes and `std::string::as_c_str()` might cut off everything after the
-     first null byte.
+ *   reuse the regular string handling here since the data may contain null
+ *   bytes and `std::string::as_c_str()` might cut off everything after the
+ *   first null byte.
  * - An X11 window handle.
  * - Specific data structures from `aeffextx.h`. For instance an event with the
  *   opcode `effProcessEvents` the hosts passes a `VstEvents` struct containing
