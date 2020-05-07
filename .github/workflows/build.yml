@@ -53,7 +53,7 @@ jobs:
           mkdir yabridge
           # This is ran under dash which does not support brace expansion
           cp build/libyabridge.so build/yabridge-host.exe build/yabridge-host.exe.so build/yabridge-host-32.exe build/yabridge-host-32.exe.so yabridge
-          cp README.md yabridge
+          cp CHANGELOG.md README.md yabridge
 
           tar -caf "$ARCHIVE_NAME" yabridge
           rm -rf yabridge
@@ -96,7 +96,7 @@ jobs:
           mkdir yabridge
           # This is ran under dash which does not support brace expansion
           cp build/libyabridge.so build/yabridge-host.exe build/yabridge-host.exe.so build/yabridge-host-32.exe build/yabridge-host-32.exe.so yabridge
-          cp README.md yabridge
+          cp CHANGELOG.md README.md yabridge
 
           tar -caf "$ARCHIVE_NAME" yabridge
           rm -rf yabridge
