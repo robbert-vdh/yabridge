@@ -80,6 +80,9 @@ struct VstSpeaker {
  * during `eff{Get,Set}SpeakerArrangement`. Reverse engineered from Renoise by
  * attaching gdb and dumping both the `value` and `data` pointers when the host
  * calls opcode 42.
+ *
+ * Use the `DynamicSpeakerArrangement` class to serialize and construct these
+ * objects.
  */
 struct VstSpeakerArrangement {
     int flags;
@@ -88,5 +91,5 @@ struct VstSpeakerArrangement {
      * Variable length array of speakers. Similar to how `VstEvents` works, but
      * with an array of objects instead of an array of pointers to objects.
      */
-    VstSpeaker speakers[8];
+    VstSpeaker speakers[2];
 };

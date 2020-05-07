@@ -32,9 +32,9 @@ VstEvents& DynamicVstEvents::as_c_events() {
     // First we need to allocate enough memory for the entire object. The events
     // are stored as pointers to objects in the `events` vector that we sent
     // over the socket.
-    static_assert(std::extent<decltype(VstEvents::events)>::value == 1);
+    static_assert(std::extent_v<decltype(VstEvents::events)> == 1);
     const size_t buffer_size =
-        sizeof(VstEvents) + (events.size() - 1) * sizeof(VstEvent*);
+        sizeof(VstEvents) + ((events.size() - 1) * sizeof(VstEvent*));
     vst_events_buffer.resize(buffer_size);
 
     // Now we can populate the VLA with pointers to the objects in the `events`
@@ -46,4 +46,41 @@ VstEvents& DynamicVstEvents::as_c_events() {
                    [](VstEvent& event) -> VstEvent* { return &event; });
 
     return *vst_events;
+}
+
+DynamicSpeakerArrangement::DynamicSpeakerArrangement(
+    const VstSpeakerArrangement& speaker_arrangement)
+    : flags(speaker_arrangement.flags),
+      speakers(speaker_arrangement.num_speakers) {
+    using speaker_type =
+        std::remove_extent_t<decltype(speaker_arrangement.speakers)>;
+    static_assert(std::is_same_v<speaker_type, VstSpeaker>);
+
+    // Copy from the C-style array into a vector for serialization
+    speakers.assign(
+        speaker_arrangement.speakers,
+        speaker_arrangement.speakers +
+            (speaker_arrangement.num_speakers * sizeof(speaker_type)));
+}
+
+VstSpeakerArrangement& DynamicSpeakerArrangement::as_c_speaker_arrangement() {
+    // Just like in `DynamicVstEvents::as_c_events()`, we will use our buffer
+    // vector to allocate enough heap space and then reconstruct the original
+    // `VstSpeakerArrangement` object passed to the constructor.
+    static_assert(std::extent_v<decltype(VstSpeakerArrangement::speakers)> ==
+                  2);
+    const size_t buffer_size = sizeof(VstSpeakerArrangement) +
+                               ((speakers.size() - 2) * sizeof(VstSpeaker));
+    speaker_arrangement_buffer.resize(buffer_size);
+
+    // Now we'll just copy over the elements from our vector to the VLA in this
+    // struct
+    VstSpeakerArrangement* speaker_arrangement =
+        reinterpret_cast<VstSpeakerArrangement*>(
+            speaker_arrangement_buffer.data());
+    speaker_arrangement->flags = flags;
+    speaker_arrangement->num_speakers = speakers.size();
+    std::copy(speakers.begin(), speakers.end(), speaker_arrangement->speakers);
+
+    return *speaker_arrangement;
 }

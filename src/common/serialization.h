@@ -190,8 +190,9 @@ class alignas(16) DynamicVstEvents {
 
    private:
     /**
-     * Some buffer we can build a `VstEvents`. This object can be populated with
-     * contents of the `VstEvents` vector using the `as_c_events()` method.
+     * Some buffer we can build a `VstEvents` object in. This object can be
+     * populated with contents of the `VstEvents` vector using the
+     * `as_c_events()` method.
      *
      * The reason why this is necessary is because the `VstEvents` struct is
      * actually a variable size object. In the definition in
@@ -202,6 +203,54 @@ class alignas(16) DynamicVstEvents {
      * heap by hand.
      */
     std::vector<uint8_t> vst_events_buffer;
+};
+
+/**
+ * A wrapper around `VstSpeakerArrangement` that works the same way as the above
+ * wrapper for `VstEvents`. This is needed because the `VstSpeakerArrangement`
+ * struct is actually a variable sized array. Even though it will be very
+ * unlikely that we'll encounter systems with more than 8 speakers, it is
+ * something we should be able to support.
+ *
+ * Before serialization the events are read from a C-style array into a vector
+ * using this class's constructor, and after deserializing the original struct
+ * can be reconstructed using the `as_c_speaker_arrangement()` method.
+ */
+class alignas(16) DynamicSpeakerArrangement {
+   public:
+    DynamicSpeakerArrangement(){};
+
+    explicit DynamicSpeakerArrangement(
+        const VstSpeakerArrangement& speaker_arrangement);
+
+    /**
+     * Construct a dynamically sized `VstSpeakerArrangement` struct based on
+     * this object.
+     */
+    VstSpeakerArrangement& as_c_speaker_arrangement();
+
+    /**
+     * The flags field from `VstSpeakerArrangement`
+     */
+    int flags;
+
+    /**
+     * Information about the speakers in a particular input or output
+     * configuration.
+     */
+    std::vector<VstSpeaker> speakers;
+
+   private:
+    /**
+     * Some buffer we can build a `VstSpeakerArrangement` object in. This object
+     * can be populated using the `as_c_speaker_arrangement()` method.
+     *
+     * This is necessary because the `VstSpeakerArrangement` struct contains a
+     * dynamically sized array of length `VstSpeakerArrangement::num_speakers`.
+     * We build this object in a byte sized vector to make allocating enough
+     * heap space easy and safe.
+     */
+    std::vector<uint8_t> speaker_arrangement_buffer;
 };
 
 /**
@@ -348,8 +397,8 @@ struct Event {
  *   gets passed along.
  * - A (short) string.
  * - Some binary blob stored as a byte vector. During `effGetChunk` this will
-     contain some chunk data that should be written to
-     `PluginBridge::chunk_data`.
+ *   contain some chunk data that should be written to
+ *   `PluginBridge::chunk_data`.
  * - A specific struct in response to an event such as `audioMasterGetTime` or
  *   `audioMasterIOChanged`.
  * - An X11 window pointer for the editor window.
