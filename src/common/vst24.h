@@ -19,21 +19,33 @@
 // This file contains important opcodes and structs missing from
 // `vestige/aeffectx.h`
 
-// Glanced from https://www.kvraudio.com/forum/viewtopic.php?p=2744675#p2744675.
-// These opcodes are used to retrieve names and specific properties for a
-// plugin's inputs and outputs, if the plugin supports this. The index parameter
-// is used to specify the index of the channel being queried, and the plugin
-// gets passed an empty struct to describe the input/output through the data
-// parameter. Finally the plugin returns a string containing the input or output
-// name.
+/**
+ * Glanced from https://www.kvraudio.com/forum/viewtopic.php?p=2744675#p2744675.
+ * These opcodes are used to retrieve names and specific properties for a
+ * plugin's inputs and outputs, if the plugin supports this. The index parameter
+ * is used to specify the index of the channel being queried, and the plugin
+ * gets passed an empty struct to describe the input/output through the data
+ * parameter. Finally the plugin returns a string containing the input or output
+ * name.
+ */
 constexpr int effGetInputProperties = 33;
 constexpr int effGetOutputProperties = 34;
 
-// Found on
-// https://github.com/falkTX/Carla/blob/07e876a743c5e15c358be170af2e523eadc7dbfa/source/utils/CarlaVstUtils.hpp#L75
-// Used to assign names to MIDI keys, for some reason uses the `VstMidiKeyName`
-// struct defined below rather than a simple string.
+/**
+ * Found on
+ * https://github.com/falkTX/Carla/blob/07e876a743c5e15c358be170af2e523eadc7dbfa/source/utils/CarlaVstUtils.hpp#L75
+ * Used to assign names to MIDI keys, for some reason uses the `VstMidiKeyName`
+ * struct defined below rather than a simple string.
+ */
 constexpr int effGetMidiKeyName = 66;
+
+/**
+ * Events used to tell a plugin to use a specific speaker arrangement (is this
+ * used outside of things like Dolby Atmos?), or to query its preferred speaker
+ * arrangement. Found on the same list as above.
+ */
+constexpr int effSetSpeakerArrangement = 42;
+constexpr int effGetSpeakerArrangement = 69;
 
 /**
  * The struct that's being passed through the data parameter during the
@@ -53,4 +65,28 @@ struct VstIOProperties {
  */
 struct VstMidiKeyName {
     char data[80];
+};
+
+/**
+ * Contains information about a speaker, used during
+ * `eff{Get,Set}SpeakerArrangement`.
+ */
+struct VstSpeaker {
+    char data[112];
+};
+
+/**
+ * Contains information about a speaker setup, either for input or output. Used
+ * during `eff{Get,Set}SpeakerArrangement`. Reverse engineered from Renoise by
+ * attaching gdb and dumping both the `value` and `data` pointers when the host
+ * calls opcode 42.
+ */
+struct VstSpeakerArrangement {
+    int flags;
+    int num_speakers;
+    /**
+     * Variable length array of speakers. Similar to how `VstEvents` works, but
+     * with an array of objects instead of an array of pointers to objects.
+     */
+    VstSpeaker speakers[8];
 };

@@ -400,6 +400,12 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
             case effGetMidiKeyName:
                 return "effGetMidiKeyName";
                 break;
+            case effSetSpeakerArrangement:
+                return "effSetSpeakerArrangement";
+                break;
+            case effGetSpeakerArrangement:
+                return "effGetSpeakerArrangement ";
+                break;
             default:
                 return std::nullopt;
                 break;
