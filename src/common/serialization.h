@@ -188,6 +188,12 @@ class alignas(16) DynamicVstEvents {
      */
     std::vector<VstEvent> events;
 
+    template <typename S>
+    void serialize(S& s) {
+        s.container(events, max_midi_events,
+                    [](S& s, VstEvent& event) { s.container1b(event.dump); });
+    }
+
    private:
     /**
      * Some buffer we can build a `VstEvents` object in. This object can be
@@ -342,11 +348,7 @@ void serialize(S& s, EventPayload& payload) {
                   s.value8b(window_handle);
               },
               [](S& s, AEffect& effect) { s.object(effect); },
-              [](S& s, DynamicVstEvents& events) {
-                  s.container(
-                      events.events, max_midi_events,
-                      [](S& s, VstEvent& event) { s.container1b(event.dump); });
-              },
+              [](S& s, DynamicVstEvents& events) { s.object(events); },
               [](S& s, VstIOProperties& props) { s.object(props); },
               [](S& s, VstMidiKeyName& key_name) { s.object(key_name); },
               [](S& s, VstParameterProperties& props) { s.object(props); },
