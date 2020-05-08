@@ -30,12 +30,12 @@ You can either download a prebuilt version of yabridge through the GitHub
 compile it from source using the instructions in the [build](#Building) section
 below.
 
-There are two ways to use yabridge. If you're using Bitwig Studio, then the
-recommended installation method is to use symbolic links. The main advantage
+There are two ways to use yabridge. If your host supports plugin sanboxing, then
+the recommended installation method is to use symbolic links. The main advantage
 here is that you will be able to update yabridge for all of your plugins in one
-go, and it avoids having to install anything outside of your home directory.
-Sadly, not all hosts support this behavior. The copy-based installation will
-work for all hosts.
+go, and it avoids having to either install outside of your home directory or to
+set up environment variables. Sadly, not all hosts support this behavior. The
+copy-based installation will work for all hosts.
 
 If you have downloaded the prebuilt version of yabridge or if have followed the
 instructions from the [bitbridge](#32-bit-bitbridge) section below, then
@@ -49,20 +49,23 @@ automatically detect and use the Wine prefix the plugin's `.dll` file is located
 in. Alternatively you could set the `WINEPREFIX` environment variable to
 override the Wine prefix for all instances of yabridge.
 
-### Symlinking (recommended with Bitwig Studio)
+### Symlinking (recommended for Bitwig Studio)
 
-This is the recommended way to use yabridge if you're using Bitwig Studio You
-can either use the prebuilt binaries from the GitHub releases section, or you
-can build yabridge directly from source. If you use the prebuilt binaries, then
-you can simply extract them to `~/.local/share/yabridge` or to anywhere else in
-your home directory. If you choose to build from source, then you can use the
-compiled binaries directly from the `build/` directory. For the section below
-I'm going to assume you've extracted the files to `~/.local/share/yabridge`.
+This is the recommended way to use yabridge if you're using Bitwig Studio or any
+other VST host that supports _invididually sandboxed plugins_. If you use Bitwig
+Studio and you do not want to use the '_Individually_' plugin hosting mode, then
+you should follow the instructions from the [copying](#Copying) section below
+instead. For this installation method you can either use the prebuilt binaries
+from the [GitHub releases](https://github.com/robbert-vdh/yabridge/releases)
+section, or you can build yabridge directly from source. If you use the prebuilt
+binaries, then you can simply extract them to `~/.local/share/yabridge` or to
+any other location in your home directory. If you choose to build from source,
+then you can use the compiled binaries directly from the `build/` directory. For
+the section below I'm going to assume you've extracted the files to
+`~/.local/share/yabridge`.
 
-To set up yabridge for a VST plugin called
-`~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`,
-simply create a symlink from `~/.local/share/yabridge/libyabridge.so` to
-`~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so` like so:
+To set up yabridge for a VST plugin called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`, simply create a symlink from
+`~/.local/share/yabridge/libyabridge.so` to `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so`, like so:
 
 ```shell
 ln -s ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
@@ -84,9 +87,9 @@ find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.
 
 ### Copying
 
-If your VST host does not have support for symlinked VST plugins, then you can
-also install yabridge by creating copies of the `libyabridge.so` file instead of
-using symlinks. For this you will have to make sure that all four of the
+This installation method will work for all VST hosts. This works similar to the
+procedure described above, but using copies of `libyabridge.so` instead of
+symlinks. For this you will have to make sure that all four of the
 `yabridge-host*` files from the downloaded archive are somewhere in the search
 path. The recommended way to do this is to download yabridge from the GitHub
 [releases](https://github.com/robbert-vdh/yabridge/releases) section, extract
@@ -95,12 +98,11 @@ all the files to `~/.local/share/yabridge`, and then add that directory to your
 package](https://aur.archlinux.org/packages/yabridge/) available if you're
 running Arch or Manjaro.
 
-The installation process for a plugin is the same as the procedure described
-above, but instead of creating a symlink from `libyabridge.so` to `plugin.so`,
-you'll now have to create a copy. Using the same example, if you have extracted
-yabridge's files to `~/.local/share/yabridge` and you want to set up yabridge
-for a VST plugin called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`, then you should copy
-`~/.local/share/yabridge/libyabridge.so` to `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so` like so:
+The setup process for a plugin is similar to the procedure described above.
+Using the same example, if you have extracted yabridge's files to
+`~/.local/share/yabridge` and you want to set up yabridge for a VST plugin
+called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`, then you
+should copy `~/.local/share/yabridge/libyabridge.so` to `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so`, like so:
 
 ```shell
 cp ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
