@@ -10,11 +10,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added support for plugins that send MIDI events back to the host. This plugins
-  such as Cthulhu and Scaler to output notes and CC for another plugin to work
-  with.
+- Added support for plugins that send MIDI events back to the host. This allows
+  plugins such as Cthulhu and Scaler to output notes and CC for another plugin
+  to work with.
 - Added support for querying and setting detailed information about speaker
-  configurations for use in advanced surround setups. This indirectly allowed
+  configurations for use in advanced surround setups. This indirectly allows
   yabridge to work under _Renoise_.
 - Added automated development builds for yabridge, available by clicking on the
   'Automated builds' badge in the project readme.
@@ -24,7 +24,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Changed the plugin detection mechanism to support yet another way of
   symlinking plugins. Now you can use a symlink to a copy of `libyabridge.so`
   that's installed for a plugin in another directory. This is not recommended
-  though. Fixes #3.
+  though.
 - Changed Wine prefix detection to be relative to the plugin's `.dll` file,
   rather than the loaded `.so` file.
 - Increased the maximum number of audio channels from 32 to 256.
@@ -36,7 +36,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixed plugins failing to load on certain versions of _Ubuntu_ because of
   paths starting with two forward slashes.
-- Redirect the output from the Wine host process earlier in the startup.
+- Redirect the output from the Wine host process earlier in the startup process.
   Otherwise errors printed startup won't be visible, making it very hard to
   diagnose problems.
 
