@@ -25,9 +25,11 @@
 #define VST_EXPORT __attribute__((visibility("default")))
 
 // The main entry point for VST plugins should be called `VSTPluginMain``. The
-// other one exist for legacy reasons since some old hosts might still use
-// them.`
-extern "C" {
+// other one exist for legacy reasons since some old hosts might still use them.
+// There's also another possible legacy entry point just called `main`, but GCC
+// will refuse to compile a function called `main` that's not a regular C++ main
+// function
+
 /**
  * The main VST plugin entry point. We first set up a bridge that connects to a
  * Wine process that hosts the Windows VST plugin. We then create and return a
@@ -37,17 +39,8 @@ extern "C" {
  * manual memory management. Clean up is done when we receive the `effClose`
  * opcode from the VST host (i.e. opcode 1).`
  */
-extern VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback);
-
-// There's also another possible legacy entry point just called `main`, but GCC
-// will refuse to compile a function called `main` that's not a regular C++ main
-// function
-VST_EXPORT AEffect* main_plugin(audioMasterCallback audioMaster) {
-    return VSTPluginMain(audioMaster);
-}
-}
-
-VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback host_callback) {
+extern "C" VST_EXPORT AEffect* VSTPluginMain(
+    audioMasterCallback host_callback) {
     try {
         // This is the only place where we have to use manual memory management.
         // The bridge's destructor is called when the `effClose` opcode is
@@ -62,4 +55,8 @@ VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback host_callback) {
 
         return nullptr;
     }
+}
+
+extern "C" VST_EXPORT AEffect* main_plugin(audioMasterCallback audioMaster) {
+    return VSTPluginMain(audioMaster);
 }
