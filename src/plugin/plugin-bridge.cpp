@@ -452,12 +452,10 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
 
     switch (opcode) {
         case effClose: {
-            // Allow the plugin to handle its own shutdown. I've found a few
-            // plugins that work fine except for that they crash during
-            // shutdown. This shouldn't have any negative side effects since
-            // state has already been saved before this and all resources are
-            // cleaned up properly. Still not sure if this is a good way to
-            // handle this.
+            // Allow the plugin to handle its own shutdown, and then terminate
+            // the process. Because terminating the Wine process will also
+            // forcefully close all open sockets this will also terminate our
+            // handler thread.
             intptr_t return_value = 0;
             try {
                 // TODO: Add some kind of timeout?
@@ -470,27 +468,17 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
                 // loaded into the Wine process crashed during shutdown
                 logger.log("The plugin crashed during shutdown, ignoring");
             }
+            vst_host.terminate();
 
-            // Boost.Process will send SIGKILL to the Wine host for us when this
-            // class gets destroyed. Because the process is running a few
-            // threads Wine will say something about a segfault (probably
-            // related to `std::terminate`), but this doesn't seem to have any
-            // negative impact
-
-            // The `stop()` method will cause the IO context to just drop
-            // all of its work and immediately and not throw any exceptions
-            // that would have been caused by pipes and sockets being closed
+            // The `stop()` method will cause the IO context to just drop all of
+            // its work immediately and not throw any exceptions that would have
+            // been caused by pipes and sockets being closed.
             io_context.stop();
 
-            // `std::thread`s are not interruptable, and since we're doing
-            // blocking synchronous reads there's no way to interrupt them. If
-            // we don't detach them then the runtime will call `std::terminate`
-            // for us. The workaround here is to simply detach the threads and
-            // then close all sockets. This will cause them to throw exceptions
-            // which we then catch and ignore. Please let me know if there's a
-            // better way to handle this.q
-            host_callback_handler.detach();
-            wine_io_handler.detach();
+            // These threads should now be finished because we've forcefully
+            // terminated the Wine process, interupting their socket operations
+            host_callback_handler.join();
+            wine_io_handler.join();
 
             delete this;
 

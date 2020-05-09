@@ -18,6 +18,7 @@ Wine Staging 5.5 and 5.6:
 - Bitwig Studio 3.1 and the beta releases of 3.2
 - Carla 2.1
 - Ardour 5.12
+- Mixbus 6.0.702
 - REAPER 6.09
 - Renoise 3.2.1
 
