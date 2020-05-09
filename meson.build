@@ -62,6 +62,7 @@ shared_library(
     'src/common/serialization.cpp',
     'src/plugin/plugin.cpp',
     'src/plugin/plugin-bridge.cpp',
+    'src/plugin/utils.cpp',
     version_header,
   ],
   native : true,
