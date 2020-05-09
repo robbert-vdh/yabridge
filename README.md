@@ -133,7 +133,7 @@ will automatically pick up any of your Windows VST2 plugins.
   path. Make sure the directory you installed yabridge to (e.g.
   `~/.local/share/yabridge`) is listed in your `PATH` environment variable. For
   instance, if you're using the default Bash shell, then you could append this
-  line to `~/.bash_profile`:
+  line to `~/.bash_profile` (not to `~/.bashrc`):
 
   ```shell
   export PATH="$HOME/.local/share/yabridge:$PATH"
@@ -143,6 +143,13 @@ will automatically pick up any of your Windows VST2 plugins.
   applications not launched through a terminal. To check whether everything's
   set up correctly you could run `which yabridge-host.exe` in a terminal. If it
   is, then that should print a path to `yabridge-hsot.exe`.
+
+- If you're using the symlink installation method and you're seeing multiple
+  duplicate instances of the same plugin, or after opening one plugin every
+  subsequent plugin opens as another instance of the first plugin you've opened,
+  then your VST host is not sandboxing individual plugins. If you're using
+  Bitwig Studio, make sure the '_Individual_' plugin hosting mode is enabled and
+  all of the checkboxes in the list of sandboxing exceptions are left unchecked.
 
 - Sometimes left over Wine processes can cause problems. Run `wineserver -k` to
   terminate Wine related in the current or default Wine prefix.
