@@ -10,7 +10,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed issue where plugin removal could crash Ardour and Mixbus.
+- Fixed issue where plugin removal could cause Ardour and Mixbus to crash.
 
 ## [1.1.1] - 2020-05-09
 
