@@ -19,6 +19,7 @@
 #include <iostream>
 #include <memory>
 
+#include "../common/logging.h"
 #include "plugin-bridge.h"
 
 #define VST_EXPORT __attribute__((visibility("default")))
@@ -55,8 +56,9 @@ VST_EXPORT AEffect* VSTPluginMain(audioMasterCallback host_callback) {
 
         return &bridge->plugin;
     } catch (const std::exception& error) {
-        std::cerr << "Error during initialization:" << std::endl;
-        std::cerr << error.what() << std::endl;
+        Logger logger = Logger::create_from_environment();
+        logger.log("Error during initialization:");
+        logger.log(error.what());
 
         return nullptr;
     }

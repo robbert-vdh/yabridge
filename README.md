@@ -378,13 +378,13 @@ as the _Windows VST plugin_. The whole process works as follows:
    the `dispatcher()` and `audioMaster()` functions respectively. For operations
    involving the plugin editor there is also some extra glue in
    `WineBridge::dispatch_wrapper`. On the receiving end of the function calls,
-   the `passthrough_event()` function calls the callback functions and handles
-   the marshalling between our data types created by the `*DataConverter`
-   classes and the VST API's different pointer types. This behaviour is
-   separated from `receive_event()` so we can handle MIDI events separately.
-   This is needed because a select few plugins only store pointers to the
-   received events rather than copies of the objects. Because of this, the
-   received event data must live at least until the next audio buffer gets
+   the `passthrough_event()` function which calls the callback functions and
+   handles the marshalling between our data types created by the
+   `*DataConverter` classes and the VST API's different pointer types. This
+   behaviour is separated from `receive_event()` so we can handle MIDI events
+   separately. This is needed because a select few plugins only store pointers
+   to the received events rather than copies of the objects. Because of this,
+   the received event data must live at least until the next audio buffer gets
    processed so it needs to be stored temporarily.
 
 6. The Wine VST host loads the Windows VST plugin and starts forwarding messages

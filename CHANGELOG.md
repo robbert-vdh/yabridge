@@ -12,6 +12,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Changed installation recommendations to only install using symlinks with hosts
   that support individually sandboxed plugins.
+- Respect `YABRIDGE_DEBUG_FILE` when printing initialization errors.
 
 ## [1.1.0] - 2020-05-07
 
