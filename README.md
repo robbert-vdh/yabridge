@@ -143,7 +143,7 @@ will automatically pick up any of your Windows VST2 plugins.
   You'll likely have to log out and back in again for this to take effect for
   applications not launched through a terminal. To check whether everything's
   set up correctly you could run `which yabridge-host.exe` in a terminal. If it
-  is, then that should print a path to `yabridge-hsot.exe`.
+  is, then that should print a path to `yabridge-host.exe`.
 
 - If you're using the symlink installation method and you're seeing multiple
   duplicate instances of the same plugin, or after opening one plugin every
@@ -387,7 +387,7 @@ as the _Windows VST plugin_. The whole process works as follows:
      `process()` function, then the Wine VST host will emulate the behavior of
      `processReplacing()` instead.
    - The Windows VST plugin's `AEffect` object. A copy of this is sent over a
-     socket from the Wine VST hsot to the plugin after the Windows VST plugin
+     socket from the Wine VST host to the plugin after the Windows VST plugin
      has finished initializing. Whenever this struct gets updated by the Windows
      VST plugin, the Windows VST plugin will call the `audioMasterIOChanged()`
      host callback and we'll repeat the process.

@@ -553,7 +553,7 @@ void PluginBridge::process_replacing(AEffect* /*plugin*/,
 
     // Plugins are allowed to send MIDI events during processing using a host
     // callback. These have to be processed during the actual
-    // `processReplacing()` function or else the hsot will ignore them. To
+    // `processReplacing()` function or else the host will ignore them. To
     // prevent these events from getting delayed by a sample we'll process them
     // after the plugin is done processing audio rather than during the time
     // we're still waiting on the plugin.

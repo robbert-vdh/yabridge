@@ -126,7 +126,7 @@ class DefaultDataConverter {
  *   contains either a string or a null pointer while `dispatch()` calls might
  *   contain opcode specific structs. See the documentation for `EventPayload`
  *   for more information. The `DefaultDataConverter` defined above handles the
- *   basic behavior that's sufficient for hsot callbacks.
+ *   basic behavior that's sufficient for host callbacks.
  * @param logging A pair containing a logger instance and whether or not this is
  *   for sending `dispatch()` events or host callbacks. Optional since it
  *   doesn't have to be done on both sides.
@@ -312,7 +312,7 @@ auto passthrough_event(AEffect* plugin, F callback) {
                 // This is a bit of a special case! Instead of writing some
                 // return value, we will update values on the native VST
                 // plugin's `AEffect` object. This is triggered by the
-                // `audioMasterIOChanged` callback from the hsoted VST plugin.
+                // `audioMasterIOChanged` callback from the hosted VST plugin.
 
                 // These are the same fields written by bitsery in the
                 // initialization of `PluginBridge`. I can't think of a way to

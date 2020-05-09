@@ -69,7 +69,7 @@ std::string create_logger_prefix(const boost::filesystem::path& socket_path);
 PluginArchitecture find_vst_architecture(boost::filesystem::path);
 
 /**
- * Finds the Wine VST hsot (either `yabridge-host.exe` or `yabridge-host.exe`
+ * Finds the Wine VST host (either `yabridge-host.exe` or `yabridge-host.exe`
  * depending on the plugin). For this we will search in two places:
  *
  *   1. Alongside libyabridge.so if the file got symlinked. This is useful

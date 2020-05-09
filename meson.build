@@ -17,7 +17,7 @@ endif
 
 # Depending on the `use-bitbridge` flag we'll enable building a second 32-bit
 # host application that can act as a bit bridge for using 32-bit Windows plugins
-# in 64-bit Linux VST hsots. The plugin will determine which host application to
+# in 64-bit Linux VST hosts. The plugin will determine which host application to
 # use based on the `.dll` file it's trying to load.
 # This setup is necessary until Meson provides a way to have multiple
 # cross-builds for a single build directory:

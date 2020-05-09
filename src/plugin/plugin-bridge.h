@@ -96,7 +96,7 @@ class PluginBridge {
     AEffect plugin;
 
     /**
-     * The VST hsot can query a plugin for arbitrary binary data such as
+     * The VST host can query a plugin for arbitrary binary data such as
      * presets. It will expect the plugin to write back a pointer that points to
      * that data. This vector is where we store the chunk data for the last
      * `effGetChunk` event.
