@@ -125,6 +125,32 @@ Finally, open your DAW's VST location configuration and tell it to look for
 plugins under `~/.wine/drive_c/Program Files/Steinberg/VstPlugins`. That way it
 will automatically pick up any of your Windows VST2 plugins.
 
+## Troubleshooting common issues
+
+- If you're using the copying installation method and plugins are getting
+  skipped or blacklisted immediately when your VST host is scanning them, then
+  this is likely caused by `yabridge-host.exe` not being found in your search
+  path. Make sure the directory you installed yabridge to (e.g.
+  `~/.local/share/yabridge`) is listed in your `PATH` environment variable. For
+  instance, if you're using the default Bash shell, then you could append this
+  line to `~/.bash_profile`:
+
+  ```shell
+  export PATH="$HOME/.local/share/yabridge:$PATH"
+  ```
+
+  You'll likely have to log out and back in again for this to take effect for
+  applications not launched through a terminal. To check whether everything's
+  set up correctly you could run `which yabridge-host.exe` in a terminal. If it
+  is, then that should print a path to `yabridge-hsot.exe`.
+
+- Sometimes left over Wine processes can cause problems. Run `wineserver -k` to
+  terminate Wine related in the current or default Wine prefix.
+
+- Time out errors during plugin scanning are caused by the Wine process not
+  being able to start. There should be plugin output messages in your DAW or
+  terminal that with more information on what went wrong.
+
 ## Runtime dependencies and known issues
 
 Any VST2 plugin should function out of the box, although some plugins will need
