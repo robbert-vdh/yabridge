@@ -134,6 +134,29 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     async_log_pipe_lines(wine_stderr, wine_stderr_buffer, "[Wine STDERR] ");
     wine_io_handler = std::thread([&]() { io_context.run(); });
 
+    // If the Wine process fails to start, then nothing will connect to the
+    // sockets and we'll be hanging here indefinitely. To prevent this, we'll
+    // periodically poll whether the Wine process is still running, and throw
+    // when it is not. The alternative would be to rewrite this to using
+    // `async_accept`, Boost.Asio timers, and another IO context, but I feel
+    // like this a much simpler solution.
+    std::thread([&]() {
+        using namespace std::literals::chrono_literals;
+
+        while (true) {
+            if (finished_accepting_sockets) {
+                return;
+            }
+            if (!vst_host.running()) {
+                throw std::runtime_error(
+                    "The Wine process failed to start. Check the output above "
+                    "for more information.");
+            }
+
+            std::this_thread::sleep_for(1s);
+        }
+    }).detach();
+
     // It's very important that these sockets are connected to in the same
     // order in the Wine VST host
     socket_acceptor.accept(host_vst_dispatch);
@@ -142,6 +165,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     socket_acceptor.accept(host_vst_parameters);
     socket_acceptor.accept(host_vst_process_replacing);
     socket_acceptor.accept(vst_host_aeffect);
+    finished_accepting_sockets = true;
 
     // There's no need to keep the socket endpoint file around after accepting
     // all the sockets, and RAII won't clean these files up for us

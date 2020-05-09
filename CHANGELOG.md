@@ -14,6 +14,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   that support individually sandboxed plugins.
 - Respect `YABRIDGE_DEBUG_FILE` when printing initialization errors.
 
+### Fixed
+
+- Stop waiting for the Wine VST host process on startup if the process has
+  crashed or if Wine was not able to start.
+
 ## [1.1.0] - 2020-05-07
 
 ### Added
