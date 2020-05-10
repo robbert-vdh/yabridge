@@ -201,12 +201,13 @@ void Logger::log_event(bool is_dispatch,
                     message << "<" << speaker_arrangement.speakers.size()
                             << " output_speakers>";
                 },
-                [&](const WantsChunkBuffer&) {
-                    message << "<writable_buffer>";
-                },
                 [&](const VstIOProperties&) { message << "<io_properties>"; },
                 [&](const VstMidiKeyName&) { message << "<key_name>"; },
                 [&](const VstParameterProperties&) {
+                    message << "<writable_buffer>";
+                },
+                [&](const WantsAEffectUpdate&) { message << "<nullptr>"; },
+                [&](const WantsChunkBuffer&) {
                     message << "<writable_buffer>";
                 },
                 [&](const WantsVstRect&) { message << "<writable_buffer>"; },

@@ -283,6 +283,14 @@ auto passthrough_event(AEffect* plugin, F callback) {
             [&](DynamicSpeakerArrangement& speaker_arrangement) -> void* {
                 return &speaker_arrangement.as_c_speaker_arrangement();
             },
+            [&](WantsAEffectUpdate&) -> void* {
+                // The host will never actually ask for an updated `AEffect`
+                // object since that should not be a thing. This is purely a
+                // meant as a workaround for plugins that initialize their
+                // `AEffect` object after the plugin has already finished
+                // initializing.
+                return nullptr;
+            },
             [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
             [&](VstIOProperties& props) -> void* { return &props; },
             [&](VstMidiKeyName& key_name) -> void* { return &key_name; },
@@ -335,6 +343,7 @@ auto passthrough_event(AEffect* plugin, F callback) {
             [&](VstParameterProperties& props) -> EventResultPayload {
                 return props;
             },
+            [&](WantsAEffectUpdate&) -> EventResultPayload { return *plugin; },
             [&](WantsVstRect&) -> EventResultPayload {
                 // The plugin has written a pointer to a VstRect struct into the
                 // data poitner

@@ -286,6 +286,15 @@ class alignas(16) DynamicSpeakerArrangement {
 };
 
 /**
+ * Marker struct to indicate that the other side (the Wine VST host) should send
+ * an updated copy of the plugin's `AEffect` object. Should not be needed since
+ * the plugin should be calling `audioMasterIOChanged()` after it has changed
+ * its object, but some improperly coded plugins will only initialize their
+ * flags, IO properties and parameter counts after `effEditOpen()`.
+ */
+struct WantsAEffectUpdate {};
+
+/**
  * Marker struct to indicate that that the event writes arbitrary data into one
  * of its own buffers and uses the void pointer to store start of that data,
  * with the return value indicating the size of the array.
@@ -352,6 +361,7 @@ using EventPayload = std::variant<std::nullptr_t,
                                   AEffect,
                                   DynamicVstEvents,
                                   DynamicSpeakerArrangement,
+                                  WantsAEffectUpdate,
                                   WantsChunkBuffer,
                                   VstIOProperties,
                                   VstMidiKeyName,
@@ -382,8 +392,9 @@ void serialize(S& s, EventPayload& payload) {
               [](S& s, VstIOProperties& props) { s.object(props); },
               [](S& s, VstMidiKeyName& key_name) { s.object(key_name); },
               [](S& s, VstParameterProperties& props) { s.object(props); },
-              [](S&, WantsChunkBuffer&) {}, [](S&, WantsVstRect&) {},
-              [](S&, WantsVstTimeInfo&) {}, [](S&, WantsString&) {}});
+              [](S&, WantsAEffectUpdate&) {}, [](S&, WantsChunkBuffer&) {},
+              [](S&, WantsVstRect&) {}, [](S&, WantsVstTimeInfo&) {},
+              [](S&, WantsString&) {}});
 }
 
 /**
