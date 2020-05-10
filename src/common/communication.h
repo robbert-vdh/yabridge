@@ -71,20 +71,18 @@ inline void write_object(
  * together with `write_object`. This will block until the object is available.
  *
  * @param socket The Boost.Asio socket to read from.
- * @param object The object to deserialize to, if given. This can be used to
- *   update an existing `AEffect` struct without losing the pointers set by the
- *   host and the bridge.
  * @param buffer The buffer to read into. This is useful for sending audio and
  *   chunk data since that can vary in size by a lot.
+ *
+ * @return The deserialized object.
  *
  * @throw std::runtime_error If the conversion to an object was not successful.
  *
  * @relates write_object
  */
 template <typename T, typename Socket>
-inline T& read_object(Socket& socket,
-                      T& object,
-                      std::vector<uint8_t> buffer = std::vector<uint8_t>(64)) {
+inline T read_object(Socket& socket,
+                     std::vector<uint8_t> buffer = std::vector<uint8_t>(64)) {
     // See the note above on the use of `uint64_t` instead of `size_t`
     std::array<uint64_t, 1> message_length;
     boost::asio::read(socket, boost::asio::buffer(message_length));
@@ -100,6 +98,7 @@ inline T& read_object(Socket& socket,
         boost::asio::read(socket, boost::asio::buffer(buffer));
     assert(size == actual_size);
 
+    T object;
     auto [_, success] =
         bitsery::quickDeserialization<InputAdapter<std::vector<uint8_t>>>(
             {buffer.begin(), size}, object);
@@ -110,10 +109,4 @@ inline T& read_object(Socket& socket,
     }
 
     return object;
-}
-
-template <typename T, typename Socket>
-inline T read_object(Socket& socket) {
-    T object;
-    return read_object(socket, object);
 }

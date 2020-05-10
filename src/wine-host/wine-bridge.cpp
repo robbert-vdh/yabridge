@@ -253,9 +253,8 @@ void WineBridge::handle_dispatch() {
     std::vector<std::vector<float>> output_buffers(plugin->numOutputs);
 
     while (true) {
-        AudioBuffers request;
-        request =
-            read_object(host_vst_process_replacing, request, process_buffer);
+        auto request = read_object<AudioBuffers>(host_vst_process_replacing,
+                                                 process_buffer);
 
         // The process functions expect a `float**` for their inputs and
         // their outputs

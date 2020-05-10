@@ -222,7 +222,8 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     // Read the plugin's information from the Wine process. This can only be
     // done after we started accepting host callbacks as the plugin might do
     // this during initialization.
-    plugin = read_object(vst_host_aeffect, plugin);
+    const auto initialized_plugin = read_object<AEffect>(vst_host_aeffect);
+    update_aeffect(plugin, initialized_plugin);
 }
 
 class DispatchDataConverter : DefaultDataConverter {
@@ -541,9 +542,8 @@ void PluginBridge::process_replacing(AEffect* /*plugin*/,
     write_object(host_vst_process_replacing, request, process_buffer);
 
     // Write the results back to the `outputs` arrays
-    AudioBuffers response;
-    response =
-        read_object(host_vst_process_replacing, response, process_buffer);
+    const auto response =
+        read_object<AudioBuffers>(host_vst_process_replacing, process_buffer);
 
     assert(response.buffers.size() == static_cast<size_t>(plugin.numOutputs));
     for (int channel = 0; channel < plugin.numOutputs; channel++) {
