@@ -91,3 +91,20 @@ std::vector<uint8_t>& DynamicSpeakerArrangement::as_raw_data() {
 
     return speaker_arrangement_buffer;
 }
+
+AEffect& update_aeffect(AEffect& plugin, const AEffect& updated_plugin) {
+    plugin.magic = updated_plugin.magic;
+    plugin.numPrograms = updated_plugin.numPrograms;
+    plugin.numParams = updated_plugin.numParams;
+    plugin.numInputs = updated_plugin.numInputs;
+    plugin.numOutputs = updated_plugin.numOutputs;
+    plugin.flags = updated_plugin.flags;
+    plugin.initialDelay = updated_plugin.initialDelay;
+    plugin.empty3a = updated_plugin.empty3a;
+    plugin.empty3b = updated_plugin.empty3b;
+    plugin.unkown_float = updated_plugin.unkown_float;
+    plugin.uniqueID = updated_plugin.uniqueID;
+    plugin.version = updated_plugin.version;
+
+    return plugin;
+}

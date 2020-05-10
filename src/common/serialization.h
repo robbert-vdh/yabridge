@@ -86,9 +86,20 @@ template <class... Ts>
 overload(Ts...) -> overload<Ts...>;
 
 /**
+ * Update an `AEffect` object, copying values from `updated_plugin` to `plugin`.
+ * This will copy all flags and regular values, leaving all pointers in `plugin`
+ * untouched. This should be updating the same values as the serialization
+ * function right below this.
+ */
+AEffect& update_aeffect(AEffect& plugin, const AEffect& updated_plugin);
+
+/**
  * The serialization function for `AEffect` structs. This will s serialize all
  * of the values but it will not touch any of the pointer fields. That way you
- * can deserialize to an existing `AEffect` instance.
+ * can deserialize to an existing `AEffect` instance. Since we can't always
+ * deserialize directly into an existing `AEffect`, there is also another
+ * function called `update_aeffect()` that copies values from one `AEffect` to
+ * another. Both of these functions should be updating the same values.
  */
 template <typename S>
 void serialize(S& s, AEffect& plugin) {
