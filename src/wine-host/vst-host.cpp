@@ -22,7 +22,10 @@
 
 #include "wine-bridge.h"
 
-int main(int argc, char* argv[]) {
+// This explicit calling convention is needed to work around a bug introduced in
+// Wine 5.7
+// https://bugs.winehq.org/show_bug.cgi?id=49138
+int __cdecl main(int argc, char* argv[]) {
     // We pass the name of the VST plugin .dll file to load and the Unix domain
     // socket to connect to in plugin/bridge.cpp as the first two arguments of
     // this process.
