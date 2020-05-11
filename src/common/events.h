@@ -253,10 +253,14 @@ template <typename F>
 auto passthrough_event(AEffect* plugin, F callback) {
     return [=](Event& event) -> EventResult {
         // This buffer is used to write strings and small objects to. We'll
-        // initialize it with a single null to prevent it from being read as
-        // some arbitrary C-style string.
+        // initialize the beginning with null values to both prevent it from
+        // being read as some arbitrary C-style string, and to make sure that
+        // `*static_cast<void**>(string_buffer.data)` will be a null pointer if
+        // the plugin is supposed to write a pointer there but doesn't (such as
+        // with `effEditGetRect`/`WantsVstRect`).
         std::array<char, max_string_length> string_buffer;
-        string_buffer[0] = 0;
+        std::fill(string_buffer.begin(), string_buffer.begin() + sizeof(size_t),
+                  0);
 
         auto read_payload_fn = overload{
             [&](const std::nullptr_t&) -> void* { return nullptr; },
@@ -345,9 +349,17 @@ auto passthrough_event(AEffect* plugin, F callback) {
             },
             [&](WantsAEffectUpdate&) -> EventResultPayload { return *plugin; },
             [&](WantsVstRect&) -> EventResultPayload {
-                // The plugin has written a pointer to a VstRect struct into the
-                // data poitner
-                return **static_cast<VstRect**>(data);
+                // The plugin should have written a pointer to a VstRect struct
+                // into the data pointer. I haven't seen this fail yet, but
+                // since some hosts will call `effEditGetRect()` before
+                // `effEditOpen()` I can assume there are plugins that don't
+                // handle this correctly.
+                VstRect* editor_rect = *static_cast<VstRect**>(data);
+                if (editor_rect == nullptr) {
+                    return nullptr;
+                }
+
+                return *editor_rect;
             },
             [&](WantsVstTimeInfo&) -> EventResultPayload {
                 // Not sure why the VST API has twenty different ways of

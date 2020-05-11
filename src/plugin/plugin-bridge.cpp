@@ -342,7 +342,12 @@ class DispatchDataConverter : DefaultDataConverter {
                 update_aeffect(plugin, updated_plugin);
             } break;
             case effEditGetRect: {
-                // Write back the (hopefully) updated editor dimensions
+                // Either the plugin will have returned (a pointer to) their
+                // editor dimensions, or they will not have written anything.
+                if (std::holds_alternative<std::nullptr_t>(response.payload)) {
+                    return;
+                }
+
                 const auto new_rect = std::get<VstRect>(response.payload);
                 rect = new_rect;
 

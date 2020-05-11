@@ -18,6 +18,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added a workaround for the compilation issues under Wine 5.7 and above as
   caused by [Wine bug 49138](https://bugs.winehq.org/show_bug.cgi?id=49138).
+- Fixed potential issue with plugins not returning their editor size.
 
 ## [1.1.2] - 2020-05-09
 
