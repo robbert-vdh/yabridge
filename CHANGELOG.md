@@ -15,6 +15,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added a workaround for plugins that improperly defer part of their
   initialization process without telling the host. This fixes startup behavior
   for the Roland Cloud plugins.
+- Added a workaround for a rare race condition in certain plugins caused by
+  incorrect assumptions in plugin's editor handling. Fixes the editor for
+  Superior Drummer 3 and the Roland Cloud synths in Bitwig Studio.
 - Fixed potential issue with plugins not returning their editor size.
 
 ## [1.1.2] - 2020-05-09

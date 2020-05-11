@@ -34,6 +34,13 @@
 #include "utils.h"
 
 /**
+ * A marker struct to indicate that the editor is about to be opened.
+ *
+ * @see WineBridge::editor
+ */
+struct EditorOpening {};
+
+/**
  * This handles the communication between the Linux native VST plugin and the
  * Wine VST host. The functions below should be used as callback functions in an
  * `AEffect` object.
@@ -186,6 +193,24 @@ class WineBridge {
      * The plugin editor window. Allows embedding the plugin's editor into a
      * Wine window, and embedding that Wine window into a window provided by the
      * host. Should be empty when the editor is not open.
+     *
+     * This field can have three possible states:
+     *
+     * - `std::nullopt` when the editor is closed.
+     * - An `Editor` object when the editor is open.
+     * - `EditorOpening` when the editor is not yet open, but the host has
+     *   already called `effEditGetRect()` and is about to call `effEditOpen()`.
+     *   This is needed because there is a race condition in some bugs that
+     *   cause them to crash or enter an infinite Win32 message loop when
+     *   `effEditGetRect()` gets dispatched and we then enter the message loop
+     *   loop before `effEditOpen()` gets called. Most plugins will handle this
+     *   just fine, but a select few plugins make the assumption that the editor
+     *   is already open once `effEditGetRect()` has been called, even if
+     *   `effEditOpen` has not yet been dispatched. VST hsots on Windows will
+     *   call these two events in sequence, so the bug would never occur there.
+     *   To work around this we'll use this third state to temporarily stop
+     *   processing Windows events in the one or two ticks between these two
+     *   events.
      */
-    std::optional<Editor> editor;
+    std::variant<std::monostate, Editor, EditorOpening> editor;
 };

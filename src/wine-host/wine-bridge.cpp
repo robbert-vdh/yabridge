@@ -154,23 +154,29 @@ void WineBridge::handle_dispatch() {
 
             // Because of the way the Win32 API works we have to process events
             // on the same thread as the one the window was created on, and that
-            // thread is the thread that's handling dispatcher calls.
-            if (editor.has_value()) {
-                // This will handle Win32 events similar to the loop below, and
-                // it will also handle any X11 events.
-                editor->handle_events();
-            } else {
-                MSG msg;
+            // thread is the thread that's handling dispatcher calls. Some
+            // plugins will also rely on the Win32 message loop to run tasks on
+            // a timer and to defer loading, so we have to make sure to always
+            // run this loop. The only exception is a in specific situation that
+            // can cause a race condition in some plugins because of incorrect
+            // assumptions made by the plugin. See the dostring for
+            // `WineBridge::editor` for more information.
+            std::visit(overload{[](Editor& editor) { editor.handle_events(); },
+                                [](std::monostate&) {
+                                    MSG msg;
 
-                // Since some plugins rely on the Win32 message API even for
-                // non-editor related tasks (such as deferring the loading of
-                // presets using a timer), we have to run a message loop even
-                // when the editor is closed.
-                while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-                    TranslateMessage(&msg);
-                    DispatchMessage(&msg);
-                }
-            }
+                                    while (PeekMessage(&msg, nullptr, 0, 0,
+                                                       PM_REMOVE)) {
+                                        TranslateMessage(&msg);
+                                        DispatchMessage(&msg);
+                                    }
+                                },
+                                [](EditorOpening&) {
+                                    // Don't handle any events in this
+                                    // particular case as explained in
+                                    // `WineBridge::editor`
+                                }},
+                       editor);
         }
     } catch (const boost::system::system_error&) {
         // The plugin has cut off communications, so we can shut down this host
@@ -314,22 +320,38 @@ intptr_t WineBridge::dispatch_wrapper(AEffect* plugin,
     // We have to intercept GUI open calls since we can't use
     // the X11 window handle passed by the host
     switch (opcode) {
+        case effEditGetRect: {
+            // Some plugins will have a race condition if the message loops gets
+            // handled between the call to `effEditGetRect()` and
+            // `effEditOpen()`, although this behavior never appears on Windows
+            // as hosts will always either call these functions in sequence or
+            // in reverse. We need to temporarily stop handling messages when
+            // this happens.
+            if (!std::holds_alternative<Editor>(editor)) {
+                editor = EditorOpening{};
+            }
+
+            return plugin->dispatcher(plugin, opcode, index, value, data,
+                                      option);
+        } break;
         case effEditOpen: {
             // Create a Win32 window through Wine, embed it into the window
-            // provided by the host, and let the plugin embed itself into the
-            // Wine window
+            // provided by the host, and let the plugin embed itself into
+            // the Wine window
             const auto x11_handle = reinterpret_cast<size_t>(data);
-            editor.emplace("yabridge plugin", plugin, x11_handle);
+            Editor& editor_instance =
+                editor.emplace<Editor>("yabridge plugin", plugin, x11_handle);
 
             return plugin->dispatcher(plugin, opcode, index, value,
-                                      editor->win32_handle.get(), option);
+                                      editor_instance.win32_handle.get(),
+                                      option);
         } break;
         case effEditClose: {
             const intptr_t return_value =
                 plugin->dispatcher(plugin, opcode, index, value, data, option);
 
             // Cleanup is handled through RAII
-            editor = std::nullopt;
+            editor = std::monostate();
 
             return return_value;
         } break;
