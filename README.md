@@ -205,9 +205,11 @@ the following dependencies:
 
 - gcc (tested using GCC 9.2)
 - A Wine installation with `winegcc` and the development headers. At the moment
-  there's a regression in **Wine 5.7** causing compiled winelib applications to
-  break. You'll have to temporarily downgrade to an earlier version of Wine if
-  you've got Wine 5.7 installed and you're trying to compile yabridge.
+  there's a regression in **Wine 5.7+** causing compiled winelib applications to
+  break. I've created an issue for this on WineHQ's [bug
+  tracker](https://bugs.winehq.org/show_bug.cgi?id=49138). You'll have to
+  temporarily downgrade to an earlier version of Wine if you've got Wine 5.7
+  installed and you're trying to compile yabridge.
 - Boost
 - xcb
 
