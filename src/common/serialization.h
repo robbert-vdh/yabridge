@@ -303,7 +303,9 @@ struct WantsChunkBuffer {};
 
 /**
  * Marker struct to indicate that the event handler will write a pointer to a
- * `VstRect` struct into the void pointer.
+ * `VstRect` struct into the void pointer. It's also possible that the plugin
+ * doesn't do anything. In that case we'll serialize the response as a null
+ * pointer.
  */
 struct WantsVstRect {};
 
