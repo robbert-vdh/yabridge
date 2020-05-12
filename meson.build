@@ -99,8 +99,12 @@ if get_option('use-bitbridge')
   # I honestly have no idea what the correct way to have `find_dependency()` use
   # `/usr/lib32` instead of `/usr/lib` is. If anyone does know, please tell me!
   winegcc = meson.get_compiler('cpp', native : false)
-  boost_dep = [winegcc.find_library('boost_filesystem')]
-  xcb_dep = [winegcc.find_library('xcb')]
+  boost_dep = winegcc.find_library(
+    'boost_filesystem',
+    static : true,
+    dirs : ['/usr/lib', '/usr/local/lib']
+  )
+  xcb_dep = winegcc.find_library('xcb')
 
   executable(
     host_name_32bit,
