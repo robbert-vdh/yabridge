@@ -200,6 +200,9 @@ because I haven't needed them myself. Let me know if you need any of these
 features for a certain plugin or VST host:
 
 - Double precision audio (`processDoubleReplacing`).
+- SysEx messages. In addition to MIDI, VST 2.4 also supports SysEx. I don't know
+  of any hosts or plugins that use this, but please let me know if this is
+  needed for something.
 - Vendor specific extension (for instance, for
   [REAPER](https://www.reaper.fm/sdk/vst/vst_ext.php), though most of these
   extension functions will work out of the box without any modifications).
