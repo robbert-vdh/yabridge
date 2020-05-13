@@ -73,8 +73,7 @@ WineBridge::WineBridge(std::string plugin_dll_path,
       host_vst_dispatch_midi_events(io_context),
       vst_host_callback(io_context),
       host_vst_parameters(io_context),
-      host_vst_process_replacing(io_context),
-      vst_host_aeffect(io_context) {
+      host_vst_process_replacing(io_context) {
     // Got to love these C APIs
     if (plugin_handle == nullptr) {
         throw std::runtime_error("Could not load the Windows .dll file at '" +
@@ -106,7 +105,6 @@ WineBridge::WineBridge(std::string plugin_dll_path,
     vst_host_callback.connect(socket_endpoint);
     host_vst_parameters.connect(socket_endpoint);
     host_vst_process_replacing.connect(socket_endpoint);
-    vst_host_aeffect.connect(socket_endpoint);
 
     // Initialize after communication has been set up
     // We'll try to do the same `get_bridge_isntance` trick as in
@@ -123,9 +121,11 @@ WineBridge::WineBridge(std::string plugin_dll_path,
     current_bridge_instance = nullptr;
     plugin->ptr1 = this;
 
-    // Send the plugin's information to the Linux VST plugin. Any updates during
-    // runtime are handled using the `audioMasterIOChanged` host callback.
-    write_object(vst_host_aeffect, *plugin);
+    // Send the plugin's information to the Linux VST plugin. This is done over
+    // the `dispatch()` socket since this has to be done only once during
+    // initialization. Any updates during runtime are handled using the
+    // `audioMasterIOChanged` host callback.
+    write_object(host_vst_dispatch, EventResult{0, *plugin, std::nullopt});
 
     // This works functionally identically to the `handle_dispatch()` function
     // below, but this socket will only handle MIDI events. This is needed

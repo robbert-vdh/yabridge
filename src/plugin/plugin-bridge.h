@@ -129,6 +129,12 @@ class PluginBridge {
     // instance the socket named `host_vst_dispatch` forwards
     // `AEffect.dispatch()` calls from the native VST host to the Windows VST
     // plugin (through the Wine VST host).
+
+    /**
+     * The socket that forwards all `dispatcher()` calls from the VST host to
+     * the plugin. This is also used once at startup to populate the values of
+     * the `AEffect` object.
+     */
     boost::asio::local::stream_protocol::socket host_vst_dispatch;
     /**
      * Used specifically for the `effProcessEvents` opcode. This is needed
@@ -144,13 +150,6 @@ class PluginBridge {
      */
     boost::asio::local::stream_protocol::socket host_vst_parameters;
     boost::asio::local::stream_protocol::socket host_vst_process_replacing;
-
-    /**
-     * This socket only handles updates of the `AEffect` struct instead of
-     * passing through function calls. It's also used during initialization to
-     * pass the Wine plugin's information to the host.
-     */
-    boost::asio::local::stream_protocol::socket vst_host_aeffect;
 
     /**
      * Whether we're done accepting sockets. The plugin may hang indefinitely if

@@ -68,7 +68,6 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
       vst_host_callback(io_context),
       host_vst_parameters(io_context),
       host_vst_process_replacing(io_context),
-      vst_host_aeffect(io_context),
       host_callback_function(host_callback),
       logger(Logger::create_from_environment(
           create_logger_prefix(socket_endpoint.path()))),
@@ -164,7 +163,6 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     socket_acceptor.accept(vst_host_callback);
     socket_acceptor.accept(host_vst_parameters);
     socket_acceptor.accept(host_vst_process_replacing);
-    socket_acceptor.accept(vst_host_aeffect);
     finished_accepting_sockets = true;
 
     // There's no need to keep the socket endpoint file around after accepting
@@ -220,9 +218,14 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     });
 
     // Read the plugin's information from the Wine process. This can only be
-    // done after we started accepting host callbacks as the plugin might do
-    // this during initialization.
-    const auto initialized_plugin = read_object<AEffect>(vst_host_aeffect);
+    // done after we started accepting host callbacks as the plugin will likely
+    // call these during its initialization. We reuse the `dispatcher()` socket
+    // for this since this has to be done only once.
+    const auto initialization_data =
+        read_object<EventResult>(host_vst_dispatch);
+    const auto initialized_plugin =
+        std::get<AEffect>(initialization_data.payload);
+
     update_aeffect(plugin, initialized_plugin);
 }
 

@@ -391,11 +391,6 @@ as the _Windows VST plugin_. The whole process works as follows:
      `processReplacing()` and only supports The deprecated commutative
      `process()` function, then the Wine VST host will emulate the behavior of
      `processReplacing()` instead.
-   - The Windows VST plugin's `AEffect` object. A copy of this is sent over a
-     socket from the Wine VST host to the plugin after the Windows VST plugin
-     has finished initializing. Whenever this struct gets updated by the Windows
-     VST plugin, the Windows VST plugin will call the `audioMasterIOChanged()`
-     host callback and we'll repeat the process.
 
    The operations described above involving the host -> plugin `dispatcher()`and
    plugin -> host `audioMaster()` functions are all handled by first serializing
@@ -429,6 +424,6 @@ as the _Windows VST plugin_. The whole process works as follows:
 6. The Wine VST host loads the Windows VST plugin and starts forwarding messages
    over the sockets described above.
 7. After the Windows VST plugin has started loading we will forward all values
-   from the plugin's `AEffect` struct to the Linux native VST plugin using the
-   socket described above. After this point the plugin will stop blocking and
-   has finished loading.
+   from the plugin's `AEffect` struct to the Linux native VST plugin over the
+   `dispatcher()` socket. This is only done once at startup. After this point
+   the plugin will stop blocking and has finished loading.
