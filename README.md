@@ -38,18 +38,6 @@ go, and it avoids having to either install outside of your home directory or to
 set up environment variables. Sadly, not all hosts support this behavior. The
 copy-based installation will work for all hosts.
 
-If you have downloaded the prebuilt version of yabridge or if have followed the
-instructions from the [bitbridge](#32-bit-bitbridge) section below, then
-yabridge is also able to load 32-bit VST plugins. The installation procedure for
-32-bit plugins is exactly the same as for 64-bit plugins. Yabridge will detect
-whether a plugin is 32-bit or 64-bit on startup and it will handle it
-accordingly.
-
-It's also possible to use yabridge with multiple Wine prefixes. Yabridge will
-automatically detect and use the Wine prefix the plugin's `.dll` file is located
-in. Alternatively you could set the `WINEPREFIX` environment variable to
-override the Wine prefix for all instances of yabridge.
-
 ### Symlinking (recommended for Bitwig Studio)
 
 This is the recommended way to use yabridge if you're using Bitwig Studio or any
@@ -127,6 +115,22 @@ find "$plugin_dir" -type f -iname '*.dll' -print0 |
 Finally, open your DAW's VST location configuration and tell it to look for
 plugins under `~/.wine/drive_c/Program Files/Steinberg/VstPlugins`. That way it
 will automatically pick up any of your Windows VST2 plugins.
+
+### Bitbridge
+
+If you have downloaded the prebuilt version of yabridge or if have followed the
+instructions from the [bitbridge](#32-bit-bitbridge) section below, then
+yabridge is also able to load 32-bit VST plugins. The installation procedure for
+32-bit plugins is exactly the same as for 64-bit plugins. Yabridge will
+automatically detect whether a plugin is 32-bit or 64-bit on startup and it will
+handle it accordingly.
+
+### Wine prefixes
+
+It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
+automatically detect and use the Wine prefix the plugin's `.dll` file is located
+in. Alternatively you could set the `WINEPREFIX` environment variable to
+override the Wine prefix for all instances of yabridge.
 
 ## Troubleshooting common issues
 
