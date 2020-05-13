@@ -79,8 +79,9 @@ VST plugins.
 
 ```shell
 yabridge_home=$HOME/.local/share/yabridge
+plugin_dir="$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"
 
-find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.dll' -print0 |
+find "$plugin_dir" -type f -iname '*.dll' -print0 |
   xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
   sed -z 's/\.dll$/.so/' |
   xargs -0 -n1 ln -sf "$yabridge_home/libyabridge.so"
@@ -113,8 +114,9 @@ To install yabridge for all VST2 plugins under `~/.wine/drive_c/Program Files/St
 
 ```shell
 yabridge_home=$HOME/.local/share/yabridge
+plugin_dir="$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"
 
-find "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins" -type f -iname '*.dll' -print0 |
+find "$plugin_dir" -type f -iname '*.dll' -print0 |
   xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
   sed -z 's/\.dll$/.so/' |
   xargs -0 -n1 cp "$yabridge_home/libyabridge.so"
