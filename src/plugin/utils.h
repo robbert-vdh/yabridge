@@ -101,7 +101,8 @@ boost::filesystem::path find_vst_plugin();
 
 /**
  * Locate the Wine prefix this file is located in, if it is inside of a wine
- * prefix.
+ * prefix. This is done by locating the first parent directory that contains a
+ * directory named `dosdevices`.
  *
  * @return Either the path to the Wine prefix (containing the `drive_c?`
  *   directory), or `std::nullopt` if it is not inside of a wine prefix.

@@ -28,6 +28,8 @@
 // Generated inside of build directory
 #include <src/common/config/config.h>
 
+#include <../common/configuration.h>
+
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
@@ -53,16 +55,13 @@ std::string create_logger_prefix(const fs::path& socket_path) {
 }
 
 std::optional<fs::path> find_wineprefix() {
-    // Try to locate the Wine prefix the plugin's .dll file is located in by
-    // finding the first parent directory that contains a directory named
-    // `dosdevices`
-    fs::path wineprefix_path = find_vst_plugin();
-    while (wineprefix_path != "") {
-        if (fs::is_directory(wineprefix_path / "dosdevices")) {
-            return wineprefix_path;
-        }
-
-        wineprefix_path = wineprefix_path.parent_path();
+    // We need these string conversions because Boost still doesn't use
+    // std::filesystem paths
+    std::optional<std::filesystem::path> dosdevices_dir =
+        find_dominating_file("dosdevices", find_vst_plugin().string(),
+                             std::filesystem::is_directory);
+    if (dosdevices_dir.has_value()) {
+        return dosdevices_dir->parent_path().string();
     }
 
     return std::nullopt;
