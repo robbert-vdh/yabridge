@@ -40,8 +40,10 @@ endif
 subdir('src/common/config')
 
 # Statically link against Boost.Filesystem, otherwise it becomes impossible to
-# distribute a prebuilt version of yabridge
-boost_dep = dependency('boost', version : '>=1.66', modules : ['filesystem'], static : true)
+# distribute a prebuilt version of yabridge. For the Wine host applications we
+# only use the headers only libraries.
+boost_dep = dependency('boost', version : '>=1.66', static : true)
+boost_filesystem_dep = dependency('boost', version : '>=1.66', modules : ['filesystem'], static : true)
 bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
 threads_dep = dependency('threads')
 # The built in threads dependency does not know how to handle winegcc
@@ -67,7 +69,7 @@ shared_library(
   ],
   native : true,
   include_directories : include_dir,
-  dependencies : [boost_dep, bitsery_dep, threads_dep],
+  dependencies : [boost_dep, boost_filesystem_dep, bitsery_dep, threads_dep],
   cpp_args : compiler_options,
   link_args : ['-ldl']
 )
@@ -99,11 +101,6 @@ if get_option('use-bitbridge')
   # I honestly have no idea what the correct way to have `find_dependency()` use
   # `/usr/lib32` instead of `/usr/lib` is. If anyone does know, please tell me!
   winegcc = meson.get_compiler('cpp', native : false)
-  boost_dep = winegcc.find_library(
-    'boost_filesystem',
-    static : true,
-    dirs : ['/usr/lib', '/usr/local/lib']
-  )
   xcb_dep = winegcc.find_library('xcb')
 
   executable(

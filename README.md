@@ -239,7 +239,7 @@ It is also possible to compile a host application for yabridge that's compatible
 with 32-bit plugins such as old SynthEdit plugins. This will allow yabridge to
 act as a bitbirdge, allowing you to run old 32-bit only Windows VST2 plugins in
 a modern 64-bit Linux VST host. For this you'll need to have installed the 32
-bit versions of the Boost and XCB libraries. This can then be set up as follows:
+bit version of the XCB library. This can then be set up as follows:
 
 ```shell
 # Enable the bitbridge on an existing build
