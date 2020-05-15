@@ -1,1 +1,4 @@
 /*/*
+
+# The above pattern doesn't match submodules
+/tomlplusplus

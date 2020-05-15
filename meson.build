@@ -46,6 +46,7 @@ boost_dep = dependency('boost', version : '>=1.66', static : true)
 boost_filesystem_dep = dependency('boost', version : '>=1.66', modules : ['filesystem'], static : true)
 bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
 threads_dep = dependency('threads')
+tomlplusplus_dep = subproject('tomlplusplus').get_variable('tomlplusplus_dep')
 # The built in threads dependency does not know how to handle winegcc
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
@@ -69,7 +70,13 @@ shared_library(
   ],
   native : true,
   include_directories : include_dir,
-  dependencies : [boost_dep, boost_filesystem_dep, bitsery_dep, threads_dep],
+  dependencies : [
+    boost_dep,
+    boost_filesystem_dep,
+    bitsery_dep,
+    threads_dep,
+    tomlplusplus_dep
+  ],
   cpp_args : compiler_options,
   link_args : ['-ldl']
 )
@@ -90,7 +97,13 @@ executable(
   host_sources,
   native : false,
   include_directories : include_dir,
-  dependencies : [boost_dep, bitsery_dep, wine_threads_dep, xcb_dep],
+  dependencies : [
+    boost_dep,
+    bitsery_dep,
+    tomlplusplus_dep,
+    wine_threads_dep,
+    xcb_dep
+  ],
   cpp_args : compiler_options + ['-m64'],
   link_args : ['-m64']
 )
@@ -108,7 +121,13 @@ if get_option('use-bitbridge')
     host_sources,
     native : false,
     include_directories : include_dir,
-    dependencies : [boost_dep, bitsery_dep, wine_threads_dep, xcb_dep],
+    dependencies : [
+      boost_dep,
+      bitsery_dep,
+      tomlplusplus_dep,
+      wine_threads_dep,
+      xcb_dep
+    ],
     # FIXME: 32-bit winegcc defines `__stdcall` differently than the 64-bit
     #        version, and one of the changes is the inclusion of
     #        `__atribute__((__force_align_arg_pointer__))`. For whetever reason
