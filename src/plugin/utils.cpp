@@ -28,7 +28,7 @@
 // Generated inside of build directory
 #include <src/common/config/config.h>
 
-#include <../common/configuration.h>
+#include "configuration.h"
 
 namespace bp = boost::process;
 namespace fs = boost::filesystem;

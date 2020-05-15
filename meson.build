@@ -63,6 +63,7 @@ shared_library(
   [
     'src/common/logging.cpp',
     'src/common/serialization.cpp',
+    'src/plugin/configuration.cpp',
     'src/plugin/plugin.cpp',
     'src/plugin/plugin-bridge.cpp',
     'src/plugin/utils.cpp',
