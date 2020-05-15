@@ -222,6 +222,7 @@ the following dependencies:
 The following dependencies are included in the repository as a Meson wrap:
 
 - bitsery
+- tomlplusplus
 
 The project can then be compiled as follows:
 
