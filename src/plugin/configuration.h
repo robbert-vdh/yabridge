@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <filesystem>
+#include <boost/filesystem.hpp>
 #include <optional>
 
 /**
@@ -34,13 +34,13 @@
  * @return The path to the *file* found, or `std::nullopt` if the file could not
  *   be found.
  */
-template <typename F = bool(const std::filesystem::path&)>
-std::optional<std::filesystem::path> find_dominating_file(
+template <typename F = bool(const boost::filesystem::path&)>
+std::optional<boost::filesystem::path> find_dominating_file(
     const std::string& filename,
-    std::filesystem::path starting_dir,
-    F predicate = std::filesystem::exists) {
+    boost::filesystem::path starting_dir,
+    F predicate = boost::filesystem::exists) {
     while (starting_dir != "") {
-        const std::filesystem::path candidate = starting_dir / filename;
+        const boost::filesystem::path candidate = starting_dir / filename;
         if (predicate(candidate)) {
             return candidate;
         }

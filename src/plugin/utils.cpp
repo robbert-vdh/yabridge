@@ -55,16 +55,13 @@ std::string create_logger_prefix(const fs::path& socket_path) {
 }
 
 std::optional<fs::path> find_wineprefix() {
-    // We need these string conversions because Boost still doesn't use
-    // std::filesystem paths
-    std::optional<std::filesystem::path> dosdevices_dir =
-        find_dominating_file("dosdevices", find_vst_plugin().string(),
-                             std::filesystem::is_directory);
-    if (dosdevices_dir.has_value()) {
-        return dosdevices_dir->parent_path().string();
+    std::optional<fs::path> dosdevices_dir =
+        find_dominating_file("dosdevices", find_vst_plugin(), fs::is_directory);
+    if (!dosdevices_dir.has_value()) {
+        return std::nullopt;
     }
 
-    return std::nullopt;
+    return dosdevices_dir->parent_path();
 }
 
 PluginArchitecture find_vst_architecture(fs::path plugin_path) {
