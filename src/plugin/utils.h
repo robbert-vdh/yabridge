@@ -141,3 +141,35 @@ std::string get_wine_version();
  * using the user's default prefix.
  */
 boost::process::environment set_wineprefix();
+
+/**
+ * Starting from the starting file or directory, go up in the directory
+ * hierarchy until we find a file named `filename`.
+ *
+ * @param filename The name of the file we're looking for. This can also be a
+ *   directory name since directories are also files.
+ * @param starting_from The directory to start searching in. If this is a file,
+ *   then start searching in the directory the file is located in.
+ * @param predicate The predicate to use to check if the path matches a file.
+ *   Needed as an easy way to limit the search to directories only since C++17
+ *   does not have any built in coroutines or generators.
+ *
+ * @return The path to the *file* found, or `std::nullopt` if the file could not
+ *   be found.
+ */
+template <typename F = bool(const boost::filesystem::path&)>
+std::optional<boost::filesystem::path> find_dominating_file(
+    const std::string& filename,
+    boost::filesystem::path starting_dir,
+    F predicate = boost::filesystem::exists) {
+    while (starting_dir != "") {
+        const boost::filesystem::path candidate = starting_dir / filename;
+        if (predicate(candidate)) {
+            return candidate;
+        }
+
+        starting_dir = starting_dir.parent_path();
+    }
+
+    return std::nullopt;
+}

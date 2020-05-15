@@ -20,33 +20,81 @@
 #include <optional>
 
 /**
- * Starting from the starting file or directory, go up in the directory
- * hierarchy until we find a file named `filename`.
+ * An object that's used to provide plugin-specific configuration. Right now
+ * this is only used to declare plugin groups. A plugin group is a set of
+ * plugins that will be hosted in the same process rather than individually so
+ * they can share resources. Configuration file loading works as follows:
  *
- * @param filename The name of the file we're looking for. This can also be a
- *   directory name since directories are also files.
- * @param starting_from The directory to start searching in. If this is a file,
- *   then start searching in the directory the file is located in.
- * @param predicate The predicate to use to check if the path matches a file.
- *   Needed as an easy way to limit the search to directories only since C++17
- *   does not have any built in coroutines or generators.
+ * 1. `Configuration::load_for(path)` gets called with a path to the copy of or
+ *    symlink to `libyabridge.so` that the plugin host has tried to load.
+ * 2. We start looking for a file named `yabridge.toml` in the same directory as
+ *    that `.so` file, iteratively continuing to search one directory higher
+ *    until we either find the file or we reach the filesystem root.
+ * 3. If the file is found, then parse it as a TOML file and look for the first
+ *    table whose key is a glob pattern that (partially) matches the relative
+ *    path between the found `yabridge.toml` and the `.so` file. As a rule of
+ *    thumb, if the `find <pattern> -type f` command executed in Bash would list
+ *    the `.so` file, then the following table in `yabridge.tmol` would also
+ *    match the same `.so` file:
  *
- * @return The path to the *file* found, or `std::nullopt` if the file could not
- *   be found.
+ *    ```toml
+ *    ["<patern>"]
+ *    group = "..."
+ *    ```
+ * 4. If one of these glob patterns could be matched with the relative path of
+ *    the `.so` file then we'll use the settings specified in that section.
+ *    Otherwise the default settings will be used.
  */
-template <typename F = bool(const boost::filesystem::path&)>
-std::optional<boost::filesystem::path> find_dominating_file(
-    const std::string& filename,
-    boost::filesystem::path starting_dir,
-    F predicate = boost::filesystem::exists) {
-    while (starting_dir != "") {
-        const boost::filesystem::path candidate = starting_dir / filename;
-        if (predicate(candidate)) {
-            return candidate;
-        }
+class Configuration {
+    /**
+     * Create an empty configuration object with default settings.
+     */
+    Configuration();
 
-        starting_dir = starting_dir.parent_path();
-    }
+    /**
+     * Load the configuration for an instance of yabridge from a configuration
+     * file by matching the plugin's relative path to the glob patterns in that
+     * configuration file. Will leave the object empty if the plugin cannot be
+     * matched to any of the patterns. Not meant to be used directly.
+     *
+     * @throw toml::parsing_error If the file could not be parsed.
+     *
+     * @see Configuration::load_for
+     */
+    Configuration(const boost::filesystem::path& config_path,
+                  const boost::filesystem::path& yabridge_path);
 
-    return std::nullopt;
-}
+    /**
+     * Load the configuration that belongs to a copy of or symlink to
+     * `libyabridge.so`. If no configuration file could be found then this will
+     * return an empty configuration object with default settings.
+     *
+     * @param yabridge_path The path to the .so file that's being loaded.by the
+     *   VST host. This will be used both for the starting location of the
+     *   search and to determine which section in the config file to use.
+     *
+     * @return Either a configuration object populated with values from matched
+     *   glob pattern within the found configuration file, or an empty
+     *   configuration object if no configuration file could be found or if the
+     *   plugin could not be matched to any of the glob patterns in the
+     *   configuration file.
+     */
+    static Configuration load_for(const boost::filesystem::path& yabridge_path);
+
+    /**
+     * The name of the plugin group that should be used for the plugin this
+     * configuration object was created for. If not set, then the plugin should
+     * be hosted individually instead.
+     */
+    std::optional<std::string> group;
+
+    /**
+     * The path to the configuration file that was parsed.
+     */
+    std::optional<boost::filesystem::path> matched_file;
+
+    /**
+     * The matched glob pattern in the above configuration file.
+     */
+    std::optional<std::string> matched_pattern;
+};
