@@ -200,9 +200,16 @@ fs::path get_this_file_location() {
     //       on both Ubuntu 18.04 and 20.04, but not on Arch based distros.
     //       Under Linux a path starting with two slashes is treated the same as
     //       a path starting with only a single slash, but Wine will refuse to
-    //       load any files when the path starts with two slashes. Prepending
-    //       `/` to a pad coerces theses two slashes into a single slash.
-    return "/" / boost::dll::this_line_location();
+    //       load any files when the path starts with two slashes. The easiest
+    //       way to work around this if this happens is to just add another
+    //       leading slash and then normalize the path, since three or more
+    //       slashes will be coerced into a single slash.
+    fs::path this_file = boost::dll::this_line_location();
+    if (this_file.string().find("//") == 0) {
+        this_file = ("/" / this_file).lexically_normal();
+    }
+
+    return this_file;
 }
 
 std::string get_wine_version() {

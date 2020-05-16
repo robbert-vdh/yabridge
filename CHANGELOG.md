@@ -13,6 +13,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Changed architecture to use one less socket.
 - Removed dependency on 32-bit Boost.Filesystem.
 
+### Fixed
+
+- Made the plugin and host detection slightly more robust.
+
 ## [1.1.4] - 2020-05-12
 
 ### Fixed
