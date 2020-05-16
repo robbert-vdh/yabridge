@@ -95,19 +95,6 @@ class PluginBridge {
      */
     AEffect plugin;
 
-    /**
-     * The VST host can query a plugin for arbitrary binary data such as
-     * presets. It will expect the plugin to write back a pointer that points to
-     * that data. This vector is where we store the chunk data for the last
-     * `effGetChunk` event.
-     */
-    std::vector<uint8_t> chunk_data;
-    /**
-     * The VST host will expect to be returned a pointer to a struct that stores
-     * the dimensions of the editor window.
-     */
-    VstRect editor_rectangle;
-
    private:
     /**
      * Write output from an async pipe to the log on a line by line basis.
@@ -218,6 +205,19 @@ class PluginBridge {
      * `processReplacing` calls.
      */
     std::vector<uint8_t> process_buffer;
+
+    /**
+     * The VST host can query a plugin for arbitrary binary data such as
+     * presets. It will expect the plugin to write back a pointer that points to
+     * that data. This vector is where we store the chunk data for the last
+     * `effGetChunk` event.
+     */
+    std::vector<uint8_t> chunk_data;
+    /**
+     * The VST host will expect to be returned a pointer to a struct that stores
+     * the dimensions of the editor window.
+     */
+    VstRect editor_rectangle;
 
     /**
      * Sending MIDI events sent to the host by the plugin using
