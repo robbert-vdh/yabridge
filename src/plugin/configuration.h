@@ -46,6 +46,7 @@
  *    Otherwise the default settings will be used.
  */
 class Configuration {
+   public:
     /**
      * Create an empty configuration object with default settings.
      */
@@ -68,6 +69,9 @@ class Configuration {
      * Load the configuration that belongs to a copy of or symlink to
      * `libyabridge.so`. If no configuration file could be found then this will
      * return an empty configuration object with default settings.
+     *
+     * This function will take any optional compile-time features that have not
+     * been enabled into account.
      *
      * @param yabridge_path The path to the .so file that's being loaded.by the
      *   VST host. This will be used both for the starting location of the

@@ -71,6 +71,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
       host_callback_function(host_callback),
       logger(Logger::create_from_environment(
           create_logger_prefix(socket_endpoint.path()))),
+      config(Configuration::load_for(get_this_file_location())),
       wine_version(get_wine_version()),
       wine_stdout(io_context),
       wine_stderr(io_context),
@@ -102,29 +103,58 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
                bp::start_dir = vst_plugin_path.parent_path())
 #endif
 {
-    logger.log("Initializing yabridge version " +
-               std::string(yabridge_git_version));
-    logger.log("host:         '" + vst_host_path.string() + "'");
-    logger.log("plugin:       '" + vst_plugin_path.string() + "'");
-    logger.log("socket:       '" + socket_endpoint.path() + "'");
-    logger.log("wine prefix:  '" +
-               find_wineprefix().value_or("<default>").string() + "'");
-    logger.log("wine version: '" + wine_version + "'");
+    std::stringstream init_msg;
+    init_msg << "Initializing yabridge version " << yabridge_git_version
+             << std::endl;
+    init_msg << "host:         '" << vst_host_path.string() << "'" << std::endl;
+    init_msg << "plugin:       '" << vst_plugin_path.string() << "'"
+             << std::endl;
+    init_msg << "socket:       '" << socket_endpoint.path() << "'" << std::endl;
+    init_msg << "wine prefix:  '"
+             << find_wineprefix().value_or("<default>").string() << "'"
+             << std::endl;
+    init_msg << "wine version: '" << wine_version << "'" << std::endl;
+    init_msg << std::endl;
+
+    // Print the path to the currently loaded configuration file and all
+    // settings in use. Printing the matched glob pattern could also be useful
+    // but it'll be very noisy and it's likely going to be clear from the shown
+    // values anyways.
+    init_msg << "config path:  '"
+             << config.matched_file.value_or("<default>").string() << "'"
+             << std::endl;
+    init_msg << "hosting mode: '";
+    if (config.group.has_value()) {
+        init_msg << "group \"" << config.group.value() << "\"";
+    } else {
+        init_msg << "individual";
+    }
+    if (vst_plugin_arch == PluginArchitecture::vst_32) {
+        init_msg << ", 32-bit";
+    } else {
+        init_msg << ", 64-bit";
+    }
+    init_msg << "'" << std::endl;
+    init_msg << std::endl;
 
     // Include a list of enabled compile-tiem features, mostly to make debug
     // logs more useful
-    logger.log("");
-    logger.log("Enabled features:");
+    // TODO: Add a feature flag for the plugin group support
+    init_msg << "Enabled features:" << std::endl;
 #ifdef USE_BITBRIDGE
-    logger.log("- bitbridge support");
+    init_msg << "- bitbridge support" << std::endl;
 #endif
 #ifdef USE_WINEDBG
-    logger.log("- winedbg");
+    init_msg << "- winedbg" << std::endl;
 #endif
 #if !(defined(USE_BITBRIDGE) || defined(USE_WINEDBG))
-    logger.log("  <none>");
+    init_msg << "  <none>" << std::endl;
 #endif
-    logger.log("");
+    init_msg << std::endl;
+
+    for (std::string line = ""; std::getline(init_msg, line);) {
+        logger.log(line);
+    }
 
     // Print the Wine host's STDOUT and STDERR streams to the log file. This
     // should be done before trying to accept the sockets as otherwise we will

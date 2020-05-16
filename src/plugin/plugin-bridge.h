@@ -26,6 +26,7 @@
 #include <thread>
 
 #include "../common/logging.h"
+#include "configuration.h"
 #include "utils.h"
 
 /**
@@ -171,7 +172,21 @@ class PluginBridge {
      */
     audioMasterCallback host_callback_function;
 
+    /**
+     * The logging facility used for this instance of yabridge. See
+     * `Logger::create_from_env()` for how this is configured.
+     *
+     * @see Logger::create_from_env
+     */
     Logger logger;
+
+    /**
+     * The configuration for this instance of yabridge. Set based on the values
+     * from a `yabridge.toml`, if it exists.
+     *
+     * @see Configuration::load_for
+     */
+    Configuration config;
 
     /**
      * The version of Wine currently in use. Used in the debug output on plugin

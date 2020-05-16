@@ -67,5 +67,6 @@ Configuration Configuration::load_for(const fs::path& yabridge_path) {
         return Configuration();
     }
 
+    // TODO: Disable plugin groups when not compiling with plugin group support
     return Configuration(config_file.value(), yabridge_path);
 }
