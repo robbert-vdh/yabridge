@@ -17,14 +17,29 @@
 #pragma once
 
 /**
- * The name of the wine host name, e.g. `yabridge-host.exe` for the regular 64
- * bit build.
+ * The name of the Wine VST host application, e.g. `yabridge-host.exe` for the
+ * regular 64-bit build.
  */
-constexpr char yabridge_wine_host_name[] = "@host_binary_64bit@";
+constexpr char yabridge_individual_host_name[] =
+    "@individual_host_binary_64bit@";
 
 /**
- * The name of the 32-bit wine host name, e.g. `yabridge-host-32.exe`.` This is
- * used as a bitbridge to be able to load legacy 32-bit only Windows plugins
- * from a 64-bit Linux host.
+ * The name of the group host application, e.g. `yabridge-group.exe` for the
+ * regular 64-bit build.
  */
-constexpr char yabridge_wine_host_name_32bit[] = "@host_binary_32bit@";
+constexpr char yabridge_group_host_name[] = "@group_host_binary_64bit@";
+
+/**
+ * The name of the 32-bit Wine VST host application, e.g.
+ * `yabridge-host-32.exe`.` This is used as a bitbridge to be able to load
+ * legacy 32-bit only Windows plugins from a 64-bit Linux host.
+ */
+constexpr char yabridge_individual_host_name_32bit[] =
+    "@individual_host_binary_32bit@";
+
+/**
+ * The name of the 32-bit group host application, e.g. `yabridge-group-32.exe`.`
+ * This is used as a bitbridge to be able to load legacy 32-bit only Windows
+ * plugins from a 64-bit Linux host.
+ */
+constexpr char yabridge_group_host_name_32bit[] = "@group_host_binary_32bit@";

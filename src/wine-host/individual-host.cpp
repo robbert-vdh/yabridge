@@ -22,9 +22,14 @@
 
 #include "wine-bridge.h"
 
-// This explicit calling convention is needed to work around a bug introduced in
-// Wine 5.7
-// https://bugs.winehq.org/show_bug.cgi?id=49138
+/**
+ * This is the default VST host application. It will load the specified VST2
+ * plugin, and then connect back to the `libyabridge.so` instace that spawned
+ * this over the socket.
+ *
+ * The explicit calling convention is needed to work around a bug introduced in
+ * Wine 5.7: https://bugs.winehq.org/show_bug.cgi?id=49138
+ */
 int __cdecl main(int argc, char* argv[]) {
     // We pass the name of the VST plugin .dll file to load and the Unix domain
     // socket to connect to in plugin/bridge.cpp as the first two arguments of
@@ -32,9 +37,9 @@ int __cdecl main(int argc, char* argv[]) {
     if (argc < 3) {
         std::cerr << "Usage: "
 #ifdef __i386__
-                  << yabridge_wine_host_name_32bit
+                  << yabridge_individual_host_name_32bit
 #else
-                  << yabridge_wine_host_name
+                  << yabridge_individual_host_name
 #endif
                   << " <vst_plugin_dll> <unix_domain_socket>" << std::endl;
 

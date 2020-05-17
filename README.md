@@ -125,6 +125,10 @@ yabridge is also able to load 32-bit VST plugins. The installation procedure for
 automatically detect whether a plugin is 32-bit or 64-bit on startup and it will
 handle it accordingly.
 
+### Plugin groups
+
+TODO: Document
+
 ### Wine prefixes
 
 It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
@@ -431,3 +435,5 @@ as the _Windows VST plugin_. The whole process works as follows:
    from the plugin's `AEffect` struct to the Linux native VST plugin over the
    `dispatcher()` socket. This is only done once at startup. After this point
    the plugin will stop blocking and has finished loading.
+
+TODO: Document plugin groups

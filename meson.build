@@ -15,15 +15,17 @@ if not meson.get_compiler('cpp').compiles(winelib_check)
   error('You need to set up a cross compiler, check the README for compilation instructions.')
 endif
 
-# Depending on the `use-bitbridge` flag we'll enable building a second 32-bit
-# host application that can act as a bit bridge for using 32-bit Windows plugins
+# Depending on the `use-bitbridge` flag we'll enable building secondary 32-bit
+# host applications that can act as a bit bridge for using 32-bit Windows plugins
 # in 64-bit Linux VST hosts. The plugin will determine which host application to
 # use based on the `.dll` file it's trying to load.
 # This setup is necessary until Meson provides a way to have multiple
 # cross-builds for a single build directory:
 # https://github.com/mesonbuild/meson/issues/5125
-host_name_64bit = 'yabridge-host'
-host_name_32bit = 'yabridge-host-32'
+individual_host_name_64bit = 'yabridge-host'
+individual_host_name_32bit = 'yabridge-host-32'
+group_host_name_64bit = 'yabridge-group'
+group_host_name_32bit = 'yabridge-group-32'
 
 # This provides an easy way to start the Wine VST host using winedbg since it
 # can be quite a pain to set up
@@ -87,15 +89,33 @@ host_sources = [
   'src/common/serialization.cpp',
   'src/wine-host/editor.cpp',
   'src/wine-host/editor.cpp',
-  'src/wine-host/individual-host.cpp',
   'src/wine-host/utils.cpp',
   'src/wine-host/wine-bridge.cpp',
   version_header,
 ]
 
+individual_host_sources = host_sources + ['src/wine-host/individual-host.cpp']
+group_host_sources = host_sources + ['src/wine-host/group-host.cpp']
+
 executable(
-  host_name_64bit,
-  host_sources,
+  individual_host_name_64bit,
+  individual_host_sources,
+  native : false,
+  include_directories : include_dir,
+  dependencies : [
+    boost_dep,
+    bitsery_dep,
+    tomlplusplus_dep,
+    wine_threads_dep,
+    xcb_dep
+  ],
+  cpp_args : compiler_options + ['-m64'],
+  link_args : ['-m64']
+)
+
+executable(
+  group_host_name_64bit,
+  group_host_sources,
   native : false,
   include_directories : include_dir,
   dependencies : [
@@ -118,8 +138,8 @@ if get_option('use-bitbridge')
   xcb_dep = winegcc.find_library('xcb')
 
   executable(
-    host_name_32bit,
-    host_sources,
+    individual_host_name_32bit,
+    individual_host_sources,
     native : false,
     include_directories : include_dir,
     dependencies : [
@@ -136,6 +156,22 @@ if get_option('use-bitbridge')
     #        `__stdcall` calling convention in template arguments, although it
     #        otherwise works just fine. We don't ignore any warnings in the
     #        regular host application so this should not cause any issues!
+    cpp_args : compiler_options + ['-m32', '-Wno-ignored-attributes'],
+    link_args : ['-m32']
+  )
+
+  executable(
+    group_host_name_32bit,
+    group_host_sources,
+    native : false,
+    include_directories : include_dir,
+    dependencies : [
+      boost_dep,
+      bitsery_dep,
+      tomlplusplus_dep,
+      wine_threads_dep,
+      xcb_dep
+    ],
     cpp_args : compiler_options + ['-m32', '-Wno-ignored-attributes'],
     link_args : ['-m32']
   )
