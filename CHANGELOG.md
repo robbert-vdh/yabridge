@@ -11,7 +11,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - Changed architecture to use one less socket.
-- Removed dependency on 32-bit Boost.Filesystem.
 
 ### Fixed
 

@@ -41,9 +41,8 @@ endif
 # and the name of the host binary
 subdir('src/common/config')
 
-# Statically link against Boost.Filesystem, otherwise it becomes impossible to
-# distribute a prebuilt version of yabridge. For the Wine host applications we
-# only use the headers only libraries.
+# Statically link against Boost.Filesystem, otherwise it would become impossible
+# to distribute a prebuilt version of yabridge
 boost_dep = dependency('boost', version : '>=1.66', static : true)
 boost_filesystem_dep = dependency('boost', version : '>=1.66', modules : ['filesystem'], static : true)
 bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
@@ -104,6 +103,7 @@ executable(
   include_directories : include_dir,
   dependencies : [
     boost_dep,
+    boost_filesystem_dep,
     bitsery_dep,
     tomlplusplus_dep,
     wine_threads_dep,
@@ -120,6 +120,7 @@ executable(
   include_directories : include_dir,
   dependencies : [
     boost_dep,
+    boost_filesystem_dep,
     bitsery_dep,
     tomlplusplus_dep,
     wine_threads_dep,
@@ -135,6 +136,11 @@ if get_option('use-bitbridge')
   # I honestly have no idea what the correct way to have `find_dependency()` use
   # `/usr/lib32` instead of `/usr/lib` is. If anyone does know, please tell me!
   winegcc = meson.get_compiler('cpp', native : false)
+  boost_filesystem_dep = winegcc.find_library(
+    'boost_filesystem',
+    static : true,
+    dirs : ['/usr/lib', '/usr/local/lib']
+  )
   xcb_dep = winegcc.find_library('xcb')
 
   executable(
@@ -144,6 +150,7 @@ if get_option('use-bitbridge')
     include_directories : include_dir,
     dependencies : [
       boost_dep,
+      boost_filesystem_dep,
       bitsery_dep,
       tomlplusplus_dep,
       wine_threads_dep,
@@ -167,6 +174,7 @@ if get_option('use-bitbridge')
     include_directories : include_dir,
     dependencies : [
       boost_dep,
+      boost_filesystem_dep,
       bitsery_dep,
       tomlplusplus_dep,
       wine_threads_dep,
