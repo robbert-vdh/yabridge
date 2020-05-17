@@ -109,6 +109,11 @@ class PluginBridge {
                               boost::asio::streambuf& buffer,
                               std::string prefix = "");
 
+    /**
+     * Format and log all relevant debug information during initialization.
+     */
+    void log_init_message();
+
     boost::asio::io_context io_context;
     boost::asio::local::stream_protocol::endpoint socket_endpoint;
     boost::asio::local::stream_protocol::acceptor socket_acceptor;

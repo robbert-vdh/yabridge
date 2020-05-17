@@ -103,58 +103,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
                bp::start_dir = vst_plugin_path.parent_path())
 #endif
 {
-    std::stringstream init_msg;
-    init_msg << "Initializing yabridge version " << yabridge_git_version
-             << std::endl;
-    init_msg << "host:         '" << vst_host_path.string() << "'" << std::endl;
-    init_msg << "plugin:       '" << vst_plugin_path.string() << "'"
-             << std::endl;
-    init_msg << "socket:       '" << socket_endpoint.path() << "'" << std::endl;
-    init_msg << "wine prefix:  '"
-             << find_wineprefix().value_or("<default>").string() << "'"
-             << std::endl;
-    init_msg << "wine version: '" << wine_version << "'" << std::endl;
-    init_msg << std::endl;
-
-    // Print the path to the currently loaded configuration file and all
-    // settings in use. Printing the matched glob pattern could also be useful
-    // but it'll be very noisy and it's likely going to be clear from the shown
-    // values anyways.
-    init_msg << "config path:  '"
-             << config.matched_file.value_or("<default>").string() << "'"
-             << std::endl;
-    init_msg << "hosting mode: '";
-    if (config.group.has_value()) {
-        init_msg << "group \"" << config.group.value() << "\"";
-    } else {
-        init_msg << "individual";
-    }
-    if (vst_plugin_arch == PluginArchitecture::vst_32) {
-        init_msg << ", 32-bit";
-    } else {
-        init_msg << ", 64-bit";
-    }
-    init_msg << "'" << std::endl;
-    init_msg << std::endl;
-
-    // Include a list of enabled compile-tiem features, mostly to make debug
-    // logs more useful
-    // TODO: Add a feature flag for the plugin group support
-    init_msg << "Enabled features:" << std::endl;
-#ifdef USE_BITBRIDGE
-    init_msg << "- bitbridge support" << std::endl;
-#endif
-#ifdef USE_WINEDBG
-    init_msg << "- winedbg" << std::endl;
-#endif
-#if !(defined(USE_BITBRIDGE) || defined(USE_WINEDBG))
-    init_msg << "  <none>" << std::endl;
-#endif
-    init_msg << std::endl;
-
-    for (std::string line = ""; std::getline(init_msg, line);) {
-        logger.log(line);
-    }
+    log_init_message();
 
     // Print the Wine host's STDOUT and STDERR streams to the log file. This
     // should be done before trying to accept the sockets as otherwise we will
@@ -674,6 +623,66 @@ void PluginBridge::async_log_pipe_lines(patched_async_pipe& pipe,
                 async_log_pipe_lines(pipe, buffer, prefix);
             }
         });
+}
+
+void PluginBridge::log_init_message() {
+    std::stringstream init_msg;
+
+    init_msg << "Initializing yabridge version " << yabridge_git_version
+             << std::endl;
+    init_msg << "host:         '" << vst_host_path.string() << "'" << std::endl;
+    init_msg << "plugin:       '" << vst_plugin_path.string() << "'"
+             << std::endl;
+    init_msg << "socket:       '" << socket_endpoint.path() << "'" << std::endl;
+    init_msg << "wine prefix:  '"
+             << find_wineprefix().value_or("<default>").string() << "'"
+             << std::endl;
+    init_msg << "wine version: '" << wine_version << "'" << std::endl;
+    init_msg << std::endl;
+
+    // Print the path to the currently loaded configuration file and all
+    // settings in use. Printing the matched glob pattern could also be useful
+    // but it'll be very noisy and it's likely going to be clear from the shown
+    // values anyways.
+    // TODO: The group socket should take into account the:
+    //       - wine prefix
+    //       - group name
+    //       - architecture
+    init_msg << "config path:  '"
+             << config.matched_file.value_or("<default>").string() << "'"
+             << std::endl;
+    init_msg << "hosting mode: '";
+    if (config.group.has_value()) {
+        init_msg << "group \"" << config.group.value() << "\"";
+    } else {
+        init_msg << "individual";
+    }
+    if (vst_plugin_arch == PluginArchitecture::vst_32) {
+        init_msg << ", 32-bit";
+    } else {
+        init_msg << ", 64-bit";
+    }
+    init_msg << "'" << std::endl;
+    init_msg << std::endl;
+
+    // Include a list of enabled compile-tiem features, mostly to make debug
+    // logs more useful
+    // TODO: Add a feature flag for the plugin group support
+    init_msg << "Enabled features:" << std::endl;
+#ifdef USE_BITBRIDGE
+    init_msg << "- bitbridge support" << std::endl;
+#endif
+#ifdef USE_WINEDBG
+    init_msg << "- winedbg" << std::endl;
+#endif
+#if !(defined(USE_BITBRIDGE) || defined(USE_WINEDBG))
+    init_msg << "  <none>" << std::endl;
+#endif
+    init_msg << std::endl;
+
+    for (std::string line = ""; std::getline(init_msg, line);) {
+        logger.log(line);
+    }
 }
 
 // The below functions are proxy functions for the methods defined in
