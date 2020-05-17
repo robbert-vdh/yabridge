@@ -139,7 +139,12 @@ if get_option('use-bitbridge')
   boost_filesystem_dep = winegcc.find_library(
     'boost_filesystem',
     static : true,
-    dirs : ['/usr/lib', '/usr/local/lib']
+    dirs : [
+      '/usr/lib32',
+      '/usr/lib/i386-linux-gnu',
+      '/usr/local/lib32',
+      '/usr/local/lib/i386-linux-gnu'
+    ]
   )
   xcb_dep = winegcc.find_library('xcb')
 
