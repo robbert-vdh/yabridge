@@ -18,12 +18,8 @@
 
 #include <iostream>
 
-#include <boost/filesystem.hpp>
-
 #include "../common/communication.h"
 #include "../common/events.h"
-
-namespace fs = boost::filesystem;
 
 /**
  * A function pointer to what should be the entry point of a VST plugin.
