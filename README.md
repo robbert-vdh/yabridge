@@ -13,7 +13,7 @@ easy to debug and maintain.
 ## Tested with
 
 Yabridge has been verified to work correctly in the following VST hosts using
-Wine Staging 5.5 and 5.6:
+Wine Staging 5.8:
 
 - Bitwig Studio 3.1 and the beta releases of 3.2
 - Carla 2.1
