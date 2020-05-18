@@ -16,8 +16,6 @@
 
 #include "boost-fix.h"
 
-#include <unistd.h>
-#include <boost/asio/posix/stream_descriptor.hpp>
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/filesystem.hpp>
@@ -29,6 +27,7 @@
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
 
+#include "bridges/group.h"
 #include "bridges/vst2.h"
 
 // FIXME: `std::filesystem` is broken in wineg++, at least under Wine 5.8. Any
@@ -97,25 +96,14 @@ int __cdecl main(int argc, char* argv[]) {
     // process the output and redirect it to a logger. Needed to capture Wine
     // debug output, since this process will likely outlive the yabridge
     // instance that originally spawned it.
-    int stdout_pipe[2];
-    pipe(stdout_pipe);
-    dup2(stdout_pipe[1], STDOUT_FILENO);
-    close(stdout_pipe[1]);
-
-    int stderr_pipe[2];
-    pipe(stderr_pipe);
-    dup2(stderr_pipe[1], STDERR_FILENO);
-    close(stderr_pipe[1]);
-
     boost::asio::io_context io_context;
     boost::asio::streambuf stdout_buffer;
     boost::asio::streambuf stderr_buffer;
-    boost::asio::posix::stream_descriptor stdout_redirect(io_context,
-                                                          stdout_pipe[0]);
-    boost::asio::posix::stream_descriptor stderr_redirect(io_context,
-                                                          stderr_pipe[0]);
-    log_lines(logger, stdout_redirect, stdout_buffer, "[STDOUT] ");
-    log_lines(logger, stderr_redirect, stderr_buffer, "[STDERR] ");
+    StdIoCapture stdout_redirect(io_context, STDOUT_FILENO);
+    StdIoCapture stderr_redirect(io_context, STDERR_FILENO);
+    log_lines(logger, stdout_redirect.pipe, stdout_buffer, "[STDOUT] ");
+    log_lines(logger, stderr_redirect.pipe, stderr_buffer, "[STDERR] ");
+
     std::thread io_handler([&]() { io_context.run(); });
 
     logger.log("Initializing yabridge group host version " +

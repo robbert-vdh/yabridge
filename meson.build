@@ -94,7 +94,10 @@ host_sources = [
 ]
 
 individual_host_sources = host_sources + ['src/wine-host/individual-host.cpp']
-group_host_sources = host_sources + ['src/wine-host/group-host.cpp']
+group_host_sources = host_sources + [
+  'src/wine-host/bridges/group.cpp',
+  'src/wine-host/group-host.cpp',
+]
 
 executable(
   individual_host_name_64bit,
