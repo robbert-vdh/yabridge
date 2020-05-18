@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "boost-fix.h"
+#include "../boost-fix.h"
 
 #define NOMINMAX
 #define NOSERVICE
@@ -29,23 +29,23 @@
 #include <boost/asio/local/stream_protocol.hpp>
 #include <mutex>
 
-#include "../common/logging.h"
-#include "editor.h"
-#include "utils.h"
+#include "../../common/logging.h"
+#include "../editor.h"
+#include "../utils.h"
 
 /**
  * A marker struct to indicate that the editor is about to be opened.
  *
- * @see WineBridge::editor
+ * @see Vst2Bridge::editor
  */
 struct EditorOpening {};
 
 /**
  * This handles the communication between the Linux native VST plugin and the
- * Wine VST host. The functions below should be used as callback functions in an
- * `AEffect` object.
+ * Wine VST host when hosting VST2 plugins. The functions below should be used
+ * as callback functions in an `AEffect` object.
  */
-class WineBridge {
+class Vst2Bridge {
    public:
     /**
      * Initializes the Windows VST plugin and set up communication with the
@@ -59,7 +59,7 @@ class WineBridge {
      * @throw std::runtime_error Thrown when the VST plugin could not be loaded,
      *   or if communication could not be set up.
      */
-    WineBridge(std::string plugin_dll_path, std::string socket_endpoint_path);
+    Vst2Bridge(std::string plugin_dll_path, std::string socket_endpoint_path);
 
     /**
      * Handle events on the main thread until the plugin quits. This can't be

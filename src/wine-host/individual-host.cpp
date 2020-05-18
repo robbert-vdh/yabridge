@@ -20,7 +20,7 @@
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
 
-#include "wine-bridge.h"
+#include "bridges/vst2.h"
 
 /**
  * This is the default VST host application. It will load the specified VST2
@@ -55,7 +55,7 @@ int __cdecl main(int argc, char* argv[]) {
 #endif
               << std::endl;
     try {
-        WineBridge bridge(plugin_dll_path, socket_endpoint_path);
+        Vst2Bridge bridge(plugin_dll_path, socket_endpoint_path);
         std::cerr << "Finished initializing '" << plugin_dll_path << "'"
                   << std::endl;
 

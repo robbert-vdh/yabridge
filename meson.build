@@ -86,10 +86,10 @@ shared_library(
 host_sources = [
   'src/common/logging.cpp',
   'src/common/serialization.cpp',
+  'src/wine-host/bridges/vst2.cpp',
   'src/wine-host/editor.cpp',
   'src/wine-host/editor.cpp',
   'src/wine-host/utils.cpp',
-  'src/wine-host/wine-bridge.cpp',
   version_header,
 ]
 

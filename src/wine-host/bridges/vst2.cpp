@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "wine-bridge.h"
+#include "vst2.h"
 
 #include <iostream>
 
-#include "../common/communication.h"
-#include "../common/events.h"
+#include "../../common/communication.h"
+#include "../../common/events.h"
 
 /**
  * A function pointer to what should be the entry point of a VST plugin.
@@ -30,7 +30,7 @@ using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
  * This ugly global is needed so we can get the instance of a `Brdige` class
  * from an `AEffect` when it performs a host callback during its initialization.
  */
-WineBridge* current_bridge_instance = nullptr;
+Vst2Bridge* current_bridge_instance = nullptr;
 
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);
@@ -43,12 +43,12 @@ uint32_t WINAPI handle_parameters_proxy(void*);
 uint32_t WINAPI handle_process_replacing_proxy(void*);
 
 /**
- * Fetch the WineBridge instance stored in one of the two pointers reserved
+ * Fetch the Vst2Bridge instance stored in one of the two pointers reserved
  * for the host of the hosted VST plugin. This is sadly needed as a workaround
  * to avoid using globals since we need free function pointers to interface with
  * the VST C API.
  */
-WineBridge& get_bridge_instance(const AEffect* plugin) {
+Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
     // This is needed during the initialization of the plugin since we can only
     // add our own pointer after it's done initializing
     if (current_bridge_instance != nullptr) {
@@ -57,10 +57,10 @@ WineBridge& get_bridge_instance(const AEffect* plugin) {
         return *current_bridge_instance;
     }
 
-    return *static_cast<WineBridge*>(plugin->ptr1);
+    return *static_cast<Vst2Bridge*>(plugin->ptr1);
 }
 
-WineBridge::WineBridge(std::string plugin_dll_path,
+Vst2Bridge::Vst2Bridge(std::string plugin_dll_path,
                        std::string socket_endpoint_path)
     : plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
       io_context(),
@@ -135,7 +135,7 @@ WineBridge::WineBridge(std::string plugin_dll_path,
         Win32Thread(handle_process_replacing_proxy, this);
 }
 
-void WineBridge::handle_dispatch() {
+void Vst2Bridge::handle_dispatch() {
     using namespace std::placeholders;
 
     // For our communication we use simple threads and blocking operations
@@ -145,7 +145,7 @@ void WineBridge::handle_dispatch() {
         while (true) {
             receive_event(host_vst_dispatch, std::nullopt,
                           passthrough_event(
-                              plugin, std::bind(&WineBridge::dispatch_wrapper,
+                              plugin, std::bind(&Vst2Bridge::dispatch_wrapper,
                                                 this, _1, _2, _3, _4, _5, _6)));
 
             // Because of the way the Win32 API works we have to process events
@@ -156,7 +156,7 @@ void WineBridge::handle_dispatch() {
             // run this loop. The only exception is a in specific situation that
             // can cause a race condition in some plugins because of incorrect
             // assumptions made by the plugin. See the dostring for
-            // `WineBridge::editor` for more information.
+            // `Vst2Bridge::editor` for more information.
             std::visit(overload{[](Editor& editor) { editor.handle_events(); },
                                 [](std::monostate&) {
                                     MSG msg;
@@ -170,7 +170,7 @@ void WineBridge::handle_dispatch() {
                                 [](EditorOpening&) {
                                     // Don't handle any events in this
                                     // particular case as explained in
-                                    // `WineBridge::editor`
+                                    // `Vst2Bridge::editor`
                                 }},
                        editor);
         }
@@ -180,7 +180,7 @@ void WineBridge::handle_dispatch() {
     }
 }
 
-[[noreturn]] void WineBridge::handle_dispatch_midi_events() {
+[[noreturn]] void Vst2Bridge::handle_dispatch_midi_events() {
     while (true) {
         receive_event(
             host_vst_dispatch_midi_events, std::nullopt, [&](Event& event) {
@@ -221,14 +221,14 @@ void WineBridge::handle_dispatch() {
                     // Maybe this should just be a hard error instead, since it
                     // should never happen
                     return passthrough_event(
-                        plugin, std::bind(&WineBridge::dispatch_wrapper, this,
+                        plugin, std::bind(&Vst2Bridge::dispatch_wrapper, this,
                                           _1, _2, _3, _4, _5, _6))(event);
                 }
             });
     }
 }
 
-[[noreturn]] void WineBridge::handle_parameters() {
+[[noreturn]] void Vst2Bridge::handle_parameters() {
     while (true) {
         // Both `getParameter` and `setParameter` functions are passed
         // through on this socket since they have a lot of overlap. The
@@ -251,7 +251,7 @@ void WineBridge::handle_dispatch() {
     }
 }
 
-[[noreturn]] void WineBridge::handle_process_replacing() {
+[[noreturn]] void Vst2Bridge::handle_process_replacing() {
     std::vector<std::vector<float>> output_buffers(plugin->numOutputs);
 
     while (true) {
@@ -307,7 +307,7 @@ void WineBridge::handle_dispatch() {
     }
 }
 
-intptr_t WineBridge::dispatch_wrapper(AEffect* plugin,
+intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
                                       int opcode,
                                       int index,
                                       intptr_t value,
@@ -448,7 +448,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
     std::optional<VstTimeInfo>& time_info;
 };
 
-intptr_t WineBridge::host_callback(AEffect* effect,
+intptr_t Vst2Bridge::host_callback(AEffect* effect,
                                    int opcode,
                                    int index,
                                    intptr_t value,
@@ -470,13 +470,13 @@ intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,
 }
 
 uint32_t WINAPI handle_dispatch_midi_events_proxy(void* instance) {
-    static_cast<WineBridge*>(instance)->handle_dispatch_midi_events();
+    static_cast<Vst2Bridge*>(instance)->handle_dispatch_midi_events();
 }
 
 uint32_t WINAPI handle_parameters_proxy(void* instance) {
-    static_cast<WineBridge*>(instance)->handle_parameters();
+    static_cast<Vst2Bridge*>(instance)->handle_parameters();
 }
 
 uint32_t WINAPI handle_process_replacing_proxy(void* instance) {
-    static_cast<WineBridge*>(instance)->handle_process_replacing();
+    static_cast<Vst2Bridge*>(instance)->handle_process_replacing();
 }

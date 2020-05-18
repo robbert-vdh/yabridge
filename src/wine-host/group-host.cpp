@@ -29,7 +29,7 @@
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
 
-#include "wine-bridge.h"
+#include "bridges/vst2.h"
 
 // FIXME: `std::filesystem` is broken in wineg++, at least under Wine 5.8. Any
 //        path operation will thrown an encoding related error.
