@@ -136,17 +136,27 @@ executable(
 if get_option('use-bitbridge')
   message('Bitbridge enabled, configuring a 32-bit host application')
 
-  # I honestly have no idea what the correct way to have `find_dependency()` use
-  # `/usr/lib32` instead of `/usr/lib` is. If anyone does know, please tell me!
+  # I honestly have no idea what the correct way is to have `dependency()` or
+  # `compiler.find_dependency()` search for 32-bit versions of libraries when
+  # cross-compiling. Meson also doesn't seem to respect the default linker
+  # search path set by the system in `find_library()`. If anyone does know how
+  # to properly do this, please let me know!
   winegcc = meson.get_compiler('cpp', native : false)
   boost_filesystem_dep = winegcc.find_library(
     'boost_filesystem',
     static : true,
     dirs : [
-      '/usr/lib32',
-      '/usr/lib/i386-linux-gnu',
+      # Used by Arch based distros
       '/usr/local/lib32',
-      '/usr/local/lib/i386-linux-gnu'
+      '/usr/lib32',
+      # Used by Debian based distros
+      '/usr/local/lib/i386-linux-gnu',
+      '/usr/lib/i386-linux-gnu',
+      # Used by Red Hat based distros, could cause issues though since Meson
+      # cannot differentiate between the 32-bit version and the regular 64-bit
+      # version that would normally be in /lib
+      '/usr/local/lib',
+      '/usr/lib',
     ]
   )
   xcb_dep = winegcc.find_library('xcb')
