@@ -14,6 +14,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed large amount of empty lines in the log file when the Wine process closes
+  unexpectedly.
 - Made the plugin and host detection slightly more robust.
 
 ## [1.1.4] - 2020-05-12

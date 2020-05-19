@@ -612,16 +612,19 @@ void PluginBridge::async_log_pipe_lines(patched_async_pipe& pipe,
                                         boost::asio::streambuf& buffer,
                                         std::string prefix) {
     boost::asio::async_read_until(
-        pipe, buffer, '\n', [&, prefix](const auto&, size_t) {
+        pipe, buffer, '\n',
+        [&, prefix](const boost::system::error_code& error, size_t) {
+            // When we get an error code then that likely means that the pipe
+            // has been clsoed and we have reached the end of the file
+            if (error.failed()) {
+                return;
+            }
+
             std::string line;
             std::getline(std::istream(&buffer), line);
             logger.log(prefix + line);
 
-            // Not sure why, but this async read will keep reading a ton of
-            // empty lines after the Wine process crashes
-            if (vst_host.running()) {
-                async_log_pipe_lines(pipe, buffer, prefix);
-            }
+            async_log_pipe_lines(pipe, buffer, prefix);
         });
 }
 
