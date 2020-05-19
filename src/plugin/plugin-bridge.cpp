@@ -121,6 +121,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     std::thread([&]() {
         using namespace std::literals::chrono_literals;
 
+        // TODO: Figure out how this check would work with plugin gruops
         while (true) {
             if (finished_accepting_sockets) {
                 return;

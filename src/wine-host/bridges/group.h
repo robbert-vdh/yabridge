@@ -19,6 +19,25 @@
 #include "../boost-fix.h"
 
 #include <boost/asio/posix/stream_descriptor.hpp>
+#include <boost/asio/streambuf.hpp>
+#include <boost/filesystem.hpp>
+
+#include "vst2.h"
+
+// TODO: Replace this with a proper struct that contains the required arguments
+//       for creating a PluginBridge instance
+struct PluginParameters {
+    int removeme;
+
+    bool operator==(const PluginParameters& p) const;
+};
+
+template <>
+struct std::hash<PluginParameters> {
+    std::size_t operator()(PluginParameters const& params) const noexcept {
+        return std::hash<int>{}(params.removeme);
+    }
+};
 
 /**
  * Encapsulate capturing the STDOUT or STDERR stream by opening a pipe and
@@ -75,4 +94,128 @@ class StdIoCapture {
      * `pipe_fd[0]` can be used to read the captured output from.
      */
     int pipe_fd[2];
+};
+
+/**
+ * A 'plugin group' that listens on a _group socket_ for plugins to host in this
+ * process. Once the plugin gets loaded into a new thread the actual bridging
+ * process is identical to individually hosted plugins.
+ *
+ * An important detail worth mentioning here is that while this plugin group can
+ * throw in the constructor when another process is already listening on the
+ * socket, this should not be treated as an error. When using plugins groups,
+ * yabridge will try to connect to the group socket on initialization and it
+ * will launch a new group host process if it can't. If this is done for
+ * multiple yabridge instances at the same time, then multiple group host
+ * processes will be launched. Instead of using complicated inter-process
+ * synchronization, we'll simply allow the processes to fail when another
+ * process is already listening on the socket.
+ */
+class GroupBridge {
+   public:
+    /**
+     * Create a plugin group by listening on the provided socket for incoming
+     * plugin host requests.
+     *
+     * @param gruop_socket_path The path to the group socket endpoint. This path
+     *   should be in the form of
+     *   `/tmp/yabridge-group-<group_name>-<wine_prefix_id>-<architecture>`
+     *   where `<wine_prefix_id>` is a numerical hash as explained in the
+     *   `create_logger_prefix()` function in `./group.cpp`.
+     *
+     * @note Creating an `GroupBridge` instance has the side effect that the
+     *   STDOUT and STDERR streams of the current process will be redirected to
+     *   a pipe so they can be properly written to a log file.
+     */
+    GroupBridge(boost::filesystem::path group_socket_path);
+
+    /**
+     * Host a new plugin within this process. Called by proxy using
+     * `handle_host_plugin_proxy()` in `./group.cpp` because the Win32
+     * `CreateThread` API only allows passing a single pointer to the function.
+     * Because we don't have access to our own thread handle, the thread that's
+     * listening on the group socket and that has created this thread will also
+     * add this thread to the `active_plugins` map.
+     *
+     * Once the plugin has exited, this thread will then remove itself from the
+     * `active_plugins` map. If this causes the vector to become empty, we will
+     * terminate this process.
+     *
+     * @param parameters Information about the plugin to launch, i.e. the path
+     *   to the plugin and the path of the socket endpoint that will be used for
+     *   communication.
+     *
+     * @note In the case that the process starts but no plugin gets initiated,
+     *   then the process will never exit on its own. This should not happen
+     *   though.
+     */
+    void handle_host_plugin(const PluginParameters& parameters);
+
+    /**
+     * Listen for new requests to spawn plugins within this process and handle
+     * them accordingly. Will terminate once all plugins have exited.
+     */
+    void handle_incoming_connections();
+
+   private:
+    /**
+     * Continuously read from a pipe and write the output to the log file. Used
+     * with the IO streams captured by `stdout_redirect` and `stderr_redirect`.
+     *
+     * TODO: Merge this with `PluginBridge::async_log_pipe_lines`
+     *
+     * @param pipe The pipe to read from.
+     * @param buffer The stream buffer to write to.
+     * @param prefix Text to prepend to the line before writing to the log.
+     */
+    void async_log_pipe_lines(boost::asio::posix::stream_descriptor& pipe,
+                              boost::asio::streambuf& buffer,
+                              std::string prefix);
+
+    /**
+     * The logging facility used for this group host process. Since we can't
+     * identify which plugin is generating (debug) output, every line will only
+     * be prefixed with the name of the group.
+     */
+    Logger logger;
+
+    boost::asio::io_context io_context;
+
+    boost::asio::streambuf stdout_buffer;
+    boost::asio::streambuf stderr_buffer;
+    /**
+     * Contains a pipe used for capturing this process's STDOUT stream. Needed
+     * to be able to process the output generated by Wine and plugins and to be
+     * able write it write it to an external log file.
+     */
+    StdIoCapture stdout_redirect;
+    /**
+     * Contains a pipe used for capturing this process's STDERR stream. Needed
+     * to be able to process the output generated by Wine and plugins and to be
+     * able write it write it to an external log file.
+     */
+    StdIoCapture stderr_redirect;
+
+    boost::asio::local::stream_protocol::endpoint group_socket_endpoint;
+    /**
+     * The UNIX domain socket acceptor that will be used to listen for incoming
+     * connections to spawn new plugins within this process.
+     */
+    boost::asio::local::stream_protocol::acceptor group_socket_acceptor;
+
+    /**
+     * A map of threads that are currently hosting a plugin within this process.
+     * After a plugin has exited or its initialization has failed, the thread
+     * handling it will remove itself from this map.
+     */
+    std::unordered_map<PluginParameters,
+                       std::pair<Win32Thread, std::unique_ptr<Vst2Bridge>>>
+        active_plugins;
+    /**
+     * A mutex to prevent two threads from simultaneously accessing the plugins
+     * map, and also to prevent `handle_host_plugin()` from terminating the
+     * process because it thinks there are no active plugins left just as a new
+     * plugin is being spawned.
+     */
+    std::mutex active_plugins_mutex;
 };
