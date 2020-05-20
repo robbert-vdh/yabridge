@@ -56,31 +56,29 @@ int __cdecl main(int argc, char* argv[]) {
 
     const std::string group_socket_endpoint_path(argv[1]);
 
-    // TODO: Catch exception during initialization when another process is
-    //       already listening on the socket. Make sure to print a more useful
-    //       message instead.
-    try {
-        std::cerr << "Initializing yabridge group host version "
-                  << yabridge_git_version
+    std::cerr << "Initializing yabridge group host version "
+              << yabridge_git_version
 #ifdef __i386__
-                  << " (32-bit compatibility mode)"
+              << " (32-bit compatibility mode)"
 #endif
-                  << std::endl;
+              << std::endl;
 
+    try {
         GroupBridge bridge(group_socket_endpoint_path);
 
         // Blocks the main thread until all plugins have exited
         bridge.handle_incoming_connections();
-    } catch (const std::runtime_error& error) {
-        // Even though the process will likely outlive the yabridge instance
-        // that spawns it, we can still print any initialization messages and
-        // errors to STDERR since at this point there will still be a yabridge
-        // instance capturing this process's output.
+    } catch (const boost::system::system_error& error) {
+        // If another process is already listening on the socket, we'll just
+        // print a message and exit quietly. This could happen if the host
+        // starts multiple yabridge instances that all use the same plugin group
+        // at the same time.
         // TODO: Check if this is printed on the right stream
-        std::cerr << "Error while initializing the group host process:"
+        std::cerr << "Another process is already listening on this group's "
+                     "socket, connecting to the existing process:"
                   << std::endl;
         std::cerr << error.what() << std::endl;
 
-        return 1;
+        return 0;
     }
 }

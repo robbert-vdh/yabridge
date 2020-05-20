@@ -54,6 +54,7 @@ int __cdecl main(int argc, char* argv[]) {
               << " (32-bit compatibility mode)"
 #endif
               << std::endl;
+
     try {
         Vst2Bridge bridge(plugin_dll_path, socket_endpoint_path);
         std::cerr << "Finished initializing '" << plugin_dll_path << "'"

@@ -121,7 +121,12 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     std::thread([&]() {
         using namespace std::literals::chrono_literals;
 
-        // TODO: Figure out how this check would work with plugin gruops
+        // TODO: For plugin groups, we should be polling whether someone is
+        //       still listening on the group socket (and ideally we should be
+        //       able to tell it's the same process). If we can't figure out a
+        //       better way, then we could just return the PID when sending the
+        //       host request to the group process and check whether that
+        //       process is still running.
         while (true) {
             if (finished_accepting_sockets) {
                 return;

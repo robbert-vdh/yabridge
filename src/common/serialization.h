@@ -571,3 +571,30 @@ struct AudioBuffers {
         s.value4b(sample_frames);
     }
 };
+
+/**
+ * An object containing the startup options for hosting a plugin in a plugin
+ * group process. These are the exact same options that would have been passed
+ * to `yabridge-host.exe` were the plugin to be hosted individually.
+ */
+struct PluginParameters {
+    std::string plugin_path;
+    std::string socket_path;
+
+    bool operator==(const PluginParameters& rhs) const;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.text1b(plugin_path, 4096);
+        s.text1b(socket_path, 4096);
+    }
+};
+
+template <>
+struct std::hash<PluginParameters> {
+    std::size_t operator()(PluginParameters const& params) const noexcept {
+        std::hash<string> hasher{};
+
+        return hasher(params.plugin_path) ^ (hasher(params.socket_path) << 1);
+    }
+};

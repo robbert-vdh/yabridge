@@ -20,6 +20,8 @@
 #include <boost/asio/read_until.hpp>
 #include <regex>
 
+#include "../../common/communication.h"
+
 // FIXME: `std::filesystem` is broken in wineg++, at least under Wine 5.8. Any
 //        path operation will thrown an encoding related error
 namespace fs = boost::filesystem;
@@ -28,6 +30,13 @@ namespace fs = boost::filesystem;
  * Create a logger prefix containing the group name based on the socket path.
  */
 std::string create_logger_prefix(const fs::path& socket_path);
+
+// CreateThread() is great and allows you to pass a single value to the
+// function, so we'll use this to pass both `this` and the parameters to the
+// below thread function so it can do its thing.
+using handle_host_plugin_parameters = std::pair<GroupBridge*, PluginParameters>;
+
+uint32_t WINAPI handle_host_plugin_proxy(void* param);
 
 StdIoCapture::StdIoCapture(boost::asio::io_context& io_context,
                            int file_descriptor)
@@ -54,10 +63,6 @@ StdIoCapture::~StdIoCapture() {
     close(pipe_fd[0]);
 }
 
-bool PluginParameters::operator==(const PluginParameters& other) const {
-    return removeme == other.removeme;
-}
-
 GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
     : logger(Logger::create_from_environment(
           create_logger_prefix(group_socket_path))),
@@ -77,16 +82,56 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
 }
 
 void GroupBridge::handle_host_plugin(const PluginParameters& parameters) {
-    // TODO: Start the plugin,
+    // TODO: Start the plugin
     // TODO: Allow this process to exit when the last plugin exits. Make sure
     //       that that doesn't cause any race conditions.
 }
 
 void GroupBridge::handle_incoming_connections() {
-    // TODO: Accept connections here
+    accept_requests();
 
     logger.log("Now accepting incoming connections");
     io_context.run();
+}
+
+void GroupBridge::accept_requests() {
+    group_socket_acceptor.async_accept(
+        [&](const boost::system::error_code& error,
+            boost::asio::local::stream_protocol::socket socket) {
+            // Stop the whole process when the socket gets closed unexpectedly
+            if (error.failed()) {
+                logger.log("Error while listening for incoming connections:");
+                logger.log(error.message());
+
+                io_context.stop();
+            }
+
+            // Read the parameters, and then host the plugin in this process
+            // just like if we would be hosting the plugin individually through
+            // `yabridge-hsot.exe`. Since we're using sockets there's no reason
+            // to send an acknowledgement back. One potential issue here is that
+            // it will be hard to tell whether a plugin has crashed before
+            // initialization, and that the sockets will never be accepted. For
+            // individually hosted plugins we poll whether the Wine process is
+            // still active so we can terminate early if it is not, but in this
+            // case the yabridge instance has to determine that this process is
+            // still running.
+            const auto parameters = read_object<PluginParameters>(socket);
+
+            // Collisions in the generated socket names should be very rare, but
+            // it could in theory happen
+            std::lock_guard lock(active_plugins_mutex);
+            assert(active_plugins.find(parameters) != active_plugins.end());
+
+            // CreateThread() doesn't support multiple arguments and requires
+            // manualy memory management.
+            handle_host_plugin_parameters* thread_params =
+                new std::pair<GroupBridge*, PluginParameters>(this, parameters);
+            active_plugins[parameters] =
+                Win32Thread(handle_host_plugin_proxy, &thread_params);
+
+            accept_requests();
+        });
 }
 
 void GroupBridge::async_log_pipe_lines(
@@ -134,4 +179,17 @@ std::string create_logger_prefix(const fs::path& socket_path) {
     }
 
     return "[" + socket_name + "] ";
+}
+
+uint32_t WINAPI handle_host_plugin_proxy(void* param) {
+    // The Win32 API only allows you to pass a void pointer to threads, so we
+    // need to use manual memory management.
+    auto thread_params = static_cast<handle_host_plugin_parameters*>(param);
+    GroupBridge* instance = thread_params->first;
+    PluginParameters& parameters = thread_params->second;
+    delete thread_params;
+
+    instance->handle_host_plugin(parameters);
+
+    return 0;
 }

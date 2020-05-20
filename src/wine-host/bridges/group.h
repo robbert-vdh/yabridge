@@ -24,21 +24,6 @@
 
 #include "vst2.h"
 
-// TODO: Replace this with a proper struct that contains the required arguments
-//       for creating a PluginBridge instance
-struct PluginParameters {
-    int removeme;
-
-    bool operator==(const PluginParameters& p) const;
-};
-
-template <>
-struct std::hash<PluginParameters> {
-    std::size_t operator()(PluginParameters const& params) const noexcept {
-        return std::hash<int>{}(params.removeme);
-    }
-};
-
 /**
  * Encapsulate capturing the STDOUT or STDERR stream by opening a pipe and
  * reopening the passed file descriptor as one of the ends of the newly opened
@@ -123,6 +108,8 @@ class GroupBridge {
      *   where `<wine_prefix_id>` is a numerical hash as explained in the
      *   `create_logger_prefix()` function in `./group.cpp`.
      *
+     * @throw boost::system::system_error If we can't listen on the socket.
+     *
      * @note Creating an `GroupBridge` instance has the side effect that the
      *   STDOUT and STDERR streams of the current process will be redirected to
      *   a pipe so they can be properly written to a log file.
@@ -132,10 +119,10 @@ class GroupBridge {
     /**
      * Host a new plugin within this process. Called by proxy using
      * `handle_host_plugin_proxy()` in `./group.cpp` because the Win32
-     * `CreateThread` API only allows passing a single pointer to the function.
-     * Because we don't have access to our own thread handle, the thread that's
-     * listening on the group socket and that has created this thread will also
-     * add this thread to the `active_plugins` map.
+     * `CreateThread` API only allows passing a single pointer to the function
+     * and does not allow lambdas. Because we don't have access to our own
+     * thread handle, the thread that's listening on the group socket will have
+     * already added this thread to the `active_plugins` map.
      *
      * Once the plugin has exited, this thread will then remove itself from the
      * `active_plugins` map. If this causes the vector to become empty, we will
@@ -158,6 +145,17 @@ class GroupBridge {
     void handle_incoming_connections();
 
    private:
+    /**
+     * Listen on the group socket for incoming requests to host a new plugin
+     * within this group process. This will asynchronously listen on the socket,
+     * and for any connection made it will retrieve a `PluginParameters` object
+     * containing information about the plugin to host and then spawn a new
+     * thread to start hosting that plugin.
+     *
+     * @see handle_host_plugin
+     */
+    void accept_requests();
+
     /**
      * Continuously read from a pipe and write the output to the log file. Used
      * with the IO streams captured by `stdout_redirect` and `stderr_redirect`.
@@ -206,11 +204,11 @@ class GroupBridge {
     /**
      * A map of threads that are currently hosting a plugin within this process.
      * After a plugin has exited or its initialization has failed, the thread
-     * handling it will remove itself from this map.
+     * handling it will remove itself from this map. This is to keep track of
+     * the amount of plugins currently running with their associated thread
+     * handles.
      */
-    std::unordered_map<PluginParameters,
-                       std::pair<Win32Thread, std::unique_ptr<Vst2Bridge>>>
-        active_plugins;
+    std::unordered_map<PluginParameters, Win32Thread> active_plugins;
     /**
      * A mutex to prevent two threads from simultaneously accessing the plugins
      * map, and also to prevent `handle_host_plugin()` from terminating the
