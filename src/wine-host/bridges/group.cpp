@@ -71,20 +71,42 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
       stderr_redirect(io_context, STDERR_FILENO),
       group_socket_endpoint(group_socket_path.string()),
       group_socket_acceptor(io_context, group_socket_endpoint) {
-    // TODO: After initializing, listen for connections and spawn plugins
-    //       the exact same way as what happens in `individual-host.cpp`
-    // TODO: Allow this process to exit when the last plugin exits. Make sure
-    //       that that doesn't cause any race conditions.
-
     // Write this process's original STDOUT and STDERR streams to the logger
     async_log_pipe_lines(stdout_redirect.pipe, stdout_buffer, "[STDOUT] ");
     async_log_pipe_lines(stderr_redirect.pipe, stderr_buffer, "[STDERR] ");
 }
 
-void GroupBridge::handle_host_plugin(const PluginParameters& parameters) {
-    // TODO: Start the plugin
-    // TODO: Allow this process to exit when the last plugin exits. Make sure
-    //       that that doesn't cause any race conditions.
+void GroupBridge::handle_host_plugin(const PluginParameters parameters) {
+    // At this point the `active_plugins` map will already contain a copy of
+    // `parameters` along with this thread's handle
+    // The initialization process for a plugin is identical to that in
+    // `../individual-host.cpp`
+    logger.log("Received request to host '" + parameters.plugin_path +
+               "' using socket '" + parameters.socket_path + "'");
+    try {
+        Vst2Bridge bridge(parameters.plugin_path, parameters.socket_path);
+        logger.log("Finished initializing '" + parameters.plugin_path + "'");
+
+        // Blocks the main thread until the plugin shuts down
+        bridge.handle_dispatch();
+
+        logger.log("" + parameters.plugin_path + "' has exited");
+    } catch (const std::runtime_error& error) {
+        logger.log("Error while initializing '" + parameters.plugin_path +
+                   "':");
+        logger.log(error.what());
+    }
+
+    // After the plugin has exited (either after `effClose()` or because it
+    // failed to initialize), we'll remove this thread's plugin from the active
+    // plugins. If no active plugins remain, then we'll terminate
+    std::lock_guard lock(active_plugins_mutex);
+
+    active_plugins.erase(parameters);
+    if (active_plugins.size() == 0) {
+        logger.log("All plugins have exited, shutting down the group process");
+        io_context.stop();
+    }
 }
 
 void GroupBridge::handle_incoming_connections() {
@@ -187,7 +209,7 @@ uint32_t WINAPI handle_host_plugin_proxy(void* param) {
     // need to use manual memory management.
     auto thread_params = static_cast<handle_host_plugin_parameters*>(param);
     GroupBridge* instance = thread_params->first;
-    PluginParameters& parameters = thread_params->second;
+    PluginParameters parameters = thread_params->second;
     delete thread_params;
 
     instance->handle_host_plugin(parameters);

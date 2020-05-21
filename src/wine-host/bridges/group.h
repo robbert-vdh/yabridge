@@ -136,7 +136,7 @@ class GroupBridge {
      *   then the process will never exit on its own. This should not happen
      *   though.
      */
-    void handle_host_plugin(const PluginParameters& parameters);
+    void handle_host_plugin(const PluginParameters parameters);
 
     /**
      * Listen for new requests to spawn plugins within this process and handle
