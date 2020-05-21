@@ -676,7 +676,6 @@ void PluginBridge::log_init_message() {
 
     // Include a list of enabled compile-tiem features, mostly to make debug
     // logs more useful
-    // TODO: Add a feature flag for the plugin group support
     init_msg << "Enabled features:" << std::endl;
 #ifdef USE_BITBRIDGE
     init_msg << "- bitbridge support" << std::endl;
