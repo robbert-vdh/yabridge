@@ -98,6 +98,8 @@ void GroupBridge::accept_requests() {
     group_socket_acceptor.async_accept(
         [&](const boost::system::error_code& error,
             boost::asio::local::stream_protocol::socket socket) {
+            std::lock_guard lock(active_plugins_mutex);
+
             // Stop the whole process when the socket gets closed unexpectedly
             if (error.failed()) {
                 logger.log("Error while listening for incoming connections:");
@@ -120,7 +122,6 @@ void GroupBridge::accept_requests() {
 
             // Collisions in the generated socket names should be very rare, but
             // it could in theory happen
-            std::lock_guard lock(active_plugins_mutex);
             assert(active_plugins.find(parameters) != active_plugins.end());
 
             // CreateThread() doesn't support multiple arguments and requires
