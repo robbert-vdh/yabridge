@@ -110,6 +110,19 @@ class PluginBridge {
                               std::string prefix = "");
 
     /**
+     * Launch the Wine VST host to host the plugin. When using plugin groups,
+     * this will first try to connect to the plugin group's socket (determined
+     * based on group name, Wine prefix and architecture). If that fails, it
+     * will launch a new, detached group host process. This will likely outlive
+     * this plugin instance if multiple instances of yabridge using the same
+     * plugin group are in use. In the event that two yabridge instances are
+     * initialized at the same time and both instances spawn their own group
+     * host process, then the later one will simply terminate gracefully after
+     * it fails to listen on the socket.
+     */
+    void launch_vst_host();
+
+    /**
      * Format and log all relevant debug information during initialization.
      */
     void log_init_message();
@@ -217,6 +230,8 @@ class PluginBridge {
 
     /**
      * The Wine process hosting the Windows VST plugin.
+     *
+     * @see launch_vst_host
      */
     boost::process::child vst_host;
 

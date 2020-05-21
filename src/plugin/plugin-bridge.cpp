@@ -19,11 +19,8 @@
 #include <boost/asio/read_until.hpp>
 #include <boost/process/env.hpp>
 #include <boost/process/io.hpp>
-#include <iostream>
-
-#ifdef USE_WINEDBG
 #include <boost/process/start_dir.hpp>
-#endif
+#include <iostream>
 
 // Generated inside of build directory
 #include <src/common/config/config.h>
@@ -74,35 +71,8 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
       config(Configuration::load_for(get_this_file_location())),
       wine_version(get_wine_version()),
       wine_stdout(io_context),
-      wine_stderr(io_context),
-#ifndef USE_WINEDBG
-      vst_host(vst_host_path,
-               // The Wine VST host needs to know which plugin to load
-               // and which Unix domain socket to connect to
-               vst_plugin_path,
-               socket_endpoint.path(),
-               bp::env = set_wineprefix(),
-               bp::std_out = wine_stdout,
-               bp::std_err = wine_stderr)
-#else
-      // This is set up for KDE Plasma. Other desktop environments and window
-      // managers require some slight modifications to spawn a detached terminal
-      // emulator.
-      vst_host("/usr/bin/kstart5",
-               "konsole",
-               "--",
-               "-e",
-               "winedbg",
-               "--gdb",
-               vst_host_path.string() + ".so",
-               vst_plugin_path.filename(),
-               socket_endpoint.path(),
-               bp::env = set_wineprefix(),
-               // winedbg has no reliable way to escape spaces, so we'll start
-               // the process in the plugin's directory
-               bp::start_dir = vst_plugin_path.parent_path())
-#endif
-{
+      wine_stderr(io_context) {
+    launch_vst_host();
     log_init_message();
 
     // Print the Wine host's STDOUT and STDERR streams to the log file. This
@@ -479,7 +449,12 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
                 // loaded into the Wine process crashed during shutdown
                 logger.log("The plugin crashed during shutdown, ignoring");
             }
-            vst_host.terminate();
+
+            // Don't terminate group host processes. They will shut down
+            // automatically after all plugins have exited.
+            if (!config.group.has_value()) {
+                vst_host.terminate();
+            }
 
             // The `stop()` method will cause the IO context to just drop all of
             // its work immediately and not throw any exceptions that would have
@@ -632,6 +607,45 @@ void PluginBridge::async_log_pipe_lines(patched_async_pipe& pipe,
 
             async_log_pipe_lines(pipe, buffer, prefix);
         });
+}
+
+void PluginBridge::launch_vst_host() {
+    // TODO: Connect to and launch group host processes
+
+#ifndef USE_WINEDBG
+    std::vector<std::string> args{vst_host_path.string()};
+#else
+    // This is set up for KDE Plasma. Other desktop environments and window
+    // managers require some slight modifications to spawn a detached terminal
+    // emulator.
+    std::vector<std::string> args{"/usr/bin/kstart5",
+                                  "konsole",
+                                  "--",
+                                  "-e",
+                                  "winedbg",
+                                  "--gdb",
+                                  vst_host_path.string() + ".so"};
+#endif
+
+#ifndef USE_WINEDBG
+    args.push_back(vst_plugin_path.string());
+    const fs::path starting_dir = fs::current_path();
+#else
+    // winedbg has no reliable way to escape spaces, so we'll start the process
+    // in the plugin's directory
+    args.push_back(vst_plugin_path.filename().string());
+    const fs::path starting_dir = vst_plugin_path.parent_path();
+
+    if (vst_plugin_path.filename().string().find(' ') != std::string::npos) {
+        logger.log("Warning: winedbg does not support paths containing spaces");
+    }
+#endif
+
+    args.push_back(socket_endpoint.path());
+
+    vst_host =
+        bp::child(args, bp::env = set_wineprefix(), bp::std_out = wine_stdout,
+                  bp::std_err = wine_stderr, bp::start_dir = starting_dir);
 }
 
 void PluginBridge::log_init_message() {
