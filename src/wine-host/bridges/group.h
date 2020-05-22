@@ -104,7 +104,7 @@ class GroupBridge {
      *
      * @param gruop_socket_path The path to the group socket endpoint. This path
      *   should be in the form of
-     *   `/tmp/yabridge-group-<group_name>-<wine_prefix_id>-<architecture>`
+     *   `/tmp/yabridge-group-<group_name>-<wine_prefix_id>-<architecture>.sock`
      *   where `<wine_prefix_id>` is a numerical hash as explained in the
      *   `create_logger_prefix()` function in `./group.cpp`.
      *

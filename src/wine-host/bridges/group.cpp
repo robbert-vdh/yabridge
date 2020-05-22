@@ -28,6 +28,26 @@
 namespace fs = boost::filesystem;
 
 /**
+ * Listen on the specified endpoint if no process is already listening there,
+ * otherwise throw. This is needed to handle these three situations:
+ *
+ * 1. The endpoint does not already exist, and we can simply create an endpoint.
+ * 2. The endpoint already exists but it is stale and no process is currently
+ *    listening. In this case we can remove the file and start listening.
+ * 3. The endpoint already exists and another process is currently listening on
+ *    it. In this situation we will throw immediately and we'll terminate this
+ *    process.
+ *
+ * If anyone knows a better way to handle this, please let me know!
+ *
+ * @throw std::runtime_error If another process is already listening on the
+ *        endpoint.
+ */
+boost::asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
+    boost::asio::io_context& io_context,
+    boost::asio::local::stream_protocol::endpoint& endpoint);
+
+/**
  * Create a logger prefix containing the group name based on the socket path.
  */
 std::string create_logger_prefix(const fs::path& socket_path);
@@ -75,7 +95,8 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
       stdout_redirect(io_context, STDOUT_FILENO),
       stderr_redirect(io_context, STDERR_FILENO),
       group_socket_endpoint(group_socket_path.string()),
-      group_socket_acceptor(io_context, group_socket_endpoint) {
+      group_socket_acceptor(
+          create_acceptor_if_inactive(io_context, group_socket_endpoint)) {
     // Write this process's original STDOUT and STDERR streams to the logger
     async_log_pipe_lines(stdout_redirect.pipe, stdout_buffer, "[STDOUT] ");
     async_log_pipe_lines(stderr_redirect.pipe, stderr_buffer, "[STDERR] ");
@@ -177,6 +198,39 @@ void GroupBridge::async_log_pipe_lines(
 
             async_log_pipe_lines(pipe, buffer, prefix);
         });
+}
+
+boost::asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
+    boost::asio::io_context& io_context,
+    boost::asio::local::stream_protocol::endpoint& endpoint) {
+    // First try to listen on the endpoint normally
+    try {
+        return boost::asio::local::stream_protocol::acceptor(io_context,
+                                                             endpoint);
+    } catch (const boost::system::system_error& error) {
+        // If this failed, then either there is a stale socket file or another
+        // process is already is already listening. In the last case we will
+        // simply throw so the other process can handle the request.
+        std::ifstream open_sockets("/proc/net/unix");
+        std::string endpoint_path = endpoint.path();
+        for (std::string line; std::getline(open_sockets, line);) {
+            if (line.size() < endpoint_path.size()) {
+                continue;
+            }
+
+            std::string file = line.substr(line.size() - endpoint_path.size());
+            if (file == endpoint_path) {
+                // Another process is already listening, so we don't have to do
+                // anything
+                throw error;
+            }
+        }
+
+        // At this point we can remove the stale socket and start listening
+        fs::remove(endpoint_path);
+        return boost::asio::local::stream_protocol::acceptor(io_context,
+                                                             endpoint);
+    }
 }
 
 std::string create_logger_prefix(const fs::path& socket_path) {
