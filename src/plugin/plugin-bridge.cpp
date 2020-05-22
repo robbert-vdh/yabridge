@@ -720,6 +720,8 @@ void PluginBridge::launch_vst_host() {
             // TODO: Replace this polling with inotify when encapsulating
             //       the different host launch behaviors
             while (vst_host.running()) {
+                std::this_thread::sleep_for(20ms);
+
                 try {
                     // This is the exact same connection sequence as above
                     boost::asio::local::stream_protocol::socket group_socket(
@@ -729,11 +731,14 @@ void PluginBridge::launch_vst_host() {
                     write_object(group_socket,
                                  GroupRequest{plugin_path.string(),
                                               socket_path.string()});
-                    read_object<GroupResponse>(group_socket);
+                    const auto response =
+                        read_object<GroupResponse>(group_socket);
 
+                    // If two group processes started at the same time, than the
+                    // first one will be the one to respond to the host request
+                    vst_host_pid = response.pid;
                     return;
                 } catch (const boost::system::system_error&) {
-                    std::this_thread::sleep_for(20ms);
                 }
             }
         });
