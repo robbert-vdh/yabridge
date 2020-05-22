@@ -469,6 +469,10 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
             // automatically after all plugins have exited.
             if (!config.group.has_value()) {
                 vst_host.terminate();
+            } else {
+                // Manually the dispatch socket will cause the host process to
+                // terminate
+                host_vst_dispatch.close();
             }
 
             // The `stop()` method will cause the IO context to just drop all of
