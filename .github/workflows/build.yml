@@ -14,6 +14,11 @@ on:
   release:
     types: [created]
 
+defaults:
+  run:
+    # This otherwise gets run under dash which does not support brace expansion
+    shell: bash
+
 jobs:
   build-bionic:
     name: Build on Ubuntu 18.04
@@ -48,11 +53,8 @@ jobs:
           ninja -C build
       - name: Create an archive for the binaries
         run: |
-          set -e
-
           mkdir yabridge
-          # This gets run under dash which does not support brace expansion
-          cp build/libyabridge.so build/yabridge-host.exe build/yabridge-host.exe.so build/yabridge-host-32.exe build/yabridge-host-32.exe.so build/yabridge-group.exe build/yabridge-group.exe.so build/yabridge-group-32.exe build/yabridge-group-32.exe.so yabridge
+          cp build/libyabridge.so build/yabridge-{host,group}{,-32}.exe{,.so} yabridge
           cp CHANGELOG.md README.md yabridge
 
           tar -caf "$ARCHIVE_NAME" yabridge
@@ -91,11 +93,8 @@ jobs:
           ninja -C build
       - name: Create an archive for the binaries
         run: |
-          set -e
-
           mkdir yabridge
-          # This gets run under dash which does not support brace expansion
-          cp build/libyabridge.so build/yabridge-host.exe build/yabridge-host.exe.so build/yabridge-host-32.exe build/yabridge-host-32.exe.so build/yabridge-group.exe build/yabridge-group.exe.so build/yabridge-group-32.exe build/yabridge-group-32.exe.so yabridge
+          cp build/libyabridge.so build/yabridge-{host,group}{,-32}.exe{,.so} yabridge
           cp CHANGELOG.md README.md yabridge
 
           tar -caf "$ARCHIVE_NAME" yabridge
