@@ -31,12 +31,16 @@ namespace fs = boost::filesystem;
  */
 std::string create_logger_prefix(const fs::path& socket_path);
 
-// CreateThread() is great and allows you to pass a single value to the
-// function, so we'll use this to pass both `this` and the parameters to the
-// below thread function so it can do its thing.
-using handle_host_plugin_parameters = std::pair<GroupBridge*, PluginParameters>;
-
 uint32_t WINAPI handle_host_plugin_proxy(void* param);
+
+/**
+ * CreateThread() is great and allows you to pass a single value to the
+ * function, so we'll use this to pass both `this` and the parameters to the
+ * below thread function so it can do its thing.
+ *
+ * @relates handle_host_plugin_proxy
+ */
+using handle_host_plugin_parameters = std::pair<GroupBridge*, GroupRequest>;
 
 StdIoCapture::StdIoCapture(boost::asio::io_context& io_context,
                            int file_descriptor)
@@ -76,24 +80,23 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
     async_log_pipe_lines(stderr_redirect.pipe, stderr_buffer, "[STDERR] ");
 }
 
-void GroupBridge::handle_host_plugin(const PluginParameters parameters) {
+void GroupBridge::handle_host_plugin(const GroupRequest request) {
     // At this point the `active_plugins` map will already contain a copy of
     // `parameters` along with this thread's handle
     // The initialization process for a plugin is identical to that in
     // `../individual-host.cpp`
-    logger.log("Received request to host '" + parameters.plugin_path +
-               "' using socket '" + parameters.socket_path + "'");
+    logger.log("Received request to host '" + request.plugin_path +
+               "' using socket '" + request.socket_path + "'");
     try {
-        Vst2Bridge bridge(parameters.plugin_path, parameters.socket_path);
-        logger.log("Finished initializing '" + parameters.plugin_path + "'");
+        Vst2Bridge bridge(request.plugin_path, request.socket_path);
+        logger.log("Finished initializing '" + request.plugin_path + "'");
 
         // Blocks the main thread until the plugin shuts down
         bridge.handle_dispatch();
 
-        logger.log("" + parameters.plugin_path + "' has exited");
+        logger.log("" + request.plugin_path + "' has exited");
     } catch (const std::runtime_error& error) {
-        logger.log("Error while initializing '" + parameters.plugin_path +
-                   "':");
+        logger.log("Error while initializing '" + request.plugin_path + "':");
         logger.log(error.what());
     }
 
@@ -102,7 +105,7 @@ void GroupBridge::handle_host_plugin(const PluginParameters parameters) {
     // plugins. If no active plugins remain, then we'll terminate
     std::lock_guard lock(active_plugins_mutex);
 
-    active_plugins.erase(parameters);
+    active_plugins.erase(request);
     if (active_plugins.size() == 0) {
         logger.log("All plugins have exited, shutting down the group process");
         io_context.stop();
@@ -140,7 +143,7 @@ void GroupBridge::accept_requests() {
             // still active so we can terminate early if it is not, but in this
             // case the yabridge instance has to determine that this process is
             // still running.
-            const auto parameters = read_object<PluginParameters>(socket);
+            const auto parameters = read_object<GroupRequest>(socket);
 
             // Collisions in the generated socket names should be very rare, but
             // it could in theory happen
@@ -149,7 +152,7 @@ void GroupBridge::accept_requests() {
             // CreateThread() doesn't support multiple arguments and requires
             // manualy memory management.
             handle_host_plugin_parameters* thread_params =
-                new std::pair<GroupBridge*, PluginParameters>(this, parameters);
+                new std::pair<GroupBridge*, GroupRequest>(this, parameters);
             active_plugins[parameters] =
                 Win32Thread(handle_host_plugin_proxy, &thread_params);
 
@@ -209,7 +212,7 @@ uint32_t WINAPI handle_host_plugin_proxy(void* param) {
     // need to use manual memory management.
     auto thread_params = static_cast<handle_host_plugin_parameters*>(param);
     GroupBridge* instance = thread_params->first;
-    PluginParameters parameters = thread_params->second;
+    GroupRequest parameters = thread_params->second;
     delete thread_params;
 
     instance->handle_host_plugin(parameters);

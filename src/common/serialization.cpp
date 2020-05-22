@@ -109,6 +109,6 @@ AEffect& update_aeffect(AEffect& plugin, const AEffect& updated_plugin) {
     return plugin;
 }
 
-bool PluginParameters::operator==(const PluginParameters& rhs) const {
+bool GroupRequest::operator==(const GroupRequest& rhs) const {
     return plugin_path == rhs.plugin_path && socket_path == rhs.socket_path;
 }

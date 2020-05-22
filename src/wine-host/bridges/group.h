@@ -128,15 +128,15 @@ class GroupBridge {
      * `active_plugins` map. If this causes the vector to become empty, we will
      * terminate this process.
      *
-     * @param parameters Information about the plugin to launch, i.e. the path
-     *   to the plugin and the path of the socket endpoint that will be used for
+     * @param request Information about the plugin to launch, i.e. the path to
+     *   the plugin and the path of the socket endpoint that will be used for
      *   communication.
      *
      * @note In the case that the process starts but no plugin gets initiated,
      *   then the process will never exit on its own. This should not happen
      *   though.
      */
-    void handle_host_plugin(const PluginParameters parameters);
+    void handle_host_plugin(const GroupRequest request);
 
     /**
      * Listen for new requests to spawn plugins within this process and handle
@@ -148,7 +148,7 @@ class GroupBridge {
     /**
      * Listen on the group socket for incoming requests to host a new plugin
      * within this group process. This will asynchronously listen on the socket,
-     * and for any connection made it will retrieve a `PluginParameters` object
+     * and for any connection made it will retrieve a `GroupRequest` object
      * containing information about the plugin to host and then spawn a new
      * thread to start hosting that plugin.
      *
@@ -208,7 +208,7 @@ class GroupBridge {
      * the amount of plugins currently running with their associated thread
      * handles.
      */
-    std::unordered_map<PluginParameters, Win32Thread> active_plugins;
+    std::unordered_map<GroupRequest, Win32Thread> active_plugins;
     /**
      * A mutex to prevent two threads from simultaneously accessing the plugins
      * map, and also to prevent `handle_host_plugin()` from terminating the

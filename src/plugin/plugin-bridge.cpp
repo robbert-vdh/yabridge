@@ -49,6 +49,10 @@ PluginBridge& get_bridge_instance(const AEffect& plugin) {
     return *static_cast<PluginBridge*>(plugin.ptr3);
 }
 
+// TODO: It would be nice to have a better way to encapsulate the small
+//       differences in behavior when using plugin groups, i.e. everywhere where
+//       we check for `config.group.has_value()`
+
 PluginBridge::PluginBridge(audioMasterCallback host_callback)
     : config(Configuration::load_for(get_this_file_location())),
       vst_plugin_path(find_vst_plugin()),

@@ -577,11 +577,11 @@ struct AudioBuffers {
  * group process. These are the exact same options that would have been passed
  * to `yabridge-host.exe` were the plugin to be hosted individually.
  */
-struct PluginParameters {
+struct GroupRequest {
     std::string plugin_path;
     std::string socket_path;
 
-    bool operator==(const PluginParameters& rhs) const;
+    bool operator==(const GroupRequest& rhs) const;
 
     template <typename S>
     void serialize(S& s) {
@@ -591,8 +591,8 @@ struct PluginParameters {
 };
 
 template <>
-struct std::hash<PluginParameters> {
-    std::size_t operator()(PluginParameters const& params) const noexcept {
+struct std::hash<GroupRequest> {
+    std::size_t operator()(GroupRequest const& params) const noexcept {
         std::hash<string> hasher{};
 
         return hasher(params.plugin_path) ^ (hasher(params.socket_path) << 1);
