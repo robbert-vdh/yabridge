@@ -617,38 +617,38 @@ void PluginBridge::launch_vst_host() {
     // TODO: Connect to and launch group host processes
 
 #ifndef USE_WINEDBG
-    std::vector<std::string> args{vst_host_path.string()};
+    std::vector<std::string> host_command{vst_host_path.string()};
 #else
     // This is set up for KDE Plasma. Other desktop environments and window
     // managers require some slight modifications to spawn a detached terminal
     // emulator.
-    std::vector<std::string> args{"/usr/bin/kstart5",
-                                  "konsole",
-                                  "--",
-                                  "-e",
-                                  "winedbg",
-                                  "--gdb",
-                                  vst_host_path.string() + ".so"};
+    std::vector<std::string> host_command{"/usr/bin/kstart5",
+                                          "konsole",
+                                          "--",
+                                          "-e",
+                                          "winedbg",
+                                          "--gdb",
+                                          vst_host_path.string() + ".so"};
 #endif
 
 #ifndef USE_WINEDBG
-    args.push_back(vst_plugin_path.string());
+    const fs::path plugin_path = vst_plugin_path;
     const fs::path starting_dir = fs::current_path();
 #else
     // winedbg has no reliable way to escape spaces, so we'll start the process
     // in the plugin's directory
-    args.push_back(vst_plugin_path.filename().string());
+    const fs::path plugin_path = vst_plugin_path.filename();
     const fs::path starting_dir = vst_plugin_path.parent_path();
 
-    if (vst_plugin_path.filename().string().find(' ') != std::string::npos) {
+    if (plugin_path.string().find(' ') != std::string::npos) {
         logger.log("Warning: winedbg does not support paths containing spaces");
     }
 #endif
-
-    args.push_back(socket_endpoint.path());
+    const fs::path socket_path = socket_endpoint.path();
 
     vst_host =
-        bp::child(args, bp::env = set_wineprefix(), bp::std_out = wine_stdout,
+        bp::child(host_command, plugin_path, socket_path,
+                  bp::env = set_wineprefix(), bp::std_out = wine_stdout,
                   bp::std_err = wine_stderr, bp::start_dir = starting_dir);
 }
 
