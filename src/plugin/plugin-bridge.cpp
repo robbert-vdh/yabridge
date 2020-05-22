@@ -108,15 +108,17 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
             // is still active.
             if (config.group.has_value()) {
                 if (kill(vst_host_pid, 0) != 0) {
-                    throw std::runtime_error(
+                    logger.log(
                         "The group host process has exited unexpectedly. Check "
                         "the output above for more information.");
+                    std::terminate();
                 }
             } else {
                 if (!vst_host.running()) {
-                    throw std::runtime_error(
+                    logger.log(
                         "The Wine process failed to start. Check the output "
                         "above for more information.");
+                    std::terminate();
                 }
             }
 
