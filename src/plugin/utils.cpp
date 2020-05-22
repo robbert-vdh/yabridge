@@ -164,7 +164,27 @@ fs::path find_vst_plugin() {
                              "VST plugin .dll file.");
 }
 
-fs::path generate_endpoint_name() {
+boost::filesystem::path generate_group_endpoint(
+    std::string group_name,
+    boost::filesystem::path wine_prefix,
+    PluginArchitecture architecture) {
+    std::ostringstream socket_name;
+    socket_name << "yabridge-group-" << group_name << "-"
+                << std::hash<std::string>{}(wine_prefix.string()) << "-";
+    switch (architecture) {
+        case PluginArchitecture::vst_32:
+            socket_name << "x32";
+            break;
+        case PluginArchitecture::vst_64:
+            socket_name << "x64";
+            break;
+    }
+    socket_name << ".sock";
+
+    return fs::temp_directory_path() / socket_name.str();
+}
+
+fs::path generate_plugin_endpoint() {
     const auto plugin_name =
         find_vst_plugin().filename().replace_extension("").string();
 

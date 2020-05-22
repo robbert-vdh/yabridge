@@ -113,6 +113,32 @@ boost::filesystem::path find_vst_plugin();
 std::optional<boost::filesystem::path> find_wineprefix();
 
 /**
+ * Generate the group socket endpoint name used based on the name of the group,
+ * the Wine prefix in use and the plugin architecture. The resulting format is
+ * `/tmp/yabridge-group-<group_name>-<wine_prefix_id>-<architecture>.sock`. In
+ * this socket name the `wine_prefix_id` is a numerical hash based on the Wine
+ * prefix in use. This way the same group name can be used for multiple Wine
+ * prefixes and for both 32 and 64 bit plugins without clashes.
+ *
+ * @param group_name The name of the plugin group.
+ * @param wine_prefix The name of the Wine prefix in use. This should be
+ *   obtained by first calling `set_wineprefix()` to allow the user to override
+ *   this, and then falling back to `$HOME/.wine` if the environment variable is
+ *   unset. Otherwise plugins run from outwide of a Wine prefix will not be
+ *   groupable with those run from within `~/.wine` even though they both run
+ *   under the same prefix.
+ * @param architecture The architecture the plugin is using, since 64-bit
+ *   processes can't host 32-bit plugins and the other way around.
+ *
+ * @return A socket endpoint path that corresponds to the format described
+ * above.
+ */
+boost::filesystem::path generate_group_endpoint(
+    std::string group_name,
+    boost::filesystem::path wine_prefix,
+    PluginArchitecture architecture);
+
+/**
  * Generate a unique name for the Unix domain socket endpoint based on the VST
  * plugin's name. This will also generate the parent directory if it does not
  * yet exist since we're using this in the constructor's initializer list.
@@ -120,7 +146,7 @@ std::optional<boost::filesystem::path> find_wineprefix();
  * @return A path to a not yet existing Unix domain socket endpoint.
  * @throw std::runtime_error If no matching .dll file could be found.
  */
-boost::filesystem::path generate_endpoint_name();
+boost::filesystem::path generate_plugin_endpoint();
 
 /**
  * Return a path to this `.so` file. This can be used to find out from where
