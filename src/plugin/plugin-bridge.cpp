@@ -50,9 +50,10 @@ PluginBridge& get_bridge_instance(const AEffect& plugin) {
 }
 
 PluginBridge::PluginBridge(audioMasterCallback host_callback)
-    : vst_plugin_path(find_vst_plugin()),
+    : config(Configuration::load_for(get_this_file_location())),
+      vst_plugin_path(find_vst_plugin()),
       vst_plugin_arch(find_vst_architecture(vst_plugin_path)),
-      vst_host_path(find_vst_host(vst_plugin_arch)),
+      vst_host_path(find_vst_host(vst_plugin_arch, config.group.has_value())),
       // All the fields should be zero initialized because
       // `Vst2PluginInstance::vstAudioMasterCallback` from Bitwig's plugin
       // bridge will crash otherwise
@@ -68,7 +69,6 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
       host_callback_function(host_callback),
       logger(Logger::create_from_environment(
           create_logger_prefix(socket_endpoint.path()))),
-      config(Configuration::load_for(get_this_file_location())),
       wine_version(get_wine_version()),
       wine_stdout(io_context),
       wine_stderr(io_context) {

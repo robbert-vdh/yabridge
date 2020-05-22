@@ -80,11 +80,14 @@ PluginArchitecture find_vst_architecture(boost::filesystem::path);
  *
  * @param plugin_arch The architecture of the plugin, either 64-bit or 32-bit.
  *   Used to determine which host application to use, if available.
+ * @param use_plugin_groups Whether the plugin is using plugin groups and we
+ *   should be looking for the group host instead of the individual plugin host.
  *
  * @return The a path to the VST host, if found.
  * @throw std::runtime_error If the Wine VST host could not be found.
  */
-boost::filesystem::path find_vst_host(PluginArchitecture plugin_arch);
+boost::filesystem::path find_vst_host(PluginArchitecture plugin_arch,
+                                      bool use_plugin_groups);
 
 /**
  * Find the VST plugin .dll file that corresponds to this copy of

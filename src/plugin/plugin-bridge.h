@@ -75,6 +75,14 @@ class PluginBridge {
     void set_parameter(AEffect* plugin, int index, float value);
 
     /**
+     * The configuration for this instance of yabridge. Set based on the values
+     * from a `yabridge.toml`, if it exists.
+     *
+     * @see Configuration::load_for
+     */
+    Configuration config;
+
+    /**
      * The path to the .dll being loaded in the Wine VST host.
      */
     const boost::filesystem::path vst_plugin_path;
@@ -197,14 +205,6 @@ class PluginBridge {
      * @see Logger::create_from_env
      */
     Logger logger;
-
-    /**
-     * The configuration for this instance of yabridge. Set based on the values
-     * from a `yabridge.toml`, if it exists.
-     *
-     * @see Configuration::load_for
-     */
-    Configuration config;
 
     /**
      * The version of Wine currently in use. Used in the debug output on plugin

@@ -111,11 +111,12 @@ PluginArchitecture find_vst_architecture(fs::path plugin_path) {
     throw std::runtime_error(error_msg.str());
 }
 
-fs::path find_vst_host(PluginArchitecture plugin_arch) {
-    // TODO: Take plugin group settings into account
-    auto host_name = yabridge_individual_host_name;
+fs::path find_vst_host(PluginArchitecture plugin_arch, bool use_plugin_groups) {
+    auto host_name = use_plugin_groups ? yabridge_group_host_name
+                                       : yabridge_individual_host_name;
     if (plugin_arch == PluginArchitecture::vst_32) {
-        host_name = yabridge_individual_host_name_32bit;
+        host_name = use_plugin_groups ? yabridge_group_host_name_32bit
+                                      : yabridge_individual_host_name_32bit;
     }
 
     fs::path host_path =
