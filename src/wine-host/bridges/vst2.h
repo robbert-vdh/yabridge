@@ -74,9 +74,9 @@ class Vst2Bridge {
     // below. They're defined here because we can't use lambdas with WinAPI's
     // `CreateThread` which is needed to support the proper call conventions the
     // VST plugins expect.
-    [[noreturn]] void handle_dispatch_midi_events();
-    [[noreturn]] void handle_parameters();
-    [[noreturn]] void handle_process_replacing();
+    void handle_dispatch_midi_events();
+    void handle_parameters();
+    void handle_process_replacing();
 
     /**
      * Forward the host callback made by the plugin to the host and return the
