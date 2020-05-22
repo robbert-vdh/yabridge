@@ -31,6 +31,11 @@ using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
  * from an `AEffect` when it performs a host callback during its initialization.
  */
 Vst2Bridge* current_bridge_instance = nullptr;
+/**
+ * Needed for the rare event that two plugins are getting initialized at the
+ * same time.
+ */
+std::mutex current_bridge_instance_mutex;
 
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);
@@ -52,8 +57,6 @@ Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
     // This is needed during the initialization of the plugin since we can only
     // add our own pointer after it's done initializing
     if (current_bridge_instance != nullptr) {
-        // This should only be used during initialization
-        assert(plugin == nullptr || plugin->ptr1 == nullptr);
         return *current_bridge_instance;
     }
 
@@ -106,16 +109,19 @@ Vst2Bridge::Vst2Bridge(std::string plugin_dll_path,
     // We'll try to do the same `get_bridge_isntance` trick as in
     // `plugin/plugin.cpp`, but since the plugin will probably call the host
     // callback while it's initializing we sadly have to use a global here.
-    current_bridge_instance = this;
-    plugin = vst_entry_point(host_callback_proxy);
-    if (plugin == nullptr) {
-        throw std::runtime_error("VST plugin at '" + plugin_dll_path +
-                                 "' failed to initialize.");
-    }
+    {
+        std::lock_guard lock(current_bridge_instance_mutex);
+        current_bridge_instance = this;
+        plugin = vst_entry_point(host_callback_proxy);
+        if (plugin == nullptr) {
+            throw std::runtime_error("VST plugin at '" + plugin_dll_path +
+                                     "' failed to initialize.");
+        }
 
-    // We only needed this little hack during initialization
-    current_bridge_instance = nullptr;
-    plugin->ptr1 = this;
+        // We only needed this little hack during initialization
+        current_bridge_instance = nullptr;
+        plugin->ptr1 = this;
+    }
 
     // Send the plugin's information to the Linux VST plugin. This is done over
     // the `dispatch()` socket since this has to be done only once during
