@@ -63,7 +63,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
       // bridge will crash otherwise
       plugin(),
       io_context(),
-      socket_endpoint(generate_endpoint_name().string()),
+      socket_endpoint(generate_plugin_endpoint().string()),
       socket_acceptor(io_context, socket_endpoint),
       host_vst_dispatch(io_context),
       host_vst_dispatch_midi_events(io_context),
@@ -95,20 +95,29 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     std::thread([&]() {
         using namespace std::literals::chrono_literals;
 
-        // TODO: For plugin groups, we should be polling whether someone is
-        //       still listening on the group socket (and ideally we should be
-        //       able to tell it's the same process). If we can't figure out a
-        //       better way, then we could just return the PID when sending the
-        //       host request to the group process and check whether that
-        //       process is still running.
         while (true) {
             if (finished_accepting_sockets) {
                 return;
             }
-            if (!vst_host.running()) {
-                throw std::runtime_error(
-                    "The Wine process failed to start. Check the output above "
-                    "for more information.");
+
+            // When using regular individually hosted plugins we can simply
+            // check whether the process is still running, but Boost.Process
+            // does not allow you to do the same thing for a process that's not
+            // a child if this process. When using plugin groups we'll have to
+            // manually check whether the PID returned by the group host process
+            // is still active.
+            if (config.group.has_value()) {
+                if (kill(vst_host_pid, 0) != 0) {
+                    throw std::runtime_error(
+                        "The group host process has exited unexpectedly. Check "
+                        "the output above for more information.");
+                }
+            } else {
+                if (!vst_host.running()) {
+                    throw std::runtime_error(
+                        "The Wine process failed to start. Check the output "
+                        "above for more information.");
+                }
             }
 
             std::this_thread::sleep_for(1s);
@@ -467,6 +476,7 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
 
             // These threads should now be finished because we've forcefully
             // terminated the Wine process, interupting their socket operations
+            group_host_connect_handler.join();
             host_callback_handler.join();
             wine_io_handler.join();
 
@@ -614,21 +624,21 @@ void PluginBridge::async_log_pipe_lines(patched_async_pipe& pipe,
 }
 
 void PluginBridge::launch_vst_host() {
-    // TODO: Connect to and launch group host processes
+    const bp::environment host_env = set_wineprefix();
 
 #ifndef USE_WINEDBG
-    std::vector<std::string> host_command{vst_host_path.string()};
+    const std::vector<std::string> host_command{vst_host_path.string()};
 #else
     // This is set up for KDE Plasma. Other desktop environments and window
     // managers require some slight modifications to spawn a detached terminal
     // emulator.
-    std::vector<std::string> host_command{"/usr/bin/kstart5",
-                                          "konsole",
-                                          "--",
-                                          "-e",
-                                          "winedbg",
-                                          "--gdb",
-                                          vst_host_path.string() + ".so"};
+    const std::vector<std::string> host_command{"/usr/bin/kstart5",
+                                                "konsole",
+                                                "--",
+                                                "-e",
+                                                "winedbg",
+                                                "--gdb",
+                                                vst_host_path.string() + ".so"};
 #endif
 
 #ifndef USE_WINEDBG
@@ -646,10 +656,86 @@ void PluginBridge::launch_vst_host() {
 #endif
     const fs::path socket_path = socket_endpoint.path();
 
-    vst_host =
-        bp::child(host_command, plugin_path, socket_path,
-                  bp::env = set_wineprefix(), bp::std_out = wine_stdout,
-                  bp::std_err = wine_stderr, bp::start_dir = starting_dir);
+    if (!config.group.has_value()) {
+        vst_host =
+            bp::child(host_command, plugin_path, socket_path,
+                      bp::env = host_env, bp::std_out = wine_stdout,
+                      bp::std_err = wine_stderr, bp::start_dir = starting_dir);
+        return;
+    }
+
+    // When using plugin groups, we'll first try to connect to an existing group
+    // host process and ask it to host our plugin. If no such process exists,
+    // then we'll start a new process. In the event that two yabridge instances
+    // simultaneously try to start a new group process for the same group, then
+    // the last process to connect to the socket will terminate gracefully and
+    // the first process will handle the connections for both yabridge
+    // instances.
+    fs::path wine_prefix = host_env.at("WINEPREFIX").to_string();
+    if (host_env.at("WINEPREFIX").empty()) {
+        // Fall back to `~/.wine` if this has not been set or detected. This
+        // would happen if the plugin's .dll file is not inside of a Wine
+        // prefix. If this happens, then the Wine instance will be launched in
+        // the default Wine prefix, so we should reflect that here.
+        wine_prefix = fs::path(host_env.at("HOME").to_string()) / ".wine";
+    }
+
+    const fs::path group_socket_path = generate_group_endpoint(
+        config.group.value(), wine_prefix, vst_plugin_arch);
+
+    try {
+        // Request the existing group host process to host our plugin, and store
+        // the PID of that process so we'll know if it has crashed
+        boost::asio::local::stream_protocol::socket group_socket(io_context);
+        group_socket.connect(group_socket_path.string());
+
+        write_object(group_socket,
+                     GroupRequest{plugin_path.string(), socket_path.string()});
+        const auto response = read_object<GroupResponse>(group_socket);
+
+        vst_host_pid = response.pid;
+    } catch (const boost::system::system_error&) {
+        // In case we could not connect to the socket, then we'll start a
+        // new group host process. This process is detached immediately
+        // because it should run independently of this yabridge instance as
+        // it will likely outlive it.
+        vst_host =
+            bp::child(host_command, group_socket_path, bp::env = host_env,
+                      bp::std_out = wine_stdout, bp::std_err = wine_stderr,
+                      bp::start_dir = starting_dir);
+        vst_host_pid = vst_host.id();
+        vst_host.detach();
+
+        // We now want to connect to the socket the in the exact same way as
+        // above. The only problem is that it may take some time for the
+        // process to start depending on Wine's current state. We'll defer
+        // this to a thread so we can finish the rest of the startup in the
+        // meantime.
+        group_host_connect_handler = std::thread([&, group_socket_path,
+                                                  plugin_path, socket_path]() {
+            using namespace std::literals::chrono_literals;
+
+            // TODO: Replace this polling with inotify when encapsulating
+            //       the different host launch behaviors
+            while (vst_host.running()) {
+                try {
+                    // This is the exact same connection sequence as above
+                    boost::asio::local::stream_protocol::socket group_socket(
+                        io_context);
+                    group_socket.connect(group_socket_path.string());
+
+                    write_object(group_socket,
+                                 GroupRequest{plugin_path.string(),
+                                              socket_path.string()});
+                    read_object<GroupResponse>(group_socket);
+
+                    return;
+                } catch (const boost::system::system_error&) {
+                    std::this_thread::sleep_for(20ms);
+                }
+            }
+        });
+    }
 }
 
 void PluginBridge::log_init_message() {
@@ -671,10 +757,6 @@ void PluginBridge::log_init_message() {
     // settings in use. Printing the matched glob pattern could also be useful
     // but it'll be very noisy and it's likely going to be clear from the shown
     // values anyways.
-    // TODO: The group socket should take into account the:
-    //       - wine prefix
-    //       - group name
-    //       - architecture
     init_msg << "config path:  '"
              << config.matched_file.value_or("<default>").string() << "'"
              << std::endl;

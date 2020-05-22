@@ -234,6 +234,27 @@ class PluginBridge {
      * @see launch_vst_host
      */
     boost::process::child vst_host;
+    /**
+     * The PID of the vst host process. Needed for checking whether the group
+     * host is still active if we are connecting to an already running group
+     * host instance.
+     *
+     * TODO: Remove this after encapsulating the minor differences in individual
+     *       and group host handling
+     */
+    pid_t vst_host_pid;
+    /**
+     * A thread that waits for the group host to have started and then ask it to
+     * host our plugin. This is used to defer the request since it may take a
+     * little while until the group host process is up and running. This way we
+     * don't have to delay the rest of the initialization process.
+     *
+     * TODO: Remove this after encapsulating the minor differences in individual
+     *       and group host handling
+     * TODO: Replace this with inotify to prevent delays and to reduce wasting
+     *       resources
+     */
+    std::thread group_host_connect_handler;
 
     /**
      * A scratch buffer for sending and receiving data during `process` and
