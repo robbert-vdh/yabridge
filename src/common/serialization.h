@@ -598,3 +598,18 @@ struct std::hash<GroupRequest> {
         return hasher(params.plugin_path) ^ (hasher(params.socket_path) << 1);
     }
 };
+
+/**
+ * The response sent back after the group host process receives a `GroupRequest`
+ * object. This only holds the group process's PID because we need to know if
+ * the group process crashes while it is initializing the plugin to prevent us
+ * from waiting indefinitely for the socket to be connected to.
+ */
+struct GroupResponse {
+    int pid;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value4b(pid);
+    }
+};

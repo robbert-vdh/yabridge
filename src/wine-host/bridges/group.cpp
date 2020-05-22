@@ -18,6 +18,7 @@
 
 #include <unistd.h>
 #include <boost/asio/read_until.hpp>
+#include <boost/process/environment.hpp>
 #include <regex>
 
 #include "../../common/communication.h"
@@ -135,15 +136,12 @@ void GroupBridge::accept_requests() {
 
             // Read the parameters, and then host the plugin in this process
             // just like if we would be hosting the plugin individually through
-            // `yabridge-hsot.exe`. Since we're using sockets there's no reason
-            // to send an acknowledgement back. One potential issue here is that
-            // it will be hard to tell whether a plugin has crashed before
-            // initialization, and that the sockets will never be accepted. For
-            // individually hosted plugins we poll whether the Wine process is
-            // still active so we can terminate early if it is not, but in this
-            // case the yabridge instance has to determine that this process is
-            // still running.
+            // `yabridge-hsot.exe`. We will reply with this process's PID so the
+            // yabridge plugin will be able to tell if the plugin has caused
+            // this process to crash during its initialization to prevent
+            // waiting indefinitely on the sockets to be connected to.
             const auto parameters = read_object<GroupRequest>(socket);
+            write_object(socket, GroupResponse{boost::this_process::get_id()});
 
             // Collisions in the generated socket names should be very rare, but
             // it could in theory happen
