@@ -606,7 +606,7 @@ struct std::hash<GroupRequest> {
  * from waiting indefinitely for the socket to be connected to.
  */
 struct GroupResponse {
-    int pid;
+    pid_t pid;
 
     template <typename S>
     void serialize(S& s) {
