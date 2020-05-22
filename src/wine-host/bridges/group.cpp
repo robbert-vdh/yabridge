@@ -137,7 +137,8 @@ void GroupBridge::handle_host_plugin(const GroupRequest request) {
 void GroupBridge::handle_incoming_connections() {
     accept_requests();
 
-    logger.log("Now accepting incoming connections");
+    logger.log(
+        "Group host is up and running, now accepting incoming connections");
     io_context.run();
 }
 
@@ -166,14 +167,14 @@ void GroupBridge::accept_requests() {
 
             // Collisions in the generated socket names should be very rare, but
             // it could in theory happen
-            assert(active_plugins.find(parameters) != active_plugins.end());
+            assert(active_plugins.find(parameters) == active_plugins.end());
 
             // CreateThread() doesn't support multiple arguments and requires
             // manualy memory management.
             handle_host_plugin_parameters* thread_params =
                 new std::pair<GroupBridge*, GroupRequest>(this, parameters);
             active_plugins[parameters] =
-                Win32Thread(handle_host_plugin_proxy, &thread_params);
+                Win32Thread(handle_host_plugin_proxy, thread_params);
 
             accept_requests();
         });
