@@ -778,7 +778,7 @@ void PluginBridge::log_init_message() {
     if (config.group.has_value()) {
         init_msg << "plugin group \"" << config.group.value() << "\"";
     } else {
-        init_msg << "individual";
+        init_msg << "individually";
     }
     if (vst_plugin_arch == PluginArchitecture::vst_32) {
         init_msg << ", 32-bit";
