@@ -8,6 +8,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added the ability to host multiple plugins in the same Wine process through
+  _plugin groups_. A plugin group is a user-defined set of plugins that will be
+  hosted together in the same Wine process. This allows multiple instances of
+  plugins to share data and communicate with eachother. Examples of plugins that
+  can benefit from this are Fabfilter Pro-Q 3, MMultiAnalyzer and the iZotope
+  mixing plugins. See the readme for instructions on how to set this up.
+
 ### Changed
 
 - Changed architecture to use one less socket.
