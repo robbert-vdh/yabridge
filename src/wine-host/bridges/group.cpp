@@ -96,13 +96,16 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
       stderr_redirect(io_context, STDERR_FILENO),
       group_socket_endpoint(group_socket_path.string()),
       group_socket_acceptor(
-          create_acceptor_if_inactive(io_context, group_socket_endpoint)) {
+          create_acceptor_if_inactive(io_context, group_socket_endpoint)),
+      shutdown_timer(io_context) {
     // Write this process's original STDOUT and STDERR streams to the logger
     async_log_pipe_lines(stdout_redirect.pipe, stdout_buffer, "[STDOUT] ");
     async_log_pipe_lines(stderr_redirect.pipe, stderr_buffer, "[STDERR] ");
 }
 
 void GroupBridge::handle_host_plugin(const GroupRequest request) {
+    using namespace std::literals::chrono_literals;
+
     // At this point the `active_plugins` map will already contain a copy of
     // `parameters` along with this thread's handle
     // The initialization process for a plugin is identical to that in
@@ -124,14 +127,27 @@ void GroupBridge::handle_host_plugin(const GroupRequest request) {
 
     // After the plugin has exited (either after `effClose()` or because it
     // failed to initialize), we'll remove this thread's plugin from the active
-    // plugins. If no active plugins remain, then we'll terminate
+    // plugins. If no active plugins remain, then we'll terminate this process.
     std::lock_guard lock(active_plugins_mutex);
-
     active_plugins.erase(request);
-    if (active_plugins.size() == 0) {
-        logger.log("All plugins have exited, shutting down the group process");
-        io_context.stop();
-    }
+
+    // Defer shutting down the process to allow for fast plugin scanning by
+    // allowing plugins to reuse the same group host process
+    shutdown_timer.expires_after(2s);
+    shutdown_timer.async_wait([&](const boost::system::error_code& error) {
+        // A previous timer gets canceled automatically when another plugin
+        // exits
+        if (error.failed()) {
+            return;
+        }
+
+        std::lock_guard lock(active_plugins_mutex);
+        if (active_plugins.size() == 0) {
+            logger.log(
+                "All plugins have exited, shutting down the group process");
+            io_context.stop();
+        }
+    });
 }
 
 void GroupBridge::handle_incoming_connections() {

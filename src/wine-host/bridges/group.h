@@ -126,7 +126,9 @@ class GroupBridge {
      *
      * Once the plugin has exited, this thread will then remove itself from the
      * `active_plugins` map. If this causes the vector to become empty, we will
-     * terminate this process.
+     * terminate this process. This check will be delayed by a few seconds to
+     * prevent having to constantly restart the group process during plugin
+     * scanning.
      *
      * @param request Information about the plugin to launch, i.e. the path to
      *   the plugin and the path of the socket endpoint that will be used for
@@ -216,4 +218,13 @@ class GroupBridge {
      * plugin is being spawned.
      */
     std::mutex active_plugins_mutex;
+
+    /**
+     * A timer to defer shutting down the process, allowing for fast plugin
+     * scanning without having to start a new group host process for each
+     * plugin.
+     *
+     * @see handle_host_plugin
+     */
+    boost::asio::steady_timer shutdown_timer;
 };
