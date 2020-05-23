@@ -361,8 +361,13 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             // provided by the host, and let the plugin embed itself into
             // the Wine window
             const auto x11_handle = reinterpret_cast<size_t>(data);
+            // Win32 window classes have to be unique for the whole application.
+            // When hosting multiple plugins in a group process, all plugins
+            // should get a unique window class
+            const std::string window_class =
+                "yabridge plugin " + socket_endpoint.path();
             Editor& editor_instance =
-                editor.emplace<Editor>("yabridge plugin", plugin, x11_handle);
+                editor.emplace<Editor>(window_class, plugin, x11_handle);
 
             return plugin->dispatcher(plugin, opcode, index, value,
                                       editor_instance.win32_handle.get(),
