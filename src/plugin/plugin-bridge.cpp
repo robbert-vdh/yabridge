@@ -482,7 +482,10 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
 
             // These threads should now be finished because we've forcefully
             // terminated the Wine process, interupting their socket operations
-            group_host_connect_handler.join();
+            if (group_host_connect_handler.joinable()) {
+                // This thread is only used when using plugin groups
+                group_host_connect_handler.join();
+            }
             host_callback_handler.join();
             wine_io_handler.join();
 
