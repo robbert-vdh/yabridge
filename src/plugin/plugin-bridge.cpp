@@ -773,7 +773,7 @@ void PluginBridge::log_init_message() {
              << std::endl;
     init_msg << "hosting mode: '";
     if (config.group.has_value()) {
-        init_msg << "group \"" << config.group.value() << "\"";
+        init_msg << "in group \"" << config.group.value() << "\"";
     } else {
         init_msg << "individual";
     }
