@@ -119,7 +119,7 @@ void GroupBridge::handle_host_plugin(const GroupRequest request) {
         // Blocks the main thread until the plugin shuts down
         bridge.handle_dispatch();
 
-        logger.log("" + request.plugin_path + "' has exited");
+        logger.log("'" + request.plugin_path + "' has exited");
     } catch (const std::runtime_error& error) {
         logger.log("Error while initializing '" + request.plugin_path + "':");
         logger.log(error.what());
