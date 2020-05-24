@@ -16,6 +16,7 @@
 
 #include "vst2.h"
 
+#include <future>
 #include <iostream>
 
 #include "../../common/communication.h"
@@ -154,31 +155,41 @@ void Vst2Bridge::handle_dispatch() {
                               plugin, std::bind(&Vst2Bridge::dispatch_wrapper,
                                                 this, _1, _2, _3, _4, _5, _6)));
 
-            // Because of the way the Win32 API works we have to process events
-            // on the same thread as the one the window was created on, and that
-            // thread is the thread that's handling dispatcher calls. Some
-            // plugins will also rely on the Win32 message loop to run tasks on
-            // a timer and to defer loading, so we have to make sure to always
-            // run this loop. The only exception is a in specific situation that
-            // can cause a race condition in some plugins because of incorrect
-            // assumptions made by the plugin. See the dostring for
-            // `Vst2Bridge::editor` for more information.
-            std::visit(overload{[](Editor& editor) { editor.handle_events(); },
-                                [](std::monostate&) {
-                                    MSG msg;
+            pump_message_loop();
+        }
+    } catch (const boost::system::system_error&) {
+        // The plugin has cut off communications, so we can shut down this host
+        // application
+    }
+}
 
-                                    while (PeekMessage(&msg, nullptr, 0, 0,
-                                                       PM_REMOVE)) {
-                                        TranslateMessage(&msg);
-                                        DispatchMessage(&msg);
-                                    }
-                                },
-                                [](EditorOpening&) {
-                                    // Don't handle any events in this
-                                    // particular case as explained in
-                                    // `Vst2Bridge::editor`
-                                }},
-                       editor);
+void Vst2Bridge::handle_dispatch(boost::asio::io_context& main_context) {
+    using namespace std::placeholders;
+
+    // This works exactly the same as the function above, but execute the actual
+    // event and run the message loop from the main thread that's also
+    // instantiating these plugins. This is required for a few plugins to run
+    // multiple instances in the same process
+    try {
+        while (true) {
+            receive_event(
+                host_vst_dispatch, std::nullopt,
+                passthrough_event(
+                    plugin,
+                    [&](AEffect* plugin, int opcode, int index, intptr_t value,
+                        void* data, float option) -> intptr_t {
+                        std::promise<intptr_t> dispatch_result;
+                        boost::asio::dispatch(main_context, [&]() {
+                            const intptr_t result = dispatch_wrapper(
+                                plugin, opcode, index, value, data, option);
+
+                            dispatch_result.set_value(result);
+                        });
+
+                        return dispatch_result.get_future().get();
+                    }));
+
+            boost::asio::post(main_context, [&]() { pump_message_loop(); });
         }
     } catch (const boost::system::system_error&) {
         // The plugin has cut off communications, so we can shut down this host
@@ -387,6 +398,25 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
                                       option);
             break;
     }
+}
+
+void Vst2Bridge::pump_message_loop() {
+    std::visit(
+        overload{[](Editor& editor) { editor.handle_events(); },
+                 [](std::monostate&) {
+                     MSG msg;
+
+                     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+                         TranslateMessage(&msg);
+                         DispatchMessage(&msg);
+                     }
+                 },
+                 [](EditorOpening&) {
+                     // Don't handle any events in this
+                     // particular case as explained in
+                     // `Vst2Bridge::editor`
+                 }},
+        editor);
 }
 
 class HostCallbackDataConverter : DefaultDataConverter {
