@@ -306,7 +306,8 @@ bool Logger::should_filter_event(bool is_dispatch, int opcode) {
     // called tens of times per second
     // TODO: Figure out what opcode 52 is
     if ((is_dispatch && (opcode == effEditIdle || opcode == 52)) ||
-        (!is_dispatch && opcode == audioMasterGetTime)) {
+        (!is_dispatch && (opcode == audioMasterGetTime ||
+                          opcode == audioMasterGetCurrentProcessLevel))) {
         return true;
     }
 
