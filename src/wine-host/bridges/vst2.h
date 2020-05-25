@@ -26,9 +26,13 @@
 #include <vestige/aeffectx.h>
 #include <windows.h>
 
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
+#include <future>
 #include <mutex>
 
+#include "../../common/communication.h"
+#include "../../common/events.h"
 #include "../../common/logging.h"
 #include "../editor.h"
 #include "../utils.h"
@@ -93,11 +97,49 @@ class Vst2Bridge {
      *
      * @param main_context The main IO context that's handling the event
      *   handling for all plugins.
+     * @param message_loop_blocked A function that returns true if the message
+     *   loop is blocked. This is used to temporarily postpone running the
+     *   message loop while a plugin is opening its GUI.
      *
      * @note With this approach you'll have to make sure that the object was
      *   instantiated from the same thread as the one that runs the IO context.
      */
-    void handle_dispatch(boost::asio::io_context& main_context);
+    template <typename F = bool()>
+    void handle_dispatch(boost::asio::io_context& main_context,
+                         const F& message_loop_blocked) {
+        // This works exactly the same as the function above, but execute the
+        // actual event and run the message loop from the main thread that's
+        // also instantiating these plugins. This is required for a few plugins
+        // to run multiple instances in the same process
+        try {
+            while (true) {
+                receive_event(
+                    host_vst_dispatch, std::nullopt,
+                    passthrough_event(
+                        plugin,
+                        [&](AEffect* plugin, int opcode, int index,
+                            intptr_t value, void* data,
+                            float option) -> intptr_t {
+                            std::promise<intptr_t> dispatch_result;
+                            boost::asio::dispatch(main_context, [&]() {
+                                const intptr_t result = dispatch_wrapper(
+                                    plugin, opcode, index, value, data, option);
+
+                                dispatch_result.set_value(result);
+
+                                if (!message_loop_blocked()) {
+                                    pump_message_loop();
+                                }
+                            });
+
+                            return dispatch_result.get_future().get();
+                        }));
+            }
+        } catch (const boost::system::system_error&) {
+            // The plugin has cut off communications, so we can shut down this
+            // host application
+        }
+    }
 
     // These functions are the entry points for the `*_handler` threads
     // defined below. They're defined here because we can't use lambdas with
