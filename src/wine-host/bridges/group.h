@@ -22,6 +22,8 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/filesystem.hpp>
 
+#include <thread>
+
 #include "vst2.h"
 
 /**
@@ -116,6 +118,11 @@ class GroupBridge {
      */
     GroupBridge(boost::filesystem::path group_socket_path);
 
+    ~GroupBridge();
+
+    GroupBridge(const GroupBridge&) = delete;
+    GroupBridge& operator=(const GroupBridge&) = delete;
+
     /**
      * Host a new plugin within this process. Called by proxy using
      * `handle_host_plugin_proxy()` in `./group.cpp` because the Win32
@@ -180,6 +187,14 @@ class GroupBridge {
     Logger logger;
 
     boost::asio::io_context io_context;
+    /**
+     * A seperate IO context that handles the STDIO redirect through
+     * `StdIoCapture`. This is seperated the `plugin_context` above so that
+     * STDIO capture does not get blocked by blocking GUI operations. Since
+     * every GUI related operation should be run from the same thread, we can't
+     * just add another thread to the main IO context.
+     */
+    boost::asio::io_context stdio_context;
 
     boost::asio::streambuf stdout_buffer;
     boost::asio::streambuf stderr_buffer;
@@ -195,6 +210,10 @@ class GroupBridge {
      * able write it write it to an external log file.
      */
     StdIoCapture stderr_redirect;
+    /**
+     * A thread that runs the `stdio_context` loop.
+     */
+    std::thread stdio_handler;
 
     boost::asio::local::stream_protocol::endpoint group_socket_endpoint;
     /**

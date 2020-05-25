@@ -92,8 +92,9 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
     : logger(Logger::create_from_environment(
           create_logger_prefix(group_socket_path))),
       io_context(),
-      stdout_redirect(io_context, STDOUT_FILENO),
-      stderr_redirect(io_context, STDERR_FILENO),
+      stdio_context(),
+      stdout_redirect(stdio_context, STDOUT_FILENO),
+      stderr_redirect(stdio_context, STDERR_FILENO),
       group_socket_endpoint(group_socket_path.string()),
       group_socket_acceptor(
           create_acceptor_if_inactive(io_context, group_socket_endpoint)),
@@ -101,6 +102,13 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
     // Write this process's original STDOUT and STDERR streams to the logger
     async_log_pipe_lines(stdout_redirect.pipe, stdout_buffer, "[STDOUT] ");
     async_log_pipe_lines(stderr_redirect.pipe, stderr_buffer, "[STDERR] ");
+
+    stdio_handler = std::thread([&]() { stdio_context.run(); });
+}
+
+GroupBridge::~GroupBridge() {
+    stdio_context.stop();
+    stdio_handler.join();
 }
 
 void GroupBridge::handle_host_plugin(const GroupRequest request) {
