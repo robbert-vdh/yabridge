@@ -127,9 +127,9 @@ Vst2Bridge::Vst2Bridge(std::string plugin_dll_path,
     // `audioMasterIOChanged` host callback.
     write_object(host_vst_dispatch, EventResult{0, *plugin, std::nullopt});
 
-    // This works functionally identically to the `handle_dispatch()` function
-    // below, but this socket will only handle MIDI events. This is needed
-    // because of Win32 API limitations.
+    // This works functionally identically to the `handle_dispatch_single()`
+    // function below, but this socket will only handle MIDI events. This is
+    // needed because of Win32 API limitations.
     dispatch_midi_events_handler =
         Win32Thread(handle_dispatch_midi_events_proxy, this);
 
@@ -139,7 +139,7 @@ Vst2Bridge::Vst2Bridge(std::string plugin_dll_path,
         Win32Thread(handle_process_replacing_proxy, this);
 }
 
-void Vst2Bridge::handle_dispatch() {
+void Vst2Bridge::handle_dispatch_single() {
     using namespace std::placeholders;
 
     // For our communication we use simple threads and blocking operations

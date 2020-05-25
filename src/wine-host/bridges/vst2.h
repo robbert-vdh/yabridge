@@ -51,13 +51,13 @@ struct EditorOpening {};
  * @remark Because of Win32 API limitations, all window handling has to be done
  *   from the same thread. For individually hosted plugins this only means that
  *   this class has to be initialized from the same thread as the one that calls
- *   `handle_dispatch()`, and thus also runs the message loop. When using plugin
- *   groups, however, all instantiation, editor event handling and message loop
- *   pumping has to be done from a single thread. Most plugins won't have any
- *   issues when using multiple message loops, but the Melda plugins for
- *   instance will only update their GUIs from the message loop of the thread
- *   that created the first instance. When running multiple plugins
- *   `handle_dispatch(io_context)` should be used to make sure all plugins
+ *   `handle_dispatch_single()`, and thus also runs the message loop. When using
+ *   plugin groups, however, all instantiation, editor event handling and
+ *   message loop pumping has to be done from a single thread. Most plugins
+ *   won't have any issues when using multiple message loops, but the Melda
+ *   plugins for instance will only update their GUIs from the message loop of
+ *   the thread that created the first instance. When running multiple plugins
+ *   `handle_dispatch_multi()` should be used to make sure all plugins
  *   handle their events on the same thread.
  */
 class Vst2Bridge {
@@ -71,7 +71,7 @@ class Vst2Bridge {
      * @param socket_endpoint_path A (Unix style) path to the Unix socket
      *   endpoint the native VST plugin created to communicate over.
      *
-     * @note When using plugin groups and `handle_dispatch(io_context)`, this
+     * @note When using plugin groups and `handle_dispatch_multi()`, this
      *   object has to be constructed from within the IO context.
      *
      * @throw std::runtime_error Thrown when the VST plugin could not be loaded,
@@ -85,7 +85,7 @@ class Vst2Bridge {
      * events to be passed from the same thread it was initiated from. This is
      * then also the same thread that should handle Win32 GUI events.
      */
-    void handle_dispatch();
+    void handle_dispatch_single();
 
     /**
      * Handle events just like in the function above, but do the actual
@@ -105,8 +105,8 @@ class Vst2Bridge {
      *   instantiated from the same thread as the one that runs the IO context.
      */
     template <typename F = bool()>
-    void handle_dispatch(boost::asio::io_context& main_context,
-                         const F& message_loop_blocked) {
+    void handle_dispatch_multi(boost::asio::io_context& main_context,
+                               const F& message_loop_blocked) {
         // This works exactly the same as the function above, but execute the
         // actual event and run the message loop from the main thread that's
         // also instantiating these plugins. This is required for a few plugins

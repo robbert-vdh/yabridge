@@ -61,7 +61,7 @@ int __cdecl main(int argc, char* argv[]) {
                   << std::endl;
 
         // Blocks the main thread until the plugin shuts down
-        bridge.handle_dispatch();
+        bridge.handle_dispatch_single();
     } catch (const std::runtime_error& error) {
         std::cerr << "Error while initializing Wine VST host:" << std::endl;
         std::cerr << error.what() << std::endl;
