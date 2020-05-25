@@ -124,12 +124,12 @@ class GroupBridge {
     GroupBridge& operator=(const GroupBridge&) = delete;
 
     /**
-     * Host a new plugin within this process. Called by proxy using
-     * `handle_host_plugin_proxy()` in `./group.cpp` because the Win32
-     * `CreateThread` API only allows passing a single pointer to the function
-     * and does not allow lambdas. Because we don't have access to our own
-     * thread handle, the thread that's listening on the group socket will have
-     * already added this thread to the `active_plugins` map.
+     * Run a plugin's dispatcher and message loop, processing all events on the
+     * main IO context. The plugin will have already been created in
+     * `accept_requests` since it has to be initiated inside of the IO context's
+     * thread. Called by proxy using `handle_plugin_dispatch_proxy()` in
+     * `./group.cpp` because the Win32 `CreateThread` API only allows passing a
+     * single pointer to the function and does not allow lambdas.
      *
      * Once the plugin has exited, this thread will then remove itself from the
      * `active_plugins` map. If this causes the vector to become empty, we will
@@ -145,7 +145,7 @@ class GroupBridge {
      *   then the process will never exit on its own. This should not happen
      *   though.
      */
-    void handle_host_plugin(const GroupRequest request);
+    void handle_plugin_dispatch(const GroupRequest request);
 
     /**
      * Listen for new requests to spawn plugins within this process and handle
@@ -153,15 +153,33 @@ class GroupBridge {
      */
     void handle_incoming_connections();
 
+    /**
+     * Returns true if the message loop should not be run at this time. This is
+     * necessary because hosts will always call either `effEditOpen()` and then
+     * `effEditGetRect()` or the other way around. If the message loop is
+     * handled in between these two actions, then some plugins will either
+     * freeze or sometimes outright crash. Because every plugin has to be run
+     * from the same thread, this is a simple way to synchronize blocking the
+     * mesage loop between the different plugin instances.
+     */
+    bool should_postpone_message_loop();
+
    private:
     /**
      * Listen on the group socket for incoming requests to host a new plugin
-     * within this group process. This will asynchronously listen on the socket,
-     * and for any connection made it will retrieve a `GroupRequest` object
-     * containing information about the plugin to host and then spawn a new
-     * thread to start hosting that plugin.
+     * within this group process. This will read a `GoupRequest` object
+     * containing information about the plugin, reply with this process's PID so
+     * the yabridge instance can tell if the plugin crashed during
+     * initialization, and it will then try to initialize the plugin. After
+     * intialization the plugin handling will be handed over to a new thread
+     * running `handle_plugin_dispatch()`. Because of the way the Win32 API
+     * works, all plugins have to be initialized from the same thread, and all
+     * event handling and message loop interaction also has to be done from that
+     * thread, which is why we initialize the plugin here and use the
+     * `handle_dispatch_multi()` function to run events within the same
+     * `plugin_context`.
      *
-     * @see handle_host_plugin
+     * @see handle_plugin_dispatch
      */
     void accept_requests();
 
@@ -186,7 +204,12 @@ class GroupBridge {
      */
     Logger logger;
 
-    boost::asio::io_context io_context;
+    /**
+     * The IO context that connections will be accepted on, and that any plugin
+     * operations that may involve the Win32 mesasge loop (e.g. initialization
+     * and most `AEffect::dispatcher()` calls) should be run on.
+     */
+    boost::asio::io_context plugin_context;
     /**
      * A seperate IO context that handles the STDIO redirect through
      * `StdIoCapture`. This is seperated the `plugin_context` above so that
@@ -223,16 +246,23 @@ class GroupBridge {
     boost::asio::local::stream_protocol::acceptor group_socket_acceptor;
 
     /**
-     * A map of threads that are currently hosting a plugin within this process.
-     * After a plugin has exited or its initialization has failed, the thread
-     * handling it will remove itself from this map. This is to keep track of
-     * the amount of plugins currently running with their associated thread
-     * handles.
+     * A map of threads that are currently hosting a plugin within this process
+     * along with their plugin instance. After a plugin has exited or its
+     * initialization has failed, the thread handling it will remove itself from
+     * this map. This is to keep track of the amount of plugins currently
+     * running with their associated thread handles.
+     *
+     * TODO: Check again if we can just use std::thread here instead, that would
+     *       make everything much simpler. `std::thread` was a problem with
+     *       gdiplus in the past as Serum would randomly crash because calling
+     *       conventions were nto being respected.
      */
-    std::unordered_map<GroupRequest, Win32Thread> active_plugins;
+    std::unordered_map<GroupRequest,
+                       std::pair<Win32Thread, std::unique_ptr<Vst2Bridge>>>
+        active_plugins;
     /**
      * A mutex to prevent two threads from simultaneously accessing the plugins
-     * map, and also to prevent `handle_host_plugin()` from terminating the
+     * map, and also to prevent `handle_plugin_dispatch()` from terminating the
      * process because it thinks there are no active plugins left just as a new
      * plugin is being spawned.
      */
@@ -243,7 +273,7 @@ class GroupBridge {
      * scanning without having to start a new group host process for each
      * plugin.
      *
-     * @see handle_host_plugin
+     * @see handle_plugin_dispatch
      */
     boost::asio::steady_timer shutdown_timer;
 };
