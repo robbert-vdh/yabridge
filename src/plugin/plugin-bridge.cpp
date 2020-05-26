@@ -76,8 +76,8 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
       wine_version(get_wine_version()),
       wine_stdout(io_context),
       wine_stderr(io_context) {
-    launch_vst_host();
     log_init_message();
+    launch_vst_host();
 
     // Print the Wine host's STDOUT and STDERR streams to the log file. This
     // should be done before trying to accept the sockets as otherwise we will
