@@ -196,8 +196,9 @@ void Editor::handle_x11_events() {
                 // We can't directly use the `event.x` and `event.y` coordinates
                 // because the parent window may also be embedded inside another
                 // window.
-                // TODO: With plugin groups this has to be done any time the
-                //       mouse cursor enters the window on a FOCUS_IN event
+                // TODO: This seems to get clamped at (0, 0), causing large
+                //       windows dragged off screen on the top or the left
+                //       borders to act up
                 const auto translate_cookie = xcb_translate_coordinates(
                     x11_connection.get(), parent_window, root, 0, 0);
                 const xcb_translate_coordinates_reply_t*
