@@ -16,8 +16,12 @@
 
 #include "vst2.h"
 
+#include <boost/asio/dispatch.hpp>
 #include <future>
 #include <iostream>
+
+#include "../../common/communication.h"
+#include "../../common/events.h"
 
 /**
  * A function pointer to what should be the entry point of a VST plugin.
@@ -156,17 +160,44 @@ void Vst2Bridge::handle_dispatch_single() {
                               plugin, std::bind(&Vst2Bridge::dispatch_wrapper,
                                                 this, _1, _2, _3, _4, _5, _6)));
 
-            // Don't run them message loop during the two step process of
-            // opening the plugin editor since some plugins don't expect this
-            if (!should_skip_message_loop()) {
-                handle_win32_events();
-            }
-
+            handle_win32_events();
             handle_x11_events();
         }
     } catch (const boost::system::system_error&) {
         // The plugin has cut off communications, so we can shut down this host
         // application
+    }
+}
+
+void Vst2Bridge::handle_dispatch_multi(boost::asio::io_context& main_context) {
+    // This works exactly the same as the function above, but execute the
+    // actual event and run the message loop from the main thread that's
+    // also instantiating these plugins. This is required for a few plugins
+    // to run multiple instances in the same process
+    try {
+        while (true) {
+            receive_event(
+                host_vst_dispatch, std::nullopt,
+                passthrough_event(
+                    plugin,
+                    [&](AEffect* plugin, int opcode, int index, intptr_t value,
+                        void* data, float option) -> intptr_t {
+                        std::promise<intptr_t> dispatch_result;
+                        boost::asio::dispatch(main_context, [&]() {
+                            const intptr_t result = dispatch_wrapper(
+                                plugin, opcode, index, value, data, option);
+
+                            dispatch_result.set_value(result);
+                        });
+
+                        // The message loop and X11 event handling will be run
+                        // separately on a timer
+                        return dispatch_result.get_future().get();
+                    }));
+        }
+    } catch (const boost::system::system_error&) {
+        // The plugin has cut off communications, so we can shut down this
+        // host application
     }
 }
 
@@ -381,6 +412,12 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
 }
 
 void Vst2Bridge::handle_win32_events() {
+    // Don't run them message loop during the two step process of opening the
+    // plugin editor since some plugins don't expect this
+    if (should_skip_message_loop()) {
+        return;
+    }
+
     if (editor.has_value()) {
         editor->handle_win32_events();
     } else {

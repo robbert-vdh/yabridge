@@ -184,6 +184,13 @@ class GroupBridge {
     void accept_requests();
 
     /**
+     * Handle both Win32 messages and X11 events on a timer within the IO
+     * context. This is a centralized replacement for the event handling in
+     * `Vst2Bridge::handle_dispatch_single` for plugin groups.
+     */
+    void async_handle_events();
+
+    /**
      * Continuously read from a pipe and write the output to the log file. Used
      * with the IO streams captured by `stdout_redirect` and `stderr_redirect`.
      *
@@ -267,6 +274,14 @@ class GroupBridge {
      * plugin is being spawned.
      */
     std::mutex active_plugins_mutex;
+
+    /**
+     * A timer used to repeatedly handle the Win32 message loop and the X11
+     * events.
+     *
+     8 @see async_handle_events
+     */
+    boost::asio::steady_timer events_timer;
 
     /**
      * A timer to defer shutting down the process, allowing for fast plugin
