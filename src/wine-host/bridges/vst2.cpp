@@ -139,6 +139,10 @@ Vst2Bridge::Vst2Bridge(std::string plugin_dll_path,
         Win32Thread(handle_process_replacing_proxy, this);
 }
 
+bool Vst2Bridge::should_skip_message_loop() {
+    return editor_is_opening;
+}
+
 void Vst2Bridge::handle_dispatch_single() {
     using namespace std::placeholders;
 
@@ -152,7 +156,12 @@ void Vst2Bridge::handle_dispatch_single() {
                               plugin, std::bind(&Vst2Bridge::dispatch_wrapper,
                                                 this, _1, _2, _3, _4, _5, _6)));
 
-            handle_win32_events();
+            // Don't run them message loop during the two step process of
+            // opening the plugin editor since some plugins don't expect this
+            if (!should_skip_message_loop()) {
+                handle_win32_events();
+            }
+
             handle_x11_events();
         }
     } catch (const boost::system::system_error&) {
@@ -320,18 +329,27 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
         case effEditGetRect: {
             // Some plugins will have a race condition if the message loops gets
             // handled between the call to `effEditGetRect()` and
-            // `effEditOpen()`, although this behavior never appears on Windows
-            // as hosts will always either call these functions in sequence or
-            // in reverse. We need to temporarily stop handling messages when
-            // this happens.
-            if (!std::holds_alternative<Editor>(editor)) {
-                editor = EditorOpening{};
-            }
+            // `effEditOpen()`, since this won't ever happen on Windows and
+            // plugins thus assume that this can't happen at all. If
+            // `effEditOpen()` has not yet been called, then we'll mark the
+            // editor as currently opening to prevent the message loop from
+            // running.
+            editor_is_opening = !editor.has_value();
 
             return plugin->dispatcher(plugin, opcode, index, value, data,
                                       option);
         } break;
         case effEditOpen: {
+            // As explained above, if `effEditGetRect()` was called first then
+            // after this the editor has finally been opened. Otherwise if this
+            // function was first then we'll say that the editor is in the
+            // process of being opened as the host will call `effEditGetRect()`
+            // next.
+            // TODO: Without plugin groups only the `effEditGetRect()` ->
+            //       `effEditOpen()`, is skipping the message loop in between
+            //       `effEditOpen()` and `effEditGetRect()` really needed?
+            editor_is_opening = !editor_is_opening;
+
             // Create a Win32 window through Wine, embed it into the window
             // provided by the host, and let the plugin embed itself into
             // the Wine window
@@ -341,19 +359,17 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             // should get a unique window class
             const std::string window_class =
                 "yabridge plugin " + socket_endpoint.path();
-            Editor& editor_instance =
-                editor.emplace<Editor>(window_class, plugin, x11_handle);
 
+            editor.emplace(window_class, plugin, x11_handle);
             return plugin->dispatcher(plugin, opcode, index, value,
-                                      editor_instance.win32_handle.get(),
-                                      option);
+                                      editor->win32_handle.get(), option);
         } break;
         case effEditClose: {
             const intptr_t return_value =
                 plugin->dispatcher(plugin, opcode, index, value, data, option);
 
             // Cleanup is handled through RAII
-            editor = std::monostate();
+            editor.reset();
 
             return return_value;
         } break;
@@ -364,23 +380,23 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
     }
 }
 
-void Vst2Bridge::pump_message_loop() {
-    std::visit(
-        overload{[](Editor& editor) { editor.handle_events(); },
-                 [](std::monostate&) {
-                     MSG msg;
+void Vst2Bridge::handle_win32_events() {
+    if (editor.has_value()) {
+        editor->handle_win32_events();
+    } else {
+        MSG msg;
 
-                     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-                         TranslateMessage(&msg);
-                         DispatchMessage(&msg);
-                     }
-                 },
-                 [](EditorOpening&) {
-                     // Don't handle any events in this
-                     // particular case as explained in
-                     // `Vst2Bridge::editor`
-                 }},
-        editor);
+        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+    }
+}
+
+void Vst2Bridge::handle_x11_events() {
+    if (editor.has_value()) {
+        editor->handle_x11_events();
+    }
 }
 
 class HostCallbackDataConverter : DefaultDataConverter {

@@ -162,7 +162,7 @@ class GroupBridge {
      * from the same thread, this is a simple way to synchronize blocking the
      * mesage loop between the different plugin instances.
      */
-    bool should_postpone_message_loop();
+    bool should_skip_message_loop();
 
    private:
     /**

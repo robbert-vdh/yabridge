@@ -125,8 +125,8 @@ void GroupBridge::handle_plugin_dispatch(const GroupRequest request) {
     // TODO: Maybe add a function to each vstbridge that returns whether the
     //       message loop should be postponed, and pass a function here that
     //       checks if this is the case for any of the plugins?
-    bridge->handle_dispatch_multi(
-        plugin_context, [&]() { return should_postpone_message_loop(); });
+    bridge->handle_dispatch_multi(plugin_context,
+                                  [&]() { return should_skip_message_loop(); });
     logger.log("'" + request.plugin_path + "' has exited");
 
     // After the plugin has exited, we'll remove this thread's plugin from the
@@ -162,8 +162,19 @@ void GroupBridge::handle_incoming_connections() {
     plugin_context.run();
 }
 
-bool GroupBridge::should_postpone_message_loop() {
-    // TODO: Iterate over the plugins
+bool GroupBridge::should_skip_message_loop() {
+    // We do not need additional locking since the call to `AEffect::dispatcher`
+    // and the actual event handling and message loop handling are performed
+    // within the IO context and these values thus can't change while another
+    // the message loop is being running
+    std::lock_guard lock(active_plugins_mutex);
+    for (auto& [parameters, value] : active_plugins) {
+        auto& [thread, bridge] = value;
+        if (bridge->should_skip_message_loop()) {
+            return true;
+        }
+    }
+
     return false;
 }
 
