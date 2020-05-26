@@ -126,10 +126,11 @@ class Vst2Bridge {
                                     plugin, opcode, index, value, data, option);
 
                                 dispatch_result.set_value(result);
-
                                 if (!message_loop_blocked()) {
-                                    pump_message_loop();
+                                    handle_win32_events();
                                 }
+
+                                handle_x11_events();
                             });
 
                             return dispatch_result.get_future().get();

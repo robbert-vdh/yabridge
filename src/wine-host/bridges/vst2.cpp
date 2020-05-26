@@ -152,7 +152,8 @@ void Vst2Bridge::handle_dispatch_single() {
                               plugin, std::bind(&Vst2Bridge::dispatch_wrapper,
                                                 this, _1, _2, _3, _4, _5, _6)));
 
-            pump_message_loop();
+            handle_win32_events();
+            handle_x11_events();
         }
     } catch (const boost::system::system_error&) {
         // The plugin has cut off communications, so we can shut down this host

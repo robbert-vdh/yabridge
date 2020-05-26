@@ -87,9 +87,9 @@ Editor::Editor(const std::string& window_class_name,
     // The Win32 API will block the `DispatchMessage` call when opening e.g. a
     // dropdown, but it will still allow timers to be run so the GUI can still
     // update in the background. Because of this we send `effEditIdle` to the
-    // plugin on a timer. The refresh rate is purposely fairly low since we
-    // we'll also trigger this manually in `Editor::handle_events()` whenever
-    // the plugin is not busy.
+    // plugin on a timer. The refresh rate is purposely fairly low since the
+    // host will call `effEditIdle()` explicitely when the plugin is not busy.
+    // TODO: Add a `KillTimer()` now that we are hosting multiple plugins
     SetTimer(win32_handle.get(), idle_timer_id, 100, nullptr);
 
     // We need to tell the Wine window it has been moved whenever the window
@@ -137,7 +137,7 @@ void Editor::send_idle_event() {
     plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0);
 }
 
-void Editor::handle_events() {
+void Editor::handle_win32_events() {
     MSG msg;
 
     // The null value for the second argument is needed to handle interaction
@@ -158,8 +158,9 @@ void Editor::handle_events() {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+}
 
-    // Handle X11 events
+void Editor::handle_x11_events() {
     // TODO: Initiating drag-and-drop in Serum _sometimes_ causes the GUI to
     //       update while dragging while other times it does not. From all the
     //       plugins I've tested this only happens in Serum though.
@@ -195,6 +196,8 @@ void Editor::handle_events() {
                 // We can't directly use the `event.x` and `event.y` coordinates
                 // because the parent window may also be embedded inside another
                 // window.
+                // TODO: With plugin groups this has to be done any time the
+                //       mouse cursor enters the window on a FOCUS_IN event
                 const auto translate_cookie = xcb_translate_coordinates(
                     x11_connection.get(), parent_window, root, 0, 0);
                 const xcb_translate_coordinates_reply_t*

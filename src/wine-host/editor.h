@@ -101,11 +101,16 @@ class Editor {
     void send_idle_event();
 
     /**
-     * Pump messages from the editor GUI's event loop until all events are
-     * process. Must be run from the same thread the GUI was created in because
-     * of Win32 limitations.
+     * Pump messages from the editor loop loop until all events are process.
+     * Must be run from the same thread the GUI was created in because of Win32
+     * limitations.
      */
-    void handle_events();
+    void handle_win32_events();
+
+    /**
+     * Handle X11 events sent to the window our editor is embedded in.
+     */
+    void handle_x11_events();
 
    private:
     /**
