@@ -23,6 +23,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Steal keyboard focus when clicking on the plugin editor window to account for
+  the new keyboard focus behavior in Bitwig Studio 3.2.
 - Fixed large amount of empty lines in the log file when the Wine process closes
   unexpectedly.
 - Made the plugin and host detection slightly more robust.

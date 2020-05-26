@@ -114,6 +114,13 @@ class Editor {
 
    private:
     /**
+     * Lie to the Wine window about its coordinates on the screen for
+     * reparenting without using XEmbed. See the comment at the top of the
+     * implementation on why this is needed.
+     */
+    void fix_window_coordinates();
+
+    /**
      * A pointer to the currently active window. Will be a null pointer if no
      * window is active.
      */
