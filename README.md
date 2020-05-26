@@ -127,7 +127,58 @@ handle it accordingly.
 
 ### Plugin groups
 
-TODO: Document
+Some plugins have the ability to communicate with other instances of that same
+plugin or with other plugins made by the same manufacturer. This is often used
+in mixing plugins to allow different tracks to reference each other without
+having to route audio between them. Examples of plugins that do this are
+Fabfilter Pro-Q 3, MMultiAnalyzer and the iZotope mixing plugins. For this to
+work, all instances of a particular plugin have to be hosted in the same
+process.
+
+Yabridge has the concept of _plugin groups_, which are user defined groups of
+plugins that will all be hosted in the same process. These plugins groups can be
+configured using a `yabridge.toml` file located either in the same directory as
+the symlink of or copy to `libyabridge.so`, or in any directories above it. This
+file contains case sensitive
+[glob](https://www.man7.org/linux/man-pages/man7/glob.7.html) patterns that are
+used to match the names of `*.so` files relative to that `yabridge.toml` file.
+These patterns can also match an entire directory. For simplicity's sake only
+the first `yabridge.toml` file found and only the first glob pattern matched
+within that file are considered. An example `yabridge.toml` file looks like
+this:
+
+```toml
+# ~/.wine/drive_c/Program Files/Steinberg/VstPlugins/yabridge.toml
+
+["FabFilter Pro-Q 3.so"]
+group = "fabfilter"
+
+["MeldaProduction/Tools/MMultiAnalyzer.so"]
+group = "melda"
+
+# Matches an entire directory and all files inside it. Make sure to not include
+# a trailing slash.
+["ToneBoosters"]
+group = "toneboosters"
+
+["iZotope*/Neutron *"]
+group = "izotope"
+
+["iZotope7/Insight 2.so"]
+group = "izotope"
+
+# This won't do anything, since the pattern above has already matched this file
+["iZotope7/Neutron 2 Mix Tap.so"]
+group = "This will be ignored!"
+
+# Don't do this! This matches all plugins in this directory and all of its
+# subdirectories, causing all of them to be hosted in a single process. While
+# this would increase startup performance considerably, it will also break any
+# form of individual plugin sandboxing provided by the host and could
+# potentially introduce all kinds of weird issues.
+# ["*"]
+# group = "all"
+```
 
 ### Wine prefixes
 
@@ -192,12 +243,6 @@ Aside from that, these are some known caveats:
 - Most recent **iZotope** plugins don't have a functional GUI in a typical out
   of the box Wine setup because of missing dependencies. Please let me know if
   you know which dependencies are needed for these plugins to render correctly.
-- Some plugins, such as **Fabfilter Pro-Q 3**, are able to communicate between
-  different instances of the same plugin by relying on the fact that they're all
-  loaded into the same process. Right now this is something that yabridge does
-  not do as it would break any form of sandboxing, meaning that if one plugin
-  were to crash, all other plugins would go down with it. If this is something
-  you need for your workflow, please let me know.
 
 There are also some VST2.X extension features that have not been implemented yet
 because I haven't needed them myself. Let me know if you need any of these
