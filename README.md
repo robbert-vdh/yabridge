@@ -79,9 +79,9 @@ find "$plugin_dir" -type f -iname '*.dll' -print0 |
 
 This installation method will work for all VST hosts. This works similar to the
 procedure described above, but using copies of `libyabridge.so` instead of
-symlinks. For this you will have to make sure that all four of the
-`yabridge-host*` files from the downloaded archive are somewhere in the search
-path. The recommended way to do this is to download yabridge from the GitHub
+symlinks. For this you will have to make sure that all eight of the `yabridge-*`
+files from the downloaded archive are somewhere in the search path. The
+recommended way to do this is to download yabridge from the GitHub
 [releases](https://github.com/robbert-vdh/yabridge/releases) section, extract
 all the files to `~/.local/share/yabridge`, and then add that directory to your
 `$PATH` environment variable. Alternatively there's an [AUR
@@ -300,10 +300,11 @@ meson setup --buildtype=release --cross-file cross-wine.conf -Duse-bitbridge=tru
 ninja -C build
 ```
 
-This will produce two files called `yabridge-host-32.exe` and
-`yabridge-host-32.exe.so`. Yabridge will detect whether the plugin you're trying
-to load is 32-bit or 64-bit, and will run either `yabridge-host.exe` or
-`yabridge-host-32.exe` accordingly.
+This will produce four files called `yabridge-host-32.exe`,
+`yabridge-host-32.exe.so`, `yabridge-group-32.exe` and
+`yabridge-group-32.exe.so`. Yabridge will detect whether the plugin you're
+trying to load is 32-bit or 64-bit, and will run either the regular version or
+the `*-32.exe` variant accordingly.
 
 ## Debugging
 
