@@ -233,6 +233,10 @@ include:
   Center.
 - **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
   `gdiplus` through `winetricks`.
+- Plugins like **FabFilter Pro-Q 3** that can share data between different
+  instances of the same plugin plugins have to be hosted within a single process
+  for that functionality to work. See the [plugin groups](#Plugin-groups)
+  section for instructions on how to set this up.
 
 Aside from that, these are some known caveats:
 
