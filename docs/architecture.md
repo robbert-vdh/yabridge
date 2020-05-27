@@ -119,4 +119,32 @@ as the _Windows VST plugin_. The whole process works as follows:
    `dispatcher()` socket. This is only done once at startup. After this point
    the plugin will stop blocking and has finished loading.
 
-TODO: Document plugin groups
+## Plugin groups
+
+When using plugin groups, the startup and event handling behavior is slightly
+different.
+
+- First of all, instead of directly spawning a Wine process to host the plugin,
+  yabridge will either:
+
+  - Connect to an existing group host process that matches the plugin's
+    combination of group name, Wine prefix, and Windows VST plugin architecture,
+    and ask it to host the Windows VST plugin.
+  - Spawn a new group process and detach it from the process, then proceed as
+    normal by connecting to that process as described above. When two yabridge
+    instances are initialized simultaneously and both try to launch a new group
+    process, then the process that manages to listen on the group's socket first
+    will handle both instances.
+
+- Events, both Win32 messages and `dispatcher()` events, are handled slightly
+  differently when using plugin groups. Because most of the Win32 API cannot be
+  used from multiple threads, all plugin initialization and all event handling
+  has to be done from the same thread. To achieve this, yabridge will use a
+  slightly modified version of the `dispatcher()` handler that executes the
+  actual events for all plugins within a single Boost.Asio IO context.
+- Win32 messages are now also handled on a timer within the same IO context so
+  mentioned above. This behavior is different from individually hosted plugins,
+  where the message loop can simply be run after every event. If any of the
+  plugins within the plugin group is in a state that would cause the message
+  loop to fail, such as when a plugin is in the process of opening its editor
+  GUI, then the message loop will be skipped temporarily.
