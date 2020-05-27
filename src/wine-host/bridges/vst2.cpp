@@ -146,7 +146,7 @@ Vst2Bridge::Vst2Bridge(std::string plugin_dll_path,
 }
 
 bool Vst2Bridge::should_skip_message_loop() {
-    return editor_is_opening;
+    return std::holds_alternative<EditorOpening>(editor);
 }
 
 void Vst2Bridge::handle_dispatch_single() {
@@ -362,27 +362,18 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
         case effEditGetRect: {
             // Some plugins will have a race condition if the message loops gets
             // handled between the call to `effEditGetRect()` and
-            // `effEditOpen()`, since this won't ever happen on Windows and
-            // plugins thus assume that this can't happen at all. If
-            // `effEditOpen()` has not yet been called, then we'll mark the
-            // editor as currently opening to prevent the message loop from
-            // running.
-            editor_is_opening = !editor.has_value();
+            // `effEditOpen()`, although this behavior never appears on Windows
+            // as hosts will always either call these functions in sequence or
+            // in reverse. We need to temporarily stop handling messages when
+            // this happens.
+            if (!std::holds_alternative<Editor>(editor)) {
+                editor = EditorOpening{};
+            }
 
             return plugin->dispatcher(plugin, opcode, index, value, data,
                                       option);
         } break;
         case effEditOpen: {
-            // As explained above, if `effEditGetRect()` was called first then
-            // after this the editor has finally been opened. Otherwise if this
-            // function was first then we'll say that the editor is in the
-            // process of being opened as the host will call `effEditGetRect()`
-            // next.
-            // TODO: Without plugin groups only the `effEditGetRect()` ->
-            //       `effEditOpen()`, is skipping the message loop in between
-            //       `effEditOpen()` and `effEditGetRect()` really needed?
-            editor_is_opening = !editor_is_opening;
-
             // Create a Win32 window through Wine, embed it into the window
             // provided by the host, and let the plugin embed itself into
             // the Wine window
@@ -392,17 +383,19 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             // should get a unique window class
             const std::string window_class =
                 "yabridge plugin " + socket_endpoint.path();
+            Editor& editor_instance =
+                editor.emplace<Editor>(window_class, plugin, x11_handle);
 
-            editor.emplace(window_class, plugin, x11_handle);
             return plugin->dispatcher(plugin, opcode, index, value,
-                                      editor->win32_handle.get(), option);
+                                      editor_instance.win32_handle.get(),
+                                      option);
         } break;
         case effEditClose: {
             const intptr_t return_value =
                 plugin->dispatcher(plugin, opcode, index, value, data, option);
 
             // Cleanup is handled through RAII
-            editor.reset();
+            editor = std::monostate();
 
             return return_value;
         } break;
@@ -414,28 +407,28 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
 }
 
 void Vst2Bridge::handle_win32_events() {
-    // Don't run them message loop during the two step process of opening the
-    // plugin editor since some plugins don't expect this
-    if (should_skip_message_loop()) {
-        return;
-    }
+    std::visit(
+        overload{[](Editor& editor) { editor.handle_win32_events(); },
+                 [](std::monostate&) {
+                     MSG msg;
 
-    if (editor.has_value()) {
-        editor->handle_win32_events();
-    } else {
-        MSG msg;
-
-        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-    }
+                     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+                         TranslateMessage(&msg);
+                         DispatchMessage(&msg);
+                     }
+                 },
+                 [](EditorOpening&) {
+                     // Don't handle any events in this
+                     // particular case as explained in
+                     // `Vst2Bridge::editor`
+                 }},
+        editor);
 }
 
 void Vst2Bridge::handle_x11_events() {
-    if (editor.has_value()) {
-        editor->handle_x11_events();
-    }
+    std::visit(overload{[](Editor& editor) { editor.handle_x11_events(); },
+                        [](auto&) {}},
+               editor);
 }
 
 class HostCallbackDataConverter : DefaultDataConverter {
@@ -453,17 +446,18 @@ class HostCallbackDataConverter : DefaultDataConverter {
                 return WantsVstTimeInfo{};
                 break;
             case audioMasterIOChanged:
-                // This is a helpful event that indicates that the VST plugin's
-                // `AEffect` struct has changed. Writing these results back is
-                // done inside of `passthrough_event`.
+                // This is a helpful event that indicates that the VST
+                // plugin's `AEffect` struct has changed. Writing these
+                // results back is done inside of `passthrough_event`.
                 return AEffect(*plugin);
                 break;
             case audioMasterProcessEvents:
                 return DynamicVstEvents(*static_cast<const VstEvents*>(data));
                 break;
-            // We detect whether an opcode should return a string by checking
-            // whether there's a zeroed out buffer behind the void pointer. This
-            // works for any host, but not all plugins zero out their buffers.
+            // We detect whether an opcode should return a string by
+            // checking whether there's a zeroed out buffer behind the void
+            // pointer. This works for any host, but not all plugins zero
+            // out their buffers.
             case audioMasterGetVendorString:
             case audioMasterGetProductString:
                 return WantsString{};
@@ -482,11 +476,11 @@ class HostCallbackDataConverter : DefaultDataConverter {
     void write(const int opcode, void* data, const EventResult& response) {
         switch (opcode) {
             case audioMasterGetTime:
-                // Write the returned `VstTimeInfo` struct into a field and make
-                // the function return a poitner to it in the function below.
-                // Depending on whether the host supported the requested time
-                // information this operations returns either a null pointer or
-                // a pointer to a `VstTimeInfo` object.
+                // Write the returned `VstTimeInfo` struct into a field and
+                // make the function return a poitner to it in the function
+                // below. Depending on whether the host supported the
+                // requested time information this operations returns either
+                // a null pointer or a pointer to a `VstTimeInfo` object.
                 if (std::holds_alternative<std::nullptr_t>(response.payload)) {
                     time_info = std::nullopt;
                 } else {
@@ -502,8 +496,8 @@ class HostCallbackDataConverter : DefaultDataConverter {
     intptr_t return_value(const int opcode, const intptr_t original) {
         switch (opcode) {
             case audioMasterGetTime: {
-                // Return a pointer to the `VstTimeInfo` object written in the
-                // function above
+                // Return a pointer to the `VstTimeInfo` object written in
+                // the function above
                 VstTimeInfo* time_info_pointer = nullptr;
                 if (time_info.has_value()) {
                     time_info_pointer = &time_info.value();
