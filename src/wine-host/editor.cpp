@@ -92,15 +92,20 @@ Editor::Editor(const std::string& window_class_name,
     // TODO: Add a `KillTimer()` now that we are hosting multiple plugins
     SetTimer(win32_handle.get(), idle_timer_id, 100, nullptr);
 
-    // We need to tell the Wine window it has been moved whenever the window
-    // it's been embedded in gets moved around. In most cases this is
-    // `parent_window`, but for instance REAPER reparents `parent_window` in
-    // another window so we'll have to find the correct window first.
+    // Because we're not using XEmbed Wine will interpret any local coordinates
+    // as global coordinates. To work around this we'll tell the Wine window
+    // it's located at its actual coordinates on screen rather than somewhere
+    // within. For robustness's sake this should be done both when the actual
+    // window the Wine window is embedded in (which may not be the parent
+    // window) is moved or resized, and when the user moves his mouse over the
+    // window. We also want to set keyboard focus when the user clicks on the
+    // Windows since Bitwig 3.2 now explicitely requires this.
     const uint32_t topmost_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
     xcb_change_window_attributes(x11_connection.get(), topmost_window,
                                  XCB_CW_EVENT_MASK, &topmost_event_mask);
     xcb_flush(x11_connection.get());
-    const uint32_t parent_event_mask = XCB_EVENT_MASK_FOCUS_CHANGE;
+    const uint32_t parent_event_mask =
+        XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
     xcb_flush(x11_connection.get());
@@ -172,18 +177,20 @@ void Editor::handle_x11_events() {
     while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
            nullptr) {
         switch (generic_event->response_type & event_type_mask) {
-            // We're listening for ConfigureNotify events on the topmost window
-            // before the root window, i.e. the window that's actually going to
-            // get dragged around the by the user. In most cases this is the
-            // same as `parent_window`.
+            // We're listening for `ConfigureNotify` events on the topmost
+            // window before the root window, i.e. the window that's actually
+            // going to get dragged around the by the user. In most cases this
+            // is the same as `parent_window`. When either this window gets
+            // moved, or when the user moves his mouse over our window, the
+            // local coordinates should be updated. The additional `EnterWindow`
+            // check is sometimes necessary for using multiple editor windows
+            // within a single plugin group.
             case XCB_CONFIGURE_NOTIFY:
-                fox_local_coordinates();
+            case XCB_ENTER_NOTIFY:
+                fix_local_coordinates();
                 break;
-            // The coordinates should also be reset when the user clicks on the
-            // window. This is sometimes necessary when opening multiple editors
-            // in a single plugin group.
             case XCB_FOCUS_IN:
-                fox_local_coordinates();
+                fix_local_coordinates();
 
                 // Explicitely request input focus when the user clicks on the
                 // window. This is needed for Bitwig Studio 3.2, as the parent
@@ -194,7 +201,6 @@ void Editor::handle_x11_events() {
                                     XCB_INPUT_FOCUS_PARENT, child_window,
                                     XCB_CURRENT_TIME);
                 xcb_flush(x11_connection.get());
-
                 break;
         }
 
@@ -202,7 +208,7 @@ void Editor::handle_x11_events() {
     }
 }
 
-void Editor::fox_local_coordinates() {
+void Editor::fix_local_coordinates() {
     // We're purposely not using XEmbed. This has the consequence that wine
     // still thinks that any X and Y coordinates are relative to the x11 window
     // root instead of the parent window provided by the DAW, causing all sorts
