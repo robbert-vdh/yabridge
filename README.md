@@ -131,7 +131,7 @@ Some plugins have the ability to communicate with other instances of that same
 plugin or with other plugins made by the same manufacturer. This is often used
 in mixing plugins to allow different tracks to reference each other without
 having to route audio between them. Examples of plugins that do this are
-Fabfilter Pro-Q 3, MMultiAnalyzer and the iZotope mixing plugins. For this to
+FabFilter Pro-Q 3, MMultiAnalyzer and the iZotope mixing plugins. For this to
 work, all instances of a particular plugin have to be hosted in the same
 process.
 
