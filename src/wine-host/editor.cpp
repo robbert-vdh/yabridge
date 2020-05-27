@@ -177,13 +177,13 @@ void Editor::handle_x11_events() {
             // get dragged around the by the user. In most cases this is the
             // same as `parent_window`.
             case XCB_CONFIGURE_NOTIFY:
-                fix_window_coordinates();
+                fox_local_coordinates();
                 break;
             // The coordinates should also be reset when the user clicks on the
             // window. This is sometimes necessary when opening multiple editors
             // in a single plugin group.
             case XCB_FOCUS_IN:
-                fix_window_coordinates();
+                fox_local_coordinates();
 
                 // Explicitely request input focus when the user clicks on the
                 // window. This is needed for Bitwig Studio 3.2, as the parent
@@ -202,7 +202,7 @@ void Editor::handle_x11_events() {
     }
 }
 
-void Editor::fix_window_coordinates() {
+void Editor::fox_local_coordinates() {
     // We're purposely not using XEmbed. This has the consequence that wine
     // still thinks that any X and Y coordinates are relative to the x11 window
     // root instead of the parent window provided by the DAW, causing all sorts
