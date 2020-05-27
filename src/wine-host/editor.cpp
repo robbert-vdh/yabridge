@@ -87,18 +87,27 @@ Editor::Editor(const std::string& window_class_name,
     // The Win32 API will block the `DispatchMessage` call when opening e.g. a
     // dropdown, but it will still allow timers to be run so the GUI can still
     // update in the background. Because of this we send `effEditIdle` to the
-    // plugin on a timer. The refresh rate is purposely fairly low since we
-    // we'll also trigger this manually in `Editor::handle_events()` whenever
-    // the plugin is not busy.
+    // plugin on a timer. The refresh rate is purposely fairly low since the
+    // host will call `effEditIdle()` explicitely when the plugin is not busy.
+    // TODO: Add a `KillTimer()` now that we are hosting multiple plugins
     SetTimer(win32_handle.get(), idle_timer_id, 100, nullptr);
 
-    // We need to tell the Wine window it has been moved whenever the window
-    // it's been embedded in gets moved around. In most cases this is
-    // `parent_window`, but for instance REAPER reparents `parent_window` in
-    // another window so we'll have to find the correct window first.
+    // Because we're not using XEmbed Wine will interpret any local coordinates
+    // as global coordinates. To work around this we'll tell the Wine window
+    // it's located at its actual coordinates on screen rather than somewhere
+    // within. For robustness's sake this should be done both when the actual
+    // window the Wine window is embedded in (which may not be the parent
+    // window) is moved or resized, and when the user moves his mouse over the
+    // window. We also want to set keyboard focus when the user clicks on the
+    // Windows since Bitwig 3.2 now explicitely requires this.
     const uint32_t topmost_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
     xcb_change_window_attributes(x11_connection.get(), topmost_window,
                                  XCB_CW_EVENT_MASK, &topmost_event_mask);
+    xcb_flush(x11_connection.get());
+    const uint32_t parent_event_mask =
+        XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
+    xcb_change_window_attributes(x11_connection.get(), parent_window,
+                                 XCB_CW_EVENT_MASK, &parent_event_mask);
     xcb_flush(x11_connection.get());
 
     // Embed the Win32 window into the window provided by the host. Instead of
@@ -137,7 +146,7 @@ void Editor::send_idle_event() {
     plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0);
 }
 
-void Editor::handle_events() {
+void Editor::handle_win32_events() {
     MSG msg;
 
     // The null value for the second argument is needed to handle interaction
@@ -158,8 +167,9 @@ void Editor::handle_events() {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+}
 
-    // Handle X11 events
+void Editor::handle_x11_events() {
     // TODO: Initiating drag-and-drop in Serum _sometimes_ causes the GUI to
     //       update while dragging while other times it does not. From all the
     //       plugins I've tested this only happens in Serum though.
@@ -167,64 +177,82 @@ void Editor::handle_events() {
     while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
            nullptr) {
         switch (generic_event->response_type & event_type_mask) {
-            // We're listening for ConfigureNotify events on the topmost window
-            // before the root window, i.e. the window that's actually going to
-            // get dragged around the by the user. In most cases this is the
-            // same as `parent_window`.
-            case XCB_CONFIGURE_NOTIFY: {
-                // We're purposely not using XEmbed. This has the consequence
-                // that wine still thinks that any X and Y coordinates are
-                // relative to the x11 window root instead of the parent window
-                // provided by the DAW, causing all sorts of GUI interactions to
-                // break. To alleviate this we'll just lie to Wine and tell it
-                // that it's located at the parent window's location on the root
-                // window. We also will keep the child window at its largest
-                // possible size to allow for smooth resizing. This works
-                // because the embedding hierarchy is DAW window -> Win32 window
-                // (created in this class) -> VST plugin window created by the
-                // plugin itself. In this case it doesn't matter that the Win32
-                // window is larger than the part of the client area the plugin
-                // draws to since any excess will be clipped off by the parent
-                // window.
-                const auto query_cookie =
-                    xcb_query_tree(x11_connection.get(), parent_window);
-                xcb_window_t root = xcb_query_tree_reply(x11_connection.get(),
-                                                         query_cookie, nullptr)
-                                        ->root;
+            // We're listening for `ConfigureNotify` events on the topmost
+            // window before the root window, i.e. the window that's actually
+            // going to get dragged around the by the user. In most cases this
+            // is the same as `parent_window`. When either this window gets
+            // moved, or when the user moves his mouse over our window, the
+            // local coordinates should be updated. The additional `EnterWindow`
+            // check is sometimes necessary for using multiple editor windows
+            // within a single plugin group.
+            case XCB_CONFIGURE_NOTIFY:
+            case XCB_ENTER_NOTIFY:
+                fix_local_coordinates();
+                break;
+            case XCB_FOCUS_IN:
+                fix_local_coordinates();
 
-                // We can't directly use the `event.x` and `event.y` coordinates
-                // because the parent window may also be embedded inside another
-                // window.
-                const auto translate_cookie = xcb_translate_coordinates(
-                    x11_connection.get(), parent_window, root, 0, 0);
-                const xcb_translate_coordinates_reply_t*
-                    translated_coordiantes = xcb_translate_coordinates_reply(
-                        x11_connection.get(), translate_cookie, nullptr);
-
-                xcb_configure_notify_event_t translated_event{};
-                translated_event.response_type = XCB_CONFIGURE_NOTIFY;
-                translated_event.event = child_window;
-                translated_event.window = child_window;
-                // This should be set to the same sizes the window was created
-                // on. Since we're not using `SetWindowPos` to resize the
-                // Window, Wine can get a bit confused when we suddenly report a
-                // different client area size. Without this certain plugins
-                // (such as those by Valhalla DSP) would break.
-                translated_event.width = client_area.width;
-                translated_event.height = client_area.height;
-                translated_event.x = translated_coordiantes->dst_x;
-                translated_event.y = translated_coordiantes->dst_y;
-
-                xcb_send_event(x11_connection.get(), false, child_window,
-                               XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-                                   XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
-                               reinterpret_cast<char*>(&translated_event));
+                // Explicitely request input focus when the user clicks on the
+                // window. This is needed for Bitwig Studio 3.2, as the parent
+                // window now captures all keyboard events and forwards them to
+                // the main Bitwig Studio window instead of allowing the child
+                // window to handle those events.
+                xcb_set_input_focus(x11_connection.get(),
+                                    XCB_INPUT_FOCUS_PARENT, child_window,
+                                    XCB_CURRENT_TIME);
                 xcb_flush(x11_connection.get());
-            } break;
+                break;
         }
 
         free(generic_event);
     }
+}
+
+void Editor::fix_local_coordinates() {
+    // We're purposely not using XEmbed. This has the consequence that wine
+    // still thinks that any X and Y coordinates are relative to the x11 window
+    // root instead of the parent window provided by the DAW, causing all sorts
+    // of GUI interactions to break. To alleviate this we'll just lie to Wine
+    // and tell it that it's located at the parent window's location on the root
+    // window. We also will keep the child window at its largest possible size
+    // to allow for smooth resizing. This works because the embedding hierarchy
+    // is DAW window -> Win32 window (created in this class) -> VST plugin
+    // window created by the plugin itself. In this case it doesn't matter that
+    // the Win32 window is larger than the part of the client area the plugin
+    // draws to since any excess will be clipped off by the parent window.
+    const auto query_cookie =
+        xcb_query_tree(x11_connection.get(), parent_window);
+    xcb_window_t root =
+        xcb_query_tree_reply(x11_connection.get(), query_cookie, nullptr)->root;
+
+    // We can't directly use the `event.x` and `event.y` coordinates because the
+    // parent window may also be embedded inside another window.
+    // TODO: This seems to get clamped at (0, 0), causing large windows dragged
+    //       off screen on the top or the left borders to act up
+    const auto translate_cookie = xcb_translate_coordinates(
+        x11_connection.get(), parent_window, root, 0, 0);
+    const xcb_translate_coordinates_reply_t* translated_coordiantes =
+        xcb_translate_coordinates_reply(x11_connection.get(), translate_cookie,
+                                        nullptr);
+
+    xcb_configure_notify_event_t translated_event{};
+    translated_event.response_type = XCB_CONFIGURE_NOTIFY;
+    translated_event.event = child_window;
+    translated_event.window = child_window;
+    // This should be set to the same sizes the window was created on. Since
+    // we're not using `SetWindowPos` to resize the Window, Wine can get a bit
+    // confused when we suddenly report a different client area size. Without
+    // this certain plugins (such as those by Valhalla DSP) would break.
+    translated_event.width = client_area.width;
+    translated_event.height = client_area.height;
+    translated_event.x = translated_coordiantes->dst_x;
+    translated_event.y = translated_coordiantes->dst_y;
+
+    xcb_send_event(
+        x11_connection.get(), false, child_window,
+        XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
+        reinterpret_cast<char*>(&translated_event));
+    xcb_flush(x11_connection.get());
 }
 
 LRESULT CALLBACK window_proc(HWND handle,

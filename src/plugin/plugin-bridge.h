@@ -26,6 +26,7 @@
 #include <thread>
 
 #include "../common/logging.h"
+#include "configuration.h"
 #include "utils.h"
 
 /**
@@ -64,7 +65,7 @@ class PluginBridge {
      * Ask the VST plugin to process audio for us. If the plugin somehow does
      * not support `processReplacing()` and only supports the old `process()`
      * function, then this will be handled implicitely in
-     * `WineBridge::handle_process_replacing()`.
+     * `Vst2Bridge::handle_process_replacing()`.
      */
     void process_replacing(AEffect* plugin,
                            float** inputs,
@@ -72,6 +73,14 @@ class PluginBridge {
                            int sample_frames);
     float get_parameter(AEffect* plugin, int index);
     void set_parameter(AEffect* plugin, int index, float value);
+
+    /**
+     * The configuration for this instance of yabridge. Set based on the values
+     * from a `yabridge.toml`, if it exists.
+     *
+     * @see Configuration::load_for
+     */
+    Configuration config;
 
     /**
      * The path to the .dll being loaded in the Wine VST host.
@@ -95,19 +104,6 @@ class PluginBridge {
      */
     AEffect plugin;
 
-    /**
-     * The VST host can query a plugin for arbitrary binary data such as
-     * presets. It will expect the plugin to write back a pointer that points to
-     * that data. This vector is where we store the chunk data for the last
-     * `effGetChunk` event.
-     */
-    std::vector<uint8_t> chunk_data;
-    /**
-     * The VST host will expect to be returned a pointer to a struct that stores
-     * the dimensions of the editor window.
-     */
-    VstRect editor_rectangle;
-
    private:
     /**
      * Write output from an async pipe to the log on a line by line basis.
@@ -120,6 +116,24 @@ class PluginBridge {
     void async_log_pipe_lines(patched_async_pipe& pipe,
                               boost::asio::streambuf& buffer,
                               std::string prefix = "");
+
+    /**
+     * Launch the Wine VST host to host the plugin. When using plugin groups,
+     * this will first try to connect to the plugin group's socket (determined
+     * based on group name, Wine prefix and architecture). If that fails, it
+     * will launch a new, detached group host process. This will likely outlive
+     * this plugin instance if multiple instances of yabridge using the same
+     * plugin group are in use. In the event that two yabridge instances are
+     * initialized at the same time and both instances spawn their own group
+     * host process, then the later one will simply terminate gracefully after
+     * it fails to listen on the socket.
+     */
+    void launch_vst_host();
+
+    /**
+     * Format and log all relevant debug information during initialization.
+     */
+    void log_init_message();
 
     boost::asio::io_context io_context;
     boost::asio::local::stream_protocol::endpoint socket_endpoint;
@@ -184,6 +198,12 @@ class PluginBridge {
      */
     audioMasterCallback host_callback_function;
 
+    /**
+     * The logging facility used for this instance of yabridge. See
+     * `Logger::create_from_env()` for how this is configured.
+     *
+     * @see Logger::create_from_env
+     */
     Logger logger;
 
     /**
@@ -210,14 +230,50 @@ class PluginBridge {
 
     /**
      * The Wine process hosting the Windows VST plugin.
+     *
+     * @see launch_vst_host
      */
     boost::process::child vst_host;
+    /**
+     * The PID of the vst host process. Needed for checking whether the group
+     * host is still active if we are connecting to an already running group
+     * host instance.
+     *
+     * TODO: Remove this after encapsulating the minor differences in individual
+     *       and group host handling
+     */
+    pid_t vst_host_pid;
+    /**
+     * A thread that waits for the group host to have started and then ask it to
+     * host our plugin. This is used to defer the request since it may take a
+     * little while until the group host process is up and running. This way we
+     * don't have to delay the rest of the initialization process.
+     *
+     * TODO: Remove this after encapsulating the minor differences in individual
+     *       and group host handling
+     * TODO: Replace this with inotify to prevent delays and to reduce wasting
+     *       resources
+     */
+    std::thread group_host_connect_handler;
 
     /**
      * A scratch buffer for sending and receiving data during `process` and
      * `processReplacing` calls.
      */
     std::vector<uint8_t> process_buffer;
+
+    /**
+     * The VST host can query a plugin for arbitrary binary data such as
+     * presets. It will expect the plugin to write back a pointer that points to
+     * that data. This vector is where we store the chunk data for the last
+     * `effGetChunk` event.
+     */
+    std::vector<uint8_t> chunk_data;
+    /**
+     * The VST host will expect to be returned a pointer to a struct that stores
+     * the dimensions of the editor window.
+     */
+    VstRect editor_rectangle;
 
     /**
      * Sending MIDI events sent to the host by the plugin using

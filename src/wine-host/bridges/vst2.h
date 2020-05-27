@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "boost-fix.h"
+#include "../boost-fix.h"
 
 #define NOMINMAX
 #define NOSERVICE
@@ -29,23 +29,34 @@
 #include <boost/asio/local/stream_protocol.hpp>
 #include <mutex>
 
-#include "../common/logging.h"
-#include "editor.h"
-#include "utils.h"
+#include "../../common/logging.h"
+#include "../editor.h"
+#include "../utils.h"
 
 /**
  * A marker struct to indicate that the editor is about to be opened.
  *
- * @see WineBridge::editor
+ * @see Vst2Bridge::editor
  */
 struct EditorOpening {};
 
 /**
- * This handles the communication between the Linux native VST plugin and the
- * Wine VST host. The functions below should be used as callback functions in an
- * `AEffect` object.
+ * This hosts a Windows VST2 plugin, forwards messages sent by the Linux VST
+ * plugin and provides host callback function for the plugin to talk back.
+ *
+ * @remark Because of Win32 API limitations, all window handling has to be done
+ *   from the same thread. For individually hosted plugins this only means that
+ *   this class has to be initialized from the same thread as the one that calls
+ *   `handle_dispatch_single()`, and thus also runs the message loop. When using
+ *   plugin groups, however, all instantiation, editor event handling and
+ *   message loop pumping has to be done from a single thread. Most plugins
+ *   won't have any issues when using multiple message loops, but the Melda
+ *   plugins for instance will only update their GUIs from the message loop of
+ *   the thread that created the first instance. When running multiple plugins
+ *   `handle_dispatch_multi()` should be used to make sure all plugins
+ *   handle their events on the same thread.
  */
-class WineBridge {
+class Vst2Bridge {
    public:
     /**
      * Initializes the Windows VST plugin and set up communication with the
@@ -56,27 +67,67 @@ class WineBridge {
      * @param socket_endpoint_path A (Unix style) path to the Unix socket
      *   endpoint the native VST plugin created to communicate over.
      *
+     * @note When using plugin groups and `handle_dispatch_multi()`, this
+     *   object has to be constructed from within the IO context.
+     *
      * @throw std::runtime_error Thrown when the VST plugin could not be loaded,
      *   or if communication could not be set up.
      */
-    WineBridge(std::string plugin_dll_path, std::string socket_endpoint_path);
+    Vst2Bridge(std::string plugin_dll_path, std::string socket_endpoint_path);
+
+    /**
+     * Returns true if the message loop should be skipped. This happens when the
+     * editor is in the process of being opened. In VST hosts on Windows
+     * `effEditOpen()` and `effEditGetRect()` will always be called in sequence,
+     * but in our approach there will be an opportunity to handle events in
+     * between these two calls. Most plugins will handle this just fine, but
+     * some plugins end up blocking indefinitely while waiting for the other
+     * function to be called, hence why this function is needed. For
+     * individually hosted plugins this check is done implicitely in
+     * `Vst2Bridge::handle_win32_events()`.
+     */
+    bool should_skip_message_loop();
 
     /**
      * Handle events on the main thread until the plugin quits. This can't be
      * done on another thread since some plugins (e.g. Melda) expect certain
-     * (but for some reason not all) events to be passed from the same thread it
-     * was initiated from. This is then also the same thread that should handle
-     * Win32 GUI events.
+     * events to be passed from the same thread it was initiated from. This is
+     * then also the same thread that should handle Win32 GUI events.
      */
-    void handle_dispatch();
+    void handle_dispatch_single();
 
-    // These functions are the entry points for the `*_handler` threads defined
-    // below. They're defined here because we can't use lambdas with WinAPI's
-    // `CreateThread` which is needed to support the proper call conventions the
-    // VST plugins expect.
-    [[noreturn]] void handle_dispatch_midi_events();
-    [[noreturn]] void handle_parameters();
-    [[noreturn]] void handle_process_replacing();
+    /**
+     * Handle events just like in the function above, but do the actual
+     * execution on the IO context. As explained in this class' docstring, this
+     * is needed because some plugins make the assumption that all of their
+     * instances are handled from the same thread, and that the thread that the
+     * first instance was initiated on will be kept alive until the VST host
+     * terminates.
+     *
+     * @param main_context The main IO context that's handling the event
+     *   handling for all plugins.
+     *
+     * @note With this approach you'll have to make sure that the object was
+     *   instantiated from the same thread as the one that runs the IO context.
+     * @note This appraoch does _not_ handle any events. This has to be done on
+     *   a timer within the IO context since otherwise things would become very
+     *   messy very quick.
+     */
+    void handle_dispatch_multi(boost::asio::io_context& main_context);
+
+    /**
+     * Handle X11 events for the editor window if it is open. This can be run
+     * safely from any thread.
+     */
+    void handle_x11_events();
+
+    // These functions are the entry points for the `*_handler` threads
+    // defined below. They're defined here because we can't use lambdas with
+    // WinAPI's `CreateThread` which is needed to support the proper call
+    // conventions the VST plugins expect.
+    void handle_dispatch_midi_events();
+    void handle_parameters();
+    void handle_process_replacing();
 
     /**
      * Forward the host callback made by the plugin to the host and return the
@@ -105,11 +156,37 @@ class WineBridge {
                               float option);
 
     /**
-     * The shared library handle of the VST plugin. I sadly could not get
-     * Boost.DLL to work here, so we'll just load the VST plugisn by hand.
+     * Run the message loop for this plugin and potentially also for other
+     * plugins. This is only used in `handle_dispatch_single()`, as this will be
+     * run on a timer when using plugin groups. The caller should first check
+     * whether the event loop can be run through `should_skip_message_loop()`.
+     *
+     * Because of the way the Win32 API works we have to process events on the
+     * same thread as the one the window was created on, and that thread is the
+     * thread that's handling dispatcher calls. Some plugins will also rely on
+     * the Win32 message loop to run tasks on a timer and to defer loading, so
+     * we have to make sure to always run this loop. The only exception is a in
+     * specific situation that can cause a race condition in some plugins
+     * because of incorrect assumptions made by the plugin. See the dostring for
+     * `Vst2Bridge::editor` for more information.
      */
-    std::unique_ptr<std::remove_pointer_t<HMODULE>, decltype(&FreeLibrary)>
-        plugin_handle;
+    void handle_win32_events();
+
+    /**
+     * The shared library handle of the VST plugin. I sadly could not get
+     * Boost.DLL to work here, so we'll just load the VST plugins by hand.
+     *
+     * FIXME: I don't know why, but `FreeLibrary()` seems to corrupt memory.
+     *        This leads to a lot of weird behavior, such as plugins crashing as
+     *        soon as other plugins get loaded or calls to `LoadLibrary()`
+     *        returning null pointers while they would otherwise load fine
+     *        without the prior call to `FreeLibrary`. We are leaking memory
+     *        here until this is fixed, but it should not be a huge issue since
+     *        this leak only exists for plugin groups.
+     */
+    // std::unique_ptr<std::remove_pointer_t<HMODULE>, decltype(&FreeLibrary)>
+    //     plugin_handle;
+    HMODULE plugin_handle;
 
     /**
      * The loaded plugin's `AEffect` struct, obtained using the above library
@@ -210,6 +287,8 @@ class WineBridge {
      *   To work around this we'll use this third state to temporarily stop
      *   processing Windows events in the one or two ticks between these two
      *   events.
+     *
+     * @see should_postpone_message_loop
      */
     std::variant<std::monostate, Editor, EditorOpening> editor;
 };

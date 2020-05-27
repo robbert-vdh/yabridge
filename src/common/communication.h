@@ -41,6 +41,10 @@ using InputAdapter = bitsery::InputBufferAdapter<B>;
  * @param buffer The buffer to write to. This is useful for sending audio and
  *   chunk data since that can vary in size by a lot.
  *
+ * @warning This operation is not atomic, and calling this function with the
+ *   same socket from multiple threads at once will cause issues with the
+ *   packets arriving out of order.
+ *
  * @relates read_object
  */
 template <typename T, typename Socket>

@@ -28,6 +28,8 @@
 // Generated inside of build directory
 #include <src/common/config/config.h>
 
+#include "configuration.h"
+
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
@@ -53,19 +55,13 @@ std::string create_logger_prefix(const fs::path& socket_path) {
 }
 
 std::optional<fs::path> find_wineprefix() {
-    // Try to locate the Wine prefix the plugin's .dll file is located in by
-    // finding the first parent directory that contains a directory named
-    // `dosdevices`
-    fs::path wineprefix_path = find_vst_plugin();
-    while (wineprefix_path != "") {
-        if (fs::is_directory(wineprefix_path / "dosdevices")) {
-            return wineprefix_path;
-        }
-
-        wineprefix_path = wineprefix_path.parent_path();
+    std::optional<fs::path> dosdevices_dir =
+        find_dominating_file("dosdevices", find_vst_plugin(), fs::is_directory);
+    if (!dosdevices_dir.has_value()) {
+        return std::nullopt;
     }
 
-    return std::nullopt;
+    return dosdevices_dir->parent_path();
 }
 
 PluginArchitecture find_vst_architecture(fs::path plugin_path) {
@@ -115,10 +111,12 @@ PluginArchitecture find_vst_architecture(fs::path plugin_path) {
     throw std::runtime_error(error_msg.str());
 }
 
-fs::path find_vst_host(PluginArchitecture plugin_arch) {
-    auto host_name = yabridge_wine_host_name;
+fs::path find_vst_host(PluginArchitecture plugin_arch, bool use_plugin_groups) {
+    auto host_name = use_plugin_groups ? yabridge_group_host_name
+                                       : yabridge_individual_host_name;
     if (plugin_arch == PluginArchitecture::vst_32) {
-        host_name = yabridge_wine_host_name_32bit;
+        host_name = use_plugin_groups ? yabridge_group_host_name_32bit
+                                      : yabridge_individual_host_name_32bit;
     }
 
     fs::path host_path =
@@ -166,7 +164,27 @@ fs::path find_vst_plugin() {
                              "VST plugin .dll file.");
 }
 
-fs::path generate_endpoint_name() {
+boost::filesystem::path generate_group_endpoint(
+    std::string group_name,
+    boost::filesystem::path wine_prefix,
+    PluginArchitecture architecture) {
+    std::ostringstream socket_name;
+    socket_name << "yabridge-group-" << group_name << "-"
+                << std::hash<std::string>{}(wine_prefix.string()) << "-";
+    switch (architecture) {
+        case PluginArchitecture::vst_32:
+            socket_name << "x32";
+            break;
+        case PluginArchitecture::vst_64:
+            socket_name << "x64";
+            break;
+    }
+    socket_name << ".sock";
+
+    return fs::temp_directory_path() / socket_name.str();
+}
+
+fs::path generate_plugin_endpoint() {
     const auto plugin_name =
         find_vst_plugin().filename().replace_extension("").string();
 
@@ -204,9 +222,16 @@ fs::path get_this_file_location() {
     //       on both Ubuntu 18.04 and 20.04, but not on Arch based distros.
     //       Under Linux a path starting with two slashes is treated the same as
     //       a path starting with only a single slash, but Wine will refuse to
-    //       load any files when the path starts with two slashes. Prepending
-    //       `/` to a pad coerces theses two slashes into a single slash.
-    return "/" / boost::dll::this_line_location();
+    //       load any files when the path starts with two slashes. The easiest
+    //       way to work around this if this happens is to just add another
+    //       leading slash and then normalize the path, since three or more
+    //       slashes will be coerced into a single slash.
+    fs::path this_file = boost::dll::this_line_location();
+    if (this_file.string().find("//") == 0) {
+        this_file = ("/" / this_file).lexically_normal();
+    }
+
+    return this_file;
 }
 
 std::string get_wine_version() {

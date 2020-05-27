@@ -15,15 +15,17 @@ if not meson.get_compiler('cpp').compiles(winelib_check)
   error('You need to set up a cross compiler, check the README for compilation instructions.')
 endif
 
-# Depending on the `use-bitbridge` flag we'll enable building a second 32-bit
-# host application that can act as a bit bridge for using 32-bit Windows plugins
+# Depending on the `use-bitbridge` flag we'll enable building secondary 32-bit
+# host applications that can act as a bit bridge for using 32-bit Windows plugins
 # in 64-bit Linux VST hosts. The plugin will determine which host application to
 # use based on the `.dll` file it's trying to load.
 # This setup is necessary until Meson provides a way to have multiple
 # cross-builds for a single build directory:
 # https://github.com/mesonbuild/meson/issues/5125
-host_name_64bit = 'yabridge-host'
-host_name_32bit = 'yabridge-host-32'
+individual_host_name_64bit = 'yabridge-host'
+individual_host_name_32bit = 'yabridge-host-32'
+group_host_name_64bit = 'yabridge-group'
+group_host_name_32bit = 'yabridge-group-32'
 
 # This provides an easy way to start the Wine VST host using winedbg since it
 # can be quite a pain to set up
@@ -39,13 +41,13 @@ endif
 # and the name of the host binary
 subdir('src/common/config')
 
-# Statically link against Boost.Filesystem, otherwise it becomes impossible to
-# distribute a prebuilt version of yabridge. For the Wine host applications we
-# only use the headers only libraries.
+# Statically link against Boost.Filesystem, otherwise it would become impossible
+# to distribute a prebuilt version of yabridge
 boost_dep = dependency('boost', version : '>=1.66', static : true)
 boost_filesystem_dep = dependency('boost', version : '>=1.66', modules : ['filesystem'], static : true)
 bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
 threads_dep = dependency('threads')
+tomlplusplus_dep = subproject('tomlplusplus').get_variable('tomlplusplus_dep')
 # The built in threads dependency does not know how to handle winegcc
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
@@ -62,6 +64,7 @@ shared_library(
   [
     'src/common/logging.cpp',
     'src/common/serialization.cpp',
+    'src/plugin/configuration.cpp',
     'src/plugin/plugin.cpp',
     'src/plugin/plugin-bridge.cpp',
     'src/plugin/utils.cpp',
@@ -69,7 +72,13 @@ shared_library(
   ],
   native : true,
   include_directories : include_dir,
-  dependencies : [boost_dep, boost_filesystem_dep, bitsery_dep, threads_dep],
+  dependencies : [
+    boost_dep,
+    boost_filesystem_dep,
+    bitsery_dep,
+    threads_dep,
+    tomlplusplus_dep
+  ],
   cpp_args : compiler_options,
   link_args : ['-ldl']
 )
@@ -77,20 +86,49 @@ shared_library(
 host_sources = [
   'src/common/logging.cpp',
   'src/common/serialization.cpp',
+  'src/wine-host/bridges/vst2.cpp',
   'src/wine-host/editor.cpp',
   'src/wine-host/editor.cpp',
-  'src/wine-host/vst-host.cpp',
-  'src/wine-host/wine-bridge.cpp',
   'src/wine-host/utils.cpp',
   version_header,
 ]
 
+individual_host_sources = host_sources + ['src/wine-host/individual-host.cpp']
+group_host_sources = host_sources + [
+  'src/wine-host/bridges/group.cpp',
+  'src/wine-host/group-host.cpp',
+]
+
 executable(
-  host_name_64bit,
-  host_sources,
+  individual_host_name_64bit,
+  individual_host_sources,
   native : false,
   include_directories : include_dir,
-  dependencies : [boost_dep, bitsery_dep, wine_threads_dep, xcb_dep],
+  dependencies : [
+    boost_dep,
+    boost_filesystem_dep,
+    bitsery_dep,
+    tomlplusplus_dep,
+    wine_threads_dep,
+    xcb_dep
+  ],
+  cpp_args : compiler_options + ['-m64'],
+  link_args : ['-m64']
+)
+
+executable(
+  group_host_name_64bit,
+  group_host_sources,
+  native : false,
+  include_directories : include_dir,
+  dependencies : [
+    boost_dep,
+    boost_filesystem_dep,
+    bitsery_dep,
+    tomlplusplus_dep,
+    wine_threads_dep,
+    xcb_dep
+  ],
   cpp_args : compiler_options + ['-m64'],
   link_args : ['-m64']
 )
@@ -98,17 +136,44 @@ executable(
 if get_option('use-bitbridge')
   message('Bitbridge enabled, configuring a 32-bit host application')
 
-  # I honestly have no idea what the correct way to have `find_dependency()` use
-  # `/usr/lib32` instead of `/usr/lib` is. If anyone does know, please tell me!
+  # I honestly have no idea what the correct way is to have `dependency()` or
+  # `compiler.find_dependency()` search for 32-bit versions of libraries when
+  # cross-compiling. Meson also doesn't seem to respect the default linker
+  # search path set by the system in `find_library()`. If anyone does know how
+  # to properly do this, please let me know!
   winegcc = meson.get_compiler('cpp', native : false)
+  boost_filesystem_dep = winegcc.find_library(
+    'boost_filesystem',
+    static : true,
+    dirs : [
+      # Used by Arch based distros
+      '/usr/local/lib32',
+      '/usr/lib32',
+      # Used by Debian based distros
+      '/usr/local/lib/i386-linux-gnu',
+      '/usr/lib/i386-linux-gnu',
+      # Used by Red Hat based distros, could cause issues though since Meson
+      # cannot differentiate between the 32-bit version and the regular 64-bit
+      # version that would normally be in /lib
+      '/usr/local/lib',
+      '/usr/lib',
+    ]
+  )
   xcb_dep = winegcc.find_library('xcb')
 
   executable(
-    host_name_32bit,
-    host_sources,
+    individual_host_name_32bit,
+    individual_host_sources,
     native : false,
     include_directories : include_dir,
-    dependencies : [boost_dep, bitsery_dep, wine_threads_dep, xcb_dep],
+    dependencies : [
+      boost_dep,
+      boost_filesystem_dep,
+      bitsery_dep,
+      tomlplusplus_dep,
+      wine_threads_dep,
+      xcb_dep
+    ],
     # FIXME: 32-bit winegcc defines `__stdcall` differently than the 64-bit
     #        version, and one of the changes is the inclusion of
     #        `__atribute__((__force_align_arg_pointer__))`. For whetever reason
@@ -116,6 +181,23 @@ if get_option('use-bitbridge')
     #        `__stdcall` calling convention in template arguments, although it
     #        otherwise works just fine. We don't ignore any warnings in the
     #        regular host application so this should not cause any issues!
+    cpp_args : compiler_options + ['-m32', '-Wno-ignored-attributes'],
+    link_args : ['-m32']
+  )
+
+  executable(
+    group_host_name_32bit,
+    group_host_sources,
+    native : false,
+    include_directories : include_dir,
+    dependencies : [
+      boost_dep,
+      boost_filesystem_dep,
+      bitsery_dep,
+      tomlplusplus_dep,
+      wine_threads_dep,
+      xcb_dep
+    ],
     cpp_args : compiler_options + ['-m32', '-Wno-ignored-attributes'],
     link_args : ['-m32']
   )

@@ -101,13 +101,25 @@ class Editor {
     void send_idle_event();
 
     /**
-     * Pump messages from the editor GUI's event loop until all events are
-     * process. Must be run from the same thread the GUI was created in because
-     * of Win32 limitations.
+     * Pump messages from the editor loop loop until all events are process.
+     * Must be run from the same thread the GUI was created in because of Win32
+     * limitations.
      */
-    void handle_events();
+    void handle_win32_events();
+
+    /**
+     * Handle X11 events sent to the window our editor is embedded in.
+     */
+    void handle_x11_events();
 
    private:
+    /**
+     * Lie to the Wine window about its coordinates on the screen for
+     * reparenting without using XEmbed. See the comment at the top of the
+     * implementation on why this is needed.
+     */
+    void fix_local_coordinates();
+
     /**
      * A pointer to the currently active window. Will be a null pointer if no
      * window is active.
