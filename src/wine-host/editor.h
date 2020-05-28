@@ -32,6 +32,8 @@
 #include <optional>
 #include <string>
 
+#include "utils.h"
+
 /**
  * Used to store the maximum width and height of a screen.
  */
@@ -151,6 +153,15 @@ class Editor {
         win32_handle;
 
    private:
+    /**
+     * The Win32 API will block the `DispatchMessage` call when opening e.g. a
+     * dropdown, but it will still allow timers to be run so the GUI can still
+     * update in the background. Because of this we send `effEditIdle` to the
+     * plugin on a timer. The refresh rate is purposely fairly low since the
+     * host will call `effEditIdle()` explicitely when the plugin is not busy.
+     */
+    Win32Timer idle_timer;
+
     /**
      * The window handle of the editor window created by the DAW.
      */

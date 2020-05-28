@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#pragma once
+
 #include <memory>
+#include <optional>
 
 #define NOMINMAX
 #define NOSERVICE
@@ -70,4 +73,24 @@ class Win32Thread {
      */
     std::unique_ptr<std::remove_pointer_t<HANDLE>, decltype(&CloseHandle)>
         handle;
+};
+
+/**
+ * A simple RAII wrapper around `SetTimer`. Does not support timer procs since
+ * we don't use them.
+ */
+class Win32Timer {
+   public:
+    Win32Timer(HWND window_handle, size_t timer_id, unsigned int interval_ms);
+    ~Win32Timer();
+
+    Win32Timer(const Win32Timer&) = delete;
+    Win32Timer& operator=(const Win32Timer&) = delete;
+
+    Win32Timer(Win32Timer&&);
+    Win32Timer& operator=(Win32Timer&&);
+
+   private:
+    HWND window_handle;
+    std::optional<size_t> timer_id;
 };

@@ -79,19 +79,12 @@ Editor::Editor(const std::string& window_class_name,
                                   GetModuleHandle(nullptr),
                                   this),
                    DestroyWindow),
+      idle_timer(win32_handle.get(), idle_timer_id, 100),
       parent_window(parent_window_handle),
       child_window(get_x11_handle(win32_handle.get())),
       topmost_window(find_topmost_window(*x11_connection, parent_window)),
       // Needed to send update messages on a timer
       plugin(effect) {
-    // The Win32 API will block the `DispatchMessage` call when opening e.g. a
-    // dropdown, but it will still allow timers to be run so the GUI can still
-    // update in the background. Because of this we send `effEditIdle` to the
-    // plugin on a timer. The refresh rate is purposely fairly low since the
-    // host will call `effEditIdle()` explicitely when the plugin is not busy.
-    // TODO: Add a `KillTimer()` now that we are hosting multiple plugins
-    SetTimer(win32_handle.get(), idle_timer_id, 100, nullptr);
-
     // Because we're not using XEmbed Wine will interpret any local coordinates
     // as global coordinates. To work around this we'll tell the Wine window
     // it's located at its actual coordinates on screen rather than somewhere
