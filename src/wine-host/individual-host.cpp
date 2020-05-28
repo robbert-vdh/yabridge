@@ -71,52 +71,39 @@ int __cdecl main(int argc, char* argv[]) {
               << std::endl;
 
     // As explained in `Vst2Bridge`, the plugin has to be initialized in the
-    // same thread as the one that calls `io_context.run()`. This setup is
-    // slightly more convoluted than it has to be, but doing it this way we
-    // don't need to differentiate between individually hosted plugins and
-    // plugin groups when it comes to event handling.
+    // same thread as the one that calls `io_context.run()`. And for some
+    // reason, a lot of plugins have memory corruption issues when executing
+    // `LoadLibrary()` or some of their functions from within a `std::thread`
+    // (although the WinAPI `CreateThread()` does not have these issues). This
+    // setup is slightly more convoluted than it has to be, but doing it this
+    // way we don't need to differentiate between individually hosted plugins
+    // and plugin groups when it comes to event handling.
     boost::asio::io_context io_context{};
-    boost::asio::steady_timer events_timer(io_context);
-
     std::unique_ptr<Vst2Bridge> bridge;
-    std::promise<Vst2Bridge&> bridge_instance;
-    std::thread io_handler([&]() {
-        try {
-            bridge = std::make_unique<Vst2Bridge>(io_context, plugin_dll_path,
-                                                  socket_endpoint_path);
-            bridge_instance.set_value(*bridge);
-            std::cout << "Finished initializing '" << plugin_dll_path << "'"
-                      << std::endl;
-
-            // Handle Win32 messages and X11 events on a timer, just like in
-            // `GroupBridge::async_handle_events()``
-            async_handle_events(events_timer, *bridge);
-        } catch (const std::runtime_error&) {
-            bridge_instance.set_exception(std::current_exception());
-            return;
-        }
-
-        io_context.run();
-    });
-
     try {
-        // Handle the dispatcher events within the IO context
-        Vst2Bridge& bridge = bridge_instance.get_future().get();
-        bridge.handle_dispatch();
-
-        io_context.stop();
-        io_handler.join();
-
-        return 0;
+        bridge = std::make_unique<Vst2Bridge>(io_context, plugin_dll_path,
+                                              socket_endpoint_path);
     } catch (const std::runtime_error& error) {
         std::cerr << "Error while initializing Wine VST host:" << std::endl;
         std::cerr << error.what() << std::endl;
 
-        io_context.stop();
-        io_handler.join();
-
         return 1;
     }
+
+    std::cout << "Finished initializing '" << plugin_dll_path << "'"
+              << std::endl;
+
+    // We'll listen for `dispatcher()` calls on a different thread, but the
+    // actual events will still be executed within the IO context
+    std::thread dispatch_handler([&]() { bridge->handle_dispatch(); });
+
+    // Handle Win32 messages and X11 events on a timer, just like in
+    // `GroupBridge::async_handle_events()``
+    boost::asio::steady_timer events_timer(io_context);
+    async_handle_events(events_timer, *bridge);
+
+    io_context.run();
+    dispatch_handler.join();
 }
 
 void async_handle_events(boost::asio::steady_timer& timer, Vst2Bridge& bridge) {
