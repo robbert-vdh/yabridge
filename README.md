@@ -4,9 +4,10 @@
 
 Yet Another way to use Windows VST plugins on Linux. Yabridge seamlessly
 supports running both 64-bit Windows VST2 plugins as well as 32-bit Windows VST2
-plugins in a 64-bit Linux VST host. This project aims to be as transparent as
-possible to achieve the best possible plugin compatibility while also staying
-easy to debug and maintain.
+plugins in a 64-bit Linux VST host, with optional support for inter-plugin
+communication through [plugin groups](#Plugin-groups). This project aims to be
+as transparent as possible in order to achieve the best possible plugin
+compatibility while also staying easy to debug and maintain.
 
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
