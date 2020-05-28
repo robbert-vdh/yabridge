@@ -128,7 +128,7 @@ void GroupBridge::handle_plugin_dispatch(const GroupRequest request) {
 
     // Blocks this thread until the plugin shuts down, handling all events on
     // the main IO context
-    bridge->handle_dispatch_multi(plugin_context);
+    bridge->handle_dispatch();
     logger.log("'" + request.plugin_path + "' has exited");
 
     // After the plugin has exited, we'll remove this thread's plugin from the
@@ -214,8 +214,8 @@ void GroupBridge::accept_requests() {
             logger.log("Received request to host '" + request.plugin_path +
                        "' using socket '" + request.socket_path + "'");
             try {
-                auto bridge = std::make_unique<Vst2Bridge>(request.plugin_path,
-                                                           request.socket_path);
+                auto bridge = std::make_unique<Vst2Bridge>(
+                    plugin_context, request.plugin_path, request.socket_path);
                 logger.log("Finished initializing '" + request.plugin_path +
                            "'");
 
@@ -261,6 +261,8 @@ void GroupBridge::async_handle_events() {
         // TODO: Check if those same weird crashes with Serum are happening
         //       again with these normal threads
         if (!should_skip_message_loop()) {
+            std::lock_guard lock(active_plugins_mutex);
+
             MSG msg;
 
             // Keep the loop responsive by not handling too many events at once

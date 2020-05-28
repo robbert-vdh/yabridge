@@ -65,13 +65,14 @@ Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
     return *static_cast<Vst2Bridge*>(plugin->ptr1);
 }
 
-Vst2Bridge::Vst2Bridge(std::string plugin_dll_path,
+Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
+                       std::string plugin_dll_path,
                        std::string socket_endpoint_path)
-    // See `plugin_handle`s docstring for information on why we're leaking
-    // memory here
-    // : plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
-    : plugin_handle(LoadLibrary(plugin_dll_path.c_str())),
-      io_context(),
+    : io_context(main_context),
+      // See `plugin_handle`s docstring for information on why we're leaking
+      // memory here
+      // plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
+      plugin_handle(LoadLibrary(plugin_dll_path.c_str())),
       socket_endpoint(socket_endpoint_path),
       host_vst_dispatch(io_context),
       host_vst_dispatch_midi_events(io_context),
@@ -133,9 +134,9 @@ Vst2Bridge::Vst2Bridge(std::string plugin_dll_path,
     // `audioMasterIOChanged` host callback.
     write_object(host_vst_dispatch, EventResult{0, *plugin, std::nullopt});
 
-    // This works functionally identically to the `handle_dispatch_single()`
-    // function below, but this socket will only handle MIDI events. This is
-    // needed because of Win32 API limitations.
+    // This works functionally identically to the `handle_dispatch()` function,
+    // but this socket will only handle MIDI events and it will handle them
+    // eagerly. This is needed because of Win32 API limitations.
     dispatch_midi_events_handler =
         Win32Thread(handle_dispatch_midi_events_proxy, this);
 
@@ -149,33 +150,7 @@ bool Vst2Bridge::should_skip_message_loop() {
     return std::holds_alternative<EditorOpening>(editor);
 }
 
-void Vst2Bridge::handle_dispatch_single() {
-    using namespace std::placeholders;
-
-    // For our communication we use simple threads and blocking operations
-    // instead of asynchronous IO since communication has to be handled in
-    // lockstep anyway
-    try {
-        while (true) {
-            receive_event(host_vst_dispatch, std::nullopt,
-                          passthrough_event(
-                              plugin, std::bind(&Vst2Bridge::dispatch_wrapper,
-                                                this, _1, _2, _3, _4, _5, _6)));
-
-            handle_x11_events();
-            handle_win32_events();
-        }
-    } catch (const boost::system::system_error&) {
-        // The plugin has cut off communications, so we can shut down this host
-        // application
-    }
-}
-
-void Vst2Bridge::handle_dispatch_multi(boost::asio::io_context& main_context) {
-    // This works exactly the same as the function above, but execute the
-    // actual event and run the message loop from the main thread that's
-    // also instantiating these plugins. This is required for a few plugins
-    // to run multiple instances in the same process
+void Vst2Bridge::handle_dispatch() {
     try {
         while (true) {
             receive_event(
@@ -184,8 +159,13 @@ void Vst2Bridge::handle_dispatch_multi(boost::asio::io_context& main_context) {
                     plugin,
                     [&](AEffect* plugin, int opcode, int index, intptr_t value,
                         void* data, float option) -> intptr_t {
+                        // Instead of running `plugin->dispatcher()` (or
+                        // `dispatch_wrapper()`) directly, we'll run the
+                        // function within the IO context so all events will be
+                        // executed on the same thread as the one that runs the
+                        // Win32 message loop
                         std::promise<intptr_t> dispatch_result;
-                        boost::asio::dispatch(main_context, [&]() {
+                        boost::asio::dispatch(io_context, [&]() {
                             const intptr_t result = dispatch_wrapper(
                                 plugin, opcode, index, value, data, option);
 

@@ -176,7 +176,7 @@ class GroupBridge {
      * works, all plugins have to be initialized from the same thread, and all
      * event handling and message loop interaction also has to be done from that
      * thread, which is why we initialize the plugin here and use the
-     * `handle_dispatch_multi()` function to run events within the same
+     * `handle_dispatch()` function to run events within the same
      * `plugin_context`.
      *
      * @see handle_plugin_dispatch
@@ -185,8 +185,7 @@ class GroupBridge {
 
     /**
      * Handle both Win32 messages and X11 events on a timer within the IO
-     * context. This is a centralized replacement for the event handling in
-     * `Vst2Bridge::handle_dispatch_single` for plugin groups.
+     * context for all plugins.
      */
     void async_handle_events();
 
