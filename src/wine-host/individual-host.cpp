@@ -64,7 +64,7 @@ int __cdecl main(int argc, char* argv[]) {
     const std::string plugin_dll_path(argv[1]);
     const std::string socket_endpoint_path(argv[2]);
 
-    std::cerr << "Initializing yabridge host version " << yabridge_git_version
+    std::cout << "Initializing yabridge host version " << yabridge_git_version
 #ifdef __i386__
               << " (32-bit compatibility mode)"
 #endif
@@ -75,16 +75,22 @@ int __cdecl main(int argc, char* argv[]) {
     // slightly more convoluted than it has to be, but doing it this way we
     // don't need to differentiate between individually hosted plugins and
     // plugin groups when it comes to event handling.
-    boost::asio::io_context io_context;
+    boost::asio::io_context io_context{};
+    boost::asio::steady_timer events_timer(io_context);
+
+    std::unique_ptr<Vst2Bridge> bridge;
     std::promise<Vst2Bridge&> bridge_instance;
-    std::thread event_handler([&]() {
+    std::thread io_handler([&]() {
         try {
-            Vst2Bridge bridge(io_context, plugin_dll_path,
-                              socket_endpoint_path);
-            std::cerr << "Finished initializing '" << plugin_dll_path << "'"
+            bridge = std::make_unique<Vst2Bridge>(io_context, plugin_dll_path,
+                                                  socket_endpoint_path);
+            bridge_instance.set_value(*bridge);
+            std::cout << "Finished initializing '" << plugin_dll_path << "'"
                       << std::endl;
 
-            bridge_instance.set_value(bridge);
+            // Handle Win32 messages and X11 events on a timer, just like in
+            // `GroupBridge::async_handle_events()``
+            async_handle_events(events_timer, *bridge);
         } catch (const std::runtime_error&) {
             bridge_instance.set_exception(std::current_exception());
             return;
@@ -94,24 +100,20 @@ int __cdecl main(int argc, char* argv[]) {
     });
 
     try {
-        Vst2Bridge& bridge = bridge_instance.get_future().get();
-
-        // Handle Win32 messages and X11 events on a timer, just like in
-        // `GroupBridge::async_handle_events()``
-        boost::asio::steady_timer events_timer(io_context);
-        async_handle_events(events_timer, bridge);
-
         // Handle the dispatcher events within the IO context
+        Vst2Bridge& bridge = bridge_instance.get_future().get();
         bridge.handle_dispatch();
 
         io_context.stop();
-        event_handler.join();
+        io_handler.join();
+
+        return 0;
     } catch (const std::runtime_error& error) {
         std::cerr << "Error while initializing Wine VST host:" << std::endl;
         std::cerr << error.what() << std::endl;
 
         io_context.stop();
-        event_handler.join();
+        io_handler.join();
 
         return 1;
     }
