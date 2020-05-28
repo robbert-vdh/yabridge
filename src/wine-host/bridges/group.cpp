@@ -59,17 +59,6 @@ boost::asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
  */
 std::string create_logger_prefix(const fs::path& socket_path);
 
-uint32_t WINAPI handle_plugin_dispatch_proxy(void* param);
-
-/**
- * CreateThread() is great and allows you to pass a single value to the
- * function, so we'll use this to pass both `this` and the parameters to the
- * below thread function so it can do its thing.
- *
- * @relates handle_plugin_dispatch_proxy
- */
-using handle_plugin_dispatch_parameters = std::pair<GroupBridge*, GroupRequest>;
-
 StdIoCapture::StdIoCapture(boost::asio::io_context& io_context,
                            int file_descriptor)
     : pipe(io_context),
@@ -131,11 +120,17 @@ void GroupBridge::handle_plugin_dispatch(const GroupRequest request) {
     bridge->handle_dispatch();
     logger.log("'" + request.plugin_path + "' has exited");
 
-    // After the plugin has exited, we'll remove this thread's plugin from the
-    // active plugins. If no active plugins remain, then we'll terminate the
-    // process.
-    std::lock_guard lock(active_plugins_mutex);
-    active_plugins.erase(request);
+    // After the plugin has exited we'll remove this thread's plugin from the
+    // active plugins. This is done within the IO context so we can properly
+    // join the thread again. If no active plugins remain, then we'll terminate
+    // the process.
+    boost::asio::post(plugin_context, [&, request]() {
+        std::lock_guard lock(active_plugins_mutex);
+
+        auto& [thread, bridge] = active_plugins.at(request);
+        thread.join();
+        active_plugins.erase(request);
+    });
 
     // Defer actually shutting down the process to allow for fast plugin
     // scanning by allowing plugins to reuse the same group host process
@@ -219,13 +214,14 @@ void GroupBridge::accept_requests() {
                 logger.log("Finished initializing '" + request.plugin_path +
                            "'");
 
-                // CreateThread() doesn't support multiple arguments and
-                // requires manualy memory management.
-                handle_plugin_dispatch_parameters* thread_params =
-                    new std::pair<GroupBridge*, GroupRequest>(this, request);
-                active_plugins[request] = std::pair(
-                    Win32Thread(handle_plugin_dispatch_proxy, thread_params),
-                    std::move(bridge));
+                // Start listening for dispatcher events sent to the plugin's
+                // socket on another thread. The actual event handling will
+                // still occur within this IO context.
+                active_plugins[request] =
+                    std::pair(std::thread([&, request]() {
+                                  handle_plugin_dispatch(request);
+                              }),
+                              std::move(bridge));
             } catch (const std::runtime_error& error) {
                 logger.log("Error while initializing '" + request.plugin_path +
                            "':");
@@ -258,8 +254,6 @@ void GroupBridge::async_handle_events() {
 
         // Handle Win32 messages unless plugins are in the middle of opening
         // their editor
-        // TODO: Check if those same weird crashes with Serum are happening
-        //       again with these normal threads
         if (!should_skip_message_loop()) {
             std::lock_guard lock(active_plugins_mutex);
 
@@ -359,17 +353,4 @@ std::string create_logger_prefix(const fs::path& socket_path) {
     }
 
     return "[" + socket_name + "] ";
-}
-
-uint32_t WINAPI handle_plugin_dispatch_proxy(void* param) {
-    // The Win32 API only allows you to pass a void pointer to threads, so we
-    // need to use manual memory management.
-    auto thread_params = static_cast<handle_plugin_dispatch_parameters*>(param);
-    GroupBridge* instance = thread_params->first;
-    GroupRequest parameters = thread_params->second;
-    delete thread_params;
-
-    instance->handle_plugin_dispatch(parameters);
-
-    return 0;
 }

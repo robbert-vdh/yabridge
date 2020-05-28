@@ -127,9 +127,7 @@ class GroupBridge {
      * Run a plugin's dispatcher and message loop, processing all events on the
      * main IO context. The plugin will have already been created in
      * `accept_requests` since it has to be initiated inside of the IO context's
-     * thread. Called by proxy using `handle_plugin_dispatch_proxy()` in
-     * `./group.cpp` because the Win32 `CreateThread` API only allows passing a
-     * single pointer to the function and does not allow lambdas.
+     * thread.
      *
      * Once the plugin has exited, this thread will then remove itself from the
      * `active_plugins` map. If this causes the vector to become empty, we will
@@ -264,7 +262,7 @@ class GroupBridge {
      *       conventions were nto being respected.
      */
     std::unordered_map<GroupRequest,
-                       std::pair<Win32Thread, std::unique_ptr<Vst2Bridge>>>
+                       std::pair<std::thread, std::unique_ptr<Vst2Bridge>>>
         active_plugins;
     /**
      * A mutex to prevent two threads from simultaneously accessing the plugins
