@@ -86,6 +86,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     async_log_pipe_lines(wine_stderr, wine_stderr_buffer, "[Wine STDERR] ");
     wine_io_handler = std::thread([&]() { io_context.run(); });
 
+#ifndef USE_WINEDBG
     // If the Wine process fails to start, then nothing will connect to the
     // sockets and we'll be hanging here indefinitely. To prevent this, we'll
     // periodically poll whether the Wine process is still running, and throw
@@ -125,6 +126,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
             std::this_thread::sleep_for(1s);
         }
     }).detach();
+#endif
 
     // It's very important that these sockets are connected to in the same
     // order in the Wine VST host
