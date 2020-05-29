@@ -69,10 +69,7 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
                        std::string plugin_dll_path,
                        std::string socket_endpoint_path)
     : io_context(main_context),
-      // See `plugin_handle`s docstring for information on why we're leaking
-      // memory here
-      // plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
-      plugin_handle(LoadLibrary(plugin_dll_path.c_str())),
+      plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
       socket_endpoint(socket_endpoint_path),
       host_vst_dispatch(io_context),
       host_vst_dispatch_midi_events(io_context),
@@ -89,8 +86,9 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
     // there are some older deprecated names that legacy plugins may still use
     VstEntryPoint vst_entry_point = nullptr;
     for (auto name : {"VSTPluginMain", "main_plugin", "main"}) {
-        vst_entry_point = reinterpret_cast<VstEntryPoint>(
-            reinterpret_cast<size_t>(GetProcAddress(plugin_handle, name)));
+        vst_entry_point =
+            reinterpret_cast<VstEntryPoint>(reinterpret_cast<size_t>(
+                GetProcAddress(plugin_handle.get(), name)));
 
         if (vst_entry_point != nullptr) {
             break;

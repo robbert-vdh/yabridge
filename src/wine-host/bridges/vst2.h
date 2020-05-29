@@ -169,19 +169,10 @@ class Vst2Bridge {
 
     /**
      * The shared library handle of the VST plugin. I sadly could not get
-     * Boost.DLL to work here, so we'll just load the VST plugins by hand.
-     *
-     * FIXME: I don't know why, but `FreeLibrary()` seems to corrupt memory.
-     *        This leads to a lot of weird behavior, such as plugins crashing as
-     *        soon as other plugins get loaded or calls to `LoadLibrary()`
-     *        returning null pointers while they would otherwise load fine
-     *        without the prior call to `FreeLibrary`. We are leaking memory
-     *        here until this is fixed, but it should not be a huge issue since
-     *        this leak only exists for plugin groups.
+     * Boost.DLL to work here, so we'll just load the VST plugisn by hand.
      */
-    // std::unique_ptr<std::remove_pointer_t<HMODULE>, decltype(&FreeLibrary)>
-    //     plugin_handle;
-    HMODULE plugin_handle;
+    std::unique_ptr<std::remove_pointer_t<HMODULE>, decltype(&FreeLibrary)>
+        plugin_handle;
 
     /**
      * The loaded plugin's `AEffect` struct, obtained using the above library
