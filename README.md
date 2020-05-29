@@ -156,16 +156,16 @@ group = "fabfilter"
 ["MeldaProduction/Tools/MMultiAnalyzer.so"]
 group = "melda"
 
-# Matches an entire directory and all files inside it. Make sure to not include
-# a trailing slash.
+# Matches an entire directory and all files inside it, make sure to not include
+# a trailing slash
 ["ToneBoosters"]
 group = "toneboosters"
 
-# Simple glob patterns can be used to avoid a unnecessary repitition
+# Simple glob patterns can be used to avoid a unneeded repitition
 ["iZotope*/Neutron *"]
 group = "izotope"
 
-# And of course, you can also add multiple plugins to the same group by hand
+# Of course, you can also add multiple plugins to the same group by hand
 ["iZotope7/Insight 2.so"]
 group = "izotope"
 
