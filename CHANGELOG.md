@@ -10,12 +10,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added the ability to host multiple plugins in the same Wine process through
-  _plugin groups_. A plugin group is a user-defined set of plugins that will be
-  hosted together in the same Wine process. This allows multiple instances of
-  plugins to share data and communicate with eachother. Examples of plugins that
-  can benefit from this are FabFilter Pro-Q 3, MMultiAnalyzer and the iZotope
-  mixing plugins. See the readme for instructions on how to set this up.
+- Added the ability to host multiple plugins within a single Wine process
+  through _plugin groups_. A plugin group is a user-defined set of plugins that
+  will be hosted together in the same Wine process. This allows multiple
+  instances of plugins to share data and communicate with each other. Examples
+  of plugins that can benefit from this are FabFilter Pro-Q 3, MMultiAnalyzer
+  and the iZotope mixing plugins. See the readme for instructions on how to set
+  this up.
 
 ### Changed
 
@@ -23,13 +24,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - GUI events are now always handled on a steady timer rather than being
   interleaved as part of the event loop. This change was made to unify the event
   handling logic for individually hosted plugins and plugin groups. It should
-  have any negative effects, but please let me know if this does cause unwanted
-  behavior.
+  not have any noticeable effects, but please let me know if this does cause
+  unwanted behavior.
 
 ### Fixed
 
 - Steal keyboard focus when clicking on the plugin editor window to account for
-  the new keyboard focus behavior in Bitwig Studio 3.2.
+  the new keyboard focus behavior in _Bitwig Studio 3.2_.
 - Fixed large amount of empty lines in the log file when the Wine process closes
   unexpectedly.
 - Made the plugin and host detection slightly more robust.
