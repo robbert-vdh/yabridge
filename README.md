@@ -133,16 +133,16 @@ plugin or with other plugins made by the same manufacturer. This is often used
 in mixing plugins to allow different tracks to reference each other without
 having to route audio between them. Examples of plugins that do this are
 FabFilter Pro-Q 3, MMultiAnalyzer and the iZotope mixing plugins. For this to
-work, all instances of a particular plugin have to be hosted in the same
+work, all instances of a particular plugin will have to be hosted in the same
 process.
 
 Yabridge has the concept of _plugin groups_, which are user defined groups of
-plugins that will all be hosted in the same process. These plugins groups can be
-configured using a `yabridge.toml` file located either in the same directory as
-the symlink of or copy to `libyabridge.so`, or in any directories above it. This
+plugins that will all be hosted in a single process. Plugins groups can be
+configured by creating a `yabridge.toml` file in either the same directory as
+the symlink of or copy to `libyabridge.so` or in any directories above it. This
 file contains case sensitive
 [glob](https://www.man7.org/linux/man-pages/man7/glob.7.html) patterns that are
-used to match the names of `*.so` files relative to that `yabridge.toml` file.
+used to match the paths of `*.so` files relative to that `yabridge.toml` file.
 These patterns can also match an entire directory. For simplicity's sake only
 the first `yabridge.toml` file found and only the first glob pattern matched
 within that file are considered. An example `yabridge.toml` file looks like
@@ -162,21 +162,25 @@ group = "melda"
 ["ToneBoosters"]
 group = "toneboosters"
 
+# Simple glob patterns can be used to avoid a unnecessary repitition
 ["iZotope*/Neutron *"]
 group = "izotope"
 
+# And of course, you can also add multiple plugins to the same group by hand
 ["iZotope7/Insight 2.so"]
 group = "izotope"
 
-# This won't do anything, since the pattern above has already matched this file
+# This won't do anything as this file has already been matched by the pattern
+# above
 ["iZotope7/Neutron 2 Mix Tap.so"]
 group = "This will be ignored!"
 
-# Don't do this! This matches all plugins in this directory and all of its
-# subdirectories, causing all of them to be hosted in a single process. While
-# this would increase startup performance considerably, it will also break any
-# form of individual plugin sandboxing provided by the host and could
-# potentially introduce all kinds of weird issues.
+# Don't do this unless you know what you're doing! This matches all plugins in
+# this directory and all of its subdirectories, which will cause all of them to
+# be hosted in a single process. While this would increase startup and plugin
+# scanning performance considerably, it will also break any form of individual
+# plugin sandboxing provided by the host and could potentially introduce all
+# kinds of weird issues.
 # ["*"]
 # group = "all"
 ```
