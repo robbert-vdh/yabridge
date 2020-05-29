@@ -128,23 +128,23 @@ handle it accordingly.
 ### Plugin groups
 
 Some plugins have the ability to communicate with other instances of that same
-plugin or with other plugins made by the same manufacturer. This is often used
-in mixing plugins to allow different tracks to reference each other without
+plugin or even with other plugins made by the same manufacturer. This is often
+used in mixing plugins to allow different tracks to reference each other without
 having to route audio between them. Examples of plugins that do this are
-FabFilter Pro-Q 3, MMultiAnalyzer and the iZotope mixing plugins. For this to
-work, all instances of a particular plugin will have to be hosted in the same
-process.
+FabFilter Pro-Q 3, MMultiAnalyzer and the iZotope mixing plugins. In order for
+this to work, all instances of a particular plugin will have to be hosted in the
+same process.
 
 Yabridge has the concept of _plugin groups_, which are user defined groups of
-plugins that will all be hosted in a single process. Plugins groups can be
-configured by creating a `yabridge.toml` file in either the same directory as
-the symlink of or copy to `libyabridge.so` or in any directories above it. This
-file contains case sensitive
+plugins that will all be hosted inside of a single process. Plugins groups can
+be configured for a plugin by creating a `yabridge.toml` file in either the same
+directory as the symlink of or copy to `libyabridge.so` or in any directories
+above it. This file contains case sensitive
 [glob](https://www.man7.org/linux/man-pages/man7/glob.7.html) patterns that are
-used to match the paths of `*.so` files relative to that `yabridge.toml` file.
-These patterns can also match an entire directory. For simplicity's sake only
+used to match the paths of `.so` files relative to that `yabridge.toml` file.
+These patterns can also match an entire directory. For simplicity's sake, only
 the first `yabridge.toml` file found and only the first glob pattern matched
-within that file are considered. An example `yabridge.toml` file looks like
+within that file will be considered. An example `yabridge.toml` file looks like
 this:
 
 ```toml
