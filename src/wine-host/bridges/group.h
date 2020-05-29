@@ -191,7 +191,7 @@ class GroupBridge {
      * Continuously read from a pipe and write the output to the log file. Used
      * with the IO streams captured by `stdout_redirect` and `stderr_redirect`.
      *
-     * TODO: Merge this with `PluginBridge::async_log_pipe_lines`
+     * TODO: Merge this with `HostProcess::async_log_pipe_lines`
      *
      * @param pipe The pipe to read from.
      * @param buffer The stream buffer to write to.

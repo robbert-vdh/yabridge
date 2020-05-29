@@ -20,14 +20,12 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
-#include <boost/asio/streambuf.hpp>
-#include <boost/process/child.hpp>
 #include <mutex>
 #include <thread>
 
 #include "../common/logging.h"
 #include "configuration.h"
-#include "utils.h"
+#include "host-process.h"
 
 /**
  * This handles the communication between the Linux native VST plugin and the
@@ -86,16 +84,6 @@ class PluginBridge {
      * The path to the .dll being loaded in the Wine VST host.
      */
     const boost::filesystem::path vst_plugin_path;
-    /**
-     * Whether the plugin is 64-bit or 32-bit.
-     */
-    const PluginArchitecture vst_plugin_arch;
-    /**
-     * The path to the host application (i.e. a path to either
-     * `yabridge-host.exe` or `yabridge-host-32.exe`). The host application will
-     * be chosen depending on the architecture of the VST plugin .dll file.
-     */
-    const boost::filesystem::path vst_host_path;
 
     /**
      * This AEffect struct will be populated using the data passed by the Wine
@@ -105,31 +93,6 @@ class PluginBridge {
     AEffect plugin;
 
    private:
-    /**
-     * Write output from an async pipe to the log on a line by line basis.
-     * Useful for logging the Wine process's STDOUT and STDERR streams.
-     *
-     * @param pipe The pipe to read from.
-     * @param buffer The stream buffer to write to.
-     * @param prefix Text to prepend to the line before writing to the log.
-     */
-    void async_log_pipe_lines(patched_async_pipe& pipe,
-                              boost::asio::streambuf& buffer,
-                              std::string prefix = "");
-
-    /**
-     * Launch the Wine VST host to host the plugin. When using plugin groups,
-     * this will first try to connect to the plugin group's socket (determined
-     * based on group name, Wine prefix and architecture). If that fails, it
-     * will launch a new, detached group host process. This will likely outlive
-     * this plugin instance if multiple instances of yabridge using the same
-     * plugin group are in use. In the event that two yabridge instances are
-     * initialized at the same time and both instances spawn their own group
-     * host process, then the later one will simply terminate gracefully after
-     * it fails to listen on the socket.
-     */
-    void launch_vst_host();
-
     /**
      * Format and log all relevant debug information during initialization.
      */
@@ -212,49 +175,17 @@ class PluginBridge {
      */
     const std::string wine_version;
 
-    boost::asio::streambuf wine_stdout_buffer;
-    boost::asio::streambuf wine_stderr_buffer;
-    /**
-     * The STDOUT stream of the Wine process we can forward to the logger.
-     */
-    patched_async_pipe wine_stdout;
-    /**
-     * The STDERR stream of the Wine process we can forward to the logger.
-     */
-    patched_async_pipe wine_stderr;
-    /**
-     * Runs the Boost.Asio `io_context` thread for logging the Wine process
-     * STDOUT and STDERR messages.
-     */
-    std::thread wine_io_handler;
-
     /**
      * The Wine process hosting the Windows VST plugin.
      *
      * @see launch_vst_host
      */
-    boost::process::child vst_host;
+    std::unique_ptr<HostProcess> vst_host;
     /**
-     * The PID of the vst host process. Needed for checking whether the group
-     * host is still active if we are connecting to an already running group
-     * host instance.
-     *
-     * TODO: Remove this after encapsulating the minor differences in individual
-     *       and group host handling
+     * Runs the Boost.Asio `io_context` thread for logging the Wine process
+     * STDOUT and STDERR messages.
      */
-    pid_t vst_host_pid;
-    /**
-     * A thread that waits for the group host to have started and then ask it to
-     * host our plugin. This is used to defer the request since it may take a
-     * little while until the group host process is up and running. This way we
-     * don't have to delay the rest of the initialization process.
-     *
-     * TODO: Remove this after encapsulating the minor differences in individual
-     *       and group host handling
-     * TODO: Replace this with inotify to prevent delays and to reduce wasting
-     *       resources
-     */
-    std::thread group_host_connect_handler;
+    std::thread wine_io_handler;
 
     /**
      * A scratch buffer for sending and receiving data during `process` and
