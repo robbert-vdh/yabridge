@@ -121,9 +121,11 @@ void GroupBridge::handle_plugin_dispatch(const GroupRequest request) {
     logger.log("'" + request.plugin_path + "' has exited");
 
     // After the plugin has exited we'll remove this thread's plugin from the
-    // active plugins. This is done within the IO context so we can properly
-    // join the thread again. If no active plugins remain, then we'll terminate
-    // the process.
+    // active plugins. This is done within the IO context because the call to
+    // `FreeLibrary()` has to be done from the main thread, or else we'll
+    // potentially corrupt our heap. This way we can also properly join the
+    // thread again. If no active plugins remain, then we'll terminate the
+    // process.
     boost::asio::post(plugin_context, [&, request]() {
         std::lock_guard lock(active_plugins_mutex);
 
