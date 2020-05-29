@@ -30,7 +30,8 @@ Please let me know if there are any issues with other VST hosts.
 You can either download a prebuilt version of yabridge through the GitHub
 [releases](https://github.com/robbert-vdh/yabridge/releases) section, or you can
 compile it from source using the instructions in the [build](#Building) section
-below.
+below. Alternatively there are AUR packages available if you are running Arch or
+Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/), [yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/), [yabridge-git](https://aur.archlinux.org/packages/yabridge-git/)).
 
 There are two ways to use yabridge. If your host supports plugin sanboxing, then
 the recommended installation method is to use symbolic links. The main advantage
@@ -85,9 +86,7 @@ files from the downloaded archive are somewhere in the search path. The
 recommended way to do this is to download yabridge from the GitHub
 [releases](https://github.com/robbert-vdh/yabridge/releases) section, extract
 all the files to `~/.local/share/yabridge`, and then add that directory to your
-`$PATH` environment variable. Alternatively there's an [AUR
-package](https://aur.archlinux.org/packages/yabridge/) available if you're
-running Arch or Manjaro.
+`$PATH` environment variable.
 
 The setup process for a plugin is similar to the procedure described above.
 Using the same example, if you have extracted yabridge's files to
