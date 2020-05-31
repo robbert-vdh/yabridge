@@ -49,7 +49,9 @@ jobs:
           mkdir -p /tmp/prefix
           export WINEPREFIX=/tmp/prefix
 
-          meson setup --buildtype=release --cross-file cross-wine.conf -Duse-bitbridge=true build
+          # Statically link to libstdc++ on Ubuntu 18.04 as we're compiling
+          # with a newer version of g++ than what's in the default repos
+          meson setup --buildtype=release --cross-file cross-wine.conf -Duse-bitbridge=true  -Dcpp_link_args='-static-libstdc++' -Dbuild.cpp_link_args='-static-libstdc++' build
           ninja -C build
       - name: Create an archive for the binaries
         run: |
