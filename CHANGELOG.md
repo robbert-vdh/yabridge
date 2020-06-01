@@ -14,13 +14,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   through _plugin groups_. A plugin group is a user-defined set of plugins that
   will be hosted together in the same Wine process. This allows multiple
   instances of plugins to share data and communicate with each other. Examples
-  of plugins that can benefit from this are FabFilter Pro-Q 3, MMultiAnalyzer
+  of plugins that can benefit from this are FabFilter Pro-Q 3, MMultiAnalyzer,
   and the iZotope mixing plugins. See the readme for instructions on how to set
   this up.
 
 ### Changed
 
-- Changed architecture to use one less socket.
+- Changed architecture to use one fewer socket.
 - GUI events are now always handled on a steady timer rather than being
   interleaved as part of the event loop. This change was made to unify the event
   handling logic for individually hosted plugins and plugin groups. It should
