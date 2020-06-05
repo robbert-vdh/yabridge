@@ -26,8 +26,8 @@ Win32Timer::Win32Timer(HWND window_handle,
 }
 
 Win32Timer::~Win32Timer() {
-    if (timer_id.has_value()) {
-        KillTimer(window_handle, timer_id.value());
+    if (timer_id) {
+        KillTimer(window_handle, *timer_id);
     }
 }
 

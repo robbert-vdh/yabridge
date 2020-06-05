@@ -57,7 +57,7 @@ std::string create_logger_prefix(const fs::path& socket_path) {
 std::optional<fs::path> find_wineprefix() {
     std::optional<fs::path> dosdevices_dir =
         find_dominating_file("dosdevices", find_vst_plugin(), fs::is_directory);
-    if (!dosdevices_dir.has_value()) {
+    if (!dosdevices_dir) {
         return std::nullopt;
     }
 
@@ -276,7 +276,7 @@ bp::environment set_wineprefix() {
     }
 
     const auto wineprefix_path = find_wineprefix();
-    if (wineprefix_path.has_value()) {
+    if (wineprefix_path) {
         env["WINEPREFIX"] = wineprefix_path->string();
     }
 

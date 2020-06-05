@@ -63,9 +63,9 @@ Configuration Configuration::load_for(const fs::path& yabridge_path) {
     // to default configuration settings if it doesn't exist
     const std::optional<fs::path> config_file =
         find_dominating_file("yabridge.toml", yabridge_path);
-    if (!config_file.has_value()) {
+    if (!config_file) {
         return Configuration();
     }
 
-    return Configuration(config_file.value(), yabridge_path);
+    return Configuration(*config_file, yabridge_path);
 }

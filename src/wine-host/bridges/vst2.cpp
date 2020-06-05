@@ -245,10 +245,9 @@ void Vst2Bridge::handle_parameters() {
             // presence of the `value` field tells us which one we're dealing
             // with.
             auto request = read_object<Parameter>(host_vst_parameters);
-            if (request.value.has_value()) {
+            if (request.value) {
                 // `setParameter`
-                plugin->setParameter(plugin, request.index,
-                                     request.value.value());
+                plugin->setParameter(plugin, request.index, *request.value);
 
                 ParameterResult response{std::nullopt};
                 write_object(host_vst_parameters, response);
@@ -477,8 +476,8 @@ class HostCallbackDataConverter : DefaultDataConverter {
                 // Return a pointer to the `VstTimeInfo` object written in
                 // the function above
                 VstTimeInfo* time_info_pointer = nullptr;
-                if (time_info.has_value()) {
-                    time_info_pointer = &time_info.value();
+                if (time_info) {
+                    time_info_pointer = &*time_info;
                 }
 
                 return reinterpret_cast<intptr_t>(time_info_pointer);

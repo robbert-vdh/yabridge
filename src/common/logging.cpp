@@ -158,8 +158,8 @@ void Logger::log_event(bool is_dispatch,
         }
 
         const auto opcode_name = opcode_to_string(is_dispatch, opcode);
-        if (opcode_name.has_value()) {
-            message << opcode_name.value();
+        if (opcode_name) {
+            message << *opcode_name;
         } else {
             message << "<opcode = " << opcode << ">";
         }
@@ -169,7 +169,7 @@ void Logger::log_event(bool is_dispatch,
 
         // Only used during `effSetSpeakerArrangement` and
         // `effGetSpeakerArrangement`
-        if (value_payload.has_value()) {
+        if (value_payload) {
             std::visit(
                 overload{
                     [&](auto) {},
@@ -177,7 +177,7 @@ void Logger::log_event(bool is_dispatch,
                         message << "<" << speaker_arrangement.speakers.size()
                                 << " input_speakers>, ";
                     }},
-                value_payload.value());
+                *value_payload);
         }
 
         std::visit(
@@ -248,7 +248,7 @@ void Logger::log_event_response(
 
         // Only used during `effSetSpeakerArrangement` and
         // `effGetSpeakerArrangement`
-        if (value_payload.has_value()) {
+        if (value_payload) {
             std::visit(
                 overload{
                     [&](auto) {},
@@ -256,7 +256,7 @@ void Logger::log_event_response(
                         message << ", <" << speaker_arrangement.speakers.size()
                                 << " input_speakers>";
                     }},
-                value_payload.value());
+                *value_payload);
         }
 
         std::visit(

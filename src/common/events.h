@@ -153,8 +153,8 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
     const std::optional<EventPayload> value_payload =
         data_converter.read_value(opcode, value);
 
-    if (logging.has_value()) {
-        auto [logger, is_dispatch] = logging.value();
+    if (logging) {
+        auto [logger, is_dispatch] = *logging;
         logger.log_event(is_dispatch, opcode, index, value, payload, option,
                          value_payload);
     }
@@ -172,8 +172,8 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
         response = read_object<EventResult>(socket);
     }
 
-    if (logging.has_value()) {
-        auto [logger, is_dispatch] = logging.value();
+    if (logging) {
+        auto [logger, is_dispatch] = *logging;
         logger.log_event_response(is_dispatch, opcode, response.return_value,
                                   response.payload, response.value_payload);
     }
@@ -209,15 +209,15 @@ void receive_event(boost::asio::local::stream_protocol::socket& socket,
                    std::optional<std::pair<Logger&, bool>> logging,
                    F callback) {
     auto event = read_object<Event>(socket);
-    if (logging.has_value()) {
-        auto [logger, is_dispatch] = logging.value();
+    if (logging) {
+        auto [logger, is_dispatch] = *logging;
         logger.log_event(is_dispatch, event.opcode, event.index, event.value,
                          event.payload, event.option, event.value_payload);
     }
 
     EventResult response = callback(event);
-    if (logging.has_value()) {
-        auto [logger, is_dispatch] = logging.value();
+    if (logging) {
+        auto [logger, is_dispatch] = *logging;
         logger.log_event_response(is_dispatch, event.opcode,
                                   response.return_value, response.payload,
                                   response.value_payload);
@@ -308,9 +308,9 @@ auto passthrough_event(AEffect* plugin, F callback) {
         // data through the value argument.
         void* data = std::visit(read_payload_fn, event.payload);
         intptr_t value = event.value;
-        if (event.value_payload.has_value()) {
+        if (event.value_payload) {
             value = reinterpret_cast<intptr_t>(
-                std::visit(read_payload_fn, event.value_payload.value()));
+                std::visit(read_payload_fn, *event.value_payload));
         }
 
         const intptr_t return_value = callback(
@@ -388,9 +388,9 @@ auto passthrough_event(AEffect* plugin, F callback) {
         const EventResultPayload response_data =
             std::visit(write_payload_fn, event.payload);
         std::optional<EventResultPayload> value_response_data = std::nullopt;
-        if (event.value_payload.has_value()) {
+        if (event.value_payload) {
             value_response_data =
-                std::visit(write_payload_fn, event.value_payload.value());
+                std::visit(write_payload_fn, *event.value_payload);
         }
 
         EventResult response{return_value, response_data, value_response_data};

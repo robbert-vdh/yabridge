@@ -62,13 +62,13 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
           create_logger_prefix(socket_endpoint.path()))),
       wine_version(get_wine_version()),
       vst_host(
-          config.group.has_value()
+          config.group
               ? std::unique_ptr<HostProcess>(
                     std::make_unique<GroupHost>(io_context,
                                                 logger,
                                                 vst_plugin_path,
                                                 socket_endpoint.path(),
-                                                config.group.value(),
+                                                *config.group,
                                                 host_vst_dispatch))
               : std::unique_ptr<HostProcess>(
                     std::make_unique<IndividualHost>(io_context,
@@ -554,9 +554,9 @@ float PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
         response = read_object<ParameterResult>(host_vst_parameters);
     }
 
-    logger.log_get_parameter_response(response.value.value());
+    logger.log_get_parameter_response(*response.value);
 
-    return response.value.value();
+    return *response.value;
 }
 
 void PluginBridge::set_parameter(AEffect* /*plugin*/, int index, float value) {
@@ -575,7 +575,7 @@ void PluginBridge::set_parameter(AEffect* /*plugin*/, int index, float value) {
     logger.log_set_parameter_response();
 
     // This should not contain any values and just serve as an acknowledgement
-    assert(!response.value.has_value());
+    assert(!response.value);
 }
 
 void PluginBridge::log_init_message() {
@@ -602,8 +602,8 @@ void PluginBridge::log_init_message() {
              << config.matched_file.value_or("<defaults>").string() << "'"
              << std::endl;
     init_msg << "hosting mode: '";
-    if (config.group.has_value()) {
-        init_msg << "plugin group \"" << config.group.value() << "\"";
+    if (config.group) {
+        init_msg << "plugin group \"" << *config.group << "\"";
     } else {
         init_msg << "individually";
     }
