@@ -170,7 +170,9 @@ boost::filesystem::path generate_group_endpoint(
     PluginArchitecture architecture) {
     std::ostringstream socket_name;
     socket_name << "yabridge-group-" << group_name << "-"
-                << std::hash<std::string>{}(wine_prefix.string()) << "-";
+                << std::to_string(
+                       std::hash<std::string>{}(wine_prefix.string()))
+                << "-";
     switch (architecture) {
         case PluginArchitecture::vst_32:
             socket_name << "x32";
