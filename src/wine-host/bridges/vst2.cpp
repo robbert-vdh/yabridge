@@ -58,7 +58,7 @@ uint32_t WINAPI handle_process_replacing_proxy(void*);
 Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
     // This is needed during the initialization of the plugin since we can only
     // add our own pointer after it's done initializing
-    if (current_bridge_instance != nullptr) {
+    if (current_bridge_instance) {
         return *current_bridge_instance;
     }
 
@@ -77,7 +77,7 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
       host_vst_parameters(io_context),
       host_vst_process_replacing(io_context) {
     // Got to love these C APIs
-    if (plugin_handle == nullptr) {
+    if (!plugin_handle) {
         throw std::runtime_error("Could not load the Windows .dll file at '" +
                                  plugin_dll_path + "'");
     }
@@ -90,11 +90,11 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
             reinterpret_cast<VstEntryPoint>(reinterpret_cast<size_t>(
                 GetProcAddress(plugin_handle.get(), name)));
 
-        if (vst_entry_point != nullptr) {
+        if (vst_entry_point) {
             break;
         }
     }
-    if (vst_entry_point == nullptr) {
+    if (!vst_entry_point) {
         throw std::runtime_error(
             "Could not find a valid VST entry point for '" + plugin_dll_path +
             "'.");
@@ -116,7 +116,7 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
         std::lock_guard lock(current_bridge_instance_mutex);
         current_bridge_instance = this;
         plugin = vst_entry_point(host_callback_proxy);
-        if (plugin == nullptr) {
+        if (!plugin) {
             throw std::runtime_error("VST plugin at '" + plugin_dll_path +
                                      "' failed to initialize.");
         }
@@ -301,7 +301,7 @@ void Vst2Bridge::handle_process_replacing() {
                 // Any plugin made in the last fifteen years or so should
                 // support `processReplacing`. In the off chance it does not we
                 // can just emulate this behavior ourselves.
-                if (plugin->processReplacing != nullptr) {
+                if (plugin->processReplacing) {
                     plugin->processReplacing(plugin, inputs.data(),
                                              outputs.data(),
                                              request.sample_frames);

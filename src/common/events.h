@@ -39,7 +39,7 @@ class DefaultDataConverter {
                               const int /*index*/,
                               const intptr_t /*value*/,
                               const void* data) {
-        if (data == nullptr) {
+        if (!data) {
             return nullptr;
         }
 
@@ -355,7 +355,7 @@ auto passthrough_event(AEffect* plugin, F callback) {
                 // `effEditOpen()` I can assume there are plugins that don't
                 // handle this correctly.
                 VstRect* editor_rect = *static_cast<VstRect**>(data);
-                if (editor_rect == nullptr) {
+                if (!editor_rect) {
                     return nullptr;
                 }
 
@@ -369,7 +369,7 @@ auto passthrough_event(AEffect* plugin, F callback) {
                 // host doesn't support this.
                 const auto time_info =
                     reinterpret_cast<const VstTimeInfo*>(return_value);
-                if (time_info == nullptr) {
+                if (!time_info) {
                     return nullptr;
                 } else {
                     return *time_info;

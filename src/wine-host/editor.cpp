@@ -258,7 +258,7 @@ LRESULT CALLBACK window_proc(HWND handle,
                 reinterpret_cast<CREATESTRUCT*>(lParam);
             const auto editor =
                 static_cast<Editor*>(window_parameters->lpCreateParams);
-            if (editor == nullptr) {
+            if (!editor) {
                 break;
             }
 
@@ -272,7 +272,7 @@ LRESULT CALLBACK window_proc(HWND handle,
         case WM_TIMER: {
             auto editor = reinterpret_cast<Editor*>(
                 GetWindowLongPtr(handle, GWLP_USERDATA));
-            if (editor == nullptr || wParam != idle_timer_id) {
+            if (!editor || wParam != idle_timer_id) {
                 break;
             }
 

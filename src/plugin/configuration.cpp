@@ -50,7 +50,7 @@ Configuration::Configuration(const fs::path& config_path,
 
         // If the table is missing some fields then they will simply be left at
         // their defaults
-        if (toml::table* config = value.as_table(); config != nullptr) {
+        if (toml::table* config = value.as_table()) {
             group = (*config)["group"].value<std::string>();
         }
 
