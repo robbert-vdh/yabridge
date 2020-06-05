@@ -2,7 +2,7 @@ project(
   'yabridge',
   'cpp',
   version : '1.2.0',
-  default_options : ['warning_level=3', 'cpp_std=c++17', 'build.cpp_std=c++17']
+  default_options : ['warning_level=3', 'cpp_std=c++2a', 'build.cpp_std=c++2a']
 )
 
 # Meson does not let us set a default cross compiler, which makes sense, but it
@@ -27,9 +27,12 @@ individual_host_name_32bit = 'yabridge-host-32'
 group_host_name_64bit = 'yabridge-group'
 group_host_name_32bit = 'yabridge-group-32'
 
+# Disable the use of concepts in Boost.Asio until Boost 1.73 gets released
+# https://github.com/boostorg/asio/issues/312
+compiler_options = ['-DBOOST_ASIO_DISABLE_CONCEPTS']
+
 # This provides an easy way to start the Wine VST host using winedbg since it
 # can be quite a pain to set up
-compiler_options = []
 if get_option('use-winedbg')
   compiler_options += '-DUSE_WINEDBG'
 endif
