@@ -38,7 +38,7 @@ class DefaultDataConverter {
     virtual EventPayload read(const int /*opcode*/,
                               const int /*index*/,
                               const intptr_t /*value*/,
-                              const void* data) {
+                              const void* data) const {
         if (!data) {
             return nullptr;
         }
@@ -60,8 +60,9 @@ class DefaultDataConverter {
      * can be serialized and conveys the meaning of the event. This is only used
      * for the `effSetSpeakerArrangement` and `effGetSpeakerArrangement` events.
      */
-    virtual std::optional<EventPayload> read_value(const int /*opcode*/,
-                                                   const intptr_t /*value*/) {
+    virtual std::optional<EventPayload> read_value(
+        const int /*opcode*/,
+        const intptr_t /*value*/) const {
         return std::nullopt;
     }
 
@@ -70,7 +71,7 @@ class DefaultDataConverter {
      */
     virtual void write(const int /*opcode*/,
                        void* data,
-                       const EventResult& response) {
+                       const EventResult& response) const {
         // The default behavior is to handle this as a null terminated C-style
         // string
         std::visit(overload{[&](const auto&) {},
@@ -92,7 +93,7 @@ class DefaultDataConverter {
      */
     virtual void write_value(const int /*opcode*/,
                              intptr_t /*value*/,
-                             const EventResult& /*response*/) {}
+                             const EventResult& /*response*/) const {}
 
     /**
      * This function can override a callback's return value based on the opcode.
@@ -104,7 +105,7 @@ class DefaultDataConverter {
      *   function.
      */
     virtual intptr_t return_value(const int /*opcode*/,
-                                  const intptr_t original) {
+                                  const intptr_t original) const {
         return original;
     }
 };

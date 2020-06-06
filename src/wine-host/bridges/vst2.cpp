@@ -144,7 +144,7 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
         Win32Thread(handle_process_replacing_proxy, this);
 }
 
-bool Vst2Bridge::should_skip_message_loop() {
+bool Vst2Bridge::should_skip_message_loop() const {
     return std::holds_alternative<EditorOpening>(editor);
 }
 
@@ -417,7 +417,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
     EventPayload read(const int opcode,
                       const int index,
                       const intptr_t value,
-                      const void* data) {
+                      const void* data) const override {
         switch (opcode) {
             case audioMasterGetTime:
                 return WantsVstTimeInfo{};
@@ -445,12 +445,15 @@ class HostCallbackDataConverter : DefaultDataConverter {
         }
     }
 
-    std::optional<EventPayload> read_value(const int opcode,
-                                           const intptr_t value) {
+    std::optional<EventPayload> read_value(
+        const int opcode,
+        const intptr_t value) const override {
         return DefaultDataConverter::read_value(opcode, value);
     }
 
-    void write(const int opcode, void* data, const EventResult& response) {
+    void write(const int opcode,
+               void* data,
+               const EventResult& response) const override {
         switch (opcode) {
             case audioMasterGetTime:
                 // Write the returned `VstTimeInfo` struct into a field and
@@ -470,7 +473,8 @@ class HostCallbackDataConverter : DefaultDataConverter {
         }
     }
 
-    intptr_t return_value(const int opcode, const intptr_t original) {
+    intptr_t return_value(const int opcode,
+                          const intptr_t original) const override {
         switch (opcode) {
             case audioMasterGetTime: {
                 // Return a pointer to the `VstTimeInfo` object written in
@@ -490,7 +494,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
 
     void write_value(const int opcode,
                      intptr_t value,
-                     const EventResult& response) {
+                     const EventResult& response) const override {
         return DefaultDataConverter::write_value(opcode, value, response);
     }
 

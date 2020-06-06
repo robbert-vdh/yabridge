@@ -107,12 +107,12 @@ class Editor {
      * Must be run from the same thread the GUI was created in because of Win32
      * limitations.
      */
-    void handle_win32_events();
+    void handle_win32_events() const;
 
     /**
      * Handle X11 events sent to the window our editor is embedded in.
      */
-    void handle_x11_events();
+    void handle_x11_events() const;
 
    private:
     /**
@@ -120,7 +120,7 @@ class Editor {
      * reparenting without using XEmbed. See the comment at the top of the
      * implementation on why this is needed.
      */
-    void fix_local_coordinates();
+    void fix_local_coordinates() const;
 
     /**
      * A pointer to the currently active window. Will be a null pointer if no

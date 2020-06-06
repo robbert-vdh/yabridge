@@ -87,7 +87,7 @@ class Vst2Bridge {
      * individually hosted plugins this check is done implicitely in
      * `Vst2Bridge::handle_win32_events()`.
      */
-    bool should_skip_message_loop();
+    bool should_skip_message_loop() const;
 
     /**
      * Handle events until the plugin exits. The actual events are posted to
@@ -151,7 +151,7 @@ class Vst2Bridge {
    private:
     /**
      * A wrapper around `plugin->dispatcher` that handles the opening and
-     * closing of GUIs.
+     * closing of GUIs. Used inside of `handle_dispatch()`.
      */
     intptr_t dispatch_wrapper(AEffect* plugin,
                               int opcode,

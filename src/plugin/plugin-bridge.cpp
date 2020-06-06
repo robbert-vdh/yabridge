@@ -187,7 +187,7 @@ class DispatchDataConverter : DefaultDataConverter {
     EventPayload read(const int opcode,
                       const int index,
                       const intptr_t value,
-                      const void* data) {
+                      const void* data) const override {
         // There are some events that need specific structs that we can't simply
         // serialize as a string because they might contain null bytes
         switch (opcode) {
@@ -262,8 +262,9 @@ class DispatchDataConverter : DefaultDataConverter {
         }
     }
 
-    std::optional<EventPayload> read_value(const int opcode,
-                                           const intptr_t value) {
+    std::optional<EventPayload> read_value(
+        const int opcode,
+        const intptr_t value) const override {
         switch (opcode) {
             case effSetSpeakerArrangement:
             case effGetSpeakerArrangement:
@@ -282,7 +283,9 @@ class DispatchDataConverter : DefaultDataConverter {
         }
     }
 
-    void write(const int opcode, void* data, const EventResult& response) {
+    void write(const int opcode,
+               void* data,
+               const EventResult& response) const override {
         switch (opcode) {
             case effOpen: {
                 // Update our `AEffect` object one last time for improperly
@@ -363,13 +366,14 @@ class DispatchDataConverter : DefaultDataConverter {
         }
     }
 
-    intptr_t return_value(const int opcode, const intptr_t original) {
+    intptr_t return_value(const int opcode,
+                          const intptr_t original) const override {
         return DefaultDataConverter::return_value(opcode, original);
     }
 
     void write_value(const int opcode,
                      intptr_t value,
-                     const EventResult& response) {
+                     const EventResult& response) const override {
         switch (opcode) {
             case effGetSpeakerArrangement: {
                 // Same as the above, but now for the input speaker

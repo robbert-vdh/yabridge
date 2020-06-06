@@ -118,7 +118,7 @@ class Logger {
      * Determine whether an event should be filtered based on the current
      * verbosity level.
      */
-    bool should_filter_event(bool is_dispatch, int opcode);
+    bool should_filter_event(bool is_dispatch, int opcode) const;
 
     /**
      * The output stream to write the log messages to. Typically either STDERR

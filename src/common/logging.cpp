@@ -297,7 +297,7 @@ void Logger::log_event_response(
     }
 }
 
-bool Logger::should_filter_event(bool is_dispatch, int opcode) {
+bool Logger::should_filter_event(bool is_dispatch, int opcode) const {
     if (verbosity >= Verbosity::all_events) {
         return false;
     }

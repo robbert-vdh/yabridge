@@ -139,7 +139,7 @@ void Editor::send_idle_event() {
     plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0);
 }
 
-void Editor::handle_win32_events() {
+void Editor::handle_win32_events() const {
     MSG msg;
 
     // The null value for the second argument is needed to handle interaction
@@ -162,7 +162,7 @@ void Editor::handle_win32_events() {
     }
 }
 
-void Editor::handle_x11_events() {
+void Editor::handle_x11_events() const {
     // TODO: Initiating drag-and-drop in Serum _sometimes_ causes the GUI to
     //       update while dragging while other times it does not. From all the
     //       plugins I've tested this only happens in Serum though.
@@ -201,7 +201,7 @@ void Editor::handle_x11_events() {
     }
 }
 
-void Editor::fix_local_coordinates() {
+void Editor::fix_local_coordinates() const {
     // We're purposely not using XEmbed. This has the consequence that wine
     // still thinks that any X and Y coordinates are relative to the x11 window
     // root instead of the parent window provided by the DAW, causing all sorts
