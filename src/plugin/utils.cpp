@@ -165,9 +165,9 @@ fs::path find_vst_plugin() {
 }
 
 boost::filesystem::path generate_group_endpoint(
-    std::string group_name,
-    boost::filesystem::path wine_prefix,
-    PluginArchitecture architecture) {
+    const std::string& group_name,
+    const boost::filesystem::path& wine_prefix,
+    const PluginArchitecture architecture) {
     std::ostringstream socket_name;
     socket_name << "yabridge-group-" << group_name << "-"
                 << std::to_string(

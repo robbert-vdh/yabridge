@@ -31,8 +31,7 @@ Win32Timer::~Win32Timer() {
     }
 }
 
-Win32Timer::Win32Timer(Win32Timer&& o) {
-    timer_id = o.timer_id;
+Win32Timer::Win32Timer(Win32Timer&& o) : timer_id(o.timer_id) {
     o.timer_id = std::nullopt;
 }
 

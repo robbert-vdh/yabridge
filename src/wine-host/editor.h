@@ -48,7 +48,7 @@ struct Size {
  */
 class WindowClass {
    public:
-    WindowClass(std::string name);
+    explicit WindowClass(const std::string& name);
     ~WindowClass();
 
     /**

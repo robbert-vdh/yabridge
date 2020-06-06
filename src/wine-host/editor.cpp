@@ -48,7 +48,7 @@ Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection);
 xcb_window_t get_x11_handle(HWND win32_handle);
 ATOM register_window_class(std::string window_class_name);
 
-WindowClass::WindowClass(std::string name)
+WindowClass::WindowClass(const std::string& name)
     : atom(register_window_class(name)) {}
 
 WindowClass::~WindowClass() {

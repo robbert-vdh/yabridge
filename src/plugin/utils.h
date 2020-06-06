@@ -134,9 +134,9 @@ std::optional<boost::filesystem::path> find_wineprefix();
  * above.
  */
 boost::filesystem::path generate_group_endpoint(
-    std::string group_name,
-    boost::filesystem::path wine_prefix,
-    PluginArchitecture architecture);
+    const std::string& group_name,
+    const boost::filesystem::path& wine_prefix,
+    const PluginArchitecture architecture);
 
 /**
  * Generate a unique name for the Unix domain socket endpoint based on the VST
