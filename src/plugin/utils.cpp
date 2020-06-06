@@ -44,8 +44,9 @@ std::string create_logger_prefix(const fs::path& socket_path) {
     // part since that's redundant
     std::string socket_name =
         socket_path.filename().replace_extension().string();
-    const std::string socket_prefix("yabridge-");
-    assert(socket_name.find(socket_prefix) == 0);
+
+    constexpr std::string_view socket_prefix("yabridge-");
+    assert(socket_name.starts_with(socket_prefix));
     socket_name = socket_name.substr(socket_prefix.size());
 
     std::ostringstream prefix;
@@ -229,7 +230,7 @@ fs::path get_this_file_location() {
     //       leading slash and then normalize the path, since three or more
     //       slashes will be coerced into a single slash.
     fs::path this_file = boost::dll::this_line_location();
-    if (this_file.string().find("//") == 0) {
+    if (this_file.string().starts_with("//")) {
         this_file = ("/" / this_file).lexically_normal();
     }
 
@@ -261,8 +262,8 @@ std::string get_wine_version() {
 
     // Strip the `wine-` prefix from the output, could potentially be absent in
     // custom Wine builds
-    const std::string version_prefix("wine-");
-    if (version_string.find(version_prefix) == 0) {
+    constexpr std::string_view version_prefix("wine-");
+    if (version_string.starts_with(version_prefix)) {
         version_string = version_string.substr(version_prefix.size());
     }
 

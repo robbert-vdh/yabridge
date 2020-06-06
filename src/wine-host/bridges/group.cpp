@@ -203,7 +203,7 @@ void GroupBridge::accept_requests() {
 
             // Collisions in the generated socket names should be very rare, but
             // it could in theory happen
-            assert(active_plugins.find(request) == active_plugins.end());
+            assert(!active_plugins.contains(request));
 
             // The plugin has to be initiated on the IO context's thread because
             // this has to be done on the same thread that's handling messages,
