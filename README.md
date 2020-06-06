@@ -217,6 +217,31 @@ override the Wine prefix for all instances of yabridge.
   Bitwig Studio, make sure the '_Individual_' plugin hosting mode is enabled and
   all of the checkboxes in the list of sandboxing exceptions are left unchecked.
 
+- If you're using a symlink and the plugin is not getting picked up at all, then
+  you can verify that the symlink is correct by running:
+
+  ```shell
+  readelf -s ~/.wine/drive_c/path/to/plugin.so | grep yabridge
+  ```
+
+  The output should contain several lines related to yabridge.
+
+- If you're seeing errors related to Wine, then you can verify that Wine is
+  working correctly by running one of the VST host applications manually.
+  Assuming that yabridge is installed under `~/.local/share/yabridge`, then
+  running `~/.local/share/yabridge/yabridge-host.exe` in a terminal should print
+  a few messages related to Wine's startup process followed by the following
+  line:
+
+  ```
+  Usage: yabridge-host.exe <vst_plugin_dll> <unix_domain_socket>
+  ```
+
+  If you're getting a `002b:err:module:__wine_process_init` error instead, then
+  your version of Wine is too old for the version of yabridge you are using and
+  you'll have to upgrade your Wine version. Instructions for how to do this on
+  Ubuntu can be found on the [WineHQ website](https://wiki.winehq.org/Ubuntu).
+
 - Sometimes left over Wine processes can cause problems. Run `wineserver -k` to
   terminate Wine related in the current or default Wine prefix.
 
