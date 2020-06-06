@@ -16,7 +16,7 @@ compatibility while also staying easy to debug and maintain.
 Yabridge has been verified to work correctly in the following VST hosts using
 Wine Staging 5.8:
 
-- Bitwig Studio 3.1 and the beta releases of 3.2
+- Bitwig Studio 3.2
 - Carla 2.1
 - Ardour 5.12
 - Mixbus 6.0.702
