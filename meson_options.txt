@@ -1,8 +1,18 @@
+# TODO: For the next major or minor release, deprecate these `use-*` flags and
+#       replace them with `with-*` variants.
+
 option(
   'use-bitbridge',
   type : 'boolean',
   value : false,
   description : 'Build a 32-bit host application for hosting 32-bit plugins. See the readme for full instructions on how to use this.'
+)
+
+option(
+  'with-static-boost',
+  type : 'boolean',
+  value : false,
+  description : 'Enable static linking for Boost. Needed when distributing the binaries to other systems.'
 )
 
 option(

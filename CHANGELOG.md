@@ -8,6 +8,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- When building from source, only statically link Boost when the
+  `with-static-boost` option is enabled.
+
 ### Fixed
 
 - Fixed plugin group socket name generation. This prevented plugin groups with

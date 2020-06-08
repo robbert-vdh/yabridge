@@ -46,8 +46,13 @@ subdir('src/common/config')
 
 # Statically link against Boost.Filesystem, otherwise it would become impossible
 # to distribute a prebuilt version of yabridge
-boost_dep = dependency('boost', version : '>=1.66', static : true)
-boost_filesystem_dep = dependency('boost', version : '>=1.66', modules : ['filesystem'], static : true)
+boost_dep = dependency('boost', version : '>=1.66', static : get_option('with-static-boost'))
+boost_filesystem_dep = dependency(
+  'boost',
+  version : '>=1.66',
+  modules : ['filesystem'],
+  static : get_option('with-static-boost')
+)
 bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
 threads_dep = dependency('threads')
 tomlplusplus_dep = subproject('tomlplusplus').get_variable('tomlplusplus_dep')
@@ -148,7 +153,7 @@ if get_option('use-bitbridge')
   winegcc = meson.get_compiler('cpp', native : false)
   boost_filesystem_dep = winegcc.find_library(
     'boost_filesystem',
-    static : true,
+    static : get_option('with-static-boost'),
     dirs : [
       # Used by Arch based distros
       '/usr/local/lib32',
