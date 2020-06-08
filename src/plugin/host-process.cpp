@@ -36,7 +36,7 @@ namespace fs = boost::filesystem;
 template <typename... Args>
 bp::child launch_host(fs::path host_path, Args&&... args) {
     return bp::child(
-#ifdef USE_WINEDBG
+#ifdef WITH_WINEDBG
         // This is set up for KDE Plasma. Other desktop environments and
         // window managers require some slight modifications to spawn a
         // detached terminal emulator.
@@ -85,7 +85,7 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
       plugin_arch(find_vst_architecture(plugin_path)),
       host_path(find_vst_host(plugin_arch, false)),
       host(launch_host(host_path,
-#ifdef USE_WINEDBG
+#ifdef WITH_WINEDBG
                        plugin_path.filename(),
 #else
                        plugin_path,
@@ -94,13 +94,13 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
                        bp::env = set_wineprefix(),
                        bp::std_out = stdout_pipe,
                        bp::std_err = stderr_pipe
-#ifdef USE_WINEDBG
+#ifdef WITH_WINEDBG
                        ,  // winedbg has no reliable way to escape spaces, so
                           // we'll start the process in the plugin's directory
                        bp::start_dir = plugin_path.parent_path()
 #endif
                            )) {
-#ifdef USE_WINEDBG
+#ifdef WITH_WINEDBG
     if (plugin_path.string().find(' ') != std::string::npos) {
         logger.log("Warning: winedbg does not support paths containing spaces");
     }
@@ -135,7 +135,7 @@ GroupHost::GroupHost(
       plugin_arch(find_vst_architecture(plugin_path)),
       host_path(find_vst_host(plugin_arch, true)),
       host_vst_dispatch(host_vst_dispatch) {
-#ifdef USE_WINEDBG
+#ifdef WITH_WINEDBG
     if (plugin_path.string().find(' ') != std::string::npos) {
         logger.log("Warning: winedbg does not support paths containing spaces");
     }

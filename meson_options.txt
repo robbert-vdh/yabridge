@@ -5,6 +5,13 @@ option(
   'use-bitbridge',
   type : 'boolean',
   value : false,
+  description : 'Alias for `with-bitbridge`, will be marked as deprecated in the next minor version.'
+)
+
+option(
+  'with-bitbridge',
+  type : 'boolean',
+  value : false,
   description : 'Build a 32-bit host application for hosting 32-bit plugins. See the readme for full instructions on how to use this.'
 )
 
@@ -17,6 +24,13 @@ option(
 
 option(
   'use-winedbg',
+  type : 'boolean',
+  value : false,
+  description : 'Alias for `with-winedbg`, will be marked as deprecated in the next minor version.'
+)
+
+option(
+  'with-winedbg',
   type : 'boolean',
   value : false,
   description : 'Whether to run the Wine VST host with GDB attached. Might not always be reliable.'

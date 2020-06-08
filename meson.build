@@ -31,13 +31,20 @@ group_host_name_32bit = 'yabridge-group-32'
 # https://github.com/boostorg/asio/issues/312
 compiler_options = ['-DBOOST_ASIO_DISABLE_CONCEPTS']
 
+# TODO: Mark the `use-` versions of these options as deprecated in the next
+#       minor version
+with_bitbridge = get_option('use-bitbridge') or get_option('with-bitbridge')
+with_static_boost = get_option('with-static-boost')
+with_winedbg = get_option('use-winedbg') or get_option('with-winedbg')
+
+if with_bitbridge
+  compiler_options += '-DWITH_BITBRIDGE'
+endif
+
 # This provides an easy way to start the Wine VST host using winedbg since it
 # can be quite a pain to set up
-if get_option('use-winedbg')
-  compiler_options += '-DUSE_WINEDBG'
-endif
-if get_option('use-bitbridge')
-  compiler_options += '-DUSE_BITBRIDGE'
+if with_winedbg
+  compiler_options += '-DWITH_WINEDBG'
 endif
 
 # Generate header files for configuration variables such as the current git tag
@@ -46,12 +53,12 @@ subdir('src/common/config')
 
 # Statically link against Boost.Filesystem, otherwise it would become impossible
 # to distribute a prebuilt version of yabridge
-boost_dep = dependency('boost', version : '>=1.66', static : get_option('with-static-boost'))
+boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
 boost_filesystem_dep = dependency(
   'boost',
   version : '>=1.66',
   modules : ['filesystem'],
-  static : get_option('with-static-boost')
+  static : with_static_boost
 )
 bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
 threads_dep = dependency('threads')
@@ -142,7 +149,7 @@ executable(
   link_args : ['-m64']
 )
 
-if get_option('use-bitbridge')
+if with_bitbridge
   message('Bitbridge enabled, configuring a 32-bit host application')
 
   # I honestly have no idea what the correct way is to have `dependency()` or
@@ -153,7 +160,7 @@ if get_option('use-bitbridge')
   winegcc = meson.get_compiler('cpp', native : false)
   boost_filesystem_dep = winegcc.find_library(
     'boost_filesystem',
-    static : get_option('with-static-boost'),
+    static : with_static_boost,
     dirs : [
       # Used by Arch based distros
       '/usr/local/lib32',

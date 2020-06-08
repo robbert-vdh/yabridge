@@ -78,7 +78,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
       wine_io_handler([&]() { io_context.run(); }) {
     log_init_message();
 
-#ifndef USE_WINEDBG
+#ifndef WITH_WINEDBG
     // If the Wine process fails to start, then nothing will connect to the
     // sockets and we'll be hanging here indefinitely. To prevent this, we'll
     // periodically poll whether the Wine process is still running, and throw
@@ -622,13 +622,13 @@ void PluginBridge::log_init_message() {
     // Include a list of enabled compile-tiem features, mostly to make debug
     // logs more useful
     init_msg << "Enabled features:" << std::endl;
-#ifdef USE_BITBRIDGE
+#ifdef WITH_BITBRIDGE
     init_msg << "- bitbridge support" << std::endl;
 #endif
-#ifdef USE_WINEDBG
+#ifdef WITH_WINEDBG
     init_msg << "- winedbg" << std::endl;
 #endif
-#if !(defined(USE_BITBRIDGE) || defined(USE_WINEDBG))
+#if !(defined(WITH_BITBRIDGE) || defined(WITH_WINEDBG))
     init_msg << "  <none>" << std::endl;
 #endif
     init_msg << std::endl;

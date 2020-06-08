@@ -336,9 +336,9 @@ bit versions of the Boost and XCB libraries. This can then be set up as follows:
 
 ```shell
 # Enable the bitbridge on an existing build
-meson configure build -Duse-bitbridge=true
+meson configure build -Dwidth-bitbridge=true
 # Or configure a new build from scratch
-meson setup --buildtype=release --cross-file cross-wine.conf -Duse-bitbridge=true build
+meson setup --buildtype=release --cross-file cross-wine.conf -Dwidth-bitbridge=true build
 
 ninja -C build
 ```
@@ -401,5 +401,5 @@ Other desktop environments and window managers will require some slight
 modifications in `src/plugin/plugin-bridge.cpp`. To enable this, simply run:
 
 ```shell
-meson configure build --buildtype=debug -Duse-winedbg=true
+meson configure build --buildtype=debug -Dwidth-winedbg=true
 ```

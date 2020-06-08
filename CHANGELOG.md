@@ -12,6 +12,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - When building from source, only statically link Boost when the
   `with-static-boost` option is enabled.
+- The `use-bitbridge` and `use-winedbg` options have been replaced by
+  `with-bitbridge` and `with-winedbg` for consistency's sake. The old options
+  will be marked as deprecated in the next minor release.
 
 ### Fixed
 
