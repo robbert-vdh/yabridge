@@ -512,7 +512,7 @@ void PluginBridge::process_replacing(AEffect* /*plugin*/,
     std::vector<std::vector<float>> input_buffers(
         plugin.numInputs, std::vector<float>(sample_frames));
     for (int channel = 0; channel < plugin.numInputs; channel++) {
-        std::copy(inputs[channel], inputs[channel] + sample_frames + 1,
+        std::copy(inputs[channel], inputs[channel] + sample_frames,
                   input_buffers[channel].begin());
     }
 

@@ -18,6 +18,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed memory error that was causing playback issues with some buffer sizes in
+  Mixbus6.
 - Fixed plugin group socket name generation. This prevented plugin groups with
   the same name from being used simultaneously in multiple Wine prefixes.
 
