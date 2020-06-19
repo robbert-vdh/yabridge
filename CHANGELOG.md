@@ -22,6 +22,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   Mixbus6.
 - Fixed plugin group socket name generation. This prevented plugin groups with
   the same name from being used simultaneously in multiple Wine prefixes.
+- Fixed manual Wine prefix overides through the `WINEPREFIX` environment
+  variable not being reflected in the output shwon in startup.
 
 ## [1.2.0] - 2020-05-29
 

@@ -23,6 +23,7 @@
 #include "../common/communication.h"
 #include "../common/events.h"
 
+namespace bp = boost::process;
 // I'd rather use std::filesystem instead, but Boost.Process depends on
 // boost::filesystem
 namespace fs = boost::filesystem;
@@ -592,9 +593,18 @@ void PluginBridge::log_init_message() {
     init_msg << "plugin:       '" << vst_plugin_path.string() << "'"
              << std::endl;
     init_msg << "socket:       '" << socket_endpoint.path() << "'" << std::endl;
-    init_msg << "wine prefix:  '"
-             << find_wineprefix().value_or("<default>").string() << "'"
-             << std::endl;
+    init_msg << "wine prefix:  '";
+
+    // If the Wine prefix is manually overridden, then this should be made
+    // clear. This follows the behaviour of `set_wineprefix()`.
+    bp::native_environment env = boost::this_process::environment();
+    if (!env["WINEPREFIX"].empty()) {
+        init_msg << env["WINEPREFIX"].to_string() << " <overridden>";
+    } else {
+        init_msg << find_wineprefix().value_or("<default>").string();
+    }
+    init_msg << "'" << std::endl;
+
     init_msg << "wine version: '" << wine_version << "'" << std::endl;
     init_msg << std::endl;
 
