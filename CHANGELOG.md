@@ -18,15 +18,16 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed memory error that was causing playback issues with some buffer sizes in
-  Mixbus6.
-- Fixed plugin group socket name generation. This prevented plugin groups with
-  the same name from being used simultaneously in multiple Wine prefixes.
-- Fixed manual Wine prefix overides through the `WINEPREFIX` environment
-  variable not being reflected in the output shwon in startup.
-- Fixed the Wine prefix being overwritten for all subsequent plugins opened
-  within the same process. This prevented the use of multiple Wine prefixes
-  within hosts that do not sandbox their plugins, such as Ardour.
+- Fixed memory error that would cause crashing on playback with some buffer
+  sizes in Mixbus6.
+- Opening a plugin would override the Wine prefix for all subsequent plugins
+  opened from within the same process. This prevented the use of multiple Wine
+  prefixes in hosts that do not sandbox their plugins, such as Ardour.
+- Manual Wine prefix overides through the `WINEPREFIX` environment were not
+  reflected in the output shown on startup.
+- Fixed plugin group socket name generation. This would have prevented plugin
+  groups with the same name from being used simultaneously in different Wine
+  prefixes.
 - Distinguish between active processes and zombies when checking whether a group
   host process is still running during initialization.
 
