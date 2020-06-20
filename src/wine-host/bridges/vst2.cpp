@@ -149,8 +149,8 @@ bool Vst2Bridge::should_skip_message_loop() const {
 }
 
 void Vst2Bridge::handle_dispatch() {
-    try {
-        while (true) {
+    while (true) {
+        try {
             receive_event(
                 host_vst_dispatch, std::nullopt,
                 passthrough_event(
@@ -174,16 +174,17 @@ void Vst2Bridge::handle_dispatch() {
                         // separately on a timer
                         return dispatch_result.get_future().get();
                     }));
+        } catch (const boost::system::system_error&) {
+            // The plugin has cut off communications, so we can shut down this
+            // host application
+            break;
         }
-    } catch (const boost::system::system_error&) {
-        // The plugin has cut off communications, so we can shut down this
-        // host application
     }
 }
 
 void Vst2Bridge::handle_dispatch_midi_events() {
-    try {
-        while (true) {
+    while (true) {
+        try {
             receive_event(
                 host_vst_dispatch_midi_events, std::nullopt, [&](Event& event) {
                     if (BOOST_LIKELY(event.opcode == effProcessEvents)) {
@@ -230,16 +231,17 @@ void Vst2Bridge::handle_dispatch_midi_events() {
                                       _2, _3, _4, _5, _6))(event);
                     }
                 });
+        } catch (const boost::system::system_error&) {
+            // The plugin has cut off communications, so we can shut down this
+            // host application
+            break;
         }
-    } catch (const boost::system::system_error&) {
-        // The plugin has cut off communications, so we can shut down this host
-        // application
     }
 }
 
 void Vst2Bridge::handle_parameters() {
-    try {
-        while (true) {
+    while (true) {
+        try {
             // Both `getParameter` and `setParameter` functions are passed
             // through on this socket since they have a lot of overlap. The
             // presence of the `value` field tells us which one we're dealing
@@ -258,18 +260,19 @@ void Vst2Bridge::handle_parameters() {
                 ParameterResult response{value};
                 write_object(host_vst_parameters, response);
             }
+        } catch (const boost::system::system_error&) {
+            // The plugin has cut off communications, so we can shut down this
+            // host application
+            break;
         }
-    } catch (const boost::system::system_error&) {
-        // The plugin has cut off communications, so we can shut down this host
-        // application
     }
 }
 
 void Vst2Bridge::handle_process_replacing() {
     std::vector<std::vector<float>> output_buffers(plugin->numOutputs);
 
-    try {
-        while (true) {
+    while (true) {
+        try {
             auto request = read_object<AudioBuffers>(host_vst_process_replacing,
                                                      process_buffer);
 
@@ -320,10 +323,11 @@ void Vst2Bridge::handle_process_replacing() {
 
             AudioBuffers response{output_buffers, request.sample_frames};
             write_object(host_vst_process_replacing, response, process_buffer);
+        } catch (const boost::system::system_error&) {
+            // The plugin has cut off communications, so we can shut down this
+            // host application
+            break;
         }
-    } catch (const boost::system::system_error&) {
-        // The plugin has cut off communications, so we can shut down this host
-        // application
     }
 }
 

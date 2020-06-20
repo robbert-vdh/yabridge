@@ -132,8 +132,8 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     // instead of asynchronous IO since communication has to be handled in
     // lockstep anyway
     host_callback_handler = std::thread([&]() {
-        try {
-            while (true) {
+        while (true) {
+            try {
                 // TODO: Think of a nicer way to structure this and the similar
                 //       handler in `Vst2Bridge::handle_dispatch_midi_events`
                 receive_event(
@@ -159,10 +159,11 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
                                 &plugin, host_callback_function)(event);
                         }
                     });
+            } catch (const boost::system::system_error&) {
+                // This happens when the sockets got closed because the plugin
+                // is being shut down
+                break;
             }
-        } catch (const boost::system::system_error&) {
-            // This happens when the sockets got closed because the plugin
-            // is being shut down
         }
     });
 
