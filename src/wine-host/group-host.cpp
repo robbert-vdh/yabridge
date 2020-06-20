@@ -73,7 +73,6 @@ int __cdecl main(int argc, char* argv[]) {
         // print a message and exit quietly. This could happen if the host
         // starts multiple yabridge instances that all use the same plugin group
         // at the same time.
-        // TODO: Check if this is printed on the right stream
         std::cerr << "Another process is already listening on this group's "
                      "socket, connecting to the existing process:"
                   << std::endl;
