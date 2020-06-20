@@ -66,7 +66,9 @@ StdIoCapture::StdIoCapture(boost::asio::io_context& io_context,
       original_fd_copy(dup(file_descriptor)) {
     // We'll use the second element of these two file descriptors to reopen
     // `file_descriptor`, and the first one to read the captured contents from
-    ::pipe(pipe_fd);
+    if (::pipe(pipe_fd) != 0) {
+        throw std::system_error(errno, std::system_category());
+    }
 
     // We've already created a copy of the original file descriptor, so we can
     // reopen it using the newly created pipe

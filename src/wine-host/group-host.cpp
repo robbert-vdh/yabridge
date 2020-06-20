@@ -79,5 +79,10 @@ int __cdecl main(int argc, char* argv[]) {
         std::cerr << error.what() << std::endl;
 
         return 0;
+    } catch (const std::system_error& error) {
+        std::cerr << "Could not create pipe:" << std::endl;
+        std::cerr << error.what() << std::endl;
+
+        return 0;
     }
 }

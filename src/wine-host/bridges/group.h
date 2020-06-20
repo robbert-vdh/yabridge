@@ -45,6 +45,8 @@ class StdIoCapture {
      *
      * @param io_context The IO context to create the captured pipe stream on.
      * @param file_descriptor The file descriptor to remap.
+     *
+     * @throw std::system_error If the pipe could not be created.
      */
     StdIoCapture(boost::asio::io_context& io_context, int file_descriptor);
 
@@ -111,6 +113,7 @@ class GroupBridge {
      *   `create_logger_prefix()` function in `./group.cpp`.
      *
      * @throw boost::system::system_error If we can't listen on the socket.
+     * @throw std::system_error If the pipe could not be created.
      *
      * @note Creating an `GroupBridge` instance has the side effect that the
      *   STDOUT and STDERR streams of the current process will be redirected to
