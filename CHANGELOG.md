@@ -27,6 +27,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed the Wine prefix being overwritten for all subsequent plugins opened
   within the same process. This prevented the use of multiple Wine prefixes
   within hosts that do not sandbox their plugins, such as Ardour.
+- Distinguish between active processes and zombies when checking whether a group
+  host process is still running during initialization.
 
 ## [1.2.0] - 2020-05-29
 
