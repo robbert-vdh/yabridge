@@ -24,6 +24,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   the same name from being used simultaneously in multiple Wine prefixes.
 - Fixed manual Wine prefix overides through the `WINEPREFIX` environment
   variable not being reflected in the output shwon in startup.
+- Fixed the Wine prefix being overwritten for all subsequent plugins opened
+  within the same process. This prevented the use of multiple Wine prefixes
+  within hosts that do not sandbox their plugins, such as Ardour.
 
 ## [1.2.0] - 2020-05-29
 

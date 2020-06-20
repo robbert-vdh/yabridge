@@ -242,7 +242,7 @@ std::string get_wine_version() {
     // used to run Wine, so will will respect this as well
     std::string wine_command = "wine";
 
-    bp::native_environment env = boost::this_process::environment();
+    bp::environment env = boost::this_process::environment();
     if (!env["WINELOADER"].empty()) {
         wine_command = env.get("WINELOADER");
     }
@@ -271,7 +271,7 @@ std::string get_wine_version() {
 }
 
 bp::environment set_wineprefix() {
-    bp::native_environment env = boost::this_process::environment();
+    bp::environment env = boost::this_process::environment();
 
     // Allow the wine prefix to be overridden manually
     if (!env["WINEPREFIX"].empty()) {

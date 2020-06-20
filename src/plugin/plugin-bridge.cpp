@@ -597,7 +597,7 @@ void PluginBridge::log_init_message() {
 
     // If the Wine prefix is manually overridden, then this should be made
     // clear. This follows the behaviour of `set_wineprefix()`.
-    bp::native_environment env = boost::this_process::environment();
+    bp::environment env = boost::this_process::environment();
     if (!env["WINEPREFIX"].empty()) {
         init_msg << env["WINEPREFIX"].to_string() << " <overridden>";
     } else {
