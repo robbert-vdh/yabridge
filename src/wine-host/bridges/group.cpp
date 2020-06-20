@@ -102,12 +102,11 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
     async_log_pipe_lines(stdout_redirect.pipe, stdout_buffer, "[STDOUT] ");
     async_log_pipe_lines(stderr_redirect.pipe, stderr_buffer, "[STDERR] ");
 
-    stdio_handler = std::thread([&]() { stdio_context.run(); });
+    stdio_handler = std::jthread([&]() { stdio_context.run(); });
 }
 
 GroupBridge::~GroupBridge() {
     stdio_context.stop();
-    stdio_handler.join();
 }
 
 void GroupBridge::handle_plugin_dispatch(const GroupRequest request) {
@@ -129,8 +128,7 @@ void GroupBridge::handle_plugin_dispatch(const GroupRequest request) {
     boost::asio::post(plugin_context, [&, request]() {
         std::lock_guard lock(active_plugins_mutex);
 
-        auto& [thread, bridge] = active_plugins.at(request);
-        thread.join();
+        // The join is implicit because we're using std::jthread
         active_plugins.erase(request);
     });
 
@@ -220,7 +218,7 @@ void GroupBridge::accept_requests() {
                 // socket on another thread. The actual event handling will
                 // still occur within this IO context.
                 active_plugins[request] =
-                    std::pair(std::thread([&, request]() {
+                    std::pair(std::jthread([&, request]() {
                                   handle_plugin_dispatch(request);
                               }),
                               std::move(bridge));

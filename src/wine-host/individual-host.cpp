@@ -94,7 +94,7 @@ int __cdecl main(int argc, char* argv[]) {
 
     // We'll listen for `dispatcher()` calls on a different thread, but the
     // actual events will still be executed within the IO context
-    std::thread dispatch_handler([&]() { bridge->handle_dispatch(); });
+    std::jthread dispatch_handler([&]() { bridge->handle_dispatch(); });
 
     // Handle Win32 messages and X11 events on a timer, just like in
     // `GroupBridge::async_handle_events()``
@@ -102,7 +102,6 @@ int __cdecl main(int argc, char* argv[]) {
     async_handle_events(events_timer, *bridge);
 
     io_context.run();
-    dispatch_handler.join();
 }
 
 void async_handle_events(boost::asio::steady_timer& timer, Vst2Bridge& bridge) {

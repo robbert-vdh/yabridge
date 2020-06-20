@@ -86,13 +86,10 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     // when it is not. The alternative would be to rewrite this to using
     // `async_accept`, Boost.Asio timers, and another IO context, but I feel
     // like this a much simpler solution.
-    std::thread([&]() {
+    std::jthread host_guard_handler([&](std::stop_token st) {
         using namespace std::literals::chrono_literals;
 
-        while (true) {
-            if (finished_accepting_sockets) {
-                return;
-            }
+        while (!st.stop_requested()) {
             if (!vst_host->running()) {
                 logger.log(
                     "The Wine host process has exited unexpectedly. Check the "
@@ -102,7 +99,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
 
             std::this_thread::sleep_for(1s);
         }
-    }).detach();
+    });
 #endif
 
     // It's very important that these sockets are connected to in the same
@@ -112,7 +109,11 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     socket_acceptor.accept(vst_host_callback);
     socket_acceptor.accept(host_vst_parameters);
     socket_acceptor.accept(host_vst_process_replacing);
-    finished_accepting_sockets = true;
+
+#ifndef WITH_WINEDBG
+    host_guard_handler.request_stop();
+    host_guard_handler.detach();
+#endif
 
     // There's no need to keep the socket endpoint file around after accepting
     // all the sockets, and RAII won't clean these files up for us
@@ -131,7 +132,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     // For our communication we use simple threads and blocking operations
     // instead of asynchronous IO since communication has to be handled in
     // lockstep anyway
-    host_callback_handler = std::thread([&]() {
+    host_callback_handler = std::jthread([&]() {
         while (true) {
             try {
                 // TODO: Think of a nicer way to structure this and the similar
@@ -455,11 +456,6 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
             // its work immediately and not throw any exceptions that would have
             // been caused by pipes and sockets being closed.
             io_context.stop();
-
-            // These threads should now be finished because we've forcefully
-            // terminated the Wine process, interupting their socket operations
-            host_callback_handler.join();
-            wine_io_handler.join();
 
             delete this;
 

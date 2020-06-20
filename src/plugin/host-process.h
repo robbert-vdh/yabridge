@@ -171,8 +171,6 @@ class GroupHost : public HostProcess {
               std::string group_name,
               boost::asio::local::stream_protocol::socket& host_vst_dispatch);
 
-    ~GroupHost();
-
     PluginArchitecture architecture() override;
     boost::filesystem::path path() override;
     bool running() override;
@@ -204,5 +202,5 @@ class GroupHost : public HostProcess {
      * TODO: Replace the polling with inotify to prevent delays and to reduce
      *       wasting resources
      */
-    std::thread group_host_connect_handler;
+    std::jthread group_host_connect_handler;
 };

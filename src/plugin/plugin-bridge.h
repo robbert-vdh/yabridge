@@ -129,18 +129,9 @@ class PluginBridge {
     boost::asio::local::stream_protocol::socket host_vst_process_replacing;
 
     /**
-     * Whether we're done accepting sockets. The plugin may hang indefinitely if
-     * the Wine process fails to start, since then nothing will connect to our
-     * sockets. While we're waiting for our sockets we'll periodically poll the
-     * Wine process to see if it's still running, and terminate the socket
-     * accepting if it is not.
-     */
-    std::atomic_bool finished_accepting_sockets;
-
-    /**
      * The thread that handles host callbacks.
      */
-    std::thread host_callback_handler;
+    std::jthread host_callback_handler;
 
     /**
      * A binary semaphore to prevent race conditions from the dispatch function
@@ -185,7 +176,7 @@ class PluginBridge {
      * Runs the Boost.Asio `io_context` thread for logging the Wine process
      * STDOUT and STDERR messages.
      */
-    std::thread wine_io_handler;
+    std::jthread wine_io_handler;
 
     /**
      * A scratch buffer for sending and receiving data during `process` and

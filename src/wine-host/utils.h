@@ -45,8 +45,8 @@
  *   converting stateless lambdas to this format, but clang (as used for IDE
  *   tooling) does not.
  *
- * @note This should be used instead of `std::thread` whenever the thread
- *   directly calls third party library code, i.e. `LoadLibrary()`,
+ * @note This should be used instead of `std::thread` or `std::jthread` whenever
+ *   the thread directly calls third party library code, i.e. `LoadLibrary()`,
  *   `FreeLibrary()`, the plugin's entry point, or any of the `AEffect::*()`
  *   functions.
  */

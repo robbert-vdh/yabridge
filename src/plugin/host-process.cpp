@@ -187,9 +187,9 @@ GroupHost::GroupHost(
         // process to start depending on Wine's current state. We'll defer
         // this to a thread so we can finish the rest of the startup in the
         // meantime.
-        group_host_connect_handler = std::thread([&, group_socket_path,
-                                                  plugin_path,
-                                                  socket_endpoint]() {
+        group_host_connect_handler = std::jthread([&, group_socket_path,
+                                                   plugin_path,
+                                                   socket_endpoint]() {
             using namespace std::literals::chrono_literals;
 
             // TODO: Replace this polling with inotify
@@ -218,14 +218,6 @@ GroupHost::GroupHost(
                 }
             }
         });
-    }
-}
-
-GroupHost::~GroupHost() {
-    // This thread was briefly used to issue the host request if we had to start
-    // a new group host process
-    if (group_host_connect_handler.joinable()) {
-        group_host_connect_handler.join();
     }
 }
 

@@ -240,7 +240,7 @@ class GroupBridge {
     /**
      * A thread that runs the `stdio_context` loop.
      */
-    std::thread stdio_handler;
+    std::jthread stdio_handler;
 
     boost::asio::local::stream_protocol::endpoint group_socket_endpoint;
     /**
@@ -255,14 +255,9 @@ class GroupBridge {
      * initialization has failed, the thread handling it will remove itself from
      * this map. This is to keep track of the amount of plugins currently
      * running with their associated thread handles.
-     *
-     * TODO: Check again if we can just use std::thread here instead, that would
-     *       make everything much simpler. `std::thread` was a problem with
-     *       gdiplus in the past as Serum would randomly crash because calling
-     *       conventions were nto being respected.
      */
     std::unordered_map<GroupRequest,
-                       std::pair<std::thread, std::unique_ptr<Vst2Bridge>>>
+                       std::pair<std::jthread, std::unique_ptr<Vst2Bridge>>>
         active_plugins;
     /**
      * A mutex to prevent two threads from simultaneously accessing the plugins
