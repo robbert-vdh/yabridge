@@ -18,7 +18,7 @@ Wine Staging 5.8:
 
 - Bitwig Studio 3.2
 - Carla 2.1
-- Ardour 5.12
+- Ardour 5.6
 - Mixbus 6.0.702
 - REAPER 6.09
 - Renoise 3.2.1
