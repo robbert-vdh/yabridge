@@ -317,7 +317,7 @@ After you've finished building you can follow the instructions under the
 [usage](#Usage) section on how to set up yabridge.
 
 <small>
-  \*The versions of GCC and Boost that ship with Ubuntu 18.04 by default are too
+  *The versions of GCC and Boost that ship with Ubuntu 18.04 by default are too
   old to compile yabridge. If you do wish to build yabridge from scratch rather
   than using the [prebuilt binaries](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster),
   then you should take a look at the [docker
