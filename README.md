@@ -298,7 +298,7 @@ the following dependencies:
 - A Wine installation with `winegcc` and the development headers. The latest
   commits contain a workaround for a winelib [compilation
   issue](https://bugs.winehq.org/show_bug.cgi?id=49138) with Wine 5.7+.
-- Boost version 1.66 or higher with `libboost_filesystem.a`\*
+- Boost version 1.66 or higher\*
 - libxcb
 
 The following dependencies are included in the repository as a Meson wrap:
