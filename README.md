@@ -316,15 +316,16 @@ ninja -C build
 After you've finished building you can follow the instructions under the
 [usage](#Usage) section on how to set up yabridge.
 
-<sub>
+<sup>
   \*The versions of GCC and Boost that ship with Ubuntu 18.04 by default are too
   old to compile yabridge. If you do wish to build yabridge from scratch rather
-  than using the [prebuilt binaries](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster),
-  then you should take a look at the [docker
-  image](https://github.com/robbert-vdh/docker-yabridge/blob/master/bionic/Dockerfile)
-  used when building yabridge on Ubuntu 18.04 for on overview of what would need
-  to be installed to compile on Ubuntu 18.04.
-</sub>
+  than using the <a
+  href="https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster">prebuilt
+  binaries</a>, then you should take a look at the <a
+  href="https://github.com/robbert-vdh/docker-yabridge/blob/master/bionic/Dockerfile">docker
+  image</a> used when building yabridge on Ubuntu 18.04 for on overview of what
+  would need to be installed to compile on Ubuntu 18.04.
+</sup>
 
 ### 32-bit bitbridge
 
