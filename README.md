@@ -276,6 +276,10 @@ Aside from that, these are some known caveats:
 - Most recent **iZotope** plugins don't have a functional GUI in a typical out
   of the box Wine setup because of missing dependencies. Please let me know if
   you know which dependencies are needed for these plugins to render correctly.
+- MIDI key labels (for use with drum machines and multisamplers) will not be
+  updated once the plugin has finished loading since there's no way to tell that
+  they have been updated by the plugin. Right now simply deactivating and
+  reactivating the plugin will cause these labels to be updated.
 
 There are also some VST2.X extension features that have not been implemented yet
 because I haven't needed them myself. Let me know if you need any of these
