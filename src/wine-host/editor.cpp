@@ -224,7 +224,7 @@ void Editor::fix_local_coordinates() const {
     //       off screen on the top or the left borders to act up
     const auto translate_cookie = xcb_translate_coordinates(
         x11_connection.get(), parent_window, root, 0, 0);
-    const xcb_translate_coordinates_reply_t* translated_coordiantes =
+    const xcb_translate_coordinates_reply_t* translated_coordinates =
         xcb_translate_coordinates_reply(x11_connection.get(), translate_cookie,
                                         nullptr);
 
@@ -238,8 +238,8 @@ void Editor::fix_local_coordinates() const {
     // this certain plugins (such as those by Valhalla DSP) would break.
     translated_event.width = client_area.width;
     translated_event.height = client_area.height;
-    translated_event.x = translated_coordiantes->dst_x;
-    translated_event.y = translated_coordiantes->dst_y;
+    translated_event.x = translated_coordinates->dst_x;
+    translated_event.y = translated_coordinates->dst_y;
 
     xcb_send_event(
         x11_connection.get(), false, child_window,
