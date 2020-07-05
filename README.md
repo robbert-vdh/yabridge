@@ -262,6 +262,11 @@ include:
   Center.
 - **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
   `gdiplus` through `winetricks`.
+- **MeldaProduction** plugins have minor rendering issues when GPU acceleration
+  is enabled. This can be fixed by disabling GPU acceleration in the plugin
+  settings. I'm not sure whether this is an issue with Wine or the plugins
+  themselves. Notable issues here are missing redraws and incorrect positioning
+  when the window gets dragged offscreen on the top and left dies of the screen.
 - Plugins like **FabFilter Pro-Q 3** that can share data between different
   instances of the same plugin plugins have to be hosted within a single process
   for that functionality to work. See the [plugin groups](#Plugin-groups)

@@ -220,12 +220,6 @@ void Editor::fix_local_coordinates() const {
 
     // We can't directly use the `event.x` and `event.y` coordinates because the
     // parent window may also be embedded inside another window.
-    // XXX: There's a quirk with either the Melda plugins or Wine itself that
-    //      cause rendering issues with those plugins and negative screen
-    //      coordinates, i.e. when the window gets dragged offscreen at the top
-    //      and left sides of the screen. These plugins sometimes also do not
-    //      redraw properly. I have not found any other plugins that behave like
-    //      this, so I'll it's not something we can fix ourselves.
     const auto translate_cookie = xcb_translate_coordinates(
         x11_connection.get(), parent_window, root, 0, 0);
     const xcb_translate_coordinates_reply_t* translated_coordinates =
