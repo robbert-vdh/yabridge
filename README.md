@@ -285,6 +285,15 @@ Aside from that, these are some known caveats:
   updated once the plugin has finished loading since there's no way to tell that
   they have been updated by the plugin. Right now simply deactivating and
   reactivating the plugin will cause these labels to be updated.
+- Under Bitwig Studio, opening the editor for a plugin that perform IO while
+  loading its editor may cause playback to pause briefly during that time.
+  Examples of plugins that do this include recent versions of Kontakt and the
+  Spitfire plugins. This happens because Bitwig expects the plugins to be able
+  to instantly report their editor size before actually opening the editor, but
+  instead of doing so these plugins will instead perform a bunch of IO first and
+  Bitwig will wait patiently for them to finish. It would be possible to modify
+  yabridge to work around this limitation of Bitwig, but I'm very hesitant to
+  add hacks to yabridge unless absolutely necessary.
 - Drag-and-drop from plugins to the host does not work. This is sadly not yet
   implemented in Wine, although in theory it would be possible to create a small
   utility that supports both Wine <-> Wine and X11 <-> X11 drag-and-drop to act
