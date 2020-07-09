@@ -285,6 +285,10 @@ Aside from that, these are some known caveats:
   updated once the plugin has finished loading since there's no way to tell that
   they have been updated by the plugin. Right now simply deactivating and
   reactivating the plugin will cause these labels to be updated.
+- Drag-and-drop from plugins to the host does not work. This is sadly not yet
+  implemented in Wine, although in theory it would be possible to create a small
+  utility that supports both Wine <-> Wine and X11 <-> X11 drag-and-drop to act
+  as a bridge.
 
 There are also some VST2.X extension features that have not been implemented yet
 because I haven't needed them myself. Let me know if you need any of these
