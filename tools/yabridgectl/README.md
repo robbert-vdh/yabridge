@@ -8,6 +8,18 @@ once and to keep them updated.
 
 All of the information below can also be found by running `yabridgectl --help`.
 
+### Yabridge path
+
+Yabrdgectl will need to know where it can find `libyabridge.so`. By default it
+will look for it in both `~/.local/share/yabridge` (the recommended installation
+directory when using the prebuilt binaries) and in `/usr/lib` (used when using
+the AUR packages). You can use the command below to override this behaviour and
+to use a custom installation directory instead.
+
+```shell
+yabridgectl set --path=<path/to/directory/containing/yabridge>
+```
+
 ### Installation modes
 
 By default, yabridgectl will use the copy-based installation method for yabridge
