@@ -11,8 +11,6 @@ on:
   pull_request:
     branches:
       - master
-  release:
-    types: [created]
 
 defaults:
   run:
@@ -105,33 +103,3 @@ jobs:
         with:
           name: ${{ env.ARCHIVE_NAME }}
           path: ${{ env.ARCHIVE_NAME }}
-
-  upload-releases:
-    name: Upload the created artifacts to the releases page
-    runs-on: ubuntu-latest
-    needs: [build-bionic, build-focal]
-    if: ${{ github.event_name == 'release' }}
-    steps:
-      # They don't allow you to specify multiple file names for these actions
-      - uses: actions/download-artifact@v2
-        with:
-          name: ${{ needs.build-bionic.outputs.artifact-name }}
-      - uses: actions/download-artifact@v2
-        with:
-          name: ${{ needs.build-focal.outputs.artifact-name }}
-      - uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ needs.build-bionic.outputs.artifact-name }}
-          asset_name: $${{ needs.build-bionic.outputs.artifact-name }}
-          asset_content_type: application/x-compressed-tar
-      - uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ needs.build-focal.outputs.artifact-name }}
-          asset_name: $${{ needs.build-focal.outputs.artifact-name }}
-          asset_content_type: application/x-compressed-tar
