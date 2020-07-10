@@ -103,3 +103,44 @@ jobs:
         with:
           name: ${{ env.ARCHIVE_NAME }}
           path: ${{ env.ARCHIVE_NAME }}
+
+  build-yabridgectl:
+    name: Build yabridgectl
+    runs-on: ubuntu-18.04
+    outputs:
+      artifact-name: ${{ env.ARCHIVE_NAME }}
+    defaults:
+      run:
+        working-directory: tools/yabridgectl
+    steps:
+      - uses: actions/checkout@v2
+      # Needed for git-describe to do anything useful
+      - name: Fetch all git history
+        run: git fetch --force --prune --tags --unshallow
+      - name: Determine build archive name
+        run: |
+          export ARCHIVE_NAME=yabridgectl-$(git describe --always).tar.gz
+          echo ::set-env "name=ARCHIVE_NAME::$ARCHIVE_NAME"
+      - name: Set up Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          default: true
+      - name: Build the binaries
+        run: cargo build --release
+      - name: Strip remaining debug symbols
+        run: strip target/release/yabridgectl
+      - name: Create an archive for the binaries
+        run: |
+          mkdir yabridgectl
+          cp target/release/yabridgectl README.md yabridgectl
+
+          tar -caf "$ARCHIVE_NAME" yabridgectl
+          rm -rf yabridgectl
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.ARCHIVE_NAME }}
+          # For some reason there's no way to tell GitHub actions to run actions
+          # in a subdirectory
+          path: tools/yabridgectl/${{ env.ARCHIVE_NAME }}
