@@ -1,8 +1,13 @@
 [package]
 name = "yabridgectl"
-version = "0.1.0"
+# This version is linked to yabridge's version for clarity's sake and because
+# there's not a lot going on here
+version = "1.2.1"
 authors = ["Robbert van der Helm <mail@robbertvanderhelm.nl>"]
 edition = "2018"
+description = "Optional command line helper to set up yabridge"
+repository = "https://github.com/robbert-vdh/yabridge"
+license = "GPL-3.0-or-later"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
