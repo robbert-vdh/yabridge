@@ -45,7 +45,7 @@ yabridgectl add <path/to/plugins>
 # No longer watch a directory, this will ask you if you want to remove any leftover yabridge files
 yabridgectl rm <path/to/plugins>
 # List the currently watched directories
-yabridgectl ls
+yabridgectl list
 # Show the current settings and the installation status for all plugins in the watched directories
 yabridgectl status
 ```
