@@ -6,7 +6,9 @@ once and to keep them updated.
 
 ## Usage
 
-All of the information below can also be found by running `yabridgectl --help`.
+Yabridgectl can be downloaded from the GitHub releases section, and it can run
+from anywhere. All of the information below can also be found by running
+`yabridgectl --help`.
 
 ### Yabridge path
 
