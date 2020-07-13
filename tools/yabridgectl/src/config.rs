@@ -1,0 +1,89 @@
+// yabridge: a Wine VST bridge
+// Copyright (C) 2020  Robbert van der Helm
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+use std::path::{Path, PathBuf};
+use xdg::BaseDirectories;
+
+const LIBYABRIDGE_NAME: &str = "libyabridge.so";
+
+/// The configuration used for yabridgectl. This will be serialized to and deserialized from
+/// `$XDG_CONFIG_HOME/yabridge/config.toml`.
+pub struct Config {
+    /// The installation method to use. We will default to creating copies since that works
+    /// everywehre.
+    pub method: InstallationMethod,
+    /// The path to the directory containing `libyabridge.so`. If not set, then yabridgectl will
+    /// look in `/usr/lib` and `$XDG_DATA_HOME/yabridge` since those are the expected locations for
+    /// yabridge to be installed in.
+    pub yabridge_home: Option<PathBuf>,
+    /// Directories to search for Windows VST plugins.
+    pub plugin_dirs: Vec<PathBuf>,
+}
+
+impl Config {
+    /// Return the path to `libyabridge.so`, or a descriptive error if it can't be found. If
+    /// `yabridge_home` is `None`, then we'll search in both `/usr/lib` and
+    /// `$XDG_DATA_HOME/yabridge`.
+    pub fn libyabridge(&self) -> Result<PathBuf, String> {
+        match &self.yabridge_home {
+            Some(directory) => {
+                let candidate = directory.join(LIBYABRIDGE_NAME);
+                if candidate.exists() {
+                    Ok(candidate)
+                } else {
+                    Err(format!(
+                        "Could not find {} in '{}'.",
+                        LIBYABRIDGE_NAME,
+                        directory.display()
+                    ))
+                }
+            }
+            None => {
+                // Search in the two common installation locations if no path was set explicitely
+                let system_path = Path::new("/usr/lib");
+                let user_path = BaseDirectories::new()
+                    .map_err(|err| format!("Error while parsing base directories:\n{}", err))?
+                    .get_data_home();
+                for directory in &[system_path, &user_path] {
+                    let candidate = directory.join(LIBYABRIDGE_NAME);
+                    if candidate.exists() {
+                        return Ok(candidate);
+                    }
+                }
+
+                Err(format!(
+                    "Could not find {} in either '{}' or '{}'. You can tell yabridgectl where \
+                     to search for it using 'yabridgectl set --path=<path>'.",
+                    LIBYABRIDGE_NAME,
+                    system_path.display(),
+                    user_path.display()
+                ))
+            }
+        }
+    }
+}
+
+/// Specifies how yabridge will be set up for the found plugins.
+pub enum InstallationMethod {
+    /// Create a copy of `libyabridge.so` for every Windows VST2 plugin .dll file found. After
+    /// updating yabridge, the user will have to rerun `yabridgectl sync` to copy over the new
+    /// version.
+    Copy,
+    /// This will create a symlink to `libyabridge.so` for every VST2 .dll file in the plugin
+    /// directories. As explained in the readme, this makes updating easier and remvoes the need to
+    /// modify the `PATH` environment variable.
+    Symlink,
+}
