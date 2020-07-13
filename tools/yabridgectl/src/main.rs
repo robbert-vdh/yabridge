@@ -16,6 +16,21 @@
 
 mod config;
 
+use config::Config;
+
 fn main() {
-    println!("Hello, world!");
+    // TODO: Remove debug
+    match Config::read() {
+        Ok(config) => {
+            println!("Read config:\n\n{:#?}\n", config);
+            println!(
+                "Searching for libyabridge.toml:\n\n{:?}",
+                config.libyabridge()
+            );
+        }
+        Err(err) => {
+            eprintln!("Error while reading config:\n\n{}", err);
+            std::process::exit(1);
+        }
+    }
 }
