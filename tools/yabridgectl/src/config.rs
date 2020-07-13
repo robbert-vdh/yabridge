@@ -21,10 +21,15 @@ use xdg::BaseDirectories;
 
 /// The name of the config file, relative to `$XDG_CONFIG_HOME/CONFIG_PREFIX`.
 const CONFIG_FILE_NAME: &str = "config.toml";
-/// The name of the configuration directory, relative to `$XDG_CONFIG_HOME`.
-const CONFIG_PREFIX: &str = "yabridgectl";
+/// The name of the XDG base directory prefix for yabridgectl, relative to `$XDG_CONFIG_HOME` and
+/// `$XDG_DATA_HOME`.
+const YABRIDGECTL_PREFIX: &str = "yabridgectl";
 
+/// The name of the library file we're searching for.
 const LIBYABRIDGE_NAME: &str = "libyabridge.so";
+/// The name of the XDG base directory prefix for yabridge's own files, relative to
+/// `$XDG_CONFIG_HOME` and `$XDG_DATA_HOME`.
+const YABRIDGE_PREFIX: &str = "yabridge";
 
 /// The configuration used for yabridgectl. This will be serialized to and deserialized from
 /// `$XDG_CONFIG_HOME/yabridge/config.toml`.
@@ -41,11 +46,25 @@ pub struct Config {
     pub plugin_dirs: Vec<PathBuf>,
 }
 
+/// Specifies how yabridge will be set up for the found plugins.
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum InstallationMethod {
+    /// Create a copy of `libyabridge.so` for every Windows VST2 plugin .dll file found. After
+    /// updating yabridge, the user will have to rerun `yabridgectl sync` to copy over the new
+    /// version.
+    Copy,
+    /// This will create a symlink to `libyabridge.so` for every VST2 .dll file in the plugin
+    /// directories. As explained in the readme, this makes updating easier and remvoes the need to
+    /// modify the `PATH` environment variable.
+    Symlink,
+}
+
 impl Config {
     /// Try to read the config file, creating a new default file if necessary. This will fail if the
     /// file could not be created or if it could not be parsed.
     pub fn read() -> Result<Config, String> {
-        match base_directories()?.find_config_file(CONFIG_FILE_NAME) {
+        match yabridge_directories()?.find_config_file(CONFIG_FILE_NAME) {
             Some(path) => {
                 let toml_str = fs::read_to_string(&path).map_err(|err| {
                     format!(
@@ -78,7 +97,7 @@ impl Config {
     pub fn write(&self) -> Result<(), String> {
         let toml_str = toml::to_string_pretty(&self)
             .map_err(|err| format!("Could not format TOML: {}", err))?;
-        let config_file = base_directories()?
+        let config_file = yabridgectl_directories()?
             .place_config_file(CONFIG_FILE_NAME)
             .map_err(|err| format!("Could not write config file: {}", err))?;
 
@@ -111,7 +130,7 @@ impl Config {
             None => {
                 // Search in the two common installation locations if no path was set explicitely
                 let system_path = Path::new("/usr/lib");
-                let user_path = base_directories()?.get_data_home();
+                let user_path = yabridge_directories()?.get_data_home();
                 for directory in &[system_path, &user_path] {
                     let candidate = directory.join(LIBYABRIDGE_NAME);
                     if candidate.exists() {
@@ -131,23 +150,17 @@ impl Config {
     }
 }
 
-/// Specifies how yabridge will be set up for the found plugins.
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(rename_all = "snake_case")]
-pub enum InstallationMethod {
-    /// Create a copy of `libyabridge.so` for every Windows VST2 plugin .dll file found. After
-    /// updating yabridge, the user will have to rerun `yabridgectl sync` to copy over the new
-    /// version.
-    Copy,
-    /// This will create a symlink to `libyabridge.so` for every VST2 .dll file in the plugin
-    /// directories. As explained in the readme, this makes updating easier and remvoes the need to
-    /// modify the `PATH` environment variable.
-    Symlink,
+/// Fetch the XDG base directories for yabridge's own files, converting any error messages if this
+/// somehow fails into a printable string to reduce boiler plate. This is only used when searching
+/// for `libyabridge.so` when no explicit search path has been set.
+fn yabridge_directories() -> Result<BaseDirectories, String> {
+    BaseDirectories::with_prefix(YABRIDGE_PREFIX)
+        .map_err(|err| format!("Error while parsing base directories: {}", err))
 }
 
-/// Fetch the XDG base directories, converting any error messages if this somehow fails into a
-/// printable string to reduce boiler plate.
-fn base_directories() -> Result<BaseDirectories, String> {
-    BaseDirectories::with_prefix(CONFIG_PREFIX)
+/// Fetch the XDG base directories used for yabridgectl, converting any error messages if this
+/// somehow fails into a printable string to reduce boiler plate.
+fn yabridgectl_directories() -> Result<BaseDirectories, String> {
+    BaseDirectories::with_prefix(YABRIDGECTL_PREFIX)
         .map_err(|err| format!("Error while parsing base directories: {}", err))
 }
