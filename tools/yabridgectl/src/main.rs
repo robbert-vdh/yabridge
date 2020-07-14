@@ -16,17 +16,18 @@
 
 use clap::{app_from_crate, App, AppSettings, Arg};
 use colored::Colorize;
+use std::fs;
+use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 use std::process::exit;
 
-use crate::config::Config;
+use crate::config::{Config, InstallationMethod};
 use crate::files::FoundFile;
 
 mod config;
 mod files;
 
 // TODO: Add the different `yabridgectl set` options
-// TODO: Add `yabridgectl sync`
 // TODO: Naming and descriptions could be made clearer
 // TODO: When creating copies, check whether `yabridge-host.exe` is in the PATH for the login shell
 // TODO: Check for left over files when removing directory
@@ -74,6 +75,22 @@ fn main() {
         )
         .subcommand(App::new("list").about("List the plugin install locations"))
         .subcommand(App::new("status").about("Show the installation status for all plugins"))
+        .subcommand(
+            App::new("sync")
+                .about("Set up or update yabridge for all plugins")
+                .arg(
+                    Arg::with_name("prune")
+                        .short('p')
+                        .long("prune")
+                        .about("Remove unrelated or leftover '.so' files"),
+                )
+                .arg(
+                    Arg::with_name("verbose")
+                        .short('v')
+                        .long("verbose")
+                        .about("Print every plugin yabridge has been set up for"),
+                ),
+        )
         .get_matches();
 
     match matches.subcommand() {
@@ -83,6 +100,11 @@ fn main() {
         }
         ("list", _) => list_directories(&config),
         ("status", _) => show_status(&config),
+        ("sync", Some(options)) => do_sync(
+            &config,
+            options.is_present("prune"),
+            options.is_present("verbose"),
+        ),
         _ => unreachable!(),
     }
 }
@@ -117,44 +139,155 @@ fn list_directories(config: &Config) {
 
 /// Print the current configuration and the installation status for all found plugins.
 fn show_status(config: &Config) {
-    match config.index_directories() {
-        Ok(results) => {
-            println!(
-                "yabridge path: {}",
-                config
-                    .yabridge_home
-                    .as_ref()
-                    .map(|path| format!("'{}'", path.display()))
-                    .unwrap_or_else(|| String::from("<auto>"))
-            );
-            println!(
-                "libyabridge.so: {}",
-                config
-                    .libyabridge()
-                    .map(|path| format!("'{}'", path.display()))
-                    .unwrap_or_else(|_| format!("{}", "<not found>".red()))
-            );
-            println!("installation method: {}", config.method);
-
-            for (path, search_results) in results {
-                println!("\n{}:", path.display());
-
-                for (plugin, status) in search_results.installation_status() {
-                    let status_str = match status {
-                        Some(FoundFile::Regular(_)) => "copy".green(),
-                        Some(FoundFile::Symlink(_)) => "symlink".green(),
-                        None => "not installed".red(),
-                    };
-
-                    println!("  {} :: {}", plugin.display(), status_str);
-                }
-            }
-        }
+    let results = match config.index_directories() {
+        Ok(results) => results,
         Err(err) => {
             eprintln!("Error while searching for plugins: {}", err);
             exit(1);
         }
+    };
+
+    println!(
+        "yabridge path: {}",
+        config
+            .yabridge_home
+            .as_ref()
+            .map(|path| format!("'{}'", path.display()))
+            .unwrap_or_else(|| String::from("<auto>"))
+    );
+    println!(
+        "libyabridge.so: {}",
+        config
+            .libyabridge()
+            .map(|path| format!("'{}'", path.display()))
+            .unwrap_or_else(|_| format!("{}", "<not found>".red()))
+    );
+    println!("installation method: {}", config.method);
+
+    for (path, search_results) in results {
+        println!("\n{}:", path.display());
+
+        for (plugin, status) in search_results.installation_status() {
+            let status_str = match status {
+                Some(FoundFile::Regular(_)) => "copy".green(),
+                Some(FoundFile::Symlink(_)) => "symlink".green(),
+                None => "not installed".red(),
+            };
+
+            println!("  {} :: {}", plugin.display(), status_str);
+        }
     }
+}
+
+/// Set up yabridge for all Windows VST2 plugins in the plugin directories. Will also remove orphan
+/// `.so` files if the prune option is set.
+fn do_sync(config: &Config, prune: bool, verbose: bool) {
+    let libyabridge_path = match config.libyabridge() {
+        Ok(path) => {
+            println!("Using '{}'\n", path.display());
+            path
+        }
+        Err(err) => {
+            // The error messages here are already formatted
+            eprintln!("{}", err);
+            exit(1);
+        }
+    };
+
+    let results = match config.index_directories() {
+        Ok(results) => results,
+        Err(err) => {
+            eprintln!("Error while searching for plugins: {}", err);
+            exit(1);
+        }
+    };
+
+    // Keep track of some global statistics
+    let mut num_installed = 0;
+    let mut num_skipped = 0;
+    let mut orphan_so_files: Vec<FoundFile> = Vec::new();
+    for (path, search_results) in results {
+        orphan_so_files.extend(search_results.orphans().into_iter().cloned());
+        num_installed += search_results.vst2_files.len();
+        num_skipped += search_results.num_skipped_files;
+
+        if verbose {
+            println!("{}:", path.display());
+        }
+        for plugin in search_results.vst2_files {
+            // If the target file already exists, we'll remove it first to prevent issues with
+            // mixing symlinks and regular files
+            let target_path = plugin.with_extension("so");
+            if target_path.exists() {
+                fs::remove_file(&target_path).unwrap_or_else(|err| {
+                    eprintln!("Could not remove '{}': {}", target_path.display(), err);
+                    exit(1);
+                });
+            }
+
+            match config.method {
+                InstallationMethod::Copy => {
+                    fs::copy(&libyabridge_path, &target_path).unwrap_or_else(|err| {
+                        eprintln!(
+                            "Error copying '{}' to '{}': {}",
+                            libyabridge_path.display(),
+                            target_path.display(),
+                            err
+                        );
+                        exit(1);
+                    });
+                }
+                InstallationMethod::Symlink => {
+                    symlink(&libyabridge_path, &target_path).unwrap_or_else(|err| {
+                        eprintln!(
+                            "Error symlinking '{}' to '{}': {}",
+                            libyabridge_path.display(),
+                            target_path.display(),
+                            err
+                        );
+                        exit(1);
+                    });
+                }
+            }
+
+            if verbose {
+                println!("  {}", plugin.display());
+            }
+        }
+        if verbose {
+            println!();
+        }
+    }
+
+    if !orphan_so_files.is_empty() {
+        if prune {
+            println!("Removing {} leftover '.so' file(s):", orphan_so_files.len());
+        } else {
+            println!(
+                "Found {} leftover '.so' file(s), rerun with the '--prune' option to remove them:",
+                orphan_so_files.len()
+            );
+        }
+
+        for file in orphan_so_files {
+            let path = file.path();
+
+            println!("- {}", path.display());
+            if prune {
+                fs::remove_file(path).unwrap_or_else(|err| {
+                    eprintln!("Error while trying to remove '{}': {}", path.display(), err);
+                    exit(1);
+                });
+            }
+        }
+
+        println!();
+    }
+
+    println!(
+        "Finished setting up {} plugins, skipped {} non-plugin '.dll' files.",
+        num_installed, num_skipped
+    )
 }
 
 /// Verify that a path exists, used for validating arguments.

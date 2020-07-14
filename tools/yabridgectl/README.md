@@ -63,7 +63,7 @@ the `--prune` option.
 # Set up copies or symlinks of yabridge for all plugins under the watched directories
 yabridgectl sync
 # Set up yabridge, and also remove any '.so' still leftover after removing a plugin
-yabridgectl sync --purge
+yabridgectl sync --prune
 ```
 
 ## Building

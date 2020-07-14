@@ -136,7 +136,7 @@ impl Config {
                     Ok(candidate)
                 } else {
                     Err(format!(
-                        "Could not find {} in '{}'.",
+                        "Could not find '{}' in '{}'.",
                         LIBYABRIDGE_NAME,
                         directory.display()
                     ))
@@ -154,7 +154,7 @@ impl Config {
                 }
 
                 Err(format!(
-                    "Could not find {} in either '{}' or '{}'. You can tell yabridgectl where \
+                    "Could not find '{}' in either '{}' or '{}'. You can tell yabridgectl where \
                      to search for it using 'yabridgectl set --path=<path>'.",
                     LIBYABRIDGE_NAME,
                     system_path.display(),

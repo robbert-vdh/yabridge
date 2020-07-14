@@ -26,11 +26,14 @@ use walkdir::WalkDir;
 
 /// Stores the results from searching for Windows VST plugin `.dll` files and native Linux `.so`
 /// files inside of a directory. These `.so` files are kept track of so we can report the current
-/// installation status and to be able to purge orphan files.
+/// installation status and to be able to prune orphan files.
 #[derive(Debug)]
 pub struct SearchResults {
     /// Absolute paths to the found VST2 `.dll` files.
     pub vst2_files: Vec<PathBuf>,
+    /// The number of skipped `.dll` files. Only used for printing statistics, so we don't keep
+    /// track of the exact files.
+    pub num_skipped_files: usize,
     /// Absolute paths to any `.so` files inside of the directory, and whether they're a symlink or
     /// a regular file.
     pub so_files: Vec<FoundFile>,
@@ -126,6 +129,7 @@ pub fn index(directory: &Path) -> Result<SearchResults, std::io::Error> {
             AhoCorasick::new_auto_configured(&["VSTPluginMain", "main", "main_plugin"]);
     }
 
+    let dll_file_count = dll_files.len();
     let vst2_files: Vec<PathBuf> = dll_files
         .into_par_iter()
         .map(|path| {
@@ -151,6 +155,7 @@ pub fn index(directory: &Path) -> Result<SearchResults, std::io::Error> {
         .collect::<Result<_, std::io::Error>>()?;
 
     Ok(SearchResults {
+        num_skipped_files: dll_file_count - vst2_files.len(),
         vst2_files,
         so_files,
     })
