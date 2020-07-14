@@ -22,7 +22,7 @@ to use a custom installation directory instead.
 yabridgectl set --path=<path/to/directory/containing/yabridge>
 ```
 
-### Installation modes
+### Installation methods
 
 By default, yabridgectl will use the copy-based installation method for yabridge
 since this installation method works everywhere. If you are using a DAW that
@@ -30,7 +30,7 @@ supports individually sandboxed plugins, then you can choose between using
 copies and symlinks using the command below.
 
 ```shell
-yabridgectl set --mode=<copy|symlink>
+yabridgectl set --method=<copy|symlink>
 ```
 
 ### Managing directories

@@ -15,20 +15,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use clap::{app_from_crate, App, AppSettings, Arg};
-use config::Config;
+use colored::Colorize;
 use std::path::{Path, PathBuf};
 use std::process::exit;
+
+use crate::config::Config;
+use crate::files::FoundFile;
 
 mod config;
 mod files;
 
 // TODO: Add the different `yabridgectl set` options
-// TODO: Add `yabridgectl status`
 // TODO: Add `yabridgectl sync`
 // TODO: Naming and descriptions could be made clearer
 // TODO: When creating copies, check whether `yabridge-host.exe` is in the PATH for the login shell
-// TODO: Also give a good error if winedump cannot be found
-// TODO: Check for left over files when removign directory
+// TODO: Check for left over files when removing directory
 // TODO: Warn about left over files if not using --prune
 // TODO: Reward parts of the readme
 // TODO: Record .dll files processed, .dll files skipped and orphan .so files. Print a summary of
@@ -73,6 +74,7 @@ fn main() {
                 ),
         )
         .subcommand(App::new("list").about("List the plugin install locations"))
+        .subcommand(App::new("status").about("Show the installation status for all plugins"))
         .get_matches();
 
     match matches.subcommand() {
@@ -81,6 +83,7 @@ fn main() {
             remove_directory(&mut config, &options.value_of_t_or_exit::<PathBuf>("path"))
         }
         ("list", _) => list_directories(&config),
+        ("status", _) => show_status(&config),
         _ => unreachable!(),
     }
 }
@@ -109,6 +112,41 @@ fn remove_directory(config: &mut Config, path: &Path) {
 fn list_directories(config: &Config) {
     for directory in &config.plugin_dirs {
         println!("{}", directory.display());
+    }
+}
+
+/// Print the current configuration and the installation status for all found plugins.
+fn show_status(config: &Config) {
+    match config.index_directories() {
+        Ok(results) => {
+            println!(
+                "yabridge path: {}",
+                config
+                    .yabridge_home
+                    .as_ref()
+                    .map(|path| format!("'{}'", path.display()))
+                    .unwrap_or(String::from("<auto>"))
+            );
+            println!("installation method: {}", config.method);
+
+            for (path, search_results) in results {
+                println!("\n{}:", path.display());
+
+                for (plugin, status) in search_results.installation_status() {
+                    let status_str = match status {
+                        Some(FoundFile::Regular(_)) => "copy".green(),
+                        Some(FoundFile::Symlink(_)) => "symlink".green(),
+                        None => "not installed".red(),
+                    };
+
+                    println!("  {} :: {}", plugin.display(), status_str);
+                }
+            }
+        }
+        Err(err) => {
+            eprintln!("Error while searching for plugins: {}", err);
+            exit(1);
+        }
     }
 }
 

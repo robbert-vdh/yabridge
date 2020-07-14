@@ -14,11 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Display;
 use std::fs;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
+
+use crate::files::{self, SearchResults};
 
 /// The name of the config file, relative to `$XDG_CONFIG_HOME/CONFIG_PREFIX`.
 const CONFIG_FILE_NAME: &str = "config.toml";
@@ -60,6 +64,15 @@ pub enum InstallationMethod {
     /// directories. As explained in the readme, this makes updating easier and remvoes the need to
     /// modify the `PATH` environment variable.
     Symlink,
+}
+
+impl Display for InstallationMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            InstallationMethod::Copy => write!(f, "copy"),
+            InstallationMethod::Symlink => write!(f, "symlink"),
+        }
+    }
 }
 
 impl Config {
@@ -149,6 +162,15 @@ impl Config {
                 ))
             }
         }
+    }
+
+    /// Search for VST2 plugins in all of the registered plugins directories. This will return an
+    /// error if `winedump` could not be called.
+    pub fn index_directories(&self) -> Result<BTreeMap<&Path, SearchResults>, std::io::Error> {
+        self.plugin_dirs
+            .par_iter()
+            .map(|path| files::index(path).map(|search_results| (path.as_path(), search_results)))
+            .collect()
     }
 }
 
