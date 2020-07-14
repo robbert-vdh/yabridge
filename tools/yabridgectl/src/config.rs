@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use serde_derive::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
@@ -42,8 +43,9 @@ pub struct Config {
     /// look in `/usr/lib` and `$XDG_DATA_HOME/yabridge` since those are the expected locations for
     /// yabridge to be installed in.
     pub yabridge_home: Option<PathBuf>,
-    /// Directories to search for Windows VST plugins.
-    pub plugin_dirs: Vec<PathBuf>,
+    /// Directories to search for Windows VST plugins. We're using an ordered set here out of
+    /// convenience so we can't get duplicates and the config file is always sorted.
+    pub plugin_dirs: BTreeSet<PathBuf>,
 }
 
 /// Specifies how yabridge will be set up for the found plugins.
@@ -81,7 +83,7 @@ impl Config {
                 let defaults = Config {
                     method: InstallationMethod::Copy,
                     yabridge_home: None,
-                    plugin_dirs: Vec::new(),
+                    plugin_dirs: BTreeSet::new(),
                 };
 
                 // If no existing config file exists, then write a new config file with default
