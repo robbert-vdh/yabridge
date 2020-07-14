@@ -75,7 +75,7 @@ impl Config {
                 })?;
 
                 Ok(toml::from_str(&toml_str)
-                    .map_err(|err| format!("Could not parse TOML: {:#?}", err))?)
+                    .map_err(|err| format!("Could not parse TOML: {}", err))?)
             }
             None => {
                 let defaults = Config {

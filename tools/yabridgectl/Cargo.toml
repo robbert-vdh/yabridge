@@ -5,7 +5,7 @@ name = "yabridgectl"
 version = "1.2.1"
 authors = ["Robbert van der Helm <mail@robbertvanderhelm.nl>"]
 edition = "2018"
-description = "Optional command line helper to set up yabridge"
+description = "Optional utility to help set up yabridge"
 repository = "https://github.com/robbert-vdh/yabridge"
 license = "GPL-3.0-or-later"
 
