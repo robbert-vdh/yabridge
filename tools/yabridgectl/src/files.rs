@@ -19,6 +19,7 @@
 use aho_corasick::AhoCorasick;
 use lazy_static::lazy_static;
 use rayon::prelude::*;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use walkdir::WalkDir;
@@ -35,10 +36,60 @@ pub struct SearchResults {
     pub so_files: Vec<FoundFile>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FoundFile {
     Symlink(PathBuf),
     Regular(PathBuf),
+}
+
+impl SearchResults {
+    /// For every found VST2 plugin, find the associated copy or symlink of `libyabridge.so`. The
+    /// returned hashmap will contain a `None` value for plugins that have not yet been set up.
+    ///
+    /// These two functions could be combined into a single function, but speed isn't really an
+    /// issue here and it's a bit more organized this way.
+    pub fn installation_status(&self) -> HashMap<&Path, Option<&FoundFile>> {
+        let so_files: HashMap<&Path, &FoundFile> = self
+            .so_files
+            .iter()
+            .map(|file| (file.path(), file))
+            .collect();
+
+        self.vst2_files
+            .iter()
+            .map(
+                |path| match so_files.get(path.with_extension("so").as_path()) {
+                    Some(&file) => (path.as_path(), Some(file)),
+                    None => (path.as_path(), None),
+                },
+            )
+            .collect()
+    }
+
+    /// Find all `.so` files in the search results that do not belong to a VST2 plugin `.dll` file.
+    pub fn orphans(&self) -> Vec<&FoundFile> {
+        // We need to store these in a map so we can easily entries with corresponding `.dll` files
+        let mut orphans: HashMap<&Path, &FoundFile> = self
+            .so_files
+            .iter()
+            .map(|file| (file.path(), file))
+            .collect();
+        for vst2_path in &self.vst2_files {
+            orphans.remove(vst2_path.with_extension("so").as_path());
+        }
+
+        orphans.into_iter().map(|(_, file)| file).collect()
+    }
+}
+
+impl FoundFile {
+    /// Return the path of a found `.so` file.
+    pub fn path(&self) -> &Path {
+        match &self {
+            FoundFile::Symlink(path) => path,
+            FoundFile::Regular(path) => path,
+        }
+    }
 }
 
 /// Search for Windows VST2 plugins and .so files under a directory. This will return an error if
