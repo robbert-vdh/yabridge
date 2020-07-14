@@ -76,31 +76,39 @@ fn main() {
         .get_matches();
 
     match matches.subcommand() {
-        ("add", Some(options)) => {
-            config
-                .plugin_dirs
-                .insert(options.value_of_t_or_exit("path"));
-            if let Err(err) = config.write() {
-                eprintln!("Error while writing config file: {}", err);
-                exit(1);
-            };
-        }
+        ("add", Some(options)) => add_directory(&mut config, options.value_of_t_or_exit("path")),
         ("rm", Some(options)) => {
-            // We've already verified that this path is in `config.plugin_dirs`
-            config
-                .plugin_dirs
-                .remove(&options.value_of_t_or_exit::<PathBuf>("path"));
-            if let Err(err) = config.write() {
-                eprintln!("Error while writing config file: {}", err);
-                exit(1);
-            };
+            remove_directory(&mut config, &options.value_of_t_or_exit::<PathBuf>("path"))
         }
-        ("list", _) => {
-            for directory in config.plugin_dirs {
-                println!("{}", directory.display());
-            }
-        }
+        ("list", _) => list_directories(&config),
         _ => unreachable!(),
+    }
+}
+
+/// Add a direcotry to the plugin locations. Duplicates get ignord because we're using ordered sets.
+fn add_directory(config: &mut Config, path: PathBuf) {
+    config.plugin_dirs.insert(path);
+    if let Err(err) = config.write() {
+        eprintln!("Error while writing config file: {}", err);
+        exit(1);
+    };
+}
+
+/// Remove a direcotry to the plugin locations. The path is assumed to be part of
+/// `config.plugin_dirs`, otherwise this si silently ignored.
+fn remove_directory(config: &mut Config, path: &Path) {
+    // We've already verified that this path is in `config.plugin_dirs`
+    config.plugin_dirs.remove(path);
+    if let Err(err) = config.write() {
+        eprintln!("Error while writing config file: {}", err);
+        exit(1);
+    };
+}
+
+/// List the plugin locations.
+fn list_directories(config: &Config) {
+    for directory in &config.plugin_dirs {
+        println!("{}", directory.display());
     }
 }
 
