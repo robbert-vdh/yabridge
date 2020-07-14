@@ -14,17 +14,28 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use clap::{app_from_crate, App, Arg};
+use clap::{app_from_crate, App, AppSettings, Arg};
 use config::Config;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::process::exit;
 
 mod config;
 mod files;
 
+// TODO: Add the different `yabridgectl set` options
+// TODO: Add `yabridgectl status`
+// TODO: Add `yabridgectl sync`
 // TODO: Naming and descriptions could be made clearer
+// TODO: When creating copies, check whether `yabridge-host.exe` is in the PATH for the login shell
+// TODO: Also give a good error if winedump cannot be found
+// TODO: Check for left over files when removign directory
+// TODO: Warn about left over files if not using --prune
+// TODO: Reward parts of the readme
+// TODO: Record .dll files processed, .dll files skipped and orphan .so files. Print a summary of
+//       the work done, and allow a --verbose option to print everything.
 
 fn main() {
-    let config = match Config::read() {
+    let mut config = match Config::read() {
         Ok(config) => config,
         Err(err) => {
             eprintln!("Error while reading config:\n\n{}", err);
@@ -40,6 +51,7 @@ fn main() {
         .collect();
 
     let matches = app_from_crate!()
+        .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
             App::new("add").about("Add a plugin install location").arg(
                 Arg::with_name("path")
@@ -60,11 +72,36 @@ fn main() {
                         .required(true),
                 ),
         )
-        .subcommand(App::new("list").about("List the plugin directories"))
+        .subcommand(App::new("list").about("List the plugin install locations"))
         .get_matches();
 
-    // TODO: Modify the config file using these options
-    unimplemented!();
+    match matches.subcommand() {
+        ("add", Some(options)) => {
+            config
+                .plugin_dirs
+                .insert(options.value_of_t_or_exit("path"));
+            if let Err(err) = config.write() {
+                eprintln!("Error while writing config file: {}", err);
+                exit(1);
+            };
+        }
+        ("rm", Some(options)) => {
+            // We've already verified that this path is in `config.plugin_dirs`
+            config
+                .plugin_dirs
+                .remove(&options.value_of_t_or_exit::<PathBuf>("path"));
+            if let Err(err) = config.write() {
+                eprintln!("Error while writing config file: {}", err);
+                exit(1);
+            };
+        }
+        ("list", _) => {
+            for directory in config.plugin_dirs {
+                println!("{}", directory.display());
+            }
+        }
+        _ => unreachable!(),
+    }
 }
 
 /// Verify that a path exists, used for validating arguments.
