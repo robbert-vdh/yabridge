@@ -125,7 +125,14 @@ fn show_status(config: &Config) {
                     .yabridge_home
                     .as_ref()
                     .map(|path| format!("'{}'", path.display()))
-                    .unwrap_or(String::from("<auto>"))
+                    .unwrap_or_else(|| String::from("<auto>"))
+            );
+            println!(
+                "libyabridge.so: {}",
+                config
+                    .libyabridge()
+                    .map(|path| format!("'{}'", path.display()))
+                    .unwrap_or_else(|_| format!("{}", "<not found>".red()))
             );
             println!("installation method: {}", config.method);
 
