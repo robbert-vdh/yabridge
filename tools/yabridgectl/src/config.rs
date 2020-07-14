@@ -64,7 +64,7 @@ impl Config {
     /// Try to read the config file, creating a new default file if necessary. This will fail if the
     /// file could not be created or if it could not be parsed.
     pub fn read() -> Result<Config, String> {
-        match yabridge_directories()?.find_config_file(CONFIG_FILE_NAME) {
+        match yabridgectl_directories()?.find_config_file(CONFIG_FILE_NAME) {
             Some(path) => {
                 let toml_str = fs::read_to_string(&path).map_err(|err| {
                     format!(
