@@ -19,7 +19,7 @@
 use aho_corasick::AhoCorasick;
 use lazy_static::lazy_static;
 use rayon::prelude::*;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use walkdir::WalkDir;
@@ -48,7 +48,7 @@ impl SearchResults {
     ///
     /// These two functions could be combined into a single function, but speed isn't really an
     /// issue here and it's a bit more organized this way.
-    pub fn installation_status(&self) -> HashMap<&Path, Option<&FoundFile>> {
+    pub fn installation_status(&self) -> BTreeMap<&Path, Option<&FoundFile>> {
         let so_files: HashMap<&Path, &FoundFile> = self
             .so_files
             .iter()

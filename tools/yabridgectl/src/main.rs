@@ -30,7 +30,6 @@ mod files;
 // TODO: Naming and descriptions could be made clearer
 // TODO: When creating copies, check whether `yabridge-host.exe` is in the PATH for the login shell
 // TODO: Check for left over files when removing directory
-// TODO: Warn about left over files if not using --prune
 // TODO: Reward parts of the readme
 // TODO: Record .dll files processed, .dll files skipped and orphan .so files. Print a summary of
 //       the work done, and allow a --verbose option to print everything.
@@ -101,6 +100,7 @@ fn add_directory(config: &mut Config, path: PathBuf) {
 /// `config.plugin_dirs`, otherwise this si silently ignored.
 fn remove_directory(config: &mut Config, path: &Path) {
     // We've already verified that this path is in `config.plugin_dirs`
+    // XXS: Would it be a good idea to warn about leftover .so files?
     config.plugin_dirs.remove(path);
     if let Err(err) = config.write() {
         eprintln!("Error while writing config file: {}", err);
