@@ -31,9 +31,9 @@ use walkdir::WalkDir;
 pub struct SearchResults {
     /// Absolute paths to the found VST2 `.dll` files.
     pub vst2_files: Vec<PathBuf>,
-    /// The number of skipped `.dll` files. Only used for printing statistics, so we don't keep
-    /// track of the exact files.
-    pub num_skipped_files: usize,
+    /// `.dll` files skipped over during the serach. Used for printing statistics and shown when
+    /// running `yabridgectl sync --verbose`.
+    pub skipped_files: Vec<PathBuf>,
     /// Absolute paths to any `.so` files inside of the directory, and whether they're a symlink or
     /// a regular file.
     pub so_files: Vec<FoundFile>,
@@ -122,15 +122,15 @@ pub fn index(directory: &Path) -> Result<SearchResults, std::io::Error> {
         }
     }
 
-    // Then we'll filter out any .dll files that are not VST2 plugins by checking whether the
-    // exptected entry points for VST2 plugins are present
     lazy_static! {
         static ref VST2_AUTOMATON: AhoCorasick =
             AhoCorasick::new_auto_configured(&["VSTPluginMain", "main", "main_plugin"]);
     }
 
-    let dll_file_count = dll_files.len();
-    let vst2_files: Vec<PathBuf> = dll_files
+    // THne we'll figure out which `.dll` files are VST2 plugins and which should be skipped by
+    // checking whether the file contains one of the VST2 entry point functions. The boolean flag in
+    // this vector indicates whether it is a VST2 plugin.
+    let dll_files: Vec<(PathBuf, bool)> = dll_files
         .into_par_iter()
         .map(|path| {
             let exported_functions = Command::new("winedump")
@@ -140,23 +140,23 @@ pub fn index(directory: &Path) -> Result<SearchResults, std::io::Error> {
                 .output()?
                 .stdout;
 
-            Ok((path, exported_functions))
-        })
-        .filter_map(|result| match result {
-            Ok((path, exported_functions)) => {
-                if VST2_AUTOMATON.is_match(exported_functions) {
-                    Some(Ok(path))
-                } else {
-                    None
-                }
-            }
-            Err(err) => Some(Err(err)),
+            Ok((path, VST2_AUTOMATON.is_match(exported_functions)))
         })
         .collect::<Result<_, std::io::Error>>()?;
 
+    let mut vst2_files = Vec::new();
+    let mut skipped_files = Vec::new();
+    for (path, is_vst2_plugin) in dll_files {
+        if is_vst2_plugin {
+            vst2_files.push(path);
+        } else {
+            skipped_files.push(path);
+        }
+    }
+
     Ok(SearchResults {
-        num_skipped_files: dll_file_count - vst2_files.len(),
         vst2_files,
+        skipped_files,
         so_files,
     })
 }

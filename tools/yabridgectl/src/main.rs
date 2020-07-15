@@ -32,8 +32,6 @@ mod files;
 // TODO: When creating copies, check whether `yabridge-host.exe` is in the PATH for the login shell
 // TODO: Check for left over files when removing directory
 // TODO: Reward parts of the readme
-// TODO: Record .dll files processed, .dll files skipped and orphan .so files. Print a summary of
-//       the work done, and allow a --verbose option to print everything.
 
 fn main() {
     let mut config = match Config::read() {
@@ -204,12 +202,12 @@ fn do_sync(config: &Config, prune: bool, verbose: bool) {
 
     // Keep track of some global statistics
     let mut num_installed = 0;
-    let mut num_skipped = 0;
+    let mut skipped_dll_files: Vec<PathBuf> = Vec::new();
     let mut orphan_so_files: Vec<FoundFile> = Vec::new();
     for (path, search_results) in results {
-        orphan_so_files.extend(search_results.orphans().into_iter().cloned());
         num_installed += search_results.vst2_files.len();
-        num_skipped += search_results.num_skipped_files;
+        orphan_so_files.extend(search_results.orphans().into_iter().cloned());
+        skipped_dll_files.extend(search_results.skipped_files);
 
         if verbose {
             println!("{}:", path.display());
@@ -259,6 +257,18 @@ fn do_sync(config: &Config, prune: bool, verbose: bool) {
         }
     }
 
+    // We'll print the skipped files all at once to prevetn clutter
+    let num_skipped_files = skipped_dll_files.len();
+    if verbose && !skipped_dll_files.is_empty() {
+        println!("Skipped files:");
+        for path in skipped_dll_files {
+            println!("- {}", path.display());
+        }
+        println!();
+    }
+
+    // Always warn about leftover files sicne those might cause warnings or errors when a VST host
+    // tries to load them
     if !orphan_so_files.is_empty() {
         if prune {
             println!("Removing {} leftover '.so' file(s):", orphan_so_files.len());
@@ -286,7 +296,7 @@ fn do_sync(config: &Config, prune: bool, verbose: bool) {
 
     println!(
         "Finished setting up {} plugins, skipped {} non-plugin '.dll' files.",
-        num_installed, num_skipped
+        num_installed, num_skipped_files
     )
 }
 
