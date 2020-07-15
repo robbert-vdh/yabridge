@@ -66,6 +66,33 @@ yabridgectl sync
 yabridgectl sync --prune
 ```
 
+## Alternatives
+
+If you want to script your own installation behaviour and don't feel like using
+yabridgectl, then you could use one of the below bash snippets as a base. This
+approach is slightly less robust and does not do any problem detection or status
+reporting, but it will get you started.
+
+```shell
+# For use with symlinks
+yabridge_home=$HOME/.local/share/yabridge
+plugin_dir="$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"
+
+find -L "$plugin_dir" -type f -iname '*.dll' -print0 |
+  xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
+  sed -z 's/\.dll$/.so/' |
+  xargs -0 -n1 ln -sf "$yabridge_home/libyabridge.so"
+
+# For use with copies
+yabridge_home=$HOME/.local/share/yabridge
+plugin_dir="$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"
+
+find -L "$plugin_dir" -type f -iname '*.dll' -print0 |
+  xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
+  sed -z 's/\.dll$/.so/' |
+  xargs -0 -n1 cp "$yabridge_home/libyabridge.so"
+```
+
 ## Building
 
 After installing [Rust](https://rustup.rs/), simply run the below to compile and

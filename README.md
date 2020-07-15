@@ -27,6 +27,9 @@ Please let me know if there are any issues with other VST hosts.
 
 ## Usage
 
+TODO: Refactor these sections to refer to yabridgectl for most of the setup.
+Manual setup can be moved to its own section.
+
 You can either download a prebuilt version of yabridge through the GitHub
 [releases](https://github.com/robbert-vdh/yabridge/releases) section, or you can
 compile it from source using the instructions in the [build](#Building) section
