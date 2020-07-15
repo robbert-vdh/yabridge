@@ -99,28 +99,7 @@ impl FoundFile {
 /// the directory does not exist, or if `winedump` could not be found.
 pub fn index(directory: &Path) -> Result<SearchResults, std::io::Error> {
     // First we'll find all .dll and .so files in the directory
-    let mut dll_files: Vec<PathBuf> = Vec::new();
-    let mut so_files: Vec<FoundFile> = Vec::new();
-    // XXX: We're silently skipping directories and files we don't have permission to read. This
-    //      sounds like the expected behavior, but I"m not entirely sure.
-    for entry in WalkDir::new(directory)
-        .follow_links(true)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|x| !x.file_type().is_dir())
-    {
-        match entry.path().extension().and_then(|os| os.to_str()) {
-            Some("dll") => dll_files.push(entry.into_path()),
-            Some("so") => {
-                if entry.path_is_symlink() {
-                    so_files.push(FoundFile::Symlink(entry.into_path()));
-                } else {
-                    so_files.push(FoundFile::Regular(entry.into_path()));
-                }
-            }
-            _ => (),
-        }
-    }
+    let (dll_files, so_files) = find_files(directory);
 
     lazy_static! {
         static ref VST2_AUTOMATON: AhoCorasick =
@@ -159,4 +138,53 @@ pub fn index(directory: &Path) -> Result<SearchResults, std::io::Error> {
         skipped_files,
         so_files,
     })
+}
+
+/// THe same as [index()](index), but only report found `.so` files. This avoids unnecesarily
+/// filtering the found `.dll` files.
+pub fn index_so_files(directory: &Path) -> Vec<FoundFile> {
+    let (_, so_files) = find_files(directory);
+
+    so_files
+}
+
+/// Find all `.dll` and `.so` files under a directory. The results are a pair of `(dll_files,
+/// so_files)`.
+fn find_files(directory: &Path) -> (Vec<PathBuf>, Vec<FoundFile>) {
+    let mut dll_files: Vec<PathBuf> = Vec::new();
+    let mut so_files: Vec<FoundFile> = Vec::new();
+    // XXX: We're silently skipping directories and files we don't have permission to read. This
+    //      sounds like the expected behavior, but I"m not entirely sure.
+    for (file_idx, entry) in WalkDir::new(directory)
+        .follow_links(true)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|x| !x.file_type().is_dir())
+        .enumerate()
+    {
+        // This is a bit of an odd warning, but I can see it happening that someone adds their
+        // entire home directory by accident. Removing the home directory would cause yabridgectl to
+        // scan for leftover `.so` files, which would of course take an enternity. This warning will
+        // at least tell the user what's happening and that they can safely cancel the scan.
+        if file_idx == 100_000 {
+            eprintln!(
+                "Indexed over 100.000 files, press Ctrl+C to cancel this operation if this was not \
+                 intentional."
+            )
+        }
+
+        match entry.path().extension().and_then(|os| os.to_str()) {
+            Some("dll") => dll_files.push(entry.into_path()),
+            Some("so") => {
+                if entry.path_is_symlink() {
+                    so_files.push(FoundFile::Symlink(entry.into_path()));
+                } else {
+                    so_files.push(FoundFile::Regular(entry.into_path()));
+                }
+            }
+            _ => (),
+        }
+    }
+
+    (dll_files, so_files)
 }

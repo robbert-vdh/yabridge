@@ -29,7 +29,6 @@ mod files;
 
 // TODO: Naming and descriptions could be made clearer
 // TODO: When creating copies, check whether `yabridge-host.exe` is in the PATH for the login shell
-// TODO: Check for left over files when removing directory
 // TODO: Reward parts of the readme
 
 fn main() {
@@ -142,10 +141,10 @@ fn main() {
 /// Add a direcotry to the plugin locations. Duplicates get ignord because we're using ordered sets.
 fn add_directory(config: &mut Config, path: PathBuf) {
     config.plugin_dirs.insert(path);
-    if let Err(err) = config.write() {
+    config.write().unwrap_or_else(|err| {
         eprintln!("Error while writing config file: {}", err);
         exit(1);
-    };
+    });
 }
 
 /// Remove a direcotry to the plugin locations. The path is assumed to be part of
@@ -154,10 +153,41 @@ fn remove_directory(config: &mut Config, path: &Path) {
     // We've already verified that this path is in `config.plugin_dirs`
     // XXS: Would it be a good idea to warn about leftover .so files?
     config.plugin_dirs.remove(path);
-    if let Err(err) = config.write() {
+    config.write().unwrap_or_else(|err| {
         eprintln!("Error while writing config file: {}", err);
         exit(1);
-    };
+    });
+
+    // Ask the user to remove any leftover files to prevent possible future problems and out of date
+    // copies
+    let orphan_files = files::index_so_files(path);
+    if !orphan_files.is_empty() {
+        println!(
+            "WARNING: Found {} leftover '.so' files still in this directory:",
+            orphan_files.len()
+        );
+
+        for file in &orphan_files {
+            println!("- {}", file.path().display());
+        }
+
+        match promptly::prompt_opt::<String, &str>(
+            "\nWould you like to remove these files? Entering anything other than YES will leave \
+             these files intact",
+        ) {
+            Ok(Some(answer)) if answer == "YES" => {
+                for file in &orphan_files {
+                    fs::remove_file(file.path()).unwrap_or_else(|err| {
+                        eprintln!("Could not remove '{}': {}", file.path().display(), err);
+                        exit(1);
+                    });
+                }
+
+                println!("\nRemoved {} files.", orphan_files.len());
+            }
+            _ => {}
+        }
+    }
 }
 
 /// List the plugin locations.
@@ -229,10 +259,10 @@ fn set_settings(config: &mut Config, options: &ArgMatches) {
         Err(err) => err.exit(),
     }
 
-    if let Err(err) = config.write() {
+    config.write().unwrap_or_else(|err| {
         eprintln!("Error while writing config file: {}", err);
         exit(1);
-    };
+    });
 }
 
 /// Set up yabridge for all Windows VST2 plugins in the plugin directories. Will also remove orphan
