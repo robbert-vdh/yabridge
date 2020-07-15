@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use clap::{app_from_crate, App, AppSettings, Arg};
+use clap::{app_from_crate, App, AppSettings, Arg, ArgMatches};
 use colored::Colorize;
 use std::fs;
 use std::os::unix::fs::symlink;
@@ -27,7 +27,6 @@ use crate::files::FoundFile;
 mod config;
 mod files;
 
-// TODO: Add the different `yabridgectl set` options
 // TODO: Naming and descriptions could be made clearer
 // TODO: When creating copies, check whether `yabridge-host.exe` is in the PATH for the login shell
 // TODO: Check for left over files when removing directory
@@ -74,6 +73,27 @@ fn main() {
         .subcommand(App::new("list").about("List the plugin install locations"))
         .subcommand(App::new("status").about("Show the installation status for all plugins"))
         .subcommand(
+            App::new("set")
+                .about("Change installation method or yabridge path")
+                .setting(AppSettings::ArgRequiredElseHelp)
+                .arg(
+                    Arg::with_name("method")
+                        .long("method")
+                        .about("The installation method to use")
+                        .long_about("The installation method to use.")
+                        .possible_values(&["copy", "symlink"])
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("path")
+                        .long("path")
+                        .about("Path to the directory containing 'libyabridge.so'")
+                        .long_about("Path to the directory containing 'libyabridge.so'. If this is not set, then yabridgectl will look in both '/usr/lib' and '~/.local/share/yabridge' by default.")
+                        .validator(validate_path)
+                        .takes_value(true),
+                ),
+        )
+        .subcommand(
             App::new("sync")
                 .about("Set up or update yabridge for all plugins")
                 .arg(
@@ -98,6 +118,7 @@ fn main() {
         }
         ("list", _) => list_directories(&config),
         ("status", _) => show_status(&config),
+        ("set", Some(options)) => set_settings(&mut config, options),
         ("sync", Some(options)) => do_sync(
             &config,
             options.is_present("prune"),
@@ -175,6 +196,32 @@ fn show_status(config: &Config) {
             println!("  {} :: {}", plugin.display(), status_str);
         }
     }
+}
+
+/// Change configuration settings. The actual options are defined in the clap [app](clap::App).
+fn set_settings(config: &mut Config, options: &ArgMatches) {
+    match options.value_of("method") {
+        Some("copy") => config.method = InstallationMethod::Copy,
+        Some("symlink") => config.method = InstallationMethod::Symlink,
+        Some(s) => unimplemented!("Unexpected installation method '{}'", s),
+        None => (),
+    }
+
+    match options.value_of_t("path") {
+        Ok(path) => config.yabridge_home = Some(path),
+        Err(clap::Error {
+            kind: clap::ErrorKind::ArgumentNotFound,
+            ..
+        }) => (),
+        // I don't think we can get any parsing errors here since we already validated that the
+        // argument has to be a valid path, but you never know
+        Err(err) => err.exit(),
+    }
+
+    if let Err(err) = config.write() {
+        eprintln!("Error while writing config file: {}", err);
+        exit(1);
+    };
 }
 
 /// Set up yabridge for all Windows VST2 plugins in the plugin directories. Will also remove orphan
