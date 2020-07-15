@@ -27,9 +27,11 @@ Please let me know if there are any issues with other VST hosts.
 
 ## Usage
 
-**TODO: Refactor these sections to refer to yabridgectl for most of the setup.
-If you are reading this, then you can either follow the instructions below or
-you can download a preview version of yabridgectl from the [automated
+**TODO: Refactor these sections to refer to
+[yabridgectl](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl/README.md)
+for most of the setup. If you are reading this, then you can either follow the
+instructions below or you can download a preview version of yabridgectl from the
+[automated
 builds](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)
 page.**
 

@@ -6,8 +6,10 @@ once.
 
 ## Usage
 
-Yabridgectl can be downloaded from the GitHub releases section and can run from
-anywhere. All of the information below can also be found through `yabridgectl --help`.
+Yabridgectl can be downloaded from the [releases
+section](https://github.com/robbert-vdh/yabridge/releases) on GitHub and can run
+from anywhere. All of the information below can also be found through
+`yabridgectl --help`.
 
 ### Yabridge path
 
