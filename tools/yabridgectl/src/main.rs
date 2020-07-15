@@ -329,10 +329,10 @@ fn do_sync(config: &Config, prune: bool, verbose: bool) {
     // tries to load them
     if !orphan_so_files.is_empty() {
         if prune {
-            println!("Removing {} leftover '.so' file(s):", orphan_so_files.len());
+            println!("Removing {} leftover '.so' files:", orphan_so_files.len());
         } else {
             println!(
-                "Found {} leftover '.so' file(s), rerun with the '--prune' option to remove them:",
+                "Found {} leftover '.so' files, rerun with the '--prune' option to remove them:",
                 orphan_so_files.len()
             );
         }
