@@ -80,7 +80,18 @@ fn main() {
                     Arg::with_name("method")
                         .long("method")
                         .about("The installation method to use")
-                        .long_about("The installation method to use.")
+                        .long_about(&format!("The installation method to use. \
+                                     '{}' works in every situation but it requires you to rerun \
+                                     'yabridgectl sync' whenever you update yabridge. You'll also \
+                                     have to modify your PATH environment variable so yabridge is \
+                                     able to find 'yabridge-host.exe'.\
+                                     '{}' only works for hosts that support individually \
+                                     sandboxed plugins such as Bitwig Studio, but it does not \
+                                     require you to set environment variables or to manually \
+                                     update your plugins.",
+                                             "copy".bright_white(),
+                                             "symlink".bright_white()))
+                        .setting(clap::ArgSettings::NextLineHelp)
                         .possible_values(&["copy", "symlink"])
                         .takes_value(true),
                 )
