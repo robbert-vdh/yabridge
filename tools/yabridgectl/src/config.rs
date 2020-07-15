@@ -66,6 +66,16 @@ pub enum InstallationMethod {
     Symlink,
 }
 
+impl InstallationMethod {
+    /// The plural term for this installation methodd, using in string formatting.
+    pub fn plural(&self) -> &str {
+        match &self {
+            InstallationMethod::Copy => "copies",
+            InstallationMethod::Symlink => "symlinks",
+        }
+    }
+}
+
 impl Display for InstallationMethod {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {

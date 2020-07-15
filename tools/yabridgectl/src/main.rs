@@ -86,7 +86,7 @@ fn main() {
                     Arg::with_name("verbose")
                         .short('v')
                         .long("verbose")
-                        .about("Print every plugin yabridge has been set up for"),
+                        .about("Print information about plugins being set up or skipped"),
                 ),
         )
         .get_matches();
@@ -295,8 +295,10 @@ fn do_sync(config: &Config, prune: bool, verbose: bool) {
     }
 
     println!(
-        "Finished setting up {} plugins, skipped {} non-plugin '.dll' files.",
-        num_installed, num_skipped_files
+        "Finished setting up {} plugins using {}, skipped {} non-plugin '.dll' files.",
+        num_installed,
+        config.method.plural(),
+        num_skipped_files
     )
 }
 
