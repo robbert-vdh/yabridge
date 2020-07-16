@@ -26,7 +26,6 @@ mod config;
 mod files;
 mod utils;
 
-// TODO: Naming and descriptions could be made clearer
 // TODO: Reward parts of the readme
 
 fn main() -> Result<()> {
@@ -55,7 +54,7 @@ fn main() -> Result<()> {
                 .about("Remove a plugin install location")
                 .arg(
                     Arg::with_name("path")
-                        .about("Path to a directory")
+                        .about("Path to a previously added directory")
                         .possible_values(&plugin_directories)
                         .takes_value(true)
                         .required(true),
@@ -71,17 +70,18 @@ fn main() -> Result<()> {
                     Arg::with_name("method")
                         .long("method")
                         .about("The installation method to use")
-                        .long_about(&format!("The installation method to use. \
-                                     '{}' works in every situation but it requires you to rerun \
-                                     'yabridgectl sync' whenever you update yabridge. You'll also \
-                                     have to modify your PATH environment variable so yabridge is \
-                                     able to find 'yabridge-host.exe'.\
-                                     '{}' only works for hosts that support individually \
-                                     sandboxed plugins such as Bitwig Studio, but it does not \
-                                     require you to set environment variables or to manually \
-                                     update your plugins.",
-                                             "copy".bright_white(),
-                                             "symlink".bright_white()))
+                        .long_about(&format!(
+                            "The installation method to use. \
+                             '{}' works in every situation but it requires you to modify your PATH \
+                             environment variable so yabridge is able to find 'yabridge-host.exe'. \
+                             'yabridgectl sync' whenever you update yabridge. You'll also have to \
+                             rerun 'yabridgectl sync' whenever you update yabridge. \
+                             '{}' only works for hosts that support individually sandboxed plugins \
+                             such as Bitwig Studio, but it does not require setting environment \
+                             variables or to manual updates.",
+                            "copy".bright_white(),
+                            "symlink".bright_white()
+                        ))
                         .setting(clap::ArgSettings::NextLineHelp)
                         .possible_values(&["copy", "symlink"])
                         .takes_value(true),
@@ -90,7 +90,11 @@ fn main() -> Result<()> {
                     Arg::with_name("path")
                         .long("path")
                         .about("Path to the directory containing 'libyabridge.so'")
-                        .long_about("Path to the directory containing 'libyabridge.so'. If this is not set, then yabridgectl will look in both '/usr/lib' and '~/.local/share/yabridge' by default.")
+                        .long_about(
+                            "Path to the directory containing 'libyabridge.so'. If this is \
+                             not set, then yabridgectl will look in both '/usr/lib' and \
+                             '~/.local/share/yabridge' by default.",
+                        )
                         .validator(validate_path)
                         .takes_value(true),
                 ),

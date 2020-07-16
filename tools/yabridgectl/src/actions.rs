@@ -65,7 +65,7 @@ pub fn remove_directory(config: &mut Config, path: &Path) -> Result<()> {
                         .with_context(|| format!("Could not remove '{}'", file.path().display()))?;
                 }
 
-                println!("\nRemoved {} files.", orphan_files.len());
+                println!("\nRemoved {} files", orphan_files.len());
             }
             _ => {}
         }
@@ -243,9 +243,9 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) -> Result<()> {
     }
 
     println!(
-        "Finished setting up {} plugins using {}, skipped {} non-plugin '.dll' files.",
+        "Finished setting up {} plugins using {}, skipped {} non-plugin '.dll' files",
         num_installed,
-        config.method.plural(),
+        config.method.plural_name(),
         num_skipped_files
     );
 
@@ -255,11 +255,12 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) -> Result<()> {
                 "\n{}",
                 wrap(&format!(
                     "Warning: 'yabridge-host.exe' is not present in your login shell's search \
-                     path. Yabridge won't be able to run using the copy-based installatin method \
+                     path. Yabridge won't be able to run using the copy-based installation method \
                      until this is fixed.\n\
-                     Add '{}' to {}'s login shell {} environment variable. See the \
+                     Add '{}' to {}'s login shell {} environment variables. See the \
                      troubleshooting section of the readme for more details. Rerun this command to \
-                     verify that this has been set up correctly, and then reboot your system.\n\
+                     verify that the variable has been set correctly, and then reboot your system \
+                     to complete the setup.\n\
                      \n\
                      https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues",
                     libyabridge_path.parent().unwrap().display(),

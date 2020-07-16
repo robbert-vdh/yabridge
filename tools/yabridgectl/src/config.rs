@@ -71,7 +71,7 @@ pub enum InstallationMethod {
 
 impl InstallationMethod {
     /// The plural term for this installation methodd, using in string formatting.
-    pub fn plural(&self) -> &str {
+    pub fn plural_name(&self) -> &str {
         match &self {
             InstallationMethod::Copy => "copies",
             InstallationMethod::Symlink => "symlinks",
