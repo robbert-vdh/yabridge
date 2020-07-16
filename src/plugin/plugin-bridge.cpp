@@ -422,7 +422,7 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
         logger.log_event(true, opcode, index, value, nullptr, option,
                          std::nullopt);
         logger.log(
-            "   WARNING: The host has dispatched an event before the plugin "
+            "   Warning: The host has dispatched an event before the plugin "
             "has finished initializing, ignoring the event. (are we running "
             "Ardour 5.X?)");
         logger.log_event_response(true, opcode, 0, nullptr, std::nullopt);

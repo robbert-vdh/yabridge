@@ -26,6 +26,7 @@ use std::path::{Path, PathBuf};
 use crate::config::{Config, InstallationMethod};
 use crate::files;
 use crate::files::FoundFile;
+use crate::utils::{verify_path_setup, wrap};
 
 /// Add a direcotry to the plugin locations. Duplicates get ignord because we're using ordered sets.
 pub fn add_directory(config: &mut Config, path: PathBuf) -> Result<()> {
@@ -46,7 +47,7 @@ pub fn remove_directory(config: &mut Config, path: &Path) -> Result<()> {
     let orphan_files = files::index_so_files(path);
     if !orphan_files.is_empty() {
         println!(
-            "WARNING: Found {} leftover '.so' files still in this directory:",
+            "Warning: Found {} leftover '.so' files still in this directory:",
             orphan_files.len()
         );
 
@@ -247,6 +248,27 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) -> Result<()> {
         config.method.plural(),
         num_skipped_files
     );
+
+    if config.method == InstallationMethod::Copy {
+        if let Err(shell_name) = verify_path_setup() {
+            println!(
+                "\n{}",
+                wrap(&format!(
+                    "Warning: 'yabridge-host.exe' is not present in your login shell's search \
+                     path. Yabridge won't be able to run using the copy-based installatin method \
+                     until this is fixed.\n\
+                     Add '{}' to {}'s login shell {} environment variable. See the \
+                     troubleshooting section of the readme for more details. Rerun this command to \
+                     verify that this has been set up correctly, and then reboot your system.\n\
+                     \n\
+                     https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues",
+                    libyabridge_path.parent().unwrap().display(),
+                    shell_name.bright_white(),
+                    "PATH".bright_white()
+                ))
+            )
+        }
+    }
 
     Ok(())
 }

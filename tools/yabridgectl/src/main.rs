@@ -24,9 +24,9 @@ use crate::config::Config;
 mod actions;
 mod config;
 mod files;
+mod utils;
 
 // TODO: Naming and descriptions could be made clearer
-// TODO: When creating copies, check whether `yabridge-host.exe` is in the PATH for the login shell
 // TODO: Reward parts of the readme
 
 fn main() -> Result<()> {

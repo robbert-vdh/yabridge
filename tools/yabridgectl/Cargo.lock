@@ -679,6 +679,7 @@ dependencies = [
  "rayon",
  "serde",
  "serde_derive",
+ "textwrap",
  "toml",
  "walkdir",
  "xdg",
