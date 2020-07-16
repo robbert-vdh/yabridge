@@ -16,36 +16,30 @@
 
 //! Handlers for the subcommands, just to keep `main.rs` clean.
 
+use anyhow::{Context, Result};
 use clap::ArgMatches;
 use colored::Colorize;
 use std::fs;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
-use std::process::exit;
 
 use crate::config::{Config, InstallationMethod};
 use crate::files;
 use crate::files::FoundFile;
 
 /// Add a direcotry to the plugin locations. Duplicates get ignord because we're using ordered sets.
-pub fn add_directory(config: &mut Config, path: PathBuf) {
+pub fn add_directory(config: &mut Config, path: PathBuf) -> Result<()> {
     config.plugin_dirs.insert(path);
-    config.write().unwrap_or_else(|err| {
-        eprintln!("Error while writing config file: {}", err);
-        exit(1);
-    });
+    config.write()
 }
 
 /// Remove a direcotry to the plugin locations. The path is assumed to be part of
 /// `config.plugin_dirs`, otherwise this si silently ignored.
-pub fn remove_directory(config: &mut Config, path: &Path) {
+pub fn remove_directory(config: &mut Config, path: &Path) -> Result<()> {
     // We've already verified that this path is in `config.plugin_dirs`
     // XXS: Would it be a good idea to warn about leftover .so files?
     config.plugin_dirs.remove(path);
-    config.write().unwrap_or_else(|err| {
-        eprintln!("Error while writing config file: {}", err);
-        exit(1);
-    });
+    config.write()?;
 
     // Ask the user to remove any leftover files to prevent possible future problems and out of date
     // copies
@@ -66,10 +60,8 @@ pub fn remove_directory(config: &mut Config, path: &Path) {
         ) {
             Ok(Some(answer)) if answer == "YES" => {
                 for file in &orphan_files {
-                    fs::remove_file(file.path()).unwrap_or_else(|err| {
-                        eprintln!("Could not remove '{}': {}", file.path().display(), err);
-                        exit(1);
-                    });
+                    fs::remove_file(file.path())
+                        .with_context(|| format!("Could not remove '{}'", file.path().display()))?;
                 }
 
                 println!("\nRemoved {} files.", orphan_files.len());
@@ -77,24 +69,24 @@ pub fn remove_directory(config: &mut Config, path: &Path) {
             _ => {}
         }
     }
+
+    Ok(())
 }
 
 /// List the plugin locations.
-pub fn list_directories(config: &Config) {
+pub fn list_directories(config: &Config) -> Result<()> {
     for directory in &config.plugin_dirs {
         println!("{}", directory.display());
     }
+
+    Ok(())
 }
 
 /// Print the current configuration and the installation status for all found plugins.
-pub fn show_status(config: &Config) {
-    let results = match config.index_directories() {
-        Ok(results) => results,
-        Err(err) => {
-            eprintln!("Error while searching for plugins: {}", err);
-            exit(1);
-        }
-    };
+pub fn show_status(config: &Config) -> Result<()> {
+    let results = config
+        .index_directories()
+        .context("Failure while searching for plugins")?;
 
     println!(
         "yabridge path: {}",
@@ -126,10 +118,12 @@ pub fn show_status(config: &Config) {
             println!("  {} :: {}", plugin.display(), status_str);
         }
     }
+
+    Ok(())
 }
 
 /// Change configuration settings. The actual options are defined in the clap [app](clap::App).
-pub fn set_settings(config: &mut Config, options: &ArgMatches) {
+pub fn set_settings(config: &mut Config, options: &ArgMatches) -> Result<()> {
     match options.value_of("method") {
         Some("copy") => config.method = InstallationMethod::Copy,
         Some("symlink") => config.method = InstallationMethod::Symlink,
@@ -148,34 +142,18 @@ pub fn set_settings(config: &mut Config, options: &ArgMatches) {
         Err(err) => err.exit(),
     }
 
-    config.write().unwrap_or_else(|err| {
-        eprintln!("Error while writing config file: {}", err);
-        exit(1);
-    });
+    config.write()
 }
 
 /// Set up yabridge for all Windows VST2 plugins in the plugin directories. Will also remove orphan
 /// `.so` files if the prune option is set.
-pub fn do_sync(config: &Config, prune: bool, verbose: bool) {
-    let libyabridge_path = match config.libyabridge() {
-        Ok(path) => {
-            println!("Using '{}'\n", path.display());
-            path
-        }
-        Err(err) => {
-            // The error messages here are already formatted
-            eprintln!("{}", err);
-            exit(1);
-        }
-    };
+pub fn do_sync(config: &Config, prune: bool, verbose: bool) -> Result<()> {
+    let libyabridge_path = config.libyabridge()?;
+    println!("Using '{}'\n", libyabridge_path.display());
 
-    let results = match config.index_directories() {
-        Ok(results) => results,
-        Err(err) => {
-            eprintln!("Error while searching for plugins: {}", err);
-            exit(1);
-        }
-    };
+    let results = config
+        .index_directories()
+        .context("Failure while searching for plugins")?;
 
     // Keep track of some global statistics
     let mut num_installed = 0;
@@ -194,34 +172,28 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) {
             // mixing symlinks and regular files
             let target_path = plugin.with_extension("so");
             if target_path.exists() {
-                fs::remove_file(&target_path).unwrap_or_else(|err| {
-                    eprintln!("Could not remove '{}': {}", target_path.display(), err);
-                    exit(1);
-                });
+                fs::remove_file(&target_path)
+                    .with_context(|| format!("Could not remove '{}'", target_path.display()))?;
             }
 
             match config.method {
                 InstallationMethod::Copy => {
-                    fs::copy(&libyabridge_path, &target_path).unwrap_or_else(|err| {
-                        eprintln!(
-                            "Error copying '{}' to '{}': {}",
+                    fs::copy(&libyabridge_path, &target_path).with_context(|| {
+                        format!(
+                            "Error copying '{}' to '{}'",
                             libyabridge_path.display(),
-                            target_path.display(),
-                            err
-                        );
-                        exit(1);
-                    });
+                            target_path.display()
+                        )
+                    })?;
                 }
                 InstallationMethod::Symlink => {
-                    symlink(&libyabridge_path, &target_path).unwrap_or_else(|err| {
-                        eprintln!(
-                            "Error symlinking '{}' to '{}': {}",
+                    symlink(&libyabridge_path, &target_path).with_context(|| {
+                        format!(
+                            "Error symlinking '{}' to '{}'",
                             libyabridge_path.display(),
-                            target_path.display(),
-                            err
-                        );
-                        exit(1);
-                    });
+                            target_path.display()
+                        )
+                    })?;
                 }
             }
 
@@ -261,10 +233,8 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) {
 
             println!("- {}", path.display());
             if prune {
-                fs::remove_file(path).unwrap_or_else(|err| {
-                    eprintln!("Error while trying to remove '{}': {}", path.display(), err);
-                    exit(1);
-                });
+                fs::remove_file(path)
+                    .with_context(|| format!("Could not remove '{}'", path.display()))?;
             }
         }
 
@@ -276,5 +246,7 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) {
         num_installed,
         config.method.plural(),
         num_skipped_files
-    )
+    );
+
+    Ok(())
 }

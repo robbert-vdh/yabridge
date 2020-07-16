@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use anyhow::Result;
 use clap::{app_from_crate, App, AppSettings, Arg};
 use colored::Colorize;
 use std::path::{Path, PathBuf};
@@ -28,14 +29,8 @@ mod files;
 // TODO: When creating copies, check whether `yabridge-host.exe` is in the PATH for the login shell
 // TODO: Reward parts of the readme
 
-fn main() {
-    let mut config = match Config::read() {
-        Ok(config) => config,
-        Err(err) => {
-            eprintln!("Error while reading config:\n\n{}", err);
-            std::process::exit(1);
-        }
-    };
+fn main() -> Result<()> {
+    let mut config = Config::read()?;
 
     // Used for validation in `yabridgectl rm <path>`
     let plugin_directories: Vec<&str> = config

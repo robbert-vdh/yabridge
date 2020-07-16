@@ -16,6 +16,7 @@
 
 //! Utilities for managing yabrigectl's configuration.
 
+use anyhow::{anyhow, Context, Result};
 use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -90,19 +91,15 @@ impl Display for InstallationMethod {
 impl Config {
     /// Try to read the config file, creating a new default file if necessary. This will fail if the
     /// file could not be created or if it could not be parsed.
-    pub fn read() -> Result<Config, String> {
+    pub fn read() -> Result<Config> {
         match yabridgectl_directories()?.find_config_file(CONFIG_FILE_NAME) {
             Some(path) => {
-                let toml_str = fs::read_to_string(&path).map_err(|err| {
-                    format!(
-                        "Could not read config file at '{}': {}",
-                        path.display(),
-                        err
-                    )
+                let toml_str = fs::read_to_string(&path).with_context(|| {
+                    format!("Could not read config file at '{}'", path.display())
                 })?;
 
-                Ok(toml::from_str(&toml_str)
-                    .map_err(|err| format!("Could not parse TOML: {}", err))?)
+                toml::from_str(&toml_str)
+                    .with_context(|| format!("Failed to parse '{}'", path.display()))
             }
             None => {
                 let defaults = Config {
@@ -121,34 +118,28 @@ impl Config {
     }
 
     /// Write the config to disk, creating the file if it does not yet exist.
-    pub fn write(&self) -> Result<(), String> {
-        let toml_str = toml::to_string_pretty(&self)
-            .map_err(|err| format!("Could not format TOML: {}", err))?;
-        let config_file = yabridgectl_directories()?
+    pub fn write(&self) -> Result<()> {
+        let toml_str = toml::to_string_pretty(&self).context("Could not format TOML")?;
+        let config_path = yabridgectl_directories()?
             .place_config_file(CONFIG_FILE_NAME)
-            .map_err(|err| format!("Could not write config file: {}", err))?;
+            .context("Could not create config file")?;
 
-        fs::write(&config_file, toml_str).map_err(|err| {
-            format!(
-                "Could not write config file to '{}': {}",
-                config_file.display(),
-                err
-            )
-        })
+        fs::write(&config_path, toml_str)
+            .with_context(|| format!("Failed to write config file to '{}'", config_path.display()))
     }
 
     /// Return the path to `libyabridge.so`, or a descriptive error if it can't be found. If
     /// `yabridge_home` is `None`, then we'll search in both `/usr/lib` and
     /// `$XDG_DATA_HOME/yabridge`.
-    pub fn libyabridge(&self) -> Result<PathBuf, String> {
+    pub fn libyabridge(&self) -> Result<PathBuf> {
         match &self.yabridge_home {
             Some(directory) => {
                 let candidate = directory.join(LIBYABRIDGE_NAME);
                 if candidate.exists() {
                     Ok(candidate)
                 } else {
-                    Err(format!(
-                        "Could not find '{}' in '{}'.",
+                    Err(anyhow!(
+                        "Could not find '{}' in '{}'",
                         LIBYABRIDGE_NAME,
                         directory.display()
                     ))
@@ -165,7 +156,7 @@ impl Config {
                     }
                 }
 
-                Err(format!(
+                Err(anyhow!(
                     "Could not find '{}' in either '{}' or '{}'. You can tell yabridgectl where \
                      to search for it using 'yabridgectl set --path=<path>'.",
                     LIBYABRIDGE_NAME,
@@ -189,14 +180,12 @@ impl Config {
 /// Fetch the XDG base directories for yabridge's own files, converting any error messages if this
 /// somehow fails into a printable string to reduce boiler plate. This is only used when searching
 /// for `libyabridge.so` when no explicit search path has been set.
-fn yabridge_directories() -> Result<BaseDirectories, String> {
-    BaseDirectories::with_prefix(YABRIDGE_PREFIX)
-        .map_err(|err| format!("Error while parsing base directories: {}", err))
+fn yabridge_directories() -> Result<BaseDirectories> {
+    BaseDirectories::with_prefix(YABRIDGE_PREFIX).context("Error while parsing base directories")
 }
 
 /// Fetch the XDG base directories used for yabridgectl, converting any error messages if this
 /// somehow fails into a printable string to reduce boiler plate.
-fn yabridgectl_directories() -> Result<BaseDirectories, String> {
-    BaseDirectories::with_prefix(YABRIDGECTL_PREFIX)
-        .map_err(|err| format!("Error while parsing base directories: {}", err))
+fn yabridgectl_directories() -> Result<BaseDirectories> {
+    BaseDirectories::with_prefix(YABRIDGECTL_PREFIX).context("Error while parsing base directories")
 }
