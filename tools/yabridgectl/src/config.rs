@@ -169,7 +169,7 @@ impl Config {
 
     /// Search for VST2 plugins in all of the registered plugins directories. This will return an
     /// error if `winedump` could not be called.
-    pub fn index_directories(&self) -> Result<BTreeMap<&Path, SearchResults>, std::io::Error> {
+    pub fn index_directories(&self) -> Result<BTreeMap<&Path, SearchResults>> {
         self.plugin_dirs
             .par_iter()
             .map(|path| files::index(path).map(|search_results| (path.as_path(), search_results)))

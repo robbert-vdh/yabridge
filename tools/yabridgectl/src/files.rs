@@ -17,6 +17,7 @@
 //! Functions to index plugins and to set up yabridge for those plugins.
 
 use aho_corasick::AhoCorasick;
+use anyhow::{Context, Result};
 use lazy_static::lazy_static;
 use rayon::prelude::*;
 use std::collections::{BTreeMap, HashMap};
@@ -97,7 +98,7 @@ impl FoundFile {
 
 /// Search for Windows VST2 plugins and .so files under a directory. This will return an error if
 /// the directory does not exist, or if `winedump` could not be found.
-pub fn index(directory: &Path) -> Result<SearchResults, std::io::Error> {
+pub fn index(directory: &Path) -> Result<SearchResults> {
     // First we'll find all .dll and .so files in the directory
     let (dll_files, so_files) = find_files(directory);
 
@@ -116,12 +117,16 @@ pub fn index(directory: &Path) -> Result<SearchResults, std::io::Error> {
                 .arg("-j")
                 .arg("export")
                 .arg(&path)
-                .output()?
+                .output()
+                .context(
+                    "Could not find 'winedump'. In some distributions this is part of a seperate \
+                     Wine tools package.",
+                )?
                 .stdout;
 
             Ok((path, VST2_AUTOMATON.is_match(exported_functions)))
         })
-        .collect::<Result<_, std::io::Error>>()?;
+        .collect::<Result<_>>()?;
 
     let mut vst2_files = Vec::new();
     let mut skipped_files = Vec::new();
