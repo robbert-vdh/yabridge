@@ -47,15 +47,19 @@ pub fn verify_path_setup() -> Result<(), String> {
 
             let mut command = Command::new(&shell_path);
             let command = match shell {
-                // All of these shells support the `-l` flag to start a login shell and
-                // "-c<command>" to directly run a command under that login shell
-                "ash" | "bash" | "csh" | "ksh" | "dash" | "fish" | "sh" | "tcsh" | "zsh" => command
+                // All of these shells support the `-l` flag to start a login shell and have a
+                // POSIX-compatible `command` builtin
+                "ash" | "bash" | "csh" | "ksh" | "dash" | "fish" | "ion" | "sh" | "tcsh"
+                | "zsh" => command
                     .arg("-l")
                     .arg("-c")
                     .arg("command -v yabridge-host.exe"),
-                // I don't know if anyone uses PowerShell as their login shell under Linux, but it
-                // doesn't implement the POSIX `command` function so we'll just use which instead
+                // These shells either have their own implementation of `which` and don't support
+                // `command`, or they don't have a seperate login shell flag
+                "elvish" | "oil" => command.arg("-c").arg("command -v yabridge-host.exe"),
+                // xonsh's which implementation is broken as of writing this, so I left it out
                 "pwsh" => command.arg("-l").arg("-c").arg("which yabridge-host.exe"),
+                "nu" => command.arg("-c").arg("which yabridge-host.exe"),
                 shell => {
                     eprintln!(
                         "{}",
