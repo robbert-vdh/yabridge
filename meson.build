@@ -31,11 +31,23 @@ group_host_name_32bit = 'yabridge-group-32'
 # https://github.com/boostorg/asio/issues/312
 compiler_options = ['-DBOOST_ASIO_DISABLE_CONCEPTS']
 
-# TODO: Mark the `use-` versions of these options as deprecated in the next
-#       minor version
-with_bitbridge = get_option('use-bitbridge') or get_option('with-bitbridge')
+with_bitbridge = get_option('with-bitbridge')
 with_static_boost = get_option('with-static-boost')
-with_winedbg = get_option('use-winedbg') or get_option('with-winedbg')
+with_winedbg = get_option('with-winedbg')
+
+# TODO: Remove the `use-` versions of these options in yabridge 2.0.0
+if not with_bitbridge and get_option('use-bitbridge')
+  with_bitbridge = true
+  warning('''The 'use-bitbridge' option has been deprecated and will be ''' +
+          '''removed in yabridge 2.0.0, use the 'with-bitbridge' option ''' +
+          '''instead.''')
+endif
+if not with_winedbg and get_option('use-winedbg')
+  with_winedbg = true
+  warning('''The 'use-winedbg' option has been deprecated and will be ''' +
+          '''removed in yabridge 2.0.0, use the 'with-winedbg' option ''' +
+          '''instead.''')
+endif
 
 if with_bitbridge
   compiler_options += '-DWITH_BITBRIDGE'

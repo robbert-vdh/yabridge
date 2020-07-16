@@ -19,6 +19,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   [readme](https://github.com/robbert-vdh/yabridge/tree/feature/cli-tools/tools/yabridgectl/README.md)
   for more information on how it works.
 
+### Deprecated
+
+- The `use-bitbridge` and `use-winedbg` options have been deprecated in favour
+  of the new `with-bitbridge` and `with-winedbg` options. The old options will
+  continue to work until they are removed in yabridge 2.0.0.
+
 ## [1.2.1] - 2020-06-20
 
 ### Changed
