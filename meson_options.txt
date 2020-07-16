@@ -1,5 +1,4 @@
-# TODO: For the next major or minor release, deprecate these `use-*` flags and
-#       replace them with `with-*` variants.
+# TODO: Remove the `use-*` variants of these options in yabridge 2.0.0
 
 option(
   'use-bitbridge',

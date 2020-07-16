@@ -35,7 +35,7 @@ with_bitbridge = get_option('with-bitbridge')
 with_static_boost = get_option('with-static-boost')
 with_winedbg = get_option('with-winedbg')
 
-# TODO: Remove the `use-` versions of these options in yabridge 2.0.0
+# TODO: Remove the `use-*` versions of these options in yabridge 2.0.0
 if not with_bitbridge and get_option('use-bitbridge')
   with_bitbridge = true
   warning('''The 'use-bitbridge' option has been deprecated and will be ''' +
