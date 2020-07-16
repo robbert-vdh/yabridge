@@ -65,8 +65,8 @@ pub fn verify_path_setup() -> Result<(), String> {
                         "\n{}",
                         wrap(&format!(
                             "WARNING: Yabridgectl does not know how to handle your login shell \
-                             '{}', skipping PATH setup check. Feel free to open a feature request \
-                             in order to get yabridgectl to support your shell.\n\
+                             '{}', skipping PATH environment variable check. Feel free to open a \
+                             feature request in order to get yabridgectl to support your shell.\n\
                              \n\
                              https://github.com/robbert-vdh/yabridge/issues",
                             shell.bright_white(),

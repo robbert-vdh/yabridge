@@ -257,7 +257,7 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) -> Result<()> {
                     "Warning: 'yabridge-host.exe' is not present in your login shell's search \
                      path. Yabridge won't be able to run using the copy-based installation method \
                      until this is fixed.\n\
-                     Add '{}' to {}'s login shell {} environment variables. See the \
+                     Add '{}' to {}'s login shell {} environment variable. See the \
                      troubleshooting section of the readme for more details. Rerun this command to \
                      verify that the variable has been set correctly, and then reboot your system \
                      to complete the setup.\n\
