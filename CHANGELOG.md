@@ -10,12 +10,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- By somewhat popular demand, yabridge now comes with yabridgectl, a utility
-  that can automatically set up and manage yabridge for you. It also performs
-  some basic checks to ensure that everything has been set up correctly.
-  Yabridgectl can be downloaded separately from the GitHub releases page and its
-  use is completely optional, so you don't have to use it if you don't want to.
-  Check out the
+- By somewhat popular demand yabridge now comes with yabridgectl, a utility that
+  can automatically set up and manage yabridge for you. It also performs some
+  basic checks to ensure that everything has been set up correctly so you can
+  get up and running faster. Yabridgectl can be downloaded separately from the
+  GitHub releases page and its use is completely optional, so you don't have to
+  use it if you don't want to. Check out the
   [readme](https://github.com/robbert-vdh/yabridge/tree/feature/cli-tools/tools/yabridgectl/README.md)
   for more information on how it works.
 
