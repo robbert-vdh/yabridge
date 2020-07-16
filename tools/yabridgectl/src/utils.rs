@@ -87,7 +87,7 @@ pub fn verify_path_setup() -> Result<(), String> {
                 Ok(_) => Err(shell.to_string()),
                 Err(err) => {
                     eprintln!(
-                        "Warning: could not run login shell, skipping PATH setup check: {}",
+                        "\nWarning: could not run login shell, skipping PATH setup check: {}",
                         err
                     );
                     Ok(())
