@@ -668,7 +668,7 @@ checksum = "d089681aa106a86fade1b0128fb5daf07d5867a509ab036d99988dec80429a57"
 
 [[package]]
 name = "yabridgectl"
-version = "1.2.1"
+version = "1.3.0"
 dependencies = [
  "aho-corasick",
  "anyhow",
