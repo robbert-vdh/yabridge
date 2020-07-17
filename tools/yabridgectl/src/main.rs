@@ -26,8 +26,6 @@ mod config;
 mod files;
 mod utils;
 
-// TODO: Reward parts of the readme
-
 fn main() -> Result<()> {
     let mut config = Config::read()?;
 
@@ -106,7 +104,7 @@ fn main() -> Result<()> {
                     Arg::with_name("prune")
                         .short('p')
                         .long("prune")
-                        .about("Remove unrelated or leftover '.so' files"),
+                        .about("Remove unrelated or leftover .so files"),
                 )
                 .arg(
                     Arg::with_name("verbose")

@@ -5,7 +5,7 @@
 Yet Another way to use Windows VST plugins on Linux. Yabridge seamlessly
 supports running both 64-bit Windows VST2 plugins as well as 32-bit Windows VST2
 plugins in a 64-bit Linux VST host, with optional support for inter-plugin
-communication through [plugin groups](#Plugin-groups). This project aims to be
+communication through [plugin groups](#plugin-groups). This project aims to be
 as transparent as possible in order to achieve the best possible plugin
 compatibility while also staying easy to debug and maintain.
 
@@ -53,7 +53,7 @@ copy-based installation will work for all hosts.
 This is the recommended way to use yabridge if you're using Bitwig Studio or any
 other VST host that supports _invididually sandboxed plugins_. If you use Bitwig
 Studio and you do not want to use the '_Individually_' plugin hosting mode, then
-you should follow the instructions from the [copying](#Copying) section below
+you should follow the instructions from the [copying](#copying) section below
 instead. For this installation method you can either use the prebuilt binaries
 from the [GitHub releases](https://github.com/robbert-vdh/yabridge/releases)
 section, or you can build yabridge directly from source. If you use the prebuilt
@@ -277,7 +277,7 @@ include:
   when the window gets dragged offscreen on the top and left dies of the screen.
 - Plugins like **FabFilter Pro-Q 3** that can share data between different
   instances of the same plugin plugins have to be hosted within a single process
-  for that functionality to work. See the [plugin groups](#Plugin-groups)
+  for that functionality to work. See the [plugin groups](#plugin-groups)
   section for instructions on how to set this up.
 
 Aside from that, these are some known caveats:
@@ -344,7 +344,7 @@ ninja -C build
 ```
 
 After you've finished building you can follow the instructions under the
-[usage](#Usage) section on how to set up yabridge.
+[usage](#usage) section on how to set up yabridge.
 
 <sup>
   *The versions of GCC and Boost that ship with Ubuntu 18.04 by default are too

@@ -47,7 +47,7 @@ pub fn remove_directory(config: &mut Config, path: &Path) -> Result<()> {
     let orphan_files = files::index_so_files(path);
     if !orphan_files.is_empty() {
         println!(
-            "Warning: Found {} leftover '.so' files still in this directory:",
+            "Warning: Found {} leftover .so files still in this directory:",
             orphan_files.len()
         );
 
@@ -221,10 +221,10 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) -> Result<()> {
     // tries to load them
     if !orphan_so_files.is_empty() {
         if prune {
-            println!("Removing {} leftover '.so' files:", orphan_so_files.len());
+            println!("Removing {} leftover .so files:", orphan_so_files.len());
         } else {
             println!(
-                "Found {} leftover '.so' files, rerun with the '--prune' option to remove them:",
+                "Found {} leftover .so files, rerun with the '--prune' option to remove them:",
                 orphan_so_files.len()
             );
         }
@@ -243,7 +243,7 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) -> Result<()> {
     }
 
     println!(
-        "Finished setting up {} plugins using {}, skipped {} non-plugin '.dll' files",
+        "Finished setting up {} plugins using {}, skipped {} non-plugin .dll files",
         num_installed,
         config.method.plural_name(),
         num_skipped_files

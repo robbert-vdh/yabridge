@@ -164,7 +164,7 @@ fn find_files(directory: &Path) -> (Vec<PathBuf>, Vec<FoundFile>) {
         .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|x| !x.file_type().is_dir())
+        .filter(|e| !e.file_type().is_dir())
         .enumerate()
     {
         // This is a bit of an odd warning, but I can see it happening that someone adds their
