@@ -18,6 +18,7 @@
 
 use colored::Colorize;
 use std::env;
+use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use textwrap::Wrapper;
@@ -30,12 +31,6 @@ use textwrap::Wrapper;
 ///
 /// When we could not find `yabridge-host.exe`, we'll return `Err(shell_name)` so we can print a
 /// descriptive warning message.
-///
-/// # TODO
-///
-/// Starting from Rust 1.45 we can just modify `argv[0]` to start with a dash instead, see
-/// https://doc.rust-lang.org/std/os/unix/process/trait.CommandExt.html#tymethod.arg0
-/// https://github.com/rust-lang/rust/issues/66510
 pub fn verify_path_setup() -> Result<(), String> {
     match env::var("SHELL") {
         Ok(shell_path) => {
@@ -45,7 +40,13 @@ pub fn verify_path_setup() -> Result<(), String> {
                 .and_then(|os_str| os_str.to_str())
                 .unwrap_or_else(|| shell_path.as_str());
 
+            // We're using the `-l` flag present in most shells to start a login shell, but some
+            // shells don't have this option. According the Bash's man page, another method some
+            // shells use to determine that they're being run as a login shell is by checking that
+            // `argv[0]` starts with a hyphen, so we'll also do that.
             let mut command = Command::new(&shell_path);
+            command.arg0(format!("-{}", &shell_path));
+
             let command = match shell {
                 // All of these shells support the `-l` flag to start a login shell and have a
                 // POSIX-compatible `command` builtin
