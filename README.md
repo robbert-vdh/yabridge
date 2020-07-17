@@ -27,96 +27,127 @@ Please let me know if there are any issues with other VST hosts.
 
 ## Usage
 
-**TODO: Refactor these sections to refer to
-[yabridgectl](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl)
-for most of the setup. If you are reading this, then you can either follow the
-instructions below or you can download a preview version of yabridgectl from the
-[automated
-builds](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)
-page.**
-
-You can either download a prebuilt version of yabridge through the GitHub
+You can either download a prebuilt version of yabridge through GitHub's
 [releases](https://github.com/robbert-vdh/yabridge/releases) section, or you can
 compile it from source using the instructions in the [build](#Building) section
 below. Alternatively there are AUR packages available if you are running Arch or
-Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/), [yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/), [yabridge-git](https://aur.archlinux.org/packages/yabridge-git/)).
+Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
+[yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/),
+[yabridge-git](https://aur.archlinux.org/packages/yabridge-git/)).
 
-There are two ways to use yabridge. If your host supports plugin sanboxing, then
-the recommended installation method is to use symbolic links. The main advantage
-here is that you will be able to update yabridge for all of your plugins in one
-go, and it avoids having to either install outside of your home directory or to
-set up environment variables. Sadly, not all hosts support this behavior. The
-copy-based installation will work for all hosts.
+There are two ways to use yabridge, either by using copies or symbolink links.
+If your host supports plugin sanboxing, then using symlinks will be the easier
+installation method. The main advantage here is that you will be able to update
+yabridge for all of your plugins by just overwriting yabridge's files, and it
+avoids having to either install yabridge outside of your home directory or to
+modify environment variables to get yabridge to find the correct files. Sadly,
+not all hosts support this behavior. The copy-based installation will work for
+all hosts. If you decide to use the symlink-based installation method with
+Bitwig Studio, then make sure the _Individually_ plugin hosting mode is enabled.
 
-### Symlinking (recommended for Bitwig Studio)
+### Automatic setup
 
-This is the recommended way to use yabridge if you're using Bitwig Studio or any
-other VST host that supports _invididually sandboxed plugins_. If you use Bitwig
-Studio and you do not want to use the '_Individually_' plugin hosting mode, then
-you should follow the instructions from the [copying](#copying) section below
-instead. For this installation method you can either use the prebuilt binaries
-from the [GitHub releases](https://github.com/robbert-vdh/yabridge/releases)
-section, or you can build yabridge directly from source. If you use the prebuilt
-binaries, then you can simply extract them to `~/.local/share/yabridge` or to
-any other location in your home directory. If you choose to build from source,
-then you can use the compiled binaries directly from the `build/` directory. For
-the section below I'm going to assume you've extracted the files to
+The easiest way to get up and running is through
+[yabridgectl](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl).
+You can download yabridgectl from GitHub's
+[releases](https://github.com/robbert-vdh/yabridge/releases) section. There is
+also an AUR package available if you are running Arch of Manjaro
+([yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/), and
+it's also included in
+[yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/)). More
+comprehensive documentation can be found in yabridgectl's readme, or by running
+`yabridgectl --help`.
+
+First of all, yabridgectl needs to know where it can find yabridge's files. If
+you have downloaded the prebuilt binaries, then you can simply extract the
+archive to `~/.local/share` and yabridgectl will pick up the files in
+`~/.local/share/yabridge` automatically. You also won't to do any additional
+setup if you're using one of the AUR packages. If you have compiled yabridge
+from source or if you installed the files to some other location, then you can
+use `yabridgectl set --path=<path>` to tell yabridgectl where it can find the
+files.
+
+Secondly, yabridgectl will default to the copy-based installation method. If you
+are using a VST host with individually sandboxed plugins such as Bitwig Studio
+and you want to use the symlink-based installation method instead, then you can
+enable that using `yabridgectl set --method=symlink`.
+
+Next you'll want to tell yabridgectl where it can find your plugins. For this
+you can use yabridgectl's `add`, `rm` and `list` commands. For instance, to add
+the most common VST2 plugin directory, use `yabridgectl add "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"`. You can also use
+`yabridgectl status` to get an overview of the current settings and the
+installation status of all of your plugins.
+
+Finally you can run `yabridgectl sync` to finish setting up yabridge. Simply
+tell your VST host to search for plugins in the directories you just added and
+you'll be good to go. Don't forget to rerun `yabridgectl sync` whenever you
+update yabridge if you are using the copy-based installation method.
+
+### Manual setup
+
+To set up yabridge without using yabridgectl, first download and extract
+yabridge's files like in the section above. The rest of this section assumes
+that you have extracted the files to `~/.local/share` (such that
+`~/.local/share/yabridge/libyabridge.so` exists), and that you want to set up
+yabridge for the VST2 plugin called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`.
+
+Depending on whether you want to use copy or symlink-based installation method,
+you can then set up yabridge for that plugin by creating a copy or symlink of
+`libyabridge.so` next to `plugin.dll` called `plugin.so`. For the example,
+you can use either:
+
+```shell
+# For the copy-based installation method
+cp ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
+# For the symlink-based installation method
+ln -sf ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
+```
+
+If you are using the copy-based installation method, then don't forget to
+overwrite all copies of `libyabridge.so` you created this way whenever you
+update yabridge.
+
+### Search path setup
+
+If you are using the _copy-based_ installation method with the prebuilt binaries
+from GitHub's releases section, then you'll have to modify your _login shell_'s
+`PATH` environment variable so that yabridge is able to find `yabridge-host.exe`
+and other related files. Yabridgectl will automatically check whether this is
+set up correctly when you run `yabridgectl sync`, and it will show a warning if
+it detects any issues.
+
+To do this, you'll want to add yabridge's installation directory to your login
+shell's `PATH` environment variable. If you're unsure what your login shell is,
+then you can open a terminal and run `echo $SHELL` to find out. For the below
+examples I'll assume you're using the default installation location at
 `~/.local/share/yabridge`.
 
-To set up yabridge for a VST plugin called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`, simply create a symlink from
-`~/.local/share/yabridge/libyabridge.so` to `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so`, like so:
+- If you are using the default **Bash** shell, then you will want to add the
+  following line to `~/.bash_profile` (and _not_ to `~/.bashrc`):
 
-```shell
-ln -s ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
-```
+  ```shell
+  export PATH="$HOME/.local/share/yabridge:$PATH"
+  ```
 
-As an example, if you wanted to set up yabridge for all VST plugins under
-`~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, you could run the
-following script in Bash. This will skip any `.dll` files that are not actually
-VST plugins.
+- If you are using **Zsh**, then you can add the following line to `~/.zprofile`
+  (`~/.zshenv` should also work, but some distros such as Arch Linux overwrite
+  `PATH` after this file has been read):
 
-```shell
-yabridge_home=$HOME/.local/share/yabridge
-plugin_dir="$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"
+  ```shell
+  export PATH="$HOME/.local/share/yabridge:$PATH"
+  ```
 
-find "$plugin_dir" -type f -iname '*.dll' -print0 |
-  xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
-  sed -z 's/\.dll$/.so/' |
-  xargs -0 -n1 ln -sf "$yabridge_home/libyabridge.so"
-```
+- If you are using **fish**, then you can add the following line to either
+  `~/.config/fish/config.fish` or some file in `~/.config/fish/conf.d/`:
 
-### Copying
+  ```shell
+  set -gp fish_user_paths ~/.local/share/yabridge
+  ```
 
-This installation method will work for all VST hosts. This works similar to the
-procedure described above, but using copies of `libyabridge.so` instead of
-symlinks. For this you will have to make sure that all eight of the `yabridge-*`
-files from the downloaded archive are somewhere in the search path. The
-recommended way to do this is to download yabridge from the GitHub
-[releases](https://github.com/robbert-vdh/yabridge/releases) section, extract
-all the files to `~/.local/share/yabridge`, and then add that directory to your
-`$PATH` environment variable.
-
-The setup process for a plugin is similar to the procedure described above.
-Using the same example, if you have extracted yabridge's files to
-`~/.local/share/yabridge` and you want to set up yabridge for a VST plugin
-called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`, then you
-should copy `~/.local/share/yabridge/libyabridge.so` to `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so`, like so:
-
-```shell
-cp ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
-```
-
-To install yabridge for all VST2 plugins under `~/.wine/drive_c/Program Files/Steinberg/VstPlugins` you could use the following script:
-
-```shell
-yabridge_home=$HOME/.local/share/yabridge
-plugin_dir="$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"
-
-find "$plugin_dir" -type f -iname '*.dll' -print0 |
-  xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
-  sed -z 's/\.dll$/.so/' |
-  xargs -0 -n1 cp "$yabridge_home/libyabridge.so"
-```
+Rerun `yabridgectl sync` to ensure that the setup has been successful. If the
+environment variable has been set up correctly, you should not be seeing any
+warnings. Make sure to log out and log back in again to ensure that all
+applications pick up the new changes.
 
 ### DAW setup
 
@@ -201,29 +232,18 @@ override the Wine prefix for all instances of yabridge.
 
 ## Troubleshooting common issues
 
-- If you're using the copying installation method and plugins are getting
+- If you're using the copy-based installation method and plugins are getting
   skipped or blacklisted immediately when your VST host is scanning them, then
   this is likely caused by `yabridge-host.exe` not being found in your search
-  path. Make sure the directory you installed yabridge to (e.g.
-  `~/.local/share/yabridge`) is listed in your `PATH` environment variable. For
-  instance, if you're using the default Bash shell, then you could append this
-  line to `~/.bash_profile` (not to `~/.bashrc`):
-
-  ```shell
-  export PATH="$HOME/.local/share/yabridge:$PATH"
-  ```
-
-  You'll likely have to log out and back in again for this to take effect for
-  applications not launched through a terminal. To check whether everything's
-  set up correctly you could run `which yabridge-host.exe` in a terminal. If it
-  is, then that should print a path to `yabridge-host.exe`.
+  path. See the [search path setup](#search-path-setup) section for instructions
+  on how to fix this.
 
 - If you're using the symlink installation method and you're seeing multiple
-  duplicate instances of the same plugin, or after opening one plugin every
-  subsequent plugin opens as another instance of the first plugin you've opened,
-  then your VST host is not sandboxing individual plugins. If you're using
-  Bitwig Studio, make sure the '_Individual_' plugin hosting mode is enabled and
-  all of the checkboxes in the list of sandboxing exceptions are left unchecked.
+  duplicate instances of the same plugin, or after opening a single plugin every
+  subsequent plugin opens as another instance of that first plugin, then your
+  VST host is not sandboxing individual plugins. If you're using Bitwig Studio,
+  the make sure the '_Individual_' plugin hosting mode is enabled and all of the
+  checkboxes in the list of sandboxing exceptions are left unchecked.
 
 - If you're using a symlink and the plugin is not getting picked up at all, then
   you can verify that the symlink is correct by running:
