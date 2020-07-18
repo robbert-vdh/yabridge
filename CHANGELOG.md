@@ -16,7 +16,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   get up and running faster. Yabridgectl can be downloaded separately from the
   GitHub releases page and its use is completely optional, so you don't have to
   use it if you don't want to. Check out the
-  [readme](https://github.com/robbert-vdh/yabridge/tree/feature/cli-tools/tools/yabridgectl/README.md)
+  [readme](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl)
   for more information on how it works.
 
 ### Deprecated
