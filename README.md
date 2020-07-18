@@ -258,9 +258,10 @@ override the Wine prefix for all instances of yabridge.
 - If you're seeing errors related to Wine, then you can verify that Wine is
   working correctly by running one of the VST host applications manually.
   Assuming that yabridge is installed under `~/.local/share/yabridge`, then
-  running `~/.local/share/yabridge/yabridge-host.exe` in a terminal should print
-  a few messages related to Wine's startup process followed by the following
-  line:
+  running `~/.local/share/yabridge/yabridge-host.exe` directly (so _not_
+  `wine ~/.local/share/yabridge/yabridge-host.exe`, that won't work) in a
+  terminal should print a few messages related to Wine's startup process
+  followed by the following line:
 
   ```
   Usage: yabridge-host.exe <vst_plugin_dll> <unix_domain_socket>
