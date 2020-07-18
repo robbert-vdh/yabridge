@@ -35,15 +35,16 @@ Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
 [yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/),
 [yabridge-git](https://aur.archlinux.org/packages/yabridge-git/)).
 
-There are two ways to use yabridge, either by using copies or symbolink links.
-If your host supports plugin sanboxing, then using symlinks will be the easier
-installation method. The main advantage here is that you will be able to update
-yabridge for all of your plugins by just overwriting yabridge's files, and it
-avoids having to either install yabridge outside of your home directory or to
-modify environment variables to get yabridge to find the correct files. Sadly,
-not all hosts support this behavior. The copy-based installation will work for
-all hosts. If you decide to use the symlink-based installation method with
-Bitwig Studio, then make sure the _Individually_ plugin hosting mode is enabled.
+There are two ways to use yabridge, either by using copies or through symbolink
+links. If your host supports plugin sanboxing, then using symlinks will be the
+easier installation method. The main advantage here is that you will be able to
+update yabridge for all of your plugins by just overwriting yabridge's files,
+and it avoids having to either install yabridge outside of your home directory
+or to modify environment variables to get yabridge to find the correct files.
+Sadly, not all hosts support this behavior. The copy-based installation will
+work for all hosts. If you decide to use the symlink-based installation method
+with Bitwig Studio, then make sure the _Individually_ plugin hosting mode is
+enabled.
 
 ### Automatic setup
 
@@ -144,7 +145,7 @@ examples I'll assume you're using the default installation location at
   set -gp fish_user_paths ~/.local/share/yabridge
   ```
 
-Rerun `yabridgectl sync` to ensure that the setup has been successful. If the
+Rerun `yabridgectl sync` to make sure that the setup has been successful. If the
 environment variable has been set up correctly, you should not be seeing any
 warnings. Make sure to log out and log back in again to ensure that all
 applications pick up the new changes.
