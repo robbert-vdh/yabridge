@@ -218,7 +218,7 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
 
         // Ignore fixme messages here, since those can be produced by wineserver even after the
         // application has errored out
-        if &line[5..10] != "fixme" {
+        if line.get(5..10) != Some("fixme") {
             last_error = Some(line);
         }
     }
