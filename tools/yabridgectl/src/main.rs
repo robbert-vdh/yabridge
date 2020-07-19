@@ -124,11 +124,21 @@ fn main() -> Result<()> {
         }
         ("list", _) => actions::list_directories(&config),
         ("status", _) => actions::show_status(&config),
-        ("set", Some(options)) => actions::set_settings(&mut config, options),
+        ("set", Some(options)) => actions::set_settings(
+            &mut config,
+            &actions::SetOptions {
+                method: options.value_of("method"),
+                // We've already verified that the path is valid, so we should only be getting
+                // errors for missing arguments
+                path: options.value_of_t("path").ok(),
+            },
+        ),
         ("sync", Some(options)) => actions::do_sync(
             &config,
-            options.is_present("prune"),
-            options.is_present("verbose"),
+            &actions::SyncOptions {
+                prune: options.is_present("prune"),
+                verbose: options.is_present("verbose"),
+            },
         ),
         _ => unreachable!(),
     }

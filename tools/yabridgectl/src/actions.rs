@@ -17,7 +17,6 @@
 //! Handlers for the subcommands, just to keep `main.rs` clean.
 
 use anyhow::{Context, Result};
-use clap::ArgMatches;
 use colored::Colorize;
 use std::fs;
 use std::os::unix::fs::symlink;
@@ -123,32 +122,37 @@ pub fn show_status(config: &Config) -> Result<()> {
     Ok(())
 }
 
+/// Options passed to `yabridgectl set`, see `main()` for the definitions of these options.
+pub struct SetOptions<'a> {
+    pub method: Option<&'a str>,
+    pub path: Option<PathBuf>,
+}
+
 /// Change configuration settings. The actual options are defined in the clap [app](clap::App).
-pub fn set_settings(config: &mut Config, options: &ArgMatches) -> Result<()> {
-    match options.value_of("method") {
+pub fn set_settings(config: &mut Config, options: &SetOptions) -> Result<()> {
+    match options.method {
         Some("copy") => config.method = InstallationMethod::Copy,
         Some("symlink") => config.method = InstallationMethod::Symlink,
         Some(s) => unimplemented!("Unexpected installation method '{}'", s),
         None => (),
     }
 
-    match options.value_of_t("path") {
-        Ok(path) => config.yabridge_home = Some(path),
-        Err(clap::Error {
-            kind: clap::ErrorKind::ArgumentNotFound,
-            ..
-        }) => (),
-        // I don't think we can get any parsing errors here since we already validated that the
-        // argument has to be a valid path, but you never know
-        Err(err) => err.exit(),
+    if let Some(path) = &options.path {
+        config.yabridge_home = Some(path.clone());
     }
 
     config.write()
 }
 
+/// Options passed to `yabridgectl sync`, see `main()` for the definitions of these options.
+pub struct SyncOptions {
+    pub prune: bool,
+    pub verbose: bool,
+}
+
 /// Set up yabridge for all Windows VST2 plugins in the plugin directories. Will also remove orphan
 /// `.so` files if the prune option is set.
-pub fn do_sync(config: &Config, prune: bool, verbose: bool) -> Result<()> {
+pub fn do_sync(config: &Config, options: &SyncOptions) -> Result<()> {
     let libyabridge_path = config.libyabridge()?;
     println!("Using '{}'\n", libyabridge_path.display());
 
@@ -165,7 +169,7 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) -> Result<()> {
         orphan_so_files.extend(search_results.orphans().into_iter().cloned());
         skipped_dll_files.extend(search_results.skipped_files);
 
-        if verbose {
+        if options.verbose {
             println!("{}:", path.display());
         }
         for plugin in search_results.vst2_files {
@@ -198,18 +202,18 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) -> Result<()> {
                 }
             }
 
-            if verbose {
+            if options.verbose {
                 println!("  {}", plugin.display());
             }
         }
-        if verbose {
+        if options.verbose {
             println!();
         }
     }
 
     // We'll print the skipped files all at once to prevetn clutter
     let num_skipped_files = skipped_dll_files.len();
-    if verbose && !skipped_dll_files.is_empty() {
+    if options.verbose && !skipped_dll_files.is_empty() {
         println!("Skipped files:");
         for path in skipped_dll_files {
             println!("- {}", path.display());
@@ -220,7 +224,7 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) -> Result<()> {
     // Always warn about leftover files sicne those might cause warnings or errors when a VST host
     // tries to load them
     if !orphan_so_files.is_empty() {
-        if prune {
+        if options.prune {
             println!("Removing {} leftover .so files:", orphan_so_files.len());
         } else {
             println!(
@@ -233,7 +237,7 @@ pub fn do_sync(config: &Config, prune: bool, verbose: bool) -> Result<()> {
             let path = file.path();
 
             println!("- {}", path.display());
-            if prune {
+            if options.prune {
                 fs::remove_file(path)
                     .with_context(|| format!("Could not remove '{}'", path.display()))?;
             }
