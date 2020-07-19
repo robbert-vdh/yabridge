@@ -44,7 +44,7 @@ const YABRIDGE_PREFIX: &str = "yabridge";
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Config {
     /// The installation method to use. We will default to creating copies since that works
-    /// everywehre.
+    /// everywhere.
     pub method: InstallationMethod,
     /// The path to the directory containing `libyabridge.so`. If not set, then yabridgectl will
     /// look in `/usr/lib` and `$XDG_DATA_HOME/yabridge` since those are the expected locations for
@@ -53,6 +53,10 @@ pub struct Config {
     /// Directories to search for Windows VST plugins. We're using an ordered set here out of
     /// convenience so we can't get duplicates and the config file is always sorted.
     pub plugin_dirs: BTreeSet<PathBuf>,
+    /// The last known combination of Wine and yabridge versions that would work together properly.
+    /// This is mostly to diagnose issues with older Wine versions (such as those in Ubuntu's repos)
+    /// early on.
+    pub last_known_config: Option<KnownConfig>,
 }
 
 /// Specifies how yabridge will be set up for the found plugins.
@@ -88,6 +92,22 @@ impl Display for InstallationMethod {
     }
 }
 
+/// Stores information about a combination of yabridge and Wine that works together properly.
+/// Whenever we encounter a new version of yabridge or Wine, we'll check whether `yabridge-host.exe`
+/// can run without issues. This is needed because older versions of Wine won't be able to run newer
+/// winelibs, and Ubuntu ships with old versions of Wine. To prevent repeating unnecessarily
+/// repeating this check we'll keep track of the last combination of Wine and yabridge that would
+/// work together properly.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct KnownConfig {
+    /// The output of `wine --version`, minus the trailing newline.
+    wine_version: String,
+    /// The results from running the contents of `yabridge-host.exe.so` through
+    /// [`DefaultHasher`](std::collections::hash_map::DefaultHasher). Hash collisions aren't really
+    /// an issue here since we mostly care about the version of Wine.
+    yabridge_host_hash: u64,
+}
+
 impl Config {
     /// Try to read the config file, creating a new default file if necessary. This will fail if the
     /// file could not be created or if it could not be parsed.
@@ -106,6 +126,7 @@ impl Config {
                     method: InstallationMethod::Copy,
                     yabridge_home: None,
                     plugin_dirs: BTreeSet::new(),
+                    last_known_config: None,
                 };
 
                 // If no existing config file exists, then write a new config file with default
