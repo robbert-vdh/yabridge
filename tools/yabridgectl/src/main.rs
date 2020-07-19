@@ -101,6 +101,12 @@ fn main() -> Result<()> {
             App::new("sync")
                 .about("Set up or update yabridge for all plugins")
                 .arg(
+                    Arg::with_name("no-verify")
+                        .short('n')
+                        .long("no-verify")
+                        .about("Skip post-installation setup checks"),
+                )
+                .arg(
                     Arg::with_name("prune")
                         .short('p')
                         .long("prune")
@@ -136,6 +142,7 @@ fn main() -> Result<()> {
         ("sync", Some(options)) => actions::do_sync(
             &config,
             &actions::SyncOptions {
+                no_verify: options.is_present("no-verify"),
                 prune: options.is_present("prune"),
                 verbose: options.is_present("verbose"),
             },

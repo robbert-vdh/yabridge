@@ -144,6 +144,7 @@ pub fn set_settings(config: &mut Config, options: &SetOptions) -> Result<()> {
 
 /// Options passed to `yabridgectl sync`, see `main()` for the definitions of these options.
 pub struct SyncOptions {
+    pub no_verify: bool,
     pub prune: bool,
     pub verbose: bool,
 }
@@ -236,6 +237,10 @@ pub fn do_sync(config: &Config, options: &SyncOptions) -> Result<()> {
         config.method.plural_name(),
         num_skipped_files
     );
+
+    if options.no_verify {
+        return Ok(());
+    }
 
     if config.method == InstallationMethod::Copy {
         if let Err(shell_name) = verify_path_setup() {

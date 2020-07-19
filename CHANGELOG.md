@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### yabridgectl
+
+- Added a `--no-verify` option to `yabridgectl sync` to skip the
+  post-installation setup checks. This option will skip both the login shell
+  search path check when using the copy-based installation method as well as the
+  new check for whether or not yabridge will be able to run with the currently
+  installed version of Wine.
+
 ## [1.3.0] - 2020-07-17
 
 ### Added
