@@ -24,7 +24,7 @@ use crate::config::{Config, InstallationMethod};
 use crate::files;
 use crate::files::FoundFile;
 use crate::utils;
-use crate::utils::{verify_path_setup, wrap};
+use crate::utils::{verify_path_setup, verify_wine_setup, wrap};
 
 /// Add a direcotry to the plugin locations. Duplicates get ignord because we're using ordered sets.
 pub fn add_directory(config: &mut Config, path: PathBuf) -> Result<()> {
@@ -151,7 +151,7 @@ pub struct SyncOptions {
 
 /// Set up yabridge for all Windows VST2 plugins in the plugin directories. Will also remove orphan
 /// `.so` files if the prune option is set.
-pub fn do_sync(config: &Config, options: &SyncOptions) -> Result<()> {
+pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     let libyabridge_path = config.libyabridge()?;
     println!("Using '{}'\n", libyabridge_path.display());
 
@@ -243,8 +243,10 @@ pub fn do_sync(config: &Config, options: &SyncOptions) -> Result<()> {
     }
 
     if config.method == InstallationMethod::Copy {
+        // TODO: Move this warning to `verify_path_setup()` just like we're doign with
+        //       `verify_wine_setup()`
         if let Err(shell_name) = verify_path_setup() {
-            println!(
+            eprintln!(
                 "\n{}",
                 wrap(&format!(
                     "Warning: 'yabridge-host.exe' is not present in your login shell's search \
@@ -263,6 +265,9 @@ pub fn do_sync(config: &Config, options: &SyncOptions) -> Result<()> {
             )
         }
     }
+
+    // This check is only performed once per combination of Wine and yabridge versions
+    verify_wine_setup(config)?;
 
     Ok(())
 }

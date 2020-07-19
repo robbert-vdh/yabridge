@@ -18,13 +18,22 @@
 
 use anyhow::{Context, Result};
 use colored::Colorize;
+use std::collections::hash_map::DefaultHasher;
 use std::env;
 use std::fs;
+use std::hash::Hasher;
 use std::os::unix::fs as unix_fs;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use textwrap::Wrapper;
+
+use crate::config::{Config, KnownConfig};
+
+/// (Part of) the expected output when running `yabridge-host.exe`. Used to verify that everything's
+/// working correctly.
+const YABRIDGE_HOST_EXPECTED_OUTPUT: &str =
+    "Usage: yabridge-host.exe <vst_plugin_dll> <unix_domain_socket>";
 
 /// Wrapper around [`std::fs::copy()`](std::fs::copy) with a human readable error message.
 pub fn copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<u64> {
@@ -137,6 +146,111 @@ pub fn verify_path_setup() -> Result<(), String> {
             Ok(())
         }
     }
+}
+
+/// Verify that the installed versions of Wine and yabridge will work together properly. This check
+/// is only performed once per combination of Wine and yabridge, and we'll update the config with
+/// the versions we just tested if the check succeeds. Will return `Err` values if either Wine or
+/// `yabridge-host.exe` can't be run.
+pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
+    // These winelib scripts respect `$WINELOADER`, so we'll do the same thing
+    let wine_binary = env::var("WINELOADER").unwrap_or_else(|_| String::from("wine"));
+    let wine_version_output = Command::new(&wine_binary)
+        .arg("--version")
+        .output()
+        .with_context(|| {
+            format!(
+                "Could not run '{}', make sure Wine is installed",
+                wine_binary
+            )
+        })?
+        .stdout;
+    // Strip the trailing newline just to make the config file a bit neater
+    let mut wine_version = String::from_utf8(wine_version_output)?;
+    wine_version.pop().unwrap();
+
+    let yabridge_host_exe_path = config
+        .yabridge_host_exe()
+        .context("Could not find 'yabridge-host.exe")?;
+
+    // Hash the contents of `yabridge-host.exe.so` since `yabridge-host.exe` is only a Wine
+    // generated shell script
+    let yabridge_host_exe_so_path = yabridge_host_exe_path.with_extension("exe.so");
+    let mut hasher = DefaultHasher::new();
+    hasher.write(&fs::read(&yabridge_host_exe_so_path).with_context(|| {
+        format!(
+            "Could not read contents of '{}'",
+            yabridge_host_exe_so_path.display()
+        )
+    })?);
+    let yabridge_host_hash = hasher.finish();
+
+    // Since these checks can take over a second if wineserver isn't already running we'll only
+    // perform them when something has changed
+    let current_config = KnownConfig {
+        wine_version: wine_version.clone(),
+        yabridge_host_hash,
+    };
+    if config.last_known_config.as_ref() == Some(&current_config) {
+        return Ok(());
+    }
+
+    // If everything's
+    let output = Command::new(&yabridge_host_exe_path)
+        .output()
+        .with_context(|| format!("Could not run '{}'", yabridge_host_exe_path.display()))?;
+    let stderr = String::from_utf8(output.stderr)?;
+
+    // There are three scenarios here:
+    // - Either everything is fine and we'll see the usage string being printed
+    // - Or the used version of Wine is too old and we'll see some line starting with
+    //   `002b:err:module:__wine_process_init`
+    // - Or the used version of Wine is much newer than what was used to compile yabridge with
+    //
+    // I don't know if it's possible to differentiate between the second and the third case, so
+    // we'll always assume it's Wine that's outdated.
+    let mut success = false;
+    let mut last_error: Option<&str> = None;
+    for line in stderr.lines() {
+        if line == YABRIDGE_HOST_EXPECTED_OUTPUT {
+            success = true;
+            break;
+        }
+
+        // Ignore fixme messages here, since those can be produced by wineserver even after the
+        // application has errored out
+        if &line[5..10] != "fixme" {
+            last_error = Some(line);
+        }
+    }
+
+    if success {
+        config.last_known_config = Some(current_config);
+        config.write()?;
+    } else {
+        eprintln!(
+            "\n{}",
+            wrap(&format!(
+                "Warning: Could not run 'yabridge-host.exe'. Wine reported the following error: \n\
+                 \n\
+                 {}\n\
+                 \n\
+                 This can happen when using a version of Wine that is much older than the version \
+                 that has been used to compile yabridge with. Your current Wine version is '{}'. \
+                 See the troubleshooting section of the readme for more information on how to \
+                 upgrade your installation of Wine.\n\
+                 \n\
+                 https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues",
+                last_error.unwrap_or("<no_output>").bright_white(),
+                wine_version
+                    .strip_prefix("wine-")
+                    .unwrap_or(&wine_version)
+                    .bright_white(),
+            ))
+        )
+    }
+
+    Ok(())
 }
 
 /// Wrap a long paragraph of text to terminal width, or 80 characters if the width of the terminal

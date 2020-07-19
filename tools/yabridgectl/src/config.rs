@@ -23,6 +23,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Display;
 use std::fs;
 use std::path::{Path, PathBuf};
+use which::which;
 use xdg::BaseDirectories;
 
 use crate::files::{self, SearchResults};
@@ -35,6 +36,8 @@ const YABRIDGECTL_PREFIX: &str = "yabridgectl";
 
 /// The name of the library file we're searching for.
 const LIBYABRIDGE_NAME: &str = "libyabridge.so";
+/// The name of the script we're going to run to verify that everything's working correctly.
+const YABRIDGE_HOST_EXE_NAME: &str = "yabridge-host.exe";
 /// The name of the XDG base directory prefix for yabridge's own files, relative to
 /// `$XDG_CONFIG_HOME` and `$XDG_DATA_HOME`.
 const YABRIDGE_PREFIX: &str = "yabridge";
@@ -92,20 +95,20 @@ impl Display for InstallationMethod {
     }
 }
 
-/// Stores information about a combination of yabridge and Wine that works together properly.
-/// Whenever we encounter a new version of yabridge or Wine, we'll check whether `yabridge-host.exe`
+/// Stores information about a combination of Wine and yabridge that works together properly.
+/// Whenever we encounter a new version of Wine or yabridge, we'll check whether `yabridge-host.exe`
 /// can run without issues. This is needed because older versions of Wine won't be able to run newer
 /// winelibs, and Ubuntu ships with old versions of Wine. To prevent repeating unnecessarily
 /// repeating this check we'll keep track of the last combination of Wine and yabridge that would
 /// work together properly.
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
 pub struct KnownConfig {
     /// The output of `wine --version`, minus the trailing newline.
-    wine_version: String,
+    pub wine_version: String,
     /// The results from running the contents of `yabridge-host.exe.so` through
     /// [`DefaultHasher`](std::collections::hash_map::DefaultHasher). Hash collisions aren't really
     /// an issue here since we mostly care about the version of Wine.
-    yabridge_host_hash: u64,
+    pub yabridge_host_hash: u64,
 }
 
 impl Config {
@@ -186,6 +189,21 @@ impl Config {
                 ))
             }
         }
+    }
+
+    /// Return the path to `yabridge-host.exe`, or a descriptive error if it can't be found. This
+    /// will first search alongside `libyabridge.so` and then search through the search path.
+    pub fn yabridge_host_exe(&self) -> Result<PathBuf> {
+        let libyabridge_path = self.libyabridge()?;
+
+        let yabridge_host_exe_candidate = libyabridge_path.with_file_name(YABRIDGE_HOST_EXE_NAME);
+        if yabridge_host_exe_candidate.exists() {
+            return Ok(yabridge_host_exe_candidate);
+        }
+
+        // Normally we wouldn't need the full absolute path to `yabridge-host.exe`, but it's useful
+        // for the error messages
+        Ok(which(YABRIDGE_HOST_EXE_NAME)?)
     }
 
     /// Search for VST2 plugins in all of the registered plugins directories. This will return an

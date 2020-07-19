@@ -272,6 +272,10 @@ override the Wine prefix for all instances of yabridge.
   you'll have to upgrade your Wine version. Instructions for how to do this on
   Ubuntu can be found on the [WineHQ website](https://wiki.winehq.org/Ubuntu).
 
+  Note that starting from yabridge 1.3.1 this check is also performed
+  automatically whenever you run `yabridgectl sync` using a new version of Wine
+  or yabridge.
+
 - Sometimes left over Wine processes can cause problems. Run `wineserver -k` to
   terminate Wine related in the current or default Wine prefix.
 

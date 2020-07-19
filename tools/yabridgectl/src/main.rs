@@ -140,7 +140,7 @@ fn main() -> Result<()> {
             },
         ),
         ("sync", Some(options)) => actions::do_sync(
-            &config,
+            &mut config,
             &actions::SyncOptions {
                 no_verify: options.is_present("no-verify"),
                 prune: options.is_present("prune"),
