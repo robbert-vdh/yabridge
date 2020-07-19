@@ -1,13 +1,12 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
-
+about: Something's not working
+title: ""
+labels: ""
+assignees: ""
 ---
 
-Thanks for trying out yabridge! If you're having issues with plugins not working at all or scans timing out then make sure to check out the [troubleshooting common issues](https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues) section of the readme. 
+Thanks for giving yabridge a shot! If you're having issues with plugins not working at all or scans timing out then make sure to check out the [troubleshooting common issues](https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues) section of the readme.
 
 **Problem description**
 A short description of what the issue is, and possibly some steps to reproduce it if applicable.
@@ -20,13 +19,12 @@ A short description of what the issue is, and possibly some steps to reproduce i
 
 **System information**
 - Operating system: [e.g. Manjaro, or Ubuntu 20.04]
-- Wine version: [e.g. Wine Staging 5.7]
-- Installation method: [symlinks/copies]
-- yabridge version: [e.g. 1.1.0, or commit a29f43a]
+- Wine version: [e.g. Wine Staging 5.13]
+- Installation method: [symlinks/copies], [manual/yabridgectl]
+- yabridge version: [e.g. 1.3.0, or commit a29f43a]
 
 **Debug log**
-
-Please also include a debug log if possible:
+Please also include a debug log if possible. If you are reporting an issue with yabridgectl, then you can omit this section.
 
 1. First make sure that there are no left over Wine processes left running in
    the background using `wineserver -k`.
