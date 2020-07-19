@@ -195,7 +195,6 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
         return Ok(());
     }
 
-    // If everything's
     let output = Command::new(&yabridge_host_exe_path)
         .output()
         .with_context(|| format!("Could not run '{}'", yabridge_host_exe_path.display()))?;
