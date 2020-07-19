@@ -18,13 +18,12 @@
 
 use anyhow::{Context, Result};
 use colored::Colorize;
-use std::fs;
-use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
 use crate::config::{Config, InstallationMethod};
 use crate::files;
 use crate::files::FoundFile;
+use crate::utils;
 use crate::utils::{verify_path_setup, wrap};
 
 /// Add a direcotry to the plugin locations. Duplicates get ignord because we're using ordered sets.
@@ -60,8 +59,7 @@ pub fn remove_directory(config: &mut Config, path: &Path) -> Result<()> {
         ) {
             Ok(Some(answer)) if answer == "YES" => {
                 for file in &orphan_files {
-                    fs::remove_file(file.path())
-                        .with_context(|| format!("Could not remove '{}'", file.path().display()))?;
+                    utils::remove_file(file.path())?;
                 }
 
                 println!("\nRemoved {} files", orphan_files.len());
@@ -177,28 +175,15 @@ pub fn do_sync(config: &Config, options: &SyncOptions) -> Result<()> {
             // mixing symlinks and regular files
             let target_path = plugin.with_extension("so");
             if target_path.exists() {
-                fs::remove_file(&target_path)
-                    .with_context(|| format!("Could not remove '{}'", target_path.display()))?;
+                utils::remove_file(&target_path)?;
             }
 
             match config.method {
                 InstallationMethod::Copy => {
-                    fs::copy(&libyabridge_path, &target_path).with_context(|| {
-                        format!(
-                            "Error copying '{}' to '{}'",
-                            libyabridge_path.display(),
-                            target_path.display()
-                        )
-                    })?;
+                    utils::copy(&libyabridge_path, &target_path)?;
                 }
                 InstallationMethod::Symlink => {
-                    symlink(&libyabridge_path, &target_path).with_context(|| {
-                        format!(
-                            "Error symlinking '{}' to '{}'",
-                            libyabridge_path.display(),
-                            target_path.display()
-                        )
-                    })?;
+                    utils::symlink(&libyabridge_path, &target_path)?;
                 }
             }
 
@@ -238,8 +223,7 @@ pub fn do_sync(config: &Config, options: &SyncOptions) -> Result<()> {
 
             println!("- {}", path.display());
             if options.prune {
-                fs::remove_file(path)
-                    .with_context(|| format!("Could not remove '{}'", path.display()))?;
+                utils::remove_file(path)?;
             }
         }
 

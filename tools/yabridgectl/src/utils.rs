@@ -16,12 +16,43 @@
 
 //! Small helper utilities.
 
+use anyhow::{Context, Result};
 use colored::Colorize;
 use std::env;
+use std::fs;
+use std::os::unix::fs as unix_fs;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use textwrap::Wrapper;
+
+/// Wrapper around `std::fs::copy` with a human readable error message.
+pub fn copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<u64> {
+    fs::copy(&from, &to).with_context(|| {
+        format!(
+            "Error copying '{}' to '{}'",
+            from.as_ref().display(),
+            to.as_ref().display()
+        )
+    })
+}
+
+/// Wrapper around `std::fs::remove_file` with a human readable error message.
+pub fn remove_file<P: AsRef<Path>>(path: P) -> Result<()> {
+    fs::remove_file(&path)
+        .with_context(|| format!("Could not remove '{}'", path.as_ref().display()))
+}
+
+/// Wrapper around `std::os::unix::fs::symlink` with a human readable error message.
+pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> Result<()> {
+    unix_fs::symlink(&src, &dst).with_context(|| {
+        format!(
+            "Error symlinking '{}' to '{}'",
+            src.as_ref().display(),
+            dst.as_ref().display()
+        )
+    })
+}
 
 /// Verify that `yabridge-host.exe` is accessible in a login shell. Returns unit if it is, or if we
 /// the login shell is set to an unknown shell. In the last case we'll just print a warning since we
