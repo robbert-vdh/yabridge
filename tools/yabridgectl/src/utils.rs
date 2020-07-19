@@ -26,7 +26,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use textwrap::Wrapper;
 
-/// Wrapper around `std::fs::copy` with a human readable error message.
+/// Wrapper around [`std::fs::copy()`](std::fs::copy) with a human readable error message.
 pub fn copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<u64> {
     fs::copy(&from, &to).with_context(|| {
         format!(
@@ -37,13 +37,15 @@ pub fn copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<u64> {
     })
 }
 
-/// Wrapper around `std::fs::remove_file` with a human readable error message.
+/// Wrapper around [`std::fs::remove_file()`](std::fs::remove_file) with a human readable error
+/// message.
 pub fn remove_file<P: AsRef<Path>>(path: P) -> Result<()> {
     fs::remove_file(&path)
         .with_context(|| format!("Could not remove '{}'", path.as_ref().display()))
 }
 
-/// Wrapper around `std::os::unix::fs::symlink` with a human readable error message.
+/// Wrapper around [`std::os::unix::fs::symlink()`](std::os::unix::fs::symlink) with a human
+/// readable error message.
 pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> Result<()> {
     unix_fs::symlink(&src, &dst).with_context(|| {
         format!(
