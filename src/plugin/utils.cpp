@@ -138,8 +138,7 @@ fs::path find_vst_host(PluginArchitecture plugin_arch, bool use_plugin_groups) {
 }
 
 fs::path find_vst_plugin() {
-    const fs::path this_plugin_path =
-        "/" / fs::path("/" + get_this_file_location().string());
+    const fs::path this_plugin_path = get_this_file_location();
 
     fs::path plugin_path(this_plugin_path);
     plugin_path.replace_extension(".dll");

@@ -8,6 +8,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed rare plugin location detection issue related to the plugin and host
+  detection fix in yabridge 1.2.0.
+
 ### yabridgectl
 
 - Added a check to `yabridgectl sync` to verify that the currently installed
