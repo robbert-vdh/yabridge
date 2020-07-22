@@ -21,7 +21,10 @@
 #endif
 #include <boost/filesystem.hpp>
 
+#include <bitsery/ext/std_optional.h>
 #include <optional>
+
+#include "bitsery/ext/boost-path.h"
 
 /**
  * An object that's used to provide plugin-specific configuration. Right now
@@ -86,4 +89,14 @@ class Configuration {
      * The matched glob pattern in the above configuration file.
      */
     std::optional<std::string> matched_pattern;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.ext(group, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.text1b(v, 4096); });
+        s.ext(matched_file, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath()); });
+        s.ext(matched_pattern, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.text1b(v, 4096); });
+    }
 };
