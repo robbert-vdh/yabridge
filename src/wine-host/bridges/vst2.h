@@ -193,8 +193,7 @@ class Vst2Bridge {
 
     /**
      * The socket that forwards all `dispatcher()` calls from the VST host to
-     * the plugin. This is also used once at startup to populate the values of
-     * the `AEffect` object.
+     * the plugin.
      */
     boost::asio::local::stream_protocol::socket host_vst_dispatch;
     /**
@@ -204,6 +203,10 @@ class Vst2Bridge {
      * this MIDI input would just stop working at times.
      */
     boost::asio::local::stream_protocol::socket host_vst_dispatch_midi_events;
+    /**
+     * The socket that forwards all `audioMaster()` calls from the Windows VST
+     * plugin to the host.
+     */
     boost::asio::local::stream_protocol::socket vst_host_callback;
     /**
      * Used for both `getParameter` and `setParameter` since they mostly
@@ -211,6 +214,14 @@ class Vst2Bridge {
      */
     boost::asio::local::stream_protocol::socket host_vst_parameters;
     boost::asio::local::stream_protocol::socket host_vst_process_replacing;
+
+    /**
+     * A control socket that sends data that is not suitable for the other
+     * sockets. At the moment this is only used to, on startup, send the Windows
+     * VST plugin's `AEffect` object to the native VST plugin, and to then send
+     * the configuration (from `config`) back to the Wine host.
+     */
+    boost::asio::local::stream_protocol::socket host_vst_control;
 
     /**
      * The thread that specifically handles `effProcessEvents` opcodes so the

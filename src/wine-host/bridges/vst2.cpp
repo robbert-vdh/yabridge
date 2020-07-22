@@ -75,7 +75,8 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
       host_vst_dispatch_midi_events(io_context),
       vst_host_callback(io_context),
       host_vst_parameters(io_context),
-      host_vst_process_replacing(io_context) {
+      host_vst_process_replacing(io_context),
+      host_vst_control(io_context) {
     // Got to love these C APIs
     if (!plugin_handle) {
         throw std::runtime_error("Could not load the Windows .dll file at '" +
@@ -107,6 +108,7 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
     vst_host_callback.connect(socket_endpoint);
     host_vst_parameters.connect(socket_endpoint);
     host_vst_process_replacing.connect(socket_endpoint);
+    host_vst_control.connect(socket_endpoint);
 
     // Initialize after communication has been set up
     // We'll try to do the same `get_bridge_isntance` trick as in
@@ -126,11 +128,11 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
         plugin->ptr1 = this;
     }
 
-    // Send the plugin's information to the Linux VST plugin. This is done over
-    // the `dispatch()` socket since this has to be done only once during
-    // initialization. Any updates during runtime are handled using the
-    // `audioMasterIOChanged` host callback.
-    write_object(host_vst_dispatch, EventResult{0, *plugin, std::nullopt});
+    // Send the plugin's information to the Linux VST plugin. Any other updates
+    // of this object will be sent over the `dispatcher()` socket. This would be
+    // done after the host calls `effOpen()`, and when the plugin calls
+    // `audioMasterIOChanged()`.
+    write_object(host_vst_control, EventResult{0, *plugin, std::nullopt});
 
     // This works functionally identically to the `handle_dispatch()` function,
     // but this socket will only handle MIDI events and it will handle them
