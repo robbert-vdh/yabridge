@@ -1,10 +1,10 @@
 [wrap-file]
-directory = bitsery-d24dfe14f5a756c0f8ad3d56ae6949ecc2c99b2e
+directory = bitsery-5.2.0
 
-source_url = https://github.com/fraillt/bitsery/archive/d24dfe14f5a756c0f8ad3d56ae6949ecc2c99b2e.zip
-source_filename = bitsery-d24dfe14f5a756c0f8ad3d56ae6949ecc2c99b2e.zip
-source_hash = 1a3219e0818db6fa95677deb29087ddccf99087c0777c9313719122062186ae7
+source_url = https://github.com/fraillt/bitsery/archive/v5.2.0.tar.gz
+source_filename = bitsery-v5.2.0.tar.gz
+source_hash = 99f47bca227abb6b9e8030703dcc402ab930ff3bf0a87c89c3f0fb9536cad448
 
-patch_url = file:./subprojects/bitsery-patch.tar.xz
-patch_filename = bitsery-patch.tar.xz
-patch_hash = bdbd46d6be1c3ecf7b8b48f43ab0bd7837458e49ddeef81fee3ac0bdc89767ea
+patch_url = file:./subprojects/bitsery-patch-5.2.0.tar.xz
+patch_filename = bitsery-patch-5.2.0.tar.xz
+patch_hash = ab12b1622de7a17e2996ab86a0947bbbc39e6684d9ad06c46f8e3877e5f8683d
