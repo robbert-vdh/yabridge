@@ -20,8 +20,6 @@
 #include <toml++/toml.h>
 #include <fstream>
 
-#include "utils.h"
-
 namespace fs = boost::filesystem;
 
 Configuration::Configuration() {}
@@ -56,16 +54,4 @@ Configuration::Configuration(const fs::path& config_path,
 
         break;
     }
-}
-
-Configuration Configuration::load_for(const fs::path& yabridge_path) {
-    // First find the closest `yabridge.tmol` file for the plugin, falling back
-    // to default configuration settings if it doesn't exist
-    const std::optional<fs::path> config_file =
-        find_dominating_file("yabridge.toml", yabridge_path);
-    if (!config_file) {
-        return Configuration();
-    }
-
-    return Configuration(*config_file, yabridge_path);
 }

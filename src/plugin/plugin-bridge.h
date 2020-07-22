@@ -23,8 +23,8 @@
 #include <mutex>
 #include <thread>
 
+#include "../common/configuration.h"
 #include "../common/logging.h"
-#include "configuration.h"
 #include "host-process.h"
 
 /**
@@ -76,7 +76,7 @@ class PluginBridge {
      * The configuration for this instance of yabridge. Set based on the values
      * from a `yabridge.toml`, if it exists.
      *
-     * @see Configuration::load_for
+     * @see ./utils.h:load_config_for
      */
     Configuration config;
 

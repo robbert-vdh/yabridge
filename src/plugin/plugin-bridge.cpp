@@ -22,6 +22,7 @@
 
 #include "../common/communication.h"
 #include "../common/events.h"
+#include "utils.h"
 
 namespace bp = boost::process;
 // I'd rather use std::filesystem instead, but Boost.Process depends on
@@ -44,7 +45,7 @@ PluginBridge& get_bridge_instance(const AEffect& plugin) {
 }
 
 PluginBridge::PluginBridge(audioMasterCallback host_callback)
-    : config(Configuration::load_for(get_this_file_location())),
+    : config(load_config_for(get_this_file_location())),
       vst_plugin_path(find_vst_plugin()),
       // All the fields should be zero initialized because
       // `Vst2PluginInstance::vstAudioMasterCallback` from Bitwig's plugin

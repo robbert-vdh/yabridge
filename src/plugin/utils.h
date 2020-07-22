@@ -20,6 +20,8 @@
 #include <boost/process/async_pipe.hpp>
 #include <boost/process/environment.hpp>
 
+#include "../common/configuration.h"
+
 /**
  * Boost 1.72 was released with a known breaking bug caused by a missing
  * typedef: https://github.com/boostorg/process/issues/116.
@@ -163,6 +165,29 @@ boost::filesystem::path get_this_file_location();
  * '<NOT FOUND>'. This way the user will still get some useful log files.
  */
 std::string get_wine_version();
+
+/**
+ * Load the configuration that belongs to a copy of or symlink to
+ * `libyabridge.so`. If no configuration file could be found then this will
+ * return an empty configuration object with default settings. See the docstrong
+ * on the `Configuration` class for more details on how to choose the config
+ * file to load.
+ *
+ * This function will take any optional compile-time features that have not been
+ * enabled into account.
+ *
+ * @param yabridge_path The path to the .so file that's being loaded.by the VST
+ *   host. This will be used both for the starting location of the search and to
+ *   determine which section in the config file to use.
+ *
+ * @return Either a configuration object populated with values from matched glob
+ *   pattern within the found configuration file, or an empty configuration
+ *   object if no configuration file could be found or if the plugin could not
+ *   be matched to any of the glob patterns in the configuration file.
+ *
+ * @see Configuration
+ */
+Configuration load_config_for(const boost::filesystem::path& yabridge_path);
 
 /**
  * Locate the Wine prefix and set the `WINEPREFIX` environment variable if

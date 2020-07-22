@@ -16,7 +16,11 @@
 
 #pragma once
 
+#ifdef __WINE__
+#include "../wine-host/boost-fix.h"
+#endif
 #include <boost/filesystem.hpp>
+
 #include <optional>
 
 /**
@@ -25,8 +29,9 @@
  * plugins that will be hosted in the same process rather than individually so
  * they can share resources. Configuration file loading works as follows:
  *
- * 1. `Configuration::load_for(path)` gets called with a path to the copy of or
- *    symlink to `libyabridge.so` that the plugin host has tried to load.
+ * 1. `load_config_for(path)` from `src/plugin/utils.h` gets called with a path
+ *    to the copy of or symlink to `libyabridge.so` that the plugin host has
+ *    tried to load.
  * 2. We start looking for a file named `yabridge.toml` in the same directory as
  *    that `.so` file, iteratively continuing to search one directory higher
  *    until we either find the file or we reach the filesystem root.
@@ -60,30 +65,10 @@ class Configuration {
      *
      * @throw toml::parsing_error If the file could not be parsed.
      *
-     * @see Configuration::load_for
+     * @see ../plugin/utils.h:load_config_for
      */
     Configuration(const boost::filesystem::path& config_path,
                   const boost::filesystem::path& yabridge_path);
-
-    /**
-     * Load the configuration that belongs to a copy of or symlink to
-     * `libyabridge.so`. If no configuration file could be found then this will
-     * return an empty configuration object with default settings.
-     *
-     * This function will take any optional compile-time features that have not
-     * been enabled into account.
-     *
-     * @param yabridge_path The path to the .so file that's being loaded.by the
-     *   VST host. This will be used both for the starting location of the
-     *   search and to determine which section in the config file to use.
-     *
-     * @return Either a configuration object populated with values from matched
-     *   glob pattern within the found configuration file, or an empty
-     *   configuration object if no configuration file could be found or if the
-     *   plugin could not be matched to any of the glob patterns in the
-     *   configuration file.
-     */
-    static Configuration load_for(const boost::filesystem::path& yabridge_path);
 
     /**
      * The name of the plugin group that should be used for the plugin this

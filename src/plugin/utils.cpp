@@ -28,7 +28,7 @@
 // Generated inside of build directory
 #include <src/common/config/config.h>
 
-#include "configuration.h"
+#include "../common/configuration.h"
 
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
@@ -267,6 +267,18 @@ std::string get_wine_version() {
     }
 
     return version_string;
+}
+
+Configuration load_config_for(const fs::path& yabridge_path) {
+    // First find the closest `yabridge.tmol` file for the plugin, falling back
+    // to default configuration settings if it doesn't exist
+    const std::optional<fs::path> config_file =
+        find_dominating_file("yabridge.toml", yabridge_path);
+    if (!config_file) {
+        return Configuration();
+    }
+
+    return Configuration(*config_file, yabridge_path);
 }
 
 bp::environment set_wineprefix() {

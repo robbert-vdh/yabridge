@@ -89,9 +89,9 @@ include_dir = include_directories('src/include')
 shared_library(
   'yabridge',
   [
+    'src/common/configuration.cpp',
     'src/common/logging.cpp',
     'src/common/serialization.cpp',
-    'src/plugin/configuration.cpp',
     'src/plugin/host-process.cpp',
     'src/plugin/plugin.cpp',
     'src/plugin/plugin-bridge.cpp',
@@ -112,6 +112,7 @@ shared_library(
 )
 
 host_sources = [
+  'src/common/configuration.cpp',
   'src/common/logging.cpp',
   'src/common/serialization.cpp',
   'src/wine-host/bridges/vst2.cpp',
