@@ -57,12 +57,14 @@ as the _Windows VST plugin_. The whole process works as follows:
 
    - Calls from the native VST host to the plugin's `dispatcher()` function.
      These get forwarded to the Windows VST plugin through the Wine VST host.
+
    - Calls from the native VST host to the plugin's `dispatcher()` function with
      the `effProcessEvents` opcode. These also get forwarded to the Windows VST
      plugin through the Wine VST host. This has to be handled separately from
      all other events because of limitations of the Win32 API. Without doing
      this the plugin would not be able to receive any MIDI events while the GUI
      is being resized or a dropdown menu or message box is shown.
+
    - Host callback calls from the Windows VST plugin through the
      `audioMasterCallback` function. These get forwarded to the native VST host
      through the plugin.
@@ -76,12 +78,18 @@ as the _Windows VST plugin_. The whole process works as follows:
      `setParameter()` functions. Both functions get forwarded to the Windows VST
      plugin through the Wine VST host using a single socket because they're very
      similar and don't need any complicated behaviour.
+
    - Calls from the native VST host to the plugin's `processReplacing()`
      function. This function gets forwarded to the Windows VST plugin through
      the Wine VST. In the rare event that the plugin does not support
      `processReplacing()` and only supports The deprecated commutative
      `process()` function, then the Wine VST host will emulate the behavior of
      `processReplacing()` instead.
+
+   - And finally there's a separate socket for control messages. At the moment
+     this is only used to transfer the Windows VST plugin's `AEffect` object to
+     the plugin and the current configuration from the plugin to the Wine VST
+     host on startup.
 
    The operations described above involving the host -> plugin `dispatcher()`and
    plugin -> host `audioMaster()` functions are all handled by first serializing
@@ -115,9 +123,10 @@ as the _Windows VST plugin_. The whole process works as follows:
 6. The Wine VST host loads the Windows VST plugin and starts forwarding messages
    over the sockets described above.
 7. After the Windows VST plugin has started loading we will forward all values
-   from the plugin's `AEffect` struct to the Linux native VST plugin over the
-   `dispatcher()` socket. This is only done once at startup. After this point
-   the plugin will stop blocking and has finished loading.
+   from the Windows VST plugin's `AEffect` struct to the plugin, and the plugins
+   configuration gets sent back over the same socket to the Wine VST host. After
+   this point the plugin will stop blocking and the initialization process is
+   finished.
 
 ## Plugin groups
 

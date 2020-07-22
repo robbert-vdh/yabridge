@@ -180,6 +180,10 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     const auto initialized_plugin =
         std::get<AEffect>(initialization_data.payload);
 
+    // After receiving the `AEffect` values we'll want to send the configuration
+    // back to complete the startup process
+    write_object(host_vst_control, config);
+
     update_aeffect(plugin, initialized_plugin);
 }
 

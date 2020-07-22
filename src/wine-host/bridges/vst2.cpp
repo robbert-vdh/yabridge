@@ -134,6 +134,10 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
     // `audioMasterIOChanged()`.
     write_object(host_vst_control, EventResult{0, *plugin, std::nullopt});
 
+    // After sending the AEffect struct we'll receive this instance's
+    // configuration as a response
+    config = read_object<Configuration>(host_vst_control);
+
     // This works functionally identically to the `handle_dispatch()` function,
     // but this socket will only handle MIDI events and it will handle them
     // eagerly. This is needed because of Win32 API limitations.

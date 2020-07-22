@@ -29,6 +29,7 @@
 #include <boost/asio/local/stream_protocol.hpp>
 #include <mutex>
 
+#include "../../common/configuration.h"
 #include "../../common/logging.h"
 #include "../editor.h"
 #include "../utils.h"
@@ -166,6 +167,13 @@ class Vst2Bridge {
      * multiple plugins.
      */
     boost::asio::io_context& io_context;
+
+    /**
+     * The configuration for this instance of yabridge based on the `.so` file
+     * that got loaded by the host. This configuration gets loaded on the plugin
+     * side, and then sent over to the Wine host as part of the startup process.
+     */
+    Configuration config;
 
     /**
      * The shared library handle of the VST plugin. I sadly could not get
