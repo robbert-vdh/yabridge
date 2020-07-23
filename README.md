@@ -216,10 +216,10 @@ up.
 
 #### Example
 
+All of the paths used here are relative to the `yabridge.toml` file.
+
 ```toml
 # ~/.wine/drive_c/Program Files/Steinberg/VstPlugins/yabridge.toml
-
-# All of these paths are relative to this file
 
 ["FabFilter Pro-Q 3.so"]
 group = "fabfilter"
