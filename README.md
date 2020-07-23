@@ -11,6 +11,27 @@ compatibility while also staying easy to debug and maintain.
 
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
+### Table of contents
+
+- [Tested with](#tested-with)
+- [Usage](#usage)
+  - [Automatic setup](#automatic-setup)
+  - [Manual setup](#manual-setup)
+  - [Search path setup](#search-path-setup)
+  - [DAW setup](#daw-setup)
+  - [Bitbridge](#bitbridge)
+  - [Wine prefixes](#wine-prefixes)
+  - [Configuration](#configuration)
+    - [Plugin groups](#plugin-groups)
+    - [Editor hosting modes](#editor-hosting-modes)
+    - [Example](#example)
+- [Troubleshooting common issues](#troubleshooting-common-issues)
+- [Runtime dependencies and known issues](#runtime-dependencies-and-known-issues)
+- [Building](#building)
+  - [32-bit bitbridge](#32-bit-bitbridge)
+- [Debugging](#debugging)
+  - [Attaching a debugger](#attaching-a-debugger)
+
 ## Tested with
 
 Yabridge has been verified to work correctly in the following VST hosts using
