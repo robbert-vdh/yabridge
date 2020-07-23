@@ -166,8 +166,9 @@ GroupHost::GroupHost(
         boost::asio::local::stream_protocol::socket group_socket(io_context);
         group_socket.connect(group_socket_path.string());
 
-        write_object(group_socket, GroupRequest{plugin_path.string(),
-                                                socket_endpoint.string()});
+        write_object(group_socket,
+                     GroupRequest{.plugin_path = plugin_path.string(),
+                                  .socket_path = socket_endpoint.string()});
         const auto response = read_object<GroupResponse>(group_socket);
 
         host_pid = response.pid;
@@ -202,9 +203,10 @@ GroupHost::GroupHost(
                         io_context);
                     group_socket.connect(group_socket_path.string());
 
-                    write_object(group_socket,
-                                 GroupRequest{plugin_path.string(),
-                                              socket_endpoint.string()});
+                    write_object(
+                        group_socket,
+                        GroupRequest{.plugin_path = plugin_path.string(),
+                                     .socket_path = socket_endpoint.string()});
                     const auto response =
                         read_object<GroupResponse>(group_socket);
 

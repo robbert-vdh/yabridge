@@ -132,7 +132,9 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
     // of this object will be sent over the `dispatcher()` socket. This would be
     // done after the host calls `effOpen()`, and when the plugin calls
     // `audioMasterIOChanged()`.
-    write_object(host_vst_control, EventResult{0, *plugin, std::nullopt});
+    write_object(host_vst_control, EventResult{.return_value = 0,
+                                               .payload = *plugin,
+                                               .value_payload = std::nullopt});
 
     // After sending the AEffect struct we'll receive this instance's
     // configuration as a response
@@ -218,8 +220,9 @@ void Vst2Bridge::handle_dispatch_midi_events() {
                             plugin, event.opcode, event.index, event.value,
                             &events.as_c_events(), event.option);
 
-                        EventResult response{return_value, nullptr,
-                                             std::nullopt};
+                        EventResult response{.return_value = return_value,
+                                             .payload = nullptr,
+                                             .value_payload = std::nullopt};
 
                         return response;
                     } else {

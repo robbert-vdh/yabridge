@@ -160,7 +160,12 @@ intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
                          value_payload);
     }
 
-    const Event event{opcode, index, value, option, payload, value_payload};
+    const Event event{.opcode = opcode,
+                      .index = index,
+                      .value = value,
+                      .option = option,
+                      .payload = payload,
+                      .value_payload = value_payload};
 
     // Prevent two threads from writing over the socket at the same time and
     // messages getting out of order. This is needed because we can't prevent
@@ -394,7 +399,9 @@ auto passthrough_event(AEffect* plugin, F callback) {
                 std::visit(write_payload_fn, *event.value_payload);
         }
 
-        EventResult response{return_value, response_data, value_response_data};
+        EventResult response{.return_value = return_value,
+                             .payload = response_data,
+                             .value_payload = value_response_data};
 
         return response;
     };

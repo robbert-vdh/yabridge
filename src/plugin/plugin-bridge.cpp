@@ -155,7 +155,9 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
 
                             incoming_midi_events.push_back(
                                 std::get<DynamicVstEvents>(event.payload));
-                            EventResult response{1, nullptr, std::nullopt};
+                            EventResult response{.return_value = 1,
+                                                 .payload = nullptr,
+                                                 .value_payload = std::nullopt};
 
                             return response;
                         } else {
