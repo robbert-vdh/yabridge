@@ -373,11 +373,11 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             // should get a unique window class
             const std::string window_class =
                 "yabridge plugin " + socket_endpoint.path();
-            Editor& editor_instance =
-                editor.emplace<Editor>(window_class, plugin, x11_handle);
+            Editor& editor_instance = editor.emplace<Editor>(
+                config, window_class, x11_handle, plugin);
 
             return plugin->dispatcher(plugin, opcode, index, value,
-                                      editor_instance.win32_handle.get(),
+                                      editor_instance.get_win32_handle(),
                                       option);
         } break;
         case effEditClose: {

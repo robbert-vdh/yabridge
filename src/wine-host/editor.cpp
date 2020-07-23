@@ -55,9 +55,10 @@ WindowClass::~WindowClass() {
     UnregisterClass(reinterpret_cast<LPCSTR>(atom), GetModuleHandle(nullptr));
 }
 
-Editor::Editor(const std::string& window_class_name,
-               AEffect* effect,
-               const size_t parent_window_handle)
+Editor::Editor(const Configuration& config,
+               const std::string& window_class_name,
+               const size_t parent_window_handle,
+               AEffect* effect)
     : x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
       client_area(get_maximum_screen_dimensions(*x11_connection)),
       window_class(window_class_name),
@@ -79,9 +80,27 @@ Editor::Editor(const std::string& window_class_name,
                                   GetModuleHandle(nullptr),
                                   this),
                    DestroyWindow),
+      win32_child_handle(
+          config.editor_double_embed
+              ? std::make_optional<std::unique_ptr<std::remove_pointer_t<HWND>,
+                                                   decltype(&DestroyWindow)>>(
+                    CreateWindowEx(0,
+                                   reinterpret_cast<LPCSTR>(window_class.atom),
+                                   "yabridge plugin child",
+                                   WS_CHILD,
+                                   CW_USEDEFAULT,
+                                   CW_USEDEFAULT,
+                                   client_area.width,
+                                   client_area.height,
+                                   win32_handle.get(),
+                                   nullptr,
+                                   GetModuleHandle(nullptr),
+                                   nullptr),
+                    DestroyWindow)
+              : std::nullopt),
       idle_timer(win32_handle.get(), idle_timer_id, 100),
       parent_window(parent_window_handle),
-      child_window(get_x11_handle(win32_handle.get())),
+      wine_window(get_x11_handle(win32_handle.get())),
       topmost_window(find_topmost_window(*x11_connection, parent_window)),
       // Needed to send update messages on a timer
       plugin(effect) {
@@ -107,12 +126,14 @@ Editor::Editor(const std::string& window_class_name,
     // using the XEmbed protocol, we'll register a few events and manage the
     // child window ourselves. This is a hack to work around the issue's
     // described in `Editor`'s docstring'.
-    xcb_reparent_window(x11_connection.get(), child_window, parent_window, 0,
-                        0);
-    xcb_map_window(x11_connection.get(), child_window);
+    xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0, 0);
+    xcb_map_window(x11_connection.get(), wine_window);
     xcb_flush(x11_connection.get());
 
     ShowWindow(win32_handle.get(), SW_SHOWNORMAL);
+    if (win32_child_handle) {
+        ShowWindow(win32_child_handle->get(), SW_SHOWNORMAL);
+    }
 }
 
 Editor::~Editor() {
@@ -124,7 +145,7 @@ Editor::~Editor() {
         xcb_setup_roots_iterator(xcb_get_setup(x11_connection.get()))
             .data->root;
 
-    xcb_reparent_window(x11_connection.get(), child_window, root, 0, 0);
+    xcb_reparent_window(x11_connection.get(), wine_window, root, 0, 0);
     xcb_flush(x11_connection.get());
 
     // FIXME: I have no idea why, but for some reason the window still hangs
@@ -132,7 +153,16 @@ Editor::~Editor() {
     //        `std::unique_ptr`` to the window handle` (which calls
     //        `DestroyWindow()`), even though the behavior should be identical
     //        without this line.
+    win32_child_handle.reset();
     win32_handle.reset();
+}
+
+HWND Editor::get_win32_handle() {
+    if (win32_child_handle) {
+        return win32_child_handle->get();
+    } else {
+        return win32_handle.get();
+    }
 }
 
 void Editor::send_idle_event() {
@@ -191,7 +221,7 @@ void Editor::handle_x11_events() const {
                 // the main Bitwig Studio window instead of allowing the child
                 // window to handle those events.
                 xcb_set_input_focus(x11_connection.get(),
-                                    XCB_INPUT_FOCUS_PARENT, child_window,
+                                    XCB_INPUT_FOCUS_PARENT, wine_window,
                                     XCB_CURRENT_TIME);
                 xcb_flush(x11_connection.get());
                 break;
@@ -228,8 +258,8 @@ void Editor::fix_local_coordinates() const {
 
     xcb_configure_notify_event_t translated_event{};
     translated_event.response_type = XCB_CONFIGURE_NOTIFY;
-    translated_event.event = child_window;
-    translated_event.window = child_window;
+    translated_event.event = wine_window;
+    translated_event.window = wine_window;
     // This should be set to the same sizes the window was created on. Since
     // we're not using `SetWindowPos` to resize the Window, Wine can get a bit
     // confused when we suddenly report a different client area size. Without
@@ -240,7 +270,7 @@ void Editor::fix_local_coordinates() const {
     translated_event.y = translated_coordinates->dst_y;
 
     xcb_send_event(
-        x11_connection.get(), false, child_window,
+        x11_connection.get(), false, wine_window,
         XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
         reinterpret_cast<char*>(&translated_event));
     xcb_flush(x11_connection.get());

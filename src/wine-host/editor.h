@@ -32,6 +32,7 @@
 #include <optional>
 #include <string>
 
+#include "../common/configuration.h"
 #include "utils.h"
 
 /**
@@ -80,20 +81,30 @@ class Editor {
      * Open a window, embed it into the DAW's parent window and create a handle
      * to the new Win32 window that can be used by the hosted VST plugin.
      *
+     * @param config This instance's configuration, used to enable alternative
+     *   editor behaviours.
      * @param window_class_name The name for the window class for editor
      *   windows.
-     * @param effect The plugin this window is being created for. Used to send
-     *   `effEditIdle` messages on a timer.
      * @param parent_window_handle The X11 window handle passed by the VST host
      *   for the editor to embed itself into.
+     * @param effect The plugin this window is being created for. Used to send
+     *   `effEditIdle` messages on a timer.
      *
      * @see win32_handle
      */
-    Editor(const std::string& window_class_name,
-           AEffect* effect,
-           const size_t parent_window_handle);
+    Editor(const Configuration& config,
+           const std::string& window_class_name,
+           const size_t parent_window_handle,
+           AEffect* effect);
 
     ~Editor();
+
+    /**
+     * Get the Win32 window handle so it can be passed to an `effEditOpen()`
+     * call. This will return the child window's handle if double editor
+     * embedding is enabled.
+     */
+    HWND get_win32_handle();
 
     /**
      * Send a single `effEditIdle` event to the plugin to allow it to update its
@@ -144,13 +155,24 @@ class Editor {
      */
     const WindowClass window_class;
 
-   public:
     /**
      * The handle for the window created through Wine that the plugin uses to
      * embed itself in.
      */
     std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>
         win32_handle;
+
+    /**
+     * A child window embedded inside of `win32_handle`. This is only used if
+     * the `editor_double_embed` option is enabled. It can be used as a
+     * workaround for plugins that rely on their parent window's screen
+     * coordinates instead of their own (see the 'Editor hosting modes' section
+     * of the readme for more details). The plugin should then embed itself
+     * within this child window.
+     */
+    std::optional<
+        std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>>
+        win32_child_handle;
 
    private:
     /**
@@ -169,7 +191,7 @@ class Editor {
     /**
      * The X11 window handle of the window belonging to  `win32_handle`.
      */
-    const xcb_window_t child_window;
+    const xcb_window_t wine_window;
     /**
      * The X11 window that's at the top of the window tree starting from
      * `parent_window`, i.e. a direct child of the root window. In most cases
