@@ -18,10 +18,11 @@
 
 #include <iostream>
 
-// Generated inside of build directory
+// Generated inside of the build directory
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
 
+#include "../common/utils.h"
 #include "bridges/group.h"
 #include "bridges/vst2.h"
 
@@ -39,6 +40,8 @@
  * Wine 5.7: https://bugs.winehq.org/show_bug.cgi?id=49138
  */
 int __cdecl main(int argc, char* argv[]) {
+    set_realtime_priority();
+
     // Instead of directly hosting a plugin, this process will receive a UNIX
     // domain socket endpoint path that it should listen on to allow yabridge
     // instances to spawn plugins in this process.

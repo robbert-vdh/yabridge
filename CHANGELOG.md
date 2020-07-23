@@ -17,6 +17,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   [readme](https://github.com/robbert-vdh/yabridge#editor-hosting-modes) for
   more details.
 
+### Changed
+
+- Both parts of yabridge will now run with realtime priority if available. This
+  can significantly reduce overall latency and spikes. Wine itself will still
+  run with a normal scheduling policy by default, since running wineserver with
+  realtime priority can increase the audio processing latency although it does
+  greatly reduce the amount of latency spikes even further.
+
 ### Fixed
 
 - Fixed rare plugin location detection issue related to the plugin and host

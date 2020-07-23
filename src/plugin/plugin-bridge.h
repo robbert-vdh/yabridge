@@ -183,6 +183,14 @@ class PluginBridge {
      * @see launch_vst_host
      */
     std::unique_ptr<HostProcess> vst_host;
+
+    /**
+     * Whether this process runs with realtime priority. We'll set this _after_
+     * spawning the Wine process because from my testing running wineserver with
+     * realtime priority can actually increase latency.
+     */
+    bool has_realtime_priority;
+
     /**
      * Runs the Boost.Asio `io_context` thread for logging the Wine process
      * STDOUT and STDERR messages.

@@ -17,10 +17,11 @@
 #include <iostream>
 #include <thread>
 
-// Generated inside of build directory
+// Generated inside of the build directory
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
 
+#include "../common/utils.h"
 #include "bridges/vst2.h"
 
 using namespace std::literals::chrono_literals;
@@ -45,6 +46,8 @@ void async_handle_events(boost::asio::steady_timer& timer, Vst2Bridge& bridge);
  * Wine 5.7: https://bugs.winehq.org/show_bug.cgi?id=49138
  */
 int __cdecl main(int argc, char* argv[]) {
+    set_realtime_priority();
+
     // We pass the name of the VST plugin .dll file to load and the Unix domain
     // socket to connect to in plugin/bridge.cpp as the first two arguments of
     // this process.

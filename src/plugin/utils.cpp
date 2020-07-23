@@ -25,7 +25,7 @@
 #include <random>
 #include <sstream>
 
-// Generated inside of build directory
+// Generated inside of the build directory
 #include <src/common/config/config.h>
 
 #include "../common/configuration.h"

@@ -16,12 +16,13 @@
 
 #include "plugin-bridge.h"
 
-// Generated inside of build directory
+// Generated inside of the build directory
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
 
 #include "../common/communication.h"
 #include "../common/events.h"
+#include "../common/utils.h"
 #include "utils.h"
 
 namespace bp = boost::process;
@@ -78,6 +79,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
                                                      logger,
                                                      vst_plugin_path,
                                                      socket_endpoint.path()))),
+      has_realtime_priority(set_realtime_priority()),
       wine_io_handler([&]() { io_context.run(); }) {
     log_init_message();
 
@@ -598,6 +600,8 @@ void PluginBridge::log_init_message() {
              << std::endl;
     init_msg << "plugin:       '" << vst_plugin_path.string() << "'"
              << std::endl;
+    init_msg << "realtime:     '" << (has_realtime_priority ? "yes" : "no")
+             << "'" << std::endl;
     init_msg << "socket:       '" << socket_endpoint.path() << "'" << std::endl;
     init_msg << "wine prefix:  '";
 
