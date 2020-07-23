@@ -8,6 +8,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added an alternative editor hosting mode that adds another layer of embedding.
+  Right now the only known plugins that may need this are _PSPaudioware_ plugins
+  such as E27, and the behaviour can be enabled per-plugin in the plugin
+  configuration. See the
+  [readme](https://github.com/robbert-vdh/yabridge#editor-hosting-modes) for
+  more details.
+
 ### Fixed
 
 - Fixed rare plugin location detection issue related to the plugin and host

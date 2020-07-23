@@ -208,7 +208,7 @@ other. See below for an [example](#example) of how these groups can be set up.
 The way yabridge embeds editor windows will work for most plugins. There is a
 second embedding mode available that adds yet another layer of embedding. This
 can be enabled by setting the `editor_double_embed` option to `true`. At the
-moment the only known plugins that needs this are _PSPaudioware_ plugins with
+moment the only known plugins that need this are _PSPaudioware_ plugins with
 expandable GUIs, as the plugins will otherwise draw in the wrong location after
 expanding the GUI. This setting may be replaced in the future if we can come up
 with a better solution. See below for an [example](#example) of how to set this
