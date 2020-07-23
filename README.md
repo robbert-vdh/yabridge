@@ -165,7 +165,27 @@ yabridge is also able to load 32-bit VST plugins. The installation procedure for
 automatically detect whether a plugin is 32-bit or 64-bit on startup and it will
 handle it accordingly.
 
-### Plugin groups
+### Wine prefixes
+
+It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
+automatically detect and use the Wine prefix the plugin's `.dll` file is located
+in. Alternatively you could set the `WINEPREFIX` environment variable to
+override the Wine prefix for all instances of yabridge.
+
+### Configuration
+
+Configuring yabridge for specific plugins is done through a `yabridge.toml` file
+located in either the same directory as the symlink to or copy of
+`libyabridge.so` you're trying to configure or in any of its parent directories.
+This file contains case sensitive
+[glob](https://www.man7.org/linux/man-pages/man7/glob.7.html) patterns that
+paths of yabridge `.so` files relative to that `yabridge.toml` file. These
+patterns can also match an entire directory to apply settings to all plugins
+within that directory. For simplicity's sake, only the first `yabridge.toml`
+file found and only the first matching glob pattern within that file will be
+considered. See below for an [example](#example) of a `yabridge.toml` file.
+
+#### Plugin groups
 
 Some plugins have the ability to communicate with other instances of that same
 plugin or even with other plugins made by the same manufacturer. This is often
@@ -177,24 +197,38 @@ same process.
 
 Yabridge has the concept of _plugin groups_, which are user defined groups of
 plugins that will all be hosted inside of a single process. Plugins groups can
-be configured for a plugin by creating a `yabridge.toml` file in either the same
-directory as the symlink of or copy to `libyabridge.so` or in any directories
-above it. This file contains case sensitive
-[glob](https://www.man7.org/linux/man-pages/man7/glob.7.html) patterns that are
-used to match the paths of `.so` files relative to that `yabridge.toml` file.
-These patterns can also match an entire directory. For simplicity's sake, only
-the first `yabridge.toml` file found and only the first glob pattern matched
-within that file will be considered. An example `yabridge.toml` file looks like
-this:
+be configured for a plugin by setting the `group` option of that plugin to some
+name. All plugins with the same group name will be hosted within a single
+process. Of course, plugin groups with the same name but in different Wine
+prefixes and with different architectures will be run independently of each
+other. See below for an [example](#example) of how these groups can be set up.
+
+#### Editor hosting modes
+
+The way yabridge embeds editor windows will work for most plugins. There is a
+second embedding mode available that adds yet another layer of embedding. This
+can be enabled by setting the `editor_double_embed` option to `true`. At the
+moment the only known plugins that needs this are _PSPaudioware_ plugins with
+expandable GUIs, as the plugins will otherwise draw in the wrong location after
+expanding the GUI. This setting may be replaced in the future if we can come up
+with a better solution. See below for an [example](#example) of how to set this
+up.
+
+#### Example
 
 ```toml
 # ~/.wine/drive_c/Program Files/Steinberg/VstPlugins/yabridge.toml
+
+# All of these paths are relative to this file
 
 ["FabFilter Pro-Q 3.so"]
 group = "fabfilter"
 
 ["MeldaProduction/Tools/MMultiAnalyzer.so"]
 group = "melda"
+
+["PSPaudioware"]
+editor_double_embed = true
 
 # Matches an entire directory and all files inside it, make sure to not include
 # a trailing slash
@@ -223,13 +257,6 @@ group = "This will be ignored!"
 # ["*"]
 # group = "all"
 ```
-
-### Wine prefixes
-
-It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
-automatically detect and use the Wine prefix the plugin's `.dll` file is located
-in. Alternatively you could set the `WINEPREFIX` environment variable to
-override the Wine prefix for all instances of yabridge.
 
 ## Troubleshooting common issues
 
@@ -301,6 +328,9 @@ include:
   settings. I'm not sure whether this is an issue with Wine or the plugins
   themselves. Notable issues here are missing redraws and incorrect positioning
   when the window gets dragged offscreen on the top and left dies of the screen.
+- **PSPaudioware** plugins with expandable GUIs, such as E27, may have their GUI
+  appear in the wrong location after the GUI has been expanded. You can enable
+  an alternative [editor hosting mode](#editor-hosting-modes) to fix this.
 - Plugins like **FabFilter Pro-Q 3** that can share data between different
   instances of the same plugin plugins have to be hosted within a single process
   for that functionality to work. See the [plugin groups](#plugin-groups)
