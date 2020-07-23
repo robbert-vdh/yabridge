@@ -618,10 +618,10 @@ void PluginBridge::log_init_message() {
     // settings in use. Printing the matched glob pattern could also be useful
     // but it'll be very noisy and it's likely going to be clear from the shown
     // values anyways.
-    init_msg << "config from:  '"
+    init_msg << "config from:   '"
              << config.matched_file.value_or("<defaults>").string() << "'"
              << std::endl;
-    init_msg << "hosting mode: '";
+    init_msg << "hosting mode:  '";
     if (config.group) {
         init_msg << "plugin group \"" << *config.group << "\"";
     } else {
