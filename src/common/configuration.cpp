@@ -49,6 +49,8 @@ Configuration::Configuration(const fs::path& config_path,
         // If the table is missing some fields then they will simply be left at
         // their defaults
         if (toml::table* config = value.as_table()) {
+            editor_double_embed =
+                (*config)["editor_double_embed"].value<bool>().value_or(false);
             group = (*config)["group"].value<std::string>();
         }
 

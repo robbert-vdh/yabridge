@@ -633,6 +633,13 @@ void PluginBridge::log_init_message() {
         init_msg << ", 64-bit";
     }
     init_msg << "'" << std::endl;
+    init_msg << "other options: '";
+    if (config.editor_double_embed) {
+        init_msg << "editor: double embed";
+    } else {
+        init_msg << "<none>";
+    }
+    init_msg << "'" << std::endl;
     init_msg << std::endl;
 
     // Include a list of enabled compile-tiem features, mostly to make debug

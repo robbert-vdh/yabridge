@@ -74,6 +74,20 @@ class Configuration {
                   const boost::filesystem::path& yabridge_path);
 
     /**
+     * If this is set to true, then the plugin editor should be embedded in yet
+     * another window. This would result in an embedding sequence of
+     * `<window_provided_by_host> <-> <wine_parent_window> <->
+     * <wine_child_window> <-> <window_created_by_plugin>`, where
+     * `<wine_child_window>` is the new addition. The only plugin I've
+     * encountered where this was necessary was PSPaudioware E27 (and it likely
+     * also applies to other PSPaudioware plugins with expandable GUIs). I also
+     * haven't noticed any issues caused from having this enabled, but having it
+     * behind a flag reduces the amount of moving parts so that's probably a
+     * better idea.
+     */
+    bool editor_double_embed = false;
+
+    /**
      * The name of the plugin group that should be used for the plugin this
      * configuration object was created for. If not set, then the plugin should
      * be hosted individually instead.
@@ -92,6 +106,7 @@ class Configuration {
 
     template <typename S>
     void serialize(S& s) {
+        s.value1b(editor_double_embed);
         s.ext(group, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
         s.ext(matched_file, bitsery::ext::StdOptional(),
