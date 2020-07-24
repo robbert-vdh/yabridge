@@ -19,6 +19,6 @@
 #include <sched.h>
 
 bool set_realtime_priority() {
-    sched_param params{.sched_priority = 10};
+    sched_param params{.sched_priority = 5};
     return sched_setscheduler(0, SCHED_FIFO, &params) == 0;
 }
