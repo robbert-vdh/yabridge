@@ -145,7 +145,7 @@ examples I'll assume you're using the default installation location at
 `~/.local/share/yabridge`.
 
 - If you are using the default **Bash** shell, then you will want to add the
-  following line to `~/.bash_profile` (and _not_ to `~/.bashrc`):
+  following line to `~/.bash_profile` (or `~/.profile` if it does not exist):
 
   ```shell
   export PATH="$HOME/.local/share/yabridge:$PATH"
