@@ -303,10 +303,13 @@ group = "This will be ignored!"
 
   The output should contain several lines related to yabridge.
 
-- If you're seeing errors related to Wine, then you can verify that Wine is
-  working correctly by running one of the VST host applications manually.
-  Assuming that yabridge is installed under `~/.local/share/yabridge`, then
-  running `~/.local/share/yabridge/yabridge-host.exe` directly (so _not_
+- If you're seeing errors related to Wine, then it can be that your installed
+  version of Wine is much older than the version that yabridge has been compiled
+  for. Yabridgectl will automatically check for this when you run `yabridgectl sync`
+  after updating Wine or yabridge. You can also manually verify that Wine is working
+  correctly by running one of the VST host applications. Assuming that yabridge
+  is installed under `~/.local/share/yabridge`, then running
+  `~/.local/share/yabridge/yabridge-host.exe` directly (so _not_
   `wine ~/.local/share/yabridge/yabridge-host.exe`, that won't work) in a
   terminal should print a few messages related to Wine's startup process
   followed by the following line:
@@ -315,14 +318,10 @@ group = "This will be ignored!"
   Usage: yabridge-host.exe <vst_plugin_dll> <unix_domain_socket>
   ```
 
-  If you're getting a `002b:err:module:__wine_process_init` error instead, then
-  your version of Wine is too old for the version of yabridge you are using and
-  you'll have to upgrade your Wine version. Instructions for how to do this on
-  Ubuntu can be found on the [WineHQ website](https://wiki.winehq.org/Ubuntu).
-
-  Note that starting from yabridge 1.3.1 this check is also performed
-  automatically whenever you run `yabridgectl sync` using a new version of Wine
-  or yabridge.
+  If you're seeing a `002b:err:module:__wine_process_init` error instead, then
+  your version of Wine is too old for this version of yabridge and you'll have
+  to upgrade your Wine version. Instructions for how to do this on Ubuntu can be
+  found on the [WineHQ website](https://wiki.winehq.org/Ubuntu).
 
 - Sometimes left over Wine processes can cause problems. Run `wineserver -k` to
   terminate Wine related in the current or default Wine prefix.

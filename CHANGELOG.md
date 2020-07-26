@@ -36,9 +36,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   versions of Wine and yabridge are compatible. This check will only be
   performed once for a given combination of Wine and yabridge versions.
 
-  TODO: Remove the 'starting from yabridge 1.3.1' from the note about this in
-  the troubleshooting section of the readme.
-
 - Added a `--no-verify` option to `yabridgectl sync` to skip the
   post-installation setup checks. This option will skip both the login shell
   search path check when using the copy-based installation method as well as the
