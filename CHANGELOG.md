@@ -30,8 +30,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed rare plugin location detection issue on Debian derived distros related
-  to the plugin and host detection fix in yabridge 1.2.0.
+- Fixed rare plugin location detection issue on Debian based distros related to
+  the plugin and host detection fix in yabridge 1.2.0.
 
 ### yabridgectl
 
