@@ -10,10 +10,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added an alternative editor hosting mode that adds another layer of embedding.
-  Right now the only known plugins that may need this are _PSPaudioware_ plugins
-  such as E27, and the behaviour can be enabled per-plugin in the plugin
-  configuration. See the
+- Added an alternative editor hosting mode that adds yet another layer of
+  embedding. Right now the only known plugins that may need this are
+  _PSPaudioware_ plugins with expandable GUIs such as E27. The behaviour can be
+  enabled on a per-plugin basis in the plugin configuration. See the
   [readme](https://github.com/robbert-vdh/yabridge#editor-hosting-modes) for
   more details.
 
@@ -22,25 +22,27 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Both parts of yabridge will now run with realtime priority if available. This
   can significantly reduce overall latency and spikes. Wine itself will still
   run with a normal scheduling policy by default, since running wineserver with
-  realtime priority can increase the audio processing latency although it does
-  greatly reduce the amount of latency spikes even further.
+  realtime priority can actually increase the audio processing latency although
+  it does reduce the amount of latency spikes even further. You can verify that
+  yabridge is running with realtime priority by looking for the `realtime:` line
+  in the initialization message. I have not found any downsides to this approach
+  in my testing, but please let me know if this does end up causing any issues.
 
 ### Fixed
 
-- Fixed rare plugin location detection issue related to the plugin and host
-  detection fix in yabridge 1.2.0.
+- Fixed rare plugin location detection issue on Debian derived distros related
+  to the plugin and host detection fix in yabridge 1.2.0.
 
 ### yabridgectl
 
-- Added a check to `yabridgectl sync` to verify that the currently installed
-  versions of Wine and yabridge are compatible. This check will only be
-  performed once for a given combination of Wine and yabridge versions.
+- Added a check to `yabridgectl sync` that verifies that the currently installed
+  versions of Wine and yabridge are compatible. This check will only be repeated
+  after updating either Wine or yabridge.
 
 - Added a `--no-verify` option to `yabridgectl sync` to skip the
   post-installation setup checks. This option will skip both the login shell
-  search path check when using the copy-based installation method as well as the
-  new check for whether or not yabridge will be able to run with the currently
-  installed version of Wine.
+  search path check for the copy-based installation method as well as the new
+  Wine compatibility check.
 
 ## [1.3.0] - 2020-07-17
 
