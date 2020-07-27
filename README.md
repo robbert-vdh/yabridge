@@ -361,7 +361,7 @@ Aside from that, these are some known caveats:
 - Plugins by **KiloHearts** have file descriptor leaks when esync is enabled,
   causing Wine and yabridge to eventually stop working after the system hits the
   open file limit. This sadly cannot be fixed in yabridge. Simply unset
-  `WINEESYNC` while using yabridge if this is an issue.
+  `WINEESYNC` while using yabridge or switch to using fsync if this is an issue.
 - Most recent **iZotope** plugins don't have a functional GUI in a typical out
   of the box Wine setup because of missing dependencies. Please let me know if
   you know which dependencies are needed for these plugins to render correctly.
