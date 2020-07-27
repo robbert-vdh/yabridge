@@ -21,7 +21,8 @@ A short description of what the issue is, and possibly some steps to reproduce i
 - Operating system: [e.g. Manjaro, or Ubuntu 20.04]
 - Wine version: [e.g. Wine Staging 5.13]
 - Installation method: [symlinks/copies], [manual/yabridgectl]
-- yabridge version: [e.g. 1.3.0, or commit a29f43a]
+- yabridge version: [e.g. 1.3.0 or commit a29f43a]
+- yabridgectl version: [e.g. 1.3.0 or commit a29f43a, if using]
 
 **Debug log**
 Please also include a debug log if possible. If you are reporting an issue with yabridgectl, then you can omit this section.
