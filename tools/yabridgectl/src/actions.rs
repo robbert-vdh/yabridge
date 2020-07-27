@@ -18,6 +18,7 @@
 
 use anyhow::{Context, Result};
 use colored::Colorize;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::config::{Config, InstallationMethod};
@@ -173,9 +174,10 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         }
         for plugin in search_results.vst2_files {
             // If the target file already exists, we'll remove it first to prevent issues with
-            // mixing symlinks and regular files
+            // mixing symlinks and regular files. We check `std::fs::symlink_metadata` instead of
+            // `Path::exists()` because the latter reports false for broken symlinks.
             let target_path = plugin.with_extension("so");
-            if target_path.exists() {
+            if fs::symlink_metadata(&target_path).is_ok() {
                 utils::remove_file(&target_path)?;
             }
 
