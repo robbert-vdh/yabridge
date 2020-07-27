@@ -10,6 +10,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### yabridgectl
 
+- Fixed regression where the configuration file failed to parse after running
+  `yabridgectl sync` caused by
+  [alexcrichton/toml-rs#256](https://github.com/alexcrichton/toml-rs/issues/256)
+  4.0. If you have already run `yabridgectl sync` under yabridge 1.4.0, then
+  you'll have to manually remove the `[last_known_config]` section from
+  `~/.config/yabridgectl/config.toml`.
 - Fixed issue with overwriting broken symlinks during `yabridgectl sync`.
 
 ## [1.4.0] - 2020-07-26

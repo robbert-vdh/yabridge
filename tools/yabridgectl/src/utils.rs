@@ -183,7 +183,7 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
             yabridge_host_exe_so_path.display()
         )
     })?);
-    let yabridge_host_hash = hasher.finish();
+    let yabridge_host_hash = hasher.finish() as i64;
 
     // Since these checks can take over a second if wineserver isn't already running we'll only
     // perform them when something has changed

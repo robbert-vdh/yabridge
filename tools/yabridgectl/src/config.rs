@@ -108,7 +108,13 @@ pub struct KnownConfig {
     /// The results from running the contents of `yabridge-host.exe.so` through
     /// [`DefaultHasher`](std::collections::hash_map::DefaultHasher). Hash collisions aren't really
     /// an issue here since we mostly care about the version of Wine.
-    pub yabridge_host_hash: u64,
+    ///
+    /// This should have been stored as a `u64`, but the TOML library parses all integers as signed
+    /// so even though it will be able to serialize all values correctly some values will fail to
+    /// parse:
+    ///
+    /// https://github.com/alexcrichton/toml-rs/issues/256
+    pub yabridge_host_hash: i64,
 }
 
 impl Config {
