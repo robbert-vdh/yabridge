@@ -356,7 +356,7 @@ few things you can do to get rid of most or all of these negative side effects:
   this is set correctly:
 
   ```shell
-  env -i HOME="$HOME" $SHELL -l -c "echo $WINEFSYNC"
+  env -i HOME="$HOME" $SHELL -l -c 'echo $WINEFSYNC'
   ```
 
   If this prints `1` then everything is set up correctly. You'll have to log out
