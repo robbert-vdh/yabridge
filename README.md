@@ -35,12 +35,11 @@ compatibility while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been verified to work correctly in the following VST hosts using
-Wine Staging 5.8:
+Yabridge has been tested under the following VST hosts using Wine Staging 5.9:
 
 - Bitwig Studio 3.2
 - Carla 2.1
-- Ardour 6.0
+- Ardour 6.2
 - Mixbus 6.0.702
 - REAPER 6.09
 - Renoise 3.2.1
