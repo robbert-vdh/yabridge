@@ -497,29 +497,31 @@ the `*-32.exe` variant accordingly.
 ## Debugging
 
 Wine's error messages and warning are usually very helpful whenever a plugin
-doesn't work right away. Sadly this information is not always available. Bitwig,
-for instance, hides a plugin's STDOUT and STDERR streams from you. To make it
-easier to debug malfunctioning plugins, yabridge offers these two environment
-variables:
+doesn't work right away. However, with some VST hosts there is no way to inspect
+a plugin's output. Bitwig, for instance, hides a plugin's STDOUT and STDERR
+streams after the plugin scanning process. To make it easier to debug
+malfunctioning plugins, yabridge offers these two environment variables to
+control yabridge's logging facilities:
 
-- `YABRIDGE_DEBUG_FILE=<path>` allows you to write the Wine VST host's STDOUT
-  and STDERR messages to a file. For instance, you could launch your DAW with
-  `env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log <daw>`, and then use `tail -F /tmp/yabridge.log`
-  to keep track of that file. If this option is not present then yabridge will
-  write all of its debug messages to STDERR instead.
+- `YABRIDGE_DEBUG_FILE=<path>` allows you to write yabridge's debug messages as
+  well as all output produced by the plugin and by Wine itself to a file. For
+  instance, you could launch your DAW with
+  `env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log <daw>`, and then use
+  `tail -F /tmp/yabridge.log` to keep track of the output. If this option is not
+  present then yabridge will write all of its debug output to STDERR instead.
 - `YABRIDGE_DEBUG_LEVEL={0,1,2}` allows you to set the verbosity of the debug
   information. Each level increases the amount of debug information printed:
 
-  - A value of `0` (the default) means that yabridge will only write messages
-    from the Wine process and some basic information such about the plugin being
-    loaded and the Wine prefix being used.
-  - A value of `1` will log information about most events and function calls
-    sent between the VST host and the plugin. This filters out some noisy events
-    such as `effEditIdle()` and `audioMasterGetTime()` since those are sent tens
-    of times per second by for every plugin.
-  - A value of `2` will cause all of the events to be logged, including the
-    events mentioned above. This is very verbose but it can be crucial for
-    debugging plugin-specific problems.
+  - A value of `0` (the default) means that yabridge will only log the output
+    from the Wine process the Wine process and some basic information about the
+    environment, the configuration and the plugin being loaded.
+  - A value of `1` will log detailed information about most events and function
+    calls sent between the VST host and the plugin. This filters out some noisy
+    events such as `effEditIdle()` and `audioMasterGetTime()` since those are
+    sent multiple times per second by for every plugin.
+  - A value of `2` will cause all of the events to be logged without any
+    filtering. This is very verbose but it can be crucial for debugging
+    plugin-specific problems.
 
   More detailed information about these debug levels can be found in
   `src/common/logging.h`.
