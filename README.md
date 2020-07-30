@@ -334,38 +334,40 @@ group = "This will be ignored!"
 ## Performance tuning
 
 Running Windows VST plugins under Wine should have minimal performance impact,
-but you may still notice an increase in latency and audio spikes. There are a
-few things you can do to get rid of most or all of these negative side effects:
+but you may still notice an increase in audio spikes and overall processing
+latency. Luckily there are a few things you can do to get rid of most or all of
+these negative side effects:
 
-- First of all, you'll want to make sure that your user is able to run programs
-  with realtime privileges. Note that on Arch and Manjaro this does not
-  necessarily require a realtime kernel as the `PREMPT` patch set is enabled on
-  their regular kernels. You can verify that this is set up correctly by running
+- First of all, you'll want to make sure that you can run programs with realtime
+  priorities. Note that on Arch and Manjaro this does not necessarily require a
+  realtime kernel as they include the `PREMPT` patch set in their regular
+  kernels. You can verify that this is workign correctly by running
   `chrt -f 10 whoami`, which should print your username.
 
-- The second, possibly even more important thing is to use a build of Wine with
-  Proton's fsync patches. This can improve performance significantly when using
-  a lot of plugins at once. If you're running Arch or Manjaro, then you can use
+- The other even more important thing you can do is to use a build of Wine with
+  Proton's fsync patches. This can improve performance significantly, especially
+  when using a lot of plugins at the same time. If you're running Arch or
+  Manjaro, then you can use
   [this](https://github.com/nine7nine/pkgbuilds_nspa/tree/master/wine-nspa)
-  audio production optimized Wine PKGBUILD. Aside from a patched version of Wine
-  you'll also need a supported kernel for this to work. Manjaro's kernel
-  supports fsync out of the box, and on Arch you can use the `linux-zen` kernel.
-  Finally you'll have to set the `WINEFSYNC` environment variable to `1` to
-  enable fsync. See the [search path setup](#search-path-setup) section for more
-  information on where to do this. You can use the following command to check if
-  this is set correctly:
+  PKGBUILD to build an audio production optimized version of Wine. Aside from a
+  patched copy of Wine you'll also need a supported kernel for this to work.
+  Manjaro's kernel supports fsync out of the box, and on Arch you can use the
+  `linux-zen` kernel. Finally you'll have to set the `WINEFSYNC` environment
+  variable to `1` to enable fsync. See the [search path
+  setup](#search-path-setup) section for more information on where to do this.
+  You can use the following command to check if this is set correctly:
 
   ```shell
   env -i HOME="$HOME" $SHELL -l -c 'echo $WINEFSYNC'
   ```
 
-  If this prints `1` then everything is set up correctly. You'll have to log out
-  and back in again for this to take effect on applications launched from the
-  GUI.
+  If this prints `1` then everything is set up correctly. Running `wineboot`
+  from a terminal should now also print `fsync: up and running.`. You'll have to
+  log out and back in again for this to take effect on applications launched
+  from the GUI.
 
-  I don't know the what the best way to install an fsync patched version of Wine
-  on other distros is, so if anyone knows more about this then please let me
-  know and I'll add it to this section.
+  If anyone knows a good way to install an fsync patched version of Wine on
+  other distros, then please let me know!
 
 ## Runtime dependencies and known issues
 
