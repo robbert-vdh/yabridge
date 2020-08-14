@@ -173,8 +173,12 @@ void Editor::handle_win32_events() const {
     MSG msg;
 
     // The null value for the second argument is needed to handle interaction
-    // with child GUI components
-    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+    // with child GUI components. So far limiting this to `max_win32_messages`
+    // messages has only been needed for Waves plugins as they otherwise cause
+    // an infinite message loop.
+    for (int i = 0;
+         i < max_win32_messages && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
+         i++) {
         // This timer would periodically send `effEditIdle` events so the editor
         // remains responsive even during blocking GUI operations such as open
         // dropdowns or message boxes. This is only needed when the GUI is

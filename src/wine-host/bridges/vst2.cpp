@@ -397,22 +397,23 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
 }
 
 void Vst2Bridge::handle_win32_events() {
-    std::visit(
-        overload{[](Editor& editor) { editor.handle_win32_events(); },
-                 [](std::monostate&) {
-                     MSG msg;
+    std::visit(overload{[](Editor& editor) { editor.handle_win32_events(); },
+                        [](std::monostate&) {
+                            MSG msg;
 
-                     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-                         TranslateMessage(&msg);
-                         DispatchMessage(&msg);
-                     }
-                 },
-                 [](EditorOpening&) {
-                     // Don't handle any events in this
-                     // particular case as explained in
-                     // `Vst2Bridge::editor`
-                 }},
-        editor);
+                            for (int i = 0;
+                                 i < max_win32_messages &&
+                                 PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
+                                 i++) {
+                                TranslateMessage(&msg);
+                                DispatchMessage(&msg);
+                            }
+                        },
+                        [](EditorOpening&) {
+                            // Don't handle any events in this particular case
+                            // as explained in `Vst2Bridge::editor`
+                        }},
+               editor);
 }
 
 void Vst2Bridge::handle_x11_events() {

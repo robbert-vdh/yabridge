@@ -12,6 +12,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Don't print calls to `effIdle()` when `YABRIDGE_DEBUG_LEVEL` is set to 1.
 
+### Fixed
+
+- Fix Waves plugins from freezing the plugin process by preventing them from
+  causing an infinite message loop.
+
 ## [1.4.1] - 2020-07-27
 
 ### yabridgectl
