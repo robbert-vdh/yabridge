@@ -23,7 +23,7 @@ compatibility while also staying easy to debug and maintain.
   - [Wine prefixes](#wine-prefixes)
   - [Configuration](#configuration)
     - [Plugin groups](#plugin-groups)
-    - [Editor hosting modes](#editor-hosting-modes)
+    - [Miscellaneous fixes and workarounds](#miscellaneous-fixes-and-workarounds)
     - [Example](#example)
 - [Troubleshooting common issues](#troubleshooting-common-issues)
 - [Performance tuning](#performance-tuning)
@@ -41,8 +41,8 @@ Yabridge has been tested under the following VST hosts using Wine Staging 5.9:
 - Carla 2.1
 - Ardour 6.2
 - Mixbus 6.0.702
-- REAPER 6.09
-- Renoise 3.2.1
+- REAPER 6.09[\*](#runtime-dependencies-and-known-issues)
+- Renoise 3.2.1[\*](#runtime-dependencies-and-known-issues)
 
 Please let me know if there are any issues with other VST hosts.
 
@@ -224,16 +224,34 @@ process. Of course, plugin groups with the same name but in different Wine
 prefixes and with different architectures will be run independently of each
 other. See below for an [example](#example) of how these groups can be set up.
 
-#### Editor hosting modes
+#### Miscellaneous fixes and workarounds
 
-The way yabridge embeds editor windows will work for most plugins. There is a
-second embedding mode available that adds yet another layer of embedding. This
-can be enabled by setting the `editor_double_embed` option to `true`. At the
-moment the only known plugins that need this are _PSPaudioware_ plugins with
-expandable GUIs such as E27, as those plugins will otherwise draw in the wrong
-location after the GUI has been expanded. This setting may be replaced in the
-future if we can come up with a better solution. See below for an
-[example](#example) of how to set this up.
+Because Linux VST hosts are typically not tested using Windows VST plugins and
+because some Windows VST plugins make incorrect assumptions about the host or
+the environment, you may run into implementation issues when combining certain
+hosts and VST plugins. This section contains a few options you can use to work
+around these issues. The [known issues](#runtime-dependencies-and-known-issues)
+section contains more information on when these options might be necessary.
+Yabridge will show which of these options are active on startup as part of the
+initialization message.
+
+- Both _REAPER_ and _Renoise_ can freeze when the plugin uses the
+  `audioMasterUpdateDisplay()` function while the host is updating the editor
+  window. As a temporary workaround until this is fixed you can set the
+  `hack_reaper_update_display` option to `true`. If you set this option for the
+  `["*"]` pattern like in the example below, then this will be applied to all
+  yabridge `.so` files in the directory of the `yabridge.toml` files and all
+  directories below it. If you have added any other patterns to the
+  `yabridge.toml` file you'll also have to add the setting there since yabridge
+  will only read settings from the first matching pattern. See the example below
+  for more clarification.
+- The way yabridge embeds editor windows will work for most plugins. There is a
+  second embedding mode available that adds yet another layer of embedding. This
+  can be enabled by setting the `editor_double_embed` option to `true`. At the
+  moment the only known plugins that need this are _PSPaudioware_ plugins with
+  expandable GUIs such as E27 as those plugins will otherwise draw in the wrong
+  location after the GUI has been expanded. This setting may be replaced in the
+  future if we can come up with a better solution.
 
 #### Example
 
@@ -254,6 +272,7 @@ editor_double_embed = true
 # Matches an entire directory and all files inside it, make sure to not include
 # a trailing slash
 ["ToneBoosters"]
+hack_reaper_update_display = true
 group = "toneboosters"
 
 # Simple glob patterns can be used to avoid a unneeded repitition
@@ -277,6 +296,14 @@ group = "This will be ignored!"
 # kinds of weird issues.
 # ["*"]
 # group = "all"
+
+# This will apply a workaround for an implementation issue in REAPER and Renoise
+# to all plugins in the current directory _that are not already matched by one
+# of the above patterns_. You will have to add this option to any other entries
+# if you are for instance using plugin groups. See the ToneBoosters entry above
+# for an example.
+["*"]
+hack_reaper_update_display = true
 ```
 
 ## Troubleshooting common issues
@@ -374,6 +401,10 @@ Any VST2 plugin should function out of the box, although some plugins will need
 some additional dependencies for their GUIs to work correctly. Notable examples
 include:
 
+- **REAPER** and **Renoise** can both freeze when using plugins that call the
+  `audioMasterUpdateDisplay()` function. Until REAPER and Renoise fix this issue
+  you can set an [option](#miscellaneous-fixes-and-workarounds) through
+  `yabridge.toml` to work around this.
 - **Native Instruments** plugins work, but Native Access is unable to finish
   installing the plugins. To work around this you can open the .iso file
   downloaded to your downloads directory and run the installer directly. When
@@ -388,7 +419,8 @@ include:
   when the window gets dragged offscreen on the top and left dies of the screen.
 - **PSPaudioware** plugins with expandable GUIs, such as E27, may have their GUI
   appear in the wrong location after the GUI has been expanded. You can enable
-  an alternative [editor hosting mode](#editor-hosting-modes) to fix this.
+  an alternative [editor hosting mode](#miscellaneous-fixes-and-workarounds) to
+  fix this.
 - Plugins like **FabFilter Pro-Q 3** that can share data between different
   instances of the same plugin plugins have to be hosted within a single process
   for that functionality to work. See the [plugin groups](#plugin-groups)

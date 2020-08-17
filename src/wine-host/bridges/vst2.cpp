@@ -523,6 +523,16 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
                                    intptr_t value,
                                    void* data,
                                    float option) {
+    // HACK: Sadly this is needed to work around a timing issue with REAPER and
+    //       Renoise. See #29 and #32.
+    // TODO: We don't have access to the verbosity level here, but it would be
+    //       nice to log that this is being skipped when `YABRIDGE_DEBUG_LEVEL
+    //       >= 2`.
+    if (config.hack_reaper_update_display &&
+        opcode == audioMasterUpdateDisplay) {
+        return 0;
+    }
+
     HostCallbackDataConverter converter(effect, time_info);
     return send_event(vst_host_callback, host_callback_mutex, converter,
                       std::nullopt, opcode, index, value, data, option);

@@ -51,6 +51,9 @@ Configuration::Configuration(const fs::path& config_path,
         if (toml::table* config = value.as_table()) {
             editor_double_embed =
                 (*config)["editor_double_embed"].value<bool>().value_or(false);
+            hack_reaper_update_display =
+                (*config)["hack_reaper_update_display"].value<bool>().value_or(
+                    false);
             group = (*config)["group"].value<std::string>();
         }
 

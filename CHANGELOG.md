@@ -8,6 +8,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added an option to work around implementation bugs in _REAPER_ and _Renoise_
+  where the hosts can freeze when a plugin calls a certain function while the
+  editor is refreshing, see
+  [#29](https://github.com/robbert-vdh/yabridge/issues/29) and
+  [#32](https://github.com/robbert-vdh/yabridge/issues/32).
+
 ### Changed
 
 - Don't print calls to `effIdle()` when `YABRIDGE_DEBUG_LEVEL` is set to 1.
@@ -37,8 +45,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   embedding. Right now the only known plugins that may need this are
   _PSPaudioware_ plugins with expandable GUIs such as E27. The behaviour can be
   enabled on a per-plugin basis in the plugin configuration. See the
-  [readme](https://github.com/robbert-vdh/yabridge#editor-hosting-modes) for
-  more details.
+  [readme](https://github.com/robbert-vdh/yabridge#miscellaneous-fixes-and-workarounds)
+  for more details.
 
 ### Changed
 

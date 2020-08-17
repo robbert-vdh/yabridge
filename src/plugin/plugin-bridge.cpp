@@ -625,6 +625,7 @@ void PluginBridge::log_init_message() {
     init_msg << "config from:   '"
              << config.matched_file.value_or("<defaults>").string() << "'"
              << std::endl;
+
     init_msg << "hosting mode:  '";
     if (config.group) {
         init_msg << "plugin group \"" << *config.group << "\"";
@@ -637,10 +638,18 @@ void PluginBridge::log_init_message() {
         init_msg << ", 64-bit";
     }
     init_msg << "'" << std::endl;
+
+    bool other_options_set = false;
     init_msg << "other options: '";
     if (config.editor_double_embed) {
         init_msg << "editor: double embed";
-    } else {
+        other_options_set = true;
+    }
+    if (config.hack_reaper_update_display) {
+        init_msg << "hack: REAPER 'audioMasterUpdateDisplay' workaround";
+        other_options_set = true;
+    }
+    if (!other_options_set) {
         init_msg << "<none>";
     }
     init_msg << "'" << std::endl;
