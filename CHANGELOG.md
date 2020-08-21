@@ -10,11 +10,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added an option to work around implementation bugs in _REAPER_ and _Renoise_
-  where the hosts can freeze when a plugin calls a certain function while the
-  editor is refreshing, see
+- Added an option to work around timing issues in _REAPER_ and _Renoise_ where
+  the hosts can freeze when plugins call a certain function while the host
+  doesn't expect it, see
   [#29](https://github.com/robbert-vdh/yabridge/issues/29) and
-  [#32](https://github.com/robbert-vdh/yabridge/issues/32).
+  [#32](https://github.com/robbert-vdh/yabridge/issues/32). The
+  [readme](https://github.com/robbert-vdh/yabridge#runtime-dependencies-and-known-issues)
+  contains instructions on how to enable this.
 
 ### Changed
 
