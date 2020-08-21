@@ -402,9 +402,10 @@ some additional dependencies for their GUIs to work correctly. Notable examples
 include:
 
 - **REAPER** and **Renoise** can both freeze when using plugins that call the
-  `audioMasterUpdateDisplay()` function. Until REAPER and Renoise fix this issue
-  you can set an [option](#miscellaneous-fixes-and-workarounds) through
-  `yabridge.toml` to work around this.
+  `audioMasterUpdateDisplay()` function because of mutual recursion limitations.
+  Until this is fixed you can set an
+  [option](#miscellaneous-fixes-and-workarounds) through `yabridge.toml` to work
+  around this.
 - **Native Instruments** plugins work, but Native Access is unable to finish
   installing the plugins. To work around this you can open the .iso file
   downloaded to your downloads directory and run the installer directly. When
