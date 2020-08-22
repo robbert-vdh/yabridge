@@ -426,6 +426,18 @@ include:
   instances of the same plugin plugins have to be hosted within a single process
   for that functionality to work. See the [plugin groups](#plugin-groups)
   section for instructions on how to set this up.
+- **Drag-and-drop** from applications running under Wine to X11 does not yet
+  work, so you won't be able to drag samples and MIDI files from a plugin to the
+  host. At least, not directly. Because Windows applications have to create
+  actual files on the disk for drag-and-drop to work, you can keep a file
+  explorer open and manually drag the generated files into your DAW as a
+  workaround. To find out where in `~/.wine` the plugin is creating its files,
+  you can use the following command to monitor the Wine prefix for any newly
+  created files:
+
+  ```shell
+  inotifywait -mre CLOSE_WRITE --format '%w%f' ~/.wine/drive_c
+  ```
 
 Aside from that, these are some known caveats:
 
@@ -449,10 +461,6 @@ Aside from that, these are some known caveats:
   Bitwig will wait patiently for them to finish. It would be possible to modify
   yabridge to work around this limitation of Bitwig, but I'm very hesitant to
   add hacks to yabridge unless absolutely necessary.
-- Drag-and-drop from plugins to the host does not work. This is sadly not yet
-  implemented in Wine, although in theory it would be possible to create a small
-  utility that supports both Wine <-> Wine and X11 <-> X11 drag-and-drop to act
-  as a bridge.
 
 There are also some VST2.X extension features that have not been implemented yet
 because I haven't needed them myself. Let me know if you need any of these
