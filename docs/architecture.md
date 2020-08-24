@@ -79,12 +79,15 @@ as the _Windows VST plugin_. The whole process works as follows:
      plugin through the Wine VST host using a single socket because they're very
      similar and don't need any complicated behaviour.
 
-   - Calls from the native VST host to the plugin's `processReplacing()`
-     function. This function gets forwarded to the Windows VST plugin through
-     the Wine VST. In the rare event that the plugin does not support
-     `processReplacing()` and only supports The deprecated commutative
-     `process()` function, then the Wine VST host will emulate the behavior of
-     `processReplacing()` instead.
+   - Calls from the native VST host to the plugin's `processReplacing()` and
+     `processDoubleReplacing()` functions. These functions get forwarded to the
+     Windows VST plugin through the Wine VST host. In the rare event that the
+     plugin does not support `processReplacing()` and only supports The
+     deprecated commutative `process()` function, then the Wine VST host will
+     emulate the behavior of `processReplacing()` instead. Single and double
+     precision audio go over the same socket since the host will only call one
+     or the other, and we just use a variant to determine which one should be
+     called on the Wine host side.
 
    - And finally there's a separate socket for control messages. At the moment
      this is only used to transfer the Windows VST plugin's `AEffect` object to

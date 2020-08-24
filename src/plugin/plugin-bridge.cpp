@@ -33,8 +33,9 @@ namespace fs = boost::filesystem;
 intptr_t dispatch_proxy(AEffect*, int, int, intptr_t, void*, float);
 void process_proxy(AEffect*, float**, float**, int);
 void process_replacing_proxy(AEffect*, float**, float**, int);
-void setParameter_proxy(AEffect*, int, float);
-float getParameter_proxy(AEffect*, int);
+void process_double_replacing_proxy(AEffect*, double**, double**, int);
+void set_parameter_proxy(AEffect*, int, float);
+float get_parameter_proxy(AEffect*, int);
 
 /**
  * Fetch the bridge instance stored in an unused pointer from a VST plugin. This
@@ -130,9 +131,10 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     plugin.ptr3 = this;
     plugin.dispatcher = dispatch_proxy;
     plugin.process = process_proxy;
-    plugin.setParameter = setParameter_proxy;
-    plugin.getParameter = getParameter_proxy;
+    plugin.setParameter = set_parameter_proxy;
+    plugin.getParameter = get_parameter_proxy;
     plugin.processReplacing = process_replacing_proxy;
+    plugin.processDoubleReplacing = process_double_replacing_proxy;
 
     // For our communication we use simple threads and blocking operations
     // instead of asynchronous IO since communication has to be handled in
@@ -512,14 +514,12 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
                       value, data, option);
 }
 
-void PluginBridge::process_replacing(AEffect* /*plugin*/,
-                                     float** inputs,
-                                     float** outputs,
-                                     int sample_frames) {
+template <typename T>
+void PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     // The inputs and outputs arrays should be `[num_inputs][sample_frames]` and
     // `[num_outputs][sample_frames]` floats large respectfully.
-    std::vector<std::vector<float>> input_buffers(
-        plugin.numInputs, std::vector<float>(sample_frames));
+    std::vector<std::vector<T>> input_buffers(plugin.numInputs,
+                                              std::vector<T>(sample_frames));
     for (int channel = 0; channel < plugin.numInputs; channel++) {
         std::copy(inputs[channel], inputs[channel] + sample_frames,
                   input_buffers[channel].begin());
@@ -531,11 +531,13 @@ void PluginBridge::process_replacing(AEffect* /*plugin*/,
     // Write the results back to the `outputs` arrays
     const auto response =
         read_object<AudioBuffers>(host_vst_process_replacing, process_buffer);
+    const auto& response_buffers =
+        std::get<std::vector<std::vector<T>>>(response.buffers);
 
-    assert(response.buffers.size() == static_cast<size_t>(plugin.numOutputs));
+    assert(response_buffers.size() == static_cast<size_t>(plugin.numOutputs));
     for (int channel = 0; channel < plugin.numOutputs; channel++) {
-        std::copy(response.buffers[channel].begin(),
-                  response.buffers[channel].end(), outputs[channel]);
+        std::copy(response_buffers[channel].begin(),
+                  response_buffers[channel].end(), outputs[channel]);
     }
 
     // Plugins are allowed to send MIDI events during processing using a host
@@ -551,6 +553,20 @@ void PluginBridge::process_replacing(AEffect* /*plugin*/,
     }
 
     incoming_midi_events.clear();
+}
+
+void PluginBridge::process_replacing(AEffect* /*plugin*/,
+                                     float** inputs,
+                                     float** outputs,
+                                     int sample_frames) {
+    do_process<float>(inputs, outputs, sample_frames);
+}
+
+void PluginBridge::process_double_replacing(AEffect* /*plugin*/,
+                                            double** inputs,
+                                            double** outputs,
+                                            int sample_frames) {
+    do_process<double>(inputs, outputs, sample_frames);
 }
 
 float PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
@@ -691,6 +707,10 @@ void process_proxy(AEffect* plugin,
                    float** inputs,
                    float** outputs,
                    int sample_frames) {
+    // FIXME: This is incorrect, and I only noticed just now. I'm 99% sure no
+    //        hosts actually use this, but this will overwrite the buffer. On
+    //        the plugin side we do properly handle plugins that only support
+    //        the old cumulative process function.
     return get_bridge_instance(*plugin).process_replacing(
         plugin, inputs, outputs, sample_frames);
 }
@@ -703,10 +723,18 @@ void process_replacing_proxy(AEffect* plugin,
         plugin, inputs, outputs, sample_frames);
 }
 
-void setParameter_proxy(AEffect* plugin, int index, float value) {
+void process_double_replacing_proxy(AEffect* plugin,
+                                    double** inputs,
+                                    double** outputs,
+                                    int sample_frames) {
+    return get_bridge_instance(*plugin).process_double_replacing(
+        plugin, inputs, outputs, sample_frames);
+}
+
+void set_parameter_proxy(AEffect* plugin, int index, float value) {
     return get_bridge_instance(*plugin).set_parameter(plugin, index, value);
 }
 
-float getParameter_proxy(AEffect* plugin, int index) {
+float get_parameter_proxy(AEffect* plugin, int index) {
     return get_bridge_instance(*plugin).get_parameter(plugin, index);
 }

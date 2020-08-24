@@ -551,12 +551,18 @@ struct ParameterResult {
 /**
  * A buffer of audio for the plugin to process, or the response of that
  * processing. The number of samples is encoded in each audio buffer's length.
+ * This is used for both `process()/processReplacing()` and
+ * `processDoubleReplacing()`.
  */
 struct AudioBuffers {
     /**
-     * An audio buffer for each of the plugin's audio channels.
+     * An audio buffer for each of the plugin's audio channels. This uses floats
+     * or doubles depending on whether `process()/processReplacing()` or
+     * `processDoubleReplacing()` got called.
      */
-    std::vector<std::vector<float>> buffers;
+    std::variant<std::vector<std::vector<float>>,
+                 std::vector<std::vector<double>>>
+        buffers;
 
     /**
      * The number of frames in a sample. If buffers is not empty, then
@@ -566,8 +572,20 @@ struct AudioBuffers {
 
     template <typename S>
     void serialize(S& s) {
-        s.container(buffers, max_audio_channels,
-                    [](S& s, auto& v) { s.container4b(v, max_buffer_size); });
+        s.ext(
+            buffers,
+            bitsery::ext::StdVariant{
+                [](S& s, std::vector<std::vector<float>>& buffer) {
+                    s.container(buffer, max_audio_channels, [](S& s, auto& v) {
+                        s.container4b(v, max_buffer_size);
+                    });
+                },
+                [](S& s, std::vector<std::vector<double>>& buffer) {
+                    s.container(buffer, max_audio_channels, [](S& s, auto& v) {
+                        s.container8b(v, max_buffer_size);
+                    });
+                },
+            });
         s.value4b(sample_frames);
     }
 };

@@ -242,7 +242,8 @@ class Vst2Bridge {
      */
     Win32Thread parameters_handler;
     /**
-     * The thread that handles calls to `processReplacing` (and `process`).
+     * The thread that handles calls to `processReplacing` (and `process` as a
+     * fallback) and `processDoubleReplacing`.
      */
     Win32Thread process_replacing_handler;
 

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added support for double precision audio processing. This is not very widely
+  used, but some plugins running under REAPER can make use of this. Without this
+  those plugins would cause REAPER's audio engine to segfault.
+
 ## [1.5.0] - 2020-08-21
 
 ### Added

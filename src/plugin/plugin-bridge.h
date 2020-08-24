@@ -69,8 +69,32 @@ class PluginBridge {
                            float** inputs,
                            float** outputs,
                            int sample_frames);
+    /**
+     * The same as `PluginBridge::process_replacing`, but for double precision
+     * audio. Support for this on both the plugin and host side is pretty rare,
+     * but REAPER supports it. This reuses the same infrastructure as
+     * `process_replacing` is using since the host will only call one or the
+     * other.
+     */
+    void process_double_replacing(AEffect* plugin,
+                                  double** inputs,
+                                  double** outputs,
+                                  int sample_frames);
     float get_parameter(AEffect* plugin, int index);
     void set_parameter(AEffect* plugin, int index, float value);
+
+    /**
+     * Process audio and handle plugin-generated MIDI events afterwards.
+     *
+     * @tparam T The sample type. Should be either `float` for single preceision
+     *   audio processing called through `processReplacing`, or `double` for
+     *   double precision audio through `processDoubleReplacing`.
+     *
+     * @see PluginBridge::process_replacing
+     * @see PluginBridge::process_double_replacing
+     */
+    template <typename T>
+    void do_process(T** inputs, T** outputs, int sample_frames);
 
     /**
      * The configuration for this instance of yabridge. Set based on the values
@@ -198,8 +222,8 @@ class PluginBridge {
     std::jthread wine_io_handler;
 
     /**
-     * A scratch buffer for sending and receiving data during `process` and
-     * `processReplacing` calls.
+     * A scratch buffer for sending and receiving data during `process`,
+     * `processReplacing` and `processDoubleReplacing` calls.
      */
     std::vector<uint8_t> process_buffer;
 

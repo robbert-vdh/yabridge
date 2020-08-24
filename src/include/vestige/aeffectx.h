@@ -298,6 +298,15 @@ class AEffect {
     int version;
     // processReplacing 50-53
     void(VST_CALL_CONV* processReplacing)(AEffect*, float**, float**, int);
+    // Found at
+    // https://git.iem.at/zmoelnig/VeSTige/-/blob/b0e67183e155fec32dd85a2c7b5c2e4b58407323/vestige.h#L323
+    // The offset was also found based on a segfualt in REAPER's audio audio
+    // engine when it tried to call this function for the Rx7 plugins when
+    // yabridge did not yet implement it
+    void(VST_CALL_CONV* processDoubleReplacing)(AEffect*,
+                                                double**,
+                                                double**,
+                                                int);
 };
 
 class VstTimeInfo {

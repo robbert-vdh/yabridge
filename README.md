@@ -466,7 +466,9 @@ There are also some VST2.X extension features that have not been implemented yet
 because I haven't needed them myself. Let me know if you need any of these
 features for a certain plugin or VST host:
 
-- Double precision audio (`processDoubleReplacing`).
+- Double precision audio (`processDoubleReplacing`). **This is now implemented
+  on the master branch and will be part of the next release. Without this some
+  specific plugins will crash under REAPER.**
 - SysEx messages. In addition to MIDI, VST 2.4 also supports SysEx. I don't know
   of any hosts or plugins that use this, but please let me know if this is
   needed for something.
