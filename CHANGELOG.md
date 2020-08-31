@@ -16,6 +16,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
   TODO: Remove the notice about this from the README
 
+### Fixed
+
+- Increased the limit for the maximum number of audio channels. This would cause
+  issues in Renoise when using many output channels.
+
 ## [1.5.0] - 2020-08-21
 
 ### Added

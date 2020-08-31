@@ -34,9 +34,10 @@
 /**
  * The maximum number of audio channels supported. Some plugins report a huge
  * amount of input channels, even though they don't even process any incoming
- * audio.
+ * audio. Renoise seems to report 112 speakers per audio channel, so this limit
+ * is now quite a bit higher than it should have to be.
  */
-constexpr size_t max_audio_channels = 256;
+constexpr size_t max_audio_channels = 16384;
 /**
  * The maximum number of samples in a buffer.
  */
