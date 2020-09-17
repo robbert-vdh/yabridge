@@ -83,11 +83,11 @@ comprehensive documentation can be found in yabridgectl's readme, or by running
 First of all, yabridgectl needs to know where it can find yabridge's files. If
 you have downloaded the prebuilt binaries, then you can simply extract the
 archive to `~/.local/share` and yabridgectl will pick up the files in
-`~/.local/share/yabridge` automatically. You also won't to do any additional
-setup if you're using one of the AUR packages. If you have compiled yabridge
-from source or if you installed the files to some other location, then you can
-use `yabridgectl set --path=<path>` to tell yabridgectl where it can find the
-files.
+`~/.local/share/yabridge` automatically. You also won't have to do any
+additional setup if you're using one of the AUR packages. If you have compiled
+yabridge from source or if you installed the files to some other location, then
+you can use `yabridgectl set --path=<path>` to tell yabridgectl where it can
+find the files.
 
 Secondly, yabridgectl will default to the copy-based installation method. If you
 are using a VST host with individually sandboxed plugins such as Bitwig Studio
