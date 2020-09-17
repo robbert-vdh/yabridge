@@ -14,8 +14,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   used, but some plugins running under REAPER can make use of this. Without this
   those plugins would cause REAPER's audio engine to segfault.
 
-  TODO: Remove the notice about this from the README
-
 ### Fixed
 
 - Increased the limit for the maximum number of audio channels. This would cause
