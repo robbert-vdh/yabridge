@@ -11,13 +11,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Added support for double precision audio processing. This is not very widely
-  used, but some plugins running under REAPER can make use of this. Without this
-  those plugins would cause REAPER's audio engine to segfault.
+  used, but some plugins running under REAPER make use of this. Without this
+  those plugins would cause REAPER's audio engine to crash.
 
 ### Fixed
 
-- Increased the limit for the maximum number of audio channels. This would cause
-  issues in Renoise when using many output channels.
+- Increased the limit for the maximum number of audio channels. This could cause
+  issues in Renoise when using a lot of output channels.
 
 ## [1.5.0] - 2020-08-21
 
