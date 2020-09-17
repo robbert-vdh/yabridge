@@ -131,12 +131,12 @@ update yabridge.
 
 ### Search path setup
 
-If you are using the _copy-based_ installation method with the prebuilt binaries
-from GitHub's releases section, then you'll have to modify your _login shell_'s
-`PATH` environment variable so that yabridge is able to find `yabridge-host.exe`
-and other related files. Yabridgectl will automatically check whether this is
-set up correctly when you run `yabridgectl sync`, and it will show a warning if
-it detects any issues.
+If you're using the _copy-based_ installation method and you're not using any of
+the AUR packages, then you'll have to modify your _login shell_'s `PATH`
+environment variable so that yabridge is able to find the files in the directory
+you've extracted yabridge's files to. Yabridgectl will automatically check
+whether this is set up correctly when you run `yabridgectl sync`, and it will
+show a warning if it detects any issues.
 
 To do this, you'll want to add yabridge's installation directory to your login
 shell's `PATH` environment variable. If you're unsure what your login shell is,
