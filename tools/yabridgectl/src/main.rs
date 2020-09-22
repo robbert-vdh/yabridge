@@ -121,13 +121,24 @@ fn main() -> Result<()> {
         )
         .get_matches();
 
+    // We're calling canonicalize when adding and setting paths since relative paths would cause
+    // some weird behaviour. There's no built-in way to make relative paths absoltue without
+    // resolving symlinks, but I don't think this will cause any issues.
+    //
+    // https://github.com/rust-lang/rust/issues/59117
     match matches.subcommand() {
-        ("add", Some(options)) => {
-            actions::add_directory(&mut config, options.value_of_t_or_exit("path"))
-        }
-        ("rm", Some(options)) => {
-            actions::remove_directory(&mut config, &options.value_of_t_or_exit::<PathBuf>("path"))
-        }
+        ("add", Some(options)) => actions::add_directory(
+            &mut config,
+            options
+                .value_of_t_or_exit::<PathBuf>("path")
+                .canonicalize()?,
+        ),
+        ("rm", Some(options)) => actions::remove_directory(
+            &mut config,
+            &options
+                .value_of_t_or_exit::<PathBuf>("path")
+                .canonicalize()?,
+        ),
         ("list", _) => actions::list_directories(&config),
         ("status", _) => actions::show_status(&config),
         ("set", Some(options)) => actions::set_settings(
@@ -136,7 +147,10 @@ fn main() -> Result<()> {
                 method: options.value_of("method"),
                 // We've already verified that the path is valid, so we should only be getting
                 // errors for missing arguments
-                path: options.value_of_t("path").ok(),
+                path: options
+                    .value_of_t::<PathBuf>("path")
+                    .ok()
+                    .and_then(|path| path.canonicalize().ok()),
             },
         ),
         ("sync", Some(options)) => actions::do_sync(
