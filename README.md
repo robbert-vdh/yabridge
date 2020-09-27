@@ -478,11 +478,11 @@ features for a certain plugin or VST host:
 To compile yabridge, you'll need [Meson](https://mesonbuild.com/index.html) and
 the following dependencies:
 
-- GCC 10+\*
+- GCC 10+[\*](#building-ubuntu-18.04)
 - A Wine installation with `winegcc` and the development headers. The latest
   commits contain a workaround for a winelib [compilation
   issue](https://bugs.winehq.org/show_bug.cgi?id=49138) with Wine 5.7+.
-- Boost version 1.66 or higher\*
+- Boost version 1.66 or higher[\*](#building-ubuntu-18.04)
 - libxcb
 
 The following dependencies are included in the repository as a Meson wrap:
@@ -500,7 +500,7 @@ ninja -C build
 After you've finished building you can follow the instructions under the
 [usage](#usage) section on how to set up yabridge.
 
-<sup>
+<sup id="building-ubuntu-18.04">
   *The versions of GCC and Boost that ship with Ubuntu 18.04 by default are too
   old to compile yabridge. If you do wish to build yabridge from scratch rather
   than using the <a
