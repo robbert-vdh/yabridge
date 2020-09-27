@@ -12,6 +12,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Resolve relative paths when adding plugin directories or when changing
   settings.
+- Also search `/usr/local/lib` for `libyabridge.so` when no manual path has been
+  specified. Note that manually copying yabridge's files to `/usr` is still not
+  recommended.
 
 ## [1.6.0] - 2020-09-17
 

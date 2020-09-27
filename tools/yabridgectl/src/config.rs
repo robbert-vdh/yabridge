@@ -176,10 +176,14 @@ impl Config {
                 }
             }
             None => {
-                // Search in the two common installation locations if no path was set explicitely
+                // Search in the two common installation locations if no path was set explicitely.
+                // We'll also search through `/usr/local/lib` just in case but since we advocate
+                // against isntalling yabridge there we won't list this path in the error message
+                // when `libyabridge.so` can't be found.
                 let system_path = Path::new("/usr/lib");
+                let system_path_alt = Path::new("/usr/local/lib");
                 let user_path = yabridge_directories()?.get_data_home();
-                for directory in &[system_path, &user_path] {
+                for directory in &[system_path, system_path_alt, &user_path] {
                     let candidate = directory.join(LIBYABRIDGE_NAME);
                     if candidate.exists() {
                         return Ok(candidate);
