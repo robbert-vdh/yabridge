@@ -33,12 +33,36 @@ Configuration::Configuration(const fs::path& config_path,
     : Configuration() {
     // Will throw a `toml::parsing_error` if the file cannot be parsed. Better
     // to throw here rather than failing silently since syntax errors would
-    // otherwise be impossible to spot.
+    // otherwise be impossible to spot. We'll also have to sort all tables by
+    // the location in the file since tomlplusplus internally uses ordered maps
+    // so otherwise we'll get the tables sorted by key instead.
     toml::table table = toml::parse_file(config_path.string());
+
+    // I wasn't able to wade through the template soup to come up with a better
+    // way to sort this by location, so please feel free to correct this if you
+    // know of a better way! The source locations has to be stored inside of the
+    // vector itself because the `node.source()` on the copies stored in this
+    // vector won't contain the proper location after we've iterated through
+    // `table`.
+    std::vector<std::tuple<std::string, toml::source_region, toml::table>>
+        sorted_tables{};
+    for (auto [pattern, node] : table) {
+        if (const toml::table* config = node.as_table()) {
+            sorted_tables.push_back(
+                std::make_tuple(pattern, config->source(), *config));
+        }
+    }
+    std::sort(sorted_tables.begin(), sorted_tables.end(),
+              [](const auto& a, const auto& b) {
+                  const auto& [a_pattern, a_source, a_table] = a;
+                  const auto& [b_pattern, b_source, b_table] = b;
+
+                  return a_source.begin.line < b_source.begin.line;
+              });
 
     const fs::path relative_path =
         yabridge_path.lexically_relative(config_path.parent_path());
-    for (const auto& [pattern, value] : table) {
+    for (const auto& [pattern, source, table] : sorted_tables) {
         // First try to match the glob pattern, allow matching an entire
         // directory for ease of use. If none of the patterns in the file match
         // the plugin path then everything will be left at the defaults.
@@ -52,14 +76,11 @@ Configuration::Configuration(const fs::path& config_path,
 
         // If the table is missing some fields then they will simply be left at
         // their defaults
-        if (toml::table* config = value.as_table()) {
-            editor_double_embed =
-                (*config)["editor_double_embed"].value<bool>().value_or(false);
-            hack_reaper_update_display =
-                (*config)["hack_reaper_update_display"].value<bool>().value_or(
-                    false);
-            group = (*config)["group"].value<std::string>();
-        }
+        editor_double_embed =
+            table["editor_double_embed"].value<bool>().value_or(false);
+        hack_reaper_update_display =
+            table["hack_reaper_update_display"].value<bool>().value_or(false);
+        group = table["group"].value<std::string>();
 
         break;
     }

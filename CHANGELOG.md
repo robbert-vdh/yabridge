@@ -10,6 +10,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed parsing order of `yabridge.toml`. Sections were not always read from top
+  to bottom like they should be, which could cause incorrect setting overrides.
 - Fixed an initialization error when using plugin groups for plugins that are
   installed outside of a Wine prefix.
 
