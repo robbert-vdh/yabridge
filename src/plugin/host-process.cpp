@@ -149,8 +149,14 @@ GroupHost::GroupHost(
     // the first process will handle the connections for both yabridge
     // instances.
     const bp::environment host_env = set_wineprefix();
-    fs::path wine_prefix = host_env.at("WINEPREFIX").to_string();
-    if (host_env.at("WINEPREFIX").empty()) {
+    fs::path wine_prefix;
+    if (auto wine_prefix_envvar = host_env.find("WINEPREFIX");
+        wine_prefix_envvar != host_env.end()) {
+        // This is a bit ugly, but Boost.Process's environment does not have a
+        // graceful way to check for empty environment variables in const
+        // qualified environments
+        wine_prefix = wine_prefix_envvar->to_string();
+    } else {
         // Fall back to `~/.wine` if this has not been set or detected. This
         // would happen if the plugin's .dll file is not inside of a Wine
         // prefix. If this happens, then the Wine instance will be launched in

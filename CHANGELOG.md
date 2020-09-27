@@ -8,6 +8,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed an initialization error when using plugin groups for plugins that are
+  installed outside of a Wine prefix.
+
 ### yabridgectl
 
 - Resolve relative paths when adding plugin directories or when changing
