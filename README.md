@@ -367,6 +367,16 @@ hack_reaper_update_display = true
   being able to start. There should be plugin output messages in your DAW or
   terminal that with more information on what went wrong.
 
+- If you're using a _lot_ of plugins and you're unable to load any new plugins,
+  then you may be running into Xorg's client limit. The exact number of plugins
+  it takes for this to happen will depend on your system and the other
+  applications running in the background. An easy way to check if this is the
+  case would be to try and run `wine cmd.exe` from a terminal. If this prints a
+  message about the maximum number of clients being reached (or if you are not
+  able to open the terminal at all), then you might want to consider using
+  [plugin groups](#plugin-groups) to run all instances of your most frequently
+  used plugins within a single process.
+
 ## Performance tuning
 
 Running Windows VST plugins under Wine should have minimal performance impact,
