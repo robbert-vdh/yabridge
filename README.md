@@ -83,11 +83,11 @@ comprehensive documentation can be found in yabridgectl's readme, or by running
 First of all, yabridgectl needs to know where it can find yabridge's files. If
 you have downloaded the prebuilt binaries, then you can simply extract the
 archive to `~/.local/share` and yabridgectl will pick up the files in
-`~/.local/share/yabridge` automatically. You also won't have to do any
-additional setup if you're using one of the AUR packages. If you have compiled
-yabridge from source or if you installed the files to some other location, then
-you can use `yabridgectl set --path=<path>` to tell yabridgectl where it can
-find the files.
+`~/.local/share/yabridge` automatically[\*](#why-local-share-yabridge). You also
+won't have to do any additional setup if you're using one of the AUR packages.
+If you have compiled yabridge from source or if you installed the files to some
+other location, then you can use `yabridgectl set --path=<path>` to tell
+yabridgectl where it can find the files.
 
 Secondly, yabridgectl will default to the copy-based installation method. If you
 are using a VST host with individually sandboxed plugins such as Bitwig Studio
@@ -104,6 +104,16 @@ Finally you can run `yabridgectl sync` to finish setting up yabridge. Simply
 tell your VST host to search for plugins in the directories you just added and
 you'll be good to go. Don't forget to rerun `yabridgectl sync` whenever you
 update yabridge if you are using the copy-based installation method.
+
+<sup id="why-local-share-yabridge">
+  *Instead of copying yabridge's files to <code>~/.local/share</code>, it would
+  also be possible to install yabridge to <code>/usr/local/bin</code> and
+  <code>/usr/local/lib</code>. While this does avoid the need to modify your
+  <code>PATH</code> environment variable when using the copy-based installation
+  method, it could also cause other issues if you're not careful. This is why
+  it's recommended to install yabridge to your home directory if you're not
+  using one of the AUR packages.
+</sup>
 
 ### Manual setup
 
