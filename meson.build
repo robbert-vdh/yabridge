@@ -74,7 +74,7 @@ boost_filesystem_dep = dependency(
 )
 bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
 threads_dep = dependency('threads')
-tomlplusplus_dep = subproject('tomlplusplus').get_variable('tomlplusplus_dep')
+tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('tomlplusplus_dep')
 # The built in threads dependency does not know how to handle winegcc
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')

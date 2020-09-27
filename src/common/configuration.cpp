@@ -16,6 +16,10 @@
 
 #include "configuration.h"
 
+// tomlplusplus recently got some Windows fixes, but they cause compilation
+// errors and we don't need them so we'll just disable them outright
+#define TOML_WINDOWS_COMPAT 0
+
 #include <fnmatch.h>
 #include <toml++/toml.h>
 #include <fstream>
