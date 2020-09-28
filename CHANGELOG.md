@@ -14,14 +14,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   immediately after its initialization. This issue affected the plugin scanning
   in _REAPER_.
 - Fixed parsing order of `yabridge.toml`. Sections were not always read from top
-  to bottom like they should be, which could cause incorrect setting overrides.
+  to bottom like they should be, which could cause incorrect and unexpected
+  setting overrides.
 - Fixed an initialization error when using plugin groups for plugins that are
   installed outside of a Wine prefix.
 
 ### yabridgectl
 
-- Resolve relative paths when adding plugin directories or when changing
-  settings.
+- Relative paths now work when adding plugin directories or when setting the
+  path to yabridge's files.
 - Also search `/usr/local/lib` for `libyabridge.so` when no manual path has been
   specified. Note that manually copying yabridge's files to `/usr` is still not
   recommended.
