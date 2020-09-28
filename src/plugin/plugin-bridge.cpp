@@ -91,7 +91,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     // when it is not. The alternative would be to rewrite this to using
     // `async_accept`, Boost.Asio timers, and another IO context, but I feel
     // like this a much simpler solution.
-    std::jthread host_guard_handler([&](std::stop_token st) {
+    host_guard_handler = std::jthread([&](std::stop_token st) {
         using namespace std::literals::chrono_literals;
 
         while (!st.stop_requested()) {
@@ -102,7 +102,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
                 std::terminate();
             }
 
-            std::this_thread::sleep_for(1s);
+            std::this_thread::sleep_for(20ms);
         }
     });
 #endif
@@ -118,7 +118,6 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
 
 #ifndef WITH_WINEDBG
     host_guard_handler.request_stop();
-    host_guard_handler.detach();
 #endif
 
     // There's no need to keep the socket endpoint file around after accepting

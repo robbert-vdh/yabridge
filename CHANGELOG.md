@@ -10,6 +10,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed a potential crash that could happen if the host would unload a plugin
+  immediately after its initialization. This issue affected the plugin scanning
+  in _REAPER_.
 - Fixed parsing order of `yabridge.toml`. Sections were not always read from top
   to bottom like they should be, which could cause incorrect setting overrides.
 - Fixed an initialization error when using plugin groups for plugins that are

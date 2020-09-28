@@ -209,6 +209,15 @@ class PluginBridge {
     std::unique_ptr<HostProcess> vst_host;
 
     /**
+     * A thread used during the initialisation process to terminate listening on
+     * the sockets if the Wine process cannot start for whatever reason. This
+     * has to be defined here instead of in the constructor we can't simply
+     * detach the thread as it has to check whether the VST host is still
+     * running.
+     */
+    std::jthread host_guard_handler;
+
+    /**
      * Whether this process runs with realtime priority. We'll set this _after_
      * spawning the Wine process because from my testing running wineserver with
      * realtime priority can actually increase latency.
