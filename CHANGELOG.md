@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Added a note to the message saying that libSwell GUI support has been disabled
+  that his is perfectly normal when using REAPER. The message now also contains
+  the suggestion to enable the `hack_reaper_update_display` workaround for
+  REAPER when it is not already enabled.
+
 ## [1.6.1] - 2020-09-28
 
 ### Fixed

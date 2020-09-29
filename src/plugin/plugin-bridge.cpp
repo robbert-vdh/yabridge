@@ -493,9 +493,40 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
             if (query == "hasCockosViewAsConfig") {
                 logger.log_event(true, opcode, index, value, query, option,
                                  std::nullopt);
+
+                logger.log("");
                 logger.log(
-                    "   The host requests libSwell GUI support which is not "
-                    "supported using Wine, ignoring the request.");
+                    "   The host has requested libSwell GUI support which is ");
+                logger.log(
+                    "   not supported when using Wine, ignoring the request.");
+                logger.log(
+                    "   You can safely ignore this message. This is normal");
+                logger.log("   when using REAPER.");
+                logger.log("");
+
+                // Since the user is using REAPER, also show a reminder that the
+                // REAPER workaround should be enabled when it is not yet
+                // enabled since it may be easy to miss
+                if (!config.hack_reaper_update_display) {
+                    logger.log(
+                        "   With using REAPER you will have to enable the");
+                    logger.log(
+                        "   'hack_reaper_update_display' option to prevent");
+                    logger.log(
+                        "   certain plugins from crashing. To do so, create a");
+                    logger.log(
+                        "   new file named 'yabridge.toml' next to your");
+                    logger.log("   plugins with the following contents:");
+                    logger.log("");
+                    logger.log(
+                        "   # "
+                        "https://github.com/robbert-vdh/"
+                        "yabridge#runtime-dependencies-and-known-issues");
+                    logger.log("   [\"*\"]");
+                    logger.log("   hack_reaper_update_display = true");
+                    logger.log("");
+                }
+
                 logger.log_event_response(true, opcode, -1, nullptr,
                                           std::nullopt);
                 return -1;
