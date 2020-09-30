@@ -110,14 +110,12 @@ Editor::Editor(const Configuration& config,
     // within. For robustness's sake this should be done both when the actual
     // window the Wine window is embedded in (which may not be the parent
     // window) is moved or resized, and when the user moves his mouse over the
-    // window. We also want to set keyboard focus when the user clicks on the
-    // Windows since Bitwig 3.2 now explicitely requires this.
+    // window because this is sometimes needed for plugin groups.
     const uint32_t topmost_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
     xcb_change_window_attributes(x11_connection.get(), topmost_window,
                                  XCB_CW_EVENT_MASK, &topmost_event_mask);
     xcb_flush(x11_connection.get());
-    const uint32_t parent_event_mask =
-        XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
+    const uint32_t parent_event_mask = XCB_EVENT_MASK_ENTER_WINDOW;
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
     xcb_flush(x11_connection.get());
@@ -216,19 +214,6 @@ void Editor::handle_x11_events() const {
             case XCB_ENTER_NOTIFY:
                 fix_local_coordinates();
                 break;
-            case XCB_FOCUS_IN:
-                fix_local_coordinates();
-
-                // Explicitely request input focus when the user clicks on the
-                // window. This is needed for Bitwig Studio 3.2, as the parent
-                // window now captures all keyboard events and forwards them to
-                // the main Bitwig Studio window instead of allowing the child
-                // window to handle those events.
-                xcb_set_input_focus(x11_connection.get(),
-                                    XCB_INPUT_FOCUS_PARENT, wine_window,
-                                    XCB_CURRENT_TIME);
-                xcb_flush(x11_connection.get());
-                break;
         }
 
         free(generic_event);
@@ -280,6 +265,19 @@ void Editor::fix_local_coordinates() const {
     xcb_flush(x11_connection.get());
 }
 
+void Editor::grab_input_focus() const {
+    // Explicitely request input focus when the user clicks on the window. This
+    // is needed for Bitwig Studio 3.2, as the parent window now captures all
+    // keyboard events and forwards them to the main Bitwig Studio window
+    // instead of allowing the child window to handle those events. We used to
+    // do this on the X11 FocusIn event, but that's not getting fired for REAPER
+    // so we now do this on `WM_PARENTNOTIFY` which included every time the user
+    // clicks on the Wine window.
+    xcb_set_input_focus(x11_connection.get(), XCB_INPUT_FOCUS_PARENT,
+                        wine_window, XCB_CURRENT_TIME);
+    xcb_flush(x11_connection.get());
+}
+
 LRESULT CALLBACK window_proc(HWND handle,
                              UINT message,
                              WPARAM wParam,
@@ -314,6 +312,20 @@ LRESULT CALLBACK window_proc(HWND handle,
             // blocked by a dropdown or a message box.
             editor->send_idle_event();
             return 0;
+        } break;
+        case WM_PARENTNOTIFY: {
+            auto editor = reinterpret_cast<Editor*>(
+                GetWindowLongPtr(handle, GWLP_USERDATA));
+            if (!editor) {
+                break;
+            }
+
+            // Grab input focus when the user interacts with the Wine window.
+            // Ideally this would only be done when the window does not yet have
+            // keyboard focus but I wasn't able to find a reliable way to do
+            // that that also works in REAPER.
+            editor->fix_local_coordinates();
+            editor->grab_input_focus();
         } break;
     }
 

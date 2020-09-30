@@ -136,7 +136,6 @@ class Editor {
      */
     void handle_x11_events() const;
 
-   private:
     /**
      * Lie to the Wine window about its coordinates on the screen for
      * reparenting without using XEmbed. See the comment at the top of the
@@ -144,6 +143,14 @@ class Editor {
      */
     void fix_local_coordinates() const;
 
+    /**
+     * Steal keyboard focus. This is done whenever the user clicks on the window
+     * since we don't have a way to detect whether the client window is calling
+     * `SetFocus()`.
+     */
+    void grab_input_focus() const;
+
+   private:
     /**
      * A pointer to the currently active window. Will be a null pointer if no
      * window is active.
