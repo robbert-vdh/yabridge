@@ -500,7 +500,7 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
                 logger.log(
                     "   not supported when using Wine, ignoring the request.");
                 logger.log(
-                    "   You can safely ignore this message. This is normal");
+                    "   You can safely ignore this message; this is normal");
                 logger.log("   when using REAPER.");
                 logger.log("");
 
