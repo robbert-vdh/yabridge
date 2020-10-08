@@ -17,8 +17,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Changed the way keyboard input focus works to also allow keyboard input in
-  _REAPER_. Please let me know if this causes any issues elsewhere!
+- Changed the way keyboard input focus works. This fixes keyboard input
+  sometimes not working in _REAPER_ and _Ardour_. Please let me know if this
+  causes any issues elsewhere!
 
 ## [1.6.1] - 2020-09-28
 
