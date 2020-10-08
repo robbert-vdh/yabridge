@@ -221,6 +221,8 @@ void Editor::handle_x11_events() const {
 }
 
 void Editor::fix_local_coordinates() const {
+    xcb_generic_error_t* error;
+
     // We're purposely not using XEmbed. This has the consequence that wine
     // still thinks that any X and Y coordinates are relative to the x11 window
     // root instead of the parent window provided by the DAW, causing all sorts
@@ -235,7 +237,8 @@ void Editor::fix_local_coordinates() const {
     const auto query_cookie =
         xcb_query_tree(x11_connection.get(), parent_window);
     xcb_window_t root =
-        xcb_query_tree_reply(x11_connection.get(), query_cookie, nullptr)->root;
+        xcb_query_tree_reply(x11_connection.get(), query_cookie, &error)->root;
+    assert(!error);
 
     // We can't directly use the `event.x` and `event.y` coordinates because the
     // parent window may also be embedded inside another window.
@@ -243,7 +246,8 @@ void Editor::fix_local_coordinates() const {
         x11_connection.get(), parent_window, root, 0, 0);
     const xcb_translate_coordinates_reply_t* translated_coordinates =
         xcb_translate_coordinates_reply(x11_connection.get(), translate_cookie,
-                                        nullptr);
+                                        &error);
+    assert(!error);
 
     xcb_configure_notify_event_t translated_event{};
     translated_event.response_type = XCB_CONFIGURE_NOTIFY;
@@ -348,19 +352,24 @@ LRESULT CALLBACK window_proc(HWND handle,
 
 xcb_window_t find_topmost_window(xcb_connection_t& x11_connection,
                                  xcb_window_t starting_at) {
+    xcb_generic_error_t* error;
+
     xcb_window_t current_window = starting_at;
 
     xcb_query_tree_cookie_t query_cookie =
         xcb_query_tree(&x11_connection, starting_at);
     xcb_query_tree_reply_t* query_reply =
-        xcb_query_tree_reply(&x11_connection, query_cookie, nullptr);
+        xcb_query_tree_reply(&x11_connection, query_cookie, &error);
+    assert(!error);
+
     xcb_window_t root = query_reply->root;
     while (query_reply->parent != root) {
         current_window = query_reply->parent;
 
         query_cookie = xcb_query_tree(&x11_connection, current_window);
         query_reply =
-            xcb_query_tree_reply(&x11_connection, query_cookie, nullptr);
+            xcb_query_tree_reply(&x11_connection, query_cookie, &error);
+        assert(!error);
     }
 
     return current_window;
