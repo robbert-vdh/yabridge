@@ -26,6 +26,12 @@ constexpr size_t idle_timer_id = 1337;
 constexpr uint16_t event_type_mask = ((1 << 7) - 1);
 
 /**
+ * The name of the X11 property on the root window used to denote the active
+ * window in EWMH compliant window managers.
+ */
+constexpr char active_window_property_name[] = "_NET_ACTIVE_WINDOW";
+
+/**
  * Find the topmost window (i.e. the window before the root window in the window
  * tree) starting from a certain window.
  *
@@ -37,6 +43,19 @@ constexpr uint16_t event_type_mask = ((1 << 7) - 1);
  */
 xcb_window_t find_topmost_window(xcb_connection_t& x11_connection,
                                  xcb_window_t starting_at);
+/**
+ * Check whether `child` is a descendant of `parent` or the same window. Used
+ * during focus checks to only grab focus when needed.
+ *
+ * @param x11_connection The X11 connection to use.
+ * @param child The potential child window.
+ * @param parent The potential parent window.
+ *
+ * @return Whether `child` is a descendant of or the same window as `parent.`
+ */
+bool is_child_window_or_same(xcb_connection_t& x11_connection,
+                             xcb_window_t child,
+                             xcb_window_t parent);
 /**
  * Compute the size a window would have to be to be allowed to fullscreened on
  * any of the connected screens.
@@ -104,6 +123,22 @@ Editor::Editor(const Configuration& config,
       topmost_window(find_topmost_window(*x11_connection, parent_window)),
       // Needed to send update messages on a timer
       plugin(effect) {
+    xcb_generic_error_t* error;
+
+    // Used for input focus grabbing to only grab focus when the window is
+    // active.
+    const xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(
+        x11_connection.get(), true, strlen(active_window_property_name),
+        active_window_property_name);
+    xcb_intern_atom_reply_t* atom_reply =
+        xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
+    assert(!error);
+    // TODO: Check for XCB_ATOM_NONE. If the user is using some obscure WM that
+    //       does not support _NET_WM_NAME, then we can print a warning message
+    //       and fall back to grabbing focus on `WM_PARENTNOTIFY`.
+    active_window_property = atom_reply->atom;
+    free(atom_reply);
+
     // Because we're not using XEmbed Wine will interpret any local coordinates
     // as global coordinates. To work around this we'll tell the Wine window
     // it's located at its actual coordinates on screen rather than somewhere
@@ -115,7 +150,9 @@ Editor::Editor(const Configuration& config,
     xcb_change_window_attributes(x11_connection.get(), topmost_window,
                                  XCB_CW_EVENT_MASK, &topmost_event_mask);
     xcb_flush(x11_connection.get());
-    const uint32_t parent_event_mask = XCB_EVENT_MASK_ENTER_WINDOW;
+    const uint32_t parent_event_mask = XCB_EVENT_MASK_FOCUS_CHANGE |
+                                       XCB_EVENT_MASK_ENTER_WINDOW |
+                                       XCB_EVENT_MASK_LEAVE_WINDOW;
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
     xcb_flush(x11_connection.get());
@@ -211,8 +248,36 @@ void Editor::handle_x11_events() const {
             // check is sometimes necessary for using multiple editor windows
             // within a single plugin group.
             case XCB_CONFIGURE_NOTIFY:
-            case XCB_ENTER_NOTIFY:
                 fix_local_coordinates();
+                break;
+            // We want to grab keyboard input focus when the user hovers over
+            // our embedded Wine window AND that window is a child of the
+            // currently active window. This ensures that the behavior is
+            // similar to what you'd expect of a native application, without
+            // grabbing input focus when accidentally hovering over a yabridge
+            // window in the background.
+            // The `FocusIn` is needed for when returning to the main plugin
+            // window after closing a dialog, since that often won't trigger an
+            // `EnterNotify'.
+            case XCB_ENTER_NOTIFY:
+            case XCB_FOCUS_IN:
+                fix_local_coordinates();
+
+                if (is_wine_window_active()) {
+                    set_input_focus(true);
+                }
+                break;
+            // When the user moves their mouse away from the Wine window _while
+            // the window provided by the host it is contained in is still
+            // active_, we will give back keyboard focus to that window. This
+            // for instance allows you to still use the search bar in REAPER's
+            // FX window. This distinction is important, because we do not want
+            // to mess with keyboard focus when hovering over the window while
+            // for instance a dialog is open.
+            case XCB_LEAVE_NOTIFY:
+                if (is_wine_window_active()) {
+                    set_input_focus(false);
+                }
                 break;
         }
 
@@ -239,7 +304,6 @@ void Editor::fix_local_coordinates() const {
     xcb_query_tree_reply_t* query_reply =
         xcb_query_tree_reply(x11_connection.get(), query_cookie, &error);
     assert(!error);
-
     xcb_window_t root = query_reply->root;
     free(query_reply);
 
@@ -274,27 +338,48 @@ void Editor::fix_local_coordinates() const {
     xcb_flush(x11_connection.get());
 }
 
-void Editor::grab_input_focus() const {
-    // Explicitely request input focus when the user clicks on the window.
-    // Without this the parent window will capture all keyboard events in most
+void Editor::set_input_focus(bool grab) const {
+    // Explicitly request input focus when the user interacts with the window.
+    // Without this `topmost_window` will capture all keyboard events in most
     // hosts. Ideally we would just do this whenever the child window calls
     // `SetFocus()` (or no handling should be necessary), but as far as I'm
-    // aware there is no way to do this. Right now we're doing grabbing input
-    // focus in one of two situations:
-    //
-    // - On `WM_PARENTNOTIFY`, which include every time the user clicks on the
-    //   Wine window. On most hosts we could get away with using the `FocusIn`
-    //   X11 event instead, but this does not work reliably in REAPER and
-    //   Ardour.
-    // - On `WM_NCACTIVATE` and `WM_CANCELMODE`. This is a small HACK to
-    //   immediatly grab keyboard focus again when the user closes a popup
-    //   window. Again, this is only needed for Ardour and REAPER, but without
-    //   this the F1 help dialog system in Melda plugins does not work like
-    //   you'd expect, instead requiring you to click on the window in between
-    //   F1 presses.
+    // aware there is no way to do this. Right now we will grab input focus when
+    // the user hovers over the Wine window while the window it is contained in
+    // (the one provided by the host) is active. Keyboard focus will be given
+    // back to that window when the user moves their mouse outside of the Wine
+    // window while the host's window is still active (that's an important
+    // detail, since plugins may have dialogs).
     xcb_set_input_focus(x11_connection.get(), XCB_INPUT_FOCUS_PARENT,
-                        wine_window, XCB_CURRENT_TIME);
+                        grab ? parent_window : topmost_window,
+                        XCB_CURRENT_TIME);
     xcb_flush(x11_connection.get());
+}
+
+bool Editor::is_wine_window_active() const {
+    // We will only grab focus when the Wine window is active. To do this we'll
+    // read the `_NET_ACTIVE_WINDOW` property from the root window (which can
+    // change when the window gets moved to another screen, so we won't cache
+    // this).
+    xcb_generic_error_t* error;
+    const xcb_query_tree_cookie_t root_query_cookie =
+        xcb_query_tree(x11_connection.get(), wine_window);
+    xcb_query_tree_reply_t* root_query_reply =
+        xcb_query_tree_reply(x11_connection.get(), root_query_cookie, &error);
+    assert(!error);
+    const xcb_window_t root_window = root_query_reply->root;
+    free(root_query_reply);
+
+    const xcb_get_property_cookie_t property_cookie =
+        xcb_get_property(x11_connection.get(), false, root_window,
+                         active_window_property, XCB_ATOM_WINDOW, 0, 1);
+    xcb_get_property_reply_t* property_reply =
+        xcb_get_property_reply(x11_connection.get(), property_cookie, &error);
+    assert(!error);
+    const xcb_window_t active_window =
+        *static_cast<xcb_window_t*>(xcb_get_property_value(property_reply));
+    free(property_reply);
+
+    return is_child_window_or_same(*x11_connection, wine_window, active_window);
 }
 
 LRESULT CALLBACK window_proc(HWND handle,
@@ -331,24 +416,6 @@ LRESULT CALLBACK window_proc(HWND handle,
             // blocked by a dropdown or a message box.
             editor->send_idle_event();
             return 0;
-        } break;
-        // See the comment in `Editor::grab_input_focus()` for more details on
-        // what's happening here
-        case WM_NCACTIVATE:
-        case WM_CANCELMODE:
-        case WM_PARENTNOTIFY: {
-            auto editor = reinterpret_cast<Editor*>(
-                GetWindowLongPtr(handle, GWLP_USERDATA));
-            if (!editor) {
-                break;
-            }
-
-            // Grab input focus when the user interacts with the Wine window.
-            // Ideally this would only be done when the window does not yet have
-            // keyboard focus but I wasn't able to find a reliable way to do
-            // that that also works in REAPER.
-            editor->fix_local_coordinates();
-            editor->grab_input_focus();
         } break;
     }
 

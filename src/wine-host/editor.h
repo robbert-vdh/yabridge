@@ -144,14 +144,23 @@ class Editor {
     void fix_local_coordinates() const;
 
     /**
-     * Steal keyboard focus. This is done whenever the user clicks on the window
-     * since we don't have a way to detect whether the client window is calling
-     * `SetFocus()`. See the comment inside of this function for more details on
-     * when this is used.
+     * Steal or release keyboard focus. This is done whenever the user clicks on
+     * the window since we don't have a way to detect whether the client window
+     * is calling `SetFocus()`. See the comment inside of this function for more
+     * details on when this is used.
+     *
+     * @param grab Whether to grab input focus (if `true`) or to give back input
+     *   focus to `topmost_window` (if `false`).
      */
-    void grab_input_focus() const;
+    void set_input_focus(bool grab) const;
 
    private:
+    /**
+     * Returns `true` if the currently active window (as per
+     * `_NET_ACTIVE_WINDOW`) contains `wine_window`.
+     */
+    bool is_wine_window_active() const;
+
     /**
      * A pointer to the currently active window. Will be a null pointer if no
      * window is active.
@@ -193,7 +202,6 @@ class Editor {
         std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>>
         win32_child_handle;
 
-   private:
     /**
      * The Win32 API will block the `DispatchMessage` call when opening e.g. a
      * dropdown, but it will still allow timers to be run so the GUI can still
@@ -225,4 +233,9 @@ class Editor {
      *Needed to handle idle updates through a timer
      */
     AEffect* plugin;
+
+    /**
+     * The atom corresponding to `_NET_ACTIVE_WINDOW`.
+     */
+    xcb_atom_t active_window_property;
 };
