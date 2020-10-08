@@ -234,17 +234,21 @@ void Editor::fix_local_coordinates() const {
     // window created by the plugin itself. In this case it doesn't matter that
     // the Win32 window is larger than the part of the client area the plugin
     // draws to since any excess will be clipped off by the parent window.
-    const auto query_cookie =
+    const xcb_query_tree_cookie_t query_cookie =
         xcb_query_tree(x11_connection.get(), parent_window);
-    xcb_window_t root =
-        xcb_query_tree_reply(x11_connection.get(), query_cookie, &error)->root;
+    xcb_query_tree_reply_t* query_reply =
+        xcb_query_tree_reply(x11_connection.get(), query_cookie, &error);
     assert(!error);
+
+    xcb_window_t root = query_reply->root;
+    free(query_reply);
 
     // We can't directly use the `event.x` and `event.y` coordinates because the
     // parent window may also be embedded inside another window.
-    const auto translate_cookie = xcb_translate_coordinates(
-        x11_connection.get(), parent_window, root, 0, 0);
-    const xcb_translate_coordinates_reply_t* translated_coordinates =
+    const xcb_translate_coordinates_cookie_t translate_cookie =
+        xcb_translate_coordinates(x11_connection.get(), parent_window, root, 0,
+                                  0);
+    xcb_translate_coordinates_reply_t* translated_coordinates =
         xcb_translate_coordinates_reply(x11_connection.get(), translate_cookie,
                                         &error);
     assert(!error);
@@ -261,6 +265,7 @@ void Editor::fix_local_coordinates() const {
     translated_event.height = client_area.height;
     translated_event.x = translated_coordinates->dst_x;
     translated_event.y = translated_coordinates->dst_y;
+    free(translated_coordinates);
 
     xcb_send_event(
         x11_connection.get(), false, wine_window,
@@ -366,13 +371,47 @@ xcb_window_t find_topmost_window(xcb_connection_t& x11_connection,
     while (query_reply->parent != root) {
         current_window = query_reply->parent;
 
+        free(query_reply);
         query_cookie = xcb_query_tree(&x11_connection, current_window);
         query_reply =
             xcb_query_tree_reply(&x11_connection, query_cookie, &error);
         assert(!error);
     }
 
+    free(query_reply);
     return current_window;
+}
+
+bool is_child_window_or_same(xcb_connection_t& x11_connection,
+                             xcb_window_t child,
+                             xcb_window_t parent) {
+    xcb_generic_error_t* error;
+
+    xcb_window_t current_window = child;
+
+    xcb_query_tree_cookie_t query_cookie =
+        xcb_query_tree(&x11_connection, child);
+    xcb_query_tree_reply_t* query_reply =
+        xcb_query_tree_reply(&x11_connection, query_cookie, &error);
+    assert(!error);
+
+    while (query_reply->parent != XCB_NONE) {
+        if (current_window == parent) {
+            free(query_reply);
+            return true;
+        }
+
+        current_window = query_reply->parent;
+
+        free(query_reply);
+        query_cookie = xcb_query_tree(&x11_connection, current_window);
+        query_reply =
+            xcb_query_tree_reply(&x11_connection, query_cookie, &error);
+        assert(!error);
+    }
+
+    free(query_reply);
+    return false;
 }
 
 Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection) {
