@@ -496,9 +496,8 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
 
                 logger.log("");
                 logger.log(
-                    "   The host has requested libSwell GUI support which is ");
-                logger.log(
-                    "   not supported when using Wine, ignoring the request.");
+                    "   The host has requested libSwell GUI support, which is");
+                logger.log("   not supported when using Wine.");
                 logger.log(
                     "   You can safely ignore this message; this is normal");
                 logger.log("   when using REAPER.");
