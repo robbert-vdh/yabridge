@@ -266,13 +266,23 @@ void Editor::fix_local_coordinates() const {
 }
 
 void Editor::grab_input_focus() const {
-    // Explicitely request input focus when the user clicks on the window. This
-    // is needed for Bitwig Studio 3.2, as the parent window now captures all
-    // keyboard events and forwards them to the main Bitwig Studio window
-    // instead of allowing the child window to handle those events. We used to
-    // do this on the X11 FocusIn event, but that's not getting fired for REAPER
-    // so we now do this on `WM_PARENTNOTIFY` which included every time the user
-    // clicks on the Wine window.
+    // Explicitely request input focus when the user clicks on the window.
+    // Without this the parent window will capture all keyboard events in most
+    // hosts. Ideally we would just do this whenever the child window calls
+    // `SetFocus()` (or no handling should be necessary), but as far as I'm
+    // aware there is no way to do this. Right now we're doing grabbing input
+    // focus in one of two situations:
+    //
+    // - On `WM_PARENTNOTIFY`, which include every time the user clicks on the
+    //   Wine window. On most hosts we could get away with using the `FocusIn`
+    //   X11 event instead, but this does not work reliably in REAPER and
+    //   Ardour.
+    // - On `WM_NCACTIVATE` and `WM_CANCELMODE`. This is a small HACK to
+    //   immediatly grab keyboard focus again when the user closes a popup
+    //   window. Again, this is only needed for Ardour and REAPER, but without
+    //   this the F1 help dialog system in Melda plugins does not work like
+    //   you'd expect, instead requiring you to click on the window in between
+    //   F1 presses.
     xcb_set_input_focus(x11_connection.get(), XCB_INPUT_FOCUS_PARENT,
                         wine_window, XCB_CURRENT_TIME);
     xcb_flush(x11_connection.get());
@@ -313,6 +323,10 @@ LRESULT CALLBACK window_proc(HWND handle,
             editor->send_idle_event();
             return 0;
         } break;
+        // See the comment in `Editor::grab_input_focus()` for more details on
+        // what's happening here
+        case WM_NCACTIVATE:
+        case WM_CANCELMODE:
         case WM_PARENTNOTIFY: {
             auto editor = reinterpret_cast<Editor*>(
                 GetWindowLongPtr(handle, GWLP_USERDATA));

@@ -146,7 +146,8 @@ class Editor {
     /**
      * Steal keyboard focus. This is done whenever the user clicks on the window
      * since we don't have a way to detect whether the client window is calling
-     * `SetFocus()`.
+     * `SetFocus()`. See the comment inside of this function for more details on
+     * when this is used.
      */
     void grab_input_focus() const;
 
