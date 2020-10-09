@@ -38,8 +38,7 @@ jobs:
         run: git fetch --force --prune --tags --unshallow
       - name: Determine build archive name
         run: |
-          export ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz
-          echo ::set-env "name=ARCHIVE_NAME::$ARCHIVE_NAME"
+          echo "ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz" >> "$GITHUB_ENV"
       - name: Build the binaries
         run: |
           # Wine won't create a Wine prefix in ~/.wine because /github/home is
@@ -80,8 +79,7 @@ jobs:
         run: git fetch --force --prune --tags --unshallow
       - name: Determine build archive name
         run: |
-          export ARCHIVE_NAME=yabridge-$(git describe --always).tar.gz
-          echo ::set-env "name=ARCHIVE_NAME::$ARCHIVE_NAME"
+          echo "ARCHIVE_NAME=yabridge-$(git describe --always).tar.gz" >> "$GITHUB_ENV"
       - name: Build the binaries
         run: |
           # Wine won't create a Wine prefix in ~/.wine because /github/home is
@@ -119,8 +117,7 @@ jobs:
         run: git fetch --force --prune --tags --unshallow
       - name: Determine build archive name
         run: |
-          export ARCHIVE_NAME=yabridgectl-$(git describe --always).tar.gz
-          echo ::set-env "name=ARCHIVE_NAME::$ARCHIVE_NAME"
+          echo "ARCHIVE_NAME=yabridgectl-$(git describe --always).tar.gz" >> "$GITHUB_ENV"
       - name: Set up Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
