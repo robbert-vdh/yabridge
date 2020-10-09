@@ -16,6 +16,8 @@
 
 #include "editor.h"
 
+#include <iostream>
+
 // The Win32 API requires you to hardcode identifiers for tiemrs
 constexpr size_t idle_timer_id = 1337;
 
@@ -61,6 +63,12 @@ bool is_child_window_or_same(xcb_connection_t& x11_connection,
  * any of the connected screens.
  */
 Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection);
+/**
+ * Get the root window for the specified window. The returned root window will
+ * depend on the screen the window is on.
+ */
+xcb_window_t get_root_window(xcb_connection_t& x11_connection,
+                             xcb_window_t window);
 /**
  * Return the X11 window handle for the window if it's currently open.
  */
@@ -133,11 +141,20 @@ Editor::Editor(const Configuration& config,
     xcb_intern_atom_reply_t* atom_reply =
         xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
     assert(!error);
-    // TODO: Check for XCB_ATOM_NONE. If the user is using some obscure WM that
-    //       does not support _NET_WM_NAME, then we can print a warning message
-    //       and fall back to grabbing focus on `WM_PARENTNOTIFY`.
+
+    // In case the atom does not exist or the WM does not support this hint,
+    // we'll print a warning and fall back to grabbing focus when the user
+    // clicks on the window (which should trigger a `WM_PARENTNOTIFY`).
     active_window_property = atom_reply->atom;
     free(atom_reply);
+    if (!supports_ewmh_active_window()) {
+        std::cout << "WARNING: The current window manager does not support the"
+                  << std::endl;
+        std::cout << "         '" << active_window_property_name
+                  << "' property. Falling back to a" << std::endl;
+        std::cout << "         less reliable keyboard input grabbing method."
+                  << std::endl;
+    }
 
     // Because we're not using XEmbed Wine will interpret any local coordinates
     // as global coordinates. To work around this we'll tell the Wine window
@@ -263,7 +280,10 @@ void Editor::handle_x11_events() const {
             case XCB_FOCUS_IN:
                 fix_local_coordinates();
 
-                if (is_wine_window_active()) {
+                // In case the WM somehow does not support `_NET_ACTIVE_WINDOW`,
+                // a more naive focus grabbing method implemented in the
+                // `WM_PARENTNOTIFY` handler will be used.
+                if (supports_ewmh_active_window() && is_wine_window_active()) {
                     set_input_focus(true);
                 }
                 break;
@@ -275,7 +295,7 @@ void Editor::handle_x11_events() const {
             // to mess with keyboard focus when hovering over the window while
             // for instance a dialog is open.
             case XCB_LEAVE_NOTIFY:
-                if (is_wine_window_active()) {
+                if (supports_ewmh_active_window() && is_wine_window_active()) {
                     set_input_focus(false);
                 }
                 break;
@@ -286,8 +306,6 @@ void Editor::handle_x11_events() const {
 }
 
 void Editor::fix_local_coordinates() const {
-    xcb_generic_error_t* error;
-
     // We're purposely not using XEmbed. This has the consequence that wine
     // still thinks that any X and Y coordinates are relative to the x11 window
     // root instead of the parent window provided by the DAW, causing all sorts
@@ -299,16 +317,11 @@ void Editor::fix_local_coordinates() const {
     // window created by the plugin itself. In this case it doesn't matter that
     // the Win32 window is larger than the part of the client area the plugin
     // draws to since any excess will be clipped off by the parent window.
-    const xcb_query_tree_cookie_t query_cookie =
-        xcb_query_tree(x11_connection.get(), parent_window);
-    xcb_query_tree_reply_t* query_reply =
-        xcb_query_tree_reply(x11_connection.get(), query_cookie, &error);
-    assert(!error);
-    xcb_window_t root = query_reply->root;
-    free(query_reply);
+    const xcb_window_t root = get_root_window(*x11_connection, parent_window);
 
     // We can't directly use the `event.x` and `event.y` coordinates because the
     // parent window may also be embedded inside another window.
+    xcb_generic_error_t* error;
     const xcb_translate_coordinates_cookie_t translate_cookie =
         xcb_translate_coordinates(x11_connection.get(), parent_window, root, 0,
                                   0);
@@ -356,19 +369,18 @@ void Editor::set_input_focus(bool grab) const {
 }
 
 bool Editor::is_wine_window_active() const {
+    if (!supports_ewmh_active_window()) {
+        return false;
+    }
+
     // We will only grab focus when the Wine window is active. To do this we'll
     // read the `_NET_ACTIVE_WINDOW` property from the root window (which can
     // change when the window gets moved to another screen, so we won't cache
     // this).
-    xcb_generic_error_t* error;
-    const xcb_query_tree_cookie_t root_query_cookie =
-        xcb_query_tree(x11_connection.get(), wine_window);
-    xcb_query_tree_reply_t* root_query_reply =
-        xcb_query_tree_reply(x11_connection.get(), root_query_cookie, &error);
-    assert(!error);
-    const xcb_window_t root_window = root_query_reply->root;
-    free(root_query_reply);
+    const xcb_window_t root_window =
+        get_root_window(*x11_connection, wine_window);
 
+    xcb_generic_error_t* error;
     const xcb_get_property_cookie_t property_cookie =
         xcb_get_property(x11_connection.get(), false, root_window,
                          active_window_property, XCB_ATOM_WINDOW, 0, 1);
@@ -380,6 +392,40 @@ bool Editor::is_wine_window_active() const {
     free(property_reply);
 
     return is_child_window_or_same(*x11_connection, wine_window, active_window);
+}
+
+bool Editor::supports_ewmh_active_window() const {
+    if (supports_ewmh_active_window_cache) {
+        return *supports_ewmh_active_window_cache;
+    }
+
+    // It could be that the `_NET_ACTIVE_WINDOW` atom exists (because it was
+    // created by another application) but that the root window does not have
+    // the property
+    if (active_window_property == XCB_ATOM_NONE) {
+        supports_ewmh_active_window_cache = false;
+        return false;
+    }
+
+    const xcb_window_t root_window =
+        get_root_window(*x11_connection, wine_window);
+
+    // If the `_NET_ACTIVE_WINDOW` property does not exist on the root window,
+    // the returned property type will be `XCB_ATOM_NONE` as specified in the
+    // X11 manual
+    xcb_generic_error_t* error;
+    const xcb_get_property_cookie_t property_cookie =
+        xcb_get_property(x11_connection.get(), false, root_window,
+                         active_window_property, XCB_ATOM_WINDOW, 0, 1);
+    xcb_get_property_reply_t* property_reply =
+        xcb_get_property_reply(x11_connection.get(), property_cookie, &error);
+    assert(!error);
+    bool active_window_property_exists =
+        property_reply->format != XCB_ATOM_NONE;
+    free(property_reply);
+
+    supports_ewmh_active_window_cache = active_window_property_exists;
+    return active_window_property_exists;
 }
 
 LRESULT CALLBACK window_proc(HWND handle,
@@ -417,6 +463,21 @@ LRESULT CALLBACK window_proc(HWND handle,
             editor->send_idle_event();
             return 0;
         } break;
+        // In case the WM does not support the EWMH active window property,
+        // we'll fall back to grabbing focus when the user clicks on the window
+        // by listening to the generated `WM_PARENTNOTIFY` messages. Otherwise
+        // we have some more sophisticated behaviour using `EnterNotify` and
+        // `LeaveNotify` X11 events. This will only be necessary for very
+        // barebones window managers.
+        case WM_PARENTNOTIFY: {
+            auto editor = reinterpret_cast<Editor*>(
+                GetWindowLongPtr(handle, GWLP_USERDATA));
+            if (!editor || editor->supports_ewmh_active_window()) {
+                break;
+            }
+
+            editor->set_input_focus(true);
+        } break;
     }
 
     return DefWindowProc(handle, message, wParam, lParam);
@@ -424,10 +485,9 @@ LRESULT CALLBACK window_proc(HWND handle,
 
 xcb_window_t find_topmost_window(xcb_connection_t& x11_connection,
                                  xcb_window_t starting_at) {
-    xcb_generic_error_t* error;
-
     xcb_window_t current_window = starting_at;
 
+    xcb_generic_error_t* error;
     xcb_query_tree_cookie_t query_cookie =
         xcb_query_tree(&x11_connection, starting_at);
     xcb_query_tree_reply_t* query_reply =
@@ -452,10 +512,9 @@ xcb_window_t find_topmost_window(xcb_connection_t& x11_connection,
 bool is_child_window_or_same(xcb_connection_t& x11_connection,
                              xcb_window_t child,
                              xcb_window_t parent) {
-    xcb_generic_error_t* error;
-
     xcb_window_t current_window = child;
 
+    xcb_generic_error_t* error;
     xcb_query_tree_cookie_t query_cookie =
         xcb_query_tree(&x11_connection, child);
     xcb_query_tree_reply_t* query_reply =
@@ -500,6 +559,21 @@ Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection) {
     }
 
     return maximum_screen_size;
+}
+
+xcb_window_t get_root_window(xcb_connection_t& x11_connection,
+                             xcb_window_t window) {
+    xcb_generic_error_t* error;
+    const xcb_query_tree_cookie_t query_cookie =
+        xcb_query_tree(&x11_connection, window);
+    xcb_query_tree_reply_t* query_reply =
+        xcb_query_tree_reply(&x11_connection, query_cookie, &error);
+    assert(!error);
+
+    const xcb_window_t root = query_reply->root;
+    free(query_reply);
+
+    return root;
 }
 
 xcb_window_t get_x11_handle(HWND win32_handle) {

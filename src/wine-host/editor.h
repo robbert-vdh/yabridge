@@ -118,6 +118,17 @@ class Editor {
     HWND get_win32_handle();
 
     /**
+     * Returns `true` if the window manager supports the EWMH active window
+     * protocol through the `_NET_ACTIVE_WINDOW` attribute. Some more
+     * minimalistic window managers may not support this. In that case we'll
+     * show a warning and fall back to a more hacky approach to grabbing input
+     * focus. This involves checking whether the `_NET_ACTIVE_WINDOW` atom
+     * exists and whether the property is set on the root window. The result is
+     * cached in `supports_ewmh_active_window_cache`.
+     */
+    bool supports_ewmh_active_window() const;
+
+    /**
      * Send a single `effEditIdle` event to the plugin to allow it to update its
      * GUI state. This is called periodically from a timer while the GUI is
      * being blocked, and also called explicitly by the host on a timer.
@@ -157,7 +168,10 @@ class Editor {
    private:
     /**
      * Returns `true` if the currently active window (as per
-     * `_NET_ACTIVE_WINDOW`) contains `wine_window`.
+     * `_NET_ACTIVE_WINDOW`) contains `wine_window`. If the window manager does
+     * not support this hint, this will always return false.
+     *
+     * @see Editor::supports_ewmh_active_window
      */
     bool is_wine_window_active() const;
 
@@ -238,4 +252,10 @@ class Editor {
      * The atom corresponding to `_NET_ACTIVE_WINDOW`.
      */
     xcb_atom_t active_window_property;
+    /**
+     * Whether the root window supports the `_NET_ACTIVE_WINDOW` hint. We'll
+     * check this once and then cache the results in
+     * `supports_ewmh_active_window()`.
+     */
+    mutable std::optional<bool> supports_ewmh_active_window_cache;
 };
