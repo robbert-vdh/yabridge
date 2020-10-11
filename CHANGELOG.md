@@ -18,8 +18,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   the window is still active. This should fix some instances where keyboard
   input was not working in hosts with more complex editor windows like _REAPER_
   and _Ardour_, and it will also allow things like the comment field in REAPER's
-  FX window to still function. Please let me know if this causes any issues
-  elsewhere!
+  FX window to still function.
+
+  A consequence of this change is that pressing Space in Bitwig Studio 3.2 will
+  now play or pause playback as intended, but this may also make it impossible
+  to type text with spaces inside of a plugin editor window. Please let me know
+  if this causes any issues and we'll try to come up with a middle ground.
+
 - Added a note to the message saying that libSwell GUI support has been disabled
   that his is perfectly normal when using REAPER. The message now also contains
   the suggestion to enable the `hack_reaper_update_display` workaround for
