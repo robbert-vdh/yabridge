@@ -179,13 +179,20 @@ Editor::Editor(const Configuration& config,
     // child window ourselves. This is a hack to work around the issue's
     // described in `Editor`'s docstring'.
     xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0, 0);
-    xcb_map_window(x11_connection.get(), wine_window);
     xcb_flush(x11_connection.get());
 
     ShowWindow(win32_handle.get(), SW_SHOWNORMAL);
     if (win32_child_handle) {
         ShowWindow(win32_child_handle->get(), SW_SHOWNORMAL);
     }
+
+    // HACK: I can't seem to figure why the initial reparent would fail on this
+    //       particular i3 config in a way that I'm unable to reproduce, but if
+    //       it doesn't work the first time, just keep trying!
+    //
+    //       https://github.com/robot-vdh/yabridge/issues/40
+    xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0, 0);
+    xcb_flush(x11_connection.get());
 }
 
 Editor::~Editor() {

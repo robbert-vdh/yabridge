@@ -30,6 +30,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   the suggestion to enable the `hack_reaper_update_display` workaround for
   REAPER when it is not already enabled.
 
+### Fixed
+
+- Added a workaround for reparenting issues with the plugin editor GUI on a
+  [specific i3 setup](https://github.com/robbert-vdh/yabridge/issues/40).
+
 ## [1.6.1] - 2020-09-28
 
 ### Fixed
