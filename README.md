@@ -146,7 +146,8 @@ the AUR packages, then you'll have to modify your _login shell_'s `PATH`
 environment variable so that yabridge is able to find the files in the directory
 you've extracted yabridge's files to. Yabridgectl will automatically check
 whether this is set up correctly when you run `yabridgectl sync`, and it will
-show a warning if it detects any issues.
+show a warning if it detects any issues. _If you do not see such a warning after
+running `yabridgectl sync`, then you can skip this section._
 
 To do this, you'll want to add yabridge's installation directory to your login
 shell's `PATH` environment variable. If you're unsure what your login shell is,
