@@ -269,6 +269,17 @@ std::string get_wine_version() {
     return version_string;
 }
 
+std::string join_quoted_strings(std::vector<std::string>& strings) {
+    bool is_first = true;
+    std::ostringstream joined_strigns{};
+    for (const auto& option : strings) {
+        joined_strigns << (is_first ? "'" : ", '") << option << "'";
+        is_first = false;
+    }
+
+    return joined_strigns.str();
+}
+
 Configuration load_config_for(const fs::path& yabridge_path) {
     // First find the closest `yabridge.tmol` file for the plugin, falling back
     // to default configuration settings if it doesn't exist

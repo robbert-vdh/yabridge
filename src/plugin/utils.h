@@ -167,6 +167,14 @@ boost::filesystem::path get_this_file_location();
 std::string get_wine_version();
 
 /**
+ * Join a vector of strings with commas while wrapping the strings in quotes.
+ * For example, `join_quoted_strings(std::vector<string>{"string", "another
+ * string", "also a string"})` outputs `"'string', 'another string', 'also a
+ * string'"`. This is used to format the initialisation message.
+ */
+std::string join_quoted_strings(std::vector<std::string>& strings);
+
+/**
  * Load the configuration that belongs to a copy of or symlink to
  * `libyabridge.so`. If no configuration file could be found then this will
  * return an empty configuration object with default settings. See the docstrong

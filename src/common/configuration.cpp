@@ -75,12 +75,31 @@ Configuration::Configuration(const fs::path& config_path,
         matched_pattern = pattern;
 
         // If the table is missing some fields then they will simply be left at
-        // their defaults
-        editor_double_embed =
-            table["editor_double_embed"].value<bool>().value_or(false);
-        hack_reaper_update_display =
-            table["hack_reaper_update_display"].value<bool>().value_or(false);
-        group = table["group"].value<std::string>();
+        // their defaults. At this point I'd really wish C++ could do pattern
+        // matching.
+        for (const auto& [key, value] : table) {
+            if (key == "editor_double_embed") {
+                if (const auto parsed_value = value.as_boolean()) {
+                    editor_double_embed = parsed_value->get();
+                } else {
+                    invalid_options.push_back(key);
+                }
+            } else if (key == "hack_reaper_update_display") {
+                if (const auto parsed_value = value.as_boolean()) {
+                    hack_reaper_update_display = parsed_value->get();
+                } else {
+                    invalid_options.push_back(key);
+                }
+            } else if (key == "group") {
+                if (const auto parsed_value = value.as_string()) {
+                    group = parsed_value->get();
+                } else {
+                    invalid_options.push_back(key);
+                }
+            } else {
+                unknown_options.push_back(key);
+            }
+        }
 
         break;
     }

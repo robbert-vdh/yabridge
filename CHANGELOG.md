@@ -25,6 +25,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   to type text with spaces inside of a plugin editor window. Please let me know
   if this causes any issues and we'll try to come up with a middle ground.
 
+- Both unrecognized and invalid options will now be printed on started to make
+  debugging easier.
+
 - Added a note to the message saying that libSwell GUI support has been disabled
   that his is perfectly normal when using REAPER. The message now also contains
   the suggestion to enable the `hack_reaper_update_display` workaround for

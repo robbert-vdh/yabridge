@@ -112,6 +112,19 @@ class Configuration {
      */
     std::optional<std::string> matched_pattern;
 
+    /**
+     * Options with a wrong argument type. These will be printed separately from
+     * `unknown_options` to avoid confusion.
+     */
+    std::vector<std::string> invalid_options;
+
+    /**
+     * Unrecognized configuration options, likely caused by an old option that
+     * served as a hack or a workaround getting removed. Will be printed on
+     * startup when not empty.
+     */
+    std::vector<std::string> unknown_options;
+
     template <typename S>
     void serialize(S& s) {
         s.value1b(editor_double_embed);
@@ -122,5 +135,10 @@ class Configuration {
               [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath()); });
         s.ext(matched_pattern, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
+
+        s.container(invalid_options, 1024,
+                    [](S& s, auto& v) { s.text1b(v, 4096); });
+        s.container(unknown_options, 1024,
+                    [](S& s, auto& v) { s.text1b(v, 4096); });
     }
 };

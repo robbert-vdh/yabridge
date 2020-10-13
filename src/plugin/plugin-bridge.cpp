@@ -684,20 +684,33 @@ void PluginBridge::log_init_message() {
     }
     init_msg << "'" << std::endl;
 
-    bool other_options_set = false;
-    init_msg << "other options: '";
+    init_msg << "other options: ";
+    std::vector<std::string> other_options;
     if (config.editor_double_embed) {
-        init_msg << "editor: double embed";
-        other_options_set = true;
+        other_options.push_back("editor: double embed");
     }
     if (config.hack_reaper_update_display) {
-        init_msg << "hack: REAPER 'audioMasterUpdateDisplay' workaround";
-        other_options_set = true;
+        other_options.push_back(
+            "hack: REAPER audioMasterUpdateDisplay() workaround");
     }
-    if (!other_options_set) {
-        init_msg << "<none>";
+    if (!other_options.empty()) {
+        init_msg << join_quoted_strings(other_options) << std::endl;
+    } else {
+        init_msg << "'<none>'" << std::endl;
     }
-    init_msg << "'" << std::endl;
+
+    // To make debugging easier, we'll print both unrecognized options (that
+    // might be left over when an option gets removed) as well as options have
+    // the wrong argument types
+    if (!config.invalid_options.empty()) {
+        init_msg << "invalid arguments: "
+                 << join_quoted_strings(config.invalid_options)
+                 << " (check the readme for more information)" << std::endl;
+    }
+    if (!config.unknown_options.empty()) {
+        init_msg << "unrecognized options: "
+                 << join_quoted_strings(config.unknown_options) << std::endl;
+    }
     init_msg << std::endl;
 
     // Include a list of enabled compile-tiem features, mostly to make debug
