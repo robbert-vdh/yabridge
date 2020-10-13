@@ -13,25 +13,25 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - The way keyboard input works has been completely rewritten to be more reliable
   in certain hosts and to provide a more integrated experience. Hovering over
   the plugin's editor while the window provided by the host is active will now
-  immediately grab keyboard focus, and yabridge will now return input focus to
-  the host's window when moving the mouse outside of the plugin's editor when
-  the window is still active. This should fix some instances where keyboard
-  input was not working in hosts with more complex editor windows like _REAPER_
-  and _Ardour_, and it will also allow things like the comment field in REAPER's
-  FX window to still function.
+  immediately grab keyboard focus, and yabridge will return input focus to the
+  host's window when moving the mouse outside of the plugin's editor when the
+  window is still active. This should fix some instances where keyboard input
+  was not working in hosts with more complex editor windows like _REAPER_ and
+  _Ardour_, and it also allows things like the comment field in REAPER's FX
+  window to still function.
 
   A consequence of this change is that pressing Space in Bitwig Studio 3.2 will
-  now play or pause playback as intended, but this may also make it impossible
-  to type text with spaces inside of a plugin editor window. Please let me know
-  if this causes any issues and we'll try to come up with a middle ground.
+  now play or pause playback as intended, but this does mean that it can be
+  impossible to type the space character in text boxes inside of a plugin editor
+  window. Please let me know if this causes any issues for you.
 
-- Both unrecognized and invalid options will now be printed on started to make
-  debugging easier.
+- Both unrecognized and invalid options are now printed on started to make
+  debugging `yabridge.toml` files easier.
 
-- Added a note to the message saying that libSwell GUI support has been disabled
-  that his is perfectly normal when using REAPER. The message now also contains
-  the suggestion to enable the `hack_reaper_update_display` workaround for
-  REAPER when it is not already enabled.
+- Added a note to the message stating that libSwell GUI support has been
+  disabled to clarify that this is expected behaviour when using REAPER. The
+  message now also contains a suggestion to enable the
+  `hack_reaper_update_display` option when it is not already enabled.
 
 ### Fixed
 
