@@ -35,6 +35,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added a workaround for reparenting issues with the plugin editor GUI on a
   [specific i3 setup](https://github.com/robbert-vdh/yabridge/issues/40).
 
+### Documentation
+
+- The documentation on `yabridge.toml` files and the available options has been
+  rewritten in an effort to make it easier to comprehend.
+
 ## [1.6.1] - 2020-09-28
 
 ### Fixed
@@ -110,7 +115,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   embedding. Right now the only known plugins that may need this are
   _PSPaudioware_ plugins with expandable GUIs such as E27. The behaviour can be
   enabled on a per-plugin basis in the plugin configuration. See the
-  [readme](https://github.com/robbert-vdh/yabridge#miscellaneous-fixes-and-workarounds)
+  [readme](https://github.com/robbert-vdh/yabridge#compatibility-options)
   for more details.
 
 ### Changed

@@ -23,7 +23,7 @@ compatibility while also staying easy to debug and maintain.
   - [Wine prefixes](#wine-prefixes)
   - [Configuration](#configuration)
     - [Plugin groups](#plugin-groups)
-    - [Miscellaneous fixes and workarounds](#miscellaneous-fixes-and-workarounds)
+    - [Compatibility options](#compatibility-options)
     - [Example](#example)
 - [Troubleshooting common issues](#troubleshooting-common-issues)
 - [Performance tuning](#performance-tuning)
@@ -206,18 +206,27 @@ override the Wine prefix for all instances of yabridge.
 
 ### Configuration
 
+Yabridge can be configured on a per plugin basis to host multiple plugins within
+a single process using [plugin groups](#plugin-groups), as well as to improve
+compatibility with certain hosts and plugins through a variety of [compatibility
+options](#compatibility-options)
+
 Configuring yabridge for specific plugins is done through a `yabridge.toml` file
-located in either the same directory as the symlink to or copy of
-`libyabridge.so` you're trying to configure or in any of its parent directories.
-This file contains case sensitive
-[glob](https://www.man7.org/linux/man-pages/man7/glob.7.html) patterns that
-paths of yabridge `.so` files relative to that `yabridge.toml` file. These
-patterns can also match an entire directory to apply settings to all plugins
-within that directory. For simplicity's sake, only the first `yabridge.toml`
-file found and only the first matching glob pattern within that file will be
-considered. See below for an [example](#example) of a `yabridge.toml` file.
+located in either the same directory as the plugin's `.so` file you're trying to
+configure, or in any of its parent directories. This file contains case
+sensitive [glob](https://www.man7.org/linux/man-pages/man7/glob.7.html) patterns
+that match paths to yabridge `.so` files relative to the `yabridge.toml` file.
+These patterns can also match an entire directory to apply settings to all
+plugins within that directory. To avoid confusion, only the first
+`yabridge.toml` file found and only the first matching glob pattern within that
+file will be considered. See below for an [example](#example) of a
+`yabridge.toml` file.
 
 #### Plugin groups
+
+| Option  | Values            | Description                                                            |
+| ------- | ----------------- | ---------------------------------------------------------------------- |
+| `group` | `{"<string>",""}` | Defaults to `""`, meaning that the plugin will be hosted individually. |
 
 Some plugins have the ability to communicate with other instances of that same
 plugin or even with other plugins made by the same manufacturer. This is often
@@ -235,34 +244,24 @@ process. Of course, plugin groups with the same name but in different Wine
 prefixes and with different architectures will be run independently of each
 other. See below for an [example](#example) of how these groups can be set up.
 
-#### Miscellaneous fixes and workarounds
+#### Compatibility options
 
-Because Linux VST hosts are typically not tested using Windows VST plugins and
-because some Windows VST plugins make incorrect assumptions about the host or
-the environment, you may run into implementation issues when combining certain
-hosts and VST plugins. This section contains a few options you can use to work
-around these issues. The [known issues](#runtime-dependencies-and-known-issues)
-section contains more information on when these options might be necessary.
-Yabridge will show which of these options are active on startup as part of the
-initialization message.
+| Option                       | Values         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ---------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `editor_double_embed`        | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`. |
+| `hack_reaper_update_display` | `{true,false}` | Compatibility option for _REAPER_ and _Renoise_. This disables the `audioMasterUpdateDisplay()` function, which in these hosts will introduce mutual recursion which is currently not supported by yabridge's communication model. Defaults to `false`.                                                                                                                                                                                                    |
 
-- Both _REAPER_ and _Renoise_ can freeze when the plugin uses the
-  `audioMasterUpdateDisplay()` function while the host is updating the editor
-  window. As a temporary workaround until this is fixed you can set the
-  `hack_reaper_update_display` option to `true`. If you set this option for the
-  `["*"]` pattern like in the example below, then this will be applied to all
-  yabridge `.so` files in the directory of the `yabridge.toml` files and all
-  directories below it. If you have added any other patterns to the
-  `yabridge.toml` file you'll also have to add the setting there since yabridge
-  will only read settings from the first matching pattern. See the example below
-  for more clarification.
-- The way yabridge embeds editor windows will work for most plugins. There is a
-  second embedding mode available that adds yet another layer of embedding. This
-  can be enabled by setting the `editor_double_embed` option to `true`. At the
-  moment the only known plugins that need this are _PSPaudioware_ plugins with
-  expandable GUIs such as E27 as those plugins will otherwise draw in the wrong
-  location after the GUI has been expanded. This setting may be replaced in the
-  future if we can come up with a better solution.
+These options are workarounds for issues mentioned in the [known
+issues](#runtime-dependencies-and-known-issues) section. Depending on the hosts
+and plugins you use you might want to enable some of them. When using REAPER,
+it's recommended to enable `hack_reaper_update_display` for all of your plugins.
+To do this, create a `yabridge.toml` file next to your plugin's .so files with
+the following contents:
+
+```toml
+["*"]
+hack_reaper_update_display = true
+```
 
 #### Example
 
@@ -277,36 +276,27 @@ group = "fabfilter"
 ["MeldaProduction/Tools/MMultiAnalyzer.so"]
 group = "melda"
 
-["PSPaudioware"]
-editor_double_embed = true
-
 # Matches an entire directory and all files inside it, make sure to not include
 # a trailing slash
 ["ToneBoosters"]
 hack_reaper_update_display = true
 group = "toneboosters"
 
-# Simple glob patterns can be used to avoid a unneeded repitition
+["PSPaudioware"]
+editor_double_embed = true
+
+# Simple glob patterns can be used to avoid unneeded repetition
 ["iZotope*/Neutron *"]
 group = "izotope"
+
+# Since this file has already been matched by the above glob pattern, this won't
+# do anything
+["iZotope7/Neutron 2 Mix Tap.so"]
+group = "This will be ignored!"
 
 # Of course, you can also add multiple plugins to the same group by hand
 ["iZotope7/Insight 2.so"]
 group = "izotope"
-
-# This won't do anything as this file has already been matched by the pattern
-# above
-["iZotope7/Neutron 2 Mix Tap.so"]
-group = "This will be ignored!"
-
-# Don't do this unless you know what you're doing! This matches all plugins in
-# this directory and all of its subdirectories, which will cause all of them to
-# be hosted in a single process. While this would increase startup and plugin
-# scanning performance considerably, it will also break any form of individual
-# plugin sandboxing provided by the host and could potentially introduce all
-# kinds of weird issues.
-# ["*"]
-# group = "all"
 
 # This will apply a workaround for an implementation issue in REAPER and Renoise
 # to all plugins in the current directory _that are not already matched by one
@@ -424,9 +414,8 @@ include:
 
 - **REAPER** and **Renoise** can both freeze when using plugins that call the
   `audioMasterUpdateDisplay()` function because of mutual recursion limitations.
-  Until this is fixed you can set an
-  [option](#miscellaneous-fixes-and-workarounds) through `yabridge.toml` to work
-  around this.
+  Until this is fixed you can set an [option](#compatibility-options) through
+  `yabridge.toml` to work around this.
 - **Native Instruments** plugins work, but Native Access is unable to finish
   installing the plugins. To work around this you can open the .iso file
   downloaded to your downloads directory and run the installer directly. When
@@ -441,8 +430,7 @@ include:
   when the window gets dragged offscreen on the top and left dies of the screen.
 - **PSPaudioware** plugins with expandable GUIs, such as E27, may have their GUI
   appear in the wrong location after the GUI has been expanded. You can enable
-  an alternative [editor hosting mode](#miscellaneous-fixes-and-workarounds) to
-  fix this.
+  an alternative [editor hosting mode](#compatibility-options) to fix this.
 - Plugins like **FabFilter Pro-Q 3** that can share data between different
   instances of the same plugin plugins have to be hosted within a single process
   for that functionality to work. See the [plugin groups](#plugin-groups)
