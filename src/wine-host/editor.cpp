@@ -107,24 +107,9 @@ Editor::Editor(const Configuration& config,
                                   GetModuleHandle(nullptr),
                                   this),
                    DestroyWindow),
-      win32_child_handle(
-          config.editor_double_embed
-              ? std::make_optional<std::unique_ptr<std::remove_pointer_t<HWND>,
-                                                   decltype(&DestroyWindow)>>(
-                    CreateWindowEx(0,
-                                   reinterpret_cast<LPCSTR>(window_class.atom),
-                                   "yabridge plugin child",
-                                   WS_CHILD,
-                                   CW_USEDEFAULT,
-                                   CW_USEDEFAULT,
-                                   client_area.width,
-                                   client_area.height,
-                                   win32_handle.get(),
-                                   nullptr,
-                                   GetModuleHandle(nullptr),
-                                   nullptr),
-                    DestroyWindow)
-              : std::nullopt),
+      // If `config.editor_double_embed` is set, then we'll also create a child
+      // window in `win32_child_handle`. If we do this before calling
+      // `ShowWindow()` on `win32_handle` we'll run into X11 errors.
       idle_timer(win32_handle.get(), idle_timer_id, 100),
       parent_window(parent_window_handle),
       wine_window(get_x11_handle(win32_handle.get())),
@@ -182,7 +167,17 @@ Editor::Editor(const Configuration& config,
     xcb_flush(x11_connection.get());
 
     ShowWindow(win32_handle.get(), SW_SHOWNORMAL);
-    if (win32_child_handle) {
+    if (config.editor_double_embed) {
+        // As explained above, we can't do this directly in the initializer list
+        win32_child_handle = std::unique_ptr<std::remove_pointer_t<HWND>,
+                                             decltype(&DestroyWindow)>(
+            CreateWindowEx(
+                WS_EX_TOOLWINDOW, reinterpret_cast<LPCSTR>(window_class.atom),
+                "yabridge plugin child", WS_CHILD, CW_USEDEFAULT, CW_USEDEFAULT,
+                client_area.width, client_area.height, win32_handle.get(),
+                nullptr, GetModuleHandle(nullptr), this),
+            DestroyWindow);
+
         ShowWindow(win32_child_handle->get(), SW_SHOWNORMAL);
     }
 
