@@ -145,6 +145,7 @@ pub fn set_settings(config: &mut Config, options: &SetOptions) -> Result<()> {
 
 /// Options passed to `yabridgectl sync`, see `main()` for the definitions of these options.
 pub struct SyncOptions {
+    pub force: bool,
     pub no_verify: bool,
     pub prune: bool,
     pub verbose: bool,
@@ -154,6 +155,7 @@ pub struct SyncOptions {
 /// `.so` files if the prune option is set.
 pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     let libyabridge_path = config.libyabridge()?;
+    let libyabridge_hash = utils::hash_file(&libyabridge_path)?;
     println!("Using '{}'\n", libyabridge_path.display());
 
     let results = config
@@ -162,6 +164,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
 
     // Keep track of some global statistics
     let mut num_installed = 0;
+    let mut num_new = 0;
     let mut skipped_dll_files: Vec<PathBuf> = Vec::new();
     let mut orphan_so_files: Vec<FoundFile> = Vec::new();
     for (path, search_results) in results {
@@ -173,14 +176,45 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
             println!("{}:", path.display());
         }
         for plugin in search_results.vst2_files {
-            // If the target file already exists, we'll remove it first to prevent issues with
-            // mixing symlinks and regular files. We check `std::fs::symlink_metadata` instead of
-            // `Path::exists()` because the latter reports false for broken symlinks.
             let target_path = plugin.with_extension("so");
-            if fs::symlink_metadata(&target_path).is_ok() {
-                utils::remove_file(&target_path)?;
-            }
 
+            // We'll only recreate existing files when updating yabridge, when switching between the
+            // symlink and copy installation methods, or when the `force` option is set. If the
+            // target file already exists and does not require updating, we'll just skip the file
+            // since some DAWs will otherwise unnecessarily reindex the file.
+            // We check `std::fs::symlink_metadata` instead of `Path::exists()` because the latter
+            // reports false for broken symlinks.
+            if let Ok(metadata) = fs::symlink_metadata(&target_path) {
+                match (options.force, &config.method) {
+                    (false, InstallationMethod::Copy) => {
+                        // If the target file is already a real file (not a symlink) and its hash is
+                        // the same as the `libyabridge.so` file we're trying to copy there, then we
+                        // don't have to do anything
+                        if metadata.file_type().is_file()
+                            && utils::hash_file(&target_path)? == libyabridge_hash
+                        {
+                            continue;
+                        }
+                    }
+                    (false, InstallationMethod::Symlink) => {
+                        // If the target file is already a symlink to `libyabridge.so`, then we can
+                        // skip this file
+                        if metadata.file_type().is_symlink()
+                            && target_path.read_link()? == libyabridge_path
+                        {
+                            continue;
+                        }
+                    }
+                    // With the force option we always want to recreate existing .so files
+                    (true, _) => (),
+                }
+
+                utils::remove_file(&target_path)?;
+            };
+
+            // Since we skip some files, we'll also keep track of how many new file we've actually
+            // set up
+            num_new += 1;
             match config.method {
                 InstallationMethod::Copy => {
                     utils::copy(&libyabridge_path, &target_path)?;
@@ -234,9 +268,10 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     }
 
     println!(
-        "Finished setting up {} plugins using {}, skipped {} non-plugin .dll files",
+        "Finished setting up {} plugins using {} ({} new), skipped {} non-plugin .dll files",
         num_installed,
         config.method.plural_name(),
+        num_new,
         num_skipped_files
     );
 

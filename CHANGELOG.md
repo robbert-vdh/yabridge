@@ -13,6 +13,16 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed a regression where the `editor_double_embed` option would cause X11
   errors and crash yabridge.
 
+### yabridgectl
+
+- When running `yabridgectl sync`, existing .so files will no longer be
+  recreated unless necessary. This prevents hosts from rescanning all plugins
+  after setting up a single new plugin through yabridgectl. Running
+  `yabridgectl sync` after updating yabridge will still recreate all existing
+  .so files as usual.
+- Added a `--force` option to `yabridgectl sync` to always recreate existing .so
+  files like in previous versions.
+
 ## [1.7.0] - 2020-10-13
 
 ### Changed

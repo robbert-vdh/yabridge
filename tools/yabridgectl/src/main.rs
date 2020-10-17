@@ -101,6 +101,12 @@ fn main() -> Result<()> {
             App::new("sync")
                 .about("Set up or update yabridge for all plugins")
                 .arg(
+                    Arg::with_name("force")
+                        .short('f')
+                        .long("force")
+                        .about("Always update files, even not necessary"),
+                )
+                .arg(
                     Arg::with_name("no-verify")
                         .short('n')
                         .long("no-verify")
@@ -156,6 +162,7 @@ fn main() -> Result<()> {
         ("sync", Some(options)) => actions::do_sync(
             &mut config,
             &actions::SyncOptions {
+                force: options.is_present("force"),
                 no_verify: options.is_present("no-verify"),
                 prune: options.is_present("prune"),
                 verbose: options.is_present("verbose"),
