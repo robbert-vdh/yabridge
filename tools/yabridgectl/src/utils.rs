@@ -65,6 +65,23 @@ pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> Result<()> {
     })
 }
 
+/// Hash the conetnts of a file as an `i64` using Rust's built in hasher. Collisions are not a big
+/// issue in our situation so we can get away with this.
+///
+/// # Note
+///
+/// We convert the hash to an i64 because the TOML library can't deserialize large u64 values since
+/// it uses i64s internally.
+pub fn hash_file(file: &Path) -> Result<i64> {
+    let mut hasher = DefaultHasher::new();
+    hasher.write(
+        &fs::read(file)
+            .with_context(|| format!("Could not read contents of '{}'", file.display()))?,
+    );
+
+    Ok(hasher.finish() as i64)
+}
+
 /// Verify that `yabridge-host.exe` is accessible in a login shell. Returns unit if it is, or if we
 /// the login shell is set to an unknown shell. In the last case we'll just print a warning since we
 /// don't know how to invoke the shell as a login shell. This is needed when using copies to ensure
@@ -175,15 +192,7 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
 
     // Hash the contents of `yabridge-host.exe.so` since `yabridge-host.exe` is only a Wine
     // generated shell script
-    let yabridge_host_exe_so_path = yabridge_host_exe_path.with_extension("exe.so");
-    let mut hasher = DefaultHasher::new();
-    hasher.write(&fs::read(&yabridge_host_exe_so_path).with_context(|| {
-        format!(
-            "Could not read contents of '{}'",
-            yabridge_host_exe_so_path.display()
-        )
-    })?);
-    let yabridge_host_hash = hasher.finish() as i64;
+    let yabridge_host_hash = hash_file(&yabridge_host_exe_path.with_extension("exe.so"))?;
 
     // Since these checks can take over a second if wineserver isn't already running we'll only
     // perform them when something has changed
