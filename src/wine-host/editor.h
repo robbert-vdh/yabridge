@@ -115,7 +115,7 @@ class Editor {
      * call. This will return the child window's handle if double editor
      * embedding is enabled.
      */
-    HWND get_win32_handle();
+    HWND get_win32_handle() const;
 
     /**
      * Returns `true` if the window manager supports the EWMH active window

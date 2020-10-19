@@ -141,13 +141,15 @@ Editor::Editor(const Configuration& config,
                   << std::endl;
     }
 
-    // Because we're not using XEmbed Wine will interpret any local coordinates
+    // Because we're not using XEmbed, Wine will interpret any local coordinates
     // as global coordinates. To work around this we'll tell the Wine window
     // it's located at its actual coordinates on screen rather than somewhere
     // within. For robustness's sake this should be done both when the actual
     // window the Wine window is embedded in (which may not be the parent
     // window) is moved or resized, and when the user moves his mouse over the
-    // window because this is sometimes needed for plugin groups.
+    // window because this is sometimes needed for plugin groups. We also listen
+    // for EnterNotify and LeaveNotify events on the Wine window so we can grab
+    // and release input focus as necessary.
     const uint32_t topmost_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
     xcb_change_window_attributes(x11_connection.get(), topmost_window,
                                  XCB_CW_EVENT_MASK, &topmost_event_mask);
@@ -211,7 +213,7 @@ Editor::~Editor() {
     win32_handle.reset();
 }
 
-HWND Editor::get_win32_handle() {
+HWND Editor::get_win32_handle() const {
     if (win32_child_handle) {
         return win32_child_handle->get();
     } else {
@@ -296,11 +298,24 @@ void Editor::handle_x11_events() const {
             // FX window. This distinction is important, because we do not want
             // to mess with keyboard focus when hovering over the window while
             // for instance a dialog is open.
-            case XCB_LEAVE_NOTIFY:
-                if (supports_ewmh_active_window() && is_wine_window_active()) {
+            case XCB_LEAVE_NOTIFY: {
+                const auto event =
+                    reinterpret_cast<xcb_leave_notify_event_t*>(generic_event);
+
+                // This extra check for the `NonlinearVirtual` detail is
+                // important (see
+                // https://www.x.org/releases/X11R7.5/doc/x11proto/proto.html
+                // for more information on what this actually means). I've only
+                // seen this issue with the Tokyo Dawn Records plugins, but a
+                // plugin may create a popup window that acts as a dropdown
+                // without actually activating that window (unlike with an
+                // actual Win32 dropdown menu). Without this check these fake
+                // dropdowns would immediately close when hovering over them.
+                if (event->detail != XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL &&
+                    supports_ewmh_active_window() && is_wine_window_active()) {
                     set_input_focus(false);
                 }
-                break;
+            } break;
         }
 
         free(generic_event);

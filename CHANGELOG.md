@@ -12,6 +12,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixed a regression where the `editor_double_embed` option would cause X11
   errors and crash yabridge.
+- Fixed a regression where certain fake dropdown menus such as those used in the
+  Tokyo Dawn Records plugins would close immediately when hovering over them.
 
 ### yabridgectl
 
