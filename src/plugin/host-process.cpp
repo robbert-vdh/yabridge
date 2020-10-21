@@ -45,7 +45,10 @@ bp::child launch_host(fs::path host_path, Args&&... args) {
 #else
         host_path,
 #endif
-        std::forward<Args>(args)...);
+        // We'll use vfork() instead of fork to avoid potential issues with
+        // inheriting file descriptors
+        // https://github.com/robbert-vdh/yabridge/issues/45
+        bp::posix::use_vfork, std::forward<Args>(args)...);
 }
 
 HostProcess::HostProcess(boost::asio::io_context& io_context, Logger& logger)
