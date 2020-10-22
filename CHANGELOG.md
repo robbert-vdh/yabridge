@@ -27,6 +27,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   .so files as usual.
 - Added a `--force` option to `yabridgectl sync` to always recreate existing .so
   files like in previous versions.
+- Fixed a regression from yabridgectl 1.6.1 that prevented you from removing
+  directories that no longer exist using `yabridgectl rm`.
 
 ## [1.7.0] - 2020-10-13
 

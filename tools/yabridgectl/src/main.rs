@@ -139,12 +139,9 @@ fn main() -> Result<()> {
                 .value_of_t_or_exit::<PathBuf>("path")
                 .canonicalize()?,
         ),
-        ("rm", Some(options)) => actions::remove_directory(
-            &mut config,
-            &options
-                .value_of_t_or_exit::<PathBuf>("path")
-                .canonicalize()?,
-        ),
+        ("rm", Some(options)) => {
+            actions::remove_directory(&mut config, &options.value_of_t_or_exit::<PathBuf>("path"))
+        }
         ("list", _) => actions::list_directories(&config),
         ("status", _) => actions::show_status(&config),
         ("set", Some(options)) => actions::set_settings(
