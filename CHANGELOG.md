@@ -15,7 +15,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed a regression where certain fake dropdown menus such as those used in the
   Tokyo Dawn Records plugins would close immediately when hovering over them.
 - Fixed an issue where plugins hosted within a plugin group would not shut down
-  properly in certain situations. This would cause the VST host to hang while
+  properly in certain situations. This would cause the VST host to hang when
   removing such a plugin.
 
 ### yabridgectl
