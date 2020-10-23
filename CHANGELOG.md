@@ -25,8 +25,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   after setting up a single new plugin through yabridgectl. Running
   `yabridgectl sync` after updating yabridge will still recreate all existing
   .so files as usual.
-- Added a `--force` option to `yabridgectl sync` to always recreate existing .so
-  files like in previous versions.
+- Added a `--force` option to `yabridgectl sync` to always recreate all existing
+  .so files like in previous versions.
 - Fixed a regression from yabridgectl 1.6.1 that prevented you from removing
   directories that no longer exist using `yabridgectl rm`.
 
