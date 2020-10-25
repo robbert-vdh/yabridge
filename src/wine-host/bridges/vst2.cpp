@@ -21,7 +21,6 @@
 #include <iostream>
 
 #include "../../common/communication.h"
-#include "../../common/events.h"
 
 /**
  * A function pointer to what should be the entry point of a VST plugin.
