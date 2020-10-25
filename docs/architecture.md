@@ -1,5 +1,7 @@
 # Architecture
 
+<!-- TODO: Mention the new special socket approach for `dispatch()` and `audioMaster()-->
+
 The project consists of two components: a Linux native VST plugin
 (`libyabridge.so`) and a VST host that runs under Wine
 (`yabridge-host.exe`/`yabridge-host.exe.so`, and
@@ -38,22 +40,24 @@ as the _Windows VST plugin_. The whole process works as follows:
    - The Wine prefix the plugin is located in. If the `WINEPREFIX` environment
      variable is specified, then that will be used instead.
 
-3. The plugin then sets up a Unix domain socket endpoint to communicate with the
-   Wine VST host somewhere in a temporary directory and starts listening on it.
-   I chose to communicate over Unix domain sockets rather than using shared
-   memory directly because this way you get low latency communication with
-   without any busy waits or manual synchronisation for free. The added benefit
-   is that it also makes it possible to send arbitrarily large chunks of data
-   without having to split it up first. This is useful for transmitting audio
-   and preset data which may have any arbitrary size.
+3. The plugin then sets up several Unix domain socket endpoints to communicate
+   with the Wine VST host somewhere in a temporary directory and starts
+   listening on them. We'll use multiple sockets so we can easily handle
+   multiple data streams from different threads using blocking synchronous
+   operations. This greatly simplifies the way communication works without
+   compromising on latency. The different sockets will be described below. We
+   communicate over Unix domain sockets rather than using shared memory directly
+   because this way we get low latency communication without any manual
+   synchronisation for free, while being able to send messages of arbitrary
+   length without having to split them up first. This is useful for transmitting
+   audio and preset data which can be any arbitrary size.
 4. The plugin launches the Wine VST host in the detected wine prefix, passing
-   the name of the `.dll` file it should be loading and the path to the Unix
-   domain socket that was just created as its arguments.
-5. Communication gets set up using multiple sockets over the end point created
-   previously. This allows us to easily handle multiple data streams from
-   different threads using blocking read operations for synchronization. Doing
-   this greatly simplifies the way communication works without compromising on
-   latency. The following types of events each get their own socket:
+   the name of the `.dll` file it should be loading and the base directory for
+   the Unix domain sockets that are going to be communciated over as its
+   arguments.
+5. The Wine VST host connects to the sockets and communication between the
+   plugin and the Wine VST host gets set up. The following types of events each
+   get their own socket:
 
    - Calls from the native VST host to the plugin's `dispatcher()` function.
      These get forwarded to the Windows VST plugin through the Wine VST host.
