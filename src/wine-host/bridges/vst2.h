@@ -31,6 +31,7 @@
 
 #include "../../common/configuration.h"
 #include "../../common/logging.h"
+#include "../../common/communication.h"
 #include "../editor.h"
 #include "../utils.h"
 
@@ -46,7 +47,7 @@ struct EditorOpening {};
  * plugin and provides host callback function for the plugin to talk back.
  *
  * @remark Because of Win32 API limitations, all window handling has to be done
- *   from the same thread. Most plugins won't have any issues when using
+ *   from a single thread. Most plugins won't have any issues when using
  *   multiple message loops, but the Melda plugins for instance will only update
  *   their GUIs from the message loop of the thread that created the first
  *   instance. This is why we pass an IO context to this class so everything
@@ -64,8 +65,8 @@ class Vst2Bridge {
      *   also be run from this context.
      * @param plugin_dll_path A (Unix style) path to the VST plugin .dll file to
      *   load.
-     * @param socket_endpoint_path A (Unix style) path to the Unix socket
-     *   endpoint the native VST plugin created to communicate over.
+     * @param endpoint_base_dir The base directory used for the socket
+     *   endpoints. See `Sockets` for more information.
      *
      * @note The object has to be constructed from the same thread that calls
      *   `main_context.run()`.
@@ -75,7 +76,7 @@ class Vst2Bridge {
      */
     Vst2Bridge(boost::asio::io_context& main_context,
                std::string plugin_dll_path,
-               std::string socket_endpoint_path);
+               std::string endpoint_base_dir);
 
     /**
      * Returns true if the message loop should be skipped. This happens when the
@@ -189,47 +190,9 @@ class Vst2Bridge {
     AEffect* plugin;
 
     /**
-     * The UNIX domain socket endpoint used for communicating to this specific
-     * bridged plugin.
+     * All sockets used for communicating with this specific plugin.
      */
-    boost::asio::local::stream_protocol::endpoint socket_endpoint;
-
-    // The naming convention for these sockets is `<from>_<to>_<event>`. For
-    // instance the socket named `host_vst_dispatch` forwards
-    // `AEffect.dispatch()` calls from the native VST host to the Windows VST
-    // plugin (through the Wine VST host).
-
-    /**
-     * The socket that forwards all `dispatcher()` calls from the VST host to
-     * the plugin.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_dispatch;
-    /**
-     * Used specifically for the `effProcessEvents` opcode. This is needed
-     * because the Win32 API is designed to block during certain GUI
-     * interactions such as resizing a window or opening a dropdown. Without
-     * this MIDI input would just stop working at times.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_dispatch_midi_events;
-    /**
-     * The socket that forwards all `audioMaster()` calls from the Windows VST
-     * plugin to the host.
-     */
-    boost::asio::local::stream_protocol::socket vst_host_callback;
-    /**
-     * Used for both `getParameter` and `setParameter` since they mostly
-     * overlap.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_parameters;
-    boost::asio::local::stream_protocol::socket host_vst_process_replacing;
-
-    /**
-     * A control socket that sends data that is not suitable for the other
-     * sockets. At the moment this is only used to, on startup, send the Windows
-     * VST plugin's `AEffect` object to the native VST plugin, and to then send
-     * the configuration (from `config`) back to the Wine host.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_control;
+    Sockets sockets;
 
     /**
      * The thread that specifically handles `effProcessEvents` opcodes so the

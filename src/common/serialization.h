@@ -598,14 +598,14 @@ struct AudioBuffers {
  */
 struct GroupRequest {
     std::string plugin_path;
-    std::string socket_path;
+    std::string endpoint_base_dir;
 
     bool operator==(const GroupRequest& rhs) const;
 
     template <typename S>
     void serialize(S& s) {
         s.text1b(plugin_path, 4096);
-        s.text1b(socket_path, 4096);
+        s.text1b(endpoint_base_dir, 4096);
     }
 };
 
@@ -614,7 +614,8 @@ struct std::hash<GroupRequest> {
     std::size_t operator()(GroupRequest const& params) const noexcept {
         std::hash<string> hasher{};
 
-        return hasher(params.plugin_path) ^ (hasher(params.socket_path) << 1);
+        return hasher(params.plugin_path) ^
+               (hasher(params.endpoint_base_dir) << 1);
     }
 };
 

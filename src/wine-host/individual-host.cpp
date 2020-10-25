@@ -39,7 +39,7 @@ void async_handle_events(boost::asio::steady_timer& timer, Vst2Bridge& bridge);
 
 /**
  * This is the default VST host application. It will load the specified VST2
- * plugin, and then connect back to the `libyabridge.so` instace that spawned
+ * plugin, and then connect back to the `libyabridge.so` instance that spawned
  * this over the socket.
  *
  * The explicit calling convention is needed to work around a bug introduced in
@@ -48,9 +48,9 @@ void async_handle_events(boost::asio::steady_timer& timer, Vst2Bridge& bridge);
 int __cdecl main(int argc, char* argv[]) {
     set_realtime_priority();
 
-    // We pass the name of the VST plugin .dll file to load and the Unix domain
-    // socket to connect to in plugin/bridge.cpp as the first two arguments of
-    // this process.
+    // We pass the name of the VST plugin .dll file to load and the base
+    // directory for the Unix domain socket endpoints to connect to as the first
+    // two arguments of this process in plugin/bridge.cpp.
     if (argc < 3) {
         std::cerr << "Usage: "
 #ifdef __i386__
@@ -58,7 +58,7 @@ int __cdecl main(int argc, char* argv[]) {
 #else
                   << yabridge_individual_host_name
 #endif
-                  << " <vst_plugin_dll> <unix_domain_socket>" << std::endl;
+                  << " <vst_plugin_dll> <endpoint_base_directory>" << std::endl;
 
         return 1;
     }

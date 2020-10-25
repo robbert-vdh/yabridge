@@ -22,37 +22,27 @@
 #include <boost/process/search_path.hpp>
 #include <boost/process/system.hpp>
 #include <fstream>
-#include <random>
 #include <sstream>
 
 // Generated inside of the build directory
 #include <src/common/config/config.h>
 
 #include "../common/configuration.h"
+#include "../common/utils.h"
 
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
-/**
- * Used for generating random identifiers.
- */
-constexpr char alphanumeric_characters[] =
-    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-std::string create_logger_prefix(const fs::path& socket_path) {
-    // Use the socket filename as the logger prefix, but strip the `yabridge-`
-    // part since that's redundant
-    std::string socket_name =
-        socket_path.filename().replace_extension().string();
+std::string create_logger_prefix(const fs::path& endpoint_base_dir) {
+    // Use the name of the base directory used for our sockets as the logger
+    // prefix, but strip the `yabridge-` part since that's redundant
+    std::string endpoint_name = endpoint_base_dir.filename().string();
 
     constexpr std::string_view socket_prefix("yabridge-");
-    assert(socket_name.starts_with(socket_prefix));
-    socket_name = socket_name.substr(socket_prefix.size());
+    assert(endpoint_name.starts_with(socket_prefix));
+    endpoint_name = endpoint_name.substr(socket_prefix.size());
 
-    std::ostringstream prefix;
-    prefix << "[" << socket_name << "] ";
-
-    return prefix.str();
+    return "[" + endpoint_name + "] ";
 }
 
 std::optional<fs::path> find_wineprefix() {
@@ -183,39 +173,7 @@ boost::filesystem::path generate_group_endpoint(
     }
     socket_name << ".sock";
 
-    return fs::temp_directory_path() / socket_name.str();
-}
-
-fs::path generate_plugin_endpoint() {
-    const auto plugin_name =
-        find_vst_plugin().filename().replace_extension("").string();
-
-    std::random_device random_device;
-    std::mt19937 rng(random_device());
-    fs::path candidate_endpoint;
-    do {
-        std::string random_id;
-        std::sample(
-            alphanumeric_characters,
-            alphanumeric_characters + strlen(alphanumeric_characters) - 1,
-            std::back_inserter(random_id), 8, rng);
-
-        // We'll get rid of the file descriptors immediately after accepting the
-        // sockets, so putting them inside of a subdirectory would only leave
-        // behind an empty directory
-        std::ostringstream socket_name;
-        socket_name << "yabridge-" << plugin_name << "-" << random_id
-                    << ".sock";
-
-        candidate_endpoint = fs::temp_directory_path() / socket_name.str();
-    } while (fs::exists(candidate_endpoint));
-
-    // TODO: Should probably try creating the endpoint right here and catch any
-    //       exceptions since this could technically result in a race condition
-    //       when two instances of yabridge decide to use the same endpoint name
-    //       at the same time
-
-    return candidate_endpoint;
+    return get_temporary_directory() / socket_name.str();
 }
 
 fs::path get_this_file_location() {
@@ -243,7 +201,7 @@ std::string get_wine_version() {
 
     bp::environment env = boost::this_process::environment();
     if (!env["WINELOADER"].empty()) {
-        wine_command = env.get("WINELOADER");
+        wine_command = env["WINELOADER"].to_string();
     }
 
     bp::ipstream output;
@@ -271,13 +229,13 @@ std::string get_wine_version() {
 
 std::string join_quoted_strings(std::vector<std::string>& strings) {
     bool is_first = true;
-    std::ostringstream joined_strigns{};
+    std::ostringstream joined_strings{};
     for (const auto& option : strings) {
-        joined_strigns << (is_first ? "'" : ", '") << option << "'";
+        joined_strings << (is_first ? "'" : ", '") << option << "'";
         is_first = false;
     }
 
-    return joined_strigns.str();
+    return joined_strings.str();
 }
 
 Configuration load_config_for(const fs::path& yabridge_path) {

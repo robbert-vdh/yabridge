@@ -83,7 +83,7 @@ void HostProcess::async_log_pipe_lines(patched_async_pipe& pipe,
 IndividualHost::IndividualHost(boost::asio::io_context& io_context,
                                Logger& logger,
                                fs::path plugin_path,
-                               fs::path socket_endpoint)
+                               const Sockets& sockets)
     : HostProcess(io_context, logger),
       plugin_arch(find_vst_architecture(plugin_path)),
       host_path(find_vst_host(plugin_arch, false)),
@@ -93,7 +93,7 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
 #else
                        plugin_path,
 #endif
-                       socket_endpoint,
+                       sockets.base_dir,
                        bp::env = set_wineprefix(),
                        bp::std_out = stdout_pipe,
                        bp::std_err = stderr_pipe
@@ -127,17 +127,15 @@ void IndividualHost::terminate() {
     host.wait();
 }
 
-GroupHost::GroupHost(
-    boost::asio::io_context& io_context,
-    Logger& logger,
-    fs::path plugin_path,
-    fs::path socket_endpoint,
-    std::string group_name,
-    boost::asio::local::stream_protocol::socket& host_vst_dispatch)
+GroupHost::GroupHost(boost::asio::io_context& io_context,
+                     Logger& logger,
+                     fs::path plugin_path,
+                     Sockets& sockets,
+                     std::string group_name)
     : HostProcess(io_context, logger),
       plugin_arch(find_vst_architecture(plugin_path)),
       host_path(find_vst_host(plugin_arch, true)),
-      host_vst_dispatch(host_vst_dispatch) {
+      sockets(sockets) {
 #ifdef WITH_WINEDBG
     if (plugin_path.string().find(' ') != std::string::npos) {
         logger.log("Warning: winedbg does not support paths containing spaces");
@@ -167,6 +165,7 @@ GroupHost::GroupHost(
         wine_prefix = fs::path(host_env.at("HOME").to_string()) / ".wine";
     }
 
+    const fs::path endpoint_base_dir = sockets.base_dir;
     const fs::path group_socket_path =
         generate_group_endpoint(group_name, wine_prefix, plugin_arch);
     try {
@@ -175,9 +174,10 @@ GroupHost::GroupHost(
         boost::asio::local::stream_protocol::socket group_socket(io_context);
         group_socket.connect(group_socket_path.string());
 
-        write_object(group_socket,
-                     GroupRequest{.plugin_path = plugin_path.string(),
-                                  .socket_path = socket_endpoint.string()});
+        write_object(
+            group_socket,
+            GroupRequest{.plugin_path = plugin_path.string(),
+                         .endpoint_base_dir = endpoint_base_dir.string()});
         const auto response = read_object<GroupResponse>(group_socket);
 
         host_pid = response.pid;
@@ -199,7 +199,7 @@ GroupHost::GroupHost(
         // meantime.
         group_host_connect_handler = std::jthread([&, group_socket_path,
                                                    plugin_path,
-                                                   socket_endpoint]() {
+                                                   endpoint_base_dir]() {
             using namespace std::literals::chrono_literals;
 
             // TODO: Replace this polling with inotify
@@ -214,8 +214,9 @@ GroupHost::GroupHost(
 
                     write_object(
                         group_socket,
-                        GroupRequest{.plugin_path = plugin_path.string(),
-                                     .socket_path = socket_endpoint.string()});
+                        GroupRequest{
+                            .plugin_path = plugin_path.string(),
+                            .endpoint_base_dir = endpoint_base_dir.string()});
                     const auto response =
                         read_object<GroupResponse>(group_socket);
 
@@ -262,7 +263,7 @@ void GroupHost::terminate() {
     // There's no need to manually terminate group host processes as they will
     // shut down automatically after all plugins have exited. Manually closing
     // the dispatch socket will cause the associated plugin to exit.
-    host_vst_dispatch.shutdown(
+    sockets.host_vst_dispatch.shutdown(
         boost::asio::local::stream_protocol::socket::shutdown_both);
-    host_vst_dispatch.close();
+    sockets.host_vst_dispatch.close();
 }

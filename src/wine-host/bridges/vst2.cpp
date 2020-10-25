@@ -67,16 +67,10 @@ Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
 
 Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
                        std::string plugin_dll_path,
-                       std::string socket_endpoint_path)
+                       std::string endpoint_base_dir)
     : io_context(main_context),
       plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
-      socket_endpoint(socket_endpoint_path),
-      host_vst_dispatch(io_context),
-      host_vst_dispatch_midi_events(io_context),
-      vst_host_callback(io_context),
-      host_vst_parameters(io_context),
-      host_vst_process_replacing(io_context),
-      host_vst_control(io_context) {
+      sockets(io_context, endpoint_base_dir, false) {
     // Got to love these C APIs
     if (!plugin_handle) {
         throw std::runtime_error("Could not load the Windows .dll file at '" +
@@ -101,14 +95,7 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
             "'.");
     }
 
-    // It's very important that these sockets are accepted to in the same order
-    // in the Linux plugin
-    host_vst_dispatch.connect(socket_endpoint);
-    host_vst_dispatch_midi_events.connect(socket_endpoint);
-    vst_host_callback.connect(socket_endpoint);
-    host_vst_parameters.connect(socket_endpoint);
-    host_vst_process_replacing.connect(socket_endpoint);
-    host_vst_control.connect(socket_endpoint);
+    sockets.connect();
 
     // Initialize after communication has been set up
     // We'll try to do the same `get_bridge_isntance` trick as in
@@ -132,13 +119,14 @@ Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
     // of this object will be sent over the `dispatcher()` socket. This would be
     // done after the host calls `effOpen()`, and when the plugin calls
     // `audioMasterIOChanged()`.
-    write_object(host_vst_control, EventResult{.return_value = 0,
-                                               .payload = *plugin,
-                                               .value_payload = std::nullopt});
+    write_object(sockets.host_vst_control,
+                 EventResult{.return_value = 0,
+                             .payload = *plugin,
+                             .value_payload = std::nullopt});
 
     // After sending the AEffect struct we'll receive this instance's
     // configuration as a response
-    config = read_object<Configuration>(host_vst_control);
+    config = read_object<Configuration>(sockets.host_vst_control);
 
     // This works functionally identically to the `handle_dispatch()` function,
     // but this socket will only handle MIDI events and it will handle them
@@ -160,7 +148,7 @@ void Vst2Bridge::handle_dispatch() {
     while (true) {
         try {
             receive_event(
-                host_vst_dispatch, std::nullopt,
+                sockets.host_vst_dispatch, std::nullopt,
                 passthrough_event(
                     plugin,
                     [&](AEffect* plugin, int opcode, int index, intptr_t value,
@@ -194,7 +182,8 @@ void Vst2Bridge::handle_dispatch_midi_events() {
     while (true) {
         try {
             receive_event(
-                host_vst_dispatch_midi_events, std::nullopt, [&](Event& event) {
+                sockets.host_vst_dispatch_midi_events, std::nullopt,
+                [&](Event& event) {
                     if (BOOST_LIKELY(event.opcode == effProcessEvents)) {
                         // For 99% of the plugins we can just call
                         // `effProcessReplacing()` and be done with it, but a
@@ -255,19 +244,19 @@ void Vst2Bridge::handle_parameters() {
             // through on this socket since they have a lot of overlap. The
             // presence of the `value` field tells us which one we're dealing
             // with.
-            auto request = read_object<Parameter>(host_vst_parameters);
+            auto request = read_object<Parameter>(sockets.host_vst_parameters);
             if (request.value) {
                 // `setParameter`
                 plugin->setParameter(plugin, request.index, *request.value);
 
                 ParameterResult response{std::nullopt};
-                write_object(host_vst_parameters, response);
+                write_object(sockets.host_vst_parameters, response);
             } else {
                 // `getParameter`
                 float value = plugin->getParameter(plugin, request.index);
 
                 ParameterResult response{value};
-                write_object(host_vst_parameters, response);
+                write_object(sockets.host_vst_parameters, response);
             }
         } catch (const boost::system::system_error&) {
             // The plugin has cut off communications, so we can shut down this
@@ -288,8 +277,8 @@ void Vst2Bridge::handle_process_replacing() {
 
     while (true) {
         try {
-            auto request = read_object<AudioBuffers>(host_vst_process_replacing,
-                                                     process_buffer);
+            auto request = read_object<AudioBuffers>(
+                sockets.host_vst_process_replacing, process_buffer);
             // Let the plugin process the MIDI events that were received since
             // the last buffer, and then clean up those events. This approach
             // should not be needed but Kontakt only stores pointers to rather
@@ -348,8 +337,8 @@ void Vst2Bridge::handle_process_replacing() {
 
                         AudioBuffers response{output_buffers_single_precision,
                                               request.sample_frames};
-                        write_object(host_vst_process_replacing, response,
-                                     process_buffer);
+                        write_object(sockets.host_vst_process_replacing,
+                                     response, process_buffer);
                     },
                     [&](std::vector<std::vector<double>>& input_buffers) {
                         // Exactly the same as the above, but for double
@@ -373,8 +362,8 @@ void Vst2Bridge::handle_process_replacing() {
 
                         AudioBuffers response{output_buffers_double_precision,
                                               request.sample_frames};
-                        write_object(host_vst_process_replacing, response,
-                                     process_buffer);
+                        write_object(sockets.host_vst_process_replacing,
+                                     response, process_buffer);
                     }},
                 request.buffers);
 
@@ -419,7 +408,7 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             // When hosting multiple plugins in a group process, all plugins
             // should get a unique window class
             const std::string window_class =
-                "yabridge plugin " + socket_endpoint.path();
+                "yabridge plugin " + sockets.base_dir.string();
             Editor& editor_instance = editor.emplace<Editor>(
                 config, window_class, x11_handle, plugin);
 
@@ -581,7 +570,7 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
     }
 
     HostCallbackDataConverter converter(effect, time_info);
-    return send_event(vst_host_callback, host_callback_mutex, converter,
+    return send_event(sockets.vst_host_callback, host_callback_mutex, converter,
                       std::nullopt, opcode, index, value, data, option);
 }
 

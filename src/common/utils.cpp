@@ -17,6 +17,19 @@
 #include "utils.h"
 
 #include <sched.h>
+#include <boost/process/environment.hpp>
+
+namespace bp = boost::process;
+namespace fs = boost::filesystem;
+
+fs::path get_temporary_directory() {
+    bp::environment env = boost::this_process::environment();
+    if (!env["XDG_RUNTIME_DIR"].empty()) {
+        return env["XDG_RUNTIME_DIR"].to_string();
+    } else {
+        return fs::temp_directory_path();
+    }
+}
 
 bool set_realtime_priority() {
     sched_param params{.sched_priority = 5};

@@ -209,10 +209,12 @@ void GroupBridge::accept_requests() {
             // this has to be done on the same thread that's handling messages,
             // and all window messages have to be handled from the same thread.
             logger.log("Received request to host '" + request.plugin_path +
-                       "' using socket '" + request.socket_path + "'");
+                       "' using socket endpoint base directory '" +
+                       request.endpoint_base_dir + "'");
             try {
                 auto bridge = std::make_unique<Vst2Bridge>(
-                    plugin_context, request.plugin_path, request.socket_path);
+                    plugin_context, request.plugin_path,
+                    request.endpoint_base_dir);
                 logger.log("Finished initializing '" + request.plugin_path +
                            "'");
 
