@@ -107,25 +107,27 @@ as the _Windows VST plugin_. The whole process works as follows:
    are located in `src/common/communication.h`. The actual binary serialization
    is handled using [bitsery](https://github.com/fraillt/bitsery).
 
-   Actually sending and receiving the events happens in the `send_event()` and
-   `receive_event()` functions. When calling either `dispatch()` or
-   `audioMaster()`, the caller will oftentimes either pass along some kind of
-   data structure through the void pointer function argument, or they expect the
-   function's return value to be a pointer to some kind of struct provided by
-   the plugin or host. The behaviour for reading from and writing into these
-   void pointers and returning pointers to objects when needed is encapsulated
-   in the `DispatchDataConverter` and `HostCallbackDataCovnerter` classes for
-   the `dispatcher()` and `audioMaster()` functions respectively. For operations
-   involving the plugin editor there is also some extra glue in
-   `Vst2Bridge::dispatch_wrapper`. On the receiving end of the function calls,
-   the `passthrough_event()` function which calls the callback functions and
-   handles the marshalling between our data types created by the
-   `*DataConverter` classes and the VST API's different pointer types. This
-   behaviour is separated from `receive_event()` so we can handle MIDI events
-   separately. This is needed because a select few plugins only store pointers
-   to the received events rather than copies of the objects. Because of this,
-   the received event data must live at least until the next audio buffer gets
-   processed so it needs to be stored temporarily.
+   TODO: Rewrite this after the socket changes are done
+
+   Actually sending and receiving the events happens in the
+   `EventHandler::send()` and `EventHandler::receive()` functions. When calling
+   either `dispatch()` or `audioMaster()`, the caller will oftentimes either
+   pass along some kind of data structure through the void pointer function
+   argument, or they expect the function's return value to be a pointer to some
+   kind of struct provided by the plugin or host. The behaviour for reading from
+   and writing into these void pointers and returning pointers to objects when
+   needed is encapsulated in the `DispatchDataConverter` and
+   `HostCallbackDataCovnerter` classes for the `dispatcher()` and
+   `audioMaster()` functions respectively. For operations involving the plugin
+   editor there is also some extra glue in `Vst2Bridge::dispatch_wrapper`. On
+   the receiving end of the function calls, the `passthrough_event()` function
+   which calls the callback functions and handles the marshalling between our
+   data types created by the `*DataConverter` classes and the VST API's
+   different pointer types. This behaviour is separated from `receive_event()`
+   so we can handle MIDI events separately. This is needed because a select few
+   plugins only store pointers to the received events rather than copies of the
+   objects. Because of this, the received event data must live at least until
+   the next audio buffer gets processed so it needs to be stored temporarily.
 
 6. The Wine VST host loads the Windows VST plugin and starts forwarding messages
    over the sockets described above.

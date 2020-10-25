@@ -28,79 +28,6 @@ namespace fs = boost::filesystem;
 constexpr char alphanumeric_characters[] =
     "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-Sockets::Sockets(boost::asio::io_context& io_context,
-                 const boost::filesystem::path& endpoint_base_dir,
-                 bool listen)
-    : base_dir(endpoint_base_dir),
-      io_context(io_context),
-      host_vst_dispatch(io_context),
-      host_vst_dispatch_midi_events(io_context),
-      vst_host_callback(io_context),
-      host_vst_parameters(io_context),
-      host_vst_process_replacing(io_context),
-      host_vst_control(io_context),
-      host_vst_dispatch_endpoint(
-          (base_dir / "host_vst_dispatch.sock").string()),
-      host_vst_dispatch_midi_events_endpoint(
-          (base_dir / "host_vst_dispatch_midi_events.sock").string()),
-      vst_host_callback_endpoint(
-          (base_dir / "vst_host_callback.sock").string()),
-      host_vst_parameters_endpoint(
-          (base_dir / "host_vst_parameters.sock").string()),
-      host_vst_process_replacing_endpoint(
-          (base_dir / "host_vst_process_replacing.sock").string()),
-      host_vst_control_endpoint((base_dir / "host_vst_control.sock").string()) {
-    if (listen) {
-        fs::create_directory(base_dir);
-
-        acceptors = Acceptors{
-            .host_vst_dispatch{io_context, host_vst_dispatch_endpoint},
-            .host_vst_dispatch_midi_events{
-                io_context, host_vst_dispatch_midi_events_endpoint},
-            .vst_host_callback{io_context, vst_host_callback_endpoint},
-            .host_vst_parameters{io_context, host_vst_parameters_endpoint},
-            .host_vst_process_replacing{io_context,
-                                        host_vst_process_replacing_endpoint},
-            .host_vst_control{io_context, host_vst_control_endpoint},
-        };
-    }
-}
-
-Sockets::~Sockets() {
-    // Only clean if we're the ones who have created these files, although it
-    // should not cause any harm to also do this on the Wine side
-    if (acceptors) {
-        try {
-            fs::remove_all(base_dir);
-        } catch (const fs::filesystem_error&) {
-            // There should not be any filesystem errors since only one side
-            // removes the files, but if we somehow can't delete the file then
-            // we can just silently ignore this
-        }
-    }
-}
-
-void Sockets::connect() {
-    if (acceptors) {
-        acceptors->host_vst_dispatch.accept(host_vst_dispatch);
-        acceptors->host_vst_dispatch_midi_events.accept(
-            host_vst_dispatch_midi_events);
-        acceptors->vst_host_callback.accept(vst_host_callback);
-        acceptors->host_vst_parameters.accept(host_vst_parameters);
-        acceptors->host_vst_process_replacing.accept(
-            host_vst_process_replacing);
-        acceptors->host_vst_control.accept(host_vst_control);
-    } else {
-        host_vst_dispatch.connect(host_vst_dispatch_endpoint);
-        host_vst_dispatch_midi_events.connect(
-            host_vst_dispatch_midi_events_endpoint);
-        vst_host_callback.connect(vst_host_callback_endpoint);
-        host_vst_parameters.connect(host_vst_parameters_endpoint);
-        host_vst_process_replacing.connect(host_vst_process_replacing_endpoint);
-        host_vst_control.connect(host_vst_control_endpoint);
-    }
-}
-
 EventPayload DefaultDataConverter::read(const int /*opcode*/,
                                         const int /*index*/,
                                         const intptr_t /*value*/,
@@ -152,6 +79,94 @@ void DefaultDataConverter::write_value(const int /*opcode*/,
 intptr_t DefaultDataConverter::return_value(const int /*opcode*/,
                                             const intptr_t original) const {
     return original;
+}
+
+EventHandler::EventHandler(
+    boost::asio::io_context& io_context,
+    boost::asio::local::stream_protocol::endpoint endpoint,
+    bool listen)
+    : endpoint(endpoint), socket(io_context) {
+    if (listen) {
+        fs::create_directories(fs::path(endpoint.path()).parent_path());
+        acceptor.emplace(io_context, endpoint);
+    }
+}
+
+void EventHandler::connect() {
+    if (acceptor) {
+        acceptor->accept(socket);
+    } else {
+        socket.connect(endpoint);
+    }
+}
+
+void EventHandler::close() {
+    socket.shutdown(boost::asio::local::stream_protocol::socket::shutdown_both);
+    socket.close();
+}
+
+Sockets::Sockets(boost::asio::io_context& io_context,
+                 const boost::filesystem::path& endpoint_base_dir,
+                 bool listen)
+    : base_dir(endpoint_base_dir),
+      host_vst_dispatch(io_context,
+                        (base_dir / "host_vst_dispatch.sock").string(),
+                        listen),
+      host_vst_dispatch_midi_events(
+          io_context,
+          (base_dir / "host_vst_dispatch_midi_events.sock").string(),
+          listen),
+      vst_host_callback(io_context,
+                        (base_dir / "vst_host_callback.sock").string(),
+                        listen),
+      host_vst_parameters(io_context),
+      host_vst_process_replacing(io_context),
+      host_vst_control(io_context),
+      host_vst_parameters_endpoint(
+          (base_dir / "host_vst_parameters.sock").string()),
+      host_vst_process_replacing_endpoint(
+          (base_dir / "host_vst_process_replacing.sock").string()),
+      host_vst_control_endpoint((base_dir / "host_vst_control.sock").string()) {
+    if (listen) {
+        fs::create_directories(base_dir);
+
+        acceptors = Acceptors{
+            .host_vst_parameters{io_context, host_vst_parameters_endpoint},
+            .host_vst_process_replacing{io_context,
+                                        host_vst_process_replacing_endpoint},
+            .host_vst_control{io_context, host_vst_control_endpoint},
+        };
+    }
+}
+
+Sockets::~Sockets() {
+    // Only clean if we're the ones who have created these files, although it
+    // should not cause any harm to also do this on the Wine side
+    if (acceptors) {
+        try {
+            fs::remove_all(base_dir);
+        } catch (const fs::filesystem_error&) {
+            // There should not be any filesystem errors since only one side
+            // removes the files, but if we somehow can't delete the file then
+            // we can just silently ignore this
+        }
+    }
+}
+
+void Sockets::connect() {
+    host_vst_dispatch.connect();
+    host_vst_dispatch_midi_events.connect();
+    vst_host_callback.connect();
+    if (acceptors) {
+        acceptors->host_vst_parameters.accept(host_vst_parameters);
+        acceptors->host_vst_process_replacing.accept(
+            host_vst_process_replacing);
+        acceptors->host_vst_control.accept(host_vst_control);
+    } else {
+        host_vst_parameters.connect(host_vst_parameters_endpoint);
+        host_vst_process_replacing.connect(host_vst_process_replacing_endpoint);
+        host_vst_control.connect(host_vst_control_endpoint);
+    }
 }
 
 boost::filesystem::path generate_endpoint_base(const std::string& plugin_name) {

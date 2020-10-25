@@ -263,7 +263,5 @@ void GroupHost::terminate() {
     // There's no need to manually terminate group host processes as they will
     // shut down automatically after all plugins have exited. Manually closing
     // the dispatch socket will cause the associated plugin to exit.
-    sockets.host_vst_dispatch.shutdown(
-        boost::asio::local::stream_protocol::socket::shutdown_both);
     sockets.host_vst_dispatch.close();
 }

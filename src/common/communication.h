@@ -37,206 +37,6 @@ template <typename B>
 using InputAdapter = bitsery::InputBufferAdapter<B>;
 
 /**
- * Manages all the sockets used for communicating between the plugin and the
- * Wine host. Every plugin will get its own directory (the socket endpoint base
- * directory), and all socket endpoints are created within this directory. This
- * is usually `/run/user/<uid>/yabridge-<plugin_name>-<random_id>/`.
- *
- * On the plugin side this class should be initialized with `listen` set to
- * `true` before launching the Wine VST host. This will start listening on the
- * sockets, and the call to `connect()` will then accept any incoming
- * connections.
- */
-class Sockets {
-   public:
-    /**
-     * Sets up the sockets using the specified base directory. The sockets won't
-     * be active until `connect()` gets called.
-     *
-     * @param io_context The IO context the sockets should be bound to. Relevant
-     *   when doing asynchronous operations.
-     * @param endpoint_base_dir The base directory that will be used for the
-     * Unix domain sockets.
-     * @param listen If `true`, start listening on the sockets. Incoming
-     *   connections will be accepted when `connect()` gets called. This should
-     *   be set to `true` on the plugin side, and `false` on the Wine host side.
-     *
-     * @see Sockets::connect
-     */
-    Sockets(boost::asio::io_context& io_context,
-            const boost::filesystem::path& endpoint_base_dir,
-            bool listen);
-
-    /**
-     * Cleans up the directory containing the socket endpoints when yabridge
-     * shuts down if it still exists.
-     */
-    ~Sockets();
-
-    /**
-     * Depending on the value of the `listen` argument passed to the
-     * constructor, either accept connections made to the sockets on the Linux
-     * side or connect to the sockets on the Wine side
-     */
-    void connect();
-
-    /**
-     * The base directory for our socket endpoints. All `*_endpoint` variables
-     * below are files within this directory.
-     */
-    const boost::filesystem::path base_dir;
-
-    /**
-     * The IO context that the sockets will be created on. This is only relevant
-     * for asynchronous operations.
-     */
-    boost::asio::io_context& io_context;
-
-    // The naming convention for these sockets is `<from>_<to>_<event>`. For
-    // instance the socket named `host_vst_dispatch` forwards
-    // `AEffect.dispatch()` calls from the native VST host to the Windows VST
-    // plugin (through the Wine VST host).
-
-    /**
-     * The socket that forwards all `dispatcher()` calls from the VST host to
-     * the plugin.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_dispatch;
-    /**
-     * Used specifically for the `effProcessEvents` opcode. This is needed
-     * because the Win32 API is designed to block during certain GUI
-     * interactions such as resizing a window or opening a dropdown. Without
-     * this MIDI input would just stop working at times.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_dispatch_midi_events;
-    /**
-     * The socket that forwards all `audioMaster()` calls from the Windows VST
-     * plugin to the host.
-     */
-    boost::asio::local::stream_protocol::socket vst_host_callback;
-    /**
-     * Used for both `getParameter` and `setParameter` since they mostly
-     * overlap.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_parameters;
-    /**
-     * Used for processing audio usign the `process()`, `processReplacing()` and
-     * `processDoubleReplacing()` functions.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_process_replacing;
-    /**
-     * A control socket that sends data that is not suitable for the other
-     * sockets. At the moment this is only used to, on startup, send the Windows
-     * VST plugin's `AEffect` object to the native VST plugin, and to then send
-     * the configuration (from `config`) back to the Wine host.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_control;
-
-   private:
-    const boost::asio::local::stream_protocol::endpoint
-        host_vst_dispatch_endpoint;
-    const boost::asio::local::stream_protocol::endpoint
-        host_vst_dispatch_midi_events_endpoint;
-    const boost::asio::local::stream_protocol::endpoint
-        vst_host_callback_endpoint;
-    const boost::asio::local::stream_protocol::endpoint
-        host_vst_parameters_endpoint;
-    const boost::asio::local::stream_protocol::endpoint
-        host_vst_process_replacing_endpoint;
-    const boost::asio::local::stream_protocol::endpoint
-        host_vst_control_endpoint;
-
-    /**
-     * All of our socket acceptors. We have to create these before launching the
-     * Wine process.
-     */
-    struct Acceptors {
-        boost::asio::local::stream_protocol::acceptor host_vst_dispatch;
-        boost::asio::local::stream_protocol::acceptor
-            host_vst_dispatch_midi_events;
-        boost::asio::local::stream_protocol::acceptor vst_host_callback;
-        boost::asio::local::stream_protocol::acceptor host_vst_parameters;
-        boost::asio::local::stream_protocol::acceptor
-            host_vst_process_replacing;
-        boost::asio::local::stream_protocol::acceptor host_vst_control;
-    };
-
-    /**
-     * If the `listen` constructor argument was set to `true`, when we'll
-     * prepare a set of socket acceptors that listen on the socket endpoints.
-     */
-    std::optional<Acceptors> acceptors;
-};
-
-/**
- * Encodes the base behavior for reading from and writing to the `data` argument
- * for event dispatch functions. This provides base functionality for these
- * kinds of events. The `dispatch()` function will require some more specific
- * structs.
- */
-class DefaultDataConverter {
-   public:
-    virtual ~DefaultDataConverter(){};
-
-    /**
-     * Read data from the `data` void pointer into a an `EventPayload` value
-     * that can be serialized and conveys the meaning of the event.
-     */
-    virtual EventPayload read(const int opcode,
-                              const int index,
-                              const intptr_t value,
-                              const void* data) const;
-
-    /**
-     * Read data from the `value` pointer into a an `EventPayload` value that
-     * can be serialized and conveys the meaning of the event. This is only used
-     * for the `effSetSpeakerArrangement` and `effGetSpeakerArrangement` events.
-     */
-    virtual std::optional<EventPayload> read_value(const int opcode,
-                                                   const intptr_t value) const;
-
-    /**
-     * Write the reponse back to the `data` pointer.
-     */
-    virtual void write(const int opcode,
-                       void* data,
-                       const EventResult& response) const;
-
-    /**
-     * Write the reponse back to the `value` pointer. This is only used during
-     * the `effGetSpeakerArrangement` event.
-     */
-    virtual void write_value(const int opcode,
-                             intptr_t value,
-                             const EventResult& response) const;
-
-    /**
-     * This function can override a callback's return value based on the opcode.
-     * This is used in one place to return a pointer to a `VstTime` object
-     * that's contantly being updated.
-     *
-     * @param opcode The opcode for the current event.
-     * @param original The original return value as returned by the callback
-     *   function.
-     */
-    virtual intptr_t return_value(const int opcode,
-                                  const intptr_t original) const;
-};
-
-/**
- * Generate a unique base directory that can be used as a prefix for all Unix
- * domain socket endpoints used in `PluginBridge`/`Vst2Bridge`. This will
- * usually return `/run/user/<uid>/yabridge-<plugin_name>-<random_id>/`.
- *
- * Sockets for group hosts are handled separately. See
- * `../plugin/utils.h:generate_group_endpoint` for more information on those.
- *
- * @param plugin_name The name of the plugin we're generating endpoints for.
- *   Used as a visual indication of what plugin is using this endpoint.
- */
-boost::filesystem::path generate_endpoint_base(const std::string& plugin_name);
-
-/**
  * Serialize an object using bitsery and write it to a socket. This will write
  * both the size of the serialized object and the object itself over the socket.
  *
@@ -320,126 +120,395 @@ inline T read_object(Socket& socket,
 }
 
 /**
- * Serialize and send an event over a socket. This is used for both the host ->
- * plugin 'dispatch' events and the plugin -> host 'audioMaster' host callbacks
- * since they follow the same format. See one of those functions for details on
- * the parameters and return value of this function.
- *
- * @param socket The socket to write over, should be the same socket the other
- *   endpoint is using to call `receive_event()`.
- * @param write_mutex A mutex to ensure that only one thread can write to
- *   the socket at once. Needed because VST hosts and plugins can and sometimes
- *   will call the `dispatch()` or `audioMaster()` functions from multiple
- *   threads at once.
- * @param data_converter Some struct that knows how to read data from and write
- *   data back to the `data` void pointer. For host callbacks this parameter
- *   contains either a string or a null pointer while `dispatch()` calls might
- *   contain opcode specific structs. See the documentation for `EventPayload`
- *   for more information. The `DefaultDataConverter` defined above handles the
- *   basic behavior that's sufficient for host callbacks.
- * @param logging A pair containing a logger instance and whether or not this is
- *   for sending `dispatch()` events or host callbacks. Optional since it
- *   doesn't have to be done on both sides.
- *
- * @relates receive_event
- * @relates passthrough_event
+ * Encodes the base behavior for reading from and writing to the `data` argument
+ * for event dispatch functions. This provides base functionality for these
+ * kinds of events. The `dispatch()` function will require some more specific
+ * structs.
  */
-template <typename D>
-intptr_t send_event(boost::asio::local::stream_protocol::socket& socket,
-                    std::mutex& write_mutex,
-                    D& data_converter,
-                    std::optional<std::pair<Logger&, bool>> logging,
-                    int opcode,
-                    int index,
-                    intptr_t value,
-                    void* data,
-                    float option) {
-    // Encode the right payload types for this event. Check the documentation
-    // for `EventPayload` for more information. These types are converted to
-    // C-style data structures in `passthrough_event()` so they can be passed to
-    // a plugin or callback function.
-    const EventPayload payload =
-        data_converter.read(opcode, index, value, data);
-    const std::optional<EventPayload> value_payload =
-        data_converter.read_value(opcode, value);
+class DefaultDataConverter {
+   public:
+    virtual ~DefaultDataConverter(){};
 
-    if (logging) {
-        auto [logger, is_dispatch] = *logging;
-        logger.log_event(is_dispatch, opcode, index, value, payload, option,
-                         value_payload);
-    }
+    /**
+     * Read data from the `data` void pointer into a an `EventPayload` value
+     * that can be serialized and conveys the meaning of the event.
+     */
+    virtual EventPayload read(const int opcode,
+                              const int index,
+                              const intptr_t value,
+                              const void* data) const;
 
-    const Event event{.opcode = opcode,
-                      .index = index,
-                      .value = value,
-                      .option = option,
-                      .payload = payload,
-                      .value_payload = value_payload};
+    /**
+     * Read data from the `value` pointer into a an `EventPayload` value that
+     * can be serialized and conveys the meaning of the event. This is only used
+     * for the `effSetSpeakerArrangement` and `effGetSpeakerArrangement` events.
+     */
+    virtual std::optional<EventPayload> read_value(const int opcode,
+                                                   const intptr_t value) const;
 
-    // Prevent two threads from writing over the socket at the same time and
-    // messages getting out of order. This is needed because we can't prevent
-    // the plugin or the host from calling `dispatch()` or `audioMaster()` from
-    // multiple threads.
-    EventResult response;
-    {
-        std::lock_guard lock(write_mutex);
-        write_object(socket, event);
-        response = read_object<EventResult>(socket);
-    }
+    /**
+     * Write the reponse back to the `data` pointer.
+     */
+    virtual void write(const int opcode,
+                       void* data,
+                       const EventResult& response) const;
 
-    if (logging) {
-        auto [logger, is_dispatch] = *logging;
-        logger.log_event_response(is_dispatch, opcode, response.return_value,
-                                  response.payload, response.value_payload);
-    }
+    /**
+     * Write the reponse back to the `value` pointer. This is only used during
+     * the `effGetSpeakerArrangement` event.
+     */
+    virtual void write_value(const int opcode,
+                             intptr_t value,
+                             const EventResult& response) const;
 
-    data_converter.write(opcode, data, response);
-    data_converter.write_value(opcode, value, response);
-
-    return data_converter.return_value(opcode, response.return_value);
-}
+    /**
+     * This function can override a callback's return value based on the opcode.
+     * This is used in one place to return a pointer to a `VstTime` object
+     * that's contantly being updated.
+     *
+     * @param opcode The opcode for the current event.
+     * @param original The original return value as returned by the callback
+     *   function.
+     */
+    virtual intptr_t return_value(const int opcode,
+                                  const intptr_t original) const;
+};
 
 /**
- * Receive an event from a socket, call a function to generate a response, and
- * write the response back over the socket. This is usually used together with
- * `passthrough_event()` which passes the event data through to an event
- * dispatcher function. This behaviour is split into two functions to avoid
- * redundant data conversions when handling MIDI data, as some plugins require
- * the received data to be temporarily stored until the next event audio buffer
- * gets processed.
+ * For most of our sockets we can just send out our messages on the writing
+ * side, and do a simple blocking loop on the reading side. The `dispatch()` and
+ * `audioMaster()` calls are different. Not only do they have they come with
+ * complex payload values, they can also be called simultaneously from multiple
+ * threads, and `audioMaster()` and `dispatch()` calls can even be mutually
+ * recursive. Luckily this does not happen very often, but it does mean that our
+ * simple 'one-socket-per-function' model doesn't work anymore. Because setting
+ * up new sockets is quite expensive and this is seldom needed, this works
+ * slightly differently:
  *
- * @param socket The socket to receive on and to send the response back to.
- * @param logging A pair containing a logger instance and whether or not this is
- *   for sending `dispatch()` events or host callbacks. Optional since it
- *   doesn't have to be done on both sides.
- * @param callback The function used to generate a response out of an event.
+ * - We'll keep a single long lived socket connection. This works the exact same
+ *   way as every other socket defined in the `Sockets` class.
+ * - Aside from that the listening side will have a second thread asynchronously
+ *   listening for new connections on the socket endpoint.
  *
- * @tparam F A function type in the form of `EventResponse(Event)`.
- *
- * @relates send_event
- * @relates passthrough_event
+ * The `EventHandler::send()` is used to send events. If the socket is currently
+ * being written to, we'll first create a new socket connection as described
+ * above. Similarly, the `EventHandler::receive()` method first sets up
+ * asynchronous listeners for the socket endpoint, and then block and handle
+ * events until the main socket is closed.
  */
-template <typename F>
-void receive_event(boost::asio::local::stream_protocol::socket& socket,
-                   std::optional<std::pair<Logger&, bool>> logging,
-                   F callback) {
-    auto event = read_object<Event>(socket);
-    if (logging) {
-        auto [logger, is_dispatch] = *logging;
-        logger.log_event(is_dispatch, event.opcode, event.index, event.value,
-                         event.payload, event.option, event.value_payload);
+class EventHandler {
+   public:
+    /**
+     * Sets up a single main socket for this type of events. The sockets won't
+     * be active until `connect()` gets called.
+     *
+     * @param io_context The IO context the sockets should be bound to. Relevant
+     *   when doing asynchronous operations.
+     * @param endpoint The socket endpoint used for this event handler.
+     * @param listen If `true`, start listening on the sockets. Incoming
+     *   connections will be accepted when `connect()` gets called. This should
+     *   be set to `true` on the plugin side, and `false` on the Wine host side.
+     *
+     * @see Sockets::connect
+     */
+    EventHandler(boost::asio::io_context& io_context,
+                 boost::asio::local::stream_protocol::endpoint endpoint,
+                 bool listen);
+
+    /**
+     * Depending on the value of the `listen` argument passed to the
+     * constructor, either accept connections made to the sockets on the Linux
+     * side or connect to the sockets on the Wine side
+     */
+    void connect();
+
+    /**
+     * Close the socket. Both sides that are actively listening will be thrown a
+     * `boost::system_error` when this happens.
+     */
+    void close();
+
+    /**
+     * Serialize and send an event over a socket. This is used for both the host
+     * -> plugin 'dispatch' events and the plugin -> host 'audioMaster' host
+     * callbacks since they follow the same format. See one of those functions
+     * for details on the parameters and return value of this function.
+     *
+     * As described above, if this function is currently being called from
+     * another thread, then this will create a new socket connection and send
+     * the event there instead.
+     *
+     * @param data_converter Some struct that knows how to read data from and
+     *   write data back to the `data` void pointer. For host callbacks this
+     *   parameter contains either a string or a null pointer while `dispatch()`
+     *   calls might contain opcode specific structs. See the documentation for
+     *   `EventPayload` for more information. The `DefaultDataConverter` defined
+     *   above handles the basic behavior that's sufficient for host callbacks.
+     * @param logging A pair containing a logger instance and whether or not
+     *   this is for sending `dispatch()` events or host callbacks. Optional
+     *   since it doesn't have to be done on both sides.
+     *
+     * @relates EventHandler::receive
+     * @relates passthrough_event
+     */
+    template <typename D>
+    intptr_t send(D& data_converter,
+                  std::optional<std::pair<Logger&, bool>> logging,
+                  int opcode,
+                  int index,
+                  intptr_t value,
+                  void* data,
+                  float option) {
+        // TODO: Create a new socket if the mutex is locked
+
+        // Encode the right payload types for this event. Check the
+        // documentation for `EventPayload` for more information. These types
+        // are converted to C-style data structures in `passthrough_event()` so
+        // they can be passed to a plugin or callback function.
+        const EventPayload payload =
+            data_converter.read(opcode, index, value, data);
+        const std::optional<EventPayload> value_payload =
+            data_converter.read_value(opcode, value);
+
+        if (logging) {
+            auto [logger, is_dispatch] = *logging;
+            logger.log_event(is_dispatch, opcode, index, value, payload, option,
+                             value_payload);
+        }
+
+        const Event event{.opcode = opcode,
+                          .index = index,
+                          .value = value,
+                          .option = option,
+                          .payload = payload,
+                          .value_payload = value_payload};
+
+        // Prevent two threads from writing over the socket at the same time and
+        // messages getting out of order. This is needed because we can't
+        // prevent the plugin or the host from calling `dispatch()` or
+        // `audioMaster()` from multiple threads.
+        EventResult response;
+        {
+            std::lock_guard lock(write_mutex);
+            write_object(socket, event);
+            response = read_object<EventResult>(socket);
+        }
+
+        if (logging) {
+            auto [logger, is_dispatch] = *logging;
+            logger.log_event_response(is_dispatch, opcode,
+                                      response.return_value, response.payload,
+                                      response.value_payload);
+        }
+
+        data_converter.write(opcode, data, response);
+        data_converter.write_value(opcode, value, response);
+
+        return data_converter.return_value(opcode, response.return_value);
     }
 
-    EventResult response = callback(event);
-    if (logging) {
-        auto [logger, is_dispatch] = *logging;
-        logger.log_event_response(is_dispatch, event.opcode,
-                                  response.return_value, response.payload,
-                                  response.value_payload);
+    /**
+     * Spawn a new thread to listen for extra connections to `endpoint`, and
+     * then a blocking loop that handles events from the primary `socket`.
+     *
+     * The specified function will be used to create an `EventResult` from an
+     * `Event`. This is almost always a wrapper around `passthrough_event()`,
+     * which converts the `EventPayload` into a format used by VST2, calls
+     * either `dispatch()` or `audioMaster()` depending on the socket, and then
+     * serializes the result back into an `EventResultPayload`.
+     *
+     * This function will also be used separately for receiving MIDI data, as
+     * some plugins will need pointers to received MIDI data to stay alive until
+     * the next audio buffer gets processed.
+     *
+     * @param logging A pair containing a logger instance and whether or not
+     * this is for sending `dispatch()` events or host callbacks. Optional since
+     * it doesn't have to be done on both sides.
+     * @param callback The function used to generate a response out of an event.
+     *
+     * @tparam F A function type in the form of `EventResponse(Event)`.
+     *
+     * @relates EventHandler::send
+     * @relates passthrough_event
+     */
+    template <typename F>
+    void receive(std::optional<std::pair<Logger&, bool>> logging, F callback) {
+        // TODO: Listen for new incoming connections
+
+        while (true) {
+            try {
+                auto event = read_object<Event>(socket);
+                if (logging) {
+                    auto [logger, is_dispatch] = *logging;
+                    logger.log_event(is_dispatch, event.opcode, event.index,
+                                     event.value, event.payload, event.option,
+                                     event.value_payload);
+                }
+
+                EventResult response = callback(event);
+                if (logging) {
+                    auto [logger, is_dispatch] = *logging;
+                    logger.log_event_response(
+                        is_dispatch, event.opcode, response.return_value,
+                        response.payload, response.value_payload);
+                }
+
+                write_object(socket, response);
+            } catch (const boost::system::system_error&) {
+                // This happens when the sockets got closed because the plugin
+                // is being shut down
+                break;
+            }
+        }
     }
 
-    write_object(socket, response);
-}
+   private:
+    boost::asio::local::stream_protocol::endpoint endpoint;
+    boost::asio::local::stream_protocol::socket socket;
+
+    /**
+     * This acceptor will be used once synchronously on the listening side
+     * during `Sockets::connect()`. When `EventHandler::receive()` is called
+     * this will be replaced by a new acceptor bound to a new IO context to
+     * receive any additional incoming connections.
+     */
+    std::optional<boost::asio::local::stream_protocol::acceptor> acceptor;
+
+    /**
+     * A mutex that locks the main `socket`. If this is locked, then any new
+     * events will be sent over a new socket instead.
+     */
+    std::mutex write_mutex;
+};
+
+/**
+ * Manages all the sockets used for communicating between the plugin and the
+ * Wine host. Every plugin will get its own directory (the socket endpoint base
+ * directory), and all socket endpoints are created within this directory. This
+ * is usually `/run/user/<uid>/yabridge-<plugin_name>-<random_id>/`.
+ *
+ * On the plugin side this class should be initialized with `listen` set to
+ * `true` before launching the Wine VST host. This will start listening on the
+ * sockets, and the call to `connect()` will then accept any incoming
+ * connections.
+ */
+class Sockets {
+   public:
+    /**
+     * Sets up the sockets using the specified base directory. The sockets won't
+     * be active until `connect()` gets called.
+     *
+     * @param io_context The IO context the sockets should be bound to. Relevant
+     *   when doing asynchronous operations.
+     * @param endpoint_base_dir The base directory that will be used for the
+     *   Unix domain sockets.
+     * @param listen If `true`, start listening on the sockets. Incoming
+     *   connections will be accepted when `connect()` gets called. This should
+     *   be set to `true` on the plugin side, and `false` on the Wine host side.
+     *
+     * @see Sockets::connect
+     */
+    Sockets(boost::asio::io_context& io_context,
+            const boost::filesystem::path& endpoint_base_dir,
+            bool listen);
+
+    /**
+     * Cleans up the directory containing the socket endpoints when yabridge
+     * shuts down if it still exists.
+     */
+    ~Sockets();
+
+    /**
+     * Depending on the value of the `listen` argument passed to the
+     * constructor, either accept connections made to the sockets on the Linux
+     * side or connect to the sockets on the Wine side
+     */
+    void connect();
+
+    /**
+     * The base directory for our socket endpoints. All `*_endpoint` variables
+     * below are files within this directory.
+     */
+    const boost::filesystem::path base_dir;
+
+    // The naming convention for these sockets is `<from>_<to>_<event>`. For
+    // instance the socket named `host_vst_dispatch` forwards
+    // `AEffect.dispatch()` calls from the native VST host to the Windows VST
+    // plugin (through the Wine VST host).
+
+    /**
+     * The socket that forwards all `dispatcher()` calls from the VST host to
+     * the plugin.
+     */
+    EventHandler host_vst_dispatch;
+    /**
+     * Used specifically for the `effProcessEvents` opcode. This is needed
+     * because the Win32 API is designed to block during certain GUI
+     * interactions such as resizing a window or opening a dropdown. Without
+     * this MIDI input would just stop working at times.
+     */
+    EventHandler host_vst_dispatch_midi_events;
+    /**
+     * The socket that forwards all `audioMaster()` calls from the Windows VST
+     * plugin to the host.
+     */
+    EventHandler vst_host_callback;
+    /**
+     * Used for both `getParameter` and `setParameter` since they mostly
+     * overlap.
+     */
+    boost::asio::local::stream_protocol::socket host_vst_parameters;
+    /**
+     * Used for processing audio usign the `process()`, `processReplacing()` and
+     * `processDoubleReplacing()` functions.
+     */
+    boost::asio::local::stream_protocol::socket host_vst_process_replacing;
+    /**
+     * A control socket that sends data that is not suitable for the other
+     * sockets. At the moment this is only used to, on startup, send the Windows
+     * VST plugin's `AEffect` object to the native VST plugin, and to then send
+     * the configuration (from `config`) back to the Wine host.
+     */
+    boost::asio::local::stream_protocol::socket host_vst_control;
+
+   private:
+    const boost::asio::local::stream_protocol::endpoint
+        host_vst_parameters_endpoint;
+    const boost::asio::local::stream_protocol::endpoint
+        host_vst_process_replacing_endpoint;
+    const boost::asio::local::stream_protocol::endpoint
+        host_vst_control_endpoint;
+
+    /**
+     * All of our socket acceptors. We have to create these before launching the
+     * Wine process.
+     */
+    struct Acceptors {
+        boost::asio::local::stream_protocol::acceptor host_vst_parameters;
+        boost::asio::local::stream_protocol::acceptor
+            host_vst_process_replacing;
+        boost::asio::local::stream_protocol::acceptor host_vst_control;
+    };
+
+    /**
+     * If the `listen` constructor argument was set to `true`, when we'll
+     * prepare a set of socket acceptors that listen on the socket endpoints.
+     */
+    std::optional<Acceptors> acceptors;
+};
+
+/**
+ * Generate a unique base directory that can be used as a prefix for all Unix
+ * domain socket endpoints used in `PluginBridge`/`Vst2Bridge`. This will
+ * usually return `/run/user/<uid>/yabridge-<plugin_name>-<random_id>/`.
+ *
+ * Sockets for group hosts are handled separately. See
+ * `../plugin/utils.h:generate_group_endpoint` for more information on those.
+ *
+ * @param plugin_name The name of the plugin we're generating endpoints for.
+ *   Used as a visual indication of what plugin is using this endpoint.
+ */
+boost::filesystem::path generate_endpoint_base(const std::string& plugin_name);
 
 /**
  * Create a callback function that takes an `Event` object, decodes the data
@@ -460,9 +529,9 @@ void receive_event(boost::asio::local::stream_protocol::socket& socket,
  *   `audioMasterCallback`.
  *
  * @return A `EventResult(Event)` callback function that can be passed to
- * `receive_event`.
+ * `EditorHandler::receive()`.
  *
- * @relates receive_event
+ * @relates EditorHandler::receive
  */
 template <typename F>
 auto passthrough_event(AEffect* plugin, F callback) {

@@ -121,41 +121,31 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     // instead of asynchronous IO since communication has to be handled in
     // lockstep anyway
     host_callback_handler = std::jthread([&]() {
-        while (true) {
-            try {
-                // TODO: Think of a nicer way to structure this and the similar
-                //       handler in `Vst2Bridge::handle_dispatch_midi_events`
-                receive_event(
-                    sockets.vst_host_callback,
-                    std::pair<Logger&, bool>(logger, false), [&](Event& event) {
-                        // MIDI events sent from the plugin back to the host are
-                        // a special case here. They have to sent during the
-                        // `processReplacing()` function or else the host will
-                        // ignore them. Because of this we'll temporarily save
-                        // any MIDI events we receive here, and then we'll
-                        // actually send them to the host at the end of the
-                        // `process_replacing()` function.
-                        if (event.opcode == audioMasterProcessEvents) {
-                            std::lock_guard lock(incoming_midi_events_mutex);
+        // TODO: Think of a nicer way to structure this and the similar
+        //       handler in `Vst2Bridge::handle_dispatch_midi_events`
+        sockets.vst_host_callback.receive(
+            std::pair<Logger&, bool>(logger, false), [&](Event& event) {
+                // MIDI events sent from the plugin back to the host are a
+                // special case here. They have to sent during the
+                // `processReplacing()` function or else the host will ignore
+                // them. Because of this we'll temporarily save any MIDI events
+                // we receive here, and then we'll actually send them to the
+                // host at the end of the `process_replacing()` function.
+                if (event.opcode == audioMasterProcessEvents) {
+                    std::lock_guard lock(incoming_midi_events_mutex);
 
-                            incoming_midi_events.push_back(
-                                std::get<DynamicVstEvents>(event.payload));
-                            EventResult response{.return_value = 1,
-                                                 .payload = nullptr,
-                                                 .value_payload = std::nullopt};
+                    incoming_midi_events.push_back(
+                        std::get<DynamicVstEvents>(event.payload));
+                    EventResult response{.return_value = 1,
+                                         .payload = nullptr,
+                                         .value_payload = std::nullopt};
 
-                            return response;
-                        } else {
-                            return passthrough_event(
-                                &plugin, host_callback_function)(event);
-                        }
-                    });
-            } catch (const boost::system::system_error&) {
-                // This happens when the sockets got closed because the plugin
-                // is being shut down
-                break;
-            }
-        }
+                    return response;
+                } else {
+                    return passthrough_event(&plugin,
+                                             host_callback_function)(event);
+                }
+            });
     });
 
     // Read the plugin's information from the Wine process. This can only be
@@ -435,10 +425,9 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
             intptr_t return_value = 0;
             try {
                 // TODO: Add some kind of timeout?
-                return_value = send_event(
-                    sockets.host_vst_dispatch, dispatch_mutex, converter,
-                    std::pair<Logger&, bool>(logger, true), opcode, index,
-                    value, data, option);
+                return_value = sockets.host_vst_dispatch.send(
+                    converter, std::pair<Logger&, bool>(logger, true), opcode,
+                    index, value, data, option);
             } catch (const boost::system::system_error& a) {
                 // Thrown when the socket gets closed because the VST plugin
                 // loaded into the Wine process crashed during shutdown
@@ -461,10 +450,9 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
             // thread and socket to pass MIDI events. Otherwise plugins will
             // stop receiving MIDI data when they have an open dropdowns or
             // message box.
-            return send_event(sockets.host_vst_dispatch_midi_events,
-                              dispatch_midi_events_mutex, converter,
-                              std::pair<Logger&, bool>(logger, true), opcode,
-                              index, value, data, option);
+            return sockets.host_vst_dispatch_midi_events.send(
+                converter, std::pair<Logger&, bool>(logger, true), opcode,
+                index, value, data, option);
             break;
         case effCanDo: {
             const std::string query(static_cast<const char*>(data));
@@ -521,9 +509,9 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
     // and loading plugin state it's much better to have bitsery or our
     // receiving function temporarily allocate a large enough buffer rather than
     // to have a bunch of allocated memory sitting around doing nothing.
-    return send_event(sockets.host_vst_dispatch, dispatch_mutex, converter,
-                      std::pair<Logger&, bool>(logger, true), opcode, index,
-                      value, data, option);
+    return sockets.host_vst_dispatch.send(
+        converter, std::pair<Logger&, bool>(logger, true), opcode, index, value,
+        data, option);
 }
 
 template <typename T>

@@ -23,9 +23,9 @@
 #include <mutex>
 #include <thread>
 
+#include "../common/communication.h"
 #include "../common/configuration.h"
 #include "../common/logging.h"
-#include "../common/communication.h"
 #include "host-process.h"
 
 /**
@@ -132,16 +132,10 @@ class PluginBridge {
     std::jthread host_callback_handler;
 
     /**
-     * A binary semaphore to prevent race conditions from the dispatch function
-     * being called by two threads at once. See `send_event()` for more
-     * information.
-     */
-    std::mutex dispatch_mutex;
-    std::mutex dispatch_midi_events_mutex;
-    /**
-     * A similar semaphore as the `dispatch_*` semaphores in the rare case that
-     * `getParameter()` and `setParameter()` are being called at the same time
-     * since they use the same socket.
+     * A mutex to prevent multiple simultaneous calls to `getParameter()` and
+     * `setParameter()`. This likely won't happen, but better safe than sorry.
+     * For `dispatch()` and `audioMaster()` there's some more complex logic for
+     * this in `EventHandler`.
      */
     std::mutex parameters_mutex;
 

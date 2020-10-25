@@ -144,96 +144,74 @@ bool Vst2Bridge::should_skip_message_loop() const {
 }
 
 void Vst2Bridge::handle_dispatch() {
-    while (true) {
-        try {
-            receive_event(
-                sockets.host_vst_dispatch, std::nullopt,
-                passthrough_event(
-                    plugin,
-                    [&](AEffect* plugin, int opcode, int index, intptr_t value,
-                        void* data, float option) -> intptr_t {
-                        // Instead of running `plugin->dispatcher()` (or
-                        // `dispatch_wrapper()`) directly, we'll run the
-                        // function within the IO context so all events will be
-                        // executed on the same thread as the one that runs the
-                        // Win32 message loop
-                        std::promise<intptr_t> dispatch_result;
-                        boost::asio::dispatch(io_context, [&]() {
-                            const intptr_t result = dispatch_wrapper(
-                                plugin, opcode, index, value, data, option);
+    sockets.host_vst_dispatch.receive(
+        std::nullopt,
+        passthrough_event(
+            plugin,
+            [&](AEffect* plugin, int opcode, int index, intptr_t value,
+                void* data, float option) -> intptr_t {
+                // Instead of running `plugin->dispatcher()` (or
+                // `dispatch_wrapper()`) directly, we'll run the function within
+                // the IO context so all events will be executed on the same
+                // thread as the one that runs the Win32 message loop
+                std::promise<intptr_t> dispatch_result;
+                boost::asio::dispatch(io_context, [&]() {
+                    const intptr_t result = dispatch_wrapper(
+                        plugin, opcode, index, value, data, option);
 
-                            dispatch_result.set_value(result);
-                        });
+                    dispatch_result.set_value(result);
+                });
 
-                        // The message loop and X11 event handling will be run
-                        // separately on a timer
-                        return dispatch_result.get_future().get();
-                    }));
-        } catch (const boost::system::system_error&) {
-            // The plugin has cut off communications, so we can shut down this
-            // host application
-            break;
-        }
-    }
+                // The message loop and X11 event handling will be run
+                // separately on a timer
+                return dispatch_result.get_future().get();
+            }));
 }
 
 void Vst2Bridge::handle_dispatch_midi_events() {
-    while (true) {
-        try {
-            receive_event(
-                sockets.host_vst_dispatch_midi_events, std::nullopt,
-                [&](Event& event) {
-                    if (BOOST_LIKELY(event.opcode == effProcessEvents)) {
-                        // For 99% of the plugins we can just call
-                        // `effProcessReplacing()` and be done with it, but a
-                        // select few plugins (I could only find Kontakt that
-                        // does this) don't actually make copies of the events
-                        // they receive and only store pointers, meaning that
-                        // they have to live at least until the next audio
-                        // buffer gets processed. We're not using
-                        // `passhtourhg_events()` here directly because we need
-                        // to store a copy of the `DynamicVstEvents` struct
-                        // before passing the generated `VstEvents` object to
-                        // the plugin.
-                        std::lock_guard lock(next_buffer_midi_events_mutex);
+    sockets.host_vst_dispatch_midi_events.receive(
+        std::nullopt, [&](Event& event) {
+            if (BOOST_LIKELY(event.opcode == effProcessEvents)) {
+                // For 99% of the plugins we can just call
+                // `effProcessReplacing()` and be done with it, but a select few
+                // plugins (I could only find Kontakt that does this) don't
+                // actually make copies of the events they receive and only
+                // store pointers, meaning that they have to live at least until
+                // the next audio buffer gets processed. We're not using
+                // `passthrough_events()` here directly because we need to store
+                // a copy of the `DynamicVstEvents` struct before passing the
+                // generated `VstEvents` object to the plugin.
+                std::lock_guard lock(next_buffer_midi_events_mutex);
 
-                        next_audio_buffer_midi_events.push_back(
-                            std::get<DynamicVstEvents>(event.payload));
-                        DynamicVstEvents& events =
-                            next_audio_buffer_midi_events.back();
+                next_audio_buffer_midi_events.push_back(
+                    std::get<DynamicVstEvents>(event.payload));
+                DynamicVstEvents& events = next_audio_buffer_midi_events.back();
 
-                        // Exact same handling as in `passthrough_event`, apart
-                        // from making a copy of the events first
-                        const intptr_t return_value = plugin->dispatcher(
-                            plugin, event.opcode, event.index, event.value,
-                            &events.as_c_events(), event.option);
+                // Exact same handling as in `passthrough_event`, apart from
+                // making a copy of the events first
+                const intptr_t return_value = plugin->dispatcher(
+                    plugin, event.opcode, event.index, event.value,
+                    &events.as_c_events(), event.option);
 
-                        EventResult response{.return_value = return_value,
-                                             .payload = nullptr,
-                                             .value_payload = std::nullopt};
+                EventResult response{.return_value = return_value,
+                                     .payload = nullptr,
+                                     .value_payload = std::nullopt};
 
-                        return response;
-                    } else {
-                        using namespace std::placeholders;
+                return response;
+            } else {
+                using namespace std::placeholders;
 
-                        std::cerr << "[Warning] Received non-MIDI "
-                                     "event on MIDI processing thread"
-                                  << std::endl;
+                std::cerr << "[Warning] Received non-MIDI "
+                             "event on MIDI processing thread"
+                          << std::endl;
 
-                        // Maybe this should just be a hard error instead, since
-                        // it should never happen
-                        return passthrough_event(
-                            plugin,
-                            std::bind(&Vst2Bridge::dispatch_wrapper, this, _1,
+                // Maybe this should just be a hard error instead, since it
+                // should never happen
+                return passthrough_event(
+                    plugin, std::bind(&Vst2Bridge::dispatch_wrapper, this, _1,
                                       _2, _3, _4, _5, _6))(event);
-                    }
-                });
-        } catch (const boost::system::system_error&) {
-            // The plugin has cut off communications, so we can shut down this
-            // host application
-            break;
-        }
-    }
+            }
+        });
 }
 
 void Vst2Bridge::handle_parameters() {
@@ -569,8 +547,8 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
     }
 
     HostCallbackDataConverter converter(effect, time_info);
-    return send_event(sockets.vst_host_callback, host_callback_mutex, converter,
-                      std::nullopt, opcode, index, value, data, option);
+    return sockets.vst_host_callback.send(converter, std::nullopt, opcode,
+                                          index, value, data, option);
 }
 
 intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,
