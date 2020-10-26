@@ -84,12 +84,6 @@ Configuration::Configuration(const fs::path& config_path,
                 } else {
                     invalid_options.push_back(key);
                 }
-            } else if (key == "hack_reaper_update_display") {
-                if (const auto parsed_value = value.as_boolean()) {
-                    hack_reaper_update_display = parsed_value->get();
-                } else {
-                    invalid_options.push_back(key);
-                }
             } else if (key == "group") {
                 if (const auto parsed_value = value.as_string()) {
                     group = parsed_value->get();

@@ -10,8 +10,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-TODO: Expand on this
-
 - The way yabridge communicates between its plugin and the Wine host process has
   been completely revamped. This was necessary to allow yabridge to handle
   nested or mutually recursive function calls. What this boils down to is that
@@ -21,6 +19,14 @@ TODO: Expand on this
   `hack_reaper_update_display` workaround for is no longer needed. I have been
   testing this extensively to make sure that the change does not introduce any
   regressions, but please let me know if this does break anything for you.
+
+  TODO: Expand on this
+
+### Removed
+
+- The `hack_reaper_update_display` option is now obsolete and has been removed.
+
+  TODO: Remove all mentions of `hack_reaper_update_display` from the readme.
 
 ## [1.7.1] - 2020-10-23
 

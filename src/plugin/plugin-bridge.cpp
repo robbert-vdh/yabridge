@@ -473,29 +473,6 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
                 logger.log("   when using REAPER.");
                 logger.log("");
 
-                // Since the user is using REAPER, also show a reminder that the
-                // REAPER workaround should be enabled when it is not yet
-                // enabled since it may be easy to miss
-                if (!config.hack_reaper_update_display) {
-                    logger.log(
-                        "   With using REAPER you will have to enable the");
-                    logger.log(
-                        "   'hack_reaper_update_display' option to prevent");
-                    logger.log(
-                        "   certain plugins from crashing. To do so, create a");
-                    logger.log(
-                        "   new file named 'yabridge.toml' next to your");
-                    logger.log("   plugins with the following contents:");
-                    logger.log("");
-                    logger.log(
-                        "   # "
-                        "https://github.com/robbert-vdh/"
-                        "yabridge#runtime-dependencies-and-known-issues");
-                    logger.log("   [\"*\"]");
-                    logger.log("   hack_reaper_update_display = true");
-                    logger.log("");
-                }
-
                 logger.log_event_response(true, opcode, -1, nullptr,
                                           std::nullopt);
                 return -1;
@@ -659,10 +636,6 @@ void PluginBridge::log_init_message() {
     std::vector<std::string> other_options;
     if (config.editor_double_embed) {
         other_options.push_back("editor: double embed");
-    }
-    if (config.hack_reaper_update_display) {
-        other_options.push_back(
-            "hack: REAPER audioMasterUpdateDisplay() workaround");
     }
     if (!other_options.empty()) {
         init_msg << join_quoted_strings(other_options) << std::endl;
