@@ -206,9 +206,9 @@ class EventHandler {
      * Sets up a single main socket for this type of events. The sockets won't
      * be active until `connect()` gets called.
      *
-     * @param io_context The IO context the sockets should be bound to.
-     *   Additional incoming connections will be handled asynchronously within
-     *   this IO context.
+     * @param io_context The IO context the main socket should be bound to. A
+     *   new IO context will be created for accepting the additional incoming
+     *   connections.
      * @param endpoint The socket endpoint used for this event handler.
      * @param listen If `true`, start listening on the sockets. Incoming
      *   connections will be accepted when `connect()` gets called. This should
@@ -356,9 +356,11 @@ class EventHandler {
         // thread to handle the request. When `socket` closes and this loop
         // breaks, the listener and any still active threads will be cleaned up
         // before this function exits.
+        boost::asio::io_context secondary_context{};
+
         // The previous acceptor has already been shut down by
         // `EventHandler::connect()`
-        acceptor.emplace(io_context, endpoint);
+        acceptor.emplace(secondary_context, endpoint);
 
         // This works the exact same was as `active_plugins` and
         // `next_plugin_id` in `GroupBridge`
@@ -400,7 +402,7 @@ class EventHandler {
                         // When we have processed this request, we'll join the
                         // thread again with the thread that's handling
                         // `secondary_context`.
-                        boost::asio::post(io_context, [&, request_id]() {
+                        boost::asio::post(secondary_context, [&, request_id]() {
                             std::lock_guard lock(
                                 active_secondary_requests_mutex);
 
@@ -411,6 +413,9 @@ class EventHandler {
                     },
                     std::move(secondary_socket));
             });
+
+        std::jthread secondary_requests_handler(
+            [&]() { secondary_context.run(); });
 
         while (true) {
             try {
@@ -442,6 +447,7 @@ class EventHandler {
         // sure all outstanding jobs have been processed and then drop all work
         // from the IO context
         std::lock_guard lock(active_secondary_requests_mutex);
+        secondary_context.stop();
         acceptor.reset();
     }
 
@@ -491,10 +497,9 @@ class EventHandler {
     }
 
     /**
-     * The main IO context for this application. New sockets created during
-     * `send()` will be bound to this context, and in `receive()` we'll
-     * asynchronously listen for additional incoming connections through this
-     * context.
+     * The main IO context. New sockets created during `send()` will be bound to
+     * this context. In `receive()` we'll create a new IO context since we want
+     * to do all listening there on a dedicated thread.
      */
     boost::asio::io_context& io_context;
 
