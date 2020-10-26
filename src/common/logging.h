@@ -97,8 +97,9 @@ class Logger {
     void log_get_parameter_response(float vlaue);
     void log_set_parameter(int index, float value);
     void log_set_parameter_response();
-    // If is_dispatch is true, then use opcode names from the plugin's dispatch
-    // function. Otherwise use names for the host callback function opcodes.
+    // If `is_dispatch` is `true`, then use opcode names from the plugin's
+    // dispatch function. Otherwise use names for the host callback function
+    // opcodes.
     void log_event(bool is_dispatch,
                    int opcode,
                    int index,
