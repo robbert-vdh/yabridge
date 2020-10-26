@@ -85,7 +85,7 @@ EventHandler::EventHandler(
     boost::asio::io_context& io_context,
     boost::asio::local::stream_protocol::endpoint endpoint,
     bool listen)
-    : endpoint(endpoint), socket(io_context) {
+    : io_context(io_context), endpoint(endpoint), socket(io_context) {
     if (listen) {
         fs::create_directories(fs::path(endpoint.path()).parent_path());
         acceptor.emplace(io_context, endpoint);

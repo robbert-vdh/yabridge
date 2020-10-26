@@ -259,8 +259,6 @@ class EventHandler {
                   intptr_t value,
                   void* data,
                   float option) {
-        // TODO: Create a new socket if the mutex is locked
-
         // Encode the right payload types for this event. Check the
         // documentation for `EventPayload` for more information. These types
         // are converted to C-style data structures in `passthrough_event()` so
@@ -283,15 +281,26 @@ class EventHandler {
                           .payload = payload,
                           .value_payload = value_payload};
 
-        // Prevent two threads from writing over the socket at the same time and
-        // messages getting out of order. This is needed because we can't
-        // prevent the plugin or the host from calling `dispatch()` or
-        // `audioMaster()` from multiple threads.
+        // A socket only handles a single request at a time as to prevent
+        // messages from arriving out of order. For throughput reasons we prefer
+        // to do most communication over a single main socket (`socket`), and
+        // we'll lock `write_mutex` while doing so. In the event that the mutex
+        // is already locked and thus the main socket is currently in use by
+        // another thread, then we'll spawn a new socket to handle the request.
         EventResult response;
         {
-            std::lock_guard lock(write_mutex);
-            write_object(socket, event);
-            response = read_object<EventResult>(socket);
+            std::unique_lock lock(write_mutex, std::try_to_lock);
+            if (lock.owns_lock()) {
+                write_object(socket, event);
+                response = read_object<EventResult>(socket);
+            } else {
+                boost::asio::local::stream_protocol::socket secondary_socket(
+                    io_context);
+                secondary_socket.connect(endpoint);
+
+                write_object(secondary_socket, event);
+                response = read_object<EventResult>(secondary_socket);
+            }
         }
 
         if (logging) {
@@ -363,6 +372,13 @@ class EventHandler {
     }
 
    private:
+    /**
+     * The main IO context. New sockets created during `send()` will be bound to
+     * this context. In `receive()` we'll create a new IO context since we want
+     * to do all listening there on a dedicated thread.
+     */
+    boost::asio::io_context& io_context;
+
     boost::asio::local::stream_protocol::endpoint endpoint;
     boost::asio::local::stream_protocol::socket socket;
 
