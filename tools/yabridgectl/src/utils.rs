@@ -31,9 +31,9 @@ use textwrap::Wrapper;
 use crate::config::{Config, KnownConfig};
 
 /// (Part of) the expected output when running `yabridge-host.exe`. Used to verify that everything's
-/// working correctly.
-const YABRIDGE_HOST_EXPECTED_OUTPUT: &str =
-    "Usage: yabridge-host.exe <vst_plugin_dll> <unix_domain_socket>";
+/// working correctly. We'll only match this prefix so we can modify the exact output at a later
+/// moment without causing issues.
+const YABRIDGE_HOST_EXPECTED_OUTPUT_PREFIX: &str = "Usage: yabridge-";
 
 /// Wrapper around [`std::fs::copy()`](std::fs::copy) with a human readable error message.
 pub fn copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<u64> {
@@ -220,7 +220,7 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
     let mut success = false;
     let mut last_error: Option<&str> = None;
     for line in stderr.lines() {
-        if line == YABRIDGE_HOST_EXPECTED_OUTPUT {
+        if line.starts_with(YABRIDGE_HOST_EXPECTED_OUTPUT_PREFIX) {
             success = true;
             break;
         }
