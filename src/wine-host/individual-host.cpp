@@ -24,19 +24,6 @@
 #include "../common/utils.h"
 #include "bridges/vst2.h"
 
-using namespace std::literals::chrono_literals;
-
-/**
- * The delay between calls to the event loop at a more than cinematic 30 fps.
- */
-constexpr std::chrono::duration event_loop_interval = 1000ms / 30;
-
-/**
- * Handle both Win32 and X11 events on a timer. This is more or less a
- * simplified version of `GroupBridge::async_handle_events`.
- */
-void async_handle_events(boost::asio::steady_timer& timer, Vst2Bridge& bridge);
-
 /**
  * This is the default VST host application. It will load the specified VST2
  * plugin, and then connect back to the `libyabridge.so` instance that spawned
@@ -80,10 +67,10 @@ int __cdecl main(int argc, char* argv[]) {
     // setup is slightly more convoluted than it has to be, but doing it this
     // way we don't need to differentiate between individually hosted plugins
     // and plugin groups when it comes to event handling.
-    boost::asio::io_context io_context{};
+    PluginContext plugin_context{};
     std::unique_ptr<Vst2Bridge> bridge;
     try {
-        bridge = std::make_unique<Vst2Bridge>(io_context, plugin_dll_path,
+        bridge = std::make_unique<Vst2Bridge>(plugin_context, plugin_dll_path,
                                               socket_endpoint_path);
     } catch (const std::runtime_error& error) {
         std::cerr << "Error while initializing Wine VST host:" << std::endl;
@@ -101,25 +88,9 @@ int __cdecl main(int argc, char* argv[]) {
 
     // Handle Win32 messages and X11 events on a timer, just like in
     // `GroupBridge::async_handle_events()``
-    boost::asio::steady_timer events_timer(io_context);
-    async_handle_events(events_timer, *bridge);
-
-    io_context.run();
-}
-
-void async_handle_events(boost::asio::steady_timer& timer, Vst2Bridge& bridge) {
-    // Try to keep a steady framerate, but add in delays to let other events get
-    // handled if the GUI message handling somehow takes very long.
-    timer.expires_at(std::max(timer.expiry() + event_loop_interval,
-                              std::chrono::steady_clock::now() + 5ms));
-    timer.async_wait([&](const boost::system::error_code& error) {
-        if (error.failed()) {
-            return;
-        }
-
-        bridge.handle_x11_events();
-        bridge.handle_win32_events();
-
-        async_handle_events(timer, bridge);
+    plugin_context.async_handle_events([&]() {
+        bridge->handle_x11_events();
+        bridge->handle_win32_events();
     });
+    plugin_context.run();
 }

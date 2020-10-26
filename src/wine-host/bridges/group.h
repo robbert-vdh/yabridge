@@ -217,7 +217,7 @@ class GroupBridge {
      * operations that may involve the Win32 mesasge loop (e.g. initialization
      * and most `AEffect::dispatcher()` calls) should be run on.
      */
-    boost::asio::io_context plugin_context;
+    PluginContext plugin_context;
     /**
      * A seperate IO context that handles the STDIO redirect through
      * `StdIoCapture`. This is seperated the `plugin_context` above so that
@@ -278,14 +278,6 @@ class GroupBridge {
      * plugin is being spawned.
      */
     std::mutex active_plugins_mutex;
-
-    /**
-     * A timer used to repeatedly handle the Win32 message loop and the X11
-     * events.
-     *
-     8 @see async_handle_events
-     */
-    boost::asio::steady_timer events_timer;
 
     /**
      * A timer to defer shutting down the process, allowing for fast plugin

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "boost-fix.h"
+
 #include <memory>
 #include <optional>
 
@@ -25,6 +27,91 @@
 #define NOIMM
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
+#include <boost/asio/io_context.hpp>
+
+/**
+ * The delay between calls to the event loop at an even more than cinematic 30
+ * fps.
+ */
+constexpr std::chrono::duration event_loop_interval =
+    std::chrono::milliseconds(1000) / 30;
+
+/**
+ * A wrapper around `boost::asio::io_context()`. A single instance is shared for
+ * all plugins in a plugin group so that most events can be handled on the main
+ * thread, which can be required because all GUI related operations have to be
+ * handled from the same thread. If during the Win32 message loop the plugin
+ * performs a host callback and the host then calls a function on the plugin in
+ * response, then this IO context will still be busy with the message loop
+ * which. To prevent a deadlock in this situation, we'll allow different threads
+ * to handle `dispatch()` calls while the message loop is running.
+ */
+class PluginContext {
+   public:
+    PluginContext();
+
+    /**
+     * Run the IO context. This rest of this class assumes that this is only
+     * done from a single thread.
+     */
+    void run();
+
+    /**
+     * Drop all future work from the IO context. This does not necessarily mean
+     * that the thread that called `plugin_context.run()` immediatly returns.
+     */
+    void stop();
+
+    /**
+     * Start a timer to handle events every `event_loop_interval` milliseconds.
+     * `message_loop_active()` will return `true` while `handler` is being
+     * executed.
+     *
+     * @param handler The function that should be executed in the IO context
+     *   when the timer ticks. This should be a function that handles both the
+     *   X11 events and the Win32 message loop.
+     */
+    template <typename F>
+    void async_handle_events(F handler) {
+        // Try to keep a steady framerate, but add in delays to let other events
+        // get handled if the GUI message handling somehow takes very long.
+        events_timer.expires_at(std::max(
+            events_timer.expiry() + event_loop_interval,
+            std::chrono::steady_clock::now() + std::chrono::milliseconds(5)));
+        events_timer.async_wait(
+            [&, handler](const boost::system::error_code& error) {
+                if (error.failed()) {
+                    return;
+                }
+
+                event_loop_active = true;
+                handler();
+                event_loop_active = false;
+
+                async_handle_events(handler);
+            });
+    }
+
+    /**
+     * Is `true` if the context is currently handling the Win32 message loop and
+     * incoming `dispatch()` events should be handled on their own thread (as
+     * posting them to the IO context will thus block).
+     */
+    std::atomic_bool event_loop_active;
+
+    /**
+     * The raw IO context. Can and should be used directly for everything that's
+     * not the event handling loop.
+     */
+    boost::asio::io_context context;
+
+   private:
+    /**
+     * The timer used to periodically handle X11 events and Win32 messages.
+     */
+    boost::asio::steady_timer events_timer;
+};
 
 /**
  * A simple RAII wrapper around the Win32 thread API.

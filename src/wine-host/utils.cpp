@@ -16,6 +16,16 @@
 
 #include "utils.h"
 
+PluginContext::PluginContext() : context(), events_timer(context) {}
+
+void PluginContext::run() {
+    context.run();
+}
+
+void PluginContext::stop() {
+    context.stop();
+}
+
 Win32Thread::Win32Thread() : handle(nullptr, nullptr) {}
 
 Win32Timer::Win32Timer(HWND window_handle,

@@ -364,7 +364,7 @@ class EventHandler {
         // `next_plugin_id` in `GroupBridge`
         std::map<size_t, std::jthread> active_secondary_requests{};
         std::atomic_size_t next_request_id{};
-        std::mutex active_secondary_requests_mutex;
+        std::mutex active_secondary_requests_mutex{};
         accept_requests(
             *acceptor, logging,
             [&](boost::asio::local::stream_protocol::socket secondary_socket) {

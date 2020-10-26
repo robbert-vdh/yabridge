@@ -64,13 +64,13 @@ Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
     return *static_cast<Vst2Bridge*>(plugin->ptr1);
 }
 
-Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
+Vst2Bridge::Vst2Bridge(PluginContext& main_context,
                        std::string plugin_dll_path,
                        std::string endpoint_base_dir)
     : vst_plugin_path(plugin_dll_path),
-      io_context(main_context),
+      plugin_context(main_context),
       plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
-      sockets(io_context, endpoint_base_dir, false) {
+      sockets(plugin_context.context, endpoint_base_dir, false) {
     // Got to love these C APIs
     if (!plugin_handle) {
         throw std::runtime_error("Could not load the Windows .dll file at '" +
@@ -158,13 +158,14 @@ void Vst2Bridge::handle_dispatch() {
                     // `plugin->dispatcher()` (or `dispatch_wrapper()`)
                     // directly, we'll run the function within the IO context so
                     // all events will be executed on the same thread as the one
-                    // that runs the Win32 message loop. We'll assume every
-                    // event that comes in while the main thread is already
-                    // handling an event in the IO context can safely be handled
-                    // on an off thread.
-                    if (on_main_thread) {
+                    // that runs the Win32 message loop. In some scenarios we'll
+                    // receive incoming calls from multiple threads or we'll
+                    // receive calls while we're currently stuck in the Win32
+                    // message loop. In those cases we'll assume that these
+                    // events can be safely handled directlyfrom another thread.
+                    if (on_main_thread && !plugin_context.event_loop_active) {
                         std::promise<intptr_t> dispatch_result;
-                        boost::asio::dispatch(io_context, [&]() {
+                        boost::asio::dispatch(plugin_context.context, [&]() {
                             const intptr_t result = dispatch_wrapper(
                                 plugin, opcode, index, value, data, option);
 
