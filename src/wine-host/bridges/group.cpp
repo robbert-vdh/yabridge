@@ -219,7 +219,7 @@ void GroupBridge::accept_requests() {
                 // is only used within this context we don't need any locks.
                 const size_t plugin_id = next_plugin_id.fetch_add(1);
                 active_plugins[plugin_id] =
-                    std::pair(std::jthread([&, request]() {
+                    std::pair(std::jthread([this, plugin_id]() {
                                   handle_plugin_dispatch(plugin_id);
                               }),
                               std::move(bridge));

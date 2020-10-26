@@ -179,6 +179,11 @@ class DefaultDataConverter {
 };
 
 /**
+ * So, this is a bit of a mess. The TL;DR is that we want to use a single long
+ * living socket connection for `dispatch()` and another one for `audioMaster()`
+ * for performance reasons, but when the socket is already being written to we
+ * create new connections on demand.
+ *
  * For most of our sockets we can just send out our messages on the writing
  * side, and do a simple blocking loop on the reading side. The `dispatch()` and
  * `audioMaster()` calls are different. Not only do they have they come with
@@ -299,12 +304,27 @@ class EventHandler {
                 write_object(socket, event);
                 response = read_object<EventResult>(socket);
             } else {
-                boost::asio::local::stream_protocol::socket secondary_socket(
-                    io_context);
-                secondary_socket.connect(endpoint);
+                try {
+                    boost::asio::local::stream_protocol::socket
+                        secondary_socket(io_context);
+                    secondary_socket.connect(endpoint);
 
-                write_object(secondary_socket, event);
-                response = read_object<EventResult>(secondary_socket);
+                    write_object(secondary_socket, event);
+                    response = read_object<EventResult>(secondary_socket);
+                } catch (const boost::system::system_error&) {
+                    // So, what do we do when noone is listening on the endpoint
+                    // yet? This can happen with plugin groups when the Wine
+                    // host process does an `audioMaster()` call before the
+                    // plugin is listening. If that happens we'll fall back to a
+                    // synchronous request. This is not very pretty, so if
+                    // anyone can think of a better way to structure all of this
+                    // while still mainting a long living primary socket please
+                    // let me know.
+                    std::lock_guard lock(write_mutex);
+
+                    write_object(socket, event);
+                    response = read_object<EventResult>(socket);
+                }
             }
         }
 
