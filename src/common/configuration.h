@@ -92,6 +92,8 @@ class Configuration {
      * will automatically return 0 without being sent to the host. This is a
      * HACK to work around implementations issues in REAPER and Renoise, see #29
      * and #32.
+     *
+     * TODO: Remove for yabridge 1.8.0
      */
     bool hack_reaper_update_display = false;
 
