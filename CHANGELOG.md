@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+TODO: Expand on this
+
+- The way yabridge communicates between its plugin and the Wine host process has
+  been completely revamped. This was necessary to allow yabridge to handle
+  nested or mutually recursive function calls. What this boils down to is that
+  yabridge became even faster, more responsive, and can now handle a few edge
+  case scenarios that previously required workarounds. This means that yabridge
+  will now work out of the box with _REAPER_ and _Renoise_ and the
+  `hack_reaper_update_display` workaround for is no longer needed. I have been
+  testing this extensively to make sure that the change does not introduce any
+  regressions, but please let me know if this does break anything for you.
+
 ## [1.7.1] - 2020-10-23
 
 ### Fixed
