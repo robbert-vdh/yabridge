@@ -116,7 +116,7 @@ inline T read_object(Socket& socket,
             {buffer.begin(), size}, object);
 
     if (BOOST_UNLIKELY(!success)) {
-        throw std::runtime_error("Deserialization failure in call:" +
+        throw std::runtime_error("Deserialization failure in call: " +
                                  std::string(__PRETTY_FUNCTION__));
     }
 
@@ -370,9 +370,12 @@ class EventHandler {
             [&](boost::asio::local::stream_protocol::socket secondary_socket) {
                 const size_t request_id = next_request_id.fetch_add(1);
 
+                // We have to make sure to keep moving these sockets into the
+                // threads that will handle them
                 std::lock_guard lock(active_secondary_requests_mutex);
-                active_secondary_requests[request_id] =
-                    std::jthread([&, request_id]() {
+                active_secondary_requests[request_id] = std::jthread(
+                    [&, request_id](boost::asio::local::stream_protocol::socket
+                                        secondary_socket) {
                         // TODO: Factor this out
                         auto event = read_object<Event>(secondary_socket);
                         if (logging) {
@@ -405,7 +408,8 @@ class EventHandler {
                             // std::jthread
                             active_secondary_requests.erase(request_id);
                         });
-                    });
+                    },
+                    std::move(secondary_socket));
             });
 
         std::jthread secondary_requests_handler(
@@ -465,9 +469,9 @@ class EventHandler {
         std::optional<std::pair<Logger&, bool>> logging,
         F callback) {
         acceptor.async_accept(
-            [&](const boost::system::error_code& error,
+            [&, logging, callback](
+                const boost::system::error_code& error,
                 boost::asio::local::stream_protocol::socket secondary_socket) {
-                //
                 if (error.failed()) {
                     if (logging) {
                         auto [logger, is_dispatch] = *logging;
