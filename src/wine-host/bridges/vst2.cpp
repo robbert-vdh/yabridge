@@ -146,32 +146,43 @@ bool Vst2Bridge::should_skip_message_loop() const {
 
 void Vst2Bridge::handle_dispatch() {
     sockets.host_vst_dispatch.receive(
-        std::nullopt,
-        passthrough_event(
-            plugin,
-            [&](AEffect* plugin, int opcode, int index, intptr_t value,
-                void* data, float option) -> intptr_t {
-                // Instead of running `plugin->dispatcher()` (or
-                // `dispatch_wrapper()`) directly, we'll run the function within
-                // the IO context so all events will be executed on the same
-                // thread as the one that runs the Win32 message loop
-                std::promise<intptr_t> dispatch_result;
-                boost::asio::dispatch(io_context, [&]() {
-                    const intptr_t result = dispatch_wrapper(
-                        plugin, opcode, index, value, data, option);
+        std::nullopt, [&](Event& event, bool on_main_thread) {
+            // TODO: As per the TODO in `passthrough_event`, this can use a
+            //       round of refactoring now that we never use its returned
+            //       lambda directly anymore
+            return passthrough_event(
+                plugin,
+                [&](AEffect* plugin, int opcode, int index, intptr_t value,
+                    void* data, float option) -> intptr_t {
+                    // On the main thread, instead of running
+                    // `plugin->dispatcher()` (or `dispatch_wrapper()`)
+                    // directly, we'll run the function within the IO context so
+                    // all events will be executed on the same thread as the one
+                    // that runs the Win32 message loop. We'll assume every
+                    // event that comes in while the main thread is already
+                    // handling an event in the IO context can safely be handled
+                    // on an off thread.
+                    if (on_main_thread) {
+                        std::promise<intptr_t> dispatch_result;
+                        boost::asio::dispatch(io_context, [&]() {
+                            const intptr_t result = dispatch_wrapper(
+                                plugin, opcode, index, value, data, option);
 
-                    dispatch_result.set_value(result);
-                });
+                            dispatch_result.set_value(result);
+                        });
 
-                // The message loop and X11 event handling will be run
-                // separately on a timer
-                return dispatch_result.get_future().get();
-            }));
+                        return dispatch_result.get_future().get();
+                    } else {
+                        return dispatch_wrapper(plugin, opcode, index, value,
+                                                data, option);
+                    }
+                })(event);
+        });
 }
 
 void Vst2Bridge::handle_dispatch_midi_events() {
     sockets.host_vst_dispatch_midi_events.receive(
-        std::nullopt, [&](Event& event) {
+        std::nullopt, [&](Event& event, bool /*on_main_thread*/) {
             if (BOOST_LIKELY(event.opcode == effProcessEvents)) {
                 // For 99% of the plugins we can just call
                 // `effProcessReplacing()` and be done with it, but a select few

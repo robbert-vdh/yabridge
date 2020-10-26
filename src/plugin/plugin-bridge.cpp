@@ -121,10 +121,9 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     // instead of asynchronous IO since communication has to be handled in
     // lockstep anyway
     host_callback_handler = std::jthread([&]() {
-        // TODO: Think of a nicer way to structure this and the similar
-        //       handler in `Vst2Bridge::handle_dispatch_midi_events`
         sockets.vst_host_callback.receive(
-            std::pair<Logger&, bool>(logger, false), [&](Event& event) {
+            std::pair<Logger&, bool>(logger, false),
+            [&](Event& event, bool /*on_main_thread*/) {
                 // MIDI events sent from the plugin back to the host are a
                 // special case here. They have to sent during the
                 // `processReplacing()` function or else the host will ignore

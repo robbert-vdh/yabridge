@@ -338,19 +338,17 @@ class EventHandler {
      *   this is for sending `dispatch()` events or host callbacks. Optional
      *   since it doesn't have to be done on both sides.
      * @param callback The function used to generate a response out of an event.
+     *   See the definition of `F` for more information.
      *
-     * @tparam F A function type in the form of `EventResponse(Event)`.
-     *
-     *         TODO: Add a boolean flag indicating that this is being called
-     *               from an off thread
+     * @tparam F A function type in the form of `EventResponse(Event, bool)`.
+     *   The boolean flag is `true` when this event was received on the main
+     *   socket, and `false` otherwise.
      *
      * @relates EventHandler::send
      * @relates passthrough_event
      */
     template <typename F>
     void receive(std::optional<std::pair<Logger&, bool>> logging, F callback) {
-        assert(acceptor.has_value());
-
         // As described above we'll handle incoming requests for `socket` on
         // this thread. We'll also listen for incoming connections on `endpoint`
         // on another thread. For any incoming connection we'll spawn a new
@@ -358,6 +356,9 @@ class EventHandler {
         // breaks, the listener and any still active threads will be cleaned up
         // before this function exits.
         boost::asio::io_context secondary_context{};
+        // The previous acceptor has already been shut down by
+        // `EventHandler::connect()`
+        acceptor.emplace(secondary_context, endpoint);
 
         // This works the exact same was as `active_plugins` and
         // `next_plugin_id` in `GroupBridge`
@@ -382,7 +383,7 @@ class EventHandler {
                                              event.value_payload);
                         }
 
-                        EventResult response = callback(event);
+                        EventResult response = callback(event, false);
                         if (logging) {
                             auto [logger, is_dispatch] = *logging;
                             logger.log_event_response(is_dispatch, event.opcode,
@@ -420,7 +421,7 @@ class EventHandler {
                                      event.value_payload);
                 }
 
-                EventResult response = callback(event);
+                EventResult response = callback(event, true);
                 if (logging) {
                     auto [logger, is_dispatch] = *logging;
                     logger.log_event_response(
@@ -499,8 +500,12 @@ class EventHandler {
     /**
      * This acceptor will be used once synchronously on the listening side
      * during `Sockets::connect()`. When `EventHandler::receive()` is then
-     * called, we'll asynchronously listen for new incoming socket connections
-     * on `endpoint` using this same acceptor.
+     * called, we'll recreate the acceptor asynchronously listen for new
+     * incoming socket connections on `endpoint` using this same acceptor. This
+     * is important, because on the case of `vst_host_callback` the acceptor is
+     * first accepts an initial socket on the plugin side (like all sockets),
+     * but all additional incoming connections of course have to be listened for
+     * on the plugin side.
      */
     std::optional<boost::asio::local::stream_protocol::acceptor> acceptor;
 
@@ -649,6 +654,9 @@ boost::filesystem::path generate_endpoint_base(const std::string& plugin_name);
  * the cleanest solution for this problem.
  *
  * This is the receiving analogue of the `*DataCovnerter` objects.
+ *
+ * TODO: Now that `EventHandler::receive` replaced `receive_event()`, refactor
+ *       this to just handle the event directly rather than returning a lambda
  *
  * @param plugin The `AEffect` instance that should be passed to the callback
  *   function.

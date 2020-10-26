@@ -95,6 +95,12 @@ EventHandler::EventHandler(
 void EventHandler::connect() {
     if (acceptor) {
         acceptor->accept(socket);
+
+        // As mentioned in `acceptor's` docstring, this acceptor will be
+        // recreated in `receive()` on another context, and potentially on the
+        // other side of the connection in the case of `vst_host_callback`
+        acceptor.reset();
+        fs::remove(endpoint.path());
     } else {
         socket.connect(endpoint);
     }
