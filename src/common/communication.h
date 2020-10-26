@@ -442,7 +442,7 @@ class EventHandler {
         // sure all outstanding jobs have been processed and then drop all work
         // from the IO context
         std::lock_guard lock(active_secondary_requests_mutex);
-        io_context.stop();
+        acceptor.reset();
     }
 
    private:
@@ -471,13 +471,14 @@ class EventHandler {
                 const boost::system::error_code& error,
                 boost::asio::local::stream_protocol::socket secondary_socket) {
                 if (error.failed()) {
+                    // On the Wine side it's expected that the main socket
+                    // connection will be dropped during shutdown, so we can
+                    // silently ignore any related socket errors on the Wine
+                    // side
                     if (logging) {
                         auto [logger, is_dispatch] = *logging;
                         logger.log("Failure while accepting connections: " +
                                    error.message());
-                    } else {
-                        std::cerr << "Failure while accepting connections: "
-                                  << error.message() << std::endl;
                     }
 
                     return;
