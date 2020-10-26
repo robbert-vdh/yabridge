@@ -67,7 +67,8 @@ Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
 Vst2Bridge::Vst2Bridge(boost::asio::io_context& main_context,
                        std::string plugin_dll_path,
                        std::string endpoint_base_dir)
-    : io_context(main_context),
+    : vst_plugin_path(plugin_dll_path),
+      io_context(main_context),
       plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
       sockets(io_context, endpoint_base_dir, false) {
     // Got to love these C APIs

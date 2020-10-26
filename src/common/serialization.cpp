@@ -108,8 +108,3 @@ AEffect& update_aeffect(AEffect& plugin, const AEffect& updated_plugin) {
 
     return plugin;
 }
-
-bool GroupRequest::operator==(const GroupRequest& rhs) const {
-    return plugin_path == rhs.plugin_path &&
-           endpoint_base_dir == rhs.endpoint_base_dir;
-}

@@ -150,6 +150,11 @@ class Vst2Bridge {
      */
     std::optional<VstTimeInfo> time_info;
 
+    /**
+     * The path to the .dll being loaded in the Wine VST host.
+     */
+    const boost::filesystem::path vst_plugin_path;
+
    private:
     /**
      * A wrapper around `plugin->dispatcher` that handles the opening and

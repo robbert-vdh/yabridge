@@ -111,15 +111,15 @@ GroupBridge::~GroupBridge() {
     stdio_context.stop();
 }
 
-void GroupBridge::handle_plugin_dispatch(const GroupRequest request) {
+void GroupBridge::handle_plugin_dispatch(size_t plugin_id) {
     // At this point the `active_plugins` map will already contain the
     // intialized plugin's `Vst2Bridge` instance and this thread's handle
-    auto& [thread, bridge] = active_plugins.at(request);
+    auto& [thread, bridge] = active_plugins[plugin_id];
 
     // Blocks this thread until the plugin shuts down, handling all events on
     // the main IO context
     bridge->handle_dispatch();
-    logger.log("'" + request.plugin_path + "' has exited");
+    logger.log("'" + bridge->vst_plugin_path.string() + "' has exited");
 
     // After the plugin has exited we'll remove this thread's plugin from the
     // active plugins. This is done within the IO context because the call to
@@ -127,11 +127,11 @@ void GroupBridge::handle_plugin_dispatch(const GroupRequest request) {
     // potentially corrupt our heap. This way we can also properly join the
     // thread again. If no active plugins remain, then we'll terminate the
     // process.
-    boost::asio::post(plugin_context, [&, request]() {
+    boost::asio::post(plugin_context, [this, plugin_id]() {
         std::lock_guard lock(active_plugins_mutex);
 
         // The join is implicit because we're using std::jthread
-        active_plugins.erase(request);
+        active_plugins.erase(plugin_id);
     });
 
     // Defer actually shutting down the process to allow for fast plugin
@@ -201,10 +201,6 @@ void GroupBridge::accept_requests() {
             const auto request = read_object<GroupRequest>(socket);
             write_object(socket, GroupResponse{boost::this_process::get_id()});
 
-            // Collisions in the generated socket names should be very rare, but
-            // it could in theory happen
-            assert(!active_plugins.contains(request));
-
             // The plugin has to be initiated on the IO context's thread because
             // this has to be done on the same thread that's handling messages,
             // and all window messages have to be handled from the same thread.
@@ -220,10 +216,13 @@ void GroupBridge::accept_requests() {
 
                 // Start listening for dispatcher events sent to the plugin's
                 // socket on another thread. The actual event handling will
-                // still occur within this IO context.
-                active_plugins[request] =
+                // still be posted to this IO context so that every plugin's
+                // primary event handling happens on the main thread. Since this
+                // is only used within this context we don't need any locks.
+                const size_t plugin_id = next_plugin_id.fetch_add(1);
+                active_plugins[plugin_id] =
                     std::pair(std::jthread([&, request]() {
-                                  handle_plugin_dispatch(request);
+                                  handle_plugin_dispatch(plugin_id);
                               }),
                               std::move(bridge));
             } catch (const std::runtime_error& error) {

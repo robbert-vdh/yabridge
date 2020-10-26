@@ -600,8 +600,6 @@ struct GroupRequest {
     std::string plugin_path;
     std::string endpoint_base_dir;
 
-    bool operator==(const GroupRequest& rhs) const;
-
     template <typename S>
     void serialize(S& s) {
         s.text1b(plugin_path, 4096);
