@@ -114,7 +114,11 @@ GroupBridge::~GroupBridge() {
 void GroupBridge::handle_plugin_dispatch(size_t plugin_id) {
     // At this point the `active_plugins` map will already contain the
     // intialized plugin's `Vst2Bridge` instance and this thread's handle
-    auto& [thread, bridge] = active_plugins[plugin_id];
+    Vst2Bridge* bridge;
+    {
+        std::lock_guard lock(active_plugins_mutex);
+        bridge = active_plugins[plugin_id].second.get();
+    }
 
     // Blocks this thread until the plugin shuts down, handling all events on
     // the main IO context
