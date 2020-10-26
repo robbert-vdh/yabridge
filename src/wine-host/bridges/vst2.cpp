@@ -19,6 +19,7 @@
 #include <boost/asio/dispatch.hpp>
 #include <future>
 #include <iostream>
+#include <set>
 
 #include "../../common/communication.h"
 
@@ -37,6 +38,14 @@ Vst2Bridge* current_bridge_instance = nullptr;
  * same time.
  */
 std::mutex current_bridge_instance_mutex;
+
+/**
+ * Opcodes that should always be handled on the main thread because they may
+ * involve GUI operations.
+ */
+const std::set<int> unsafe_opcodes{effOpen,     effClose,     effEditGetRect,
+                                   effEditOpen, effEditClose, effEditIdle,
+                                   effEditTop};
 
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);
@@ -163,7 +172,8 @@ void Vst2Bridge::handle_dispatch() {
                     // receive calls while we're currently stuck in the Win32
                     // message loop. In those cases we'll assume that these
                     // events can be safely handled directlyfrom another thread.
-                    if (on_main_thread && !plugin_context.event_loop_active) {
+                    if (unsafe_opcodes.contains(opcode) ||
+                        (on_main_thread && !plugin_context.event_loop_active)) {
                         std::promise<intptr_t> dispatch_result;
                         boost::asio::dispatch(plugin_context.context, [&]() {
                             const intptr_t result = dispatch_wrapper(
