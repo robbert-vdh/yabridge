@@ -499,6 +499,7 @@ the following dependencies:
 The following dependencies are included in the repository as a Meson wrap:
 
 - bitsery
+- function2
 - tomlplusplus
 
 The project can then be compiled as follows:

@@ -73,6 +73,7 @@ boost_filesystem_dep = dependency(
   static : with_static_boost
 )
 bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
+function2_dep = subproject('function2').get_variable('function2_dep')
 threads_dep = dependency('threads')
 tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('tomlplusplus_dep')
 # The built in threads dependency does not know how to handle winegcc
@@ -141,6 +142,7 @@ executable(
     boost_dep,
     boost_filesystem_dep,
     bitsery_dep,
+    function2_dep,
     tomlplusplus_dep,
     wine_threads_dep,
     xcb_dep
@@ -158,6 +160,7 @@ executable(
     boost_dep,
     boost_filesystem_dep,
     bitsery_dep,
+    function2_dep,
     tomlplusplus_dep,
     wine_threads_dep,
     xcb_dep
@@ -203,6 +206,7 @@ if with_bitbridge
       boost_dep,
       boost_filesystem_dep,
       bitsery_dep,
+      function2_dep,
       tomlplusplus_dep,
       wine_threads_dep,
       xcb_dep
@@ -227,6 +231,7 @@ if with_bitbridge
       boost_dep,
       boost_filesystem_dep,
       bitsery_dep,
+      function2_dep,
       tomlplusplus_dep,
       wine_threads_dep,
       xcb_dep
