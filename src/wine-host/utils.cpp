@@ -18,6 +18,29 @@
 
 PluginContext::PluginContext() : context(), events_timer(context) {}
 
+uint32_t WINAPI win32_thread_trampoline(std::function<void()>* entry_point) {
+    (*entry_point)();
+    delete entry_point;
+
+    return 0;
+}
+
+Win32Thread::~Win32Thread() {
+    // Imitate std::jthread's joining behaviour, the thread handle will be
+    // cleaned up by the `std::unique_ptr`
+    if (handle) {
+        WaitForSingleObject(handle.get(), INFINITE);
+    }
+}
+
+Win32Thread::Win32Thread(Win32Thread&& o) : handle(std::move(o.handle)) {}
+
+Win32Thread& Win32Thread::operator=(Win32Thread&& o) {
+    handle = std::move(o.handle);
+
+    return *this;
+}
+
 void PluginContext::run() {
     context.run();
 }

@@ -114,23 +114,29 @@ class PluginContext {
 };
 
 /**
- * A simple RAII wrapper around the Win32 thread API.
+ * A proxy function that calls `Win32Thread::entry_point` since `CreateThread()`
+ * is not usable with lambdas directly. Calling the passed function will invoke
+ * the lambda with the arguments passed during `Win32Thread`'s constructor. This
+ * function deallocates the function after it's finished executing.
  *
- * These threads are implemented using `CreateThread` rather than `std::thread`
- * because in some cases `std::thread` in winelib causes very hard to debug data
- * races within plugins such as Serum. This might be caused by calling
- * conventions being handled differently.
+ * We can't store the function pointer in the `Win32Thread` object because
+ * moving a `Win32Thread` object would then cause issues.
  *
- * This somewhat mimicks `std::thread`, with the following differences:
+ * @param win32_thread_trampoline A `std::function<void()>*` pointer to a
+ *   function pointer, great.
+ */
+uint32_t WINAPI win32_thread_trampoline(std::function<void()>* entry_point);
+
+/**
+ * A simple RAII wrapper around the Win32 thread API that imitates
+ * `std::jthread`.
  *
- * - The threads will immediatly be killed silently when a `Win32Thread` object
- *   goes out of scope. This is the desired behavior in our case since the host
- *   will have already saved chunk data before closing the plugin and this
- *   ensures that the plugin shuts down quickly.
- * - This does not accept lambdas because we're calling a C function that
- *   expects a function pointer of type `LPTHREAD_START_ROUTINE`. GCC supports
- *   converting stateless lambdas to this format, but clang (as used for IDE
- *   tooling) does not.
+ * `std::thread` directly uses pthreads. This means that, like with
+ * `CreateThread()`, some thread local information does not get initialized
+ * which can lead to memory errors.
+ *
+ * TODO: Once these changes are complete, check if we can drop `PluginContext`
+ *       again and execute all 'safe' opcodes on the calling thread.
  *
  * @note This should be used instead of `std::thread` or `std::jthread` whenever
  *   the thread directly calls third party library code, i.e. `LoadLibrary()`,
@@ -145,18 +151,37 @@ class Win32Thread {
     Win32Thread();
 
     /**
-     * Constructor that immediately starts running the thread
+     * Constructor that immediately starts running the thread. This works
+     * equivalently to `std::jthread`.
      *
      * @param entry_point The thread entry point that should be run.
      * @param parameter The parameter passed to the entry point function.
-
-     * @tparam F A function type that should be convertible to a
-     *   `LPTHREAD_START_ROUTINE` function pointer.
      */
-    template <typename F>
-    Win32Thread(F entry_point, void* parameter)
-        : handle(CreateThread(nullptr, 0, entry_point, parameter, 0, nullptr),
+    template <class Function, class... Args>
+    Win32Thread(Function&& f, Args&&... args)
+        : handle(CreateThread(
+                     nullptr,
+                     0,
+                     reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                         win32_thread_trampoline),
+                     new std::function<void()>(
+                         [f = std::move(f), ... args = std::move(args)]() {
+                             std::invoke(f, args...);
+                         }),
+                     0,
+                     nullptr),
                  CloseHandle) {}
+
+    /**
+     * Join the thread on destruction, just like `std::jthread` does.
+     */
+    ~Win32Thread();
+
+    Win32Thread(const Win32Thread&) = delete;
+    Win32Thread& operator=(const Win32Thread&) = delete;
+
+    Win32Thread(Win32Thread&&);
+    Win32Thread& operator=(Win32Thread&&);
 
    private:
     /**
