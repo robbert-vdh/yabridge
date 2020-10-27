@@ -29,6 +29,7 @@
 #include <windows.h>
 
 #include <boost/asio/io_context.hpp>
+#include <function2/function2.hpp>
 
 /**
  * The delay between calls to the event loop at an even more than cinematic 30
@@ -122,19 +123,11 @@ class PluginContext {
  * We can't store the function pointer in the `Win32Thread` object because
  * moving a `Win32Thread` object would then cause issues.
  *
- * @param win32_thread_trampoline A `std::function<void()>*` pointer to a
- *   function pointer, great.
+ * @param entry_point A `fu2::unique_function<void()>*` pointer to a function
+ *   pointer, great.
  */
-uint32_t WINAPI win32_thread_trampoline(std::function<void()>* entry_point);
-
-/**
- * Taken from the C++ reference:
- * https://en.cppreference.com/w/cpp/thread/jthread
- */
-template <class T>
-std::decay_t<T> decay_copy(T&& v) {
-    return std::forward<T>(v);
-}
+uint32_t WINAPI
+win32_thread_trampoline(fu2::unique_function<void()>* entry_point);
 
 /**
  * A simple RAII wrapper around the Win32 thread API that imitates
@@ -166,24 +159,25 @@ class Win32Thread {
      * @param entry_point The thread entry point that should be run.
      * @param parameter The parameter passed to the entry point function.
      */
-    template <class Function, class... Args>
+    template <typename Function, typename... Args>
     Win32Thread(Function&& f, Args&&... args)
         : handle(
-              CreateThread(nullptr,
-                           0,
-                           reinterpret_cast<LPTHREAD_START_ROUTINE>(
-                               win32_thread_trampoline),
-                           // We'll capture the function by move since the
-                           // lambda will often go out of scope in the time that
-                           // the thread is starting. Alternatively we could
-                           // wait for the thread to be up before continuing,
-                           // that may be a bit safer.
-                           new std::function<void()>([&, f = std::move(f)]() {
-                               std::invoke(
-                                   f, decay_copy(std::forward<Args>(args))...);
-                           }),
-                           0,
-                           nullptr),
+              CreateThread(
+                  nullptr,
+                  0,
+                  reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                      win32_thread_trampoline),
+                  // `std::function` does not support functions with move
+                  // captures the function has to be copy-constructable.
+                  // Function2's unique_function lets us capture and move our
+                  // arguments to the lambda so we don't end up with dangling
+                  // references.
+                  new fu2::unique_function<void()>(
+                      [f = std::move(f), ... args = std::move(args)]() mutable {
+                          f(std::move(args)...);
+                      }),
+                  0,
+                  nullptr),
               CloseHandle) {}
 
     Win32Thread(const Win32Thread&) = delete;

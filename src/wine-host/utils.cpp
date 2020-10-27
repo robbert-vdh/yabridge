@@ -18,7 +18,8 @@
 
 PluginContext::PluginContext() : context(), events_timer(context) {}
 
-uint32_t WINAPI win32_thread_trampoline(std::function<void()>* entry_point) {
+uint32_t WINAPI
+win32_thread_trampoline(fu2::unique_function<void()>* entry_point) {
     (*entry_point)();
     delete entry_point;
 
