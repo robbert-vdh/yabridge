@@ -335,7 +335,7 @@ bool Vst2Bridge::should_skip_message_loop() const {
 
 void Vst2Bridge::handle_dispatch() {
     sockets.host_vst_dispatch.receive(
-        std::nullopt, [&](Event& event, bool on_main_thread) {
+        std::nullopt, [&](Event& event, bool /*on_main_thread*/) {
             // TODO: As per the TODO in `passthrough_event`, this can use a
             //       round of refactoring now that we never use its returned
             //       lambda directly anymore
@@ -343,17 +343,12 @@ void Vst2Bridge::handle_dispatch() {
                 plugin,
                 [&](AEffect* plugin, int opcode, int index, intptr_t value,
                     void* data, float option) -> intptr_t {
-                    // On the main thread, instead of running
-                    // `plugin->dispatcher()` (or `dispatch_wrapper()`)
-                    // directly, we'll run the function within the IO context so
-                    // all events will be executed on the same thread as the one
-                    // that runs the Win32 message loop. In some scenarios we'll
-                    // receive incoming calls from multiple threads or we'll
-                    // receive calls while we're currently stuck in the Win32
-                    // message loop. In those cases we'll assume that these
-                    // events can be safely handled directlyfrom another thread.
-                    if (unsafe_opcodes.contains(opcode) ||
-                        (on_main_thread && !plugin_context.event_loop_active)) {
+                    // Certain functions will most definitely involve the GUI or
+                    // the Win32 message loop. These functions have to be
+                    // performed on the thread that is running the IO context,
+                    // since this is also where the plugins were instantiated
+                    // and where the Win32 message loop is handled.
+                    if (unsafe_opcodes.contains(opcode)) {
                         std::promise<intptr_t> dispatch_result;
                         boost::asio::dispatch(plugin_context.context, [&]() {
                             const intptr_t result = dispatch_wrapper(

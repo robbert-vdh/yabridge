@@ -137,9 +137,6 @@ win32_thread_trampoline(fu2::unique_function<void()>* entry_point);
  * `CreateThread()`, some thread local information does not get initialized
  * which can lead to memory errors.
  *
- * TODO: Once these changes are complete, check if we can drop `PluginContext`
- *       again and execute all 'safe' opcodes on the calling thread.
- *
  * @note This should be used instead of `std::thread` or `std::jthread` whenever
  *   the thread directly calls third party library code, i.e. `LoadLibrary()`,
  *   `FreeLibrary()`, the plugin's entry point, or any of the `AEffect::*()`
