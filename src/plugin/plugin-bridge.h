@@ -124,7 +124,7 @@ class PluginBridge {
     void log_init_message();
 
     boost::asio::io_context io_context;
-    Sockets sockets;
+    Sockets<std::jthread> sockets;
 
     /**
      * The thread that handles host callbacks.

@@ -189,7 +189,7 @@ class Vst2Bridge {
     /**
      * All sockets used for communicating with this specific plugin.
      */
-    Sockets sockets;
+    Sockets<Win32Thread> sockets;
 
     /**
      * The thread that specifically handles `effProcessEvents` opcodes so the

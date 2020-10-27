@@ -18,7 +18,6 @@
 
 #include <atomic>
 #include <iostream>
-#include <thread>
 
 #include <bitsery/adapter/buffer.h>
 #include <bitsery/bitsery.h>
@@ -204,7 +203,11 @@ class DefaultDataConverter {
  * above. Similarly, the `EventHandler::receive()` method first sets up
  * asynchronous listeners for the socket endpoint, and then block and handle
  * events until the main socket is closed.
+ *
+ * @tparam Thread The thread implementation to use. On the Linux side this
+ *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  */
+template <typename Thread>
 class EventHandler {
    public:
     /**
@@ -223,20 +226,44 @@ class EventHandler {
      */
     EventHandler(boost::asio::io_context& io_context,
                  boost::asio::local::stream_protocol::endpoint endpoint,
-                 bool listen);
+                 bool listen)
+        : io_context(io_context), endpoint(endpoint), socket(io_context) {
+        if (listen) {
+            boost::filesystem::create_directories(
+                boost::filesystem::path(endpoint.path()).parent_path());
+            acceptor.emplace(io_context, endpoint);
+        }
+    }
 
     /**
      * Depending on the value of the `listen` argument passed to the
      * constructor, either accept connections made to the sockets on the Linux
      * side or connect to the sockets on the Wine side
      */
-    void connect();
+    void connect() {
+        if (acceptor) {
+            acceptor->accept(socket);
+
+            // As mentioned in `acceptor's` docstring, this acceptor will be
+            // recreated in `receive()` on another context, and potentially on
+            // the other side of the connection in the case of
+            // `vst_host_callback`
+            acceptor.reset();
+            boost::filesystem::remove(endpoint.path());
+        } else {
+            socket.connect(endpoint);
+        }
+    }
 
     /**
      * Close the socket. Both sides that are actively listening will be thrown a
      * `boost::system_error` when this happens.
      */
-    void close();
+    void close() {
+        socket.shutdown(
+            boost::asio::local::stream_protocol::socket::shutdown_both);
+        socket.close();
+    }
 
     /**
      * Serialize and send an event over a socket. This is used for both the host
@@ -384,7 +411,7 @@ class EventHandler {
 
         // This works the exact same was as `active_plugins` and
         // `next_plugin_id` in `GroupBridge`
-        std::map<size_t, std::jthread> active_secondary_requests{};
+        std::map<size_t, Thread> active_secondary_requests{};
         std::atomic_size_t next_request_id{};
         std::mutex active_secondary_requests_mutex{};
         accept_requests(
@@ -395,7 +422,7 @@ class EventHandler {
                 // We have to make sure to keep moving these sockets into the
                 // threads that will handle them
                 std::lock_guard lock(active_secondary_requests_mutex);
-                active_secondary_requests[request_id] = std::jthread(
+                active_secondary_requests[request_id] = Thread(
                     [&, request_id](boost::asio::local::stream_protocol::socket
                                         secondary_socket) {
                         // TODO: Factor this out
@@ -427,15 +454,14 @@ class EventHandler {
                                 active_secondary_requests_mutex);
 
                             // The join is implicit because we're using
-                            // std::jthread
+                            // std::jthread/Win32Thread
                             active_secondary_requests.erase(request_id);
                         });
                     },
                     std::move(secondary_socket));
             });
 
-        std::jthread secondary_requests_handler(
-            [&]() { secondary_context.run(); });
+        Thread secondary_requests_handler([&]() { secondary_context.run(); });
 
         while (true) {
             try {
@@ -555,7 +581,11 @@ class EventHandler {
  * `true` before launching the Wine VST host. This will start listening on the
  * sockets, and the call to `connect()` will then accept any incoming
  * connections.
+ *
+ * @tparam Thread The thread implementation to use. On the Linux side this
+ *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  */
+template <typename Thread>
 class Sockets {
    public:
     /**
@@ -574,20 +604,78 @@ class Sockets {
      */
     Sockets(boost::asio::io_context& io_context,
             const boost::filesystem::path& endpoint_base_dir,
-            bool listen);
+            bool listen)
+        : base_dir(endpoint_base_dir),
+          host_vst_dispatch(io_context,
+                            (base_dir / "host_vst_dispatch.sock").string(),
+                            listen),
+          host_vst_dispatch_midi_events(
+              io_context,
+              (base_dir / "host_vst_dispatch_midi_events.sock").string(),
+              listen),
+          vst_host_callback(io_context,
+                            (base_dir / "vst_host_callback.sock").string(),
+                            listen),
+          host_vst_parameters(io_context),
+          host_vst_process_replacing(io_context),
+          host_vst_control(io_context),
+          host_vst_parameters_endpoint(
+              (base_dir / "host_vst_parameters.sock").string()),
+          host_vst_process_replacing_endpoint(
+              (base_dir / "host_vst_process_replacing.sock").string()),
+          host_vst_control_endpoint(
+              (base_dir / "host_vst_control.sock").string()) {
+        if (listen) {
+            boost::filesystem::create_directories(base_dir);
+
+            acceptors = Acceptors{
+                .host_vst_parameters{io_context, host_vst_parameters_endpoint},
+                .host_vst_process_replacing{
+                    io_context, host_vst_process_replacing_endpoint},
+                .host_vst_control{io_context, host_vst_control_endpoint},
+            };
+        }
+    }
 
     /**
      * Cleans up the directory containing the socket endpoints when yabridge
      * shuts down if it still exists.
      */
-    ~Sockets();
+    ~Sockets() {
+        // Only clean if we're the ones who have created these files, although
+        // it should not cause any harm to also do this on the Wine side
+        if (acceptors) {
+            try {
+                boost::filesystem::remove_all(base_dir);
+            } catch (const boost::filesystem::filesystem_error&) {
+                // There should not be any filesystem errors since only one side
+                // removes the files, but if we somehow can't delete the file
+                // then we can just silently ignore this
+            }
+        }
+    }
 
     /**
      * Depending on the value of the `listen` argument passed to the
      * constructor, either accept connections made to the sockets on the Linux
      * side or connect to the sockets on the Wine side
      */
-    void connect();
+    void connect() {
+        host_vst_dispatch.connect();
+        host_vst_dispatch_midi_events.connect();
+        vst_host_callback.connect();
+        if (acceptors) {
+            acceptors->host_vst_parameters.accept(host_vst_parameters);
+            acceptors->host_vst_process_replacing.accept(
+                host_vst_process_replacing);
+            acceptors->host_vst_control.accept(host_vst_control);
+        } else {
+            host_vst_parameters.connect(host_vst_parameters_endpoint);
+            host_vst_process_replacing.connect(
+                host_vst_process_replacing_endpoint);
+            host_vst_control.connect(host_vst_control_endpoint);
+        }
+    }
 
     /**
      * The base directory for our socket endpoints. All `*_endpoint` variables
@@ -604,19 +692,19 @@ class Sockets {
      * The socket that forwards all `dispatcher()` calls from the VST host to
      * the plugin.
      */
-    EventHandler host_vst_dispatch;
+    EventHandler<Thread> host_vst_dispatch;
     /**
      * Used specifically for the `effProcessEvents` opcode. This is needed
      * because the Win32 API is designed to block during certain GUI
      * interactions such as resizing a window or opening a dropdown. Without
      * this MIDI input would just stop working at times.
      */
-    EventHandler host_vst_dispatch_midi_events;
+    EventHandler<Thread> host_vst_dispatch_midi_events;
     /**
      * The socket that forwards all `audioMaster()` calls from the Windows VST
      * plugin to the host.
      */
-    EventHandler vst_host_callback;
+    EventHandler<Thread> vst_host_callback;
     /**
      * Used for both `getParameter` and `setParameter` since they mostly
      * overlap.

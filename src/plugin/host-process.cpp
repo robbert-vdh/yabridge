@@ -83,7 +83,7 @@ void HostProcess::async_log_pipe_lines(patched_async_pipe& pipe,
 IndividualHost::IndividualHost(boost::asio::io_context& io_context,
                                Logger& logger,
                                fs::path plugin_path,
-                               const Sockets& sockets)
+                               const Sockets<std::jthread>& sockets)
     : HostProcess(io_context, logger),
       plugin_arch(find_vst_architecture(plugin_path)),
       host_path(find_vst_host(plugin_arch, false)),
@@ -130,7 +130,7 @@ void IndividualHost::terminate() {
 GroupHost::GroupHost(boost::asio::io_context& io_context,
                      Logger& logger,
                      fs::path plugin_path,
-                     Sockets& sockets,
+                     Sockets<std::jthread>& sockets,
                      std::string group_name)
     : HostProcess(io_context, logger),
       plugin_arch(find_vst_architecture(plugin_path)),
