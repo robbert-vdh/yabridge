@@ -104,7 +104,7 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
 #endif
                            )) {
 #ifdef WITH_WINEDBG
-    if (plugin_path.string().find(' ') != std::string::npos) {
+    if (plugin_path.filename().string().find(' ') != std::string::npos) {
         logger.log("Warning: winedbg does not support paths containing spaces");
     }
 #endif
