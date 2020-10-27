@@ -244,7 +244,7 @@ class GroupBridge {
     /**
      * A thread that runs the `stdio_context` loop.
      */
-    std::jthread stdio_handler;
+    Win32Thread stdio_handler;
 
     boost::asio::local::stream_protocol::endpoint group_socket_endpoint;
     /**
@@ -263,7 +263,7 @@ class GroupBridge {
      * on `next_plugin_id`.
      */
     std::unordered_map<size_t,
-                       std::pair<std::jthread, std::unique_ptr<Vst2Bridge>>>
+                       std::pair<Win32Thread, std::unique_ptr<Vst2Bridge>>>
         active_plugins;
     /**
      * A counter for the next unique plugin ID. When hosting a new plugin we'll

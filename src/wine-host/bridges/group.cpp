@@ -98,7 +98,7 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
     async_log_pipe_lines(stdout_redirect.pipe, stdout_buffer, "[STDOUT] ");
     async_log_pipe_lines(stderr_redirect.pipe, stderr_buffer, "[STDERR] ");
 
-    stdio_handler = std::jthread([&]() { stdio_context.run(); });
+    stdio_handler = Win32Thread([&]() { stdio_context.run(); });
 }
 
 GroupBridge::~GroupBridge() {
@@ -128,7 +128,8 @@ void GroupBridge::handle_plugin_dispatch(size_t plugin_id) {
     boost::asio::post(plugin_context.context, [this, plugin_id]() {
         std::lock_guard lock(active_plugins_mutex);
 
-        // The join is implicit because we're using std::jthread
+        // The join is implicit because we're using Win32Thread (which mimics
+        // std::jthread)
         active_plugins.erase(plugin_id);
     });
 
@@ -219,7 +220,7 @@ void GroupBridge::accept_requests() {
                 // is only used within this context we don't need any locks.
                 const size_t plugin_id = next_plugin_id.fetch_add(1);
                 active_plugins[plugin_id] =
-                    std::pair(std::jthread([this, plugin_id]() {
+                    std::pair(Win32Thread([this, plugin_id]() {
                                   handle_plugin_dispatch(plugin_id);
                               }),
                               std::move(bridge));

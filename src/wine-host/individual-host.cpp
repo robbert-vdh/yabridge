@@ -60,13 +60,12 @@ int __cdecl main(int argc, char* argv[]) {
               << std::endl;
 
     // As explained in `Vst2Bridge`, the plugin has to be initialized in the
-    // same thread as the one that calls `io_context.run()`. And for some
-    // reason, a lot of plugins have memory corruption issues when executing
-    // `LoadLibrary()` or some of their functions from within a `std::thread`
-    // (although the WinAPI `CreateThread()` does not have these issues). This
-    // setup is slightly more convoluted than it has to be, but doing it this
-    // way we don't need to differentiate between individually hosted plugins
-    // and plugin groups when it comes to event handling.
+    // same thread as the one that calls `io_context.run()`. This setup is
+    // slightly more convoluted than it has to be, but doing it this way we
+    // don't need to differentiate between individually hosted plugins and
+    // plugin groups when it comes to event handling.
+    // TODO: Update documentation once we figure out if we can safely replace
+    //       PluginContext again with a normal `io_context`.
     PluginContext plugin_context{};
     std::unique_ptr<Vst2Bridge> bridge;
     try {
@@ -84,7 +83,7 @@ int __cdecl main(int argc, char* argv[]) {
 
     // We'll listen for `dispatcher()` calls on a different thread, but the
     // actual events will still be executed within the IO context
-    std::jthread dispatch_handler([&]() { bridge->handle_dispatch(); });
+    Win32Thread dispatch_handler([&]() { bridge->handle_dispatch(); });
 
     // Handle Win32 messages and X11 events on a timer, just like in
     // `GroupBridge::async_handle_events()``
