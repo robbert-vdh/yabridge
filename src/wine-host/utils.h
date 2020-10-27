@@ -128,8 +128,17 @@ class PluginContext {
 uint32_t WINAPI win32_thread_trampoline(std::function<void()>* entry_point);
 
 /**
+ * Taken from the C++ reference:
+ * https://en.cppreference.com/w/cpp/thread/jthread
+ */
+template <class T>
+std::decay_t<T> decay_copy(T&& v) {
+    return std::forward<T>(v);
+}
+
+/**
  * A simple RAII wrapper around the Win32 thread API that imitates
- * `std::jthread`.
+ * `std::thread`.
  *
  * `std::thread` directly uses pthreads. This means that, like with
  * `CreateThread()`, some thread local information does not get initialized
@@ -152,30 +161,30 @@ class Win32Thread {
 
     /**
      * Constructor that immediately starts running the thread. This works
-     * equivalently to `std::jthread`.
+     * equivalently to `std::thread`.
      *
      * @param entry_point The thread entry point that should be run.
      * @param parameter The parameter passed to the entry point function.
      */
     template <class Function, class... Args>
     Win32Thread(Function&& f, Args&&... args)
-        : handle(CreateThread(
-                     nullptr,
-                     0,
-                     reinterpret_cast<LPTHREAD_START_ROUTINE>(
-                         win32_thread_trampoline),
-                     new std::function<void()>(
-                         [f = std::move(f), ... args = std::move(args)]() {
-                             std::invoke(f, args...);
-                         }),
-                     0,
-                     nullptr),
-                 CloseHandle) {}
-
-    /**
-     * Join the thread on destruction, just like `std::jthread` does.
-     */
-    ~Win32Thread();
+        : handle(
+              CreateThread(nullptr,
+                           0,
+                           reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                               win32_thread_trampoline),
+                           // We'll capture the function by move since the
+                           // lambda will often go out of scope in the time that
+                           // the thread is starting. Alternatively we could
+                           // wait for the thread to be up before continuing,
+                           // that may be a bit safer.
+                           new std::function<void()>([&, f = std::move(f)]() {
+                               std::invoke(
+                                   f, decay_copy(std::forward<Args>(args))...);
+                           }),
+                           0,
+                           nullptr),
+              CloseHandle) {}
 
     Win32Thread(const Win32Thread&) = delete;
     Win32Thread& operator=(const Win32Thread&) = delete;
