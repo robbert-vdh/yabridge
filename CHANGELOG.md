@@ -29,6 +29,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
   TODO: Remove all mentions of `hack_reaper_update_display` from the readme.
 
+### Changed
+
+- As part of the communication rework the way the Wine process handles threading
+  has also been completely reworked. although this should not cause any
+  noticeable changes.
+
 ## [1.7.1] - 2020-10-23
 
 ### Fixed
