@@ -128,14 +128,6 @@ class Vst2Bridge {
      */
     void handle_win32_events();
 
-    // These functions are the entry points for the `*_handler` threads
-    // defined below. They're defined here because we can't use lambdas with
-    // WinAPI's `CreateThread` which is needed to support the proper call
-    // conventions the VST plugins expect.
-    void handle_dispatch_midi_events();
-    void handle_parameters();
-    void handle_process_replacing();
-
     /**
      * Forward the host callback made by the plugin to the host and return the
      * results.
