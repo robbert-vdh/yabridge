@@ -38,10 +38,10 @@ compatibility while also staying easy to debug and maintain.
 Yabridge has been tested under the following VST hosts using Wine Staging 5.9:
 
 - Bitwig Studio 3.2
-- Carla 2.1
-- Ardour 6.2
+- Carla 2.2
+- Ardour 6.3
 - Mixbus 6.0.702
-- REAPER 6.09[\*](#runtime-dependencies-and-known-issues)
+- REAPER 6.15[\*](#runtime-dependencies-and-known-issues)
 - Renoise 3.2.1[\*](#runtime-dependencies-and-known-issues)
 
 Please let me know if there are any issues with other VST hosts.
