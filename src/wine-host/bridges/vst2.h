@@ -29,6 +29,7 @@
 #include <boost/asio/local/stream_protocol.hpp>
 #include <mutex>
 
+#include "../../common/communication.h"
 #include "../../common/configuration.h"
 #include "../../common/logging.h"
 #include "../editor.h"
@@ -46,7 +47,7 @@ struct EditorOpening {};
  * plugin and provides host callback function for the plugin to talk back.
  *
  * @remark Because of Win32 API limitations, all window handling has to be done
- *   from the same thread. Most plugins won't have any issues when using
+ *   from a single thread. Most plugins won't have any issues when using
  *   multiple message loops, but the Melda plugins for instance will only update
  *   their GUIs from the message loop of the thread that created the first
  *   instance. This is why we pass an IO context to this class so everything
@@ -64,8 +65,8 @@ class Vst2Bridge {
      *   also be run from this context.
      * @param plugin_dll_path A (Unix style) path to the VST plugin .dll file to
      *   load.
-     * @param socket_endpoint_path A (Unix style) path to the Unix socket
-     *   endpoint the native VST plugin created to communicate over.
+     * @param endpoint_base_dir The base directory used for the socket
+     *   endpoints. See `Sockets` for more information.
      *
      * @note The object has to be constructed from the same thread that calls
      *   `main_context.run()`.
@@ -73,9 +74,9 @@ class Vst2Bridge {
      * @throw std::runtime_error Thrown when the VST plugin could not be loaded,
      *   or if communication could not be set up.
      */
-    Vst2Bridge(boost::asio::io_context& main_context,
+    Vst2Bridge(MainContext& main_context,
                std::string plugin_dll_path,
-               std::string socket_endpoint_path);
+               std::string endpoint_base_dir);
 
     /**
      * Returns true if the message loop should be skipped. This happens when the
@@ -127,14 +128,6 @@ class Vst2Bridge {
      */
     void handle_win32_events();
 
-    // These functions are the entry points for the `*_handler` threads
-    // defined below. They're defined here because we can't use lambdas with
-    // WinAPI's `CreateThread` which is needed to support the proper call
-    // conventions the VST plugins expect.
-    void handle_dispatch_midi_events();
-    void handle_parameters();
-    void handle_process_replacing();
-
     /**
      * Forward the host callback made by the plugin to the host and return the
      * results.
@@ -148,6 +141,11 @@ class Vst2Bridge {
      * returned null pointer as a nullopt.
      */
     std::optional<VstTimeInfo> time_info;
+
+    /**
+     * The path to the .dll being loaded in the Wine VST host.
+     */
+    const boost::filesystem::path vst_plugin_path;
 
    private:
     /**
@@ -166,7 +164,7 @@ class Vst2Bridge {
      * message handling can be performed from a single thread, even when hosting
      * multiple plugins.
      */
-    boost::asio::io_context& io_context;
+    MainContext& main_context;
 
     /**
      * The configuration for this instance of yabridge based on the `.so` file
@@ -189,49 +187,6 @@ class Vst2Bridge {
     AEffect* plugin;
 
     /**
-     * The UNIX domain socket endpoint used for communicating to this specific
-     * bridged plugin.
-     */
-    boost::asio::local::stream_protocol::endpoint socket_endpoint;
-
-    // The naming convention for these sockets is `<from>_<to>_<event>`. For
-    // instance the socket named `host_vst_dispatch` forwards
-    // `AEffect.dispatch()` calls from the native VST host to the Windows VST
-    // plugin (through the Wine VST host).
-
-    /**
-     * The socket that forwards all `dispatcher()` calls from the VST host to
-     * the plugin.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_dispatch;
-    /**
-     * Used specifically for the `effProcessEvents` opcode. This is needed
-     * because the Win32 API is designed to block during certain GUI
-     * interactions such as resizing a window or opening a dropdown. Without
-     * this MIDI input would just stop working at times.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_dispatch_midi_events;
-    /**
-     * The socket that forwards all `audioMaster()` calls from the Windows VST
-     * plugin to the host.
-     */
-    boost::asio::local::stream_protocol::socket vst_host_callback;
-    /**
-     * Used for both `getParameter` and `setParameter` since they mostly
-     * overlap.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_parameters;
-    boost::asio::local::stream_protocol::socket host_vst_process_replacing;
-
-    /**
-     * A control socket that sends data that is not suitable for the other
-     * sockets. At the moment this is only used to, on startup, send the Windows
-     * VST plugin's `AEffect` object to the native VST plugin, and to then send
-     * the configuration (from `config`) back to the Wine host.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_control;
-
-    /**
      * The thread that specifically handles `effProcessEvents` opcodes so the
      * plugin can still receive MIDI during GUI interaction to work around Win32
      * API limitations.
@@ -248,11 +203,13 @@ class Vst2Bridge {
     Win32Thread process_replacing_handler;
 
     /**
-     * A binary semaphore to prevent race conditions from the host callback
-     * function being called by two threads at once. See `send_event()` for more
-     * information.
+     * All sockets used for communicating with this specific plugin.
+     *
+     * NOTE: This is defined **after** the threads on purpose. This way the
+     *       sockets will be closed first, and we can then safely wait for the
+     *       threads to exit.
      */
-    std::mutex host_callback_mutex;
+    Sockets<Win32Thread> sockets;
 
     /**
      * A scratch buffer for sending and receiving data during `process` and

@@ -44,7 +44,7 @@
  * - Melda plugins when having multiple editor windows open within a single
  *   plugin group
  */
-constexpr int max_win32_messages = 20;
+constexpr int max_win32_messages [[maybe_unused]] = 20;
 
 /**
  * Used to store the maximum width and height of a screen.

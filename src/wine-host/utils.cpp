@@ -16,6 +16,38 @@
 
 #include "utils.h"
 
+MainContext::MainContext() : context(), events_timer(context) {}
+
+void MainContext::run() {
+    context.run();
+}
+
+void MainContext::stop() {
+    context.stop();
+}
+
+uint32_t WINAPI
+win32_thread_trampoline(fu2::unique_function<void()>* entry_point) {
+    (*entry_point)();
+    delete entry_point;
+
+    return 0;
+}
+
+Win32Thread::Win32Thread(Win32Thread&& o) : handle(std::move(o.handle)) {}
+
+Win32Thread& Win32Thread::operator=(Win32Thread&& o) {
+    handle = std::move(o.handle);
+
+    return *this;
+}
+
+Win32Thread::~Win32Thread() {
+    if (handle) {
+        WaitForSingleObject(handle.get(), INFINITE);
+    }
+}
+
 Win32Thread::Win32Thread() : handle(nullptr, nullptr) {}
 
 Win32Timer::Win32Timer(HWND window_handle,

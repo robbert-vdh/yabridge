@@ -22,6 +22,7 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/filesystem.hpp>
 
+#include <atomic>
 #include <thread>
 
 #include "vst2.h"
@@ -132,21 +133,21 @@ class GroupBridge {
      * `accept_requests` since it has to be initiated inside of the IO context's
      * thread.
      *
-     * Once the plugin has exited, this thread will then remove itself from the
-     * `active_plugins` map. If this causes the vector to become empty, we will
-     * terminate this process. This check will be delayed by a few seconds to
-     * prevent having to constantly restart the group process during plugin
-     * scanning.
+     * Once the plugin has exited, this thread will then be joined to the main
+     * thread and removed from the `active_plugins` from the main IO context. If
+     * this causes the vector to become empty, we will terminate this process.
+     * This check is delayed by a few seconds to prevent having to constantly
+     * restart the group process during plugin scanning.
      *
-     * @param request Information about the plugin to launch, i.e. the path to
-     *   the plugin and the path of the socket endpoint that will be used for
-     *   communication.
+     * @param plugin_id The ID of this plugin in the `active_plugins` map. The
+     *   thread can fetch the plugin's `Vst2Bridge` instance from that map using
+     *   this identifier.
      *
      * @note In the case that the process starts but no plugin gets initiated,
      *   then the process will never exit on its own. This should not happen
      *   though.
      */
-    void handle_plugin_dispatch(const GroupRequest request);
+    void handle_plugin_dispatch(size_t plugin_id);
 
     /**
      * Listen for new requests to spawn plugins within this process and handle
@@ -178,7 +179,7 @@ class GroupBridge {
      * event handling and message loop interaction also has to be done from that
      * thread, which is why we initialize the plugin here and use the
      * `handle_dispatch()` function to run events within the same
-     * `plugin_context`.
+     * `main_context`.
      *
      * @see handle_plugin_dispatch
      */
@@ -216,13 +217,13 @@ class GroupBridge {
      * operations that may involve the Win32 mesasge loop (e.g. initialization
      * and most `AEffect::dispatcher()` calls) should be run on.
      */
-    boost::asio::io_context plugin_context;
+    MainContext main_context;
     /**
      * A seperate IO context that handles the STDIO redirect through
-     * `StdIoCapture`. This is seperated the `plugin_context` above so that
-     * STDIO capture does not get blocked by blocking GUI operations. Since
-     * every GUI related operation should be run from the same thread, we can't
-     * just add another thread to the main IO context.
+     * `StdIoCapture`. This is separated from the `main_context` above so that
+     * STDIO capture does not get blocked by GUI operations. Since every GUI
+     * related operation should be run from the same thread, we can't just add
+     * another thread to the main IO context.
      */
     boost::asio::io_context stdio_context;
 
@@ -243,7 +244,7 @@ class GroupBridge {
     /**
      * A thread that runs the `stdio_context` loop.
      */
-    std::jthread stdio_handler;
+    Win32Thread stdio_handler;
 
     boost::asio::local::stream_protocol::endpoint group_socket_endpoint;
     /**
@@ -257,11 +258,19 @@ class GroupBridge {
      * along with their plugin instance. After a plugin has exited or its
      * initialization has failed, the thread handling it will remove itself from
      * this map. This is to keep track of the amount of plugins currently
-     * running with their associated thread handles.
+     * running with their associated thread handles. The key that identifies the
+     * thread and plugin is a unique plugin ID obtained by doing a fetch-and-add
+     * on `next_plugin_id`.
      */
-    std::unordered_map<GroupRequest,
-                       std::pair<std::jthread, std::unique_ptr<Vst2Bridge>>>
+    std::unordered_map<size_t,
+                       std::pair<Win32Thread, std::unique_ptr<Vst2Bridge>>>
         active_plugins;
+    /**
+     * A counter for the next unique plugin ID. When hosting a new plugin we'll
+     * do a fetch-and-add to ensure that every thread gets its own unique
+     * identifier.
+     */
+    std::atomic_size_t next_plugin_id;
     /**
      * A mutex to prevent two threads from simultaneously accessing the plugins
      * map, and also to prevent `handle_plugin_dispatch()` from terminating the
@@ -269,14 +278,6 @@ class GroupBridge {
      * plugin is being spawned.
      */
     std::mutex active_plugins_mutex;
-
-    /**
-     * A timer used to repeatedly handle the Win32 message loop and the X11
-     * events.
-     *
-     8 @see async_handle_events
-     */
-    boost::asio::steady_timer events_timer;
 
     /**
      * A timer to defer shutting down the process, allowing for fast plugin

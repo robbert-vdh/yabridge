@@ -6,6 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- The way communication works in yabridge has been completely redesigned to be
+  asynchronous and to use additional threads as necessary. This was needed to
+  allow yabridge to handle nested and mutually recursive function calls as well
+  as several other edge cases. What this boils down to is that yabridge became
+  even faster, more responsive, and can now handle a few edge case scenarios
+  that would previously require workarounds. This means that yabridge no longer
+  requires the `hack_reaper_update_display` workaround for _REAPER_ and
+  _Renoise_, that the loading issues in Bitwig Studio 3.3 beta 1 have also been
+  resolved, and that certain plugins like Kontakt no longer interrupt playback
+  in Bitwig while their editor is opening. I have been testing this extensively
+  to make sure that the change does not introduce any regressions, but please
+  let me know if this does break anything for you.
+
+  TODO: Expand on this  
+  TODO: Remove known issue about opening Kontakt and certain other plugins
+  causing playback to stall, since this is no longer the case
+
+### Changed
+
+- As part of the communication rework the way the Wine process handles threading
+  has also been completely reworked.
+
+### Removed
+
+- The `hack_reaper_update_display` option is now obsolete and has been removed.
+
+  TODO: Remove all mentions of `hack_reaper_update_display` from the readme.
+
+### Fixed
+
+- Fixed a very long standing issue when using plugins groups where unloading a
+  plugin could cause a crash. In practice this was only reproducible during the
+  plugin scanning process when hosting a very large number of plugins in a
+  single group.
+
 ## [1.7.1] - 2020-10-23
 
 ### Fixed

@@ -23,6 +23,7 @@
 #include <mutex>
 #include <thread>
 
+#include "../common/communication.h"
 #include "../common/configuration.h"
 #include "../common/logging.h"
 #include "host-process.h"
@@ -123,45 +124,7 @@ class PluginBridge {
     void log_init_message();
 
     boost::asio::io_context io_context;
-    boost::asio::local::stream_protocol::endpoint socket_endpoint;
-    boost::asio::local::stream_protocol::acceptor socket_acceptor;
-
-    // The naming convention for these sockets is `<from>_<to>_<event>`. For
-    // instance the socket named `host_vst_dispatch` forwards
-    // `AEffect.dispatch()` calls from the native VST host to the Windows VST
-    // plugin (through the Wine VST host).
-
-    /**
-     * The socket that forwards all `dispatcher()` calls from the VST host to
-     * the plugin.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_dispatch;
-    /**
-     * Used specifically for the `effProcessEvents` opcode. This is needed
-     * because the Win32 API is designed to block during certain GUI
-     * interactions such as resizing a window or opening a dropdown. Without
-     * this MIDI input would just stop working at times.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_dispatch_midi_events;
-    /**
-     * The socket that forwards all `audioMaster()` calls from the Windows VST
-     * plugin to the host.
-     */
-    boost::asio::local::stream_protocol::socket vst_host_callback;
-    /**
-     * Used for both `getParameter` and `setParameter` since they mostly
-     * overlap.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_parameters;
-    boost::asio::local::stream_protocol::socket host_vst_process_replacing;
-
-    /**
-     * A control socket that sends data that is not suitable for the other
-     * sockets. At the moment this is only used to, on startup, send the Windows
-     * VST plugin's `AEffect` object to the native VST plugin, and to then send
-     * the configuration (from `config`) back to the Wine host.
-     */
-    boost::asio::local::stream_protocol::socket host_vst_control;
+    Sockets<std::jthread> sockets;
 
     /**
      * The thread that handles host callbacks.
@@ -169,16 +132,10 @@ class PluginBridge {
     std::jthread host_callback_handler;
 
     /**
-     * A binary semaphore to prevent race conditions from the dispatch function
-     * being called by two threads at once. See `send_event()` for more
-     * information.
-     */
-    std::mutex dispatch_mutex;
-    std::mutex dispatch_midi_events_mutex;
-    /**
-     * A similar semaphore as the `dispatch_*` semaphores in the rare case that
-     * `getParameter()` and `setParameter()` are being called at the same time
-     * since they use the same socket.
+     * A mutex to prevent multiple simultaneous calls to `getParameter()` and
+     * `setParameter()`. This likely won't happen, but better safe than sorry.
+     * For `dispatch()` and `audioMaster()` there's some more complex logic for
+     * this in `EventHandler`.
      */
     std::mutex parameters_mutex;
 

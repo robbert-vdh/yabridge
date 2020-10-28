@@ -25,6 +25,7 @@
 #include <boost/process/child.hpp>
 #include <thread>
 
+#include "../common/communication.h"
 #include "../common/logging.h"
 #include "utils.h"
 
@@ -117,7 +118,7 @@ class IndividualHost : public HostProcess {
      *   handled on.
      * @param logger The `Logger` instance the redirected STDIO streams will be
      *   written to.
-     * @param socket_endpoint The endpoint that should be used to communicate
+     * @param sockets The socket endpoints that will be used for communication
      *   with the plugin.
      *
      * @throw std::runtime_error When `plugin_path` does not point to a valid
@@ -126,7 +127,7 @@ class IndividualHost : public HostProcess {
     IndividualHost(boost::asio::io_context& io_context,
                    Logger& logger,
                    boost::filesystem::path plugin_path,
-                   boost::filesystem::path socket_endpoint);
+                   const Sockets<std::jthread>& sockets);
 
     PluginArchitecture architecture() override;
     boost::filesystem::path path() override;
@@ -160,19 +161,16 @@ class GroupHost : public HostProcess {
      *   handled on.
      * @param logger The `Logger` instance the redirected STDIO streams will be
      *   written to.
-     * @param socket_endpoint The endpoint that should be used to communicate
-     *   with the plugin.
+     * @param sockets The socket endpoints that will be used for communication
+     *   with the plugin. When the plugin shuts down, we'll terminate the
+     *   dispatch socket contained in this object.
      * @param group_name The name of the plugin group.
-     * @param host_vst_dispatch The socket used to communicate
-     *   `AEffect::dispatcher()` events with this plugin. Will be closed as to
-     *   shut down the plugin.
      */
     GroupHost(boost::asio::io_context& io_context,
               Logger& logger,
               boost::filesystem::path plugin_path,
-              boost::filesystem::path socket_endpoint,
-              std::string group_name,
-              boost::asio::local::stream_protocol::socket& host_vst_dispatch);
+              Sockets<std::jthread>& socket_endpoint,
+              std::string group_name);
 
     PluginArchitecture architecture() override;
     boost::filesystem::path path() override;
@@ -191,10 +189,10 @@ class GroupHost : public HostProcess {
     pid_t host_pid;
 
     /**
-     * The associated dispatch socket for the plugin we're hosting. This is used
-     * to terminate the plugin.
+     * The associated sockets for the plugin we're hosting. This is used to
+     * terminate the plugin.
      */
-    boost::asio::local::stream_protocol::socket& host_vst_dispatch;
+    Sockets<std::jthread>& sockets;
 
     /**
      * A thread that waits for the group host to have started and then ask it to

@@ -16,6 +16,17 @@
 
 #pragma once
 
+#ifdef __WINE__
+#include "../wine-host/boost-fix.h"
+#endif
+#include <boost/filesystem.hpp>
+
+/**
+ * Return the path to the directory for story temporary files. This will be
+ * `$XDG_RUNTIME_DIR` if set, and `/tmp` otherwise.
+ */
+boost::filesystem::path get_temporary_directory();
+
 /**
  * Set the scheduling policy to `SCHED_FIFO` with priority 10 for this process.
  * We explicitly don't do this for wineserver itself since from my testing that

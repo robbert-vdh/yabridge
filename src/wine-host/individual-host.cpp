@@ -24,22 +24,9 @@
 #include "../common/utils.h"
 #include "bridges/vst2.h"
 
-using namespace std::literals::chrono_literals;
-
-/**
- * The delay between calls to the event loop at a more than cinematic 30 fps.
- */
-constexpr std::chrono::duration event_loop_interval = 1000ms / 30;
-
-/**
- * Handle both Win32 and X11 events on a timer. This is more or less a
- * simplified version of `GroupBridge::async_handle_events`.
- */
-void async_handle_events(boost::asio::steady_timer& timer, Vst2Bridge& bridge);
-
 /**
  * This is the default VST host application. It will load the specified VST2
- * plugin, and then connect back to the `libyabridge.so` instace that spawned
+ * plugin, and then connect back to the `libyabridge.so` instance that spawned
  * this over the socket.
  *
  * The explicit calling convention is needed to work around a bug introduced in
@@ -48,9 +35,9 @@ void async_handle_events(boost::asio::steady_timer& timer, Vst2Bridge& bridge);
 int __cdecl main(int argc, char* argv[]) {
     set_realtime_priority();
 
-    // We pass the name of the VST plugin .dll file to load and the Unix domain
-    // socket to connect to in plugin/bridge.cpp as the first two arguments of
-    // this process.
+    // We pass the name of the VST plugin .dll file to load and the base
+    // directory for the Unix domain socket endpoints to connect to as the first
+    // two arguments of this process in plugin/bridge.cpp.
     if (argc < 3) {
         std::cerr << "Usage: "
 #ifdef __i386__
@@ -58,7 +45,7 @@ int __cdecl main(int argc, char* argv[]) {
 #else
                   << yabridge_individual_host_name
 #endif
-                  << " <vst_plugin_dll> <unix_domain_socket>" << std::endl;
+                  << " <vst_plugin_dll> <endpoint_base_directory>" << std::endl;
 
         return 1;
     }
@@ -73,17 +60,16 @@ int __cdecl main(int argc, char* argv[]) {
               << std::endl;
 
     // As explained in `Vst2Bridge`, the plugin has to be initialized in the
-    // same thread as the one that calls `io_context.run()`. And for some
-    // reason, a lot of plugins have memory corruption issues when executing
-    // `LoadLibrary()` or some of their functions from within a `std::thread`
-    // (although the WinAPI `CreateThread()` does not have these issues). This
-    // setup is slightly more convoluted than it has to be, but doing it this
-    // way we don't need to differentiate between individually hosted plugins
-    // and plugin groups when it comes to event handling.
-    boost::asio::io_context io_context{};
+    // same thread as the one that calls `io_context.run()`. This setup is
+    // slightly more convoluted than it has to be, but doing it this way we
+    // don't need to differentiate between individually hosted plugins and
+    // plugin groups when it comes to event handling.
+    // TODO: Update documentation once we figure out if we can safely replace
+    //       MainContext again with a normal `io_context`.
+    MainContext main_context{};
     std::unique_ptr<Vst2Bridge> bridge;
     try {
-        bridge = std::make_unique<Vst2Bridge>(io_context, plugin_dll_path,
+        bridge = std::make_unique<Vst2Bridge>(main_context, plugin_dll_path,
                                               socket_endpoint_path);
     } catch (const std::runtime_error& error) {
         std::cerr << "Error while initializing Wine VST host:" << std::endl;
@@ -97,29 +83,13 @@ int __cdecl main(int argc, char* argv[]) {
 
     // We'll listen for `dispatcher()` calls on a different thread, but the
     // actual events will still be executed within the IO context
-    std::jthread dispatch_handler([&]() { bridge->handle_dispatch(); });
+    Win32Thread dispatch_handler([&]() { bridge->handle_dispatch(); });
 
     // Handle Win32 messages and X11 events on a timer, just like in
     // `GroupBridge::async_handle_events()``
-    boost::asio::steady_timer events_timer(io_context);
-    async_handle_events(events_timer, *bridge);
-
-    io_context.run();
-}
-
-void async_handle_events(boost::asio::steady_timer& timer, Vst2Bridge& bridge) {
-    // Try to keep a steady framerate, but add in delays to let other events get
-    // handled if the GUI message handling somehow takes very long.
-    timer.expires_at(std::max(timer.expiry() + event_loop_interval,
-                              std::chrono::steady_clock::now() + 5ms));
-    timer.async_wait([&](const boost::system::error_code& error) {
-        if (error.failed()) {
-            return;
-        }
-
-        bridge.handle_x11_events();
-        bridge.handle_win32_events();
-
-        async_handle_events(timer, bridge);
+    main_context.async_handle_events([&]() {
+        bridge->handle_x11_events();
+        bridge->handle_win32_events();
     });
+    main_context.run();
 }

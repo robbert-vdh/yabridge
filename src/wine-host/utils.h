@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "boost-fix.h"
+
 #include <memory>
 #include <optional>
 
@@ -26,24 +28,119 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#include <boost/asio/io_context.hpp>
+#include <function2/function2.hpp>
+
 /**
- * A simple RAII wrapper around the Win32 thread API.
+ * The delay between calls to the event loop at an even more than cinematic 30
+ * fps.
+ */
+constexpr std::chrono::duration event_loop_interval =
+    std::chrono::milliseconds(1000) / 30;
+
+/**
+ * A wrapper around `boost::asio::io_context()` to serve as the application's
+ * main IO context. A single instance is shared for all plugins in a plugin
+ * group so that several important events can be handled on the main thread,
+ * which can be required because in the Win32 model all GUI related operations
+ * have to be handled from the same thread. This will be run from the
+ * application's main thread.
+ */
+class MainContext {
+   public:
+    MainContext();
+
+    /**
+     * Run the IO context. This rest of this class assumes that this is only
+     * done from a single thread.
+     */
+    void run();
+
+    /**
+     * Drop all future work from the IO context. This does not necessarily mean
+     * that the thread that called `main_context.run()` immediatly returns.
+     */
+    void stop();
+
+    /**
+     * Start a timer to handle events every `event_loop_interval` milliseconds.
+     * `message_loop_active()` will return `true` while `handler` is being
+     * executed.
+     *
+     * @param handler The function that should be executed in the IO context
+     *   when the timer ticks. This should be a function that handles both the
+     *   X11 events and the Win32 message loop.
+     */
+    template <typename F>
+    void async_handle_events(F handler) {
+        // Try to keep a steady framerate, but add in delays to let other events
+        // get handled if the GUI message handling somehow takes very long.
+        events_timer.expires_at(std::max(
+            events_timer.expiry() + event_loop_interval,
+            std::chrono::steady_clock::now() + std::chrono::milliseconds(5)));
+        events_timer.async_wait(
+            [&, handler](const boost::system::error_code& error) {
+                if (error.failed()) {
+                    return;
+                }
+
+                event_loop_active = true;
+                handler();
+                event_loop_active = false;
+
+                async_handle_events(handler);
+            });
+    }
+
+    /**
+     * Is `true` if the context is currently handling the Win32 message loop and
+     * incoming `dispatch()` events should be handled on their own thread (as
+     * posting them to the IO context will thus block).
+     *
+     * TODO: No longer used after the thread rework, we can probably just drop
+     *       this if everything works out
+     */
+    std::atomic_bool event_loop_active;
+
+    /**
+     * The raw IO context. Can and should be used directly for everything that's
+     * not the event handling loop.
+     */
+    boost::asio::io_context context;
+
+   private:
+    /**
+     * The timer used to periodically handle X11 events and Win32 messages.
+     */
+    boost::asio::steady_timer events_timer;
+};
+
+/**
+ * A proxy function that calls `Win32Thread::entry_point` since `CreateThread()`
+ * is not usable with lambdas directly. Calling the passed function will invoke
+ * the lambda with the arguments passed during `Win32Thread`'s constructor. This
+ * function deallocates the function after it's finished executing.
  *
- * These threads are implemented using `CreateThread` rather than `std::thread`
- * because in some cases `std::thread` in winelib causes very hard to debug data
- * races within plugins such as Serum. This might be caused by calling
- * conventions being handled differently.
+ * We can't store the function pointer in the `Win32Thread` object because
+ * moving a `Win32Thread` object would then cause issues.
  *
- * This somewhat mimicks `std::thread`, with the following differences:
+ * @param entry_point A `fu2::unique_function<void()>*` pointer to a function
+ *   pointer, great.
+ */
+uint32_t WINAPI
+win32_thread_trampoline(fu2::unique_function<void()>* entry_point);
+
+/**
+ * A simple RAII wrapper around the Win32 thread API that imitates
+ * `std::jthread`, including implicit joining (or waiting, since this is Win32)
+ * on destruction.
  *
- * - The threads will immediatly be killed silently when a `Win32Thread` object
- *   goes out of scope. This is the desired behavior in our case since the host
- *   will have already saved chunk data before closing the plugin and this
- *   ensures that the plugin shuts down quickly.
- * - This does not accept lambdas because we're calling a C function that
- *   expects a function pointer of type `LPTHREAD_START_ROUTINE`. GCC supports
- *   converting stateless lambdas to this format, but clang (as used for IDE
- *   tooling) does not.
+ * `std::thread` uses pthreads directly in Winelib (since this is technically a
+ * regular Linux application). This means that when using
+ * `std::thread`/`std::jthread` directly, some thread local information that
+ * `CreateThread()` would normally set does not get initialized. This could then
+ * lead to memory errors. This wrapper aims to be equivalent to `std::jthread`,
+ * but using the Win32 API instead.
  *
  * @note This should be used instead of `std::thread` or `std::jthread` whenever
  *   the thread directly calls third party library code, i.e. `LoadLibrary()`,
@@ -58,18 +155,44 @@ class Win32Thread {
     Win32Thread();
 
     /**
-     * Constructor that immediately starts running the thread
+     * Constructor that immediately starts running the thread. This works
+     * equivalently to `std::jthread`.
      *
      * @param entry_point The thread entry point that should be run.
      * @param parameter The parameter passed to the entry point function.
-
-     * @tparam F A function type that should be convertible to a
-     *   `LPTHREAD_START_ROUTINE` function pointer.
      */
-    template <typename F>
-    Win32Thread(F entry_point, void* parameter)
-        : handle(CreateThread(nullptr, 0, entry_point, parameter, 0, nullptr),
-                 CloseHandle) {}
+    template <typename Function, typename... Args>
+    Win32Thread(Function&& f, Args&&... args)
+        : handle(
+              CreateThread(
+                  nullptr,
+                  0,
+                  reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                      win32_thread_trampoline),
+                  // `std::function` does not support functions with move
+                  // captures the function has to be copy-constructable.
+                  // Function2's unique_function lets us capture and move our
+                  // arguments to the lambda so we don't end up with dangling
+                  // references.
+                  new fu2::unique_function<void()>(
+                      [f = std::move(f), ... args = std::move(args)]() mutable {
+                          f(std::move(args)...);
+                      }),
+                  0,
+                  nullptr),
+              CloseHandle) {}
+
+    /**
+     * Join (or wait on, since this is WIn32) the thread on shutdown, just like
+     * `std::jthread` does.
+     */
+    ~Win32Thread();
+
+    Win32Thread(const Win32Thread&) = delete;
+    Win32Thread& operator=(const Win32Thread&) = delete;
+
+    Win32Thread(Win32Thread&&);
+    Win32Thread& operator=(Win32Thread&&);
 
    private:
     /**

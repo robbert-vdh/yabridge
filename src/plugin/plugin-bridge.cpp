@@ -21,7 +21,6 @@
 #include <src/common/config/version.h>
 
 #include "../common/communication.h"
-#include "../common/events.h"
 #include "../common/utils.h"
 #include "utils.h"
 
@@ -54,32 +53,26 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
       // bridge will crash otherwise
       plugin(),
       io_context(),
-      socket_endpoint(generate_plugin_endpoint().string()),
-      socket_acceptor(io_context, socket_endpoint),
-      host_vst_dispatch(io_context),
-      host_vst_dispatch_midi_events(io_context),
-      vst_host_callback(io_context),
-      host_vst_parameters(io_context),
-      host_vst_process_replacing(io_context),
-      host_vst_control(io_context),
+      sockets(io_context,
+              generate_endpoint_base(
+                  vst_plugin_path.filename().replace_extension("").string()),
+              true),
       host_callback_function(host_callback),
       logger(Logger::create_from_environment(
-          create_logger_prefix(socket_endpoint.path()))),
+          create_logger_prefix(sockets.base_dir))),
       wine_version(get_wine_version()),
-      vst_host(
-          config.group
-              ? std::unique_ptr<HostProcess>(
-                    std::make_unique<GroupHost>(io_context,
-                                                logger,
-                                                vst_plugin_path,
-                                                socket_endpoint.path(),
-                                                *config.group,
-                                                host_vst_dispatch))
-              : std::unique_ptr<HostProcess>(
-                    std::make_unique<IndividualHost>(io_context,
+      vst_host(config.group
+                   ? std::unique_ptr<HostProcess>(
+                         std::make_unique<GroupHost>(io_context,
                                                      logger,
                                                      vst_plugin_path,
-                                                     socket_endpoint.path()))),
+                                                     sockets,
+                                                     *config.group))
+                   : std::unique_ptr<HostProcess>(
+                         std::make_unique<IndividualHost>(io_context,
+                                                          logger,
+                                                          vst_plugin_path,
+                                                          sockets))),
       has_realtime_priority(set_realtime_priority()),
       wine_io_handler([&]() { io_context.run(); }) {
     log_init_message();
@@ -107,23 +100,12 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     });
 #endif
 
-    // It's very important that these sockets are connected to in the same
-    // order in the Wine VST host
-    socket_acceptor.accept(host_vst_dispatch);
-    socket_acceptor.accept(host_vst_dispatch_midi_events);
-    socket_acceptor.accept(vst_host_callback);
-    socket_acceptor.accept(host_vst_parameters);
-    socket_acceptor.accept(host_vst_process_replacing);
-    socket_acceptor.accept(host_vst_control);
-
+    // This will block until all sockets have been connected to by the Wine VST
+    // host
+    sockets.connect();
 #ifndef WITH_WINEDBG
     host_guard_handler.request_stop();
 #endif
-
-    // There's no need to keep the socket endpoint file around after accepting
-    // all the sockets, and RAII won't clean these files up for us
-    socket_acceptor.close();
-    fs::remove(socket_endpoint.path());
 
     // Set up all pointers for our `AEffect` struct. We will fill this with data
     // from the VST plugin loaded in Wine at the end of this constructor.
@@ -139,41 +121,30 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     // instead of asynchronous IO since communication has to be handled in
     // lockstep anyway
     host_callback_handler = std::jthread([&]() {
-        while (true) {
-            try {
-                // TODO: Think of a nicer way to structure this and the similar
-                //       handler in `Vst2Bridge::handle_dispatch_midi_events`
-                receive_event(
-                    vst_host_callback, std::pair<Logger&, bool>(logger, false),
-                    [&](Event& event) {
-                        // MIDI events sent from the plugin back to the host are
-                        // a special case here. They have to sent during the
-                        // `processReplacing()` function or else the host will
-                        // ignore them. Because of this we'll temporarily save
-                        // any MIDI events we receive here, and then we'll
-                        // actually send them to the host at the end of the
-                        // `process_replacing()` function.
-                        if (event.opcode == audioMasterProcessEvents) {
-                            std::lock_guard lock(incoming_midi_events_mutex);
+        sockets.vst_host_callback.receive(
+            std::pair<Logger&, bool>(logger, false),
+            [&](Event& event, bool /*on_main_thread*/) {
+                // MIDI events sent from the plugin back to the host are a
+                // special case here. They have to sent during the
+                // `processReplacing()` function or else the host will ignore
+                // them. Because of this we'll temporarily save any MIDI events
+                // we receive here, and then we'll actually send them to the
+                // host at the end of the `process_replacing()` function.
+                if (event.opcode == audioMasterProcessEvents) {
+                    std::lock_guard lock(incoming_midi_events_mutex);
 
-                            incoming_midi_events.push_back(
-                                std::get<DynamicVstEvents>(event.payload));
-                            EventResult response{.return_value = 1,
-                                                 .payload = nullptr,
-                                                 .value_payload = std::nullopt};
+                    incoming_midi_events.push_back(
+                        std::get<DynamicVstEvents>(event.payload));
+                    EventResult response{.return_value = 1,
+                                         .payload = nullptr,
+                                         .value_payload = std::nullopt};
 
-                            return response;
-                        } else {
-                            return passthrough_event(
-                                &plugin, host_callback_function)(event);
-                        }
-                    });
-            } catch (const boost::system::system_error&) {
-                // This happens when the sockets got closed because the plugin
-                // is being shut down
-                break;
-            }
-        }
+                    return response;
+                } else {
+                    return passthrough_event(&plugin,
+                                             host_callback_function)(event);
+                }
+            });
     });
 
     // Read the plugin's information from the Wine process. This can only be
@@ -181,13 +152,14 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     // call these during its initialization. Any further updates will be sent
     // over the `dispatcher()` socket. This would happen whenever the plugin
     // calls `audioMasterIOChanged()` and after the host calls `effOpen()`.
-    const auto initialization_data = read_object<EventResult>(host_vst_control);
+    const auto initialization_data =
+        read_object<EventResult>(sockets.host_vst_control);
     const auto initialized_plugin =
         std::get<AEffect>(initialization_data.payload);
 
     // After receiving the `AEffect` values we'll want to send the configuration
     // back to complete the startup process
-    write_object(host_vst_control, config);
+    write_object(sockets.host_vst_control, config);
 
     update_aeffect(plugin, initialized_plugin);
 }
@@ -452,10 +424,9 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
             intptr_t return_value = 0;
             try {
                 // TODO: Add some kind of timeout?
-                return_value =
-                    send_event(host_vst_dispatch, dispatch_mutex, converter,
-                               std::pair<Logger&, bool>(logger, true), opcode,
-                               index, value, data, option);
+                return_value = sockets.host_vst_dispatch.send(
+                    converter, std::pair<Logger&, bool>(logger, true), opcode,
+                    index, value, data, option);
             } catch (const boost::system::system_error& a) {
                 // Thrown when the socket gets closed because the VST plugin
                 // loaded into the Wine process crashed during shutdown
@@ -478,10 +449,9 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
             // thread and socket to pass MIDI events. Otherwise plugins will
             // stop receiving MIDI data when they have an open dropdowns or
             // message box.
-            return send_event(host_vst_dispatch_midi_events,
-                              dispatch_midi_events_mutex, converter,
-                              std::pair<Logger&, bool>(logger, true), opcode,
-                              index, value, data, option);
+            return sockets.host_vst_dispatch_midi_events.send(
+                converter, std::pair<Logger&, bool>(logger, true), opcode,
+                index, value, data, option);
             break;
         case effCanDo: {
             const std::string query(static_cast<const char*>(data));
@@ -503,29 +473,6 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
                 logger.log("   when using REAPER.");
                 logger.log("");
 
-                // Since the user is using REAPER, also show a reminder that the
-                // REAPER workaround should be enabled when it is not yet
-                // enabled since it may be easy to miss
-                if (!config.hack_reaper_update_display) {
-                    logger.log(
-                        "   With using REAPER you will have to enable the");
-                    logger.log(
-                        "   'hack_reaper_update_display' option to prevent");
-                    logger.log(
-                        "   certain plugins from crashing. To do so, create a");
-                    logger.log(
-                        "   new file named 'yabridge.toml' next to your");
-                    logger.log("   plugins with the following contents:");
-                    logger.log("");
-                    logger.log(
-                        "   # "
-                        "https://github.com/robbert-vdh/"
-                        "yabridge#runtime-dependencies-and-known-issues");
-                    logger.log("   [\"*\"]");
-                    logger.log("   hack_reaper_update_display = true");
-                    logger.log("");
-                }
-
                 logger.log_event_response(true, opcode, -1, nullptr,
                                           std::nullopt);
                 return -1;
@@ -538,9 +485,9 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
     // and loading plugin state it's much better to have bitsery or our
     // receiving function temporarily allocate a large enough buffer rather than
     // to have a bunch of allocated memory sitting around doing nothing.
-    return send_event(host_vst_dispatch, dispatch_mutex, converter,
-                      std::pair<Logger&, bool>(logger, true), opcode, index,
-                      value, data, option);
+    return sockets.host_vst_dispatch.send(
+        converter, std::pair<Logger&, bool>(logger, true), opcode, index, value,
+        data, option);
 }
 
 template <typename T>
@@ -555,11 +502,11 @@ void PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     }
 
     const AudioBuffers request{input_buffers, sample_frames};
-    write_object(host_vst_process_replacing, request, process_buffer);
+    write_object(sockets.host_vst_process_replacing, request, process_buffer);
 
     // Write the results back to the `outputs` arrays
-    const auto response =
-        read_object<AudioBuffers>(host_vst_process_replacing, process_buffer);
+    const auto response = read_object<AudioBuffers>(
+        sockets.host_vst_process_replacing, process_buffer);
     const auto& response_buffers =
         std::get<std::vector<std::vector<T>>>(response.buffers);
 
@@ -608,8 +555,8 @@ float PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
     // called at the same time since  they share the same socket
     {
         std::lock_guard lock(parameters_mutex);
-        write_object(host_vst_parameters, request);
-        response = read_object<ParameterResult>(host_vst_parameters);
+        write_object(sockets.host_vst_parameters, request);
+        response = read_object<ParameterResult>(sockets.host_vst_parameters);
     }
 
     logger.log_get_parameter_response(*response.value);
@@ -625,9 +572,9 @@ void PluginBridge::set_parameter(AEffect* /*plugin*/, int index, float value) {
 
     {
         std::lock_guard lock(parameters_mutex);
-        write_object(host_vst_parameters, request);
+        write_object(sockets.host_vst_parameters, request);
 
-        response = read_object<ParameterResult>(host_vst_parameters);
+        response = read_object<ParameterResult>(sockets.host_vst_parameters);
     }
 
     logger.log_set_parameter_response();
@@ -647,7 +594,8 @@ void PluginBridge::log_init_message() {
              << std::endl;
     init_msg << "realtime:     '" << (has_realtime_priority ? "yes" : "no")
              << "'" << std::endl;
-    init_msg << "socket:       '" << socket_endpoint.path() << "'" << std::endl;
+    init_msg << "sockets:      '" << sockets.base_dir.string() << "'"
+             << std::endl;
     init_msg << "wine prefix:  '";
 
     // If the Wine prefix is manually overridden, then this should be made
@@ -688,10 +636,6 @@ void PluginBridge::log_init_message() {
     std::vector<std::string> other_options;
     if (config.editor_double_embed) {
         other_options.push_back("editor: double embed");
-    }
-    if (config.hack_reaper_update_display) {
-        other_options.push_back(
-            "hack: REAPER audioMasterUpdateDisplay() workaround");
     }
     if (!other_options.empty()) {
         init_msg << join_quoted_strings(other_options) << std::endl;

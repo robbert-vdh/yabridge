@@ -88,14 +88,6 @@ class Configuration {
     bool editor_double_embed = false;
 
     /**
-     * If this is set to true, then any calls to `audioMasterUpdateDisplay()`
-     * will automatically return 0 without being sent to the host. This is a
-     * HACK to work around implementations issues in REAPER and Renoise, see #29
-     * and #32.
-     */
-    bool hack_reaper_update_display = false;
-
-    /**
      * The name of the plugin group that should be used for the plugin this
      * configuration object was created for. If not set, then the plugin should
      * be hosted individually instead.
@@ -128,7 +120,6 @@ class Configuration {
     template <typename S>
     void serialize(S& s) {
         s.value1b(editor_double_embed);
-        s.value1b(hack_reaper_update_display);
         s.ext(group, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
         s.ext(matched_file, bitsery::ext::StdOptional(),
