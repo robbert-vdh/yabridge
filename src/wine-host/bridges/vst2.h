@@ -187,11 +187,6 @@ class Vst2Bridge {
     AEffect* plugin;
 
     /**
-     * All sockets used for communicating with this specific plugin.
-     */
-    Sockets<Win32Thread> sockets;
-
-    /**
      * The thread that specifically handles `effProcessEvents` opcodes so the
      * plugin can still receive MIDI during GUI interaction to work around Win32
      * API limitations.
@@ -206,6 +201,15 @@ class Vst2Bridge {
      * fallback) and `processDoubleReplacing`.
      */
     Win32Thread process_replacing_handler;
+
+    /**
+     * All sockets used for communicating with this specific plugin.
+     *
+     * NOTE: This is defined **after** the threads on purpose. This way the
+     *       sockets will be closed first, and we can then safely wait for the
+     *       threads to exit.
+     */
+    Sockets<Win32Thread> sockets;
 
     /**
      * A scratch buffer for sending and receiving data during `process` and
