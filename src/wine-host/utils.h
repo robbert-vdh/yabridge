@@ -132,11 +132,15 @@ win32_thread_trampoline(fu2::unique_function<void()>* entry_point);
 
 /**
  * A simple RAII wrapper around the Win32 thread API that imitates
- * `std::thread`.
+ * `std::jthread`, including implicit joining (or waiting, since this is Win32)
+ * on destruction.
  *
- * `std::thread` directly uses pthreads. This means that, like with
- * `CreateThread()`, some thread local information does not get initialized
- * which can lead to memory errors.
+ * `std::thread` uses pthreads directly in Winelib (since this is technically a
+ * regular Linux application). This means that when using
+ * `std::thread`/`std::jthread` directly, some thread local information that
+ * `CreateThread()` would normally set does not get initialized. This could then
+ * lead to memory errors. This wrapper aims to be equivalent to `std::jthread`,
+ * but using the Win32 API instead.
  *
  * @note This should be used instead of `std::thread` or `std::jthread` whenever
  *   the thread directly calls third party library code, i.e. `LoadLibrary()`,
@@ -152,7 +156,7 @@ class Win32Thread {
 
     /**
      * Constructor that immediately starts running the thread. This works
-     * equivalently to `std::thread`.
+     * equivalently to `std::jthread`.
      *
      * @param entry_point The thread entry point that should be run.
      * @param parameter The parameter passed to the entry point function.
@@ -178,17 +182,17 @@ class Win32Thread {
                   nullptr),
               CloseHandle) {}
 
+    /**
+     * Join (or wait on, since this is WIn32) the thread on shutdown, just like
+     * `std::jthread` does.
+     */
+    ~Win32Thread();
+
     Win32Thread(const Win32Thread&) = delete;
     Win32Thread& operator=(const Win32Thread&) = delete;
 
     Win32Thread(Win32Thread&&);
     Win32Thread& operator=(Win32Thread&&);
-
-    /**
-     * Threads in Win32 don't join like threads on other platforms, but it may
-     * still be useful to wait for a thread to terminate.
-     */
-    void wait();
 
    private:
     /**

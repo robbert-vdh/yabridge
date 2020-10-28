@@ -42,7 +42,7 @@ Win32Thread& Win32Thread::operator=(Win32Thread&& o) {
     return *this;
 }
 
-void Win32Thread::wait() {
+Win32Thread::~Win32Thread() {
     if (handle) {
         WaitForSingleObject(handle.get(), INFINITE);
     }
