@@ -184,6 +184,12 @@ class Win32Thread {
     Win32Thread(Win32Thread&&);
     Win32Thread& operator=(Win32Thread&&);
 
+    /**
+     * Threads in Win32 don't join like threads on other platforms, but it may
+     * still be useful to wait for a thread to terminate.
+     */
+    void wait();
+
    private:
     /**
      * The handle for the thread that is running, will be a null pointer if this

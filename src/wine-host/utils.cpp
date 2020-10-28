@@ -42,6 +42,12 @@ Win32Thread& Win32Thread::operator=(Win32Thread&& o) {
     return *this;
 }
 
+void Win32Thread::wait() {
+    if (handle) {
+        WaitForSingleObject(handle.get(), INFINITE);
+    }
+}
+
 Win32Thread::Win32Thread() : handle(nullptr, nullptr) {}
 
 Win32Timer::Win32Timer(HWND window_handle,
