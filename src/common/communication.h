@@ -260,8 +260,10 @@ class EventHandler {
      * `boost::system_error` when this happens.
      */
     void close() {
+        // The shutdown can fail when the socket is already closed
+        boost::system::error_code err;
         socket.shutdown(
-            boost::asio::local::stream_protocol::socket::shutdown_both);
+            boost::asio::local::stream_protocol::socket::shutdown_both, err);
         socket.close();
     }
 
@@ -653,6 +655,24 @@ class Sockets {
                 // then we can just silently ignore this
             }
         }
+
+        // Manually close all sockets so we break out of any blocking operations
+        // that may still be active
+        host_vst_dispatch.close();
+        host_vst_dispatch_midi_events.close();
+        vst_host_callback.close();
+
+        // These shutdowns can fail when the socket has already been closed, but
+        // that's not an issue in our case
+        constexpr auto shutdown_type =
+            boost::asio::local::stream_protocol::socket::shutdown_both;
+        boost::system::error_code err;
+        host_vst_parameters.shutdown(shutdown_type, err);
+        host_vst_process_replacing.shutdown(shutdown_type, err);
+        host_vst_control.shutdown(shutdown_type, err);
+        host_vst_parameters.close();
+        host_vst_process_replacing.close();
+        host_vst_control.close();
     }
 
     /**
