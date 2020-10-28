@@ -27,16 +27,23 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   TODO: Remove known issue about opening Kontakt and certain other plugins
   causing playback to stall, since this is no longer the case
 
+### Changed
+
+- As part of the communication rework the way the Wine process handles threading
+  has also been completely reworked.
+
 ### Removed
 
 - The `hack_reaper_update_display` option is now obsolete and has been removed.
 
   TODO: Remove all mentions of `hack_reaper_update_display` from the readme.
 
-### Changed
+### Fixed
 
-- As part of the communication rework the way the Wine process handles threading
-  has also been completely reworked.
+- Fixed a very long standing issue when using plugins groups where unloading a
+  plugin could cause a crash. In practice this was only reproducible during the
+  plugin scanning process when hosting a very large number of plugins in a
+  single group.
 
 ## [1.7.1] - 2020-10-23
 
