@@ -42,8 +42,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixed a very long standing issue when using plugins groups where unloading a
   plugin could cause a crash. In practice this was only reproducible during the
-  plugin scanning process when hosting a very large number of plugins in a
-  single group.
+  plugin scanning process when rapidly adding and removing a large number of
+  plugins in a single group.
 
 ## [1.7.1] - 2020-10-23
 
