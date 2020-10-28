@@ -74,7 +74,7 @@ class Vst2Bridge {
      * @throw std::runtime_error Thrown when the VST plugin could not be loaded,
      *   or if communication could not be set up.
      */
-    Vst2Bridge(PluginContext& main_context,
+    Vst2Bridge(MainContext& main_context,
                std::string plugin_dll_path,
                std::string endpoint_base_dir);
 
@@ -164,7 +164,7 @@ class Vst2Bridge {
      * message handling can be performed from a single thread, even when hosting
      * multiple plugins.
      */
-    PluginContext& plugin_context;
+    MainContext& main_context;
 
     /**
      * The configuration for this instance of yabridge based on the `.so` file

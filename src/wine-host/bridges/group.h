@@ -179,7 +179,7 @@ class GroupBridge {
      * event handling and message loop interaction also has to be done from that
      * thread, which is why we initialize the plugin here and use the
      * `handle_dispatch()` function to run events within the same
-     * `plugin_context`.
+     * `main_context`.
      *
      * @see handle_plugin_dispatch
      */
@@ -217,13 +217,13 @@ class GroupBridge {
      * operations that may involve the Win32 mesasge loop (e.g. initialization
      * and most `AEffect::dispatcher()` calls) should be run on.
      */
-    PluginContext plugin_context;
+    MainContext main_context;
     /**
      * A seperate IO context that handles the STDIO redirect through
-     * `StdIoCapture`. This is seperated the `plugin_context` above so that
-     * STDIO capture does not get blocked by blocking GUI operations. Since
-     * every GUI related operation should be run from the same thread, we can't
-     * just add another thread to the main IO context.
+     * `StdIoCapture`. This is separated from the `main_context` above so that
+     * STDIO capture does not get blocked by GUI operations. Since every GUI
+     * related operation should be run from the same thread, we can't just add
+     * another thread to the main IO context.
      */
     boost::asio::io_context stdio_context;
 

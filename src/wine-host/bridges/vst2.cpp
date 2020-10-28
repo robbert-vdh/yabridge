@@ -66,13 +66,13 @@ Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
     return *static_cast<Vst2Bridge*>(plugin->ptr1);
 }
 
-Vst2Bridge::Vst2Bridge(PluginContext& main_context,
+Vst2Bridge::Vst2Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
                        std::string endpoint_base_dir)
     : vst_plugin_path(plugin_dll_path),
-      plugin_context(main_context),
+      main_context(main_context),
       plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
-      sockets(plugin_context.context, endpoint_base_dir, false) {
+      sockets(main_context.context, endpoint_base_dir, false) {
     // Got to love these C APIs
     if (!plugin_handle) {
         throw std::runtime_error("Could not load the Windows .dll file at '" +
@@ -350,7 +350,7 @@ void Vst2Bridge::handle_dispatch() {
                     // and where the Win32 message loop is handled.
                     if (unsafe_opcodes.contains(opcode)) {
                         std::promise<intptr_t> dispatch_result;
-                        boost::asio::dispatch(plugin_context.context, [&]() {
+                        boost::asio::dispatch(main_context.context, [&]() {
                             const intptr_t result = dispatch_wrapper(
                                 plugin, opcode, index, value, data, option);
 

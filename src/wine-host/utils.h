@@ -39,18 +39,16 @@ constexpr std::chrono::duration event_loop_interval =
     std::chrono::milliseconds(1000) / 30;
 
 /**
- * A wrapper around `boost::asio::io_context()`. A single instance is shared for
- * all plugins in a plugin group so that most events can be handled on the main
- * thread, which can be required because all GUI related operations have to be
- * handled from the same thread. If during the Win32 message loop the plugin
- * performs a host callback and the host then calls a function on the plugin in
- * response, then this IO context will still be busy with the message loop
- * which. To prevent a deadlock in this situation, we'll allow different threads
- * to handle `dispatch()` calls while the message loop is running.
+ * A wrapper around `boost::asio::io_context()` to serve as the application's
+ * main IO context. A single instance is shared for all plugins in a plugin
+ * group so that several important events can be handled on the main thread,
+ * which can be required because in the Win32 model all GUI related operations
+ * have to be handled from the same thread. This will be run from the
+ * application's main thread.
  */
-class PluginContext {
+class MainContext {
    public:
-    PluginContext();
+    MainContext();
 
     /**
      * Run the IO context. This rest of this class assumes that this is only
@@ -60,7 +58,7 @@ class PluginContext {
 
     /**
      * Drop all future work from the IO context. This does not necessarily mean
-     * that the thread that called `plugin_context.run()` immediatly returns.
+     * that the thread that called `main_context.run()` immediatly returns.
      */
     void stop();
 
@@ -98,6 +96,9 @@ class PluginContext {
      * Is `true` if the context is currently handling the Win32 message loop and
      * incoming `dispatch()` events should be handled on their own thread (as
      * posting them to the IO context will thus block).
+     *
+     * TODO: No longer used after the thread rework, we can probably just drop
+     *       this if everything works out
      */
     std::atomic_bool event_loop_active;
 

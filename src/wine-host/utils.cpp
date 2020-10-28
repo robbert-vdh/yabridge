@@ -16,7 +16,15 @@
 
 #include "utils.h"
 
-PluginContext::PluginContext() : context(), events_timer(context) {}
+MainContext::MainContext() : context(), events_timer(context) {}
+
+void MainContext::run() {
+    context.run();
+}
+
+void MainContext::stop() {
+    context.stop();
+}
 
 uint32_t WINAPI
 win32_thread_trampoline(fu2::unique_function<void()>* entry_point) {
@@ -32,14 +40,6 @@ Win32Thread& Win32Thread::operator=(Win32Thread&& o) {
     handle = std::move(o.handle);
 
     return *this;
-}
-
-void PluginContext::run() {
-    context.run();
-}
-
-void PluginContext::stop() {
-    context.stop();
 }
 
 Win32Thread::Win32Thread() : handle(nullptr, nullptr) {}

@@ -65,11 +65,11 @@ int __cdecl main(int argc, char* argv[]) {
     // don't need to differentiate between individually hosted plugins and
     // plugin groups when it comes to event handling.
     // TODO: Update documentation once we figure out if we can safely replace
-    //       PluginContext again with a normal `io_context`.
-    PluginContext plugin_context{};
+    //       MainContext again with a normal `io_context`.
+    MainContext main_context{};
     std::unique_ptr<Vst2Bridge> bridge;
     try {
-        bridge = std::make_unique<Vst2Bridge>(plugin_context, plugin_dll_path,
+        bridge = std::make_unique<Vst2Bridge>(main_context, plugin_dll_path,
                                               socket_endpoint_path);
     } catch (const std::runtime_error& error) {
         std::cerr << "Error while initializing Wine VST host:" << std::endl;
@@ -87,9 +87,9 @@ int __cdecl main(int argc, char* argv[]) {
 
     // Handle Win32 messages and X11 events on a timer, just like in
     // `GroupBridge::async_handle_events()``
-    plugin_context.async_handle_events([&]() {
+    main_context.async_handle_events([&]() {
         bridge->handle_x11_events();
         bridge->handle_win32_events();
     });
-    plugin_context.run();
+    main_context.run();
 }
