@@ -557,12 +557,12 @@ class EventHandler {
     /**
      * This acceptor will be used once synchronously on the listening side
      * during `Sockets::connect()`. When `EventHandler::receive()` is then
-     * called, we'll recreate the acceptor asynchronously listen for new
-     * incoming socket connections on `endpoint` using this same acceptor. This
-     * is important, because on the case of `vst_host_callback` the acceptor is
-     * first accepts an initial socket on the plugin side (like all sockets),
-     * but all additional incoming connections of course have to be listened for
-     * on the plugin side.
+     * called, we'll recreate the acceptor to asynchronously listen for new
+     * incoming socket connections on `endpoint` using. This is important,
+     * because on the case of `vst_host_callback` the acceptor is first accepts
+     * an initial socket on the plugin side (like all sockets), but all
+     * additional incoming connections of course have to be listened for on the
+     * plugin side.
      */
     std::optional<boost::asio::local::stream_protocol::acceptor> acceptor;
 
