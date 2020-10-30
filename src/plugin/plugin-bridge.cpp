@@ -153,13 +153,13 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     // over the `dispatcher()` socket. This would happen whenever the plugin
     // calls `audioMasterIOChanged()` and after the host calls `effOpen()`.
     const auto initialization_data =
-        read_object<EventResult>(sockets.host_vst_control);
+        sockets.host_vst_control.receive_single<EventResult>();
     const auto initialized_plugin =
         std::get<AEffect>(initialization_data.payload);
 
     // After receiving the `AEffect` values we'll want to send the configuration
     // back to complete the startup process
-    write_object(sockets.host_vst_control, config);
+    sockets.host_vst_control.send(config);
 
     update_aeffect(plugin, initialized_plugin);
 }
@@ -502,11 +502,12 @@ void PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     }
 
     const AudioBuffers request{input_buffers, sample_frames};
-    write_object(sockets.host_vst_process_replacing, request, process_buffer);
+    sockets.host_vst_process_replacing.send(request, process_buffer);
 
     // Write the results back to the `outputs` arrays
-    const auto response = read_object<AudioBuffers>(
-        sockets.host_vst_process_replacing, process_buffer);
+    const auto response =
+        sockets.host_vst_process_replacing.receive_single<AudioBuffers>(
+            process_buffer);
     const auto& response_buffers =
         std::get<std::vector<std::vector<T>>>(response.buffers);
 
@@ -555,8 +556,10 @@ float PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
     // called at the same time since  they share the same socket
     {
         std::lock_guard lock(parameters_mutex);
-        write_object(sockets.host_vst_parameters, request);
-        response = read_object<ParameterResult>(sockets.host_vst_parameters);
+        sockets.host_vst_parameters.send(request);
+
+        response =
+            sockets.host_vst_parameters.receive_single<ParameterResult>();
     }
 
     logger.log_get_parameter_response(*response.value);
@@ -572,9 +575,10 @@ void PluginBridge::set_parameter(AEffect* /*plugin*/, int index, float value) {
 
     {
         std::lock_guard lock(parameters_mutex);
-        write_object(sockets.host_vst_parameters, request);
+        sockets.host_vst_parameters.send(request);
 
-        response = read_object<ParameterResult>(sockets.host_vst_parameters);
+        response =
+            sockets.host_vst_parameters.receive_single<ParameterResult>();
     }
 
     logger.log_set_parameter_response();

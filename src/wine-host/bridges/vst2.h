@@ -212,12 +212,6 @@ class Vst2Bridge {
     Sockets<Win32Thread> sockets;
 
     /**
-     * A scratch buffer for sending and receiving data during `process` and
-     * `processReplacing` calls.
-     */
-    std::vector<uint8_t> process_buffer;
-
-    /**
      * The MIDI events that have been received **and processed** since the last
      * call to `processReplacing()`. 99% of plugins make a copy of the MIDI
      * events they receive but some plugins such as Kontakt only store pointers

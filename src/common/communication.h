@@ -211,6 +211,8 @@ class SocketHandler {
      *   packets arriving out of order.
      *
      * @see write_object
+     * @see SocketHandler::receive_single
+     * @see SocketHandler::receive_multi
      */
     template <typename T>
     inline void send(const T& object, std::vector<uint8_t>& buffer) {
@@ -244,7 +246,7 @@ class SocketHandler {
      * @relates SocketHandler::send
      *
      * @see read_object
-     * @see SocketHandler::receive
+     * @see SocketHandler::receive_multi
      */
     template <typename T>
     inline T receive_single(std::vector<uint8_t>& buffer) {
@@ -270,8 +272,10 @@ class SocketHandler {
      *   we'd probably want to do some more stuff after sending a reply, calling
      *   `send()` is the responsibility of this function.
      *
-     * @tparam F A function type in the form of `void(T)` that does something
-     *   with the object, and then calls `send()`.
+     * @tparam F A function type in the form of `void(T, std::vector<uint8_t>&)`
+     *   that does something with the object, and then calls `send()`. The
+     *   reading/writing buffer is passed along so it can be reused for sending
+     *   large amounts of data.
      *
      * @relates SocketHandler::send
      *
@@ -279,13 +283,13 @@ class SocketHandler {
      * @see SocketHandler::receive_single
      */
     template <typename T, typename F>
-    void receive(F callback) {
+    void receive_multi(F callback) {
         std::vector<uint8_t> buffer{};
         while (true) {
             try {
                 auto object = receive_single<T>(buffer);
 
-                callback(std::move(object));
+                callback(std::move(object), buffer);
             } catch (const boost::system::system_error&) {
                 // This happens when the sockets got closed because the plugin
                 // is being shut down
@@ -804,61 +808,40 @@ class Sockets {
           vst_host_callback(io_context,
                             (base_dir / "vst_host_callback.sock").string(),
                             listen),
-          host_vst_parameters(io_context),
-          host_vst_process_replacing(io_context),
-          host_vst_control(io_context),
-          host_vst_parameters_endpoint(
-              (base_dir / "host_vst_parameters.sock").string()),
-          host_vst_process_replacing_endpoint(
-              (base_dir / "host_vst_process_replacing.sock").string()),
-          host_vst_control_endpoint(
-              (base_dir / "host_vst_control.sock").string()) {
-        if (listen) {
-            boost::filesystem::create_directories(base_dir);
-
-            acceptors = Acceptors{
-                .host_vst_parameters{io_context, host_vst_parameters_endpoint},
-                .host_vst_process_replacing{
-                    io_context, host_vst_process_replacing_endpoint},
-                .host_vst_control{io_context, host_vst_control_endpoint},
-            };
-        }
-    }
+          host_vst_parameters(io_context,
+                              (base_dir / "host_vst_parameters.sock").string(),
+                              listen),
+          host_vst_process_replacing(
+              io_context,
+              (base_dir / "host_vst_process_replacing.sock").string(),
+              listen),
+          host_vst_control(io_context,
+                           (base_dir / "host_vst_control.sock").string(),
+                           listen) {}
 
     /**
      * Cleans up the directory containing the socket endpoints when yabridge
      * shuts down if it still exists.
      */
     ~Sockets() {
-        // Only clean if we're the ones who have created these files, although
-        // it should not cause any harm to also do this on the Wine side
-        if (acceptors) {
-            try {
-                boost::filesystem::remove_all(base_dir);
-            } catch (const boost::filesystem::filesystem_error&) {
-                // There should not be any filesystem errors since only one side
-                // removes the files, but if we somehow can't delete the file
-                // then we can just silently ignore this
-            }
-        }
-
         // Manually close all sockets so we break out of any blocking operations
         // that may still be active
         host_vst_dispatch.close();
         host_vst_dispatch_midi_events.close();
         vst_host_callback.close();
-
-        // These shutdowns can fail when the socket has already been closed, but
-        // that's not an issue in our case
-        constexpr auto shutdown_type =
-            boost::asio::local::stream_protocol::socket::shutdown_both;
-        boost::system::error_code err;
-        host_vst_parameters.shutdown(shutdown_type, err);
-        host_vst_process_replacing.shutdown(shutdown_type, err);
-        host_vst_control.shutdown(shutdown_type, err);
         host_vst_parameters.close();
         host_vst_process_replacing.close();
         host_vst_control.close();
+
+        // Only clean if we're the ones who have created these files, although
+        // it should not cause any harm to also do this on the Wine side
+        try {
+            boost::filesystem::remove_all(base_dir);
+        } catch (const boost::filesystem::filesystem_error&) {
+            // There should not be any filesystem errors since only one side
+            // removes the files, but if we somehow can't delete the file
+            // then we can just silently ignore this
+        }
     }
 
     /**
@@ -870,17 +853,9 @@ class Sockets {
         host_vst_dispatch.connect();
         host_vst_dispatch_midi_events.connect();
         vst_host_callback.connect();
-        if (acceptors) {
-            acceptors->host_vst_parameters.accept(host_vst_parameters);
-            acceptors->host_vst_process_replacing.accept(
-                host_vst_process_replacing);
-            acceptors->host_vst_control.accept(host_vst_control);
-        } else {
-            host_vst_parameters.connect(host_vst_parameters_endpoint);
-            host_vst_process_replacing.connect(
-                host_vst_process_replacing_endpoint);
-            host_vst_control.connect(host_vst_control_endpoint);
-        }
+        host_vst_parameters.connect();
+        host_vst_process_replacing.connect();
+        host_vst_control.connect();
     }
 
     /**
@@ -915,44 +890,19 @@ class Sockets {
      * Used for both `getParameter` and `setParameter` since they mostly
      * overlap.
      */
-    boost::asio::local::stream_protocol::socket host_vst_parameters;
+    SocketHandler host_vst_parameters;
     /**
      * Used for processing audio usign the `process()`, `processReplacing()` and
      * `processDoubleReplacing()` functions.
      */
-    boost::asio::local::stream_protocol::socket host_vst_process_replacing;
+    SocketHandler host_vst_process_replacing;
     /**
      * A control socket that sends data that is not suitable for the other
      * sockets. At the moment this is only used to, on startup, send the Windows
      * VST plugin's `AEffect` object to the native VST plugin, and to then send
      * the configuration (from `config`) back to the Wine host.
      */
-    boost::asio::local::stream_protocol::socket host_vst_control;
-
-   private:
-    const boost::asio::local::stream_protocol::endpoint
-        host_vst_parameters_endpoint;
-    const boost::asio::local::stream_protocol::endpoint
-        host_vst_process_replacing_endpoint;
-    const boost::asio::local::stream_protocol::endpoint
-        host_vst_control_endpoint;
-
-    /**
-     * All of our socket acceptors. We have to create these before launching the
-     * Wine process.
-     */
-    struct Acceptors {
-        boost::asio::local::stream_protocol::acceptor host_vst_parameters;
-        boost::asio::local::stream_protocol::acceptor
-            host_vst_process_replacing;
-        boost::asio::local::stream_protocol::acceptor host_vst_control;
-    };
-
-    /**
-     * If the `listen` constructor argument was set to `true`, when we'll
-     * prepare a set of socket acceptors that listen on the socket endpoints.
-     */
-    std::optional<Acceptors> acceptors;
+    SocketHandler host_vst_control;
 };
 
 /**
