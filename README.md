@@ -10,13 +10,15 @@ as transparent as possible in order to achieve the best possible plugin
 compatibility while also staying easy to debug and maintain.
 
 _The current master branch version of yabridge features a fully concurrent
-rewrite of yabridge's event handling mechanisms that solves all outstanding
+rewrite of yabridge's event handling mechanisms that solves any outstanding
 issues with regards to host-specific bugs and performance limitations._ _There's
 still some cleanup refactoring work left to be done, but you can already use the
 new version either through the [automated
 builds](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)
 page or through the
-[yabridge-git](https://aur.archlinux.org/packages/yabridge-git/) AUR package._
+[yabridge-git](https://aur.archlinux.org/packages/yabridge-git/) and
+[yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/) AUR
+packages._
 
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
