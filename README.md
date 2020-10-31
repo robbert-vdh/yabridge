@@ -249,7 +249,7 @@ other. See below for an [example](#example) of how these groups can be set up.
 | Option                       | Values         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `editor_double_embed`        | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`. |
-| `hack_reaper_update_display` | `{true,false}` | Compatibility option for _REAPER_ and _Renoise_. This disables the `audioMasterUpdateDisplay()` function, which in these hosts will introduce mutual recursion which is currently not supported by yabridge's communication model. Defaults to `false`.                                                                                                                                                                                                    |
+| `hack_reaper_update_display` | `{true,false}` | Compatibility option for _REAPER_ and _Renoise_. This disables the `audioMasterUpdateDisplay()` function, which in these hosts will introduce mutual recursion which is currently not supported by yabridge's communication model. Defaults to `false`. **This option is no longer needed for the current master branch version of yabridge.**                                                                                                             |
 
 These options are workarounds for issues mentioned in the [known
 issues](#runtime-dependencies-and-known-issues) section. Depending on the hosts
@@ -417,7 +417,9 @@ include:
 - **REAPER** and **Renoise** can both freeze when using plugins that call the
   `audioMasterUpdateDisplay()` function because of mutual recursion limitations.
   Until this is fixed you can set an [option](#compatibility-options) through
-  `yabridge.toml` to work around this.
+  `yabridge.toml` to work around this. **This workaround is no longer needed in
+  the master branch version of yabridge and will be removed in the next
+  release.**
 - **Native Instruments** plugins work, but Native Access is unable to finish
   installing the plugins. To work around this you can open the .iso file
   downloaded to your downloads directory and run the installer directly. When
