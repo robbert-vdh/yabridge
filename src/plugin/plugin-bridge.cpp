@@ -121,7 +121,7 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
     // instead of asynchronous IO since communication has to be handled in
     // lockstep anyway
     host_callback_handler = std::jthread([&]() {
-        sockets.vst_host_callback.receive(
+        sockets.vst_host_callback.receive_events(
             std::pair<Logger&, bool>(logger, false),
             [&](Event& event, bool /*on_main_thread*/) {
                 // MIDI events sent from the plugin back to the host are a
@@ -424,7 +424,7 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
             intptr_t return_value = 0;
             try {
                 // TODO: Add some kind of timeout?
-                return_value = sockets.host_vst_dispatch.send(
+                return_value = sockets.host_vst_dispatch.send_event(
                     converter, std::pair<Logger&, bool>(logger, true), opcode,
                     index, value, data, option);
             } catch (const boost::system::system_error& a) {
@@ -449,7 +449,7 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
             // thread and socket to pass MIDI events. Otherwise plugins will
             // stop receiving MIDI data when they have an open dropdowns or
             // message box.
-            return sockets.host_vst_dispatch_midi_events.send(
+            return sockets.host_vst_dispatch_midi_events.send_event(
                 converter, std::pair<Logger&, bool>(logger, true), opcode,
                 index, value, data, option);
             break;
@@ -485,7 +485,7 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
     // and loading plugin state it's much better to have bitsery or our
     // receiving function temporarily allocate a large enough buffer rather than
     // to have a bunch of allocated memory sitting around doing nothing.
-    return sockets.host_vst_dispatch.send(
+    return sockets.host_vst_dispatch.send_event(
         converter, std::pair<Logger&, bool>(logger, true), opcode, index, value,
         data, option);
 }

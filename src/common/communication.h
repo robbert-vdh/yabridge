@@ -385,11 +385,11 @@ class DefaultDataConverter {
  * - Aside from that the listening side will have a second thread asynchronously
  *   listening for new connections on the socket endpoint.
  *
- * The `EventHandler::send()` is used to send events. If the socket is currently
- * being written to, we'll first create a new socket connection as described
- * above. Similarly, the `EventHandler::receive()` method first sets up
- * asynchronous listeners for the socket endpoint, and then block and handle
- * events until the main socket is closed.
+ * The `EventHandler::send_event()` method is used to send events. If the socket
+ * is currently being written to, we'll first create a new socket connection as
+ * described above. Similarly, the `EventHandler::receive_events()` method first
+ * sets up asynchronous listeners for the socket endpoint, and then block and
+ * handle events until the main socket is closed.
  *
  * @tparam Thread The thread implementation to use. On the Linux side this
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
@@ -435,8 +435,8 @@ class EventHandler {
             acceptor->accept(socket);
 
             // As mentioned in `acceptor's` docstring, this acceptor will be
-            // recreated in `receive()` on another context, and potentially on
-            // the other side of the connection in the case of
+            // recreated in `receive_events()` on another context, and
+            // potentially on the other side of the connection in the case of
             // `vst_host_callback`
             acceptor.reset();
             boost::filesystem::remove(endpoint.path());
@@ -477,17 +477,17 @@ class EventHandler {
      *   this is for sending `dispatch()` events or host callbacks. Optional
      *   since it doesn't have to be done on both sides.
      *
-     * @relates EventHandler::receive
+     * @relates EventHandler::receive_events
      * @relates passthrough_event
      */
     template <typename D>
-    intptr_t send(D& data_converter,
-                  std::optional<std::pair<Logger&, bool>> logging,
-                  int opcode,
-                  int index,
-                  intptr_t value,
-                  void* data,
-                  float option) {
+    intptr_t send_event(D& data_converter,
+                        std::optional<std::pair<Logger&, bool>> logging,
+                        int opcode,
+                        int index,
+                        intptr_t value,
+                        void* data,
+                        float option) {
         // Encode the right payload types for this event. Check the
         // documentation for `EventPayload` for more information. These types
         // are converted to C-style data structures in `passthrough_event()` so
@@ -584,11 +584,12 @@ class EventHandler {
      *   The boolean flag is `true` when this event was received on the main
      *   socket, and `false` otherwise.
      *
-     * @relates EventHandler::send
+     * @relates EventHandler::send_event
      * @relates passthrough_event
      */
     template <typename F>
-    void receive(std::optional<std::pair<Logger&, bool>> logging, F callback) {
+    void receive_events(std::optional<std::pair<Logger&, bool>> logging,
+                        F callback) {
         // As described above we'll handle incoming requests for `socket` on
         // this thread. We'll also listen for incoming connections on `endpoint`
         // on another thread. For any incoming connection we'll spawn a new
@@ -691,7 +692,7 @@ class EventHandler {
 
    private:
     /**
-     * Used in `receive()` to asynchronously listen for secondary socket
+     * Used in `receive_events()` to asynchronously listen for secondary socket
      * connections. After `callback()` returns this function will continue to be
      * called until the IO context gets stopped.
      *
@@ -735,9 +736,9 @@ class EventHandler {
     }
 
     /**
-     * The main IO context. New sockets created during `send()` will be bound to
-     * this context. In `receive()` we'll create a new IO context since we want
-     * to do all listening there on a dedicated thread.
+     * The main IO context. New sockets created during `send_event()` will be
+     * bound to this context. In `receive_events()` we'll create a new IO
+     * context since we want to do all listening there on a dedicated thread.
      */
     boost::asio::io_context& io_context;
 
@@ -746,8 +747,8 @@ class EventHandler {
 
     /**
      * This acceptor will be used once synchronously on the listening side
-     * during `Sockets::connect()`. When `EventHandler::receive()` is then
-     * called, we'll recreate the acceptor to asynchronously listen for new
+     * during `Sockets::connect()`. When `EventHandler::receive_events()` is
+     * then called, we'll recreate the acceptor to asynchronously listen for new
      * incoming socket connections on `endpoint` using. This is important,
      * because on the case of `vst_host_callback` the acceptor is first accepts
      * an initial socket on the plugin side (like all sockets), but all
@@ -928,8 +929,9 @@ boost::filesystem::path generate_endpoint_base(const std::string& plugin_name);
  *
  * This is the receiving analogue of the `*DataCovnerter` objects.
  *
- * TODO: Now that `EventHandler::receive` replaced `receive_event()`, refactor
- *       this to just handle the event directly rather than returning a lambda
+ * TODO: Now that `EventHandler::receive_events` replaced `receive_event()`,
+ *       refactor this to just handle the event directly rather than returning a
+ *       lambda
  *
  * @param plugin The `AEffect` instance that should be passed to the callback
  *   function.
@@ -940,9 +942,9 @@ boost::filesystem::path generate_endpoint_base(const std::string& plugin_name);
  *   `audioMasterCallback`.
  *
  * @return A `EventResult(Event)` callback function that can be passed to
- * `EditorHandler::receive()`.
+ * `EditorHandler::receive_events()`.
  *
- * @relates EditorHandler::receive
+ * @relates EventHandler::receive_events
  */
 template <typename F>
 auto passthrough_event(AEffect* plugin, F callback) {

@@ -110,13 +110,13 @@ as the _Windows VST plugin_. The whole process works as follows:
    TODO: Rewrite this after the socket changes are done
 
    Actually sending and receiving the events happens in the
-   `EventHandler::send()` and `EventHandler::receive()` functions. When calling
-   either `dispatch()` or `audioMaster()`, the caller will oftentimes either
-   pass along some kind of data structure through the void pointer function
-   argument, or they expect the function's return value to be a pointer to some
-   kind of struct provided by the plugin or host. The behaviour for reading from
-   and writing into these void pointers and returning pointers to objects when
-   needed is encapsulated in the `DispatchDataConverter` and
+   `EventHandler::send_event()` and `EventHandler::receive_events()` functions.
+   When calling either `dispatch()` or `audioMaster()`, the caller will
+   oftentimes either pass along some kind of data structure through the void
+   pointer function argument, or they expect the function's return value to be a
+   pointer to some kind of struct provided by the plugin or host. The behaviour
+   for reading from and writing into these void pointers and returning pointers
+   to objects when needed is encapsulated in the `DispatchDataConverter` and
    `HostCallbackDataCovnerter` classes for the `dispatcher()` and
    `audioMaster()` functions respectively. For operations involving the plugin
    editor there is also some extra glue in `Vst2Bridge::dispatch_wrapper`. On

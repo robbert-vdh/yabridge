@@ -132,7 +132,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     // but this socket will only handle MIDI events and it will handle them
     // eagerly. This is needed because of Win32 API limitations.
     dispatch_midi_events_handler = Win32Thread([&]() {
-        sockets.host_vst_dispatch_midi_events.receive(
+        sockets.host_vst_dispatch_midi_events.receive_events(
             std::nullopt, [&](Event& event, bool /*on_main_thread*/) {
                 if (BOOST_LIKELY(event.opcode == effProcessEvents)) {
                     // For 99% of the plugins we can just call
@@ -318,7 +318,7 @@ bool Vst2Bridge::should_skip_message_loop() const {
 }
 
 void Vst2Bridge::handle_dispatch() {
-    sockets.host_vst_dispatch.receive(
+    sockets.host_vst_dispatch.receive_events(
         std::nullopt, [&](Event& event, bool /*on_main_thread*/) {
             // TODO: As per the TODO in `passthrough_event`, this can use a
             //       round of refactoring now that we never use its returned
@@ -534,8 +534,8 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
                                    void* data,
                                    float option) {
     HostCallbackDataConverter converter(effect, time_info);
-    return sockets.vst_host_callback.send(converter, std::nullopt, opcode,
-                                          index, value, data, option);
+    return sockets.vst_host_callback.send_event(converter, std::nullopt, opcode,
+                                                index, value, data, option);
 }
 
 intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,
