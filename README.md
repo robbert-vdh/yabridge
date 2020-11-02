@@ -443,6 +443,10 @@ include:
   settings. I'm not sure whether this is an issue with Wine or the plugins
   themselves. Notable issues here are missing redraws and incorrect positioning
   when the window gets dragged offscreen on the top and left dies of the screen.
+- If **Scaler 2**'s interface lags, blacks out, or otherwise renders poorly,
+  then you can try enabling [software
+  rendering](https://forum.scalerplugin.com/t/scaler-2-black-empty-window/3540/8)
+  to fix these issues.
 - **PSPaudioware** plugins with expandable GUIs, such as E27, may have their GUI
   appear in the wrong location after the GUI has been expanded. You can enable
   an alternative [editor hosting mode](#compatibility-options) to fix this.
