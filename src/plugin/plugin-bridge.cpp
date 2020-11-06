@@ -141,8 +141,8 @@ PluginBridge::PluginBridge(audioMasterCallback host_callback)
 
                     return response;
                 } else {
-                    return passthrough_event(&plugin,
-                                             host_callback_function)(event);
+                    return passthrough_event(&plugin, host_callback_function,
+                                             event);
                 }
             });
     });

@@ -152,8 +152,8 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                     DynamicVstEvents& events =
                         next_audio_buffer_midi_events.back();
 
-                    // Exact same handling as in `passthrough_event`, apart from
-                    // making a copy of the events first
+                    // Exact same handling as in `passthrough_event()`, apart
+                    // from making a copy of the events first
                     const intptr_t return_value = plugin->dispatcher(
                         plugin, event.opcode, event.index, event.value,
                         &events.as_c_events(), event.option);
@@ -173,8 +173,10 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                     // Maybe this should just be a hard error instead, since it
                     // should never happen
                     return passthrough_event(
-                        plugin, std::bind(&Vst2Bridge::dispatch_wrapper, this,
-                                          _1, _2, _3, _4, _5, _6))(event);
+                        plugin,
+                        std::bind(&Vst2Bridge::dispatch_wrapper, this, _1, _2,
+                                  _3, _4, _5, _6),
+                        event);
                 }
             });
     });
@@ -320,9 +322,6 @@ bool Vst2Bridge::should_skip_message_loop() const {
 void Vst2Bridge::handle_dispatch() {
     sockets.host_vst_dispatch.receive_events(
         std::nullopt, [&](Event& event, bool /*on_main_thread*/) {
-            // TODO: As per the TODO in `passthrough_event`, this can use a
-            //       round of refactoring now that we never use its returned
-            //       lambda directly anymore
             return passthrough_event(
                 plugin,
                 [&](AEffect* plugin, int opcode, int index, intptr_t value,
@@ -346,7 +345,8 @@ void Vst2Bridge::handle_dispatch() {
                         return dispatch_wrapper(plugin, opcode, index, value,
                                                 data, option);
                     }
-                })(event);
+                },
+                event);
         });
 }
 
@@ -449,7 +449,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
             case audioMasterIOChanged:
                 // This is a helpful event that indicates that the VST
                 // plugin's `AEffect` struct has changed. Writing these
-                // results back is done inside of `passthrough_event`.
+                // results back is done inside of `passthrough_event()`.
                 return AEffect(*plugin);
                 break;
             case audioMasterProcessEvents:
