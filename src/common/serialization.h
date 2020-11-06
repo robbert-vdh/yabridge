@@ -356,6 +356,8 @@ struct WantsString {};
  *     For this we use a vector of bytes instead of a string since
  *   - Or the plugin will write a short null terminated C-string there. We'll
  *     assume that this is the default if none of the above options apply.
+ *
+ * @relates passthrough_event
  */
 using EventPayload = std::variant<std::nullptr_t,
                                   std::string,
@@ -453,6 +455,8 @@ struct Event {
  * - A specific struct in response to an event such as `audioMasterGetTime` or
  *   `audioMasterIOChanged`.
  * - An X11 window pointer for the editor window.
+ *
+ * @relates passthrough_event
  */
 using EventResultPayload = std::variant<std::nullptr_t,
                                         std::string,
