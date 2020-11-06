@@ -393,9 +393,6 @@ class DefaultDataConverter {
  *
  * @tparam Thread The thread implementation to use. On the Linux side this
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
- *
- * TODO: Factor the listening logic out to a `MultiSocketHandler`, and then
- *       recreate this on top of that
  */
 template <typename Thread>
 class EventHandler {
@@ -590,6 +587,30 @@ class EventHandler {
     template <typename F>
     void receive_events(std::optional<std::pair<Logger&, bool>> logging,
                         F callback) {
+        // Reading, processing, and writing back event data from the sockets
+        // works in the same way regardless of which socket we're using
+        auto process_event =
+            [&](boost::asio::local::stream_protocol::socket& socket,
+                bool on_main_thread) {
+                auto event = read_object<Event>(socket);
+                if (logging) {
+                    auto [logger, is_dispatch] = *logging;
+                    logger.log_event(is_dispatch, event.opcode, event.index,
+                                     event.value, event.payload, event.option,
+                                     event.value_payload);
+                }
+
+                EventResult response = callback(event, on_main_thread);
+                if (logging) {
+                    auto [logger, is_dispatch] = *logging;
+                    logger.log_event_response(
+                        is_dispatch, event.opcode, response.return_value,
+                        response.payload, response.value_payload);
+                }
+
+                write_object(socket, response);
+            };
+
         // As described above we'll handle incoming requests for `socket` on
         // this thread. We'll also listen for incoming connections on `endpoint`
         // on another thread. For any incoming connection we'll spawn a new
@@ -618,26 +639,7 @@ class EventHandler {
                 active_secondary_requests[request_id] = Thread(
                     [&, request_id](boost::asio::local::stream_protocol::socket
                                         secondary_socket) {
-                        // TODO: Factor this out
-                        auto event = read_object<Event>(secondary_socket);
-                        if (logging) {
-                            auto [logger, is_dispatch] = *logging;
-                            logger.log_event(is_dispatch, event.opcode,
-                                             event.index, event.value,
-                                             event.payload, event.option,
-                                             event.value_payload);
-                        }
-
-                        EventResult response = callback(event, false);
-                        if (logging) {
-                            auto [logger, is_dispatch] = *logging;
-                            logger.log_event_response(is_dispatch, event.opcode,
-                                                      response.return_value,
-                                                      response.payload,
-                                                      response.value_payload);
-                        }
-
-                        write_object(secondary_socket, response);
+                        process_event(secondary_socket, false);
 
                         // When we have processed this request, we'll join the
                         // thread again with the thread that's handling
@@ -658,23 +660,7 @@ class EventHandler {
 
         while (true) {
             try {
-                auto event = read_object<Event>(socket);
-                if (logging) {
-                    auto [logger, is_dispatch] = *logging;
-                    logger.log_event(is_dispatch, event.opcode, event.index,
-                                     event.value, event.payload, event.option,
-                                     event.value_payload);
-                }
-
-                EventResult response = callback(event, true);
-                if (logging) {
-                    auto [logger, is_dispatch] = *logging;
-                    logger.log_event_response(
-                        is_dispatch, event.opcode, response.return_value,
-                        response.payload, response.value_payload);
-                }
-
-                write_object(socket, response);
+                process_event(socket, true);
             } catch (const boost::system::system_error&) {
                 // This happens when the sockets got closed because the plugin
                 // is being shut down
