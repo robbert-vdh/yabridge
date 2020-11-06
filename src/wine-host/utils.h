@@ -64,8 +64,6 @@ class MainContext {
 
     /**
      * Start a timer to handle events every `event_loop_interval` milliseconds.
-     * `message_loop_active()` will return `true` while `handler` is being
-     * executed.
      *
      * @param handler The function that should be executed in the IO context
      *   when the timer ticks. This should be a function that handles both the
@@ -84,23 +82,10 @@ class MainContext {
                     return;
                 }
 
-                event_loop_active = true;
                 handler();
-                event_loop_active = false;
-
                 async_handle_events(handler);
             });
     }
-
-    /**
-     * Is `true` if the context is currently handling the Win32 message loop and
-     * incoming `dispatch()` events should be handled on their own thread (as
-     * posting them to the IO context will thus block).
-     *
-     * TODO: No longer used after the thread rework, we can probably just drop
-     *       this if everything works out
-     */
-    std::atomic_bool event_loop_active;
 
     /**
      * The raw IO context. Can and should be used directly for everything that's
