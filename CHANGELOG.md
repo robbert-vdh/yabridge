@@ -41,6 +41,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - As part of the communication rework the way the Wine process handles threading
   has also been completely reworked.
+- GUI updates for plugins that don't use hardware acceleration are now run at 60
+  Hz instead of 30 Hz. This was kept at 30 updates per second because that
+  seemed to be a typical rate for Windows VST hosts and because function calls
+  could not be processed while the GUI was being updated, but since that
+  limitation now no longer exists we can safely bump this up.
 
 ### Removed
 

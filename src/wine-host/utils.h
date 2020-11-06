@@ -32,11 +32,12 @@
 #include <function2/function2.hpp>
 
 /**
- * The delay between calls to the event loop at an even more than cinematic 30
- * fps.
+ * The delay between calls to the event loop so we can keep a nice 60 fps. We
+ * could bump this up to the monitor's refresh rate, but I'm afraid that it will
+ * start to noticeably take up resources in plugin groups.
  */
 constexpr std::chrono::duration event_loop_interval =
-    std::chrono::milliseconds(1000) / 30;
+    std::chrono::milliseconds(1000) / 60;
 
 /**
  * A wrapper around `boost::asio::io_context()` to serve as the application's
