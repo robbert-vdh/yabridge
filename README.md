@@ -282,6 +282,13 @@ All of the paths used here are relative to the `yabridge.toml` file.
 ```toml
 # ~/.wine/drive_c/Program Files/Steinberg/VstPlugins/yabridge.toml
 
+# This would cause all plugins to be hosted within a single process. Doing so
+# greatly reduces the loading time of individual plugins, with the caveat being
+# that plugins are no longer sandboxed from eachother.
+#
+# ["*"]
+# group = "all"
+
 ["FabFilter Pro-Q 3.so"]
 group = "fabfilter"
 
