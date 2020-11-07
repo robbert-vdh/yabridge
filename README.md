@@ -52,6 +52,7 @@ Yabridge has been tested under the following VST hosts using Wine Staging 5.9:
 - Carla 2.2
 - Ardour 6.3
 - Mixbus 6.0.702
+- Qtractor 0.9.18
 - REAPER 6.15[\*](#runtime-dependencies-and-known-issues)
 - Renoise 3.2.1[\*](#runtime-dependencies-and-known-issues)
 
