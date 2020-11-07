@@ -1,7 +1,5 @@
 # Architecture
 
-<!-- TODO: Mention the new special socket approach for `dispatch()` and `audioMaster()-->
-
 The project consists of two components: a Linux native VST plugin
 (`libyabridge.so`) and a VST host that runs under Wine
 (`yabridge-host.exe`/`yabridge-host.exe.so`, and
@@ -42,41 +40,31 @@ as the _Windows VST plugin_. The whole process works as follows:
 
 3. The plugin then sets up several Unix domain socket endpoints to communicate
    with the Wine VST host somewhere in a temporary directory and starts
-   listening on them. We'll use multiple sockets so we can easily handle
-   multiple data streams from different threads using blocking synchronous
-   operations. This greatly simplifies the way communication works without
-   compromising on latency. The different sockets will be described below. We
-   communicate over Unix domain sockets rather than using shared memory directly
-   because this way we get low latency communication without any manual
-   synchronisation for free, while being able to send messages of arbitrary
-   length without having to split them up first. This is useful for transmitting
-   audio and preset data which can be any arbitrary size.
+   listening on them. We use multiple sockets so we can easily concurrently
+   handle multiple data streams from different threads using blocking
+   synchronous operations. This greatly simplifies the way communication works
+   without compromising on latency. The different sockets are described below.
 4. The plugin launches the Wine VST host in the detected wine prefix, passing
    the name of the `.dll` file it should be loading and the base directory for
    the Unix domain sockets that are going to be communciated over as its
-   arguments.
+   arguments. See the [Wine hosts](#wine-hosts) below for more information on
+   the different Wine VST host binaries.
 5. The Wine VST host connects to the sockets and communication between the
-   plugin and the Wine VST host gets set up. The following types of events each
-   get their own socket:
+   plugin and the Wine VST host gets set up. The following types of events are
+   handled seperately:
 
    - Calls from the native VST host to the plugin's `dispatcher()` function.
      These get forwarded to the Windows VST plugin through the Wine VST host.
-
-   - Calls from the native VST host to the plugin's `dispatcher()` function with
-     the `effProcessEvents` opcode. These also get forwarded to the Windows VST
-     plugin through the Wine VST host. This has to be handled separately from
-     all other events because of limitations of the Win32 API. Without doing
-     this the plugin would not be able to receive any MIDI events while the GUI
-     is being resized or a dropdown menu or message box is shown.
 
    - Host callback calls from the Windows VST plugin through the
      `audioMasterCallback` function. These get forwarded to the native VST host
      through the plugin.
 
      Both the `dispatcher()` and `audioMasterCallback()` functions are handled
-     in the same way, with some minor variations on how payload data gets
-     serialized depending on the opcode of the event being sent. See the section
-     below this for more details on this procedure.
+     in the same way with some minor variations on how payload data gets
+     serialized depending on the opcode of the event being sent. See the [event
+     handling section](#event-handling) below this for more details on this
+     procedure.
 
    - Calls from the native VST host to the plugin's `getParameter()` and
      `setParameter()` functions. Both functions get forwarded to the Windows VST
@@ -91,43 +79,15 @@ as the _Windows VST plugin_. The whole process works as follows:
      emulate the behavior of `processReplacing()` instead. Single and double
      precision audio go over the same socket since the host will only call one
      or the other, and we just use a variant to determine which one should be
-     called on the Wine host side.
+     called on the Wine host side. If the host somehow does end up calling the
+     deprecated accumulative `process()` function instead of
+     `processReplacing()`, then we'll emulate `process()` using
+     `processReplacing()`.
 
    - And finally there's a separate socket for control messages. At the moment
      this is only used to transfer the Windows VST plugin's `AEffect` object to
      the plugin and the current configuration from the plugin to the Wine VST
      host on startup.
-
-   The operations described above involving the host -> plugin `dispatcher()`and
-   plugin -> host `audioMaster()` functions are all handled by first serializing
-   the function parameters and any payload data into a binary format so they can
-   be sent over a socket. The objects used for encoding both the requests and
-   the responses for theses events can be found in `src/common/serialization.h`,
-   and the functions that actually read and write these objects over the sockets
-   are located in `src/common/communication.h`. The actual binary serialization
-   is handled using [bitsery](https://github.com/fraillt/bitsery).
-
-   TODO: Rewrite this after the socket changes are done
-
-   Actually sending and receiving the events happens in the
-   `EventHandler::send_event()` and `EventHandler::receive_events()` functions.
-   When calling either `dispatch()` or `audioMaster()`, the caller will
-   oftentimes either pass along some kind of data structure through the void
-   pointer function argument, or they expect the function's return value to be a
-   pointer to some kind of struct provided by the plugin or host. The behaviour
-   for reading from and writing into these void pointers and returning pointers
-   to objects when needed is encapsulated in the `DispatchDataConverter` and
-   `HostCallbackDataCovnerter` classes for the `dispatcher()` and
-   `audioMaster()` functions respectively. For operations involving the plugin
-   editor there is also some extra glue in `Vst2Bridge::dispatch_wrapper`. On
-   the receiving end of the function calls, the `passthrough_event()` function
-   which calls the callback functions and handles the marshalling between our
-   data types created by the `*DataConverter` classes and the VST API's
-   different pointer types. This behaviour is separated from `receive_event()`
-   so we can handle MIDI events separately. This is needed because a select few
-   plugins only store pointers to the received events rather than copies of the
-   objects. Because of this, the received event data must live at least until
-   the next audio buffer gets processed so it needs to be stored temporarily.
 
 6. The Wine VST host loads the Windows VST plugin and starts forwarding messages
    over the sockets described above.
@@ -137,32 +97,56 @@ as the _Windows VST plugin_. The whole process works as follows:
    this point the plugin will stop blocking and the initialization process is
    finished.
 
-## Plugin groups
+## Event handling
 
-When using plugin groups, the startup and event handling behavior is slightly
-different.
+Event handling for the host -> plugin `dispatcher()`and plugin -> host
+`audioMaster()` functions work in the same way. The function parameters and any
+payload data are serialized into a binary format using
+[bitsery](https://github.com/fraillt/bitsery). The receiving side then
+unmarshalls the payload data into the representation used by VST2, calls the
+actual function, and then serializes the results again and sends them back to
+the caller. The conversions on the sending side are handled by the
+`*DataConverter` classes, and on the receiving side the `passthrough_event()`
+function knows how to convert between yabridge's representation types and the
+types used by VST2.
 
-- First of all, instead of directly spawning a Wine process to host the plugin,
-  yabridge will either:
+One special implementation detail about yabridge's event handling is its use of
+sockets. Whenever possible yabridge uses a single long living socket for each of
+the operations described in the section above. For event handling however it can
+happen that the host is calling `dispatch()` a second time from another thread
+while the first call is still pending. Or `audioMaster()` and `dispatch()` can
+be called in a mutually recursive fashion. In order to be able to handle those
+situations, yabridge will create additional socket connections as needed. The
+receiving side listens for incoming connections, and when it accepts a new
+connection an additional thread will be spawned to handle the incoming request.
+This allows for fully concurrent event handling without any blocking.
 
-  - Connect to an existing group host process that matches the plugin's
-    combination of group name, Wine prefix, and Windows VST plugin architecture,
-    and ask it to host the Windows VST plugin.
-  - Spawn a new group process and detach it from the process, then proceed as
-    normal by connecting to that process as described above. When two yabridge
-    instances are initialized simultaneously and both try to launch a new group
-    process, then the process that manages to listen on the group's socket first
-    will handle both instances.
+Lastly there are some `dispatch()` calls that will have to be handled on the
+Wine VST host's main thread. This is because in the Win32 programming model all
+GUI operations have to be done from a single thread, so any `dispatch()` calls
+that potentially use any of those APIs will have to be handled from the same
+thread that's running the Win32 message loop. In
+`src/wine-host/bridges/vst2.cpp` there are several opcodes marked as unsafe.
+When we encounter one of those events, we'll use Boost.Asio's strands to call
+the plugin's `dispatch()` function from within the main IO context which also
+handles the Win32 message loop. That way we can easily execute all potential GUI
+code from the same thread.
 
-- Events, both Win32 messages and `dispatcher()` events, are handled slightly
-  differently when using plugin groups. Because most of the Win32 API cannot be
-  used from multiple threads, all plugin initialization and all event handling
-  has to be done from the same thread. To achieve this, yabridge will use a
-  slightly modified version of the `dispatcher()` handler that executes the
-  actual events for all plugins within a single Boost.Asio IO context.
-- Win32 messages are now also handled on a timer within the same IO context so
-  mentioned above. This behavior is different from individually hosted plugins,
-  where the message loop can simply be run after every event. If any of the
-  plugins within the plugin group is in a state that would cause the message
-  loop to fail, such as when a plugin is in the process of opening its editor
-  GUI, then the message loop will be skipped temporarily.
+## Wine hosts
+
+Yabridge has four different VST host binaries. There are binaries for hosting a
+single plugin and binaries for hosting multiple plugins within a plugin group,
+with 32-bit and 64-bit versions of both.
+
+The group host binaries for plugin groups host plugins in the exact same way as
+the regular host binaries, but instead of directly hosting a plugin they instead
+start listening on a socket for incoming requests to host a particular plugin.
+When a group host receives a request to host a plugin, it will initialize the
+plugin from within the main Boost.Asio IO context, and it will then spawn a new
+thread to start handling events. After that everything works the exact same way
+as individually hosted plugins, and when the plugin exits the thread and all the
+plugin's resources are cleaned up. Initializing the plugin within the main IO
+context is important because all operations potentially using GUI or other Win32
+message loop related operations should be performed from the same thread. When
+all plugins have exited, the group host process will wait for a few seconds
+before it also shuts down.
