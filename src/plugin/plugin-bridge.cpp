@@ -446,15 +446,6 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
 
             return return_value;
         }; break;
-        case effProcessEvents:
-            // Because of limitations of the Win32 API we have to use a seperate
-            // thread and socket to pass MIDI events. Otherwise plugins will
-            // stop receiving MIDI data when they have an open dropdowns or
-            // message box.
-            return sockets.host_vst_dispatch_midi_events.send_event(
-                converter, std::pair<Logger&, bool>(logger, true), opcode,
-                index, value, data, option);
-            break;
         case effCanDo: {
             const std::string query(static_cast<const char*>(data));
 

@@ -187,12 +187,6 @@ class Vst2Bridge {
     AEffect* plugin;
 
     /**
-     * The thread that specifically handles `effProcessEvents` opcodes so the
-     * plugin can still receive MIDI during GUI interaction to work around Win32
-     * API limitations.
-     */
-    Win32Thread dispatch_midi_events_handler;
-    /**
      * The thread that responds to `getParameter` and `setParameter` requests.
      */
     Win32Thread parameters_handler;

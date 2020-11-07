@@ -128,59 +128,6 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     // configuration as a response
     config = sockets.host_vst_control.receive_single<Configuration>();
 
-    // This works functionally identically to the `handle_dispatch()` function,
-    // but this socket will only handle MIDI events and it will handle them
-    // eagerly. This is needed because of Win32 API limitations.
-    dispatch_midi_events_handler = Win32Thread([&]() {
-        sockets.host_vst_dispatch_midi_events.receive_events(
-            std::nullopt, [&](Event& event, bool /*on_main_thread*/) {
-                if (BOOST_LIKELY(event.opcode == effProcessEvents)) {
-                    // For 99% of the plugins we can just call
-                    // `effProcessReplacing()` and be done with it, but a select
-                    // few plugins (I could only find Kontakt that does this)
-                    // don't actually make copies of the events they receive and
-                    // only store pointers, meaning that they have to live at
-                    // least until the next audio buffer gets processed. We're
-                    // not using `passthrough_events()` here directly because we
-                    // need to store a copy of the `DynamicVstEvents` struct
-                    // before passing the generated `VstEvents` object to the
-                    // plugin.
-                    std::lock_guard lock(next_buffer_midi_events_mutex);
-
-                    next_audio_buffer_midi_events.push_back(
-                        std::get<DynamicVstEvents>(event.payload));
-                    DynamicVstEvents& events =
-                        next_audio_buffer_midi_events.back();
-
-                    // Exact same handling as in `passthrough_event()`, apart
-                    // from making a copy of the events first
-                    const intptr_t return_value = plugin->dispatcher(
-                        plugin, event.opcode, event.index, event.value,
-                        &events.as_c_events(), event.option);
-
-                    EventResult response{.return_value = return_value,
-                                         .payload = nullptr,
-                                         .value_payload = std::nullopt};
-
-                    return response;
-                } else {
-                    using namespace std::placeholders;
-
-                    std::cerr << "[Warning] Received non-MIDI "
-                                 "event on MIDI processing thread"
-                              << std::endl;
-
-                    // Maybe this should just be a hard error instead, since it
-                    // should never happen
-                    return passthrough_event(
-                        plugin,
-                        std::bind(&Vst2Bridge::dispatch_wrapper, this, _1, _2,
-                                  _3, _4, _5, _6),
-                        event);
-                }
-            });
-    });
-
     parameters_handler = Win32Thread([&]() {
         sockets.host_vst_parameters.receive_multi<Parameter>(
             [&](Parameter request, std::vector<uint8_t>& buffer) {
@@ -322,31 +269,62 @@ bool Vst2Bridge::should_skip_message_loop() const {
 void Vst2Bridge::handle_dispatch() {
     sockets.host_vst_dispatch.receive_events(
         std::nullopt, [&](Event& event, bool /*on_main_thread*/) {
-            return passthrough_event(
-                plugin,
-                [&](AEffect* plugin, int opcode, int index, intptr_t value,
-                    void* data, float option) -> intptr_t {
-                    // Certain functions will most definitely involve the GUI or
-                    // the Win32 message loop. These functions have to be
-                    // performed on the thread that is running the IO context,
-                    // since this is also where the plugins were instantiated
-                    // and where the Win32 message loop is handled.
-                    if (unsafe_opcodes.contains(opcode)) {
-                        std::promise<intptr_t> dispatch_result;
-                        boost::asio::dispatch(main_context.context, [&]() {
-                            const intptr_t result = dispatch_wrapper(
-                                plugin, opcode, index, value, data, option);
+            if (event.opcode == effProcessEvents) {
+                // For 99% of the plugins we can just call
+                // `effProcessReplacing()` and be done with it, but a select few
+                // plugins (I could only find Kontakt that does this) don't
+                // actually make copies of the events they receive and only
+                // store pointers to those events, meaning that they have to
+                // live at least until the next audio buffer gets processed.
+                // We're not using `passthrough_events()` here directly because
+                // we need to store a copy of the `DynamicVstEvents` struct
+                // before passing the generated `VstEvents` object to the
+                // plugin.
+                std::lock_guard lock(next_buffer_midi_events_mutex);
 
-                            dispatch_result.set_value(result);
-                        });
+                next_audio_buffer_midi_events.push_back(
+                    std::get<DynamicVstEvents>(event.payload));
+                DynamicVstEvents& events = next_audio_buffer_midi_events.back();
 
-                        return dispatch_result.get_future().get();
-                    } else {
-                        return dispatch_wrapper(plugin, opcode, index, value,
-                                                data, option);
-                    }
-                },
-                event);
+                // Exact same handling as in `passthrough_event()`, apart
+                // from making a copy of the events first
+                const intptr_t return_value = plugin->dispatcher(
+                    plugin, event.opcode, event.index, event.value,
+                    &events.as_c_events(), event.option);
+
+                EventResult response{.return_value = return_value,
+                                     .payload = nullptr,
+                                     .value_payload = std::nullopt};
+
+                return response;
+            } else {
+                return passthrough_event(
+                    plugin,
+                    [&](AEffect* plugin, int opcode, int index, intptr_t value,
+                        void* data, float option) -> intptr_t {
+                        // Certain functions will most definitely involve the
+                        // GUI or the Win32 message loop. These functions have
+                        // to be performed on the thread that is running the IO
+                        // context, since this is also where the plugins were
+                        // instantiated and where the Win32 message loop is
+                        // handled.
+                        if (unsafe_opcodes.contains(opcode)) {
+                            std::promise<intptr_t> dispatch_result;
+                            boost::asio::dispatch(main_context.context, [&]() {
+                                const intptr_t result = dispatch_wrapper(
+                                    plugin, opcode, index, value, data, option);
+
+                                dispatch_result.set_value(result);
+                            });
+
+                            return dispatch_result.get_future().get();
+                        } else {
+                            return dispatch_wrapper(plugin, opcode, index,
+                                                    value, data, option);
+                        }
+                    },
+                    event);
+            }
         });
 }
 

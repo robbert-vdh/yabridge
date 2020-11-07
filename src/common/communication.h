@@ -788,10 +788,6 @@ class Sockets {
           host_vst_dispatch(io_context,
                             (base_dir / "host_vst_dispatch.sock").string(),
                             listen),
-          host_vst_dispatch_midi_events(
-              io_context,
-              (base_dir / "host_vst_dispatch_midi_events.sock").string(),
-              listen),
           vst_host_callback(io_context,
                             (base_dir / "vst_host_callback.sock").string(),
                             listen),
@@ -814,7 +810,6 @@ class Sockets {
         // Manually close all sockets so we break out of any blocking operations
         // that may still be active
         host_vst_dispatch.close();
-        host_vst_dispatch_midi_events.close();
         vst_host_callback.close();
         host_vst_parameters.close();
         host_vst_process_replacing.close();
@@ -838,7 +833,6 @@ class Sockets {
      */
     void connect() {
         host_vst_dispatch.connect();
-        host_vst_dispatch_midi_events.connect();
         vst_host_callback.connect();
         host_vst_parameters.connect();
         host_vst_process_replacing.connect();
@@ -861,13 +855,6 @@ class Sockets {
      * the plugin.
      */
     EventHandler<Thread> host_vst_dispatch;
-    /**
-     * Used specifically for the `effProcessEvents` opcode. This is needed
-     * because the Win32 API is designed to block during certain GUI
-     * interactions such as resizing a window or opening a dropdown. Without
-     * this MIDI input would just stop working at times.
-     */
-    EventHandler<Thread> host_vst_dispatch_midi_events;
     /**
      * The socket that forwards all `audioMaster()` calls from the Windows VST
      * plugin to the host.
