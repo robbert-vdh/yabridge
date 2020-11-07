@@ -46,6 +46,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   seemed to be a typical rate for Windows VST hosts and because function calls
   could not be processed while the GUI was being updated, but since that
   limitation now no longer exists we can safely bump this up.
+- Sockets are now created in `XDG_RUNTIME_DIR` (`/run/user/<user_id>` on most
+  systems) instead of `/tmp` if set to avoid polluting `/tmp`.
 
 ### Removed
 
