@@ -589,7 +589,7 @@ class EventHandler {
                         F callback) {
         // Reading, processing, and writing back event data from the sockets
         // works in the same way regardless of which socket we're using
-        auto process_event =
+        const auto process_event =
             [&](boost::asio::local::stream_protocol::socket& socket,
                 bool on_main_thread) {
                 auto event = read_object<Event>(socket);

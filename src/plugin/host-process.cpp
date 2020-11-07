@@ -175,8 +175,8 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
     const fs::path endpoint_base_dir = sockets.base_dir;
     const fs::path group_socket_path =
         generate_group_endpoint(group_name, wine_prefix, plugin_arch);
-    auto connect = [&io_context, plugin_path, endpoint_base_dir,
-                    group_socket_path]() {
+    const auto connect = [&io_context, plugin_path, endpoint_base_dir,
+                          group_socket_path]() {
         boost::asio::local::stream_protocol::socket group_socket(io_context);
         group_socket.connect(group_socket_path.string());
 
@@ -201,7 +201,7 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
                         bp::std_out = stdout_pipe, bp::std_err = stderr_pipe);
         group_host.detach();
 
-        pid_t group_host_pid = group_host.id();
+        const pid_t group_host_pid = group_host.id();
         group_host_connect_handler =
             std::jthread([this, connect, group_socket_path, plugin_path,
                           endpoint_base_dir, group_host_pid]() {
