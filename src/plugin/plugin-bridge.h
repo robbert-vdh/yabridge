@@ -61,6 +61,18 @@ class PluginBridge {
                       void* data,
                       float option);
     /**
+     * This is the old, accumulative version of `processReplacing()`. As far as
+     * I'm aware no host from the last 20 years will use this (since it's not
+     * very practical), but we have to support this anyways. Because this is not
+     * used, we'll just reuse your `process_replacing()` implementation (which
+     * actually falls back to `process()` if the plugin somehow does not support
+     * the former).
+     */
+    void process(AEffect* plugin,
+                 float** inputs,
+                 float** outputs,
+                 int sample_frames);
+    /**
      * Ask the VST plugin to process audio for us. If the plugin somehow does
      * not support `processReplacing()` and only supports the old `process()`
      * function, then this will be handled implicitely in
@@ -90,11 +102,16 @@ class PluginBridge {
      * @tparam T The sample type. Should be either `float` for single preceision
      *   audio processing called through `processReplacing`, or `double` for
      *   double precision audio through `processDoubleReplacing`.
+     * @tparam replacing Whether or not `outputs` should be replaced by the new
+     *   processed audio. This is the normal behaviour for `processReplacing()`.
+     *   If this is set to `false` then the results are added to the existing
+     *   values in `outputs`. No host will use this last behaviour anymore, but
+     *   it's part of the VST2.4 spec so we have to support it.
      *
      * @see PluginBridge::process_replacing
      * @see PluginBridge::process_double_replacing
      */
-    template <typename T>
+    template <typename T, bool replacing>
     void do_process(T** inputs, T** outputs, int sample_frames);
 
     /**

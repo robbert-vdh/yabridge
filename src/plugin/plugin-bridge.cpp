@@ -16,6 +16,8 @@
 
 #include "plugin-bridge.h"
 
+#include <execution>
+
 // Generated inside of the build directory
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
@@ -490,7 +492,7 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
         data, option);
 }
 
-template <typename T>
+template <typename T, bool replacing>
 void PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     // The inputs and outputs arrays should be `[num_inputs][sample_frames]` and
     // `[num_outputs][sample_frames]` floats large respectfully.
@@ -513,8 +515,23 @@ void PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
 
     assert(response_buffers.size() == static_cast<size_t>(plugin.numOutputs));
     for (int channel = 0; channel < plugin.numOutputs; channel++) {
-        std::copy(response_buffers[channel].begin(),
-                  response_buffers[channel].end(), outputs[channel]);
+        if constexpr (replacing) {
+            std::copy(response_buffers[channel].begin(),
+                      response_buffers[channel].end(), outputs[channel]);
+        } else {
+            // The old `process()` function expects the plugin to add its output
+            // to the accumulated values in `outputs`. Since no host is ever
+            // going to call this anyways we won't even bother with a separate
+            // implementation and we'll just add `processReplacing()` results to
+            // `outputs`.
+            std::transform(std::execution::unseq,
+                           response_buffers[channel].begin(),
+                           response_buffers[channel].end(), outputs[channel],
+                           outputs[channel],
+                           [](const T& new_value, T& current_value) -> T {
+                               return new_value + current_value;
+                           });
+        }
     }
 
     // Plugins are allowed to send MIDI events during processing using a host
@@ -532,18 +549,25 @@ void PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     incoming_midi_events.clear();
 }
 
+void PluginBridge::process(AEffect* /*plugin*/,
+                           float** inputs,
+                           float** outputs,
+                           int sample_frames) {
+    do_process<float, false>(inputs, outputs, sample_frames);
+}
+
 void PluginBridge::process_replacing(AEffect* /*plugin*/,
                                      float** inputs,
                                      float** outputs,
                                      int sample_frames) {
-    do_process<float>(inputs, outputs, sample_frames);
+    do_process<float, true>(inputs, outputs, sample_frames);
 }
 
 void PluginBridge::process_double_replacing(AEffect* /*plugin*/,
                                             double** inputs,
                                             double** outputs,
                                             int sample_frames) {
-    do_process<double>(inputs, outputs, sample_frames);
+    do_process<double, true>(inputs, outputs, sample_frames);
 }
 
 float PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
@@ -697,12 +721,8 @@ void process_proxy(AEffect* plugin,
                    float** inputs,
                    float** outputs,
                    int sample_frames) {
-    // FIXME: This is incorrect, and I only noticed just now. I'm 99% sure no
-    //        hosts actually use this, but this will overwrite the buffer. On
-    //        the plugin side we do properly handle plugins that only support
-    //        the old cumulative process function.
-    return get_bridge_instance(*plugin).process_replacing(
-        plugin, inputs, outputs, sample_frames);
+    return get_bridge_instance(*plugin).process(plugin, inputs, outputs,
+                                                sample_frames);
 }
 
 void process_replacing_proxy(AEffect* plugin,

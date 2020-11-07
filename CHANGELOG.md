@@ -59,6 +59,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   plugin could cause a crash. In practice this was only reproducible during the
   plugin scanning process when rapidly adding and removing a large number of
   plugins in a single group.
+- Fixed the implementation of the accumulative `process()` function. As far as
+  I'm aware no VST hosts made in the last few decades event use this, but it
+  just feels wrong to have an incorrect implementation as part of yabridge.
 
 ## [1.7.1] - 2020-10-23
 
