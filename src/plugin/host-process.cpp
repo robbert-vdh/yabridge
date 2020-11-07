@@ -27,6 +27,12 @@ namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
 /**
+ * Check whether a process with the given PID is still active (and not a
+ * zombie).
+ */
+bool pid_running(pid_t pid);
+
+/**
  * Simple helper function around `boost::process::child` that launches the host
  * application (`*.exe`) wrapped in winedbg if compiling with
  * `-Duse-winedbg=true`. Keep in mind that winedbg does not handle arguments
@@ -144,11 +150,12 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
 
     // When using plugin groups, we'll first try to connect to an existing group
     // host process and ask it to host our plugin. If no such process exists,
-    // then we'll start a new process. In the event that two yabridge instances
-    // simultaneously try to start a new group process for the same group, then
-    // the last process to connect to the socket will terminate gracefully and
-    // the first process will handle the connections for both yabridge
-    // instances.
+    // then we'll start a new process. In the event that multiple yabridge
+    // instances simultaneously try to start a new group process for the same
+    // group, then the first process to listen on the socket will win and all
+    // other processes will exit. When a plugin's host process has exited, it
+    // will try to connect to the socket once more in the case that another
+    // process is now listening on it.
     const bp::environment host_env = set_wineprefix();
     fs::path wine_prefix;
     if (auto wine_prefix_envvar = host_env.find("WINEPREFIX");
@@ -168,9 +175,8 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
     const fs::path endpoint_base_dir = sockets.base_dir;
     const fs::path group_socket_path =
         generate_group_endpoint(group_name, wine_prefix, plugin_arch);
-    try {
-        // Request the existing group host process to host our plugin, and store
-        // the PID of that process so we'll know if it has crashed
+    auto connect = [&io_context, plugin_path, endpoint_base_dir,
+                    group_socket_path]() {
         boost::asio::local::stream_protocol::socket group_socket(io_context);
         group_socket.connect(group_socket_path.string());
 
@@ -179,8 +185,12 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
             GroupRequest{.plugin_path = plugin_path.string(),
                          .endpoint_base_dir = endpoint_base_dir.string()});
         const auto response = read_object<GroupResponse>(group_socket);
+        assert(response.pid > 0);
+    };
 
-        host_pid = response.pid;
+    try {
+        // Request an existing group host process to host our plugin
+        connect();
     } catch (const boost::system::system_error&) {
         // In case we could not connect to the socket, then we'll start a
         // new group host process. This process is detached immediately
@@ -189,47 +199,39 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
         bp::child group_host =
             launch_host(host_path, group_socket_path, bp::env = host_env,
                         bp::std_out = stdout_pipe, bp::std_err = stderr_pipe);
-        host_pid = group_host.id();
         group_host.detach();
 
-        // We now want to connect to the socket the in the exact same way as
-        // above. The only problem is that it may take some time for the
-        // process to start depending on Wine's current state. We'll defer
-        // this to a thread so we can finish the rest of the startup in the
-        // meantime.
-        group_host_connect_handler = std::jthread([&, group_socket_path,
-                                                   plugin_path,
-                                                   endpoint_base_dir]() {
-            using namespace std::literals::chrono_literals;
+        pid_t group_host_pid = group_host.id();
+        group_host_connect_handler =
+            std::jthread([this, connect, group_socket_path, plugin_path,
+                          endpoint_base_dir, group_host_pid]() {
+                using namespace std::literals::chrono_literals;
 
-            // TODO: Replace this polling with inotify
-            while (running()) {
-                std::this_thread::sleep_for(20ms);
+                // We'll first try to connect to the group host we just spawned
+                // TODO: Replace this polling with inotify
+                while (pid_running(group_host_pid)) {
+                    std::this_thread::sleep_for(20ms);
 
-                try {
-                    // This is the exact same connection sequence as above
-                    boost::asio::local::stream_protocol::socket group_socket(
-                        io_context);
-                    group_socket.connect(group_socket_path.string());
-
-                    write_object(
-                        group_socket,
-                        GroupRequest{
-                            .plugin_path = plugin_path.string(),
-                            .endpoint_base_dir = endpoint_base_dir.string()});
-                    const auto response =
-                        read_object<GroupResponse>(group_socket);
-
-                    // If two group processes started at the same time, than the
-                    // first one will be the one to respond to the host request
-                    host_pid = response.pid;
-                    return;
-                } catch (const boost::system::system_error&) {
-                    // Keep trying to connect until either connection gets
-                    // accepted or the group host crashes
+                    try {
+                        connect();
+                        return;
+                    } catch (const boost::system::system_error&) {
+                        // Keep trying to connect until either connection gets
+                        // accepted or the group host crashes
+                    }
                 }
-            }
-        });
+
+                // When the group host exits before we can connect to it this
+                // either means that there has been some kind of error (for
+                // instance related to Wine), or that another process was able
+                // to listen on the socket first. For the last case we'll try to
+                // connect once more, before concluding that we failed.
+                try {
+                    connect();
+                } catch (const boost::system::system_error&) {
+                    startup_failed = true;
+                }
+            });
     }
 }
 
@@ -242,6 +244,20 @@ fs::path GroupHost::path() {
 }
 
 bool GroupHost::running() {
+    // When we are unable to connect to a new or existing group host process,
+    // then we'll consider the startup failed and we'll allow the initialization
+    // process to terminate.
+    return !startup_failed;
+}
+
+void GroupHost::terminate() {
+    // There's no need to manually terminate group host processes as they will
+    // shut down automatically after all plugins have exited. Manually closing
+    // the dispatch socket will cause the associated plugin to exit.
+    sockets.host_vst_dispatch.close();
+}
+
+bool pid_running(pid_t pid) {
     // With regular individually hosted plugins we can simply check whether the
     // process is still running, however Boost.Process does not allow you to do
     // the same thing for a process that's not a direct child if this process.
@@ -252,16 +268,9 @@ bool GroupHost::running() {
     // left as a zombie process. If the process is active, then
     // `/proc/<pid>/{cwd,exe,root}` will be valid symlinks.
     try {
-        fs::canonical("/proc/" + std::to_string(host_pid) + "/exe");
+        fs::canonical("/proc/" + std::to_string(pid) + "/exe");
         return true;
     } catch (const fs::filesystem_error&) {
         return false;
     }
-}
-
-void GroupHost::terminate() {
-    // There's no need to manually terminate group host processes as they will
-    // shut down automatically after all plugins have exited. Manually closing
-    // the dispatch socket will cause the associated plugin to exit.
-    sockets.host_vst_dispatch.close();
 }

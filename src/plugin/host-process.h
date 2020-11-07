@@ -182,11 +182,22 @@ class GroupHost : public HostProcess {
     boost::filesystem::path host_path;
 
     /**
-     * The PID of the vst host process. Needed for checking whether the group
-     * host is still active if we are connecting to an already running group
-     * host instance.
+     * We want to either connect to an existing group host process, or spawn a
+     * new one. This can result in some interesting scenarios when multiple
+     * plugins within the same plugin host get initialized at once (e.g. when
+     * loading a project). On startup we'll go through the following sequence:
+     *
+     * 1. Try to connect to an existing group host process.
+     * 2. Spawn a new group host process and connect to it. When multiple
+     *    plugins launch at the same time the first to start listening on the
+     *    socket wins and the other processes will shut down gracefully.
+     * 3.  When the group host process exits, try to connect again (potentially
+     *     to a group host process spawned by another instance).
+     *
+     * When this last step also fails, then we'll say that startup has failed
+     * and we will terminate the plugin initialization process.
      */
-    pid_t host_pid;
+    std::atomic_bool startup_failed;
 
     /**
      * The associated sockets for the plugin we're hosting. This is used to

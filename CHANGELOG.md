@@ -62,7 +62,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed a very long standing issue when using plugins groups where unloading a
   plugin could cause a crash. In practice this was only reproducible during the
   plugin scanning process when rapidly adding and removing a large number of
-  plugins in a single group.
+  plugins in a single group. Now plugin groups no longer crash, even when
+  hosting over a hundred plugins in a single process.
+- Fixed another edge case with plugin groups when simultaneously opening
+  multiple plugins within the same group. The fallover behaviour that would
+  cause all of those plugins to eventually connect to a single group host
+  process would sometimes not work correctly because the plugins were being
+  terminated prematurely.
 - Fixed the implementation of the accumulative `process()` function. As far as
   I'm aware no VST hosts made in the last few decades event use this, but it
   just feels wrong to have an incorrect implementation as part of yabridge.
