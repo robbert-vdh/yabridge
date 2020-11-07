@@ -155,17 +155,6 @@ class GroupBridge {
      */
     void handle_incoming_connections();
 
-    /**
-     * Returns true if the message loop should not be run at this time. This is
-     * necessary because hosts will always call either `effEditOpen()` and then
-     * `effEditGetRect()` or the other way around. If the message loop is
-     * handled in between these two actions, then some plugins will either
-     * freeze or sometimes outright crash. Because every plugin has to be run
-     * from the same thread, this is a simple way to synchronize blocking the
-     * mesage loop between the different plugin instances.
-     */
-    bool should_skip_message_loop();
-
    private:
     /**
      * Listen on the group socket for incoming requests to host a new plugin

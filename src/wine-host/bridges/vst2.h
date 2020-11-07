@@ -36,13 +36,6 @@
 #include "../utils.h"
 
 /**
- * A marker struct to indicate that the editor is about to be opened.
- *
- * @see Vst2Bridge::editor
- */
-struct EditorOpening {};
-
-/**
  * This hosts a Windows VST2 plugin, forwards messages sent by the Linux VST
  * plugin and provides host callback function for the plugin to talk back.
  *
@@ -79,19 +72,6 @@ class Vst2Bridge {
                std::string endpoint_base_dir);
 
     /**
-     * Returns true if the message loop should be skipped. This happens when the
-     * editor is in the process of being opened. In VST hosts on Windows
-     * `effEditOpen()` and `effEditGetRect()` will always be called in sequence,
-     * but in our approach there will be an opportunity to handle events in
-     * between these two calls. Most plugins will handle this just fine, but
-     * some plugins end up blocking indefinitely while waiting for the other
-     * function to be called, hence why this function is needed. For
-     * individually hosted plugins this check is done implicitely in
-     * `Vst2Bridge::handle_win32_events()`.
-     */
-    bool should_skip_message_loop() const;
-
-    /**
      * Handle events until the plugin exits. The actual events are posted to
      * `main_context` to ensure that all operations to could potentially
      * interact with Win32 code are run from a single thread, even when hosting
@@ -105,17 +85,17 @@ class Vst2Bridge {
     void handle_dispatch();
 
     /**
-     * Handle X11 events for the editor window if it is open. This can be run
-     * safely from any thread.
+     * Handle X11 events for the editor window if it is open. This can safely be
+     * run from any thread.
      */
     void handle_x11_events();
 
     /**
      * Run the message loop for this plugin. This is only used for the
-     * individual plugin host. When hosting multiple plugins, a simple central
-     * message loop with a check to `should_skip_message_loop()` should be used
-     * instead. This is run on a timer in the same IO context as the one that
-     * handles the events, i.e. `main_context`.
+     * individual plugin host, so that we can filter out some unnecessary timer
+     * events. When hosting multiple plugins, a simple central message loop
+     * should be used instead. This is run on a timer in the same IO context as
+     * the one that handles the events, i.e. `main_context`.
      *
      * Because of the way the Win32 API works we have to process events on the
      * same thread as the one the window was created on, and that thread is the
@@ -224,25 +204,7 @@ class Vst2Bridge {
      * Wine window, and embedding that Wine window into a window provided by the
      * host. Should be empty when the editor is not open.
      *
-     * This field can have three possible states:
-     *
-     * - `std::nullopt` when the editor is closed.
-     * - An `Editor` object when the editor is open.
-     * - `EditorOpening` when the editor is not yet open, but the host has
-     *   already called `effEditGetRect()` and is about to call `effEditOpen()`.
-     *   This is needed because there is a race condition in some bugs that
-     *   cause them to crash or enter an infinite Win32 message loop when
-     *   `effEditGetRect()` gets dispatched and we then enter the message loop
-     *   loop before `effEditOpen()` gets called. Most plugins will handle this
-     *   just fine, but a select few plugins make the assumption that the editor
-     *   is already open once `effEditGetRect()` has been called, even if
-     *   `effEditOpen` has not yet been dispatched. VST hsots on Windows will
-     *   call these two events in sequence, so the bug would never occur there.
-     *   To work around this we'll use this third state to temporarily stop
-     *   processing Windows events in the one or two ticks between these two
-     *   events.
-     *
      * @see should_postpone_message_loop
      */
-    std::variant<std::monostate, Editor, EditorOpening> editor;
+    std::optional<Editor> editor;
 };

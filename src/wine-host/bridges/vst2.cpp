@@ -262,10 +262,6 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     });
 }
 
-bool Vst2Bridge::should_skip_message_loop() const {
-    return std::holds_alternative<EditorOpening>(editor);
-}
-
 void Vst2Bridge::handle_dispatch() {
     sockets.host_vst_dispatch.receive_events(
         std::nullopt, [&](Event& event, bool /*on_main_thread*/) {
@@ -337,20 +333,6 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
     // We have to intercept GUI open calls since we can't use
     // the X11 window handle passed by the host
     switch (opcode) {
-        case effEditGetRect: {
-            // Some plugins will have a race condition if the message loops gets
-            // handled between the call to `effEditGetRect()` and
-            // `effEditOpen()`, although this behavior never appears on Windows
-            // as hosts will always either call these functions in sequence or
-            // in reverse. We need to temporarily stop handling messages when
-            // this happens.
-            if (!std::holds_alternative<Editor>(editor)) {
-                editor = EditorOpening{};
-            }
-
-            return plugin->dispatcher(plugin, opcode, index, value, data,
-                                      option);
-        } break;
         case effEditOpen: {
             // Create a Win32 window through Wine, embed it into the window
             // provided by the host, and let the plugin embed itself into
@@ -361,8 +343,8 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             // should get a unique window class
             const std::string window_class =
                 "yabridge plugin " + sockets.base_dir.string();
-            Editor& editor_instance = editor.emplace<Editor>(
-                config, window_class, x11_handle, plugin);
+            Editor& editor_instance =
+                editor.emplace(config, window_class, x11_handle, plugin);
 
             return plugin->dispatcher(plugin, opcode, index, value,
                                       editor_instance.get_win32_handle(),
@@ -373,7 +355,7 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
                 plugin->dispatcher(plugin, opcode, index, value, data, option);
 
             // Cleanup is handled through RAII
-            editor = std::monostate();
+            editor.reset();
 
             return return_value;
         } break;
@@ -385,29 +367,24 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
 }
 
 void Vst2Bridge::handle_win32_events() {
-    std::visit(overload{[](Editor& editor) { editor.handle_win32_events(); },
-                        [](std::monostate&) {
-                            MSG msg;
+    if (editor) {
+        editor->handle_win32_events();
+    } else {
+        MSG msg;
 
-                            for (int i = 0;
-                                 i < max_win32_messages &&
-                                 PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-                                 i++) {
-                                TranslateMessage(&msg);
-                                DispatchMessage(&msg);
-                            }
-                        },
-                        [](EditorOpening&) {
-                            // Don't handle any events in this particular case
-                            // as explained in `Vst2Bridge::editor`
-                        }},
-               editor);
+        for (int i = 0; i < max_win32_messages &&
+                        PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
+             i++) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+    }
 }
 
 void Vst2Bridge::handle_x11_events() {
-    std::visit(overload{[](Editor& editor) { editor.handle_x11_events(); },
-                        [](auto&) {}},
-               editor);
+    if (editor) {
+        editor->handle_x11_events();
+    }
 }
 
 class HostCallbackDataConverter : DefaultDataConverter {

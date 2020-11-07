@@ -161,22 +161,6 @@ void GroupBridge::handle_incoming_connections() {
     main_context.run();
 }
 
-bool GroupBridge::should_skip_message_loop() {
-    // We do not need additional locking since the call to `AEffect::dispatcher`
-    // and the actual event handling and message loop handling are performed
-    // within the IO context and these values thus can't change while another
-    // the message loop is being running
-    std::lock_guard lock(active_plugins_mutex);
-    for (auto& [parameters, value] : active_plugins) {
-        auto& [thread, bridge] = value;
-        if (bridge->should_skip_message_loop()) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 void GroupBridge::accept_requests() {
     group_socket_acceptor.async_accept(
         [&](const boost::system::error_code& error,
@@ -245,25 +229,21 @@ void GroupBridge::async_handle_events() {
             }
         }
 
-        // Handle Win32 messages unless plugins are in the middle of opening
-        // their editor
-        if (!should_skip_message_loop()) {
-            std::lock_guard lock(active_plugins_mutex);
+        std::lock_guard lock(active_plugins_mutex);
 
-            MSG msg;
+        MSG msg;
 
-            // Keep the loop responsive by not handling too many events at once
-            //
-            // For some reason the Melda plugins run into a seemingly infinite
-            // timer loop for a little while after opening a second editor.
-            // Without this limit everything will get blocked indefinitely. How
-            // could this be fixed?
-            for (int i = 0; i < max_win32_messages &&
-                            PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-                 i++) {
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
-            }
+        // Keep the loop responsive by not handling too many events at once
+        //
+        // For some reason the Melda plugins run into a seemingly infinite timer
+        // loop for a little while after opening a second editor.  Without this
+        // limit everything will get blocked indefinitely. How could this be
+        // fixed?
+        for (int i = 0; i < max_win32_messages &&
+                        PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
+             i++) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
         }
     });
 }

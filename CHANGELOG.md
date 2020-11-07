@@ -31,9 +31,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
     expected.
   - And probably many more improvements.
 
-  I have been testing this extensively to make sure that the change does not
-  introduce any regressions, but please let me know if this does break anything
-  for you.
+  Aside from these more noticeable changes, this has also made it possible to
+  remove a lot of checks and behaviour that existed solely to work around the
+  limitations introduced by the event handling system. I have been testing this
+  extensively to make sure that the change does not introduce any regressions,
+  but please let me know if this does break anything for you.
 
   TODO: Remove known issue about opening Kontakt and certain other plugins causing playback to stall, since this is no longer the case
 
