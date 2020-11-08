@@ -60,17 +60,19 @@ yabridgectl status
 
 Lastly you can tell yabridgectl to set up or update yabridge for all of your
 plugins at once using the commands below. Yabridgectl will warn you if it finds
-unrelated `.so` files that may have been left over after uninstalling a plugin.
-You can rerun the sync command with the `--prune` option to delete those files.
-If you are using the default copy-based installation method, it will also verify
+unrelated `.so` files that may have been left after uninstalling a plugin. You
+can rerun the sync command with the `--prune` option to delete those files. If
+you are using the default copy-based installation method, it will also verify
 that your search `PATH` has been set up correctly so you can get up and running
 faster.
 
 ```shell
-# Set up yabridge for all plugins found under the plugin locations
+# Set up or update yabridge for all plugins found under the plugin locations
 yabridgectl sync
-# Set up yabridge, and also remove any leftover .so files
+# Set up or update yabridge, and also remove any leftover .so files
 yabridgectl sync --prune
+# Set up yabridge or update for all plugins, even if it would not be necessary
+yabridgectl sync --force
 ```
 
 ## Alternatives
