@@ -54,6 +54,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Removed
 
 - The `hack_reaper_update_display` option is now obsolete and has been removed.
+- The previously deprecated `use-bitbridge` and `use-winedbg` compilation
+  options have been removed. Please use `with-bitbridge` and `with-winedbg`
+  instead.
 
   TODO: Remove all mentions of `hack_reaper_update_display` from the readme.
 

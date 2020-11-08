@@ -35,7 +35,7 @@ bool pid_running(pid_t pid);
 /**
  * Simple helper function around `boost::process::child` that launches the host
  * application (`*.exe`) wrapped in winedbg if compiling with
- * `-Duse-winedbg=true`. Keep in mind that winedbg does not handle arguments
+ * `-Dwith-winedbg=true`. Keep in mind that winedbg does not handle arguments
  * containing spaces, so most Windows paths will be split up into multiple
  * arugments.
  */

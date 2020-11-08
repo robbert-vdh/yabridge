@@ -15,13 +15,12 @@ if not meson.get_compiler('cpp').compiles(winelib_check)
   error('You need to set up a cross compiler, check the README for compilation instructions.')
 endif
 
-# Depending on the `use-bitbridge` flag we'll enable building secondary 32-bit
-# host applications that can act as a bit bridge for using 32-bit Windows plugins
-# in 64-bit Linux VST hosts. The plugin will determine which host application to
-# use based on the `.dll` file it's trying to load.
-# This setup is necessary until Meson provides a way to have multiple
-# cross-builds for a single build directory:
-# https://github.com/mesonbuild/meson/issues/5125
+# Depending on the `with-bitbridge` flag we'll enable building secondary 32-bit
+# host applications that can act as a bit bridge for using 32-bit Windows
+# plugins in 64-bit Linux VST hosts. The plugin will determine which host
+# application to use based on the `.dll` file it's trying to load. This setup is
+# necessary until Meson provides a way to have multiple cross-builds for a
+# single build directory: https://github.com/mesonbuild/meson/issues/5125
 individual_host_name_64bit = 'yabridge-host'
 individual_host_name_32bit = 'yabridge-host-32'
 group_host_name_64bit = 'yabridge-group'
@@ -34,20 +33,6 @@ compiler_options = ['-DBOOST_ASIO_DISABLE_CONCEPTS']
 with_bitbridge = get_option('with-bitbridge')
 with_static_boost = get_option('with-static-boost')
 with_winedbg = get_option('with-winedbg')
-
-# TODO: Remove the `use-*` versions of these options in yabridge 2.0.0
-if not with_bitbridge and get_option('use-bitbridge')
-  with_bitbridge = true
-  warning('''The 'use-bitbridge' option has been deprecated and will be ''' +
-          '''removed in yabridge 2.0.0, use the 'with-bitbridge' option ''' +
-          '''instead.''')
-endif
-if not with_winedbg and get_option('use-winedbg')
-  with_winedbg = true
-  warning('''The 'use-winedbg' option has been deprecated and will be ''' +
-          '''removed in yabridge 2.0.0, use the 'with-winedbg' option ''' +
-          '''instead.''')
-endif
 
 if with_bitbridge
   compiler_options += '-DWITH_BITBRIDGE'
