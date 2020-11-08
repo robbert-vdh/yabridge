@@ -83,7 +83,13 @@ int __cdecl main(int argc, char* argv[]) {
 
     // We'll listen for `dispatcher()` calls on a different thread, but the
     // actual events will still be executed within the IO context
-    Win32Thread dispatch_handler([&]() { bridge->handle_dispatch(); });
+    Win32Thread dispatch_handler([&]() {
+        bridge->handle_dispatch();
+
+        // When the sockets get closed, this application should terminate
+        // gracefully
+        main_context.stop();
+    });
 
     // Handle Win32 messages and X11 events on a timer, just like in
     // `GroupBridge::async_handle_events()``

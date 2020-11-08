@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed a regression where `yabridge-host.exe` would not exit on its own after
+  the host crashes or gets terminated without being able to properly close all
+  plugins.
+
 ## [2.0.0] - 2020-11-08
 
 ### Added
