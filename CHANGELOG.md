@@ -14,10 +14,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   fully concurrent and to use additional threads as necessary. This was needed
   to allow yabridge to handle nested and mutually recursive function calls as
   well as several other edge cases a synchronous non-concurrent implementation
-  would struggle with. What this boils down to is that yabridge became even
-  faster, more responsive, and can now handle many scenarios that would
-  previously require workarounds. The most noticeable effects of these changes
-  are as follows:
+  would fail. What this boils down to is that yabridge became even faster, more
+  responsive, and can now handle many scenarios that would previously require
+  workarounds. The most noticeable effects of these changes are as follows:
 
   - The `hack_reaper_update_display` workaround for _REAPER_ and _Renoise_ to
     prevent certain plugins from freezing is no longer needed and has been
@@ -33,9 +32,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
   Aside from these more noticeable changes, this has also made it possible to
   remove a lot of older checks and behaviour that existed solely to work around
-  the limitations introduced by the event handling system. I have been testing
-  this extensively to make sure that these changes don't not introduce any
-  regressions, but please let me know if this did break anything for you.
+  the limitations introduced by the old event handling system. I have been
+  testing this extensively to make sure that these changes don't not introduce
+  any regressions, but please let me know if this did break anything for you.
 
 ### Changed
 
@@ -51,18 +50,16 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
-- The `hack_reaper_update_display` option is now obsolete and has been removed.
+- The now obsolete `hack_reaper_update_display` option has been removed.
 - The previously deprecated `use-bitbridge` and `use-winedbg` compilation
   options have been removed. Please use `with-bitbridge` and `with-winedbg`
   instead.
 
 ### Fixed
 
-- Fixed a very long standing issue when using plugins groups where unloading a
-  plugin could cause a crash. In practice this was only reproducible during the
-  plugin scanning process when rapidly adding and removing a large number of
-  plugins in a single group. Now you can host over a hundred plugins in a single
-  process without issues.
+- Fixed a very long standing issue with plugins groups where unloading a plugin
+  could cause a crash. Now you can host over a hundred plugins in a single
+  process without any issues.
 - Fixed another edge case with plugin groups when simultaneously opening
   multiple plugins within the same group. The fallover behaviour that would
   cause all of those plugins to eventually connect to a single group host
