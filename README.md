@@ -5,9 +5,9 @@
 Yet Another way to use Windows VST plugins on Linux. Yabridge seamlessly
 supports running both 64-bit Windows VST2 plugins as well as 32-bit Windows VST2
 plugins in a 64-bit Linux VST host, with optional support for inter-plugin
-communication through [plugin groups](#plugin-groups). This project aims to be
-as transparent as possible in order to achieve the best possible plugin
-compatibility while also staying easy to debug and maintain.
+communication through [plugin groups](#plugin-groups). Its modern concurrent
+architecture and focus on transparency allows yabridge to be both fast and
+highly compatible, while also staying easy to debug and maintain.
 
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
@@ -37,7 +37,7 @@ compatibility while also staying easy to debug and maintain.
 
 Yabridge has been tested under the following VST hosts using Wine Staging 5.9:
 
-- Bitwig Studio 3.2
+- Bitwig Studio 3.2 and the betas of Bitwig Studio 3.3
 - Carla 2.2
 - Ardour 6.3
 - Mixbus 6.0.702
@@ -50,7 +50,7 @@ Please let me know if there are any issues with other VST hosts.
 ## Usage
 
 You can either download a prebuilt version of yabridge through GitHub's
-[releases](https://github.com/robbert-vdh/yabridge/releases) section, or you can
+[releases](https://github.com/robbert-vdh/yabridge/releases) page, or you can
 compile it from source using the instructions in the [build](#Building) section
 below. Alternatively there are AUR packages available if you are running Arch or
 Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
@@ -58,35 +58,35 @@ Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
 [yabridge-git](https://aur.archlinux.org/packages/yabridge-git/)).
 
 There are two ways to use yabridge, either by using copies or through symbolink
-links. If your host supports plugin sanboxing, then using symlinks will be the
-easier installation method. The main advantage here is that you will be able to
-update yabridge for all of your plugins by just overwriting yabridge's files,
-and it avoids having to either install yabridge outside of your home directory
-or to modify environment variables to get yabridge to find the correct files.
-Sadly, not all hosts support this behavior. The copy-based installation will
-work for all hosts. If you decide to use the symlink-based installation method
-with Bitwig Studio, then make sure the _Individually_ plugin hosting mode is
-enabled.
+links. If your host supports plugin sanboxing and you're not using one of the
+AUR packages, then using symlinks will be the easier installation method. Using
+symlinks avoids having to either install yabridge outside of your home directory
+or having to modify environment variables to allow yabridge to find its Wine
+host binaries. The copy-based installation will work for all hosts. If you
+decide to use the symlink-based installation method with Bitwig Studio, then
+make sure that either the '_Per plug-in_' or the '_Individually_' plugin hosting
+mode is enabled.
 
 ### Automatic setup
 
 The easiest way to get up and running is through
 [yabridgectl](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl).
-You can download yabridgectl from GitHub's
-[releases](https://github.com/robbert-vdh/yabridge/releases) section. There is
-also an AUR package available if you are running Arch of Manjaro
-([yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/), it's
-also included in
+You can download yabridgectl from GitHub's [releases
+page](https://github.com/robbert-vdh/yabridge/releases). There is also an AUR
+package available if you're running Arch or Manjaro
+([yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/), and
+it's also included in
 [yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/)). More
-comprehensive documentation can be found in yabridgectl's readme, or by running
-`yabridgectl --help`.
+comprehensive documentation on yabridgectl can be found in its
+[readme](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl),
+or by running `yabridgectl --help`.
 
-First of all, yabridgectl needs to know where it can find yabridge's files. If
-you have downloaded the prebuilt binaries, then you can simply extract the
-archive to `~/.local/share` and yabridgectl will pick up the files in
+First, yabridgectl needs to know where it can find yabridge's files. If you have
+downloaded the prebuilt binaries, then you can simply extract the archive to
+`~/.local/share` and yabridgectl will pick up the files in
 `~/.local/share/yabridge` automatically[\*](#why-local-share-yabridge). You also
-won't have to do any additional setup if you're using one of the AUR packages.
-If you have compiled yabridge from source or if you installed the files to some
+won't have to do any additional work if you're using one of the AUR packages. If
+you have compiled yabridge from source or if you installed the files to some
 other location, then you can use `yabridgectl set --path=<path>` to tell
 yabridgectl where it can find the files.
 
@@ -97,14 +97,15 @@ enable that using `yabridgectl set --method=symlink`.
 
 Next you'll want to tell yabridgectl where it can find your plugins. For this
 you can use yabridgectl's `add`, `rm` and `list` commands. For instance, to add
-the most common VST2 plugin directory, use `yabridgectl add "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"`. You can also use
-`yabridgectl status` to get an overview of the current settings and the
+the most common VST2 plugin directory, use
+`yabridgectl add "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"`. You
+can use `yabridgectl status` to get an overview of the current settings and the
 installation status of all of your plugins.
 
 Finally you can run `yabridgectl sync` to finish setting up yabridge. Simply
 tell your VST host to search for plugins in the directories you just added and
-you'll be good to go. Don't forget to rerun `yabridgectl sync` whenever you
-update yabridge if you are using the copy-based installation method.
+you'll be good to go. _Don't forget to rerun `yabridgectl sync` whenever you
+update yabridge if you are using the copy-based installation method._
 
 <sup id="why-local-share-yabridge">
   *Instead of copying yabridge's files to <code>~/.local/share</code>, it would
@@ -143,7 +144,7 @@ update yabridge.
 ### Search path setup
 
 If you're using the _copy-based_ installation method and you're not using any of
-the AUR packages, then you'll have to modify your _login shell_'s `PATH`
+the AUR packages, then you may have to modify your _login shell_'s `PATH`
 environment variable so that yabridge is able to find the files in the directory
 you've extracted yabridge's files to. Yabridgectl will automatically check
 whether this is set up correctly when you run `yabridgectl sync`, and it will
@@ -180,14 +181,15 @@ examples I'll assume you're using the default installation location at
 
 Rerun `yabridgectl sync` to make sure that the setup has been successful. If the
 environment variable has been set up correctly, you should not be seeing any
-warnings. Make sure to log out and log back in again to ensure that all
-applications pick up the new changes.
+warnings. _Make sure to log out and log back in again to ensure that all
+applications pick up the new changes._
 
 ### DAW setup
 
 Finally, open your DAW's VST location configuration and tell it to look for
-plugins under `~/.wine/drive_c/Program Files/Steinberg/VstPlugins`. That way it
-will automatically pick up any of your Windows VST2 plugins.
+plugins under `~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, or whichever
+directories you've added in yabridgectl. That way it will automatically pick up
+all of your Windows VST2 plugins.
 
 ### Bitbridge
 
@@ -202,26 +204,25 @@ handle it accordingly.
 
 It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
 automatically detect and use the Wine prefix the plugin's `.dll` file is located
-in. Alternatively you could set the `WINEPREFIX` environment variable to
-override the Wine prefix for all instances of yabridge.
+in. Alternatively you can set the `WINEPREFIX` environment variable to override
+the Wine prefix for all instances of yabridge.
 
 ### Configuration
 
 Yabridge can be configured on a per plugin basis to host multiple plugins within
-a single process using [plugin groups](#plugin-groups), as well as to improve
-compatibility with certain hosts and plugins through a variety of [compatibility
-options](#compatibility-options)
+a single process using [plugin groups](#plugin-groups), and there are also a
+variety of [compatibility options](#compatibility-options) available to improve
+compatibility with certain hosts and plugins.
 
-Configuring yabridge for specific plugins is done through a `yabridge.toml` file
-located in either the same directory as the plugin's `.so` file you're trying to
-configure, or in any of its parent directories. This file contains case
-sensitive [glob](https://www.man7.org/linux/man-pages/man7/glob.7.html) patterns
-that match paths to yabridge `.so` files relative to the `yabridge.toml` file.
-These patterns can also match an entire directory to apply settings to all
-plugins within that directory. To avoid confusion, only the first
-`yabridge.toml` file found and only the first matching glob pattern within that
-file will be considered. See below for an [example](#example) of a
-`yabridge.toml` file.
+Configuring yabridge is done through a `yabridge.toml` file located in either
+the same directory as the plugin's `.so` file you're trying to configure, or in
+any of its parent directories. This file contains case sensitive
+[glob](https://www.man7.org/linux/man-pages/man7/glob.7.html) patterns that
+match paths to yabridge `.so` files relative to the `yabridge.toml` file. These
+patterns can also match an entire directory to apply settings to all plugins
+within that directory. To avoid confusion, only the first `yabridge.toml` file
+found and only the first matching glob pattern within that file will be
+considered. See below for an [example](#example) of a `yabridge.toml` file.
 
 #### Plugin groups
 
@@ -309,11 +310,12 @@ group = "izotope"
   duplicate instances of the same plugin, or after opening a single plugin every
   subsequent plugin opens as another instance of that first plugin, then your
   VST host is not sandboxing individual plugins. If you're using Bitwig Studio,
-  the make sure the '_Individual_' plugin hosting mode is enabled and all of the
-  checkboxes in the list of sandboxing exceptions are left unchecked.
+  the make sure the '_Per plugin-in_'` or '_Individually_' plugin hosting mode
+  is enabled and all of the checkboxes in the list of sandboxing exceptions are
+  left unchecked.
 
-- If you're using a symlink and the plugin is not getting picked up at all, then
-  you can verify that the symlink is correct by running:
+- If you're not using yabridgectl and a plugin is not getting picked up at all,
+  then you can verify that the symlink or copy is correct by running:
 
   ```shell
   readelf -s ~/.wine/drive_c/path/to/plugin.so | grep yabridge
@@ -321,19 +323,20 @@ group = "izotope"
 
   The output should contain several lines related to yabridge.
 
-- If you're seeing errors related to Wine, then it can be that your installed
-  version of Wine is much older than the version that yabridge has been compiled
-  for. Yabridgectl will automatically check for this when you run `yabridgectl sync`
-  after updating Wine or yabridge. You can also manually verify that Wine is working
-  correctly by running one of the VST host applications. Assuming that yabridge
-  is installed under `~/.local/share/yabridge`, then running
+- If you're seeing errors related to Wine either when running `yabridgectl sync`
+  or when trying to load a plugin, then it can be that your installed version of
+  Wine is much older than the version that yabridge has been compiled for.
+  Yabridgectl will automatically check for this when you run `yabridgectl sync`
+  after updating Wine or yabridge. You can also manually verify that Wine is
+  working correctly by running one of the VST host applications. Assuming that
+  yabridge is installed under `~/.local/share/yabridge`, then running
   `~/.local/share/yabridge/yabridge-host.exe` directly (so _not_
   `wine ~/.local/share/yabridge/yabridge-host.exe`, that won't work) in a
   terminal should print a few messages related to Wine's startup process
   followed by the following line:
 
   ```
-  Usage: yabridge-host.exe <vst_plugin_dll> <unix_domain_socket>
+  Usage: yabridge-host.exe <vst_plugin_dll> <endpoint_base_directory>
   ```
 
   If you're seeing a `002b:err:module:__wine_process_init` error instead, then
@@ -341,12 +344,12 @@ group = "izotope"
   to upgrade your Wine version. Instructions for how to do this on Ubuntu can be
   found on the [WineHQ website](https://wiki.winehq.org/Ubuntu).
 
+- Timeout errors during plugin scanning are caused by the Wine process not being
+  able to start. There should be plugin output messages in your DAW or terminal
+  that with more information on what went wrong.
+
 - Sometimes left over Wine processes can cause problems. Run `wineserver -k` to
   terminate Wine related in the current or default Wine prefix.
-
-- Time out errors during plugin scanning are caused by the Wine process not
-  being able to start. There should be plugin output messages in your DAW or
-  terminal that with more information on what went wrong.
 
 - If you're using a _lot_ of plugins and you're unable to load any new plugins,
   then you may be running into Xorg's client limit. The exact number of plugins
@@ -355,8 +358,8 @@ group = "izotope"
   case would be to try and run `wine cmd.exe` from a terminal. If this prints a
   message about the maximum number of clients being reached (or if you are not
   able to open the terminal at all), then you might want to consider using
-  [plugin groups](#plugin-groups) to run all instances of your most frequently
-  used plugins within a single process.
+  [plugin groups](#plugin-groups) to run multiple instances of your most
+  frequently used plugins within a single process.
 
 ## Performance tuning
 
@@ -408,7 +411,9 @@ include:
   installing the plugins. To work around this you can open the .iso file
   downloaded to your downloads directory and run the installer directly. When
   activating the plugins you may have to cancel the self-updating in NI Service
-  Center.
+  Center. You may also have to manually terminate the ISO driver installation
+  process when installing Native Access for the first time to allow the
+  installation to proceed.
 - **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
   `gdiplus` through `winetricks`.
 - **MeldaProduction** plugins have minor rendering issues when GPU acceleration
@@ -531,11 +536,9 @@ the `*-32.exe` variant accordingly.
 ## Debugging
 
 Wine's error messages and warning are usually very helpful whenever a plugin
-doesn't work right away. However, with some VST hosts there is no way to inspect
-a plugin's output. Bitwig, for instance, hides a plugin's STDOUT and STDERR
-streams after the plugin scanning process. To make it easier to debug
-malfunctioning plugins, yabridge offers these two environment variables to
-control yabridge's logging facilities:
+doesn't work right away. However, with some VST hosts it can be hard read a
+plugin's output. To make it easier to debug malfunctioning plugins, yabridge
+offers these two environment variables to control yabridge's logging facilities:
 
 - `YABRIDGE_DEBUG_FILE=<path>` allows you to write yabridge's debug messages as
   well as all output produced by the plugin and by Wine itself to a file. For
@@ -561,9 +564,9 @@ control yabridge's logging facilities:
   `src/common/logging.h`.
 
 Wine's own [logging facilities](https://wiki.winehq.org/Debug_Channels) can also
-be very helpful when diagnosing problems. In particular the `+message` and
-`+relay` channels are very useful to trace the execution path within loaded VST
-plugin itself.
+be very helpful when diagnosing problems. In particular the `+message`,
+`+module` and `+relay` channels are very useful to trace the execution path
+within loaded VST plugin itself.
 
 ### Attaching a debugger
 
