@@ -37,8 +37,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   this extensively to make sure that these changes don't not introduce any
   regressions, but please let me know if this did break anything for you.
 
-  TODO: Remove known issue about opening Kontakt and certain other plugins causing playback to stall, since this is no longer the case
-
 ### Changed
 
 - The way the Wine process handles threading has also been completely reworked
@@ -57,8 +55,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - The previously deprecated `use-bitbridge` and `use-winedbg` compilation
   options have been removed. Please use `with-bitbridge` and `with-winedbg`
   instead.
-
-  TODO: Remove all mentions of `hack_reaper_update_display` from the readme.
 
 ### Fixed
 

@@ -9,17 +9,6 @@ communication through [plugin groups](#plugin-groups). This project aims to be
 as transparent as possible in order to achieve the best possible plugin
 compatibility while also staying easy to debug and maintain.
 
-_The current master branch version of yabridge features a fully concurrent
-rewrite of yabridge's event handling mechanisms that solves any outstanding
-issues with regards to host-specific bugs and performance limitations._ _There's
-still some cleanup and refactoring work left to be done, but you can already use
-the new version either through the [automated
-builds](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)
-page or through the
-[yabridge-git](https://aur.archlinux.org/packages/yabridge-git/) and
-[yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/) AUR
-packages._
-
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
 ### Table of contents
@@ -53,8 +42,8 @@ Yabridge has been tested under the following VST hosts using Wine Staging 5.9:
 - Ardour 6.3
 - Mixbus 6.0.702
 - Qtractor 0.9.18
-- REAPER 6.15[\*](#runtime-dependencies-and-known-issues)
-- Renoise 3.2.1[\*](#runtime-dependencies-and-known-issues)
+- REAPER 6.15
+- Renoise 3.2.1
 
 Please let me know if there are any issues with other VST hosts.
 
@@ -258,22 +247,13 @@ other. See below for an [example](#example) of how these groups can be set up.
 
 #### Compatibility options
 
-| Option                       | Values         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ---------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `editor_double_embed`        | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`. |
-| `hack_reaper_update_display` | `{true,false}` | Compatibility option for _REAPER_ and _Renoise_. This disables the `audioMasterUpdateDisplay()` function, which in these hosts will introduce mutual recursion which is currently not supported by yabridge's communication model. Defaults to `false`. **This option is no longer needed for the current master branch version of yabridge.**                                                                                                             |
+| Option                | Values         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `editor_double_embed` | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`. |
 
 These options are workarounds for issues mentioned in the [known
 issues](#runtime-dependencies-and-known-issues) section. Depending on the hosts
-and plugins you use you might want to enable some of them. When using REAPER,
-it's recommended to enable `hack_reaper_update_display` for all of your plugins.
-To do this, create a `yabridge.toml` file next to your plugin's .so files with
-the following contents:
-
-```toml
-["*"]
-hack_reaper_update_display = true
-```
+and plugins you use you might want to enable some of them.
 
 #### Example
 
@@ -298,7 +278,6 @@ group = "melda"
 # Matches an entire directory and all files inside it, make sure to not include
 # a trailing slash
 ["ToneBoosters"]
-hack_reaper_update_display = true
 group = "toneboosters"
 
 ["PSPaudioware"]
@@ -316,14 +295,6 @@ group = "This will be ignored!"
 # Of course, you can also add multiple plugins to the same group by hand
 ["iZotope7/Insight 2.so"]
 group = "izotope"
-
-# This will apply a workaround for an implementation issue in REAPER and Renoise
-# to all plugins in the current directory _that are not already matched by one
-# of the above patterns_. You will have to add this option to any other entries
-# if you are for instance using plugin groups. See the ToneBoosters entry above
-# for an example.
-["*"]
-hack_reaper_update_display = true
 ```
 
 ## Troubleshooting common issues
@@ -433,12 +404,6 @@ Any VST2 plugin should function out of the box, although some plugins will need
 some additional dependencies for their GUIs to work correctly. Notable examples
 include:
 
-- **REAPER** and **Renoise** can both freeze when using plugins that call the
-  `audioMasterUpdateDisplay()` function because of mutual recursion limitations.
-  Until this is fixed you can set an [option](#compatibility-options) through
-  `yabridge.toml` to work around this. **This workaround is no longer needed in
-  the master branch version of yabridge and will be removed in the next
-  release.**
 - **Native Instruments** plugins work, but Native Access is unable to finish
   installing the plugins. To work around this you can open the .iso file
   downloaded to your downloads directory and run the installer directly. When
@@ -480,7 +445,8 @@ Aside from that, these are some known caveats:
 - Plugins by **KiloHearts** have file descriptor leaks when esync is enabled,
   causing Wine and yabridge to eventually stop working after the system hits the
   open file limit. This sadly cannot be fixed in yabridge. Simply unset
-  `WINEESYNC` while using yabridge or switch to using fsync if this is an issue.
+  `WINEESYNC` while using yabridge or switch to using _fsync_ if this is an
+  issue.
 - Most recent **iZotope** plugins don't have a functional GUI in a typical out
   of the box Wine setup because of missing dependencies. Please let me know if
   you know which dependencies are needed for these plugins to render correctly.
@@ -488,15 +454,6 @@ Aside from that, these are some known caveats:
   updated once the plugin has finished loading since there's no way to tell that
   they have been updated by the plugin. Right now simply deactivating and
   reactivating the plugin will cause these labels to be updated.
-- Under Bitwig Studio, opening the editor for a plugin that perform IO while
-  loading its editor may cause playback to pause briefly during that time.
-  Examples of plugins that do this include recent versions of Kontakt and the
-  Spitfire plugins. This happens because Bitwig expects the plugins to be able
-  to instantly report their editor size before actually opening the editor, but
-  instead of doing so these plugins will instead perform a bunch of IO first and
-  Bitwig will wait patiently for them to finish. It would be possible to modify
-  yabridge to work around this limitation of Bitwig, but I'm very hesitant to
-  add hacks to yabridge unless absolutely necessary.
 
 There are also some VST2.X extension features that have not been implemented yet
 because I haven't needed them myself. Let me know if you need any of these
