@@ -29,7 +29,7 @@
 using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
 
 /**
- * This ugly global is needed so we can get the instance of a `Brdige` class
+ * This ugly global is needed so we can get the instance of a `Vst2Bridge` class
  * from an `AEffect` when it performs a host callback during its initialization.
  */
 Vst2Bridge* current_bridge_instance = nullptr;
