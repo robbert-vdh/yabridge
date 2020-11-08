@@ -22,8 +22,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   - The `hack_reaper_update_display` workaround for _REAPER_ and _Renoise_ to
     prevent certain plugins from freezing is no longer needed and has been
     removed.
-  - Opening and scanning for plugins hosts becomes much faster in several VST
-    hosts because more work can be done simultaneously.
+  - Opening and scanning plugins becomes much faster in several VST hosts
+    because more work can be done simultaneously.
   - Certain plugins, such as Kontakt, no longer interrupt audio playback in
     Bitwig while their editor was being opened.
   - Any loading issues in Bitwig Studio 3.3 beta 1 are no longer present.
@@ -32,24 +32,24 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   - And probably many more improvements.
 
   Aside from these more noticeable changes, this has also made it possible to
-  remove a lot of checks and behaviour that existed solely to work around the
-  limitations introduced by the event handling system. I have been testing this
-  extensively to make sure that the change does not introduce any regressions,
-  but please let me know if this does break anything for you.
+  remove a lot of older checks and behaviour that existed solely to work around
+  the limitations introduced by the event handling system. I have been testing
+  this extensively to make sure that these changes don't not introduce any
+  regressions, but please let me know if this did break anything for you.
 
   TODO: Remove known issue about opening Kontakt and certain other plugins causing playback to stall, since this is no longer the case
 
 ### Changed
 
-- As part of the communication rework the way the Wine process handles threading
-  has also been completely reworked.
+- The way the Wine process handles threading has also been completely reworked
+  as part of the communication rework.
 - GUI updates for plugins that don't use hardware acceleration are now run at 60
   Hz instead of 30 Hz. This was kept at 30 updates per second because that
   seemed to be a typical rate for Windows VST hosts and because function calls
   could not be processed while the GUI was being updated, but since that
   limitation now no longer exists we can safely bump this up.
-- Sockets are now created in `XDG_RUNTIME_DIR` (`/run/user/<user_id>` on most
-  systems) instead of `/tmp` if set to avoid polluting `/tmp`.
+- Sockets are now created in `$XDG_RUNTIME_DIR` (which is `/run/user/<user_id>`
+  on most systems) instead of `/tmp` to avoid polluting `/tmp`.
 
 ### Removed
 
@@ -70,8 +70,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   process would sometimes not work correctly because the plugins were being
   terminated prematurely.
 - Fixed the implementation of the accumulative `process()` function. As far as
-  I'm aware no VST hosts made in the last few decades event use this, but it
-  just feels wrong to have an incorrect implementation as part of yabridge.
+  I'm aware no VST hosts made in the last few decades even use this, but it just
+  feels wrong to have an incorrect implementation as part of yabridge.
 
 ## [1.7.1] - 2020-10-23
 
