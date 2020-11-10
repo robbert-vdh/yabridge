@@ -401,6 +401,12 @@ these negative side effects:
   If anyone knows a good way to install an fsync patched version of Wine on
   other distros, then please let me know!
 
+- [Plugin groups](#plugin-groups) can also greatly improve performance when
+  using many instances of the same plugin. Some plugins, like the BBC Spitfire
+  plugins, can share a lot of resources between different instances of the
+  plugin. Hosting all instances of the same plugin in a single process can in
+  those cases greatly reduce overall CPU usage and get rid of latency spikes.
+
 ## Runtime dependencies and known issues
 
 Any VST2 plugin should function out of the box, although some plugins will need
