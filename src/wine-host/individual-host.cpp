@@ -64,8 +64,6 @@ int __cdecl main(int argc, char* argv[]) {
     // slightly more convoluted than it has to be, but doing it this way we
     // don't need to differentiate between individually hosted plugins and
     // plugin groups when it comes to event handling.
-    // TODO: Update documentation once we figure out if we can safely replace
-    //       MainContext again with a normal `io_context`.
     MainContext main_context{};
     std::unique_ptr<Vst2Bridge> bridge;
     try {
