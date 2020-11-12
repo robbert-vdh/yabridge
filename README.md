@@ -413,6 +413,8 @@ Any VST2 plugin should function out of the box, although some plugins will need
 some additional dependencies for their GUIs to work correctly. Notable examples
 include:
 
+- **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
+  `gdiplus` through `winetricks`.
 - **Native Instruments** plugins work, but Native Access is unable to finish
   installing the plugins. To work around this you can open the .iso file
   downloaded to your downloads directory and run the installer directly. When
@@ -420,8 +422,6 @@ include:
   Center. You may also have to manually terminate the ISO driver installation
   process when installing Native Access for the first time to allow the
   installation to proceed.
-- **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
-  `gdiplus` through `winetricks`.
 - **MeldaProduction** plugins have minor rendering issues when GPU acceleration
   is enabled. This can be fixed by disabling GPU acceleration in the plugin
   settings. I'm not sure whether this is an issue with Wine or the plugins
@@ -431,6 +431,10 @@ include:
   then you can try enabling [software
   rendering](https://forum.scalerplugin.com/t/scaler-2-black-empty-window/3540/8)
   to fix these issues.
+- Plugins by **KiloHearts** have file descriptor leaks when _esync_ is enabled,
+  causing Wine and yabridge to eventually stop working after the system hits the
+  open file limit. To fix this, either unset `WINEESYNC` while using yabridge or
+  switch to using [_fsync_](#performance-tuning).
 - **PSPaudioware** plugins with expandable GUIs, such as E27, may have their GUI
   appear in the wrong location after the GUI has been expanded. You can enable
   an alternative [editor hosting mode](#compatibility-options) to fix this.
@@ -453,22 +457,18 @@ include:
 
 Aside from that, these are some known caveats:
 
-- Plugins by **KiloHearts** have file descriptor leaks when esync is enabled,
-  causing Wine and yabridge to eventually stop working after the system hits the
-  open file limit. This sadly cannot be fixed in yabridge. Simply unset
-  `WINEESYNC` while using yabridge or switch to using _fsync_ if this is an
-  issue.
 - Most recent **iZotope** plugins don't have a functional GUI in a typical out
   of the box Wine setup because of missing dependencies. Please let me know if
   you know which dependencies are needed for these plugins to render correctly.
-- MIDI key labels (for use with drum machines and multisamplers) will not be
-  updated once the plugin has finished loading since there's no way to tell that
-  they have been updated by the plugin. Right now simply deactivating and
-  reactivating the plugin will cause these labels to be updated.
+- MIDI key labels (commonly used for drum machines and multisamplers) will not
+  be updated after the host first asks for them since VST 2.4 has no way to let
+  the host know that those labels have been updated. Deactivating and
+  reactivating the plugin will cause these labels to be updated again for the
+  current patch.
 
 There are also some VST2.X extension features that have not been implemented yet
-because I haven't needed them myself. Let me know if you need any of these
-features for a certain plugin or VST host:
+because I haven't seen them used. Let me know if you need any of these features
+for a certain plugin or VST host:
 
 - SysEx messages. In addition to MIDI, VST 2.4 also supports SysEx. I don't know
   of any hosts or plugins that use this, but please let me know if this is
