@@ -16,8 +16,6 @@
 
 #include "plugin-bridge.h"
 
-#include <execution>
-
 // Generated inside of the build directory
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
@@ -515,8 +513,10 @@ void PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
             // going to call this anyways we won't even bother with a separate
             // implementation and we'll just add `processReplacing()` results to
             // `outputs`.
-            std::transform(std::execution::unseq,
-                           response_buffers[channel].begin(),
+            // We could use `std::execution::unseq` here but that would require
+            // linking to TBB and since this probably won't ever be used anyways
+            // that's a bit of a waste.
+            std::transform(response_buffers[channel].begin(),
                            response_buffers[channel].end(), outputs[channel],
                            outputs[channel],
                            [](const T& new_value, T& current_value) -> T {
