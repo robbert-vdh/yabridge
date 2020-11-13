@@ -298,6 +298,21 @@ void Vst2Bridge::handle_dispatch() {
                     plugin,
                     [&](AEffect* plugin, int opcode, int index, intptr_t value,
                         void* data, float option) -> intptr_t {
+                        // HACK: Ardour 6.3 will call `effEditIdle` before
+                        //       `effEditOpen`, which causes some plugins to
+                        //       crash. This should be reported to Ardour's
+                        //       issue tracker.
+                        if (opcode == effEditIdle && !editor) {
+                            std::cerr << "WARNING: The host is calling "
+                                         "`effEditIdle()` while the "
+                                         "plugin's editor is closed, "
+                                         "filtering the request (is "
+                                         "this Ardour?). This bug should "
+                                         "be reported to the host."
+                                      << std::endl;
+                            return 0;
+                        }
+
                         // Certain functions will most definitely involve the
                         // GUI or the Win32 message loop. These functions have
                         // to be performed on the thread that is running the IO
