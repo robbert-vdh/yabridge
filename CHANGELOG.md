@@ -10,7 +10,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Added a workaround for a bug in Ardour 6.3 which would cause several plugins
+- Added a workaround for a bug in _Ardour 6.3_ which would cause several plugins
   including MT Power Drumkit to crash when opening the editor.
 - Fixed linking error in debug build related to the parallel STL.
 
