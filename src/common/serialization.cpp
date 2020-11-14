@@ -31,7 +31,9 @@ VstEvents& DynamicVstEvents::as_c_events() {
 
     // First we need to allocate enough memory for the entire object. The events
     // are stored as pointers to objects in the `events` vector that we sent
-    // over the socket.
+    // over the socket. Our definition of `VstEvents` contains a single
+    // `VstEvent`, so our buffer needs to be large enough to store that plus the
+    // number of events minus one pointers.
     static_assert(std::extent_v<decltype(VstEvents::events)> == 1);
     const size_t buffer_size =
         sizeof(VstEvents) + ((events.size() - 1) * sizeof(VstEvent*));
@@ -52,15 +54,10 @@ DynamicSpeakerArrangement::DynamicSpeakerArrangement(
     const VstSpeakerArrangement& speaker_arrangement)
     : flags(speaker_arrangement.flags),
       speakers(speaker_arrangement.num_speakers) {
-    using speaker_type =
-        std::remove_extent_t<decltype(speaker_arrangement.speakers)>;
-    static_assert(std::is_same_v<speaker_type, VstSpeaker>);
-
     // Copy from the C-style array into a vector for serialization
     speakers.assign(
-        speaker_arrangement.speakers,
-        speaker_arrangement.speakers +
-            (speaker_arrangement.num_speakers * sizeof(speaker_type)));
+        &speaker_arrangement.speakers[0],
+        &speaker_arrangement.speakers[speaker_arrangement.num_speakers]);
 }
 
 VstSpeakerArrangement& DynamicSpeakerArrangement::as_c_speaker_arrangement() {
