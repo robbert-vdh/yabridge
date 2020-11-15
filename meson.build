@@ -57,8 +57,8 @@ boost_filesystem_dep = dependency(
   modules : ['filesystem'],
   static : with_static_boost
 )
-bitsery_dep = subproject('bitsery').get_variable('bitsery_dep')
-function2_dep = subproject('function2').get_variable('function2_dep')
+bitsery_dep = subproject('bitsery', version : '5.2.0').get_variable('bitsery_dep')
+function2_dep = subproject('function2', version : '4.1.0').get_variable('function2_dep')
 threads_dep = dependency('threads')
 tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('tomlplusplus_dep')
 # The built in threads dependency does not know how to handle winegcc
