@@ -74,8 +74,9 @@ The easiest way to get up and running is through
 You can download yabridgectl from GitHub's [releases
 page](https://github.com/robbert-vdh/yabridge/releases). There is also an AUR
 package available if you're running Arch or Manjaro
-([yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/), and
-it's also included in
+([yabridgectl](https://aur.archlinux.org/packages/yabridgectl/),
+[yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/), and it's
+also included in
 [yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/)). More
 comprehensive documentation on yabridgectl can be found in its
 [readme](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl),

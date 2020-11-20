@@ -8,6 +8,16 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added a separate
+  [yabridgectl](https://aur.archlinux.org/packages/yabridgectl/) AUR package for
+  Arch and Manjaro. The original idea was that yabridgectl would not require a
+  lot of changes and a single
+  [yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/) package
+  would be sufficient, but sometimes changes to yabridgectl will be incompatible
+  with the current release so it's safer to also have a normal package.
+
 ### Changed
 
 - Yabridge will now always search for `yabridge-host.exe` in
