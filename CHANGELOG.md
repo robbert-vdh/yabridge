@@ -21,8 +21,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - Yabridge will now always search for `yabridge-host.exe` in
-  `~/.local/share/yabridge`, even if that directory is not in the search path.
-  This should make setup easier.
+  `~/.local/share/yabridge` even if that directory is not in the search path.
+  This should make setup easier. Because of this, the symlink-based installation
+  method does not have a lot of advantages over the copy-based method anymore
+  other than the fact that you can't forget to rerun `yabridgectl sync` after an
+  upgrade, so most references to it in the readme have been removed.
 
 ### Fixed
 

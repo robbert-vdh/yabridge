@@ -15,12 +15,12 @@ highly compatible, while also staying easy to debug and maintain.
 
 - [Tested with](#tested-with)
 - [Usage](#usage)
-  - [Automatic setup](#automatic-setup)
+  - [Automatic setup (recommended)](#automatic-setup)
   - [Manual setup](#manual-setup)
-  - [Search path setup](#search-path-setup)
   - [DAW setup](#daw-setup)
   - [Bitbridge](#bitbridge)
   - [Wine prefixes](#wine-prefixes)
+  - [Search path setup](#search-path-setup)
   - [Configuration](#configuration)
     - [Plugin groups](#plugin-groups)
     - [Compatibility options](#compatibility-options)
@@ -57,23 +57,13 @@ Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
 [yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/),
 [yabridge-git](https://aur.archlinux.org/packages/yabridge-git/)).
 
-There are two ways to use yabridge, either by using copies or through symbolink
-links. If your host supports plugin sanboxing and you're not using one of the
-AUR packages, then using symlinks will be the easier installation method. Using
-symlinks avoids having to either install yabridge outside of your home directory
-or having to modify environment variables to allow yabridge to find its Wine
-host binaries. The copy-based installation will work for all hosts. If you
-decide to use the symlink-based installation method with Bitwig Studio, then
-make sure that either the '_Per plug-in_' or the '_Individually_' plugin hosting
-mode is enabled.
-
-### Automatic setup
+### Automatic setup (recommended)
 
 The easiest way to get up and running is through
 [yabridgectl](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl).
 You can download yabridgectl from GitHub's [releases
-page](https://github.com/robbert-vdh/yabridge/releases). There is also an AUR
-package available if you're running Arch or Manjaro
+page](https://github.com/robbert-vdh/yabridge/releases). There are also AUR
+packages available if you're running Arch or Manjaro
 ([yabridgectl](https://aur.archlinux.org/packages/yabridgectl/),
 [yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/), and it's
 also included in
@@ -91,35 +81,32 @@ yabridge from source or if you installed the files to some other location, then
 you can use `yabridgectl set --path=<path>` to tell yabridgectl where it can
 find the files.
 
-Secondly, yabridgectl will default to the copy-based installation method. If you
-are using a VST host with individually sandboxed plugins such as Bitwig Studio
-and you want to use the symlink-based installation method instead, then you can
-enable that using `yabridgectl set --method=symlink`.
-
-Next you'll want to tell yabridgectl where it can find your plugins. For this
+Next, you'll want to tell yabridgectl where it can find your plugins. For this
 you can use yabridgectl's `add`, `rm` and `list` commands. For instance, to add
-the most common VST2 plugin directory, use
-`yabridgectl add "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"`. You
-can use `yabridgectl status` to get an overview of the current settings and the
+the most common VST2 plugin directory, use `yabridgectl add "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"`. You can use
+`yabridgectl status` to get an overview of the current settings and the
 installation status of all of your plugins.
 
-Finally you can run `yabridgectl sync` to finish setting up yabridge. Simply
-tell your VST host to search for plugins in the directories you just added and
-you'll be good to go. _Don't forget to rerun `yabridgectl sync` whenever you
-update yabridge if you are using the copy-based installation method._
+Finally, you can run `yabridgectl sync` to finish setting up yabridge for all of
+your plugins. Simply tell your VST host to search for plugins in the directories
+you've just added using `yabridgectl add` and you'll be good to go. _Don't
+forget to rerun `yabridgectl sync` whenever you update yabridge if you are using
+the default copy-based installation method._
 
 ### Manual setup
 
-To set up yabridge without using yabridgectl, first download and extract
-yabridge's files like in the section above. The rest of this section assumes
-that you have extracted the files to `~/.local/share` (such that
-`~/.local/share/yabridge/libyabridge.so` exists), and that you want to set up
-yabridge for the VST2 plugin called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`.
+Setting up yabridge through yabridgectl is the recommended installation method
+as it makes updating easier and yabridgectl will check for some common mistakes
+during the installation process. To set up yabridge without using yabridgectl,
+first download and extract yabridge's files like in the section above. The rest
+of this section assumes that you have extracted the files to `~/.local/share`
+(such that `~/.local/share/yabridge/libyabridge.so` exists), and that you want
+to set up yabridge for the VST2 plugin called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`.
 
 Depending on whether you want to use copy or symlink-based installation method,
 you can then set up yabridge for that plugin by creating a copy or symlink of
-`libyabridge.so` next to `plugin.dll` called `plugin.so`. For the example,
-you can use either:
+`libyabridge.so` next to `plugin.dll` called `plugin.so`. For the example, you
+can use either:
 
 ```shell
 # For the copy-based installation method
@@ -128,9 +115,33 @@ cp ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Ste
 ln -sf ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
 ```
 
-If you are using the copy-based installation method, then don't forget to
-overwrite all copies of `libyabridge.so` you created this way whenever you
-update yabridge.
+The symlink-based installation method will not work with any host that does not
+individually sandbox its plugins. If you are using the copy-based installation
+method, then don't forget to overwrite all copies of `libyabridge.so` you
+created this way whenever you update yabridge.
+
+### DAW setup
+
+Finally, open your DAW's VST location configuration and tell it to look for
+plugins under `~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, or whichever
+directories you've added in yabridgectl. That way it will automatically pick up
+all of your Windows VST2 plugins.
+
+### Bitbridge
+
+If you have downloaded the prebuilt version of yabridge or if have followed the
+instructions from the [bitbridge](#32-bit-bitbridge) section below, then
+yabridge is also able to load 32-bit VST plugins. The installation procedure for
+32-bit plugins is exactly the same as for 64-bit plugins. Yabridge will
+automatically detect whether a plugin is 32-bit or 64-bit on startup and it will
+handle it accordingly.
+
+### Wine prefixes
+
+It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
+automatically detect and use the Wine prefix the plugin's `.dll` file is located
+in. Alternatively you can set the `WINEPREFIX` environment variable to override
+the Wine prefix for all instances of yabridge.
 
 ### Search path setup
 
@@ -180,29 +191,6 @@ Rerun `yabridgectl sync` to make sure that the setup has been successful. If the
 environment variable has been set up correctly, you should not be seeing any
 warnings. _Make sure to log out and log back in again to ensure that all
 applications pick up the new changes._
-
-### DAW setup
-
-Finally, open your DAW's VST location configuration and tell it to look for
-plugins under `~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, or whichever
-directories you've added in yabridgectl. That way it will automatically pick up
-all of your Windows VST2 plugins.
-
-### Bitbridge
-
-If you have downloaded the prebuilt version of yabridge or if have followed the
-instructions from the [bitbridge](#32-bit-bitbridge) section below, then
-yabridge is also able to load 32-bit VST plugins. The installation procedure for
-32-bit plugins is exactly the same as for 64-bit plugins. Yabridge will
-automatically detect whether a plugin is 32-bit or 64-bit on startup and it will
-handle it accordingly.
-
-### Wine prefixes
-
-It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
-automatically detect and use the Wine prefix the plugin's `.dll` file is located
-in. Alternatively you can set the `WINEPREFIX` environment variable to override
-the Wine prefix for all instances of yabridge.
 
 ### Configuration
 
