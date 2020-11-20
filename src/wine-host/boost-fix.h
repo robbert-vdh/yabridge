@@ -33,7 +33,7 @@
 #undef __WIN32__
 #undef _WIN64
 
-// This would be the minimal include needed to get Bosot to work. The commented
+// This would be the minimal include needed to get Boost to work. The commented
 // out include below is the actual header that would cause compile errors if not
 // included here, but including headers from the detail directory directly
 // didn't sound like a great idea.

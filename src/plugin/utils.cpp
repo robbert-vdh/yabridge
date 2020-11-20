@@ -116,7 +116,7 @@ fs::path find_vst_host(PluginArchitecture plugin_arch, bool use_plugin_groups) {
         return host_path;
     }
 
-    // Bosot will return an empty path if the file could not be found in the
+    // Boost will return an empty path if the file could not be found in the
     // search path
     const fs::path vst_host_path = bp::search_path(host_name);
     if (vst_host_path == "") {
