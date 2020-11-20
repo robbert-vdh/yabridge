@@ -25,7 +25,7 @@ use crate::config::{Config, InstallationMethod};
 use crate::files;
 use crate::files::FoundFile;
 use crate::utils;
-use crate::utils::{verify_path_setup, verify_wine_setup, wrap};
+use crate::utils::{verify_path_setup, verify_wine_setup};
 
 /// Add a direcotry to the plugin locations. Duplicates get ignord because we're using ordered sets.
 pub fn add_directory(config: &mut Config, path: PathBuf) -> Result<()> {
@@ -280,27 +280,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     }
 
     if config.method == InstallationMethod::Copy {
-        // TODO: Move this warning to `verify_path_setup()` just like we're doign with
-        //       `verify_wine_setup()`
-        if let Err(shell_name) = verify_path_setup() {
-            eprintln!(
-                "\n{}",
-                wrap(&format!(
-                    "Warning: 'yabridge-host.exe' is not present in your login shell's search \
-                     path. Yabridge won't be able to run using the copy-based installation method \
-                     until this is fixed.\n\
-                     Add '{}' to {}'s login shell {} environment variable. See the \
-                     troubleshooting section of the readme for more details. Rerun this command to \
-                     verify that the variable has been set correctly, and then reboot your system \
-                     to complete the setup.\n\
-                     \n\
-                     https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues",
-                    libyabridge_path.parent().unwrap().display(),
-                    shell_name.bright_white(),
-                    "PATH".bright_white()
-                ))
-            )
-        }
+        verify_path_setup(config)?;
     }
 
     // This check is only performed once per combination of Wine and yabridge versions

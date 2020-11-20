@@ -86,26 +86,22 @@ pub fn hash_file(file: &Path) -> Result<i64> {
 /// Verify that `yabridge-host.exe` can be found when yabridge is run in a host launched from the
 /// GUI. We do this by launching a login shell, appending `~/.local/share/yabridge` to the login
 /// shell's search path since that's what yabridge also does, and then making the the file can be
-/// found. Returns unit if it can be found, or if we the login shell is set to an unknown shell. In
-/// the last case we'll just print a warning since we don't know how to invoke the shell as a login
-/// shell. This is needed when using copies to ensure that yabridge can find the host binaries when
-/// the VST host is launched from the desktop enviornment.
-///
-/// When we could not find `yabridge-host.exe`, we'll return `Err(shell_name)` so we can print a
-/// descriptive warning message.
-pub fn verify_path_setup() -> Result<(), String> {
+/// found. Returns `true` if it can be found, or if we the login shell is set to an unknown shell.
+/// In the last case we'll just print a warning since we don't know how to invoke the shell as a
+/// login shell. This is needed when using copies to ensure that yabridge can find the host binaries
+/// when the VST host is launched from the desktop enviornment.
+pub fn verify_path_setup(config: &Config) -> Result<bool> {
     // First we'll check `~/.local/share/yabridge`, since that's a special location where yabridge
     // will always search
     if config::yabridge_directories()
-        .ok()
-        .and_then(|dirs| {
+        .map(|dirs| {
             dirs.get_data_home()
-                .push(YABRIDGE_HOST_EXE_NAME)
+                .join(YABRIDGE_HOST_EXE_NAME)
                 .is_executable()
         })
         .unwrap_or(false)
     {
-        return Ok(());
+        return Ok(true);
     }
 
     // Then we'll check the login shell, since DAWs launched from the GUI will have the same
@@ -158,7 +154,7 @@ pub fn verify_path_setup() -> Result<(), String> {
                             shell.bright_white(),
                         ))
                     );
-                    return Ok(());
+                    return Ok(true);
                 }
             };
 
@@ -169,8 +165,28 @@ pub fn verify_path_setup() -> Result<(), String> {
                 .env("HOME", env::var("HOME").unwrap_or_default());
 
             match command.stdout(Stdio::null()).stderr(Stdio::null()).status() {
-                Ok(status) if status.success() => Ok(()),
-                Ok(_) => Err(shell.to_string()),
+                Ok(status) if status.success() => Ok(true),
+                Ok(_) => {
+                    eprintln!(
+                        "\n{}",
+                        wrap(&format!(
+                            "Warning: 'yabridge-host.exe' is not present in your login shell's \
+                             search path. Yabridge won't be able to run using the copy-based \
+                             installation method until this is fixed.\n\
+                             Add '{}' to {}'s login shell {} environment variable. See the \
+                             troubleshooting section of the readme for more details. Rerun this \
+                             command to verify that the variable has been set correctly, and then \
+                             reboot your system to complete the setup.\n\
+                             \n\
+                             https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues",
+                            config.libyabridge()?.parent().unwrap().display(),
+                            shell.bright_white(),
+                            "PATH".bright_white()
+                        ))
+                    );
+
+                    Ok(false)
+                }
                 Err(err) => {
                     eprintln!(
                         "\n{}",
@@ -180,13 +196,15 @@ pub fn verify_path_setup() -> Result<(), String> {
                             shell.bright_white(), err
                         ))
                     );
-                    Ok(())
+
+                    Ok(true)
                 }
             }
         }
         Err(_) => {
             eprintln!("\nWarning: Could not determine login shell, skipping PATH setup check");
-            Ok(())
+
+            Ok(true)
         }
     }
 }
@@ -214,7 +232,7 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
 
     let yabridge_host_exe_path = config
         .yabridge_host_exe()
-        .context("Could not find 'yabridge-host.exe")?;
+        .context(format!("Could not find '{}'", YABRIDGE_HOST_EXE_NAME))?;
 
     // Hash the contents of `yabridge-host.exe.so` since `yabridge-host.exe` is only a Wine
     // generated shell script
