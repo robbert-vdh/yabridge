@@ -15,7 +15,7 @@ highly compatible, while also staying easy to debug and maintain.
 
 - [Tested with](#tested-with)
 - [Usage](#usage)
-  - [Automatic setup (recommended)](#automatic-setup)
+  - [Automatic setup (recommended)](#automatic-setup-recommended)
   - [Manual setup](#manual-setup)
   - [DAW setup](#daw-setup)
   - [Bitbridge](#bitbridge)
