@@ -29,7 +29,7 @@ mod utils;
 
 fn main() -> Result<()> {
     // We'll modify our `PATH` environment variable so it matches up with
-    // `get_modified_search_path()` from `src/plugin/utils.h` for easier setup
+    // `get_augmented_search_path()` from `src/plugin/utils.h` for easier setup
     let yabridge_home = config::yabridge_directories()?.get_data_home();
     env::set_var(
         "PATH",

@@ -152,7 +152,7 @@ boost::filesystem::path generate_group_endpoint(
  * like that before. And since this is the recommended installation location, it
  * makes sense to also search there by default.
  */
-std::vector<boost::filesystem::path> get_modified_search_path();
+std::vector<boost::filesystem::path> get_augmented_search_path();
 
 /**
  * Return a path to this `.so` file. This can be used to find out from where
