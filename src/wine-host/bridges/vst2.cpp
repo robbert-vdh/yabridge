@@ -303,7 +303,7 @@ void Vst2Bridge::handle_dispatch() {
                         //       crash. This has been fixed as of
                         //       https://github.com/Ardour/ardour/commit/f7cb1b0b481eeda755bdf8eb9fc5f90a81d2aa01.
                         //       We should keep this in until Ardour 6.3 is no
-                        //       longer in distro's repositories.
+                        //       longer in distro repositories.
                         if (opcode == effEditIdle && !editor) {
                             std::cerr << "WARNING: The host is calling "
                                          "`effEditIdle()` while the "
