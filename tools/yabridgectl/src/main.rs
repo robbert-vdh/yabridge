@@ -17,6 +17,7 @@
 use anyhow::Result;
 use clap::{app_from_crate, App, AppSettings, Arg};
 use colored::Colorize;
+use std::env;
 use std::path::{Path, PathBuf};
 
 use crate::config::Config;
@@ -27,6 +28,17 @@ mod files;
 mod utils;
 
 fn main() -> Result<()> {
+    // We'll modify our `PATH` environment variable so it matches up with
+    // `get_modified_search_path()` from `src/plugin/utils.h` for easier setup
+    let yabridge_home = config::yabridge_directories()?.get_data_home();
+    env::set_var(
+        "PATH",
+        match env::var("PATH") {
+            Ok(path) => format!("{}:{}", path, yabridge_home.display()),
+            _ => format!("{}", yabridge_home.display()),
+        },
+    );
+
     let mut config = Config::read()?;
 
     // Used for validation in `yabridgectl rm <path>`

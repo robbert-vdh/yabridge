@@ -83,12 +83,12 @@ or by running `yabridgectl --help`.
 
 First, yabridgectl needs to know where it can find yabridge's files. If you have
 downloaded the prebuilt binaries, then you can simply extract the archive to
-`~/.local/share` and yabridgectl will pick up the files in
-`~/.local/share/yabridge` automatically[\*](#why-local-share-yabridge). You also
-won't have to do any additional work if you're using one of the AUR packages. If
-you have compiled yabridge from source or if you installed the files to some
-other location, then you can use `yabridgectl set --path=<path>` to tell
-yabridgectl where it can find the files.
+`~/.local/share` and both yabridge and yabridgectl will pick up the files in
+`~/.local/share/yabridge` automatically. You also won't have to do any
+additional work if you're using one of the AUR packages. If you have compiled
+yabridge from source or if you installed the files to some other location, then
+you can use `yabridgectl set --path=<path>` to tell yabridgectl where it can
+find the files.
 
 Secondly, yabridgectl will default to the copy-based installation method. If you
 are using a VST host with individually sandboxed plugins such as Bitwig Studio
@@ -106,16 +106,6 @@ Finally you can run `yabridgectl sync` to finish setting up yabridge. Simply
 tell your VST host to search for plugins in the directories you just added and
 you'll be good to go. _Don't forget to rerun `yabridgectl sync` whenever you
 update yabridge if you are using the copy-based installation method._
-
-<sup id="why-local-share-yabridge">
-  *Instead of copying yabridge's files to <code>~/.local/share</code>, it would
-  also be possible to install yabridge to <code>/usr/local/bin</code> and
-  <code>/usr/local/lib</code>. While this does avoid the need to modify your
-  <code>PATH</code> environment variable when using the copy-based installation
-  method, it could also cause other issues if you're not careful. This is why
-  it's recommended to install yabridge to your home directory if you're not
-  using one of the AUR packages.
-</sup>
 
 ### Manual setup
 
@@ -143,15 +133,21 @@ update yabridge.
 
 ### Search path setup
 
-If you're using the _copy-based_ installation method and you're not using any of
-the AUR packages, then you may have to modify your _login shell_'s `PATH`
-environment variable so that yabridge is able to find the files in the directory
-you've extracted yabridge's files to. Yabridgectl will automatically check
-whether this is set up correctly when you run `yabridgectl sync`, and it will
-show a warning if it detects any issues. _If you do not see such a warning after
-running `yabridgectl sync`, then you can skip this section._
+This section is only relevant if you're using the _copy-based_ installation
+method and your yabridge files are located somewhere other than in
+`~/.local/share/yabridge`. If you're using one of the AUR packages then you can
+also skip this section.
 
-To do this, you'll want to add yabridge's installation directory to your login
+Yabridge needs to know where it can find `yabridge-host.exe`. By default
+yabridge will search your through search path as well as in
+`~/.local/share/yabridge` if that exists. When loading yabridge from a
+non-standard location, such as when building from source, you may have to modify
+your _login shell_'s `PATH` environment variable so that yabridge is able to
+find its files. Yabridgectl will automatically check whether this is set up
+correctly when you run `yabridgectl sync`, and it will show a warning if it
+detects any issues. _If you do not see such a warning after running `yabridgectl sync`, then you can skip this section._
+
+To set this, you'll want to add yabridge's installation directory to your login
 shell's `PATH` environment variable. If you're unsure what your login shell is,
 then you can open a terminal and run `echo $SHELL` to find out. For the below
 examples I'll assume you're using the default installation location at

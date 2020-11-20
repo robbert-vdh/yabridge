@@ -8,6 +8,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Yabridge will now always search for `yabridge-host.exe` in
+  `~/.local/share/yabridge`, even if that directory is not in the search path.
+  This should make setup easier.
+
 ### Fixed
 
 - Fixed an issue where _Renoise_ would show an error message when trying to load

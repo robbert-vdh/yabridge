@@ -118,7 +118,8 @@ fs::path find_vst_host(PluginArchitecture plugin_arch, bool use_plugin_groups) {
 
     // Boost will return an empty path if the file could not be found in the
     // search path
-    const fs::path vst_host_path = bp::search_path(host_name);
+    const fs::path vst_host_path =
+        bp::search_path(host_name, get_modified_search_path());
     if (vst_host_path == "") {
         throw std::runtime_error("Could not locate '" + std::string(host_name) +
                                  "'");
@@ -174,6 +175,20 @@ boost::filesystem::path generate_group_endpoint(
     socket_name << ".sock";
 
     return get_temporary_directory() / socket_name.str();
+}
+
+std::vector<boost::filesystem::path> get_modified_search_path() {
+    std::vector<boost::filesystem::path> search_path =
+        boost::this_process::path();
+
+    const bp::environment environment = boost::this_process::environment();
+    if (auto home_directory = environment.find("HOME");
+        home_directory != environment.end()) {
+        search_path.push_back(fs::path(home_directory->to_string()) / ".local" /
+                              "share" / "yabridge");
+    }
+
+    return search_path;
 }
 
 fs::path get_this_file_location() {

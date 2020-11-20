@@ -29,15 +29,15 @@ use xdg::BaseDirectories;
 use crate::files::{self, SearchResults};
 
 /// The name of the config file, relative to `$XDG_CONFIG_HOME/CONFIG_PREFIX`.
-const CONFIG_FILE_NAME: &str = "config.toml";
+pub const CONFIG_FILE_NAME: &str = "config.toml";
 /// The name of the XDG base directory prefix for yabridgectl, relative to `$XDG_CONFIG_HOME` and
 /// `$XDG_DATA_HOME`.
 const YABRIDGECTL_PREFIX: &str = "yabridgectl";
 
 /// The name of the library file we're searching for.
-const LIBYABRIDGE_NAME: &str = "libyabridge.so";
+pub const LIBYABRIDGE_NAME: &str = "libyabridge.so";
 /// The name of the script we're going to run to verify that everything's working correctly.
-const YABRIDGE_HOST_EXE_NAME: &str = "yabridge-host.exe";
+pub const YABRIDGE_HOST_EXE_NAME: &str = "yabridge-host.exe";
 /// The name of the XDG base directory prefix for yabridge's own files, relative to
 /// `$XDG_CONFIG_HOME` and `$XDG_DATA_HOME`.
 const YABRIDGE_PREFIX: &str = "yabridge";
@@ -191,8 +191,8 @@ impl Config {
                 }
 
                 Err(anyhow!(
-                    "Could not find '{}' in either '{}' or '{}'. You can tell yabridgectl where \
-                     to search for it using 'yabridgectl set --path=<path>'.",
+                    "Could not find '{}' in either '{}' or '{}'. You can override the default \
+                     search path using 'yabridgectl set --path=<path>'.",
                     LIBYABRIDGE_NAME,
                     system_path.display(),
                     user_path.display()
@@ -229,12 +229,12 @@ impl Config {
 /// Fetch the XDG base directories for yabridge's own files, converting any error messages if this
 /// somehow fails into a printable string to reduce boiler plate. This is only used when searching
 /// for `libyabridge.so` when no explicit search path has been set.
-fn yabridge_directories() -> Result<BaseDirectories> {
+pub fn yabridge_directories() -> Result<BaseDirectories> {
     BaseDirectories::with_prefix(YABRIDGE_PREFIX).context("Error while parsing base directories")
 }
 
 /// Fetch the XDG base directories used for yabridgectl, converting any error messages if this
 /// somehow fails into a printable string to reduce boiler plate.
-fn yabridgectl_directories() -> Result<BaseDirectories> {
+pub fn yabridgectl_directories() -> Result<BaseDirectories> {
     BaseDirectories::with_prefix(YABRIDGECTL_PREFIX).context("Error while parsing base directories")
 }

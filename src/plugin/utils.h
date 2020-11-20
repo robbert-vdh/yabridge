@@ -80,7 +80,8 @@ PluginArchitecture find_vst_architecture(boost::filesystem::path);
  *      when developing, as you can simply symlink the the libyabridge.so
  *      file in the build directory without having to install anything to
  *      /usr.
- *   2. In the regular search path.
+ *   2. In the regular search path, augmented with `~/.local/share/yabridge` to
+ *      ease the setup process.
  *
  * @param plugin_arch The architecture of the plugin, either 64-bit or 32-bit.
  *   Used to determine which host application to use, if available.
@@ -142,6 +143,16 @@ boost::filesystem::path generate_group_endpoint(
     const std::string& group_name,
     const boost::filesystem::path& wine_prefix,
     const PluginArchitecture architecture);
+
+/**
+ * Return the search path as defined in `$PATH`, with `~/.local/share/yabridge`
+ * appended to the end. I'd rather not do this since more magic makes things
+ * harder to comprehend, but I can understand that modifying your login shell's
+ * `PATH` environment variable can be a big hurdle if you've never done anything
+ * like that before. And since this is the recommended installation location, it
+ * makes sense to also search there by default.
+ */
+std::vector<boost::filesystem::path> get_modified_search_path();
 
 /**
  * Return a path to this `.so` file. This can be used to find out from where

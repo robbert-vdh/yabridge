@@ -18,6 +18,7 @@
 
 use anyhow::{Context, Result};
 use colored::Colorize;
+use is_executable::IsExecutable;
 use std::collections::hash_map::DefaultHasher;
 use std::env;
 use std::fs;
@@ -28,7 +29,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use textwrap::Wrapper;
 
-use crate::config::{Config, KnownConfig};
+use crate::config::{self, Config, KnownConfig, YABRIDGE_HOST_EXE_NAME};
 
 /// (Part of) the expected output when running `yabridge-host.exe`. Used to verify that everything's
 /// working correctly. We'll only match this prefix so we can modify the exact output at a later
@@ -82,15 +83,33 @@ pub fn hash_file(file: &Path) -> Result<i64> {
     Ok(hasher.finish() as i64)
 }
 
-/// Verify that `yabridge-host.exe` is accessible in a login shell. Returns unit if it is, or if we
-/// the login shell is set to an unknown shell. In the last case we'll just print a warning since we
-/// don't know how to invoke the shell as a login shell. This is needed when using copies to ensure
-/// that yabridge can find the host binaries when the VST host is launched from the desktop
-/// enviornment.
+/// Verify that `yabridge-host.exe` can be found when yabridge is run in a host launched from the
+/// GUI. We do this by launching a login shell, appending `~/.local/share/yabridge` to the login
+/// shell's search path since that's what yabridge also does, and then making the the file can be
+/// found. Returns unit if it can be found, or if we the login shell is set to an unknown shell. In
+/// the last case we'll just print a warning since we don't know how to invoke the shell as a login
+/// shell. This is needed when using copies to ensure that yabridge can find the host binaries when
+/// the VST host is launched from the desktop enviornment.
 ///
 /// When we could not find `yabridge-host.exe`, we'll return `Err(shell_name)` so we can print a
 /// descriptive warning message.
 pub fn verify_path_setup() -> Result<(), String> {
+    // First we'll check `~/.local/share/yabridge`, since that's a special location where yabridge
+    // will always search
+    if config::yabridge_directories()
+        .ok()
+        .and_then(|dirs| {
+            dirs.get_data_home()
+                .push(YABRIDGE_HOST_EXE_NAME)
+                .is_executable()
+        })
+        .unwrap_or(false)
+    {
+        return Ok(());
+    }
+
+    // Then we'll check the login shell, since DAWs launched from the GUI will have the same
+    // environment
     match env::var("SHELL") {
         Ok(shell_path) => {
             // `$SHELL` will often contain a full path, but it doesn't have to
@@ -113,13 +132,20 @@ pub fn verify_path_setup() -> Result<(), String> {
                 | "zsh" => command
                     .arg("-l")
                     .arg("-c")
-                    .arg("command -v yabridge-host.exe"),
+                    .arg(format!("command -v {}", YABRIDGE_HOST_EXE_NAME)),
                 // These shells either have their own implementation of `which` and don't support
                 // `command`, or they don't have a seperate login shell flag
-                "elvish" | "oil" => command.arg("-c").arg("command -v yabridge-host.exe"),
+                "elvish" | "oil" => command
+                    .arg("-c")
+                    .arg(format!("command -v {}", YABRIDGE_HOST_EXE_NAME)),
                 // xonsh's which implementation is broken as of writing this, so I left it out
-                "pwsh" => command.arg("-l").arg("-c").arg("which yabridge-host.exe"),
-                "nu" => command.arg("-c").arg("which yabridge-host.exe"),
+                "pwsh" => command
+                    .arg("-l")
+                    .arg("-c")
+                    .arg(format!("which {}", YABRIDGE_HOST_EXE_NAME)),
+                "nu" => command
+                    .arg("-c")
+                    .arg(format!("which {}", YABRIDGE_HOST_EXE_NAME)),
                 shell => {
                     eprintln!(
                         "\n{}",
