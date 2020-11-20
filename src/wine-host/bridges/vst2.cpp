@@ -300,8 +300,10 @@ void Vst2Bridge::handle_dispatch() {
                         void* data, float option) -> intptr_t {
                         // HACK: Ardour 6.3 will call `effEditIdle` before
                         //       `effEditOpen`, which causes some plugins to
-                        //       crash. This should be reported to Ardour's
-                        //       issue tracker.
+                        //       crash. This has been fixed as of
+                        //       https://github.com/Ardour/ardour/commit/f7cb1b0b481eeda755bdf8eb9fc5f90a81d2aa01.
+                        //       We should keep this in until Ardour 6.3 is no
+                        //       longer in distro's repositories.
                         if (opcode == effEditIdle && !editor) {
                             std::cerr << "WARNING: The host is calling "
                                          "`effEditIdle()` while the "
