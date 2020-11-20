@@ -16,16 +16,19 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   lot of changes and a single
   [yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/) package
   would be sufficient, but sometimes changes to yabridgectl will be incompatible
-  with the current release so it's safer to also have a normal package.
+  with the current release so it's nicer to also have a separate regular
+  package.
 
 ### Changed
 
 - Yabridge will now always search for `yabridge-host.exe` in
   `~/.local/share/yabridge` even if that directory is not in the search path.
-  This should make setup easier. Because of this, the symlink-based installation
-  method does not have a lot of advantages over the copy-based method anymore
-  other than the fact that you can't forget to rerun `yabridgectl sync` after an
-  upgrade, so most references to it in the readme have been removed.
+  This should make setup easier, since you no longer have to modify any
+  environment variables when installing yabridge to the default location.
+  Because of this, the symlink-based installation method does not have a lot of
+  advantages over the copy-based method anymore other than the fact that you
+  can't forget to rerun `yabridgectl sync` after an upgrade, so most references
+  to it have been removed from the readme.
 
 ### Fixed
 
