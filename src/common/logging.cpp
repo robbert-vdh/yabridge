@@ -290,7 +290,11 @@ void Logger::log_event_response(
                             << ", r: " << rect.right << ", b: " << rect.bottom
                             << "}";
                 },
-                [&](const VstTimeInfo&) { message << ", <time_info>"; }},
+                [&](const VstTimeInfo& info) {
+                    message << ", <"
+                            << "quarter_notes = " << info.ppqPos
+                            << ", samples = " << info.samplePos << ">";
+                }},
             payload);
 
         log(message.str());

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- When `YABRIDGE_DEBUG_LEVEL` is set to 2 or higher and a plugin asks the host
+  for the current position in the song, yabridge will now print that position in
+  quarter notes and samples as part of the debug output.
+
 ## [2.1.0] - 2020-11-20
 
 ### Added
