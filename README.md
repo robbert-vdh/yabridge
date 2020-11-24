@@ -60,25 +60,13 @@ Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
 
 ### Preliminaries
 
-YABridge builds upon VST2 plugins installed via Wine.
+Yabridge requires a recent version of Wine Staging. Users of Debian, Ubuntu,
+Linux Mint and Pop!\_OS should install Wine Staging from the [WineHQ
+repositories](https://wiki.winehq.org/Download) as the versions of Wine provided
+by those distro's repositories will be too old to be used with yabridge.
 
-The recommended Wine version is the *staging* version installed directly from
-WineHQ (your packaged version may be too old): https://wiki.winehq.org/Download
-`sudo apt install --install-recommends winehq-staging`
-
-If you don't have any VST2 plugins installed, download an example one, e.g. 
-https://valhalladsp.com/shop/reverb/valhalla-supermassive/. Note: you will
-need to execute the .exe installer in your Wine environment in order to produce
-the VST2 .dll files.
-
-Yabridge will use the dll file 
-(e.g. `~/.wine/drive_c/Program Files/Common Files/VST2/ValhallaSupermassive_x64.dll`)
-to output a `ValhallaSupermassive_x64.so` file in the same folder, usable in linux.
-
-After installation, you'll run 
-`yabridgectl add "~/.wine/drive_c/Program Files/Common Files/VST2/"`
-and then access this same folder in your DAW for import (e.g. for BitWig, 
-add the folder via `Settings > Locations > Plug-in Locations > + Add Location`) .
+For a general overview on how to use Wine to install Windows applications, check
+out Wine's [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
 
 ### Automatic setup (recommended)
 
