@@ -15,6 +15,7 @@ highly compatible, while also staying easy to debug and maintain.
 
 - [Tested with](#tested-with)
 - [Usage](#usage)
+  - [Preliminaries](#preliminaries)
   - [Automatic setup (recommended)](#automatic-setup-recommended)
   - [Manual setup](#manual-setup)
   - [DAW setup](#daw-setup)
@@ -56,6 +57,28 @@ below. Alternatively there are AUR packages available if you are running Arch or
 Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
 [yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/),
 [yabridge-git](https://aur.archlinux.org/packages/yabridge-git/)).
+
+### Preliminaries
+
+YABridge builds upon VST2 plugins installed via Wine.
+
+The recommended Wine version is the *staging* version installed directly from
+WineHQ (your packaged version may be too old): https://wiki.winehq.org/Download
+`sudo apt install --install-recommends winehq-staging`
+
+If you don't have any VST2 plugins installed, download an example one, e.g. 
+https://valhalladsp.com/shop/reverb/valhalla-supermassive/. Note: you will
+need to execute the .exe installer in your Wine environment in order to produce
+the VST2 .dll files.
+
+Yabridge will use the dll file 
+(e.g. `~/.wine/drive_c/Program Files/Common Files/VST2/ValhallaSupermassive_x64.dll`)
+to output a `ValhallaSupermassive_x64.so` file in the same folder, usable in linux.
+
+After installation, you'll run 
+`yabridgectl add "~/.wine/drive_c/Program Files/Common Files/VST2/"`
+and then access this same folder in your DAW for import (e.g. for BitWig, 
+add the folder via `Settings > Locations > Plug-in Locations > + Add Location`) .
 
 ### Automatic setup (recommended)
 
