@@ -53,7 +53,10 @@ Please let me know if there are any issues with other VST hosts.
 You can either download a prebuilt version of yabridge through GitHub's
 [releases](https://github.com/robbert-vdh/yabridge/releases) page, or you can
 compile it from source using the instructions in the [build](#Building) section
-below. Alternatively there are AUR packages available if you are running Arch or
+below. If you're downloading the prebuilt version you're using a distro that's
+older than Ubuntu 20.04 such as Ubuntu 18.04, Debian 10, or Linux Mint 19, then
+you should download the version that ends with `-ubuntu-18.04.tar.gz`.
+Alternatively there are AUR packages available if you are running Arch or
 Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
 [yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/),
 [yabridge-git](https://aur.archlinux.org/packages/yabridge-git/)).
