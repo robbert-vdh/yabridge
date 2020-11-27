@@ -39,7 +39,8 @@
  * The explicit calling convention is needed to work around a bug introduced in
  * Wine 5.7: https://bugs.winehq.org/show_bug.cgi?id=49138
  */
-int __cdecl main(int argc, char* argv[]) {
+int __cdecl __attribute__((visibility("default")))
+main(int argc, char* argv[]) {
     set_realtime_priority();
 
     // Instead of directly hosting a plugin, this process will receive a UNIX

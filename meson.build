@@ -26,9 +26,13 @@ individual_host_name_32bit = 'yabridge-host-32'
 group_host_name_64bit = 'yabridge-group'
 group_host_name_32bit = 'yabridge-group-32'
 
-# Disable the use of concepts in Boost.Asio until Boost 1.73 gets released
-# https://github.com/boostorg/asio/issues/312
-compiler_options = ['-DBOOST_ASIO_DISABLE_CONCEPTS']
+compiler_options = [
+  '-fvisibility=hidden',
+  '-fvisibility-inlines-hidden',
+  # Disable the use of concepts in Boost.Asio until Boost 1.73 gets released
+  # https://github.com/boostorg/asio/issues/312
+  '-DBOOST_ASIO_DISABLE_CONCEPTS'
+]
 
 with_bitbridge = get_option('with-bitbridge')
 with_static_boost = get_option('with-static-boost')
