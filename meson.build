@@ -102,7 +102,7 @@ shared_library(
     'src/common/communication.cpp',
     'src/common/utils.cpp',
     'src/plugin/host-process.cpp',
-    'src/plugin/plugin.cpp',
+    'src/plugin/vst2-plugin.cpp',
     'src/plugin/bridges/vst2.cpp',
     'src/plugin/utils.cpp',
     version_header,

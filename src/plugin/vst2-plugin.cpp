@@ -24,20 +24,20 @@
 
 #define VST_EXPORT __attribute__((visibility("default")))
 
-// The main entry point for VST plugins should be called `VSTPluginMain``. The
+// The main entry point for VST2 plugins should be called `VSTPluginMain``. The
 // other one exist for legacy reasons since some old hosts might still use them.
 // There's also another possible legacy entry point just called `main`, but GCC
 // will refuse to compile a function called `main` that's not a regular C++ main
-// function
+// function.
 
 /**
- * The main VST plugin entry point. We first set up a bridge that connects to a
- * Wine process that hosts the Windows VST plugin. We then create and return a
+ * The main VST2 plugin entry point. We first set up a bridge that connects to a
+ * Wine process that hosts the Windows VST2 plugin. We then create and return a
  * VST plugin struct that acts as a passthrough to the bridge.
  *
  * To keep this somewhat contained this is the only place where we're doing
  * manual memory management. Clean up is done when we receive the `effClose`
- * opcode from the VST host (i.e. opcode 1).`
+ * opcode from the VST2 host (i.e. opcode 1).`
  */
 extern "C" VST_EXPORT AEffect* VSTPluginMain(
     audioMasterCallback host_callback) {
