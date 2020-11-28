@@ -76,10 +76,10 @@ PluginArchitecture find_vst_architecture(boost::filesystem::path);
  * Finds the Wine VST host (either `yabridge-host.exe` or `yabridge-host.exe`
  * depending on the plugin). For this we will search in two places:
  *
- *   1. Alongside libyabridge.so if the file got symlinked. This is useful
- *      when developing, as you can simply symlink the the libyabridge.so
- *      file in the build directory without having to install anything to
- *      /usr.
+ *   1. Alongside libyabridge-{vst2,vst3}.so if the file got symlinked. This is
+ *      useful when developing, as you can simply symlink the
+ *      `libyabridge-{vst2,vst3}.so` file in the build directory without having
+ *      to install anything to /usr.
  *   2. In the regular search path, augmented with `~/.local/share/yabridge` to
  *      ease the setup process.
  *
@@ -96,11 +96,14 @@ boost::filesystem::path find_vst_host(PluginArchitecture plugin_arch,
 
 /**
  * Find the VST plugin .dll file that corresponds to this copy of
- * `libyabridge.so`. This should be the same as the name of this file but with a
- * `.dll` file extension instead of `.so`. In case this file does not exist and
- * the `.so` file is a symlink, we'll also repeat this check for the file it
- * links to. This is to support the workflow described in issue #3 where you use
- * symlinks to copies of `libyabridge.so`.
+ * `libyabridge-vst2.so`. This should be the same as the name of this file but
+ * with a `.dll` file extension instead of `.so`. In case this file does not
+ * exist and the `.so` file is a symlink, we'll also repeat this check for the
+ * file it links to. This is to support the workflow described in issue #3 where
+ * you use symlinks to copies of `libyabridge-vst2.so`.
+ *
+ * TODO: This should probably be renamed to `find_vst2_plugin()` so we can have
+ *       a separate `find_vst3_plugin()`
  *
  * @return The a path to the accompanying VST plugin .dll file.
  * @throw std::runtime_error If no matching .dll file could be found.
@@ -156,7 +159,7 @@ std::vector<boost::filesystem::path> get_augmented_search_path();
 
 /**
  * Return a path to this `.so` file. This can be used to find out from where
- * this link to or copy of `libyabridge.so` was loaded.
+ * this link to or copy of `libyabridge-{vst2,vst3}.so` was loaded.
  */
 boost::filesystem::path get_this_file_location();
 
@@ -180,10 +183,10 @@ std::string join_quoted_strings(std::vector<std::string>& strings);
 
 /**
  * Load the configuration that belongs to a copy of or symlink to
- * `libyabridge.so`. If no configuration file could be found then this will
- * return an empty configuration object with default settings. See the docstrong
- * on the `Configuration` class for more details on how to choose the config
- * file to load.
+ * `libyabridge-{vst2,vst3}.so`. If no configuration file could be found then
+ * this will return an empty configuration object with default settings. See the
+ * docstrong on the `Configuration` class for more details on how to choose the
+ * config file to load.
  *
  * This function will take any optional compile-time features that have not been
  * enabled into account.

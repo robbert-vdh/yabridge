@@ -49,9 +49,9 @@ pub struct Config {
     /// The installation method to use. We will default to creating copies since that works
     /// everywhere.
     pub method: InstallationMethod,
-    /// The path to the directory containing `libyabridge.so`. If not set, then yabridgectl will
-    /// look in `/usr/lib` and `$XDG_DATA_HOME/yabridge` since those are the expected locations for
-    /// yabridge to be installed in.
+    /// The path to the directory containing `libyabridge-{vst2,vst3}.so`. If not set, then
+    /// yabridgectl will look in `/usr/lib` and `$XDG_DATA_HOME/yabridge` since those are the
+    /// expected locations for yabridge to be installed in.
     pub yabridge_home: Option<PathBuf>,
     /// Directories to search for Windows VST plugins. We're using an ordered set here out of
     /// convenience so we can't get duplicates and the config file is always sorted.

@@ -1,5 +1,7 @@
 # Architecture
 
+TODO: This document has not yet been updated since adding VST3 support
+
 The project consists of two components: a Linux native VST plugin
 (`libyabridge.so`) and a VST host that runs under Wine
 (`yabridge-host.exe`/`yabridge-host.exe.so`, and

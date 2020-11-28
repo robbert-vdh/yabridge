@@ -17,8 +17,6 @@ imcomplete list of things that still have to be done before this can be used:
 - Rename `PluginBridge` to `Vst2PluginBridge` and explain that the names are
   chosen this way to be easily greppable.
 - Actually start implementing VST3 support.
-- Make sure all old references to `libyabridge` now refer to `libyabridge-vst2`
-  or to both `libyabridge-{vst2,vst3}` depending on the situation.
 - Update the GitHub Actions workflows.
 - Update yabridgectl to handle buth VST2 and VST3 plugins.
 - Update all documentation to refer to VST2 and VST3 support separately, and
@@ -134,24 +132,25 @@ as it makes updating easier and yabridgectl will check for some common mistakes
 during the installation process. To set up yabridge without using yabridgectl,
 first download and extract yabridge's files like in the section above. The rest
 of this section assumes that you have extracted the files to `~/.local/share`
-(such that `~/.local/share/yabridge/libyabridge.so` exists), and that you want
-to set up yabridge for the VST2 plugin called `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`.
+(such that `~/.local/share/yabridge/libyabridge-vst2.so` exists), and that you
+want to set up yabridge for the VST2 plugin called
+`~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`.
 
 Depending on whether you want to use copy or symlink-based installation method,
 you can then set up yabridge for that plugin by creating a copy or symlink of
-`libyabridge.so` next to `plugin.dll` called `plugin.so`. For the example, you
-can use either:
+`libyabridge-vst2.so` next to `plugin.dll` called `plugin.so`. For the example,
+you can use either:
 
 ```shell
 # For the copy-based installation method
-cp ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
+cp ~/.local/share/yabridge/libyabridge-vst2.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
 # For the symlink-based installation method
-ln -sf ~/.local/share/yabridge/libyabridge.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
+ln -sf ~/.local/share/yabridge/libyabridge-vst2.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
 ```
 
 The symlink-based installation method will not work with any host that does not
 individually sandbox its plugins. If you are using the copy-based installation
-method, then don't forget to overwrite all copies of `libyabridge.so` you
+method, then don't forget to overwrite all copies of `libyabridge-vst2.so` you
 created this way whenever you update yabridge.
 
 ### DAW setup
