@@ -14,15 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "plugin-bridge.h"
+#include "vst2.h"
 
 // Generated inside of the build directory
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
 
-#include "../common/communication.h"
-#include "../common/utils.h"
-#include "utils.h"
+#include "../../common/communication.h"
+#include "../../common/utils.h"
+#include "../utils.h"
 
 namespace bp = boost::process;
 // I'd rather use std::filesystem instead, but Boost.Process depends on

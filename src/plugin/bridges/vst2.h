@@ -23,10 +23,10 @@
 #include <mutex>
 #include <thread>
 
-#include "../common/communication.h"
-#include "../common/configuration.h"
-#include "../common/logging.h"
-#include "host-process.h"
+#include "../../common/communication.h"
+#include "../../common/configuration.h"
+#include "../../common/logging.h"
+#include "../host-process.h"
 
 /**
  * This handles the communication between the Linux native VST plugin and the
