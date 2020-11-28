@@ -526,6 +526,7 @@ The following dependencies are included in the repository as a Meson wrap:
 - bitsery
 - function2
 - tomlplusplus
+- The [VST3 SDK](https://github.com/robbert-vdh/vst3sdk)
 
 The project can then be compiled as follows:
 
