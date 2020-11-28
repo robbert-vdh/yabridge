@@ -523,9 +523,9 @@ the following dependencies:
 
 The following dependencies are included in the repository as a Meson wrap:
 
-- bitsery
-- function2
-- tomlplusplus
+- [bitsery](https://github.com/fraillt/bitsery)
+- [function2](https://github.com/Naios/function2)
+- [tomlplusplus](https://github.com/marzer/tomlplusplus)
 - The [VST3 SDK](https://github.com/robbert-vdh/vst3sdk)
 
 The project can then be compiled as follows:
