@@ -71,13 +71,13 @@ xcb_dep = dependency('xcb')
 
 include_dir = include_directories('src/include')
 
-# The application consists of a VST plugin (yabridge) that calls a winelib
-# program (yabridge-host) that can host Windows VST plugins. More information
-# about the way these two components work together can be found in the readme
-# file.
+# The application consists of a plugin (`libyabridge-{vst2,vst3}.so`) that calls
+# a Winelib application (`yabridge-{host,group}{,-32}.exe`) that can host
+# Windows VST plugins. More information about the way these two components work
+# together can be found in `docs/architecture.md`.
 
 shared_library(
-  'yabridge',
+  'yabridge-vst2',
   [
     'src/common/configuration.cpp',
     'src/common/logging.cpp',

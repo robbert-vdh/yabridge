@@ -23,6 +23,8 @@ imcomplete list of things that still have to be done before this can be used:
 - Update yabridgectl to handle buth VST2 and VST3 plugins.
 - Update all documentation to refer to VST2 and VST3 support separately, and
   figure out how to do this in the least confusing way possible.
+- Mention that this update will break all existing symlinks and that the old
+  `libyabridge.so` file should be removed when upgrading.
 - Update all the AUR packages.
 
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
