@@ -45,7 +45,7 @@ extern "C" VST_EXPORT AEffect* VSTPluginMain(
         // This is the only place where we have to use manual memory management.
         // The bridge's destructor is called when the `effClose` opcode is
         // received.
-        PluginBridge* bridge = new PluginBridge(host_callback);
+        Vst2PluginBridge* bridge = new Vst2PluginBridge(host_callback);
 
         return &bridge->plugin;
     } catch (const std::exception& error) {

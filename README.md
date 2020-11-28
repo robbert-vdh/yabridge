@@ -14,8 +14,6 @@ highly compatible, while also staying easy to debug and maintain.
 This branch is still very far removed from being in a usable state. Below is an
 imcomplete list of things that still have to be done before this can be used:
 
-- Rename `PluginBridge` to `Vst2PluginBridge` and explain that the names are
-  chosen this way to be easily greppable.
 - Actually start implementing VST3 support.
 - Update the GitHub Actions workflows.
 - Update yabridgectl to handle buth VST2 and VST3 plugins.

@@ -41,11 +41,11 @@ float get_parameter_proxy(AEffect*, int);
  * is sadly needed as a workaround to avoid using globals since we need free
  * function pointers to interface with the VST C API.
  */
-PluginBridge& get_bridge_instance(const AEffect& plugin) {
-    return *static_cast<PluginBridge*>(plugin.ptr3);
+Vst2PluginBridge& get_bridge_instance(const AEffect& plugin) {
+    return *static_cast<Vst2PluginBridge*>(plugin.ptr3);
 }
 
-PluginBridge::PluginBridge(audioMasterCallback host_callback)
+Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
     : config(load_config_for(get_this_file_location())),
       vst_plugin_path(find_vst_plugin()),
       // All the fields should be zero initialized because
@@ -297,8 +297,8 @@ class DispatchDataConverter : DefaultDataConverter {
             } break;
             case effGetChunk: {
                 // Write the chunk data to some publically accessible place in
-                // `PluginBridge` and write a pointer to that struct to the data
-                // pointer
+                // `Vst2PluginBridge` and write a pointer to that struct to the
+                // data pointer
                 const auto buffer =
                     std::get<ChunkData>(response.payload).buffer;
                 chunk.assign(buffer.begin(), buffer.end());
@@ -391,12 +391,12 @@ class DispatchDataConverter : DefaultDataConverter {
     VstRect& rect;
 };
 
-intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
-                                int opcode,
-                                int index,
-                                intptr_t value,
-                                void* data,
-                                float option) {
+intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
+                                    int opcode,
+                                    int index,
+                                    intptr_t value,
+                                    void* data,
+                                    float option) {
     // HACK: Ardour 5.X has a bug in its VST implementation where it calls the
     //       plugin's dispatcher before the plugin has even finished
     //       initializing. This has been fixed back in 2018, but there has not
@@ -483,7 +483,7 @@ intptr_t PluginBridge::dispatch(AEffect* /*plugin*/,
 }
 
 template <typename T, bool replacing>
-void PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
+void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     // The inputs and outputs arrays should be `[num_inputs][sample_frames]` and
     // `[num_outputs][sample_frames]` floats large respectfully.
     std::vector<std::vector<T>> input_buffers(plugin.numInputs,
@@ -541,10 +541,10 @@ void PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     incoming_midi_events.clear();
 }
 
-void PluginBridge::process(AEffect* /*plugin*/,
-                           float** inputs,
-                           float** outputs,
-                           int sample_frames) {
+void Vst2PluginBridge::process(AEffect* /*plugin*/,
+                               float** inputs,
+                               float** outputs,
+                               int sample_frames) {
     // Technically either `Vst2PluginBridge::process()` or
     // `Vst2PluginBridge::process_replacing()` could actually call the other
     // function on the plugin depending on what the plugin supports.
@@ -553,25 +553,25 @@ void PluginBridge::process(AEffect* /*plugin*/,
     logger.log_trace("   process() :: end");
 }
 
-void PluginBridge::process_replacing(AEffect* /*plugin*/,
-                                     float** inputs,
-                                     float** outputs,
-                                     int sample_frames) {
+void Vst2PluginBridge::process_replacing(AEffect* /*plugin*/,
+                                         float** inputs,
+                                         float** outputs,
+                                         int sample_frames) {
     logger.log_trace(">> processReplacing() :: start");
     do_process<float, true>(inputs, outputs, sample_frames);
     logger.log_trace("   processReplacing() :: end");
 }
 
-void PluginBridge::process_double_replacing(AEffect* /*plugin*/,
-                                            double** inputs,
-                                            double** outputs,
-                                            int sample_frames) {
+void Vst2PluginBridge::process_double_replacing(AEffect* /*plugin*/,
+                                                double** inputs,
+                                                double** outputs,
+                                                int sample_frames) {
     logger.log_trace(">> processDoubleReplacing() :: start");
     do_process<double, true>(inputs, outputs, sample_frames);
     logger.log_trace("   processDoubleReplacing() :: end");
 }
 
-float PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
+float Vst2PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
     logger.log_get_parameter(index);
 
     const Parameter request{index, std::nullopt};
@@ -592,7 +592,9 @@ float PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
     return *response.value;
 }
 
-void PluginBridge::set_parameter(AEffect* /*plugin*/, int index, float value) {
+void Vst2PluginBridge::set_parameter(AEffect* /*plugin*/,
+                                     int index,
+                                     float value) {
     logger.log_set_parameter(index, value);
 
     const Parameter request{index, value};
@@ -612,7 +614,7 @@ void PluginBridge::set_parameter(AEffect* /*plugin*/, int index, float value) {
     assert(!response.value);
 }
 
-void PluginBridge::log_init_message() {
+void Vst2PluginBridge::log_init_message() {
     std::stringstream init_msg;
 
     init_msg << "Initializing yabridge version " << yabridge_git_version

@@ -881,7 +881,7 @@ class Sockets {
 
 /**
  * Generate a unique base directory that can be used as a prefix for all Unix
- * domain socket endpoints used in `PluginBridge`/`Vst2Bridge`. This will
+ * domain socket endpoints used in `Vst2PluginBridge`/`Vst2Bridge`. This will
  * usually return `/run/user/<uid>/yabridge-<plugin_name>-<random_id>/`.
  *
  * Sockets for group hosts are handled separately. See

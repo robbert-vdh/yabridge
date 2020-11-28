@@ -29,11 +29,15 @@
 #include "../host-process.h"
 
 /**
- * This handles the communication between the Linux native VST plugin and the
+ * This handles the communication between the Linux native VST2 plugin and the
  * Wine VST host. The functions below should be used as callback functions in an
  * `AEffect` object.
+ *
+ * The naming scheme of all of these 'bridge' classes is `<type>{,Plugin}Bridge`
+ * for greppability reasons. The `Plugin` infix is added on the native plugin
+ * side.
  */
-class PluginBridge {
+class Vst2PluginBridge {
    public:
     /**
      * Initializes the Wine VST bridge. This sets up the sockets for event
@@ -45,7 +49,7 @@ class PluginBridge {
      * @throw std::runtime_error Thrown when the VST host could not be found, or
      *   if it could not locate and load a VST .dll file.
      */
-    PluginBridge(audioMasterCallback host_callback);
+    Vst2PluginBridge(audioMasterCallback host_callback);
 
     // The four below functions are the handlers from the VST2 API. They are
     // called through proxy functions in `plugin.cpp`.
@@ -83,10 +87,10 @@ class PluginBridge {
                            float** outputs,
                            int sample_frames);
     /**
-     * The same as `PluginBridge::process_replacing`, but for double precision
-     * audio. Support for this on both the plugin and host side is pretty rare,
-     * but REAPER supports it. This reuses the same infrastructure as
-     * `process_replacing` is using since the host will only call one or the
+     * The same as `Vst2PluginBridge::process_replacing`, but for double
+     * precision audio. Support for this on both the plugin and host side is
+     * pretty rare, but REAPER supports it. This reuses the same infrastructure
+     * as `process_replacing` is using since the host will only call one or the
      * other.
      */
     void process_double_replacing(AEffect* plugin,
@@ -108,8 +112,8 @@ class PluginBridge {
      *   values in `outputs`. No host will use this last behaviour anymore, but
      *   it's part of the VST2.4 spec so we have to support it.
      *
-     * @see PluginBridge::process_replacing
-     * @see PluginBridge::process_double_replacing
+     * @see Vst2PluginBridge::process_replacing
+     * @see Vst2PluginBridge::process_double_replacing
      */
     template <typename T, bool replacing>
     void do_process(T** inputs, T** outputs, int sample_frames);
