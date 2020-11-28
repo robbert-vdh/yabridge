@@ -69,8 +69,26 @@ tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('t
 # The built in threads dependency does not know how to handle winegcc
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
+
 if with_vst3
-  vst3_pluginterfaces_dep = subproject('vst3', version : '3.7.1').get_variable('pluginterfaces_dep')
+  # Meson does not allow mixing native and non native dependencies from
+  # subprojects. The only workaround is to only define the necessary variables
+  # there, and to then assemble the dependencies here ourselves.
+  vst3 = subproject('vst3', version : '3.7.1')
+  vst3_compiler_options = vst3.get_variable('compiler_options')
+  vst3_include_dir = vst3.get_variable('include_dir')
+  vst3_pluginterfaces_native = static_library(
+    'pluginterfaces_native',
+    vst3.get_variable('pluginterfaces_sources'),
+    cpp_args : vst3_compiler_options,
+    include_directories : vst3_include_dir,
+    override_options : ['warning_level=0'],
+    native : true,
+  )
+  vst3_pluginterfaces_native_dep = declare_dependency(
+    link_with : vst3_pluginterfaces_native,
+    include_directories : vst3_include_dir,
+  )
 else
   message('VST3 support has been disabled')
 endif
