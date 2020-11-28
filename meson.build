@@ -71,9 +71,16 @@ wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
 if with_vst3
   cmake = import('cmake')
-  vst3_sdk = cmake.subproject('vst3')
+  vst3_sdk_options = cmake.subproject_options()
+  vst3_sdk_options.add_cmake_defines({
+    'SMTG_ADD_VST3_HOSTING_SAMPLES': 'OFF',
+    'SMTG_ADD_VST3_PLUGINS_SAMPLES': 'OFF',
+    'SMTG_ADD_VSTGUI': 'OFF',
+  })
+  vst3_sdk = cmake.subproject('vst3', options : vst3_sdk_options)
 
   # TODO: Assert version '3.7.1', somehow
+  # TODO: Check C++ standard?
   # TODO: vst3_xxx_dep = vst3_sdk.dependency('xxx')
 else
   message('VST3 support has been disabled')
