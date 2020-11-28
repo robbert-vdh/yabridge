@@ -29,9 +29,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   be logged. This makes recognizing misbheaving plugins a bit easier.
 - Symbols in all `libyabridge.so` and all Winelib `.so` files are now hidden by
   default.
-- Building from source now requires CMake since this is required to build the
-  VST3 SDK. You can disable VST3 support to remove this requirement by setting
-  the `with-vst3` meson build option to `false`.
 
 ## [2.1.0] - 2020-11-20
 

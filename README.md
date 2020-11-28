@@ -517,7 +517,6 @@ the following dependencies:
 - A Wine installation with `winegcc` and the development headers. The latest
   commits contain a workaround for a winelib [compilation
   issue](https://bugs.winehq.org/show_bug.cgi?id=49138) with Wine 5.7+.
-- CMake for VST3 support[\*](#building-without-vst3-support)
 - Boost version 1.66 or higher[\*](#building-ubuntu-18.04)
 - libxcb
 
@@ -548,18 +547,6 @@ After you've finished building you can follow the instructions under the
   image</a> used when building yabridge on Ubuntu 18.04 for on overview of what
   would need to be installed to compile on Ubuntu 18.04.
 </sup>
-
-### Building without VST3 support
-
-As mentioned above, building the VST3 SDK requires CMake. We might be able to
-easily replace the default build definitions for the SDK with a simple
-`meson.build` file in the future, but for now if you wish to build yabridge
-without VST3 support then you can disable it as follows:
-
-```shell
-# Disable VST3 support, removing the dependency on CMake
-meson configure build -Dwith-vst3=false
-```
 
 ### 32-bit bitbridge
 

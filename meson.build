@@ -70,21 +70,7 @@ tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('t
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
 if with_vst3
-  # TODO: Assert version '3.7.1', somehow
-
-  cmake = import('cmake')
-  vst3_sdk_options = cmake.subproject_options()
-  vst3_sdk_options.add_cmake_defines({
-    'SMTG_ADD_VST3_HOSTING_SAMPLES': 'OFF',
-    'SMTG_ADD_VST3_PLUGINS_SAMPLES': 'OFF',
-    'SMTG_ADD_VSTGUI': 'OFF',
-  })
-  vst3_sdk = cmake.subproject('vst3', options : vst3_sdk_options)
-  # TODO: This is not going to work due to
-  #       https://github.com/mesonbuild/meson/issues/8043
-  #       We'll have to replace this with a Meson subproject for the time being
-  #       and remove all references to cmake
-  # vst3_pluginterfaces_dep = vst3_sdk.dependency('pluginterfaces', native : true)
+  vst3_pluginterfaces_dep = subproject('vst3', version : '3.7.1').get_variable('pluginterfaces_dep')
 else
   message('VST3 support has been disabled')
 endif
