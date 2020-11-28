@@ -9,6 +9,22 @@ communication through [plugin groups](#plugin-groups). Its modern concurrent
 architecture and focus on transparency allows yabridge to be both fast and
 highly compatible, while also staying easy to debug and maintain.
 
+## TODO
+
+This branch is still very far removed from being in a usable state. Below is an
+imcomplete list of things that still have to be done before this can be used:
+
+- Rename `PluginBridge` to `Vst2PluginBridge` and explain that the names are
+  chosen this way to be easily greppable.
+- Actually start implementing VST3 support.
+- Make sure all old references to `libyabridge` now refer to `libyabridge-vst2`
+  or to both `libyabridge-{vst2,vst3}` depending on the situation.
+- Update the GitHub Actions workflows.
+- Update yabridgectl to handle buth VST2 and VST3 plugins.
+- Update all documentation to refer to VST2 and VST3 support separately, and
+  figure out how to do this in the least confusing way possible.
+- Update all the AUR packages.
+
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
 ### Table of contents
