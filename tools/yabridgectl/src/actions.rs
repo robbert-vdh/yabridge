@@ -96,9 +96,9 @@ pub fn show_status(config: &Config) -> Result<()> {
             .unwrap_or_else(|| String::from("<auto>"))
     );
     println!(
-        "libyabridge.so: {}",
+        "libyabridge-vst2.so: {}",
         config
-            .libyabridge()
+            .libyabridge_vst2()
             .map(|path| format!("'{}'", path.display()))
             .unwrap_or_else(|_| format!("{}", "<not found>".red()))
     );
@@ -154,9 +154,9 @@ pub struct SyncOptions {
 /// Set up yabridge for all Windows VST2 plugins in the plugin directories. Will also remove orphan
 /// `.so` files if the prune option is set.
 pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
-    let libyabridge_path = config.libyabridge()?;
-    let libyabridge_hash = utils::hash_file(&libyabridge_path)?;
-    println!("Using '{}'\n", libyabridge_path.display());
+    let libyabridge_vst2_path = config.libyabridge_vst2()?;
+    let libyabridge_vst2_hash = utils::hash_file(&libyabridge_vst2_path)?;
+    println!("Using '{}'\n", libyabridge_vst2_path.display());
 
     let results = config
         .index_directories()
@@ -188,19 +188,19 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 match (options.force, &config.method) {
                     (false, InstallationMethod::Copy) => {
                         // If the target file is already a real file (not a symlink) and its hash is
-                        // the same as the `libyabridge.so` file we're trying to copy there, then we
-                        // don't have to do anything
+                        // the same as the `libyabridge-vst2.so` file we're trying to copy there,
+                        // then we don't have to do anything
                         if metadata.file_type().is_file()
-                            && utils::hash_file(&target_path)? == libyabridge_hash
+                            && utils::hash_file(&target_path)? == libyabridge_vst2_hash
                         {
                             continue;
                         }
                     }
                     (false, InstallationMethod::Symlink) => {
-                        // If the target file is already a symlink to `libyabridge.so`, then we can
-                        // skip this file
+                        // If the target file is already a symlink to `libyabridge-vst2.so`, then we
+                        // can skip this file
                         if metadata.file_type().is_symlink()
-                            && target_path.read_link()? == libyabridge_path
+                            && target_path.read_link()? == libyabridge_vst2_path
                         {
                             continue;
                         }
@@ -217,10 +217,10 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
             num_new += 1;
             match config.method {
                 InstallationMethod::Copy => {
-                    utils::copy(&libyabridge_path, &target_path)?;
+                    utils::copy(&libyabridge_vst2_path, &target_path)?;
                 }
                 InstallationMethod::Symlink => {
-                    utils::symlink(&libyabridge_path, &target_path)?;
+                    utils::symlink(&libyabridge_vst2_path, &target_path)?;
                 }
             }
 

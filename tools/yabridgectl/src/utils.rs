@@ -179,7 +179,7 @@ pub fn verify_path_setup(config: &Config) -> Result<bool> {
                              reboot your system to complete the setup.\n\
                              \n\
                              https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues",
-                            config.libyabridge()?.parent().unwrap().display(),
+                            config.libyabridge_vst2()?.parent().unwrap().display(),
                             shell.bright_white(),
                             "PATH".bright_white()
                         ))

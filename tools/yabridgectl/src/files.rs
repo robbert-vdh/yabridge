@@ -47,8 +47,8 @@ pub enum FoundFile {
 }
 
 impl SearchResults {
-    /// For every found VST2 plugin, find the associated copy or symlink of `libyabridge.so`. The
-    /// returned hashmap will contain a `None` value for plugins that have not yet been set up.
+    /// For every found VST2 plugin, find the associated copy or symlink of `libyabridge-vst2.so`.
+    /// The returned hashmap will contain a `None` value for plugins that have not yet been set up.
     ///
     /// These two functions could be combined into a single function, but speed isn't really an
     /// issue here and it's a bit more organized this way.

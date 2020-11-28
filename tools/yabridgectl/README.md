@@ -13,11 +13,11 @@ from anywhere. All of the information below can also be found through
 
 ### Yabridge path
 
-Yabridgectl will need to know where it can find `libyabridge.so`. By default it
-will search for it in both `~/.local/share/yabridge` (the recommended
-installation directory when using the prebuilt binaries) and in `/usr/lib`. You
-can use the command below to override this behaviour and to use a custom
-installation directory instead.
+Yabridgectl will need to know where it can find the `libyabridge-vst*.so` files.
+By default it will search for it in both `~/.local/share/yabridge` (the
+recommended installation directory when using the prebuilt binaries) and in
+`/usr/lib`. You can use the command below to override this behaviour and to use
+a custom installation directory instead.
 
 ```shell
 yabridgectl set --path=<path/to/directory/containing/yabridge/files>
@@ -76,6 +76,11 @@ yabridgectl sync --force
 ```
 
 ## Alternatives
+
+TODO: This now only mentions how to do this for VST2 plugins. We should probably
+just drop this section altogether since using yabridgectl is so much easier, and
+if someone really wants to do this by hand then they'll be able to whip up their
+own script based on the instructions in the main readme.
 
 If you want to script your own installation behaviour and don't feel like using
 yabridgectl, then you could use one of the below bash snippets instead. This
