@@ -13,6 +13,13 @@ option(
 )
 
 option(
+  'with-vst3',
+  type : 'boolean',
+  value : true,
+  description : 'Whether to build the VST3 version of yabridge. This requires CMake to be installed.'
+)
+
+option(
   'with-winedbg',
   type : 'boolean',
   value : false,

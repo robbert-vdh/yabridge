@@ -37,6 +37,7 @@ compiler_options = [
 with_bitbridge = get_option('with-bitbridge')
 with_static_boost = get_option('with-static-boost')
 with_winedbg = get_option('with-winedbg')
+with_vst3 = get_option('with-vst3')
 
 if with_bitbridge
   compiler_options += '-DWITH_BITBRIDGE'
@@ -68,6 +69,15 @@ tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('t
 # The built in threads dependency does not know how to handle winegcc
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
+if with_vst3
+  cmake = import('cmake')
+  vst3_sdk = cmake.subproject('vst3')
+
+  # TODO: Assert version '3.7.1', somehow
+  # TODO: vst3_xxx_dep = vst3_sdk.dependency('xxx')
+else
+  message('VST3 support has been disabled')
+endif
 
 include_dir = include_directories('src/include')
 
