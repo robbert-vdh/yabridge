@@ -2,7 +2,7 @@ project(
   'yabridge',
   'cpp',
   version : '2.1.0',
-  default_options : ['warning_level=3', 'cpp_std=c++2a', 'build.cpp_std=c++2a']
+  default_options : ['warning_level=3', 'cpp_std=c++2a', 'build.cpp_std=c++2a'],
 )
 
 # Meson does not let us set a default cross compiler, which makes sense, but it
@@ -60,7 +60,7 @@ boost_filesystem_dep = dependency(
   'boost',
   version : '>=1.66',
   modules : ['filesystem'],
-  static : with_static_boost
+  static : with_static_boost,
 )
 bitsery_dep = subproject('bitsery', version : '5.2.0').get_variable('bitsery_dep')
 function2_dep = subproject('function2', version : '4.1.0').get_variable('function2_dep')
@@ -70,6 +70,8 @@ tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('t
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
 if with_vst3
+  # TODO: Assert version '3.7.1', somehow
+
   cmake = import('cmake')
   vst3_sdk_options = cmake.subproject_options()
   vst3_sdk_options.add_cmake_defines({
@@ -78,10 +80,11 @@ if with_vst3
     'SMTG_ADD_VSTGUI': 'OFF',
   })
   vst3_sdk = cmake.subproject('vst3', options : vst3_sdk_options)
-
-  # TODO: Assert version '3.7.1', somehow
-  # TODO: Check C++ standard?
-  # TODO: vst3_xxx_dep = vst3_sdk.dependency('xxx')
+  # TODO: This is not going to work due to
+  #       https://github.com/mesonbuild/meson/issues/8043
+  #       We'll have to replace this with a Meson subproject for the time being
+  #       and remove all references to cmake
+  # vst3_pluginterfaces_dep = vst3_sdk.dependency('pluginterfaces', native : true)
 else
   message('VST3 support has been disabled')
 endif
@@ -114,7 +117,7 @@ shared_library(
     boost_filesystem_dep,
     bitsery_dep,
     threads_dep,
-    tomlplusplus_dep
+    tomlplusplus_dep,
   ],
   cpp_args : compiler_options,
   link_args : ['-ldl']
@@ -151,10 +154,10 @@ executable(
     function2_dep,
     tomlplusplus_dep,
     wine_threads_dep,
-    xcb_dep
+    xcb_dep,
   ],
   cpp_args : compiler_options + ['-m64'],
-  link_args : ['-m64']
+  link_args : ['-m64'],
 )
 
 executable(
@@ -169,10 +172,10 @@ executable(
     function2_dep,
     tomlplusplus_dep,
     wine_threads_dep,
-    xcb_dep
+    xcb_dep,
   ],
   cpp_args : compiler_options + ['-m64'],
-  link_args : ['-m64']
+  link_args : ['-m64'],
 )
 
 if with_bitbridge
@@ -215,10 +218,10 @@ if with_bitbridge
       function2_dep,
       tomlplusplus_dep,
       wine_threads_dep,
-      xcb_dep
+      xcb_dep,
     ],
     cpp_args : compiler_options + ['-m32'],
-    link_args : ['-m32']
+    link_args : ['-m32'],
   )
 
   executable(
@@ -233,9 +236,9 @@ if with_bitbridge
       function2_dep,
       tomlplusplus_dep,
       wine_threads_dep,
-      xcb_dep
+      xcb_dep,
     ],
     cpp_args : compiler_options + ['-m32'],
-    link_args : ['-m32']
+    link_args : ['-m32'],
   )
 endif
