@@ -196,6 +196,29 @@ if with_vst3
     link_with : vst3_sdk_hosting_wine,
     include_directories : vst3_include_dir,
   )
+
+  # This is the VST3 equivalent of `libyabridge-vst2.so`. The Wine host
+  # applications can handle both VST2 and VST3 plugins.
+  shared_library(
+    'yabridge-vst3',
+    [
+      'src/common/logging.cpp',
+      'src/plugin/vst3-plugin.cpp',
+      version_header,
+    ],
+    native : true,
+    include_directories : include_dir,
+    dependencies : [
+      boost_dep,
+      boost_filesystem_dep,
+      bitsery_dep,
+      threads_dep,
+      tomlplusplus_dep,
+      vst3_sdk_native_dep,
+    ],
+    cpp_args : compiler_options,
+    link_args : ['-ldl'],
+  )
 else
   message('VST3 support has been disabled')
 endif
