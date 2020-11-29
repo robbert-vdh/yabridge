@@ -59,7 +59,7 @@ class Vst2Bridge {
      * @param plugin_dll_path A (Unix style) path to the VST plugin .dll file to
      *   load.
      * @param endpoint_base_dir The base directory used for the socket
-     *   endpoints. See `Sockets` for more information.
+     *   endpoints. See `Vst2Sockets` for more information.
      *
      * @note The object has to be constructed from the same thread that calls
      *   `main_context.run()`.
@@ -189,7 +189,7 @@ class Vst2Bridge {
      *       sockets will be closed first, and we can then safely wait for the
      *       threads to exit.
      */
-    Sockets<Win32Thread> sockets;
+    Vst2Sockets<Win32Thread> sockets;
 
     /**
      * The MIDI events that have been received **and processed** since the last

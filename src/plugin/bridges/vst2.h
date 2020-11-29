@@ -145,7 +145,7 @@ class Vst2PluginBridge {
     void log_init_message();
 
     boost::asio::io_context io_context;
-    Sockets<std::jthread> sockets;
+    Vst2Sockets<std::jthread> sockets;
 
     /**
      * The thread that handles host callbacks.

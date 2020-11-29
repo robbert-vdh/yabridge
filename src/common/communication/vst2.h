@@ -93,7 +93,7 @@ class DefaultDataConverter {
  * slightly differently:
  *
  * - We'll keep a single long lived socket connection. This works the exact same
- *   way as every other socket defined in the `Sockets` class.
+ *   way as every other socket defined in the `Vst2Sockets` class.
  * - Aside from that the listening side will have a second thread asynchronously
  *   listening for new connections on the socket endpoint.
  *
@@ -124,7 +124,7 @@ class EventHandler {
      *   connections will be accepted when `connect()` gets called. This should
      *   be set to `true` on the plugin side, and `false` on the Wine host side.
      *
-     * @see Sockets::connect
+     * @see Vst2Sockets::connect
      */
     EventHandler(boost::asio::io_context& io_context,
                  boost::asio::local::stream_protocol::endpoint endpoint,
@@ -448,7 +448,7 @@ class EventHandler {
 
     /**
      * This acceptor will be used once synchronously on the listening side
-     * during `Sockets::connect()`. When `EventHandler::receive_events()` is
+     * during `Vst2Sockets::connect()`. When `EventHandler::receive_events()` is
      * then called, we'll recreate the acceptor to asynchronously listen for new
      * incoming socket connections on `endpoint` using. This is important,
      * because on the case of `vst_host_callback` the acceptor is first accepts
@@ -480,7 +480,7 @@ class EventHandler {
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  */
 template <typename Thread>
-class Sockets {
+class Vst2Sockets {
    public:
     /**
      * Sets up the sockets using the specified base directory. The sockets won't
@@ -494,11 +494,11 @@ class Sockets {
      *   connections will be accepted when `connect()` gets called. This should
      *   be set to `true` on the plugin side, and `false` on the Wine host side.
      *
-     * @see Sockets::connect
+     * @see Vst2Sockets::connect
      */
-    Sockets(boost::asio::io_context& io_context,
-            const boost::filesystem::path& endpoint_base_dir,
-            bool listen)
+    Vst2Sockets(boost::asio::io_context& io_context,
+                const boost::filesystem::path& endpoint_base_dir,
+                bool listen)
         : base_dir(endpoint_base_dir),
           host_vst_dispatch(io_context,
                             (base_dir / "host_vst_dispatch.sock").string(),
@@ -521,7 +521,7 @@ class Sockets {
      * Cleans up the directory containing the socket endpoints when yabridge
      * shuts down if it still exists.
      */
-    ~Sockets() {
+    ~Vst2Sockets() {
         // Manually close all sockets so we break out of any blocking operations
         // that may still be active
         host_vst_dispatch.close();

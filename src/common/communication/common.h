@@ -154,7 +154,7 @@ class SocketHandler {
      *   connections will be accepted when `connect()` gets called. This should
      *   be set to `true` on the plugin side, and `false` on the Wine host side.
      *
-     * @see Sockets::connect
+     * @see Vst2Sockets::connect
      */
     SocketHandler(boost::asio::io_context& io_context,
                   boost::asio::local::stream_protocol::endpoint endpoint,

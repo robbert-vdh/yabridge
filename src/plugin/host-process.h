@@ -130,7 +130,7 @@ class IndividualHost : public HostProcess {
     IndividualHost(boost::asio::io_context& io_context,
                    Logger& logger,
                    boost::filesystem::path plugin_path,
-                   const Sockets<std::jthread>& sockets);
+                   const Vst2Sockets<std::jthread>& sockets);
 
     PluginArchitecture architecture() override;
     boost::filesystem::path path() override;
@@ -172,7 +172,7 @@ class GroupHost : public HostProcess {
     GroupHost(boost::asio::io_context& io_context,
               Logger& logger,
               boost::filesystem::path plugin_path,
-              Sockets<std::jthread>& socket_endpoint,
+              Vst2Sockets<std::jthread>& socket_endpoint,
               std::string group_name);
 
     PluginArchitecture architecture() override;
@@ -206,7 +206,7 @@ class GroupHost : public HostProcess {
      * The associated sockets for the plugin we're hosting. This is used to
      * terminate the plugin.
      */
-    Sockets<std::jthread>& sockets;
+    Vst2Sockets<std::jthread>& sockets;
 
     /**
      * A thread that waits for the group host to have started and then ask it to
