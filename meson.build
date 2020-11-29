@@ -77,6 +77,8 @@ if with_vst3
   vst3 = subproject('vst3', version : '3.7.1')
   vst3_compiler_options = vst3.get_variable('compiler_options')
   vst3_include_dir = vst3.get_variable('include_dir')
+
+  # We'll create a dependency for the plugin SDK for our native VST3 plugin
   vst3_base_native = static_library(
     'base_native',
     vst3.get_variable('base_sources'),
@@ -105,6 +107,38 @@ if with_vst3
   vst3_sdk_native_dep = declare_dependency(
     link_with : vst3_sdk_native,
     include_directories : vst3_include_dir,
+  )
+
+  # And another dependency for the host SDK for our Wine host applications
+  # We need to do some minor hacking to get this to compile with winegcc. Most
+  # notably some attributes are named differently, and the SDK uses 'Windows.h'
+  # instead of 'windows.h' like how the file is actually called.
+  # message(vst3_include_dir)
+  vst3_sdk_base_dir = vst3.get_variable('sdk_base_dir')
+  patch_result = run_command('tools/patch-vst3-sdk.sh', vst3_sdk_base_dir)
+  if patch_result.returncode() == 0
+    message(patch_result.stdout())
+  else
+    error('Error while trying to patch the VST3 SDK:\n' + patch_result.stderr())
+  endif
+
+  vst3_wine_compiler_options = [
+    # Removes some MSVC-isms for us
+    '-D__MINGW32__',
+    # We don't need all of this stuff from `Windows.h`, and it only causes more
+    # issues
+    '-DNOMINMAX',
+    '-DNOSERVICE',
+    '-DNOMCX',
+    '-DWIN32_LEAN_AND_MEAN',
+  ]
+  vst3_base_wine = static_library(
+    'base_wine',
+    vst3.get_variable('base_sources'),
+    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + [ '-Wno-cpp'],
+    include_directories : vst3_include_dir,
+    override_options : ['warning_level=0'],
+    native : false,
   )
 else
   message('VST3 support has been disabled')
