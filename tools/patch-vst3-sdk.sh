@@ -43,10 +43,10 @@ replace_char16() {
 
   wchar_version=${needle//char16_t/wchar_t}
   sed -i "s/^$needle$/#ifdef __WINE__\\
-      $wchar_version\\
-  #else\\
-      \0\\
-  #endif/" "$filename"
+    $wchar_version\\
+#else\\
+    \0\\
+#endif/" "$filename"
 }
 
 replace_char16 "using ConverterFacet = std::codecvt_utf8_utf16<char16_t>;" "$sdk_directory/base/source/fstring.cpp"
@@ -56,6 +56,12 @@ replace_char16 "using Converter = std::wstring_convert<std::codecvt_utf8_utf16<c
 # The definitions of long doesn't match up between platforms, and the mingw
 # version here is trying to do something funky
 sed -i 's/\b__MINGW32__\b/__NOPE__/g' "$sdk_directory/pluginterfaces/base/funknown.cpp"
+
+# We're building with `WIN32_LEAN_AND_MEAN` because some of the definitions in
+# there conflict with the C standard library as provided by GCC. This also
+# excludes the shell API, which the VST3 SDK uses to open URLs.
+sed -i "s/^#include <windows.h>$/#include <windows.h>  \\/\\/ patched for yabridge\\
+#include <shellapi.h>/" "$sdk_directory/public.sdk/source/common/openurl.cpp"
 
 # Meson requires this program to output something, or else it will error out
 # when trying to encode the empty output

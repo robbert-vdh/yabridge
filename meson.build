@@ -183,6 +183,19 @@ if with_vst3
     override_options : ['warning_level=0'],
     native : false,
   )
+  vst3_sdk_hosting_wine = static_library(
+    'sdk_hosting_wine',
+    vst3.get_variable('sdk_common_sources') + vst3.get_variable('sdk_hosting_sources'),
+    link_with : [vst3_base_wine, vst3_pluginterfaces_wine],
+    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-Wno-multichar'],
+    include_directories : vst3_include_dir,
+    override_options : ['warning_level=0'],
+    native : false,
+  )
+  vst3_sdk_hosting_wine_dep = declare_dependency(
+    link_with : vst3_sdk_hosting_wine,
+    include_directories : vst3_include_dir,
+  )
 else
   message('VST3 support has been disabled')
 endif
