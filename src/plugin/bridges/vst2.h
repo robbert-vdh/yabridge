@@ -23,7 +23,7 @@
 #include <mutex>
 #include <thread>
 
-#include "../../common/communication.h"
+#include "../../common/communication/vst2.h"
 #include "../../common/configuration.h"
 #include "../../common/logging.h"
 #include "../host-process.h"

@@ -103,15 +103,15 @@ include_dir = include_directories('src/include')
 shared_library(
   'yabridge-vst2',
   [
+    'src/common/communication/vst2.cpp',
+    'src/common/serialization/vst2.cpp',
     'src/common/configuration.cpp',
     'src/common/logging.cpp',
-    'src/common/serialization/vst2.cpp',
-    'src/common/communication.cpp',
     'src/common/utils.cpp',
-    'src/plugin/host-process.cpp',
-    'src/plugin/vst2-plugin.cpp',
     'src/plugin/bridges/vst2.cpp',
+    'src/plugin/host-process.cpp',
     'src/plugin/utils.cpp',
+    'src/plugin/vst2-plugin.cpp',
     version_header,
   ],
   native : true,
@@ -128,10 +128,10 @@ shared_library(
 )
 
 host_sources = [
+  'src/common/communication/vst2.cpp',
+  'src/common/serialization/vst2.cpp',
   'src/common/configuration.cpp',
   'src/common/logging.cpp',
-  'src/common/serialization/vst2.cpp',
-  'src/common/communication.cpp',
   'src/common/utils.cpp',
   'src/wine-host/bridges/vst2.cpp',
   'src/wine-host/editor.cpp',

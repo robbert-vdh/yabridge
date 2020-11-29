@@ -20,7 +20,7 @@
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
 
-#include "../../common/communication.h"
+#include "../../common/communication/vst2.h"
 #include "../../common/utils.h"
 #include "../utils.h"
 

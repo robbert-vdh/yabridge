@@ -30,7 +30,7 @@
 #include <boost/asio/write.hpp>
 #include <boost/filesystem.hpp>
 
-#include "logging.h"
+#include "../logging.h"
 
 template <typename B>
 using OutputAdapter = bitsery::OutputBufferAdapter<B>;

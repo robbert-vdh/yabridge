@@ -20,6 +20,8 @@
 #include <optional>
 #include <ostream>
 
+// TODO: Split up the plugin API specific logging functions so we don't have to
+//       include a bunch of stuff we don't need
 #include "serialization/vst2.h"
 
 /**

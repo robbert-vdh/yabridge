@@ -29,7 +29,7 @@
 #include <boost/asio/local/stream_protocol.hpp>
 #include <mutex>
 
-#include "../../common/communication.h"
+#include "../../common/communication/vst2.h"
 #include "../../common/configuration.h"
 #include "../../common/logging.h"
 #include "../editor.h"

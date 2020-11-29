@@ -21,7 +21,7 @@
 #include <iostream>
 #include <set>
 
-#include "../../common/communication.h"
+#include "../../common/communication/vst2.h"
 
 /**
  * A function pointer to what should be the entry point of a VST plugin.
