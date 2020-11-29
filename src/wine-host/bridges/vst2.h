@@ -153,12 +153,18 @@ class Vst2Bridge {
      */
     Configuration config;
 
+    // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+
     /**
      * The shared library handle of the VST plugin. I sadly could not get
      * Boost.DLL to work here, so we'll just load the VST plugisn by hand.
      */
     std::unique_ptr<std::remove_pointer_t<HMODULE>, decltype(&FreeLibrary)>
         plugin_handle;
+
+#pragma GCC diagnostic pop
 
     /**
      * The loaded plugin's `AEffect` struct, obtained using the above library

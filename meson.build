@@ -200,14 +200,7 @@ if with_bitbridge
       wine_threads_dep,
       xcb_dep
     ],
-    # FIXME: 32-bit winegcc defines `__stdcall` differently than the 64-bit
-    #        version, and one of the changes is the inclusion of
-    #        `__atribute__((__force_align_arg_pointer__))`. For whetever reason
-    #        this causes GCC to complain when using function pointers with the
-    #        `__stdcall` calling convention in template arguments, although it
-    #        otherwise works just fine. We don't ignore any warnings in the
-    #        regular host application so this should not cause any issues!
-    cpp_args : compiler_options + ['-m32', '-Wno-ignored-attributes'],
+    cpp_args : compiler_options + ['-m32'],
     link_args : ['-m32']
   )
 
@@ -225,7 +218,7 @@ if with_bitbridge
       wine_threads_dep,
       xcb_dep
     ],
-    cpp_args : compiler_options + ['-m32', '-Wno-ignored-attributes'],
+    cpp_args : compiler_options + ['-m32'],
     link_args : ['-m32']
   )
 endif

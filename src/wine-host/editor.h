@@ -197,6 +197,10 @@ class Editor {
      */
     const WindowClass window_class;
 
+    // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+
     /**
      * The handle for the window created through Wine that the plugin uses to
      * embed itself in.
@@ -215,6 +219,8 @@ class Editor {
     std::optional<
         std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>>
         win32_child_handle;
+
+#pragma GCC diagnostic pop
 
     /**
      * The Win32 API will block the `DispatchMessage` call when opening e.g. a

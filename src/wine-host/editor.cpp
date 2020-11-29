@@ -170,6 +170,9 @@ Editor::Editor(const Configuration& config,
 
     ShowWindow(win32_handle.get(), SW_SHOWNORMAL);
     if (config.editor_double_embed) {
+        // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
         // As explained above, we can't do this directly in the initializer list
         win32_child_handle = std::unique_ptr<std::remove_pointer_t<HWND>,
                                              decltype(&DestroyWindow)>(
@@ -179,6 +182,7 @@ Editor::Editor(const Configuration& config,
                 client_area.width, client_area.height, win32_handle.get(),
                 nullptr, GetModuleHandle(nullptr), this),
             DestroyWindow);
+#pragma GCC diagnostic pop
 
         ShowWindow(win32_child_handle->get(), SW_SHOWNORMAL);
     }
