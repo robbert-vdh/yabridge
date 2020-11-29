@@ -70,6 +70,41 @@ tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('t
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
 
+include_dir = include_directories('src/include')
+
+# The application consists of a plugin (`libyabridge-{vst2,vst3}.so`) that calls
+# a Winelib application (`yabridge-{host,group}{,-32}.exe`) that can host
+# Windows VST plugins. More information about the way these two components work
+# together can be found in `docs/architecture.md`.
+
+shared_library(
+  'yabridge-vst2',
+  [
+    'src/common/communication/common.cpp',
+    'src/common/communication/vst2.cpp',
+    'src/common/serialization/vst2.cpp',
+    'src/common/configuration.cpp',
+    'src/common/logging.cpp',
+    'src/common/utils.cpp',
+    'src/plugin/bridges/vst2.cpp',
+    'src/plugin/host-process.cpp',
+    'src/plugin/utils.cpp',
+    'src/plugin/vst2-plugin.cpp',
+    version_header,
+  ],
+  native : true,
+  include_directories : include_dir,
+  dependencies : [
+    boost_dep,
+    boost_filesystem_dep,
+    bitsery_dep,
+    threads_dep,
+    tomlplusplus_dep,
+  ],
+  cpp_args : compiler_options,
+  link_args : ['-ldl']
+)
+
 if with_vst3
   # Meson does not allow mixing native and non native dependencies from
   # subprojects. The only workaround is to only define the necessary variables
@@ -143,41 +178,6 @@ if with_vst3
 else
   message('VST3 support has been disabled')
 endif
-
-include_dir = include_directories('src/include')
-
-# The application consists of a plugin (`libyabridge-{vst2,vst3}.so`) that calls
-# a Winelib application (`yabridge-{host,group}{,-32}.exe`) that can host
-# Windows VST plugins. More information about the way these two components work
-# together can be found in `docs/architecture.md`.
-
-shared_library(
-  'yabridge-vst2',
-  [
-    'src/common/communication/common.cpp',
-    'src/common/communication/vst2.cpp',
-    'src/common/serialization/vst2.cpp',
-    'src/common/configuration.cpp',
-    'src/common/logging.cpp',
-    'src/common/utils.cpp',
-    'src/plugin/bridges/vst2.cpp',
-    'src/plugin/host-process.cpp',
-    'src/plugin/utils.cpp',
-    'src/plugin/vst2-plugin.cpp',
-    version_header,
-  ],
-  native : true,
-  include_directories : include_dir,
-  dependencies : [
-    boost_dep,
-    boost_filesystem_dep,
-    bitsery_dep,
-    threads_dep,
-    tomlplusplus_dep,
-  ],
-  cpp_args : compiler_options,
-  link_args : ['-ldl']
-)
 
 host_sources = [
   'src/common/communication/vst2.cpp',
