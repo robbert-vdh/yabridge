@@ -77,6 +77,14 @@ if with_vst3
   vst3 = subproject('vst3', version : '3.7.1')
   vst3_compiler_options = vst3.get_variable('compiler_options')
   vst3_include_dir = vst3.get_variable('include_dir')
+  vst3_base_native = static_library(
+    'base_native',
+    vst3.get_variable('base_sources'),
+    cpp_args : vst3_compiler_options + ['-Wno-cpp'],
+    include_directories : vst3_include_dir,
+    override_options : ['warning_level=0'],
+    native : true,
+  )
   vst3_pluginterfaces_native = static_library(
     'pluginterfaces_native',
     vst3.get_variable('pluginterfaces_sources'),
@@ -85,8 +93,17 @@ if with_vst3
     override_options : ['warning_level=0'],
     native : true,
   )
-  vst3_pluginterfaces_native_dep = declare_dependency(
-    link_with : vst3_pluginterfaces_native,
+  vst3_sdk_native = static_library(
+    'sdk_native',
+    vst3.get_variable('sdk_common_sources') + vst3.get_variable('sdk_sources'),
+    link_with : [vst3_base_native, vst3_pluginterfaces_native],
+    cpp_args : vst3_compiler_options + ['-Wno-multichar'],
+    include_directories : vst3_include_dir,
+    override_options : ['warning_level=0'],
+    native : true,
+  )
+  vst3_sdk_native_dep = declare_dependency(
+    link_with : vst3_sdk_native,
     include_directories : vst3_include_dir,
   )
 else
