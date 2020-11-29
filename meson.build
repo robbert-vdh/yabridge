@@ -105,7 +105,7 @@ shared_library(
   [
     'src/common/configuration.cpp',
     'src/common/logging.cpp',
-    'src/common/serialization.cpp',
+    'src/common/serialization/vst2.cpp',
     'src/common/communication.cpp',
     'src/common/utils.cpp',
     'src/plugin/host-process.cpp',
@@ -130,7 +130,7 @@ shared_library(
 host_sources = [
   'src/common/configuration.cpp',
   'src/common/logging.cpp',
-  'src/common/serialization.cpp',
+  'src/common/serialization/vst2.cpp',
   'src/common/communication.cpp',
   'src/common/utils.cpp',
   'src/wine-host/bridges/vst2.cpp',
