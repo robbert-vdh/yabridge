@@ -21,9 +21,7 @@
 #include <boost/process/environment.hpp>
 #include <regex>
 
-// TODO: Change this to commucation/common.h after refactoring, and do the same
-//       thing in other places where we don't need everything from VST2
-#include "../../common/communication/vst2.h"
+#include "../../common/communication/common.h"
 
 // FIXME: `std::filesystem` is broken in wineg++, at least under Wine 5.8. Any
 //        path operation will thrown an encoding related error

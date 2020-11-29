@@ -103,6 +103,7 @@ include_dir = include_directories('src/include')
 shared_library(
   'yabridge-vst2',
   [
+    'src/common/communication/common.cpp',
     'src/common/communication/vst2.cpp',
     'src/common/serialization/vst2.cpp',
     'src/common/configuration.cpp',

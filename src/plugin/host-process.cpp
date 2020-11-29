@@ -21,8 +21,6 @@
 #include <boost/process/io.hpp>
 #include <boost/process/start_dir.hpp>
 
-#include "../common/communication/vst2.h"
-
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
 

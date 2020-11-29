@@ -25,6 +25,9 @@
 #include <boost/process/child.hpp>
 #include <thread>
 
+// TODO: Those host process implementation now directly uses the Vst2Sockets and
+//       thus requires `communication/vst2.h`. We should create a simple common
+//       interface for this instead.
 #include "../common/communication/vst2.h"
 #include "../common/logging.h"
 #include "utils.h"
