@@ -175,6 +175,14 @@ if with_vst3
     override_options : ['warning_level=0'],
     native : false,
   )
+  vst3_pluginterfaces_wine = static_library(
+    'pluginterfaces_wine',
+    vst3.get_variable('pluginterfaces_sources'),
+    cpp_args : vst3_compiler_options + vst3_wine_compiler_options,
+    include_directories : vst3_include_dir,
+    override_options : ['warning_level=0'],
+    native : false,
+  )
 else
   message('VST3 support has been disabled')
 endif
