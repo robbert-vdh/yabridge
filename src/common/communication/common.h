@@ -488,25 +488,26 @@ class AdHocSocketHandler {
      *   socket. This is either the primary `socket`, or a new ad hock socket if
      *   this function is currently being called from another thread.
      *
+     * @tparam T The return value of F.
      * @tparam F A function in the form of
-     *   `void(boost::asio::local::stream_protocol::socket&)`.
+     *   `T(boost::asio::local::stream_protocol::socket&)`.
      */
-    template <typename F>
-    void send(F callback) {
+    template <typename T, typename F>
+    T send(F callback) {
         // XXX: Maybe at some point we should benchmark how often this
         //      ad hoc socket spawning mechanism gets used. If some hosts
         //      for instance consistently and repeatedly trigger this then
         //      we might be able to do some optimizations there.
         std::unique_lock lock(write_mutex, std::try_to_lock);
         if (lock.owns_lock()) {
-            callback(socket);
+            return callback(socket);
         } else {
             try {
                 boost::asio::local::stream_protocol::socket secondary_socket(
                     io_context);
                 secondary_socket.connect(endpoint);
 
-                callback(secondary_socket);
+                return callback(secondary_socket);
             } catch (const boost::system::system_error&) {
                 // So, what do we do when noone is listening on the endpoint
                 // yet? This can happen with plugin groups when the Wine host
@@ -517,7 +518,7 @@ class AdHocSocketHandler {
                 // long living primary socket please let me know.
                 std::lock_guard lock(write_mutex);
 
-                callback(socket);
+                return callback(socket);
             }
         }
     }
