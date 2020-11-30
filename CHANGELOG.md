@@ -8,6 +8,16 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added an option to cache the time and tempo info returned by the host for the
+  current processing cycle. This would normally not be needed since plugins
+  should ask the host for this information only once per audio callback, but a
+  bug in _SWAM Cello_ causes this to happen repeatedly for every sample,
+  resutling in very bad performance. See the [compatibility
+  options](https://github.com/robbert-vdh/yabridge#compatibility-options)
+  section of the readme for more information on how to enable this.
+
 ### Changed
 
 - When `YABRIDGE_DEBUG_LEVEL` is set to 2 or higher and a plugin asks the host

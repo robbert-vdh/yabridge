@@ -74,8 +74,22 @@ class Configuration {
                   const boost::filesystem::path& yabridge_path);
 
     /**
-     * If this is set to true, then the plugin editor should be embedded in yet
-     * another window. This would result in an embedding sequence of
+     * If set to `true`, then after an `audioMasterGetTime()` call all
+     * subsequent calls to that function during a single processing cycle will
+     * reuse the results from the first call. In theory it would be a bug on the
+     * host's side if this did _not_ return the same value every time, but since
+     * yabridge tries to not have any behaviour of its own and since this
+     * function should only be called at most once every processing cycle this
+     * option is not enabled by default. An example of a situation where this
+     * does become necessary is the SWAM Cello plugin, which calls
+     * `audioMasterGetTime()` for every sample instead of only once. This would
+     * tank performance without this caching behaviour.
+     */
+    bool cache_time_info = false;
+
+    /**
+     * If this is set to `true`, then the plugin editor should be embedded in
+     * yet another window. This would result in an embedding sequence of
      * `<window_provided_by_host> <-> <wine_parent_window> <->
      * <wine_child_window> <-> <window_created_by_plugin>`, where
      * `<wine_child_window>` is the new addition. The only plugin I've
@@ -119,6 +133,7 @@ class Configuration {
 
     template <typename S>
     void serialize(S& s) {
+        s.value1b(cache_time_info);
         s.value1b(editor_double_embed);
         s.ext(group, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });

@@ -249,6 +249,7 @@ other. See below for an [example](#example) of how these groups can be set up.
 
 | Option                | Values         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | --------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cache_time_info`     | `{true,false}` | Compatibility option for plugins that call `audioMasterGetTime()` multiple times during a single processing cycle. With this option subsequent calls during a single audio processing cycle will reuse the value returned by the first call to this function. This is a bug in the plugin, and this option serves as a temporary workaround until the plugin fixes the issue.                                                                              |
 | `editor_double_embed` | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`. |
 
 These options are workarounds for issues mentioned in the [known
@@ -282,6 +283,9 @@ group = "toneboosters"
 
 ["PSPaudioware"]
 editor_double_embed = true
+
+["SWAM Cello 64bit.so"]
+cache_time_info = true
 
 # Simple glob patterns can be used to avoid unneeded repetition
 ["iZotope*/Neutron *"]
@@ -437,6 +441,11 @@ include:
 - **PSPaudioware** plugins with expandable GUIs, such as E27, may have their GUI
   appear in the wrong location after the GUI has been expanded. You can enable
   an alternative [editor hosting mode](#compatibility-options) to fix this.
+- **SWAM Cello** has a bug where it asks the host for the current buffer's time
+  and tempo information for every sample it processes instead of doing it only
+  once per buffer, resulting in very bad performance. You can enable the time
+  info cache [compatibility option](#compatibility-options) to work around this
+  until this is fixed on the plugin's side.
 - Plugins like **FabFilter Pro-Q 3** that can share data between different
   instances of the same plugin plugins have to be hosted within a single process
   for that functionality to work. See the [plugin groups](#plugin-groups)

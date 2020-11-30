@@ -169,6 +169,15 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                 // pointers to rather than copies of the events.
                 std::lock_guard lock(next_buffer_midi_events_mutex);
 
+                // HACK: Workaround for a bug in SWAM Cello where it would call
+                //       `audioMasterGetTime()` once for every sample. The first
+                //       value returned by this function during an audio
+                //       processing cycle will be reused for the rest of the
+                //       cycle.
+                if (config.cache_time_info) {
+                    time_info.reset();
+                }
+
                 // Since the host should only be calling one of `process()`,
                 // processReplacing()` or `processDoubleReplacing()`, we can all
                 // handle them over the same socket. We pick which one to call
@@ -505,6 +514,15 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
                                    intptr_t value,
                                    void* data,
                                    float option) {
+    // HACK: Workaround for a bug in SWAM Cello where it would call
+    //       `audioMasterGetTime()` once for every sample. When this option is
+    //       enabled `time_info` should be reset in the process function. The
+    //       `time_info` value is assigned inside of
+    //       `HostCallbackDataConverter::write()`.
+    if (config.cache_time_info && time_info) {
+        return reinterpret_cast<intptr_t>(&*time_info);
+    }
+
     HostCallbackDataConverter converter(effect, time_info);
     return sockets.vst_host_callback.send_event(converter, std::nullopt, opcode,
                                                 index, value, data, option);
