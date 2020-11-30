@@ -54,10 +54,10 @@ std::optional<fs::path> find_wineprefix() {
     return dosdevices_dir->parent_path();
 }
 
-fs::path find_vst_host(PluginArchitecture plugin_arch, bool use_plugin_groups) {
+fs::path find_vst_host(LibArchitecture plugin_arch, bool use_plugin_groups) {
     auto host_name = use_plugin_groups ? yabridge_group_host_name
                                        : yabridge_individual_host_name;
-    if (plugin_arch == PluginArchitecture::vst_32) {
+    if (plugin_arch == LibArchitecture::dll_32) {
         host_name = use_plugin_groups ? yabridge_group_host_name_32bit
                                       : yabridge_individual_host_name_32bit;
     }
@@ -110,17 +110,17 @@ fs::path find_vst_plugin() {
 boost::filesystem::path generate_group_endpoint(
     const std::string& group_name,
     const boost::filesystem::path& wine_prefix,
-    const PluginArchitecture architecture) {
+    const LibArchitecture architecture) {
     std::ostringstream socket_name;
     socket_name << "yabridge-group-" << group_name << "-"
                 << std::to_string(
                        std::hash<std::string>{}(wine_prefix.string()))
                 << "-";
     switch (architecture) {
-        case PluginArchitecture::vst_32:
+        case LibArchitecture::dll_32:
             socket_name << "x32";
             break;
-        case PluginArchitecture::vst_64:
+        case LibArchitecture::dll_64:
             socket_name << "x64";
             break;
     }

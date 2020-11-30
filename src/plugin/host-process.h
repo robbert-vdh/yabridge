@@ -44,7 +44,7 @@ class HostProcess {
      * Return the architecture of the plugin we are loading, i.e. whether it is
      * 32-bit or 64-bit.
      */
-    virtual PluginArchitecture architecture() = 0;
+    virtual LibArchitecture architecture() = 0;
 
     /**
      * Return the full path to the host application in use. The host application
@@ -130,13 +130,13 @@ class IndividualHost : public HostProcess {
                    boost::filesystem::path plugin_path,
                    const Sockets& sockets);
 
-    PluginArchitecture architecture() override;
+    LibArchitecture architecture() override;
     boost::filesystem::path path() override;
     bool running() override;
     void terminate() override;
 
    private:
-    PluginArchitecture plugin_arch;
+    LibArchitecture plugin_arch;
     boost::filesystem::path host_path;
     boost::process::child host;
 };
@@ -173,13 +173,13 @@ class GroupHost : public HostProcess {
               Sockets& socket_endpoint,
               std::string group_name);
 
-    PluginArchitecture architecture() override;
+    LibArchitecture architecture() override;
     boost::filesystem::path path() override;
     bool running() override;
     void terminate() override;
 
    private:
-    PluginArchitecture plugin_arch;
+    LibArchitecture plugin_arch;
     boost::filesystem::path host_path;
 
     /**

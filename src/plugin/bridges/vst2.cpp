@@ -656,7 +656,7 @@ void Vst2PluginBridge::log_init_message() {
     } else {
         init_msg << "individually";
     }
-    if (vst_host->architecture() == PluginArchitecture::vst_32) {
+    if (vst_host->architecture() == LibArchitecture::dll_32) {
         init_msg << ", 32-bit";
     } else {
         init_msg << ", 64-bit";

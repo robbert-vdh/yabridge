@@ -89,7 +89,7 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
                                fs::path plugin_path,
                                const Sockets& sockets)
     : HostProcess(io_context, logger),
-      plugin_arch(find_vst_architecture(plugin_path)),
+      plugin_arch(find_dll_architecture(plugin_path)),
       host_path(find_vst_host(plugin_arch, false)),
       host(launch_host(host_path,
 #ifdef WITH_WINEDBG
@@ -114,7 +114,7 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
 #endif
 }
 
-PluginArchitecture IndividualHost::architecture() {
+LibArchitecture IndividualHost::architecture() {
     return plugin_arch;
 }
 
@@ -137,7 +137,7 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
                      Sockets& sockets,
                      std::string group_name)
     : HostProcess(io_context, logger),
-      plugin_arch(find_vst_architecture(plugin_path)),
+      plugin_arch(find_dll_architecture(plugin_path)),
       host_path(find_vst_host(plugin_arch, true)),
       sockets(sockets) {
 #ifdef WITH_WINEDBG
@@ -233,7 +233,7 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
     }
 }
 
-PluginArchitecture GroupHost::architecture() {
+LibArchitecture GroupHost::architecture() {
     return plugin_arch;
 }
 

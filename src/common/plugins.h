@@ -24,21 +24,20 @@
 // Utilities and tags for plugin types and architectures
 
 /**
- * A tag to differentiate between 32 and 64-bit plugins, used to determine which
- * host application to use.
+ * A tag to differentiate between 32 and 64-bit `.dll` files, used to determine
+ * which host application to use.
  */
-enum class PluginArchitecture { vst_32, vst_64 };
+enum class LibArchitecture { dll_32, dll_64 };
 
 /**
- * Determine the architecture of a VST plugin (or rather, a .dll file) based on
- * it's header values.
+ * Determine the architecture of a `.dll` file based on the file header.
  *
  * See https://docs.microsoft.com/en-us/windows/win32/debug/pe-format for more
  * information on the PE32 format.
  *
- * @param plugin_path The path to the .dll file we're going to check.
+ * @param path The path to the .dll file we're going to check.
  *
  * @return The detected architecture.
  * @throw std::runtime_error If the file is not a .dll file.
  */
-PluginArchitecture find_vst_architecture(boost::filesystem::path);
+LibArchitecture find_dll_architecture(boost::filesystem::path);

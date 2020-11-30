@@ -5,7 +5,7 @@
 
 namespace fs = boost::filesystem;
 
-PluginArchitecture find_vst_architecture(fs::path plugin_path) {
+LibArchitecture find_dll_architecture(fs::path plugin_path) {
     std::ifstream file(plugin_path, std::ifstream::binary | std::ifstream::in);
 
     // The linker will place the offset where the PE signature is placed at the
@@ -34,11 +34,11 @@ PluginArchitecture find_vst_architecture(fs::path plugin_path) {
     // https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#machine-types
     switch (machine_type) {
         case 0x014c:  // IMAGE_FILE_MACHINE_I386
-            return PluginArchitecture::vst_32;
+            return LibArchitecture::dll_32;
             break;
         case 0x8664:  // IMAGE_FILE_MACHINE_AMD64
         case 0x0000:  // IMAGE_FILE_MACHINE_UNKNOWN
-            return PluginArchitecture::vst_64;
+            return LibArchitecture::dll_64;
             break;
     }
 

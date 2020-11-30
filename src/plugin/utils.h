@@ -71,7 +71,7 @@ std::string create_logger_prefix(
  * @return The a path to the VST host, if found.
  * @throw std::runtime_error If the Wine VST host could not be found.
  */
-boost::filesystem::path find_vst_host(PluginArchitecture plugin_arch,
+boost::filesystem::path find_vst_host(LibArchitecture plugin_arch,
                                       bool use_plugin_groups);
 
 /**
@@ -125,7 +125,7 @@ std::optional<boost::filesystem::path> find_wineprefix();
 boost::filesystem::path generate_group_endpoint(
     const std::string& group_name,
     const boost::filesystem::path& wine_prefix,
-    const PluginArchitecture architecture);
+    const LibArchitecture architecture);
 
 /**
  * Return the search path as defined in `$PATH`, with `~/.local/share/yabridge`
