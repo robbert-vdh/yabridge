@@ -86,20 +86,19 @@ void HostProcess::async_log_pipe_lines(patched_async_pipe& pipe,
 
 IndividualHost::IndividualHost(boost::asio::io_context& io_context,
                                Logger& logger,
-                               fs::path plugin_path,
-                               const Sockets& sockets)
+                               const HostRequest& plugin_info)
     : HostProcess(io_context, logger),
-      plugin_arch(find_dll_architecture(plugin_path)),
+      // FIXME: This will require changing for VST3 bundles
+      plugin_arch(find_dll_architecture(plugin_info.plugin_path)),
       host_path(find_vst_host(plugin_arch, false)),
       host(launch_host(host_path,
-                       // TODO: This should of course not be hardcoded
-                       plugin_type_to_string(PluginType::vst2),
+                       plugin_type_to_string(plugin_info.plugin_type),
 #ifdef WITH_WINEDBG
-                       plugin_path.filename(),
+                       plugin_info.plugin_path.filename(),
 #else
-                       plugin_path,
+                       plugin_info.plugin_path,
 #endif
-                       sockets.base_dir,
+                       plugin_info.endpoint_base_dir,
                        bp::env = set_wineprefix(),
                        bp::std_out = stdout_pipe,
                        bp::std_err = stderr_pipe
@@ -135,11 +134,12 @@ void IndividualHost::terminate() {
 
 GroupHost::GroupHost(boost::asio::io_context& io_context,
                      Logger& logger,
-                     fs::path plugin_path,
+                     const HostRequest& host_request,
                      Sockets& sockets,
                      std::string group_name)
     : HostProcess(io_context, logger),
-      plugin_arch(find_dll_architecture(plugin_path)),
+      // FIXME: This will require changing for VST3 bundles
+      plugin_arch(find_dll_architecture(host_request.plugin_path)),
       host_path(find_vst_host(plugin_arch, true)),
       sockets(sockets) {
 #ifdef WITH_WINEDBG
@@ -175,17 +175,12 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
     const fs::path endpoint_base_dir = sockets.base_dir;
     const fs::path group_socket_path =
         generate_group_endpoint(group_name, wine_prefix, plugin_arch);
-    const auto connect = [&io_context, plugin_path, endpoint_base_dir,
+    const auto connect = [&io_context, host_request, endpoint_base_dir,
                           group_socket_path]() {
         boost::asio::local::stream_protocol::socket group_socket(io_context);
         group_socket.connect(group_socket_path.string());
 
-        write_object(
-            group_socket,
-            // TODO: The plugin type should of course not be hardcoded
-            HostRequest{.plugin_type = PluginType::vst2,
-                        .plugin_path = plugin_path.string(),
-                        .endpoint_base_dir = endpoint_base_dir.string()});
+        write_object(group_socket, host_request);
         const auto response = read_object<HostResponse>(group_socket);
         assert(response.pid > 0);
     };
@@ -205,8 +200,7 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
 
         const pid_t group_host_pid = group_host.id();
         group_host_connect_handler =
-            std::jthread([this, connect, group_socket_path, plugin_path,
-                          endpoint_base_dir, group_host_pid]() {
+            std::jthread([this, connect, group_host_pid]() {
                 using namespace std::literals::chrono_literals;
 
                 // We'll first try to connect to the group host we just spawned

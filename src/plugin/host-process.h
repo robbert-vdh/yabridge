@@ -119,16 +119,16 @@ class IndividualHost : public HostProcess {
      *   handled on.
      * @param logger The `Logger` instance the redirected STDIO streams will be
      *   written to.
-     * @param sockets The socket endpoints that will be used for communication
-     *   with the plugin.
+     * @param plugin_info The information about the plugin we should launch a
+     *   host process for. The values in the struct will be used as command line
+     *   arguments.
      *
      * @throw std::runtime_error When `plugin_path` does not point to a valid
      *   32-bit or 64-bit .dll file.
      */
     IndividualHost(boost::asio::io_context& io_context,
                    Logger& logger,
-                   boost::filesystem::path plugin_path,
-                   const Sockets& sockets);
+                   const HostRequest& plugin_info);
 
     LibArchitecture architecture() override;
     boost::filesystem::path path() override;
@@ -162,6 +162,8 @@ class GroupHost : public HostProcess {
      *   handled on.
      * @param logger The `Logger` instance the redirected STDIO streams will be
      *   written to.
+     * @param host_request The information about the plugin we should launch a
+     *   host process for. This object will be sent to the group host process.
      * @param sockets The socket endpoints that will be used for communication
      *   with the plugin. When the plugin shuts down, we'll terminate the
      *   dispatch socket contained in this object.
@@ -169,7 +171,7 @@ class GroupHost : public HostProcess {
      */
     GroupHost(boost::asio::io_context& io_context,
               Logger& logger,
-              boost::filesystem::path plugin_path,
+              const HostRequest& host_request,
               Sockets& socket_endpoint,
               std::string group_name);
 

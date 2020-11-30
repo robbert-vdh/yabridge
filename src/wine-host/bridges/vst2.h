@@ -66,9 +66,6 @@ class Vst2Bridge {
      *
      * @throw std::runtime_error Thrown when the VST plugin could not be loaded,
      *   or if communication could not be set up.
-     *
-     * TODO: Make these two arguments `boost::filesystem::path`, also use those
-     *       in `HostRequest`.
      */
     Vst2Bridge(MainContext& main_context,
                std::string plugin_dll_path,

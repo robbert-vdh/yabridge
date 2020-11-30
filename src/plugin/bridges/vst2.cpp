@@ -61,18 +61,23 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
       logger(Logger::create_from_environment(
           create_logger_prefix(sockets.base_dir))),
       wine_version(get_wine_version()),
-      vst_host(config.group
-                   ? std::unique_ptr<HostProcess>(
-                         std::make_unique<GroupHost>(io_context,
-                                                     logger,
-                                                     vst_plugin_path,
-                                                     sockets,
-                                                     *config.group))
-                   : std::unique_ptr<HostProcess>(
-                         std::make_unique<IndividualHost>(io_context,
-                                                          logger,
-                                                          vst_plugin_path,
-                                                          sockets))),
+      vst_host(
+          config.group
+              ? std::unique_ptr<HostProcess>(std::make_unique<GroupHost>(
+                    io_context,
+                    logger,
+                    HostRequest{.plugin_type = PluginType::vst2,
+                                .plugin_path = vst_plugin_path.string(),
+                                .endpoint_base_dir = sockets.base_dir.string()},
+                    sockets,
+                    *config.group))
+              : std::unique_ptr<HostProcess>(std::make_unique<IndividualHost>(
+                    io_context,
+                    logger,
+                    HostRequest{
+                        .plugin_type = PluginType::vst2,
+                        .plugin_path = vst_plugin_path.string(),
+                        .endpoint_base_dir = sockets.base_dir.string()}))),
       has_realtime_priority(set_realtime_priority()),
       wine_io_handler([&]() { io_context.run(); }) {
     log_init_message();
