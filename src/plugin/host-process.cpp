@@ -87,7 +87,7 @@ void HostProcess::async_log_pipe_lines(patched_async_pipe& pipe,
 IndividualHost::IndividualHost(boost::asio::io_context& io_context,
                                Logger& logger,
                                fs::path plugin_path,
-                               const Vst2Sockets<std::jthread>& sockets)
+                               const Sockets& sockets)
     : HostProcess(io_context, logger),
       plugin_arch(find_vst_architecture(plugin_path)),
       host_path(find_vst_host(plugin_arch, false)),
@@ -134,7 +134,7 @@ void IndividualHost::terminate() {
 GroupHost::GroupHost(boost::asio::io_context& io_context,
                      Logger& logger,
                      fs::path plugin_path,
-                     Vst2Sockets<std::jthread>& sockets,
+                     Sockets& sockets,
                      std::string group_name)
     : HostProcess(io_context, logger),
       plugin_arch(find_vst_architecture(plugin_path)),
@@ -251,8 +251,8 @@ bool GroupHost::running() {
 void GroupHost::terminate() {
     // There's no need to manually terminate group host processes as they will
     // shut down automatically after all plugins have exited. Manually closing
-    // the dispatch socket will cause the associated plugin to exit.
-    sockets.host_vst_dispatch.close();
+    // the sockets will cause the associated plugin to exit.
+    sockets.close();
 }
 
 bool pid_running(pid_t pid) {

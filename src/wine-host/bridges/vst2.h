@@ -59,7 +59,7 @@ class Vst2Bridge {
      * @param plugin_dll_path A (Unix style) path to the VST plugin .dll file to
      *   load.
      * @param endpoint_base_dir The base directory used for the socket
-     *   endpoints. See `Vst2Sockets` for more information.
+     *   endpoints. See `Sockets` for more information.
      *
      * @note The object has to be constructed from the same thread that calls
      *   `main_context.run()`.

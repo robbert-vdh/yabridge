@@ -140,6 +140,79 @@ inline T read_object(Socket& socket) {
 }
 
 /**
+ * Generate a unique base directory that can be used as a prefix for all Unix
+ * domain socket endpoints used in `Vst2PluginBridge`/`Vst2Bridge`. This will
+ * usually return `/run/user/<uid>/yabridge-<plugin_name>-<random_id>/`.
+ *
+ * Sockets for group hosts are handled separately. See
+ * `../plugin/utils.h:generate_group_endpoint` for more information on those.
+ *
+ * @param plugin_name The name of the plugin we're generating endpoints for.
+ *   Used as a visual indication of what plugin is using this endpoint.
+ */
+boost::filesystem::path generate_endpoint_base(const std::string& plugin_name);
+
+/**
+ * Manages all the sockets used for communicating between the plugin and the
+ * Wine host. Every plugin will get its own directory (the socket endpoint base
+ * directory), and all socket endpoints are created within this directory. This
+ * is usually `/run/user/<uid>/yabridge-<plugin_name>-<random_id>/`.
+ */
+class Sockets {
+   public:
+    /**
+     * Sets up the the base directory for the sockets. Classes inheriting this
+     * should set up their sockets here.
+     *
+     * @param endpoint_base_dir The base directory that will be used for the
+     *   Unix domain sockets.
+     *
+     * @see Sockets::connect
+     */
+    Sockets(const boost::filesystem::path& endpoint_base_dir)
+        : base_dir(endpoint_base_dir) {}
+
+    /**
+     * Shuts down and closes all sockets and then cleans up the directory
+     * containing the socket endpoints when yabridge shuts down if it still
+     * exists.
+     *
+     * @note Classes overriding this should call `close()` in their destructor.
+     */
+    virtual ~Sockets() {
+        try {
+            boost::filesystem::remove_all(base_dir);
+        } catch (const boost::filesystem::filesystem_error&) {
+            // There should not be any filesystem errors since only one side
+            // removes the files, but if we somehow can't delete the file
+            // then we can just silently ignore this
+        }
+    }
+
+    /**
+     * Depending on the value of the `listen` argument passed to the
+     * constructor, either accept connections made to the sockets on the Linux
+     * side or connect to the sockets on the Wine side
+     */
+    virtual void connect() = 0;
+
+    /**
+     * Shut down and close all sockets. Called during the destructor and also
+     * explicitly called when shutting down a plugin in a group host process.
+     *
+     * It should be safe to call this function more than once, and it should be
+     * called in the overridden class's destructor.
+     */
+    virtual void close() = 0;
+
+    /**
+     * The base directory for our socket endpoints. All `*_endpoint` variables
+     * below are files within this directory.
+     */
+    const boost::filesystem::path base_dir;
+};
+
+/**
  * A single, long-living socket
  */
 class SocketHandler {
@@ -154,7 +227,7 @@ class SocketHandler {
      *   connections will be accepted when `connect()` gets called. This should
      *   be set to `true` on the plugin side, and `false` on the Wine host side.
      *
-     * @see Vst2Sockets::connect
+     * @see Sockets::connect
      */
     SocketHandler(boost::asio::io_context& io_context,
                   boost::asio::local::stream_protocol::endpoint endpoint,
@@ -304,16 +377,3 @@ class SocketHandler {
      */
     std::optional<boost::asio::local::stream_protocol::acceptor> acceptor;
 };
-
-/**
- * Generate a unique base directory that can be used as a prefix for all Unix
- * domain socket endpoints used in `Vst2PluginBridge`/`Vst2Bridge`. This will
- * usually return `/run/user/<uid>/yabridge-<plugin_name>-<random_id>/`.
- *
- * Sockets for group hosts are handled separately. See
- * `../plugin/utils.h:generate_group_endpoint` for more information on those.
- *
- * @param plugin_name The name of the plugin we're generating endpoints for.
- *   Used as a visual indication of what plugin is using this endpoint.
- */
-boost::filesystem::path generate_endpoint_base(const std::string& plugin_name);

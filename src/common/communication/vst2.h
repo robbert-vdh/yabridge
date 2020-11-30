@@ -124,7 +124,7 @@ class EventHandler {
      *   connections will be accepted when `connect()` gets called. This should
      *   be set to `true` on the plugin side, and `false` on the Wine host side.
      *
-     * @see Vst2Sockets::connect
+     * @see Sockets::connect
      */
     EventHandler(boost::asio::io_context& io_context,
                  boost::asio::local::stream_protocol::endpoint endpoint,
@@ -448,7 +448,7 @@ class EventHandler {
 
     /**
      * This acceptor will be used once synchronously on the listening side
-     * during `Vst2Sockets::connect()`. When `EventHandler::receive_events()` is
+     * during `Sockets::connect()`. When `EventHandler::receive_events()` is
      * then called, we'll recreate the acceptor to asynchronously listen for new
      * incoming socket connections on `endpoint` using. This is important,
      * because on the case of `vst_host_callback` the acceptor is first accepts
@@ -467,9 +467,7 @@ class EventHandler {
 
 /**
  * Manages all the sockets used for communicating between the plugin and the
- * Wine host. Every plugin will get its own directory (the socket endpoint base
- * directory), and all socket endpoints are created within this directory. This
- * is usually `/run/user/<uid>/yabridge-<plugin_name>-<random_id>/`.
+ * Wine host when hosting a VST2 plugin.
  *
  * On the plugin side this class should be initialized with `listen` set to
  * `true` before launching the Wine VST host. This will start listening on the
@@ -480,7 +478,7 @@ class EventHandler {
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  */
 template <typename Thread>
-class Vst2Sockets {
+class Vst2Sockets : public Sockets {
    public:
     /**
      * Sets up the sockets using the specified base directory. The sockets won't
@@ -499,7 +497,7 @@ class Vst2Sockets {
     Vst2Sockets(boost::asio::io_context& io_context,
                 const boost::filesystem::path& endpoint_base_dir,
                 bool listen)
-        : base_dir(endpoint_base_dir),
+        : Sockets(endpoint_base_dir),
           host_vst_dispatch(io_context,
                             (base_dir / "host_vst_dispatch.sock").string(),
                             listen),
@@ -517,36 +515,9 @@ class Vst2Sockets {
                            (base_dir / "host_vst_control.sock").string(),
                            listen) {}
 
-    /**
-     * Cleans up the directory containing the socket endpoints when yabridge
-     * shuts down if it still exists.
-     */
-    ~Vst2Sockets() {
-        // Manually close all sockets so we break out of any blocking operations
-        // that may still be active
-        host_vst_dispatch.close();
-        vst_host_callback.close();
-        host_vst_parameters.close();
-        host_vst_process_replacing.close();
-        host_vst_control.close();
+    ~Vst2Sockets() { close(); }
 
-        // Only clean if we're the ones who have created these files, although
-        // it should not cause any harm to also do this on the Wine side
-        try {
-            boost::filesystem::remove_all(base_dir);
-        } catch (const boost::filesystem::filesystem_error&) {
-            // There should not be any filesystem errors since only one side
-            // removes the files, but if we somehow can't delete the file
-            // then we can just silently ignore this
-        }
-    }
-
-    /**
-     * Depending on the value of the `listen` argument passed to the
-     * constructor, either accept connections made to the sockets on the Linux
-     * side or connect to the sockets on the Wine side
-     */
-    void connect() {
+    void connect() override {
         host_vst_dispatch.connect();
         vst_host_callback.connect();
         host_vst_parameters.connect();
@@ -554,11 +525,15 @@ class Vst2Sockets {
         host_vst_control.connect();
     }
 
-    /**
-     * The base directory for our socket endpoints. All `*_endpoint` variables
-     * below are files within this directory.
-     */
-    const boost::filesystem::path base_dir;
+    void close() override {
+        // Manually close all sockets so we break out of any blocking operations
+        // that may still be active
+        host_vst_dispatch.close();
+        vst_host_callback.close();
+        host_vst_parameters.close();
+        host_vst_process_replacing.close();
+        host_vst_control.close();
+    }
 
     // The naming convention for these sockets is `<from>_<to>_<event>`. For
     // instance the socket named `host_vst_dispatch` forwards

@@ -25,10 +25,7 @@
 #include <boost/process/child.hpp>
 #include <thread>
 
-// TODO: Those host process implementation now directly uses the Vst2Sockets and
-//       thus requires `communication/vst2.h`. We should create a simple common
-//       interface for this instead.
-#include "../common/communication/vst2.h"
+#include "../common/communication/common.h"
 #include "../common/logging.h"
 #include "utils.h"
 
@@ -130,7 +127,7 @@ class IndividualHost : public HostProcess {
     IndividualHost(boost::asio::io_context& io_context,
                    Logger& logger,
                    boost::filesystem::path plugin_path,
-                   const Vst2Sockets<std::jthread>& sockets);
+                   const Sockets& sockets);
 
     PluginArchitecture architecture() override;
     boost::filesystem::path path() override;
@@ -172,7 +169,7 @@ class GroupHost : public HostProcess {
     GroupHost(boost::asio::io_context& io_context,
               Logger& logger,
               boost::filesystem::path plugin_path,
-              Vst2Sockets<std::jthread>& socket_endpoint,
+              Sockets& socket_endpoint,
               std::string group_name);
 
     PluginArchitecture architecture() override;
@@ -206,7 +203,7 @@ class GroupHost : public HostProcess {
      * The associated sockets for the plugin we're hosting. This is used to
      * terminate the plugin.
      */
-    Vst2Sockets<std::jthread>& sockets;
+    Sockets& sockets;
 
     /**
      * A thread that waits for the group host to have started and then ask it to
