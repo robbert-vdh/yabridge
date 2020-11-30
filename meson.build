@@ -229,6 +229,7 @@ host_sources = [
   'src/common/serialization/vst2.cpp',
   'src/common/configuration.cpp',
   'src/common/logging.cpp',
+  'src/common/plugins.cpp',
   'src/common/utils.cpp',
   'src/wine-host/bridges/vst2.cpp',
   'src/wine-host/editor.cpp',

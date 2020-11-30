@@ -190,7 +190,9 @@ void GroupBridge::accept_requests() {
             // The plugin has to be initiated on the IO context's thread because
             // this has to be done on the same thread that's handling messages,
             // and all window messages have to be handled from the same thread.
-            logger.log("Received request to host '" + request.plugin_path +
+            logger.log("Received request to host " +
+                       plugin_type_to_string(request.plugin_type) +
+                       " plugin at '" + request.plugin_path +
                        "' using socket endpoint base directory '" +
                        request.endpoint_base_dir + "'");
             try {

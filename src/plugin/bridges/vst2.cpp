@@ -617,6 +617,7 @@ void Vst2PluginBridge::set_parameter(AEffect* /*plugin*/,
 void Vst2PluginBridge::log_init_message() {
     std::stringstream init_msg;
 
+    // TODO: This should also list the plugin type
     init_msg << "Initializing yabridge version " << yabridge_git_version
              << std::endl;
     init_msg << "host:         '" << vst_host->path().string() << "'"

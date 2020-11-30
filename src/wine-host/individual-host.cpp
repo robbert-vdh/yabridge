@@ -55,6 +55,9 @@ main(int argc, char* argv[]) {
     }
 
     // TODO: Do something with the plugin type
+    // TODO: On the Wine side of things, we should only allow hosting VST3
+    //       plugins when the Meson build option is enabled (because, well,
+    //       otherwise we'd get compile errors)
     const PluginType plugin_type = plugin_type_from_string(argv[1]);
     const std::string plugin_location(argv[2]);
     const std::string socket_endpoint_path(argv[3]);
@@ -64,6 +67,8 @@ main(int argc, char* argv[]) {
               << " (32-bit compatibility mode)"
 #endif
               << std::endl;
+    std::cout << "Preparing to load " << plugin_type_to_string(plugin_type)
+              << " plugin at '" << plugin_location << "'" << std::endl;
 
     // As explained in `Vst2Bridge`, the plugin has to be initialized in the
     // same thread as the one that calls `io_context.run()`. This setup is
