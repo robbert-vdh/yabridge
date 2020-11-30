@@ -68,7 +68,7 @@ class Vst2Bridge {
      *   or if communication could not be set up.
      *
      * TODO: Make these two arguments `boost::filesystem::path`, also use those
-     *       in `GroupRequest`.
+     *       in `HostRequest`.
      */
     Vst2Bridge(MainContext& main_context,
                std::string plugin_dll_path,

@@ -34,7 +34,7 @@ enum class LibArchitecture { dll_32, dll_64 };
  * `plugin_tyep_to_string()` and `plugin_type_from_string()` can be used to
  * convert these values to and from strings. The string form is used as a
  * command line argument for the individual Wine host applications, and the enum
- * form is passed directly in `GroupRequest`.
+ * form is passed directly in `HostRequest`.
  *
  * The `unkonwn` tag is not used directly, but in the event that we do call
  * `plugin_type_from_string()` with some invalid value we can use it to

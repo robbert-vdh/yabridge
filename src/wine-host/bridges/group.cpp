@@ -184,8 +184,8 @@ void GroupBridge::accept_requests() {
             // TODO: Do something with the plugin type
             // TODO: Maybe try to merge instantiation with `individual_host`?
             //       Might only make things messier
-            const auto request = read_object<GroupRequest>(socket);
-            write_object(socket, GroupResponse{boost::this_process::get_id()});
+            const auto request = read_object<HostRequest>(socket);
+            write_object(socket, HostResponse{boost::this_process::get_id()});
 
             // The plugin has to be initiated on the IO context's thread because
             // this has to be done on the same thread that's handling messages,

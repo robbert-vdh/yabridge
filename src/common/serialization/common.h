@@ -51,11 +51,11 @@ template <class... Ts>
 overload(Ts...) -> overload<Ts...>;
 
 /**
- * An object containing the startup options for hosting a plugin in a plugin
- * group process. These are the exact same options that would have been passed
- * to `yabridge-host.exe` were the plugin to be hosted individually.
+ * An object containing the startup options for hosting a plugin. These options
+ * are passed to `yabridge-host.exe` as command line arguments, and they are
+ * used directly by group host processes.
  */
-struct GroupRequest {
+struct HostRequest {
     PluginType plugin_type;
     std::string plugin_path;
     std::string endpoint_base_dir;
@@ -69,8 +69,8 @@ struct GroupRequest {
 };
 
 template <>
-struct std::hash<GroupRequest> {
-    std::size_t operator()(GroupRequest const& params) const noexcept {
+struct std::hash<HostRequest> {
+    std::size_t operator()(HostRequest const& params) const noexcept {
         std::hash<string> hasher{};
 
         return hasher(params.plugin_path) ^
@@ -79,12 +79,12 @@ struct std::hash<GroupRequest> {
 };
 
 /**
- * The response sent back after the group host process receives a `GroupRequest`
+ * The response sent back after the group host process receives a `HostRequest`
  * object. This only holds the group process's PID because we need to know if
  * the group process crashes while it is initializing the plugin to prevent us
  * from waiting indefinitely for the socket to be connected to.
  */
-struct GroupResponse {
+struct HostResponse {
     pid_t pid;
 
     template <typename S>

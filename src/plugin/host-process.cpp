@@ -183,10 +183,10 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
         write_object(
             group_socket,
             // TODO: The plugin type should of course not be hardcoded
-            GroupRequest{.plugin_type = PluginType::vst2,
-                         .plugin_path = plugin_path.string(),
-                         .endpoint_base_dir = endpoint_base_dir.string()});
-        const auto response = read_object<GroupResponse>(group_socket);
+            HostRequest{.plugin_type = PluginType::vst2,
+                        .plugin_path = plugin_path.string(),
+                        .endpoint_base_dir = endpoint_base_dir.string()});
+        const auto response = read_object<HostResponse>(group_socket);
         assert(response.pid > 0);
     };
 
