@@ -181,6 +181,9 @@ void GroupBridge::accept_requests() {
             // yabridge plugin will be able to tell if the plugin has caused
             // this process to crash during its initialization to prevent
             // waiting indefinitely on the sockets to be connected to.
+            // TODO: Do something with the plugin type
+            // TODO: Maybe try to merge instantiation with `individual_host`?
+            //       Might only make things messier
             const auto request = read_object<GroupRequest>(socket);
             write_object(socket, GroupResponse{boost::this_process::get_id()});
 

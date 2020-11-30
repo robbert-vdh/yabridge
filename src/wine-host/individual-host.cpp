@@ -25,9 +25,9 @@
 #include "bridges/vst2.h"
 
 /**
- * This is the default VST host application. It will load the specified VST2
- * plugin, and then connect back to the `libyabridge-{vst2,vst3}.so` instance
- * that spawned this over the socket.
+ * This is the default plugin host application. It will load the specified
+ * plugin plugin, and then connect back to the `libyabridge-{vst2,vst3}.so`
+ * instance that spawned this over the socket.
  *
  * The explicit calling convention is needed to work around a bug introduced in
  * Wine 5.7: https://bugs.winehq.org/show_bug.cgi?id=49138
@@ -36,23 +36,28 @@ int __cdecl __attribute__((visibility("default")))
 main(int argc, char* argv[]) {
     set_realtime_priority();
 
-    // We pass the name of the VST plugin .dll file to load and the base
-    // directory for the Unix domain socket endpoints to connect to as the first
-    // two arguments of this process in plugin/bridge.cpp.
-    if (argc < 3) {
-        std::cerr << "Usage: "
+    // We pass plugin format, the name of the VST2 plugin .dll file or VST3
+    // bundle to load, and the base directory for the Unix domain socket
+    // endpoints to connect to as the first two arguments of this process in
+    // `src/plugin/host-process.cpp`
+    if (argc < 4) {
+        std::cerr
+            << "Usage: "
 #ifdef __i386__
-                  << yabridge_individual_host_name_32bit
+            << yabridge_individual_host_name_32bit
 #else
-                  << yabridge_individual_host_name
+            << yabridge_individual_host_name
 #endif
-                  << " <vst_plugin_dll> <endpoint_base_directory>" << std::endl;
+            << " <plugin_type> <plugin_location> <endpoint_base_directory>"
+            << std::endl;
 
         return 1;
     }
 
-    const std::string plugin_dll_path(argv[1]);
-    const std::string socket_endpoint_path(argv[2]);
+    // TODO: Do something with the plugin type
+    const PluginType plugin_type = plugin_type_from_string(argv[1]);
+    const std::string plugin_location(argv[2]);
+    const std::string socket_endpoint_path(argv[3]);
 
     std::cout << "Initializing yabridge host version " << yabridge_git_version
 #ifdef __i386__
@@ -68,7 +73,7 @@ main(int argc, char* argv[]) {
     MainContext main_context{};
     std::unique_ptr<Vst2Bridge> bridge;
     try {
-        bridge = std::make_unique<Vst2Bridge>(main_context, plugin_dll_path,
+        bridge = std::make_unique<Vst2Bridge>(main_context, plugin_location,
                                               socket_endpoint_path);
     } catch (const std::runtime_error& error) {
         std::cerr << "Error while initializing Wine VST host:" << std::endl;
@@ -77,7 +82,7 @@ main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::cout << "Finished initializing '" << plugin_dll_path << "'"
+    std::cout << "Finished initializing '" << plugin_location << "'"
               << std::endl;
 
     // We'll listen for `dispatcher()` calls on a different thread, but the

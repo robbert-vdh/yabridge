@@ -22,6 +22,8 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "../plugins.h"
+
 // The plugin should always be compiled to a 64-bit version, but the host
 // application can also be 32-bit to allow using 32-bit legacy Windows VST in a
 // modern Linux VST host. Because of this we have to make sure to always use
@@ -54,11 +56,13 @@ overload(Ts...) -> overload<Ts...>;
  * to `yabridge-host.exe` were the plugin to be hosted individually.
  */
 struct GroupRequest {
+    PluginType plugin_type;
     std::string plugin_path;
     std::string endpoint_base_dir;
 
     template <typename S>
     void serialize(S& s) {
+        s.object(plugin_type);
         s.text1b(plugin_path, 4096);
         s.text1b(endpoint_base_dir, 4096);
     }

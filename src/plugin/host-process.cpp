@@ -92,6 +92,8 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
       plugin_arch(find_dll_architecture(plugin_path)),
       host_path(find_vst_host(plugin_arch, false)),
       host(launch_host(host_path,
+                       // TODO: This should of course not be hardcoded
+                       plugin_type_to_string(PluginType::vst2),
 #ifdef WITH_WINEDBG
                        plugin_path.filename(),
 #else
@@ -180,7 +182,9 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
 
         write_object(
             group_socket,
-            GroupRequest{.plugin_path = plugin_path.string(),
+            // TODO: The plugin type should of course not be hardcoded
+            GroupRequest{.plugin_type = PluginType::vst2,
+                         .plugin_path = plugin_path.string(),
                          .endpoint_base_dir = endpoint_base_dir.string()});
         const auto response = read_object<GroupResponse>(group_socket);
         assert(response.pid > 0);
