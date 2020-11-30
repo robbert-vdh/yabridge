@@ -85,6 +85,7 @@ shared_library(
     'src/common/serialization/vst2.cpp',
     'src/common/configuration.cpp',
     'src/common/logging.cpp',
+    'src/common/plugins.cpp',
     'src/common/utils.cpp',
     'src/plugin/bridges/vst2.cpp',
     'src/plugin/host-process.cpp',

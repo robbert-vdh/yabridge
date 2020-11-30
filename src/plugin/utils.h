@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <boost/filesystem.hpp>
 #include <boost/process/async_pipe.hpp>
 #include <boost/process/environment.hpp>
 
 #include "../common/configuration.h"
+#include "../common/plugins.h"
 
 /**
  * Boost 1.72 was released with a known breaking bug caused by a missing
@@ -40,12 +40,6 @@ class patched_async_pipe : public boost::process::async_pipe {
 };
 
 /**
- * A tag to differentiate between 32 and 64-bit plugins, used to determine which
- * host application to use.
- */
-enum class PluginArchitecture { vst_32, vst_64 };
-
-/**
  * Create a logger prefix based on the endpoint base directory used for the
  * sockets for easy identification. This will result in a prefix of the form
  * `[<plugin_name>-<random_id>] `.
@@ -57,20 +51,6 @@ enum class PluginArchitecture { vst_32, vst_64 };
  */
 std::string create_logger_prefix(
     const boost::filesystem::path& endpoint_base_dir);
-
-/**
- * Determine the architecture of a VST plugin (or rather, a .dll file) based on
- * it's header values.
- *
- * See https://docs.microsoft.com/en-us/windows/win32/debug/pe-format for more
- * information on the PE32 format.
- *
- * @param plugin_path The path to the .dll file we're going to check.
- *
- * @return The detected architecture.
- * @throw std::runtime_error If the file is not a .dll file.
- */
-PluginArchitecture find_vst_architecture(boost::filesystem::path);
 
 /**
  * Finds the Wine VST host (either `yabridge-host.exe` or `yabridge-host.exe`

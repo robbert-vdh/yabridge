@@ -27,6 +27,7 @@
 
 #include "../common/communication/common.h"
 #include "../common/logging.h"
+#include "../common/plugins.h"
 #include "utils.h"
 
 /**
