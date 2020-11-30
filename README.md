@@ -38,9 +38,9 @@ highly compatible, while also staying easy to debug and maintain.
 
 Yabridge has been tested under the following VST hosts using Wine Staging 5.9:
 
-- Bitwig Studio 3.2 and the betas of Bitwig Studio 3.3
+- Bitwig Studio 3.3
 - Carla 2.2
-- Ardour 6.3
+- Ardour 6.5
 - Mixbus 6.0.702
 - Qtractor 0.9.18
 - REAPER 6.15
