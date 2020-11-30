@@ -230,6 +230,10 @@ class EventHandler {
         // another thread, then we'll spawn a new socket to handle the request.
         EventResult response;
         {
+            // XXX: Maybe at some point we should benchmark how often this
+            //      ad hoc socket spawning mechanism gets used. If some hosts
+            //      for instance consistently and repeatedly trigger this then
+            //      we might be able to do some optimizations there.
             std::unique_lock lock(write_mutex, std::try_to_lock);
             if (lock.owns_lock()) {
                 write_object(socket, event);
