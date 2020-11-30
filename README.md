@@ -44,7 +44,7 @@ Yabridge has been tested under the following VST hosts using Wine Staging 5.9:
 - Mixbus 6.0.702
 - Qtractor 0.9.18
 - REAPER 6.15
-- Renoise 3.2.1
+- Renoise 3.2.4
 
 Please let me know if there are any issues with other VST hosts.
 
