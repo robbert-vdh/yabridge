@@ -42,6 +42,11 @@ enum class LibArchitecture { dll_32, dll_64 };
  */
 enum class PluginType { vst2, vst3, unknown };
 
+template <typename S>
+void serialize(S& s, PluginType& plugin_type) {
+    s.value4b(plugin_type);
+}
+
 /**
  * Determine the architecture of a `.dll` file based on the file header.
  *
