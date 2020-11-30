@@ -30,6 +30,19 @@
 enum class LibArchitecture { dll_32, dll_64 };
 
 /**
+ * A tag to differentiate between different plugin types.
+ * `plugin_tyep_to_string()` and `plugin_type_from_string()` can be used to
+ * convert these values to and from strings. The string form is used as a
+ * command line argument for the individual Wine host applications, and the enum
+ * form is passed directly in `GroupRequest`.
+ *
+ * The `unkonwn` tag is not used directly, but in the event that we do call
+ * `plugin_type_from_string()` with some invalid value we can use it to
+ * gracefully show an error message without resorting to exceptions.
+ */
+enum class PluginType { vst2, vst3, unknown };
+
+/**
  * Determine the architecture of a `.dll` file based on the file header.
  *
  * See https://docs.microsoft.com/en-us/windows/win32/debug/pe-format for more
@@ -40,4 +53,7 @@ enum class LibArchitecture { dll_32, dll_64 };
  * @return The detected architecture.
  * @throw std::runtime_error If the file is not a .dll file.
  */
-LibArchitecture find_dll_architecture(boost::filesystem::path);
+LibArchitecture find_dll_architecture(const boost::filesystem::path&);
+
+PluginType plugin_type_from_string(const std::string& plugin_type);
+std::string plugin_type_to_string(const PluginType& plugin_type);

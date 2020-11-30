@@ -5,7 +5,7 @@
 
 namespace fs = boost::filesystem;
 
-LibArchitecture find_dll_architecture(fs::path plugin_path) {
+LibArchitecture find_dll_architecture(const fs::path& plugin_path) {
     std::ifstream file(plugin_path, std::ifstream::binary | std::ifstream::in);
 
     // The linker will place the offset where the PE signature is placed at the
@@ -50,4 +50,24 @@ LibArchitecture find_dll_architecture(fs::path plugin_path) {
                  "architecture: 0x"
               << std::hex << machine_type;
     throw std::runtime_error(error_msg.str());
+}
+
+PluginType plugin_type_from_string(const std::string& plugin_type) {
+    if (plugin_type == "vst2") {
+        return PluginType::vst2;
+    } else if (plugin_type == "vst3") {
+        return PluginType::vst3;
+    } else {
+        return PluginType::unknown;
+    }
+}
+
+std::string plugin_type_to_string(const PluginType& plugin_type) {
+    if (plugin_type == PluginType::vst2) {
+        return "vst2";
+    } else if (plugin_type == PluginType::vst3) {
+        return "vst3";
+    } else {
+        return "unknown";
+    }
 }
