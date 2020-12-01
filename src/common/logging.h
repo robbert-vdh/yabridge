@@ -55,6 +55,9 @@ class Logger {
          * The same as the above but without filtering out any events. This is
          * very chatty but it can be crucial for debugging plugin-specific
          * problems.
+         *
+         * This will also print print information about the audio processing
+         * callbacks, which can be useful for diagnosing misbehaving plugins.
          */
         all_events = 2,
     };
@@ -113,6 +116,16 @@ class Logger {
         intptr_t return_value,
         const EventResultPayload& payload,
         const std::optional<EventResultPayload>& value_payload);
+
+    /**
+     * Log a message that should only be printed when the `verbosity` is set to
+     * `all_events`. This should only be used for simple primitive messages
+     * without any formatting since the actual check happens within this
+     * function.
+     *
+     * @param message The message to write.
+     */
+    void log_trace(const std::string& message);
 
    private:
     /**

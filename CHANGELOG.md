@@ -23,6 +23,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - When `YABRIDGE_DEBUG_LEVEL` is set to 2 or higher and a plugin asks the host
   for the current position in the song, yabridge will now print that position in
   quarter notes and samples as part of the debug output.
+- `YABRIDGE_DEBUG_LEVEL` 2 will now also cause all audio processing callbacks to
+  be logged. This makes recognizing misbheaving plugins a bit easier.
 - Symbols in all `libyabridge.so` and all Winelib `.so` files are now hidden by
   default.
 

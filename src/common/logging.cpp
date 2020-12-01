@@ -105,6 +105,12 @@ void Logger::log(const std::string& message) {
     *stream << formatted_message.str() << std::flush;
 }
 
+void Logger::log_trace(const std::string& message) {
+    if (verbosity >= Verbosity::all_events) {
+        log(message);
+    }
+}
+
 void Logger::log_get_parameter(int index) {
     if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
         std::ostringstream message;

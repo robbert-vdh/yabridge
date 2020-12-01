@@ -544,21 +544,30 @@ void PluginBridge::process(AEffect* /*plugin*/,
                            float** inputs,
                            float** outputs,
                            int sample_frames) {
+    // Technically either `Vst2PluginBridge::process()` or
+    // `Vst2PluginBridge::process_replacing()` could actually call the other
+    // function on the plugin depending on what the plugin supports.
+    logger.log_trace(">> process() :: start");
     do_process<float, false>(inputs, outputs, sample_frames);
+    logger.log_trace("   process() :: end");
 }
 
 void PluginBridge::process_replacing(AEffect* /*plugin*/,
                                      float** inputs,
                                      float** outputs,
                                      int sample_frames) {
+    logger.log_trace(">> processReplacing() :: start");
     do_process<float, true>(inputs, outputs, sample_frames);
+    logger.log_trace("   processReplacing() :: end");
 }
 
 void PluginBridge::process_double_replacing(AEffect* /*plugin*/,
                                             double** inputs,
                                             double** outputs,
                                             int sample_frames) {
+    logger.log_trace(">> processDoubleReplacing() :: start");
     do_process<double, true>(inputs, outputs, sample_frames);
+    logger.log_trace("   processDoubleReplacing() :: end");
 }
 
 float PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
