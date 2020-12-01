@@ -525,7 +525,8 @@ The following dependencies are included in the repository as a Meson wrap:
 - [bitsery](https://github.com/fraillt/bitsery)
 - [function2](https://github.com/Naios/function2)
 - [tomlplusplus](https://github.com/marzer/tomlplusplus)
-- The [VST3 SDK](https://github.com/robbert-vdh/vst3sdk)
+- Version 3.7.1 of the [VST3 SDK](https://github.com/robbert-vdh/vst3sdk) with
+  some [patches](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/tools/patch-vst3-sdk.sh)
 
 The project can then be compiled as follows:
 
