@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "logging.h"
+#include "common.h"
 
 #ifdef __WINE__
 #include "../wine-host/boost-fix.h"
@@ -28,8 +28,6 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-
-#include "vst24.h"
 
 /**
  * The environment variable indicating whether to log to a file. Will log to

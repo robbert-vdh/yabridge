@@ -31,7 +31,7 @@
 
 #include "../../common/communication/vst2.h"
 #include "../../common/configuration.h"
-#include "../../common/logging.h"
+#include "../../common/logging/common.h"
 #include "../editor.h"
 #include "../utils.h"
 

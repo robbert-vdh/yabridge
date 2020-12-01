@@ -19,7 +19,7 @@
 #include <iostream>
 #include <memory>
 
-#include "../common/logging.h"
+#include "../common/logging/common.h"
 #include "bridges/vst2.h"
 
 #define VST_EXPORT __attribute__((visibility("default")))

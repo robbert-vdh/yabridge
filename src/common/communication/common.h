@@ -28,7 +28,7 @@
 #include <boost/asio/write.hpp>
 #include <boost/filesystem.hpp>
 
-#include "../logging.h"
+#include "../logging/common.h"
 
 template <typename B>
 using OutputAdapter = bitsery::OutputBufferAdapter<B>;

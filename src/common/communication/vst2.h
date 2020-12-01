@@ -18,7 +18,7 @@
 
 #include <atomic>
 
-#include "../logging.h"
+#include "../logging/common.h"
 #include "common.h"
 
 /**

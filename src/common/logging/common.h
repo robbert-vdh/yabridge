@@ -22,7 +22,7 @@
 
 // TODO: Split up the plugin API specific logging functions so we don't have to
 //       include a bunch of stuff we don't need
-#include "serialization/vst2.h"
+#include "../serialization/vst2.h"
 
 /**
  * Super basic logging facility meant for debugging malfunctioning VST

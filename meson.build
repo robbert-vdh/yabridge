@@ -84,7 +84,7 @@ shared_library(
     'src/common/communication/vst2.cpp',
     'src/common/serialization/vst2.cpp',
     'src/common/configuration.cpp',
-    'src/common/logging.cpp',
+    'src/common/logging/common.cpp',
     'src/common/plugins.cpp',
     'src/common/utils.cpp',
     'src/plugin/bridges/vst2.cpp',
@@ -203,7 +203,7 @@ if with_vst3
   shared_library(
     'yabridge-vst3',
     [
-      'src/common/logging.cpp',
+      'src/common/logging/common.cpp',
       'src/plugin/vst3-plugin.cpp',
       version_header,
     ],
@@ -228,7 +228,7 @@ host_sources = [
   'src/common/communication/vst2.cpp',
   'src/common/serialization/vst2.cpp',
   'src/common/configuration.cpp',
-  'src/common/logging.cpp',
+  'src/common/logging/common.cpp',
   'src/common/plugins.cpp',
   'src/common/utils.cpp',
   'src/wine-host/bridges/vst2.cpp',
