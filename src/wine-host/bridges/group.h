@@ -252,7 +252,7 @@ class GroupBridge {
      * on `next_plugin_id`.
      */
     std::unordered_map<size_t,
-                       std::pair<Win32Thread, std::unique_ptr<Vst2Bridge>>>
+                       std::pair<Win32Thread, std::unique_ptr<HostBridge>>>
         active_plugins;
     /**
      * A counter for the next unique plugin ID. When hosting a new plugin we'll

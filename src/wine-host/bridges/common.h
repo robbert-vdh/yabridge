@@ -24,6 +24,9 @@
  * will actually host a plugin and do all the function call forwarding.
  */
 class HostBridge {
+   protected:
+    HostBridge(boost::filesystem::path plugin_path);
+
    public:
     virtual ~HostBridge(){};
 
@@ -63,6 +66,11 @@ class HostBridge {
      * `HostBridge::editor` for more information.
      */
     void handle_win32_events();
+
+    /**
+     * The path to the .dll being loaded in the Wine plugin host.
+     */
+    const boost::filesystem::path plugin_path;
 
    protected:
     /**

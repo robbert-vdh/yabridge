@@ -108,7 +108,7 @@ GroupBridge::~GroupBridge() {
 void GroupBridge::handle_plugin_dispatch(size_t plugin_id) {
     // At this point the `active_plugins` map will already contain the
     // intialized plugin's `Vst2Bridge` instance and this thread's handle
-    Vst2Bridge* bridge;
+    HostBridge* bridge;
     {
         std::lock_guard lock(active_plugins_mutex);
         bridge = active_plugins[plugin_id].second.get();
@@ -117,7 +117,7 @@ void GroupBridge::handle_plugin_dispatch(size_t plugin_id) {
     // Blocks this thread until the plugin shuts down, handling all events on
     // the main IO context
     bridge->run();
-    logger.log("'" + bridge->vst_plugin_path.string() + "' has exited");
+    logger.log("'" + bridge->plugin_path.string() + "' has exited");
 
     // After the plugin has exited we'll remove this thread's plugin from the
     // active plugins. This is done within the IO context because the call to
@@ -181,9 +181,6 @@ void GroupBridge::accept_requests() {
             // yabridge plugin will be able to tell if the plugin has caused
             // this process to crash during its initialization to prevent
             // waiting indefinitely on the sockets to be connected to.
-            // TODO: Do something with the plugin type
-            // TODO: Maybe try to merge instantiation with `individual_host`?
-            //       Might only make things messier
             const auto request = read_object<HostRequest>(socket);
             write_object(socket, HostResponse{boost::this_process::get_id()});
 
@@ -196,9 +193,23 @@ void GroupBridge::accept_requests() {
                        "' using socket endpoint base directory '" +
                        request.endpoint_base_dir + "'");
             try {
-                auto bridge = std::make_unique<Vst2Bridge>(
-                    main_context, request.plugin_path,
-                    request.endpoint_base_dir);
+                std::unique_ptr<HostBridge> bridge = nullptr;
+                switch (request.plugin_type) {
+                    case PluginType::vst2:
+                        bridge = std::make_unique<Vst2Bridge>(
+                            main_context, request.plugin_path,
+                            request.endpoint_base_dir);
+                        break;
+                    case PluginType::vst3:
+                        throw std::runtime_error("TODO: Not yet implemented");
+                        break;
+                    case PluginType::unknown:
+                        throw std::runtime_error(
+                            "Invalid plugin host request received, how did you "
+                            "even manage to do this?");
+                        break;
+                }
+
                 logger.log("Finished initializing '" + request.plugin_path +
                            "'");
 

@@ -16,6 +16,9 @@
 
 #include "common.h"
 
+HostBridge::HostBridge(boost::filesystem::path plugin_path)
+    : plugin_path(plugin_path) {}
+
 void HostBridge::handle_win32_events() {
     if (editor) {
         editor->handle_win32_events();
