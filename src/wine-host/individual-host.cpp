@@ -54,11 +54,11 @@ main(int argc, char* argv[]) {
         return 1;
     }
 
-    // TODO: Do something with the plugin type
     // TODO: On the Wine side of things, we should only allow hosting VST3
     //       plugins when the Meson build option is enabled (because, well,
     //       otherwise we'd get compile errors)
-    const PluginType plugin_type = plugin_type_from_string(argv[1]);
+    const std::string plugin_type_str(argv[1]);
+    const PluginType plugin_type = plugin_type_from_string(plugin_type_str);
     const std::string plugin_location(argv[2]);
     const std::string socket_endpoint_path(argv[3]);
 
@@ -76,12 +76,39 @@ main(int argc, char* argv[]) {
     // don't need to differentiate between individually hosted plugins and
     // plugin groups when it comes to event handling.
     MainContext main_context{};
-    std::unique_ptr<Vst2Bridge> bridge;
+    Win32Thread worker_thread;
+    std::shared_ptr<HostBridge> bridge;
     try {
-        bridge = std::make_unique<Vst2Bridge>(main_context, plugin_location,
-                                              socket_endpoint_path);
+        switch (plugin_type) {
+            case PluginType::vst2:
+                bridge = std::make_shared<Vst2Bridge>(
+                    main_context, plugin_location, socket_endpoint_path);
+
+                // We'll listen for `dispatcher()` calls on a different thread,
+                // but the actual events will still be executed within the IO
+                // context
+                worker_thread = Win32Thread([&]() {
+                    std::static_pointer_cast<Vst2Bridge>(bridge)
+                        ->handle_dispatch();
+
+                    // When the sockets get closed, this application should
+                    // terminate gracefully
+                    main_context.stop();
+                });
+                break;
+            case PluginType::vst3:
+                std::cerr << "TODO: Not yet implemented" << std::endl;
+                return 1;
+                break;
+            case PluginType::unknown:
+                std::cerr << "Unknown plugin type '" << plugin_type_str << "'"
+                          << std::endl;
+                return 1;
+                break;
+        };
     } catch (const std::runtime_error& error) {
-        std::cerr << "Error while initializing Wine VST host:" << std::endl;
+        std::cerr << "Error while initializing the Wine plugin host:"
+                  << std::endl;
         std::cerr << error.what() << std::endl;
 
         return 1;
@@ -89,16 +116,6 @@ main(int argc, char* argv[]) {
 
     std::cout << "Finished initializing '" << plugin_location << "'"
               << std::endl;
-
-    // We'll listen for `dispatcher()` calls on a different thread, but the
-    // actual events will still be executed within the IO context
-    Win32Thread dispatch_handler([&]() {
-        bridge->handle_dispatch();
-
-        // When the sockets get closed, this application should terminate
-        // gracefully
-        main_context.stop();
-    });
 
     // Handle Win32 messages and X11 events on a timer, just like in
     // `GroupBridge::async_handle_events()``
