@@ -36,6 +36,9 @@ SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory() {
         //       already implemented and which are left
         // TODO: And when we get a query for some interface that we do not (yet)
         //       support, we should print some easy to spot warning message
+        // TODO: Should we always use plugin groups or for VST3 plugins? Since
+        //       they seem to be very keen on sharing resources and leaving
+        //       modules loaded.
         // TODO: The documentation mentions that private communication through
         //       VST3's message system should be handled on a separate timer
         //       thread.  Do we need special handling for this on the Wine side
@@ -45,6 +48,26 @@ SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory() {
         //       the`IComponentHandler::{begin,perform,end}Edit()` functions
         //       have to be called from the UI thread. Should we have special
         //       handling for this or does everything just magically work out?
+        // TODO: Something that's not relevant here but that will require some
+        //       thinking is that VST3 requires all plugins to be installed in
+        //       ~/.vst3. I can think of two options and I"m not sure what's the
+        //       best one:
+        //
+        //       1. We can add the required files for the Linux VST3 plugin to
+        //          the location of the Windows VST3 plugin (by adding some
+        //          files to the  bundle or creating a bundle next to it) and
+        //          then symlink that bundle to ~/.vst3.
+        //       2. We can create the bundle in ~/.vst3 and symlink the Windows
+        //          plugin and all of its resources into bundle as if they were
+        //          also installed there.
+        //
+        //       The second one sounds much better, but it will still need some
+        //       more consideration. Also, yabridgectl will need to do some
+        //       extra work there to detect removed plugins.
+        // TODO: Also symlink presets, and allow pruning broken symlinks there
+        //       as well
+        // TODO: And how do we choose between 32-bit and 64-bit versions of a
+        //        VST3 plugin if they exist? Config files?
 
         // static Steinberg::PFactoryInfo factoryInfo(vendor, url, email,
         // flags); gPluginFactory = new Steinberg::CPluginFactory(factoryInfo);
