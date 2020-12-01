@@ -18,6 +18,7 @@
 
 #include <bitsery/adapter/buffer.h>
 #include <bitsery/bitsery.h>
+#include <bitsery/traits/vector.h>
 
 #ifdef __WINE__
 #include "../wine-host/boost-fix.h"

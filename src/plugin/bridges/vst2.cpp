@@ -127,7 +127,7 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
     // lockstep anyway
     host_callback_handler = std::jthread([&]() {
         sockets.vst_host_callback.receive_events(
-            std::pair<Logger&, bool>(logger, false),
+            std::pair<Vst2Logger&, bool>(logger, false),
             [&](Event& event, bool /*on_main_thread*/) {
                 // MIDI events sent from the plugin back to the host are a
                 // special case here. They have to sent during the
@@ -431,8 +431,8 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
             try {
                 // TODO: Add some kind of timeout?
                 return_value = sockets.host_vst_dispatch.send_event(
-                    converter, std::pair<Logger&, bool>(logger, true), opcode,
-                    index, value, data, option);
+                    converter, std::pair<Vst2Logger&, bool>(logger, true),
+                    opcode, index, value, data, option);
             } catch (const boost::system::system_error& a) {
                 // Thrown when the socket gets closed because the VST plugin
                 // loaded into the Wine process crashed during shutdown
@@ -483,8 +483,8 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
     // receiving function temporarily allocate a large enough buffer rather than
     // to have a bunch of allocated memory sitting around doing nothing.
     return sockets.host_vst_dispatch.send_event(
-        converter, std::pair<Logger&, bool>(logger, true), opcode, index, value,
-        data, option);
+        converter, std::pair<Vst2Logger&, bool>(logger, true), opcode, index,
+        value, data, option);
 }
 
 template <typename T, bool replacing>

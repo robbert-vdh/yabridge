@@ -28,6 +28,7 @@
 #include "../common/communication/common.h"
 #include "../common/logging/common.h"
 #include "../common/plugins.h"
+#include "../common/serialization/common.h"
 #include "utils.h"
 
 /**

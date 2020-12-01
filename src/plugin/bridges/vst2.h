@@ -25,7 +25,7 @@
 
 #include "../../common/communication/vst2.h"
 #include "../../common/configuration.h"
-#include "../../common/logging/common.h"
+#include "../../common/logging/vst2.h"
 #include "../host-process.h"
 
 /**
@@ -171,7 +171,7 @@ class Vst2PluginBridge {
      *
      * @see Logger::create_from_env
      */
-    Logger logger;
+    Vst2Logger logger;
 
     /**
      * The version of Wine currently in use. Used in the debug output on plugin

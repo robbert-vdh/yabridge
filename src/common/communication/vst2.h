@@ -18,7 +18,8 @@
 
 #include <atomic>
 
-#include "../logging/common.h"
+#include "../logging/vst2.h"
+#include "../serialization/vst2.h"
 #include "common.h"
 
 /**
@@ -151,7 +152,7 @@ class EventHandler : public AdHocSocketHandler<Thread> {
      */
     template <typename D>
     intptr_t send_event(D& data_converter,
-                        std::optional<std::pair<Logger&, bool>> logging,
+                        std::optional<std::pair<Vst2Logger&, bool>> logging,
                         int opcode,
                         int index,
                         intptr_t value,
@@ -226,7 +227,7 @@ class EventHandler : public AdHocSocketHandler<Thread> {
      * @relates passthrough_event
      */
     template <typename F>
-    void receive_events(std::optional<std::pair<Logger&, bool>> logging,
+    void receive_events(std::optional<std::pair<Vst2Logger&, bool>> logging,
                         F callback) {
         // Reading, processing, and writing back event data from the sockets
         // works in the same way regardless of which socket we're using
