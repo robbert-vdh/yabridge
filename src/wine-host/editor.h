@@ -84,7 +84,9 @@ class WindowClass {
  * window without using XEmbed. If anyone knows how to work around these two
  * issues, please let me know and I'll switch to using XEmbed again.
  *
- * This workaround was inspired by LinVST.
+ * This workaround was inspired by LinVst.
+ *
+ * TODO: Decouple this from VST2
  */
 class Editor {
    public:
