@@ -32,6 +32,19 @@ SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory() {
         //          those classes.
         //
         //       We should wrap this in our `Vst3PluginBridge`
+        // TODO: We should also create a list of which extensions we have
+        //       already implemented and which are left
+        // TODO: And when we get a query for some interface that we do not (yet)
+        //       support, we should print some easy to spot warning message
+        // TODO: The documentation mentions that private communication through
+        //       VST3's message system should be handled on a separate timer
+        //       thread.  Do we need special handling for this on the Wine side
+        //       (e.g. during the event handling loop)? Probably not, since the
+        //       actual host should manage all messaging.
+        // TODO: The docs very explicitly mention that
+        //       the`IComponentHandler::{begin,perform,end}Edit()` functions
+        //       have to be called from the UI thread. Should we have special
+        //       handling for this or does everything just magically work out?
 
         // static Steinberg::PFactoryInfo factoryInfo(vendor, url, email,
         // flags); gPluginFactory = new Steinberg::CPluginFactory(factoryInfo);
