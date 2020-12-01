@@ -706,7 +706,10 @@ void Vst2PluginBridge::log_init_message() {
 #ifdef WITH_WINEDBG
     init_msg << "- winedbg" << std::endl;
 #endif
-#if !(defined(WITH_BITBRIDGE) || defined(WITH_WINEDBG))
+#ifdef WITH_VST3
+    init_msg << "- VST3 support" << std::endl;
+#endif
+#if !(defined(WITH_BITBRIDGE) || defined(WITH_WINEDBG) || defined(WITH_VST3))
     init_msg << "  <none>" << std::endl;
 #endif
     init_msg << std::endl;
