@@ -49,6 +49,10 @@ if with_winedbg
   compiler_options += '-DWITH_WINEDBG'
 endif
 
+if with_vst3
+  compiler_options += '-DWITH_VST3'
+endif
+
 # Generate header files for configuration variables such as the current git tag
 # and the name of the host binary
 subdir('src/common/config')
