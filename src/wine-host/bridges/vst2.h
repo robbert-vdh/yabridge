@@ -31,22 +31,14 @@
 
 #include "../../common/communication/vst2.h"
 #include "../../common/configuration.h"
-#include "../editor.h"
 #include "../utils.h"
+#include "common.h"
 
 /**
  * This hosts a Windows VST2 plugin, forwards messages sent by the Linux VST
  * plugin and provides host callback function for the plugin to talk back.
- *
- * @remark Because of Win32 API limitations, all window handling has to be done
- *   from a single thread. Most plugins won't have any issues when using
- *   multiple message loops, but the Melda plugins for instance will only update
- *   their GUIs from the message loop of the thread that created the first
- *   instance. This is why we pass an IO context to this class so everything
- *   that's not performance critical (audio and midi event handling) is handled
- *   on the same thread, even when hosting multiple plugins.
  */
-class Vst2Bridge {
+class Vst2Bridge : public HostBridge {
    public:
     /**
      * Initializes the Windows VST plugin and set up communication with the
@@ -82,30 +74,6 @@ class Vst2Bridge {
      *   `main_context.run()`.
      */
     void handle_dispatch();
-
-    /**
-     * Handle X11 events for the editor window if it is open. This can safely be
-     * run from any thread.
-     */
-    void handle_x11_events();
-
-    /**
-     * Run the message loop for this plugin. This is only used for the
-     * individual plugin host, so that we can filter out some unnecessary timer
-     * events. When hosting multiple plugins, a simple central message loop
-     * should be used instead. This is run on a timer in the same IO context as
-     * the one that handles the events, i.e. `main_context`.
-     *
-     * Because of the way the Win32 API works we have to process events on the
-     * same thread as the one the window was created on, and that thread is the
-     * thread that's handling dispatcher calls. Some plugins will also rely on
-     * the Win32 message loop to run tasks on a timer and to defer loading, so
-     * we have to make sure to always run this loop. The only exception is a in
-     * specific situation that can cause a race condition in some plugins
-     * because of incorrect assumptions made by the plugin. See the dostring for
-     * `Vst2Bridge::editor` for more information.
-     */
-    void handle_win32_events();
 
     /**
      * Forward the host callback made by the plugin to the host and return the
@@ -203,13 +171,4 @@ class Vst2Bridge {
      * now happens in two different threads.
      */
     std::mutex next_buffer_midi_events_mutex;
-
-    /**
-     * The plugin editor window. Allows embedding the plugin's editor into a
-     * Wine window, and embedding that Wine window into a window provided by the
-     * host. Should be empty when the editor is not open.
-     *
-     * @see should_postpone_message_loop
-     */
-    std::optional<Editor> editor;
 };
