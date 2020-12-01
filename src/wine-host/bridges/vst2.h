@@ -62,18 +62,7 @@ class Vst2Bridge : public HostBridge {
                std::string plugin_dll_path,
                std::string endpoint_base_dir);
 
-    /**
-     * Handle events until the plugin exits. The actual events are posted to
-     * `main_context` to ensure that all operations to could potentially
-     * interact with Win32 code are run from a single thread, even when hosting
-     * multiple plugins. The message loop should be run on a timer within the
-     * same IO context.
-     *
-     * @note Because of the reasons mentioned above, for this to work the plugin
-     *   should be initialized within the same thread that calls
-     *   `main_context.run()`.
-     */
-    void handle_dispatch();
+    void run() override;
 
     /**
      * Forward the host callback made by the plugin to the host and return the

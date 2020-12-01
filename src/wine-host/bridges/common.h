@@ -25,6 +25,21 @@
  */
 class HostBridge {
    public:
+    virtual ~HostBridge(){};
+
+    /**
+     * Handle events until the plugin exits. The actual events are posted to
+     * `main_context` to ensure that all operations to could potentially
+     * interact with Win32 code are run from a single thread, even when hosting
+     * multiple plugins. The message loop should be run on a timer within the
+     * same IO context.
+     *
+     * @note Because of the reasons mentioned above, for this to work the plugin
+     *   should be initialized within the same thread that calls
+     *   `main_context.run()`.
+     */
+    virtual void run() = 0;
+
     /**
      * Handle X11 events for the editor window if it is open. This can safely be
      * run from any thread.

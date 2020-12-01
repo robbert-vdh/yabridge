@@ -116,7 +116,7 @@ void GroupBridge::handle_plugin_dispatch(size_t plugin_id) {
 
     // Blocks this thread until the plugin shuts down, handling all events on
     // the main IO context
-    bridge->handle_dispatch();
+    bridge->run();
     logger.log("'" + bridge->vst_plugin_path.string() + "' has exited");
 
     // After the plugin has exited we'll remove this thread's plugin from the

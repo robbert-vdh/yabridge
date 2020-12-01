@@ -271,7 +271,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     });
 }
 
-void Vst2Bridge::handle_dispatch() {
+void Vst2Bridge::run() {
     sockets.host_vst_dispatch.receive_events(
         std::nullopt, [&](Event& event, bool /*on_main_thread*/) {
             if (event.opcode == effProcessEvents) {

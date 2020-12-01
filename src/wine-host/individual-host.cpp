@@ -76,25 +76,12 @@ main(int argc, char* argv[]) {
     // don't need to differentiate between individually hosted plugins and
     // plugin groups when it comes to event handling.
     MainContext main_context{};
-    Win32Thread worker_thread;
-    std::shared_ptr<HostBridge> bridge;
+    std::unique_ptr<HostBridge> bridge;
     try {
         switch (plugin_type) {
             case PluginType::vst2:
-                bridge = std::make_shared<Vst2Bridge>(
+                bridge = std::make_unique<Vst2Bridge>(
                     main_context, plugin_location, socket_endpoint_path);
-
-                // We'll listen for `dispatcher()` calls on a different thread,
-                // but the actual events will still be executed within the IO
-                // context
-                worker_thread = Win32Thread([&]() {
-                    std::static_pointer_cast<Vst2Bridge>(bridge)
-                        ->handle_dispatch();
-
-                    // When the sockets get closed, this application should
-                    // terminate gracefully
-                    main_context.stop();
-                });
                 break;
             case PluginType::vst3:
                 std::cerr << "TODO: Not yet implemented" << std::endl;
@@ -113,6 +100,17 @@ main(int argc, char* argv[]) {
 
         return 1;
     }
+
+    // Let the plugin receive and handle its events on its own thread. Some
+    // potentially unsafe events that should always be run from the UI thread
+    // will be posted to `main_context`.
+    Win32Thread worker_thread([&]() {
+        bridge->run();
+
+        // When the sockets get closed, this application should
+        // terminate gracefully
+        main_context.stop();
+    });
 
     std::cout << "Finished initializing '" << plugin_location << "'"
               << std::endl;
