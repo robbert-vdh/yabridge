@@ -75,9 +75,9 @@ on how to use Wine to install Windows applications, check out Wine's
 
 ### Automatic setup (recommended)
 
-The easiest way to get up and running is through
+The easiest way to get up and running is by using
 [yabridgectl](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl).
-You can download yabridgectl from GitHub's [releases
+Download yabridgectl and yabridge (which it controls) from GitHub's [releases
 page](https://github.com/robbert-vdh/yabridge/releases). There are also AUR
 packages available if you're running Arch or Manjaro
 ([yabridgectl](https://aur.archlinux.org/packages/yabridgectl/),
