@@ -85,6 +85,8 @@ main(int argc, char* argv[]) {
                 break;
             case PluginType::vst3:
 #ifdef WITH_VST3
+                justdewit(plugin_location);
+
                 std::cerr << "TODO: Not yet implemented" << std::endl;
                 return 1;
 #else

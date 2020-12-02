@@ -36,6 +36,8 @@ SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory() {
         //       already implemented and which are left
         // TODO: And when we get a query for some interface that we do not (yet)
         //       support, we should print some easy to spot warning message
+        // TODO: Check whether `IPlugView::isPlatformTypeSupported` needs
+        //       special handling.
         // TODO: Should we always use plugin groups or for VST3 plugins? Since
         //       they seem to be very keen on sharing resources and leaving
         //       modules loaded.
