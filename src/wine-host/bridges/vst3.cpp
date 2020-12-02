@@ -19,9 +19,6 @@
 #include "../boost-fix.h"
 
 // TODO: Do something with this, I just wanted to get the build working
-// TODO: Check if this can load both regular Unix style paths with Wine. Oh and
-//       check if it works at all.
-// TODO: Check if <filesystem> now works with Winelib, or replace with Boost
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
 void justdewit(const std::string& path) {
@@ -30,7 +27,13 @@ void justdewit(const std::string& path) {
         VST3::Hosting::Win32Module::create(path, error);
 
     if (plugin) {
-        std::cerr << "Hooray!" << std::endl;
+        // TODO: They use some thin wrappers around the interfaces, we can
+        //       probably reuse these instead of having to make our own
+        VST3::Hosting::FactoryInfo info = plugin->getFactory().info();
+        std::cout << "Plugin name:  " << plugin->getName() << std::endl;
+        std::cout << "Vendor:       " << info.vendor() << std::endl;
+        std::cout << "URL:          " << info.url() << std::endl;
+        std::cout << "Send spam to: " << info.email() << std::endl;
     } else {
         std::cerr << "Ohnoes!" << std::endl;
         std::cerr << error << std::endl;
