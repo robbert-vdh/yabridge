@@ -18,6 +18,7 @@
 
 #include "../boost-fix.h"
 
+#include <boost/asio/local/stream_protocol.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/filesystem.hpp>
@@ -25,7 +26,8 @@
 #include <atomic>
 #include <thread>
 
-#include "vst2.h"
+#include "../common/logging/common.h"
+#include "common.h"
 
 /**
  * Encapsulate capturing the STDOUT or STDERR stream by opening a pipe and

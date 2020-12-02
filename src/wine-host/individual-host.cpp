@@ -23,6 +23,9 @@
 
 #include "../common/utils.h"
 #include "bridges/vst2.h"
+#ifdef WITH_VST3
+#include "bridges/vst3.h"
+#endif
 
 /**
  * This is the default plugin host application. It will load the specified
@@ -54,9 +57,6 @@ main(int argc, char* argv[]) {
         return 1;
     }
 
-    // TODO: On the Wine side of things, we should only allow hosting VST3
-    //       plugins when the Meson build option is enabled (because, well,
-    //       otherwise we'd get compile errors)
     const std::string plugin_type_str(argv[1]);
     const PluginType plugin_type = plugin_type_from_string(plugin_type_str);
     const std::string plugin_location(argv[2]);
@@ -84,8 +84,15 @@ main(int argc, char* argv[]) {
                     main_context, plugin_location, socket_endpoint_path);
                 break;
             case PluginType::vst3:
+#ifdef WITH_VST3
                 std::cerr << "TODO: Not yet implemented" << std::endl;
                 return 1;
+#else
+                std::cerr << "This version of yabridge has not been compiled "
+                             "with VST3 support"
+                          << std::endl;
+                return 1;
+#endif
                 break;
             case PluginType::unknown:
                 std::cerr << "Unknown plugin type '" << plugin_type_str << "'"

@@ -22,6 +22,10 @@
 #include <regex>
 
 #include "../../common/communication/common.h"
+#include "vst2.h"
+#ifdef WITH_VST3
+#include "vst3.h"
+#endif
 
 // FIXME: `std::filesystem` is broken in wineg++, at least under Wine 5.8. Any
 //        path operation will thrown an encoding related error
@@ -201,7 +205,13 @@ void GroupBridge::accept_requests() {
                             request.endpoint_base_dir);
                         break;
                     case PluginType::vst3:
+#ifdef WITH_VST3
                         throw std::runtime_error("TODO: Not yet implemented");
+#else
+                        throw std::runtime_error(
+                            "This version of yabridge has not been compiled "
+                            "with VST3 support");
+#endif
                         break;
                     case PluginType::unknown:
                         throw std::runtime_error(
