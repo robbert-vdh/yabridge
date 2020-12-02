@@ -129,6 +129,8 @@ xcb_dep = dependency('xcb')
 # TODO: Statically link this on the ubuntu-18.04 build
 native_filesystem_dep = declare_dependency(link_args : '-lstdc++fs')
 wine_ole32_dep = declare_dependency(link_args : '-lole32')
+# The SDK includes a comment pragma that would link to this on MSVC
+wine_shell32_dep = declare_dependency(link_args : '-lshell32')
 wine_uuid_dep = declare_dependency(link_args : '-luuid')
 
 include_dir = include_directories('src/include')
@@ -323,6 +325,7 @@ if with_vst3
     native_filesystem_dep,
     vst3_sdk_hosting_wine_64bit_dep,
     wine_ole32_dep,
+    wine_shell32_dep,
     wine_uuid_dep,
   ]
 endif
@@ -369,6 +372,7 @@ if with_bitbridge
       native_filesystem_dep,
       vst3_sdk_hosting_wine_32bit_dep,
       wine_ole32_dep,
+      wine_shell32_dep,
       wine_uuid_dep,
     ]
   endif
