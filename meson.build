@@ -57,6 +57,57 @@ endif
 # and the name of the host binary
 subdir('src/common/config')
 
+vst2_plugin_sources = [
+  'src/common/communication/common.cpp',
+  'src/common/communication/vst2.cpp',
+  'src/common/serialization/vst2.cpp',
+  'src/common/configuration.cpp',
+  'src/common/logging/common.cpp',
+  'src/common/logging/vst2.cpp',
+  'src/common/plugins.cpp',
+  'src/common/utils.cpp',
+  'src/plugin/bridges/vst2.cpp',
+  'src/plugin/host-process.cpp',
+  'src/plugin/utils.cpp',
+  'src/plugin/vst2-plugin.cpp',
+  version_header,
+]
+
+vst3_plugin_sources = [
+  'src/common/logging/common.cpp',
+  'src/common/logging/vst2.cpp',
+  'src/plugin/vst3-plugin.cpp',
+  version_header,
+]
+
+host_sources = [
+  'src/common/communication/vst2.cpp',
+  'src/common/serialization/vst2.cpp',
+  'src/common/configuration.cpp',
+  'src/common/logging/common.cpp',
+  'src/common/logging/vst2.cpp',
+  'src/common/plugins.cpp',
+  'src/common/utils.cpp',
+  'src/wine-host/bridges/common.cpp',
+  'src/wine-host/bridges/vst2.cpp',
+  'src/wine-host/editor.cpp',
+  'src/wine-host/editor.cpp',
+  'src/wine-host/utils.cpp',
+  version_header,
+]
+
+if with_vst3
+  host_sources += [
+    'src/wine-host/bridges/vst3.cpp'
+  ]
+endif
+
+individual_host_sources = host_sources + ['src/wine-host/individual-host.cpp']
+group_host_sources = host_sources + [
+  'src/wine-host/bridges/group.cpp',
+  'src/wine-host/group-host.cpp',
+]
+
 # Statically link against Boost.Filesystem, otherwise it would become impossible
 # to distribute a prebuilt version of yabridge
 boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
@@ -83,21 +134,7 @@ include_dir = include_directories('src/include')
 
 shared_library(
   'yabridge-vst2',
-  [
-    'src/common/communication/common.cpp',
-    'src/common/communication/vst2.cpp',
-    'src/common/serialization/vst2.cpp',
-    'src/common/configuration.cpp',
-    'src/common/logging/common.cpp',
-    'src/common/logging/vst2.cpp',
-    'src/common/plugins.cpp',
-    'src/common/utils.cpp',
-    'src/plugin/bridges/vst2.cpp',
-    'src/plugin/host-process.cpp',
-    'src/plugin/utils.cpp',
-    'src/plugin/vst2-plugin.cpp',
-    version_header,
-  ],
+  vst2_plugin_sources,
   native : true,
   include_directories : include_dir,
   dependencies : [
@@ -207,12 +244,7 @@ if with_vst3
   # applications can handle both VST2 and VST3 plugins.
   shared_library(
     'yabridge-vst3',
-    [
-      'src/common/logging/common.cpp',
-      'src/common/logging/vst2.cpp',
-      'src/plugin/vst3-plugin.cpp',
-      version_header,
-    ],
+    vst3_plugin_sources,
     native : true,
     include_directories : include_dir,
     dependencies : [
@@ -229,34 +261,6 @@ if with_vst3
 else
   message('VST3 support has been disabled')
 endif
-
-host_sources = [
-  'src/common/communication/vst2.cpp',
-  'src/common/serialization/vst2.cpp',
-  'src/common/configuration.cpp',
-  'src/common/logging/common.cpp',
-  'src/common/logging/vst2.cpp',
-  'src/common/plugins.cpp',
-  'src/common/utils.cpp',
-  'src/wine-host/bridges/common.cpp',
-  'src/wine-host/bridges/vst2.cpp',
-  'src/wine-host/editor.cpp',
-  'src/wine-host/editor.cpp',
-  'src/wine-host/utils.cpp',
-  version_header,
-]
-
-if with_vst3
-  host_sources += [
-    'src/wine-host/bridges/vst3.cpp'
-  ]
-endif
-
-individual_host_sources = host_sources + ['src/wine-host/individual-host.cpp']
-group_host_sources = host_sources + [
-  'src/wine-host/bridges/group.cpp',
-  'src/wine-host/group-host.cpp',
-]
 
 executable(
   individual_host_name_64bit,
