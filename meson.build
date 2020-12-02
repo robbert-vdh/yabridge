@@ -217,6 +217,7 @@ if with_vst3
   vst3_sdk_hosting_wine_dep = declare_dependency(
     link_with : vst3_sdk_hosting_wine,
     include_directories : vst3_include_dir,
+    compile_args : vst3_wine_compiler_options,
   )
 endif
 
