@@ -21,7 +21,7 @@ fi
 
 # Make sure all imports use the correct casing
 find "$sdk_directory" -type f \( -iname '*.h' -or -iname '*.cpp' \) -print0 |
-  xargs -0 sed -i 's/^#include <Windows.h>$/#include <windows.h>/'
+  xargs -0 sed -i -E 's/^#include <(Windows.h|ShlObj.h)>$/#include <\L\1\E>/'
 
 # Use the string manipulation functions from the C standard library
 sed -i 's/\bSMTG_OS_WINDOWS\b/0/g;s/\bSMTG_OS_LINUX\b/1/g' "$sdk_directory/base/source/fstring.cpp"
