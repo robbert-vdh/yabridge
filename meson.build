@@ -125,9 +125,6 @@ tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('t
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
 
-# These are required for the VST3 SDK's module import system
-# TODO: Statically link this on the ubuntu-18.04 build
-native_filesystem_dep = declare_dependency(link_args : '-lstdc++fs')
 wine_ole32_dep = declare_dependency(link_args : '-lole32')
 # The SDK includes a comment pragma that would link to this on MSVC
 wine_shell32_dep = declare_dependency(link_args : '-lshell32')
@@ -322,7 +319,6 @@ host_64bit_deps = [
 ]
 if with_vst3
   host_64bit_deps += [
-    native_filesystem_dep,
     vst3_sdk_hosting_wine_64bit_dep,
     wine_ole32_dep,
     wine_shell32_dep,
@@ -369,7 +365,6 @@ if with_bitbridge
   ]
   if with_vst3
     host_32bit_deps += [
-      native_filesystem_dep,
       vst3_sdk_hosting_wine_32bit_dep,
       wine_ole32_dep,
       wine_shell32_dep,

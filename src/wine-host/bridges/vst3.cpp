@@ -16,6 +16,8 @@
 
 #include "vst3.h"
 
+#include "../boost-fix.h"
+
 // TODO: Do something with this, I just wanted to get the build working
 // TODO: Check if this can load both regular Unix style paths with Wine. Oh and
 //       check if it works at all.
