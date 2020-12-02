@@ -127,27 +127,6 @@ xcb_dep = dependency('xcb')
 
 include_dir = include_directories('src/include')
 
-# The application consists of a plugin (`libyabridge-{vst2,vst3}.so`) that calls
-# a Winelib application (`yabridge-{host,group}{,-32}.exe`) that can host
-# Windows VST plugins. More information about the way these two components work
-# together can be found in `docs/architecture.md`.
-
-shared_library(
-  'yabridge-vst2',
-  vst2_plugin_sources,
-  native : true,
-  include_directories : include_dir,
-  dependencies : [
-    boost_dep,
-    boost_filesystem_dep,
-    bitsery_dep,
-    threads_dep,
-    tomlplusplus_dep,
-  ],
-  cpp_args : compiler_options,
-  link_args : ['-ldl']
-)
-
 if with_vst3
   # Meson does not allow mixing native and non native dependencies from
   # subprojects. The only workaround is to only define the necessary variables
@@ -239,7 +218,30 @@ if with_vst3
     link_with : vst3_sdk_hosting_wine,
     include_directories : vst3_include_dir,
   )
+endif
 
+# The application consists of a plugin (`libyabridge-{vst2,vst3}.so`) that calls
+# a Winelib application (`yabridge-{host,group}{,-32}.exe`) that can host
+# Windows VST plugins. More information about the way these two components work
+# together can be found in `docs/architecture.md`.
+
+shared_library(
+  'yabridge-vst2',
+  vst2_plugin_sources,
+  native : true,
+  include_directories : include_dir,
+  dependencies : [
+    boost_dep,
+    boost_filesystem_dep,
+    bitsery_dep,
+    threads_dep,
+    tomlplusplus_dep,
+  ],
+  cpp_args : compiler_options,
+  link_args : ['-ldl']
+)
+
+if with_vst3
   # This is the VST3 equivalent of `libyabridge-vst2.so`. The Wine host
   # applications can handle both VST2 and VST3 plugins.
   shared_library(
@@ -258,8 +260,6 @@ if with_vst3
     cpp_args : compiler_options,
     link_args : ['-ldl'],
   )
-else
-  message('VST3 support has been disabled')
 endif
 
 executable(
