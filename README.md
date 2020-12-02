@@ -22,7 +22,8 @@ imcomplete list of things that still have to be done before this can be used:
 - Mention that this update will break all existing symlinks and that the old
   `libyabridge.so` file should be removed when upgrading.
 - Update all the AUR packages.
-- Add CMake to the AUR package dependencies and to our Docker images
+- Test the binaries built on GitHub on plain Ubuntu 18.04, are we missing any
+  static linking?
 
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 

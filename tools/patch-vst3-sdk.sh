@@ -70,7 +70,11 @@ sed -i 's/^#if defined(_MSC_VER) && .\+$/#if __WINE__/' "$sdk_directory/public.s
 
 # Use the proper `<filesystem>` header instead of the experimental one
 # TODO: Check if <filesystem> now works with Winelib, or replace with Boost
-sed -i 's/^#if _HAS_CXX17 && defined(_MSC_VER)$/#if 1/' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
+# sed -i 's/^#if _HAS_CXX17 && defined(_MSC_VER)$/#if 1/' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
+
+# Don't try adding `std::u8string` to an `std::vector<std::string>`. MSVC
+# probably coerces them, but GCC doesn't
+sed -i 's/\bgeneric_u8string\b/generic_string/g' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
 
 # Meson requires this program to output something, or else it will error out
 # when trying to encode the empty output

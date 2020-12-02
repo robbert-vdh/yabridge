@@ -125,6 +125,12 @@ tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('t
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
 
+# These are required for the VST3 SDK's module import system
+# TODO: Statically link this on the ubuntu-18.04 build
+native_filesystem_dep = declare_dependency(link_args : '-lstdc++fs')
+wine_ole32_dep = declare_dependency(link_args : '-lole32')
+wine_uuid_dep = declare_dependency(link_args : '-luuid')
+
 include_dir = include_directories('src/include')
 
 if with_vst3
@@ -192,7 +198,7 @@ if with_vst3
   vst3_base_wine = static_library(
     'base_wine',
     vst3.get_variable('base_sources'),
-    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + [ '-Wno-cpp'],
+    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-m64', '-Wno-cpp'],
     include_directories : vst3_include_dir,
     override_options : ['warning_level=0'],
     native : false,
@@ -200,7 +206,7 @@ if with_vst3
   vst3_pluginterfaces_wine = static_library(
     'pluginterfaces_wine',
     vst3.get_variable('pluginterfaces_sources'),
-    cpp_args : vst3_compiler_options + vst3_wine_compiler_options,
+    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-m64'],
     include_directories : vst3_include_dir,
     override_options : ['warning_level=0'],
     native : false,
@@ -209,7 +215,7 @@ if with_vst3
     'sdk_hosting_wine',
     vst3.get_variable('sdk_common_sources') + vst3.get_variable('sdk_hosting_sources'),
     link_with : [vst3_base_wine, vst3_pluginterfaces_wine],
-    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-Wno-multichar'],
+    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-m64', '-Wno-multichar'],
     include_directories : vst3_include_dir,
     override_options : ['warning_level=0'],
     native : false,
@@ -217,8 +223,48 @@ if with_vst3
   vst3_sdk_hosting_wine_dep = declare_dependency(
     link_with : vst3_sdk_hosting_wine,
     include_directories : vst3_include_dir,
+    # This does mean that we now have a lot of defines in our code, but the
+    # alternative would be patching every location in the SDK where they include
+    # `windows.h`
     compile_args : vst3_wine_compiler_options,
   )
+
+  # And another time for the 32-bit version
+  if with_bitbridge
+    vst3_base_wine_32 = static_library(
+      'base_wine_32',
+      vst3.get_variable('base_sources'),
+      cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-m32', '-Wno-cpp'],
+      include_directories : vst3_include_dir,
+      override_options : ['warning_level=0'],
+      native : false,
+    )
+    vst3_pluginterfaces_wine_32 = static_library(
+      'pluginterfaces_wine_32',
+      vst3.get_variable('pluginterfaces_sources'),
+      cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-m32'],
+      include_directories : vst3_include_dir,
+      override_options : ['warning_level=0'],
+      native : false,
+    )
+    vst3_sdk_hosting_wine_32 = static_library(
+      'sdk_hosting_wine_32',
+      vst3.get_variable('sdk_common_sources') + vst3.get_variable('sdk_hosting_sources'),
+      link_with : [vst3_base_wine_32, vst3_pluginterfaces_wine_32],
+      cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-m32', '-Wno-multichar'],
+      include_directories : vst3_include_dir,
+      override_options : ['warning_level=0'],
+      native : false,
+    )
+    vst3_sdk_hosting_wine_32_dep = declare_dependency(
+      link_with : vst3_sdk_hosting_wine_32,
+      include_directories : vst3_include_dir,
+      # This does mean that we now have a lot of defines in our code, but the
+      # alternative would be patching every location in the SDK where they include
+      # `windows.h`
+      compile_args : vst3_wine_compiler_options,
+    )
+  endif
 endif
 
 # The application consists of a plugin (`libyabridge-{vst2,vst3}.so`) that calls
@@ -263,41 +309,23 @@ if with_vst3
   )
 endif
 
-executable(
-  individual_host_name_64bit,
-  individual_host_sources,
-  native : false,
-  include_directories : include_dir,
-  dependencies : [
-    boost_dep,
-    boost_filesystem_dep,
-    bitsery_dep,
-    function2_dep,
-    tomlplusplus_dep,
-    wine_threads_dep,
-    xcb_dep,
-  ],
-  cpp_args : compiler_options + ['-m64'],
-  link_args : ['-m64'],
-)
-
-executable(
-  group_host_name_64bit,
-  group_host_sources,
-  native : false,
-  include_directories : include_dir,
-  dependencies : [
-    boost_dep,
-    boost_filesystem_dep,
-    bitsery_dep,
-    function2_dep,
-    tomlplusplus_dep,
-    wine_threads_dep,
-    xcb_dep,
-  ],
-  cpp_args : compiler_options + ['-m64'],
-  link_args : ['-m64'],
-)
+host_deps = [
+  boost_dep,
+  boost_filesystem_dep,
+  bitsery_dep,
+  function2_dep,
+  tomlplusplus_dep,
+  wine_threads_dep,
+  xcb_dep,
+]
+if with_vst3
+  host_deps += [
+    native_filesystem_dep,
+    vst3_sdk_hosting_wine_dep,
+    wine_ole32_dep,
+    wine_uuid_dep,
+  ]
+endif
 
 if with_bitbridge
   message('Bitbridge enabled, configuring a 32-bit host application')
@@ -308,7 +336,7 @@ if with_bitbridge
   # search path set by the system in `find_library()`. If anyone does know how
   # to properly do this, please let me know!
   winegcc = meson.get_compiler('cpp', native : false)
-  boost_filesystem_dep = winegcc.find_library(
+  boost_filesystem_32_dep = winegcc.find_library(
     'boost_filesystem',
     static : with_static_boost,
     dirs : [
@@ -325,22 +353,54 @@ if with_bitbridge
       '/usr/lib',
     ]
   )
-  xcb_dep = winegcc.find_library('xcb')
+  xcb_32_dep = winegcc.find_library('xcb')
 
+  host_32_deps = [
+    boost_dep,
+    boost_filesystem_32_dep,
+    bitsery_dep,
+    function2_dep,
+    tomlplusplus_dep,
+    wine_threads_dep,
+    xcb_32_dep,
+  ]
+  if with_vst3
+    host_32_deps += [
+      native_filesystem_dep,
+      vst3_sdk_hosting_wine_32_dep,
+      wine_ole32_dep,
+      wine_uuid_dep,
+    ]
+  endif
+endif
+
+executable(
+  individual_host_name_64bit,
+  individual_host_sources,
+  native : false,
+  include_directories : include_dir,
+  dependencies : host_deps,
+  cpp_args : compiler_options + ['-m64'],
+  link_args : ['-m64'],
+)
+
+executable(
+  group_host_name_64bit,
+  group_host_sources,
+  native : false,
+  include_directories : include_dir,
+  dependencies : host_deps,
+  cpp_args : compiler_options + ['-m64'],
+  link_args : ['-m64'],
+)
+
+if with_bitbridge
   executable(
     individual_host_name_32bit,
     individual_host_sources,
     native : false,
     include_directories : include_dir,
-    dependencies : [
-      boost_dep,
-      boost_filesystem_dep,
-      bitsery_dep,
-      function2_dep,
-      tomlplusplus_dep,
-      wine_threads_dep,
-      xcb_dep,
-    ],
+    dependencies : host_32_deps,
     cpp_args : compiler_options + ['-m32'],
     link_args : ['-m32'],
   )
@@ -350,15 +410,7 @@ if with_bitbridge
     group_host_sources,
     native : false,
     include_directories : include_dir,
-    dependencies : [
-      boost_dep,
-      boost_filesystem_dep,
-      bitsery_dep,
-      function2_dep,
-      tomlplusplus_dep,
-      wine_threads_dep,
-      xcb_dep,
-    ],
+    dependencies : host_32_deps,
     cpp_args : compiler_options + ['-m32'],
     link_args : ['-m32'],
   )
