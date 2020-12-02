@@ -63,15 +63,6 @@ replace_char16 "using Converter = std::wstring_convert<std::codecvt_utf8_utf16<c
 # version here is trying to do something funky
 sed -i 's/\b__MINGW32__\b/__NOPE__/g' "$sdk_directory/pluginterfaces/base/funknown.cpp"
 
-# The string conversion functions in the VST3 SDK itself are not mingw aware and
-# will thus use the wrong string types since we're not compiling with MSVC
-# TODO: Figure out if this is actually needed
-sed -i 's/^#if defined(_MSC_VER) && .\+$/#if __WINE__/' "$sdk_directory/public.sdk/source/vst/utility/stringconvert.cpp"
-
-# Use the proper `<filesystem>` header instead of the experimental one
-# TODO: Check if <filesystem> now works with Winelib, or replace with Boost
-# sed -i 's/^#if _HAS_CXX17 && defined(_MSC_VER)$/#if 1/' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
-
 # Don't try adding `std::u8string` to an `std::vector<std::string>`. MSVC
 # probably coerces them, but GCC doesn't
 sed -i 's/\bgeneric_u8string\b/generic_string/g' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
