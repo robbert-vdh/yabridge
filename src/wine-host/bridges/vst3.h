@@ -1,4 +1,3 @@
-
 // yabridge: a Wine VST bridge
 // Copyright (C) 2020  Robbert van der Helm
 //

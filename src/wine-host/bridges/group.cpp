@@ -16,6 +16,8 @@
 
 #include "group.h"
 
+#include "../boost-fix.h"
+
 #include <unistd.h>
 #include <boost/asio/read_until.hpp>
 #include <boost/process/environment.hpp>

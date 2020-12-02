@@ -16,3 +16,5 @@
 
 #include "vst3.h"
 
+// TODO: Do something with this, I just wanted to get the build working
+#include <public.sdk/source/vst/hosting/module_win32.cpp>
