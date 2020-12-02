@@ -208,7 +208,9 @@ void GroupBridge::accept_requests() {
                         break;
                     case PluginType::vst3:
 #ifdef WITH_VST3
-                        throw std::runtime_error("TODO: Not yet implemented");
+                        bridge = std::make_unique<Vst3Bridge>(
+                            main_context, request.plugin_path,
+                            request.endpoint_base_dir);
 #else
                         throw std::runtime_error(
                             "This version of yabridge has not been compiled "

@@ -85,10 +85,8 @@ main(int argc, char* argv[]) {
                 break;
             case PluginType::vst3:
 #ifdef WITH_VST3
-                justdewit(plugin_location);
-
-                std::cerr << "TODO: Not yet implemented" << std::endl;
-                return 1;
+                bridge = std::make_unique<Vst3Bridge>(
+                    main_context, plugin_location, socket_endpoint_path);
 #else
                 std::cerr << "This version of yabridge has not been compiled "
                              "with VST3 support"

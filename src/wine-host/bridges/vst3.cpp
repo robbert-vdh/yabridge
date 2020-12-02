@@ -18,24 +18,38 @@
 
 #include "../boost-fix.h"
 
-// TODO: Do something with this, I just wanted to get the build working
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
-void justdewit(const std::string& path) {
+Vst3Bridge::Vst3Bridge(MainContext& main_context,
+                       std::string plugin_dll_path,
+                       std::string endpoint_base_dir)
+    : HostBridge(plugin_dll_path),
+      main_context(main_context),
+      sockets(main_context.context, endpoint_base_dir, false) {
     std::string error;
-    std::shared_ptr<VST3::Hosting::Module> plugin =
-        VST3::Hosting::Win32Module::create(path, error);
+    module = VST3::Hosting::Win32Module::create(plugin_dll_path, error);
 
-    if (plugin) {
+    // TODO: Do something more useful with this
+    if (module) {
         // TODO: They use some thin wrappers around the interfaces, we can
         //       probably reuse these instead of having to make our own
-        VST3::Hosting::FactoryInfo info = plugin->getFactory().info();
-        std::cout << "Plugin name:  " << plugin->getName() << std::endl;
+        VST3::Hosting::FactoryInfo info = module->getFactory().info();
+        std::cout << "Plugin name:  " << module->getName() << std::endl;
         std::cout << "Vendor:       " << info.vendor() << std::endl;
         std::cout << "URL:          " << info.url() << std::endl;
         std::cout << "Send spam to: " << info.email() << std::endl;
     } else {
-        std::cerr << "Ohnoes!" << std::endl;
-        std::cerr << error << std::endl;
+        throw std::runtime_error("Could not load the VST3 module for '" +
+                                 plugin_dll_path + "': " + error);
     }
+
+    sockets.connect();
+
+    // TODO: We should send a copy of the configuration from the plugin at this
+    // point config = sockets.host_vst_control.receive_single<Configuration>();
+}
+
+void Vst3Bridge::run() {
+    // TODO: Do something
+    std::cerr << "TODO: Not yet implemented" << std::endl;
 }

@@ -28,7 +28,6 @@
 #include <vestige/aeffectx.h>
 #include <windows.h>
 
-#include <boost/asio/local/stream_protocol.hpp>
 #include <mutex>
 
 #include "../../common/communication/vst2.h"
@@ -43,14 +42,14 @@
 class Vst2Bridge : public HostBridge {
    public:
     /**
-     * Initializes the Windows VST plugin and set up communication with the
-     * native Linux VST plugin.
+     * Initializes the Windows VST2 plugin and set up communication with the
+     * native Linux VST2 plugin.
      *
      * @param main_context The main IO context for this application. Most events
      *   will be dispatched to this context, and the event handling loop should
      *   also be run from this context.
-     * @param plugin_dll_path A (Unix style) path to the VST plugin .dll file to
-     *   load.
+     * @param plugin_dll_path A (Unix style) path to the VST2 plugin .dll file
+     *   to load.
      * @param endpoint_base_dir The base directory used for the socket
      *   endpoints. See `Sockets` for more information.
      *
