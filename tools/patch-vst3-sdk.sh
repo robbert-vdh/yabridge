@@ -23,6 +23,12 @@ fi
 find "$sdk_directory" -type f \( -iname '*.h' -or -iname '*.cpp' \) -print0 |
   xargs -0 sed -i -E 's/^#include <(Windows.h|ShlObj.h)>$/#include <\L\1\E>/'
 
+# We're building with `WIN32_LEAN_AND_MEAN` because some of the definitions in
+# there conflict with the C standard library as provided by GCC. This also
+# excludes the shell API, which the VST3 SDK uses to open URLs.
+sed -i "s/^#include <windows.h>$/#include <windows.h>  \\/\\/ patched for yabridge\\
+#include <shellapi.h>/" "$sdk_directory/public.sdk/source/common/openurl.cpp"
+
 # Use the string manipulation functions from the C standard library
 sed -i 's/\bSMTG_OS_WINDOWS\b/0/g;s/\bSMTG_OS_LINUX\b/1/g' "$sdk_directory/base/source/fstring.cpp"
 sed -i 's/\bSMTG_OS_WINDOWS\b/0/g;s/\bSMTG_OS_LINUX\b/1/g' "$sdk_directory/pluginterfaces/base/fstrdefs.h"
@@ -57,11 +63,9 @@ replace_char16 "using Converter = std::wstring_convert<std::codecvt_utf8_utf16<c
 # version here is trying to do something funky
 sed -i 's/\b__MINGW32__\b/__NOPE__/g' "$sdk_directory/pluginterfaces/base/funknown.cpp"
 
-# We're building with `WIN32_LEAN_AND_MEAN` because some of the definitions in
-# there conflict with the C standard library as provided by GCC. This also
-# excludes the shell API, which the VST3 SDK uses to open URLs.
-sed -i "s/^#include <windows.h>$/#include <windows.h>  \\/\\/ patched for yabridge\\
-#include <shellapi.h>/" "$sdk_directory/public.sdk/source/common/openurl.cpp"
+# Use the proper `<filesystem>` header instead of the experimental one
+# TODO: Check if <filesystem> now works with Winelib, or replace with Boost
+sed -i 's/^#if _HAS_CXX17 && defined(_MSC_VER)$/#if 1/' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
 
 # Meson requires this program to output something, or else it will error out
 # when trying to encode the empty output
