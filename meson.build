@@ -246,6 +246,12 @@ host_sources = [
   version_header,
 ]
 
+if with_vst3
+  host_sources += [
+    'src/wine-host/bridges/vst3.cpp'
+  ]
+endif
+
 individual_host_sources = host_sources + ['src/wine-host/individual-host.cpp']
 group_host_sources = host_sources + [
   'src/wine-host/bridges/group.cpp',
