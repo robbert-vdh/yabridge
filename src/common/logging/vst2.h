@@ -32,6 +32,9 @@
  */
 std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode);
 
+/**
+ * Provides VST2 specific logging functionality for debugging plugins.
+ */
 class Vst2Logger : public Logger {
    public:
     // The following functions are for logging specific events, they are only

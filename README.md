@@ -21,6 +21,9 @@ imcomplete list of things that still have to be done before this can be used:
   figure out how to do this in the least confusing way possible.
 - Mention that this update will break all existing symlinks and that the old
   `libyabridge.so` file should be removed when upgrading.
+- Pay close attention to the plugin groups section, since VST3 plugins by design
+  cannot be hosted completely individually (as in, each plugin is basically in
+  its own group).
 - Update all the AUR packages.
 - Test the binaries built on GitHub on plain Ubuntu 18.04, are we missing any
   static linking?

@@ -19,7 +19,6 @@
 #include <vestige/aeffectx.h>
 
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/local/stream_protocol.hpp>
 #include <mutex>
 #include <thread>
 
@@ -122,7 +121,7 @@ class Vst2PluginBridge {
      * The configuration for this instance of yabridge. Set based on the values
      * from a `yabridge.toml`, if it exists.
      *
-     * @see ./utils.h:load_config_for
+     * @see ../utils.h:load_config_for
      */
     Configuration config;
 

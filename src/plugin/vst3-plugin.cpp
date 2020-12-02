@@ -1,17 +1,66 @@
+// yabridge: a Wine VST bridge
+// Copyright (C) 2020  Robbert van der Helm
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #include <public.sdk/source/main/pluginfactory.h>
 
-// TODO: Should you include this implementation file or copy everything over?
 #include <public.sdk/source/main/linuxmain.cpp>
+
+#include "bridges/vst3.h"
 
 using Steinberg::gPluginFactory;
 
-// TODO: What should we do here? Also, note to self, don't forget to call these
-//       on the Wine host side if the host SDK doesn't already do that for us.
+// Because VST3 plugins consist of completely independent components that have
+// to be initialized and connected by the host, hosting a VST3 plugin through
+// yabridge works very differently from hosting VST2 plugin. Even with
+// individually hosted plugins, all instances of the plugin will be handled by a
+// single dynamic library (that VST3 calls a 'module'). Because of this, we'll
+// spawn our host process when the first instance of a plugin gets initialized,
+// and when the last instance exits so will the host process.
+//
+// Even though the new VST3 module format where everything's inside of a bundle
+// is not particularly common, it is the only standard for Linux and that's what
+// we'll use. The installation format for yabridge will thus have the Windows
+// plugin symlinked to either the `x86_64-win` or the `x86-win` directory inside
+// of the bundle, even if it does not come in a bundle itself.
+
+Vst3PluginBridge* bridge = nullptr;
+
 bool InitModule() {
-    return true;
+    assert(bridge == nullptr);
+
+    try {
+        // This is the only place where we have to use manual memory management.
+        // The bridge's destructor is called when the `effClose` opcode is
+        // received.
+        bridge = new Vst3PluginBridge();
+
+        return true;
+    } catch (const std::exception& error) {
+        Logger logger = Logger::create_from_environment();
+        logger.log("Error during initialization:");
+        logger.log(error.what());
+
+        return false;
+    }
 }
 
 bool DeinitModule() {
+    assert(bridge != nullptr);
+
+    delete bridge;
     return true;
 }
 
@@ -21,9 +70,11 @@ bool DeinitModule() {
  * classes, and then recreate it here.
  */
 SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory() {
-    // TODO: So from this I can imagine that the host is supposed to keep this
-    //       module loaded into memory and reuse it for multiple plugins? How
-    //       should Wine host instances be tied to native plugin instances?
+    // TODO: Check the VST3::Hosting module loading source to see if
+    //       gPluginFactory is used directly by the host or not.
+    // TODO: We can do all of our allocations and things indie of
+    //       `Vst3PluginBridge`, so this function should call some function on
+    //       Vst3Bridge that does the initialization
     if (!gPluginFactory) {
         // TODO: Here we want to:
         //       1) Load the plugin on the Wine host
@@ -64,8 +115,11 @@ SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory() {
         //          also installed there.
         //
         //       The second one sounds much better, but it will still need some
-        //       more consideration. Also, yabridgectl will need to do some
-        //       extra work there to detect removed plugins.
+        //       more consideration. Aside from that VST3 plugins also have a
+        //       centralized preset location, even though barely anyone uses it,
+        //       yabridgectl will also have to make a symlink of that. Also,
+        //       yabridgectl will need to do some extra work there to detect
+        //       removed plugins.
         // TODO: Also symlink presets, and allow pruning broken symlinks there
         //       as well
         // TODO: And how do we choose between 32-bit and 64-bit versions of a

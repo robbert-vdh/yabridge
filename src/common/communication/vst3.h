@@ -29,6 +29,9 @@
  * sockets, and the call to `connect()` will then accept any incoming
  * connections.
  *
+ * TODO: I have no idea what the best approach here is yet, so this is very much
+ *       subject to change
+ *
  * @tparam Thread The thread implementation to use. On the Linux side this
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  */
@@ -62,4 +65,10 @@ class Vst3Sockets : public Sockets {
         // Manually close all sockets so we break out of any blocking operations
         // that may still be active
     }
+
+    // TODO: I still don't know if recursive callbacks are a thing in VST3. If
+    //       not, then we should probably have two `AdHocSocketHandler`s per
+    //       plugin instance (one for each direction, as with `dispatcher()` and
+    //       `audioMaster()` in VST2). Using fewer probably also works, but we
+    //       wouldn't want to have to spawn new sockets during audio processing.
 };
