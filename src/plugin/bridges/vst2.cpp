@@ -58,8 +58,9 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                   vst_plugin_path.filename().replace_extension("").string()),
               true),
       host_callback_function(host_callback),
-      logger(Logger::create_from_environment(
-          create_logger_prefix(sockets.base_dir))),
+      // This weird cast is not needed, but without it clang/ccls won't shut up
+      logger(static_cast<Vst2Logger&&>(Logger::create_from_environment(
+          create_logger_prefix(sockets.base_dir)))),
       wine_version(get_wine_version()),
       vst_host(
           config.group

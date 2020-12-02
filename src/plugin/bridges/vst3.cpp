@@ -31,8 +31,11 @@ Vst3PluginBridge::Vst3PluginBridge()
               generate_endpoint_base(
                   plugin_module_path.filename().replace_extension("").string()),
               true),
-      logger(Logger::create_from_environment(
-          create_logger_prefix(sockets.base_dir))),
+      // This weird cast is not needed, but without it clang/ccls won't shut up
+      // TODO: Apparently this is UB even though it works fine, so we should
+      //       probably just use composition here instead
+      logger(static_cast<Vst3Logger&&>(Logger::create_from_environment(
+          create_logger_prefix(sockets.base_dir)))),
       wine_version(get_wine_version()),
       vst_host(
           config.group
