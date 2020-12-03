@@ -81,6 +81,8 @@ fs::path find_vst_host(LibArchitecture plugin_arch, bool use_plugin_groups) {
 }
 
 fs::path find_vst_plugin() {
+    // TODO: This has to be able to differentiate between VST2 plugins and VST3
+    //       modules
     const fs::path this_plugin_path = get_this_file_location();
 
     fs::path plugin_path(this_plugin_path);

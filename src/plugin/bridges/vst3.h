@@ -42,6 +42,8 @@
  * The naming scheme of all of these 'bridge' classes is `<type>{,Plugin}Bridge`
  * for greppability reasons. The `Plugin` infix is added on the native plugin
  * side.
+ *
+ * TODO: Also inherit this from PluginBridge
  */
 class Vst3PluginBridge {
    public:
@@ -85,10 +87,8 @@ class Vst3PluginBridge {
     Vst3Sockets<std::jthread> sockets;
 
     /**
-     * The logging facility used for this instance of yabridge. See
-     * `Logger::create_from_env()` for how this is configured.
-     *
-     * @see Logger::create_from_env
+     * The logging facility used for this instance of yabridge. Wraps around
+     * `PluginBridge::generic_logger`.
      */
     Vst3Logger logger;
 

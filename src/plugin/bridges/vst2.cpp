@@ -16,15 +16,9 @@
 
 #include "vst2.h"
 
-// Generated inside of the build directory
-#include <src/common/config/config.h>
-#include <src/common/config/version.h>
-
 #include "../../common/communication/vst2.h"
-#include "../../common/utils.h"
 #include "../utils.h"
 
-namespace bp = boost::process;
 // I'd rather use std::filesystem instead, but Boost.Process depends on
 // boost::filesystem
 namespace fs = boost::filesystem;
@@ -46,42 +40,28 @@ Vst2PluginBridge& get_bridge_instance(const AEffect& plugin) {
 }
 
 Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
-    : config(load_config_for(get_this_file_location())),
-      vst_plugin_path(find_vst_plugin()),
+    : PluginBridge(PluginType::vst2,
+                   find_vst_plugin(),
+                   [](boost::asio::io_context& io_context) {
+                       return Vst2Sockets<std::jthread>(
+                           io_context,
+                           generate_endpoint_base(find_vst_plugin()
+                                                      .filename()
+                                                      .replace_extension("")
+                                                      .string()),
+                           true);
+                   }),
       // All the fields should be zero initialized because
       // `Vst2PluginInstance::vstAudioMasterCallback` from Bitwig's plugin
       // bridge will crash otherwise
       plugin(),
-      io_context(),
-      sockets(io_context,
-              generate_endpoint_base(
-                  vst_plugin_path.filename().replace_extension("").string()),
-              true),
       host_callback_function(host_callback),
-      // This weird cast is not needed, but without it clang/ccls won't shut up
+      // TODO: This is UB, use composition with `generic_logger` instead
       logger(static_cast<Vst2Logger&&>(Logger::create_from_environment(
-          create_logger_prefix(sockets.base_dir)))),
-      vst_host(
-          config.group
-              ? std::unique_ptr<HostProcess>(std::make_unique<GroupHost>(
-                    io_context,
-                    logger,
-                    HostRequest{.plugin_type = plugin_type,
-                                .plugin_path = vst_plugin_path.string(),
-                                .endpoint_base_dir = sockets.base_dir.string()},
-                    sockets,
-                    *config.group))
-              : std::unique_ptr<HostProcess>(std::make_unique<IndividualHost>(
-                    io_context,
-                    logger,
-                    HostRequest{
-                        .plugin_type = plugin_type,
-                        .plugin_path = vst_plugin_path.string(),
-                        .endpoint_base_dir = sockets.base_dir.string()}))),
-      has_realtime_priority(set_realtime_priority()),
-      wine_io_handler([&]() { io_context.run(); }) {
+          create_logger_prefix(sockets.base_dir)))) {
     log_init_message();
 
+    // TODO: Also move his to `PluginHost`
 #ifndef WITH_WINEDBG
     // If the Wine process fails to start, then nothing will connect to the
     // sockets and we'll be hanging here indefinitely. To prevent this, we'll
@@ -93,7 +73,7 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
         using namespace std::literals::chrono_literals;
 
         while (!st.stop_requested()) {
-            if (!vst_host->running()) {
+            if (!plugin_host->running()) {
                 logger.log(
                     "The Wine host process has exited unexpectedly. Check the "
                     "output above for more information.");
@@ -439,7 +419,7 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
                 logger.log("The plugin crashed during shutdown, ignoring");
             }
 
-            vst_host->terminate();
+            plugin_host->terminate();
 
             // The `stop()` method will cause the IO context to just drop all of
             // its work immediately and not throw any exceptions that would have
@@ -617,107 +597,6 @@ void Vst2PluginBridge::set_parameter(AEffect* /*plugin*/,
 
     // This should not contain any values and just serve as an acknowledgement
     assert(!response.value);
-}
-
-void Vst2PluginBridge::log_init_message() {
-    std::stringstream init_msg;
-
-    init_msg << "Initializing yabridge version " << yabridge_git_version
-             << std::endl;
-    init_msg << "host:         '" << vst_host->path().string() << "'"
-             << std::endl;
-    init_msg << "plugin:       '" << vst_plugin_path.string() << "'"
-             << std::endl;
-    init_msg << "plugin type:  '" << plugin_type_to_string(plugin_type) << "'"
-             << std::endl;
-    init_msg << "realtime:     '" << (has_realtime_priority ? "yes" : "no")
-             << "'" << std::endl;
-    init_msg << "sockets:      '" << sockets.base_dir.string() << "'"
-             << std::endl;
-    init_msg << "wine prefix:  '";
-
-    // If the Wine prefix is manually overridden, then this should be made
-    // clear. This follows the behaviour of `set_wineprefix()`.
-    bp::environment env = boost::this_process::environment();
-    if (!env["WINEPREFIX"].empty()) {
-        init_msg << env["WINEPREFIX"].to_string() << " <overridden>";
-    } else {
-        init_msg << find_wineprefix().value_or("<default>").string();
-    }
-    init_msg << "'" << std::endl;
-
-    init_msg << "wine version: '" << get_wine_version() << "'" << std::endl;
-    init_msg << std::endl;
-
-    // Print the path to the currently loaded configuration file and all
-    // settings in use. Printing the matched glob pattern could also be useful
-    // but it'll be very noisy and it's likely going to be clear from the shown
-    // values anyways.
-    init_msg << "config from:   '"
-             << config.matched_file.value_or("<defaults>").string() << "'"
-             << std::endl;
-
-    init_msg << "hosting mode:  '";
-    if (config.group) {
-        init_msg << "plugin group \"" << *config.group << "\"";
-    } else {
-        init_msg << "individually";
-    }
-    if (vst_host->architecture() == LibArchitecture::dll_32) {
-        init_msg << ", 32-bit";
-    } else {
-        init_msg << ", 64-bit";
-    }
-    init_msg << "'" << std::endl;
-
-    init_msg << "other options: ";
-    std::vector<std::string> other_options;
-    if (config.cache_time_info) {
-        other_options.push_back("hack: time info cache");
-    }
-    if (config.editor_double_embed) {
-        other_options.push_back("editor: double embed");
-    }
-    if (!other_options.empty()) {
-        init_msg << join_quoted_strings(other_options) << std::endl;
-    } else {
-        init_msg << "'<none>'" << std::endl;
-    }
-
-    // To make debugging easier, we'll print both unrecognized options (that
-    // might be left over when an option gets removed) as well as options have
-    // the wrong argument types
-    if (!config.invalid_options.empty()) {
-        init_msg << "invalid arguments: "
-                 << join_quoted_strings(config.invalid_options)
-                 << " (check the readme for more information)" << std::endl;
-    }
-    if (!config.unknown_options.empty()) {
-        init_msg << "unrecognized options: "
-                 << join_quoted_strings(config.unknown_options) << std::endl;
-    }
-    init_msg << std::endl;
-
-    // Include a list of enabled compile-tiem features, mostly to make debug
-    // logs more useful
-    init_msg << "Enabled features:" << std::endl;
-#ifdef WITH_BITBRIDGE
-    init_msg << "- bitbridge support" << std::endl;
-#endif
-#ifdef WITH_WINEDBG
-    init_msg << "- winedbg" << std::endl;
-#endif
-#ifdef WITH_VST3
-    init_msg << "- VST3 support" << std::endl;
-#endif
-#if !(defined(WITH_BITBRIDGE) || defined(WITH_WINEDBG) || defined(WITH_VST3))
-    init_msg << "  <none>" << std::endl;
-#endif
-    init_msg << std::endl;
-
-    for (std::string line = ""; std::getline(init_msg, line);) {
-        logger.log(line);
-    }
 }
 
 // The below functions are proxy functions for the methods defined in

@@ -23,9 +23,8 @@
 #include <thread>
 
 #include "../../common/communication/vst2.h"
-#include "../../common/configuration.h"
 #include "../../common/logging/vst2.h"
-#include "../host-process.h"
+#include "common.h"
 
 /**
  * This handles the communication between the Linux native VST2 plugin and the
@@ -36,7 +35,7 @@
  * for greppability reasons. The `Plugin` infix is added on the native plugin
  * side.
  */
-class Vst2PluginBridge {
+class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
    public:
     /**
      * Initializes the Wine VST bridge. This sets up the sockets for event
@@ -49,12 +48,6 @@ class Vst2PluginBridge {
      *   if it could not locate and load a VST .dll file.
      */
     Vst2PluginBridge(audioMasterCallback host_callback);
-
-    /**
-     * The type of the plugin we're dealing with. Passed to the host process and
-     * printed in the initialisation message.
-     */
-    static constexpr PluginType plugin_type = PluginType::vst2;
 
     // The four below functions are the handlers from the VST2 API. They are
     // called through proxy functions in `plugin.cpp`.
@@ -124,19 +117,6 @@ class Vst2PluginBridge {
     void do_process(T** inputs, T** outputs, int sample_frames);
 
     /**
-     * The configuration for this instance of yabridge. Set based on the values
-     * from a `yabridge.toml`, if it exists.
-     *
-     * @see ../utils.h:load_config_for
-     */
-    Configuration config;
-
-    /**
-     * The path to the .dll being loaded in the Wine VST host.
-     */
-    const boost::filesystem::path vst_plugin_path;
-
-    /**
      * This AEffect struct will be populated using the data passed by the Wine
      * VST host during initialization and then passed as a pointer to the Linux
      * native VST host from the Linux VST plugin's entry point.
@@ -144,14 +124,6 @@ class Vst2PluginBridge {
     AEffect plugin;
 
    private:
-    /**
-     * Format and log all relevant debug information during initialization.
-     */
-    void log_init_message();
-
-    boost::asio::io_context io_context;
-    Vst2Sockets<std::jthread> sockets;
-
     /**
      * The thread that handles host callbacks.
      */
@@ -171,19 +143,10 @@ class Vst2PluginBridge {
     audioMasterCallback host_callback_function;
 
     /**
-     * The logging facility used for this instance of yabridge. See
-     * `Logger::create_from_env()` for how this is configured.
-     *
-     * @see Logger::create_from_env
+     * The logging facility used for this instance of yabridge. Wraps around
+     * `PluginBridge::generic_logger`.
      */
     Vst2Logger logger;
-
-    /**
-     * The Wine process hosting the Windows VST plugin.
-     *
-     * @see launch_vst_host
-     */
-    std::unique_ptr<HostProcess> vst_host;
 
     /**
      * A thread used during the initialisation process to terminate listening on
@@ -193,19 +156,6 @@ class Vst2PluginBridge {
      * running.
      */
     std::jthread host_guard_handler;
-
-    /**
-     * Whether this process runs with realtime priority. We'll set this _after_
-     * spawning the Wine process because from my testing running wineserver with
-     * realtime priority can actually increase latency.
-     */
-    bool has_realtime_priority;
-
-    /**
-     * Runs the Boost.Asio `io_context` thread for logging the Wine process
-     * STDOUT and STDERR messages.
-     */
-    std::jthread wine_io_handler;
 
     /**
      * A scratch buffer for sending and receiving data during `process`,
