@@ -50,6 +50,12 @@ class Vst2PluginBridge {
      */
     Vst2PluginBridge(audioMasterCallback host_callback);
 
+    /**
+     * The type of the plugin we're dealing with. Passed to the host process and
+     * printed in the initialisation message.
+     */
+    static constexpr PluginType plugin_type = PluginType::vst2;
+
     // The four below functions are the handlers from the VST2 API. They are
     // called through proxy functions in `plugin.cpp`.
 

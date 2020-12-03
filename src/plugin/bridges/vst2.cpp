@@ -66,7 +66,7 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
               ? std::unique_ptr<HostProcess>(std::make_unique<GroupHost>(
                     io_context,
                     logger,
-                    HostRequest{.plugin_type = PluginType::vst2,
+                    HostRequest{.plugin_type = plugin_type,
                                 .plugin_path = vst_plugin_path.string(),
                                 .endpoint_base_dir = sockets.base_dir.string()},
                     sockets,
@@ -75,7 +75,7 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                     io_context,
                     logger,
                     HostRequest{
-                        .plugin_type = PluginType::vst2,
+                        .plugin_type = plugin_type,
                         .plugin_path = vst_plugin_path.string(),
                         .endpoint_base_dir = sockets.base_dir.string()}))),
       has_realtime_priority(set_realtime_priority()),
@@ -622,12 +622,13 @@ void Vst2PluginBridge::set_parameter(AEffect* /*plugin*/,
 void Vst2PluginBridge::log_init_message() {
     std::stringstream init_msg;
 
-    // TODO: This should also list the plugin type
     init_msg << "Initializing yabridge version " << yabridge_git_version
              << std::endl;
     init_msg << "host:         '" << vst_host->path().string() << "'"
              << std::endl;
     init_msg << "plugin:       '" << vst_plugin_path.string() << "'"
+             << std::endl;
+    init_msg << "plugin type:  '" << plugin_type_to_string(plugin_type) << "'"
              << std::endl;
     init_msg << "realtime:     '" << (has_realtime_priority ? "yes" : "no")
              << "'" << std::endl;
