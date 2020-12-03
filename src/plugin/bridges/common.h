@@ -25,8 +25,9 @@
 #include "../host-process.h"
 
 /**
- * Handles all common operations for hosting plugins such as setting up the
- * plugin host process, the logger, and logging debug information on startup.
+ * Handles all common operations for hosting plugins such as initializing up the
+ * plugin host process, setting up the logger, and logging debug information on
+ * startup.
  *
  * @tparam Sockets the `Sockets` implementation to use. We have to initialize it
  *   here because we need to pass it to our `HostProcess`.
@@ -46,6 +47,12 @@ class PluginBridge {
      * @param create_socket_instance A function to create a socket instance.
      *   Using a lambda here feels wrong, but I can't think of a better
      *   solution right now.
+     *
+     * @tparam F A `TSockets(boost::asio::io_context&)` function to create the
+     *   `TSockets` instance.
+     *
+     * @throw std::runtime_error Thrown when the Wine plugin host could not be
+     *   found, or if it could not locate and load a VST3 module.
      */
     template <typename F>
     PluginBridge(PluginType plugin_type,
@@ -55,6 +62,8 @@ class PluginBridge {
           plugin_path(plugin_path),
           io_context(),
           sockets(create_socket_instance(io_context)),
+          // This is still correct for VST3 plugins because we can configure an
+          // entire directory (the module's bundle) at once
           config(load_config_for(get_this_file_location())),
           generic_logger(Logger::create_from_environment(
               create_logger_prefix(sockets.base_dir))),
@@ -197,6 +206,16 @@ class PluginBridge {
     /**
      * The path to the plugin (`.dll` or module) being loaded in the Wine plugin
      * host.
+     *
+     * Forst VST2 plugins this will be a `.dll` file. For VST3 plugins this is
+     * normally a directory called `MyPlugin.vst3` that contains
+     * `MyPlugin.vst3/Contents/x86-win/MyPlugin.vst3`, but there's also an older
+     * deprecated (but still ubiquitous) format where the top level
+     * `MyPlugin.vst3` is not a directory but a .dll file. This points to either
+     * of those things, and then `VST3::Hosting::Win32Module::create()` will be
+     * able to load it.
+     *
+     * https://developer.steinberg.help/pages/viewpage.action?pageId=9798275
      */
     const boost::filesystem::path plugin_path;
 

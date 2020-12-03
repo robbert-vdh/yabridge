@@ -16,49 +16,23 @@
 
 #include "vst3.h"
 
-#include "../../common/utils.h"
-
-// TODO: Do all of the initialization stuff from `Vst2PluginBridge`
 Vst3PluginBridge::Vst3PluginBridge()
-    :  // TODO: This is technically correct because we can configure the entire
-       // directory at once
-      config(load_config_for(get_this_file_location())),
-      // TODO: This is incorrect for VST3 modules
-      plugin_module_path(find_vst_plugin()),
-      io_context(),
-      sockets(io_context,
-              // TODO: This is incorrect
-              generate_endpoint_base(
-                  plugin_module_path.filename().replace_extension("").string()),
-              true),
-      // This weird cast is not needed, but without it clang/ccls won't shut up
-      // TODO: Apparently this is UB even though it works fine, so we should
-      //       probably just use composition here instead
+    : PluginBridge(PluginType::vst3,
+                   // TODO: This is incorrect for VST3 modules
+                   find_vst_plugin(),
+                   [](boost::asio::io_context& io_context) {
+                       return Vst3Sockets<std::jthread>(
+                           io_context,
+                           generate_endpoint_base(find_vst_plugin()
+                                                      .filename()
+                                                      .replace_extension("")
+                                                      .string()),
+                           true);
+                   }),
+      // TODO: This is UB, use composition with `generic_logger` instead
       logger(static_cast<Vst3Logger&&>(Logger::create_from_environment(
-          create_logger_prefix(sockets.base_dir)))),
-      wine_version(get_wine_version()),
-      vst_host(
-          config.group
-              ? std::unique_ptr<HostProcess>(std::make_unique<GroupHost>(
-                    io_context,
-                    logger,
-                    HostRequest{.plugin_type = PluginType::vst2,
-                                .plugin_path = plugin_module_path.string(),
-                                .endpoint_base_dir = sockets.base_dir.string()},
-                    sockets,
-                    *config.group))
-              : std::unique_ptr<HostProcess>(std::make_unique<IndividualHost>(
-                    io_context,
-                    logger,
-                    HostRequest{
-                        .plugin_type = PluginType::vst2,
-                        .plugin_path = plugin_module_path.string(),
-                        .endpoint_base_dir = sockets.base_dir.string()}))),
-      has_realtime_priority(set_realtime_priority()),
-      wine_io_handler([&]() { io_context.run(); }) {
+          create_logger_prefix(sockets.base_dir)))) {
     log_init_message();
-}
 
-void Vst3PluginBridge::log_init_message() {
-    // TODO: Move `Vst2PluginBridge::log_init_message()` to utils and call that
+    // TODO: Call the host guard handler
 }
