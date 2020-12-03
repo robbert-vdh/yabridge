@@ -173,12 +173,6 @@ class Vst2PluginBridge {
     Vst2Logger logger;
 
     /**
-     * The version of Wine currently in use. Used in the debug output on plugin
-     * startup.
-     */
-    const std::string wine_version;
-
-    /**
      * The Wine process hosting the Windows VST plugin.
      *
      * @see launch_vst_host

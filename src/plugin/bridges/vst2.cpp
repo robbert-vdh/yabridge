@@ -61,7 +61,6 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
       // This weird cast is not needed, but without it clang/ccls won't shut up
       logger(static_cast<Vst2Logger&&>(Logger::create_from_environment(
           create_logger_prefix(sockets.base_dir)))),
-      wine_version(get_wine_version()),
       vst_host(
           config.group
               ? std::unique_ptr<HostProcess>(std::make_unique<GroupHost>(
@@ -646,7 +645,7 @@ void Vst2PluginBridge::log_init_message() {
     }
     init_msg << "'" << std::endl;
 
-    init_msg << "wine version: '" << wine_version << "'" << std::endl;
+    init_msg << "wine version: '" << get_wine_version() << "'" << std::endl;
     init_msg << std::endl;
 
     // Print the path to the currently loaded configuration file and all
