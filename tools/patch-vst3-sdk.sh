@@ -19,6 +19,8 @@ if [[ -z $sdk_directory ]]; then
   exit 1
 fi
 
+# TODO: Debug builds fail now because it's using an unimplemented variation of printf
+
 # Make sure all imports use the correct casing
 find "$sdk_directory" -type f \( -iname '*.h' -or -iname '*.cpp' \) -print0 |
   xargs -0 sed -i -E 's/^#include <(Windows.h|ShlObj.h)>$/#include <\L\1\E>/'
