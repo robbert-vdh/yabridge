@@ -61,36 +61,9 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
           create_logger_prefix(sockets.base_dir)))) {
     log_init_message();
 
-    // TODO: Also move his to `PluginHost`
-#ifndef WITH_WINEDBG
-    // If the Wine process fails to start, then nothing will connect to the
-    // sockets and we'll be hanging here indefinitely. To prevent this, we'll
-    // periodically poll whether the Wine process is still running, and throw
-    // when it is not. The alternative would be to rewrite this to using
-    // `async_accept`, Boost.Asio timers, and another IO context, but I feel
-    // like this a much simpler solution.
-    host_guard_handler = std::jthread([&](std::stop_token st) {
-        using namespace std::literals::chrono_literals;
-
-        while (!st.stop_requested()) {
-            if (!plugin_host->running()) {
-                logger.log(
-                    "The Wine host process has exited unexpectedly. Check the "
-                    "output above for more information.");
-                std::terminate();
-            }
-
-            std::this_thread::sleep_for(20ms);
-        }
-    });
-#endif
-
     // This will block until all sockets have been connected to by the Wine VST
     // host
-    sockets.connect();
-#ifndef WITH_WINEDBG
-    host_guard_handler.request_stop();
-#endif
+    connect_sockets_guarded();
 
     // Set up all pointers for our `AEffect` struct. We will fill this with data
     // from the VST plugin loaded in Wine at the end of this constructor.

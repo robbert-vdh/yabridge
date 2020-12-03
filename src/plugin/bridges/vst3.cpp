@@ -34,5 +34,7 @@ Vst3PluginBridge::Vst3PluginBridge()
           create_logger_prefix(sockets.base_dir)))) {
     log_init_message();
 
-    // TODO: Call the host guard handler
+    // This will block until all sockets have been connected to by the Wine VST
+    // host
+    connect_sockets_guarded();
 }

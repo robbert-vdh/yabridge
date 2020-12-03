@@ -149,15 +149,6 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
     Vst2Logger logger;
 
     /**
-     * A thread used during the initialisation process to terminate listening on
-     * the sockets if the Wine process cannot start for whatever reason. This
-     * has to be defined here instead of in the constructor we can't simply
-     * detach the thread as it has to check whether the VST host is still
-     * running.
-     */
-    std::jthread host_guard_handler;
-
-    /**
      * A scratch buffer for sending and receiving data during `process`,
      * `processReplacing` and `processDoubleReplacing` calls.
      */

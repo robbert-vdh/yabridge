@@ -37,8 +37,8 @@ class PluginBridge {
    public:
     /**
      * Sets up everything needed to start the host process. Classes deriving
-     * from this should call `log_init_message()` themselves after their
-     * initialization list.
+     * from this should call `log_init_message()` and
+     * `connect_sockets_guarded()` themselves after their initialization list.
      *
      * @param plugin_type The type of the plugin we're handling.
      * @param plugin_path The path to the plugin. For VST2 plugins this is the
@@ -198,6 +198,47 @@ class PluginBridge {
     }
 
     /**
+     * Connect the sockets, while starting another thread that will terminate
+     * the plugin (through `std::terminate`/SIGABRT) when the host process fails
+     * to start. This is the only way to stop listening on our sockets without
+     * moving everything over to asynchronous listeners (which may actually be a
+     * good idea just for this use case). Otherwise the plugin would be stuck
+     * loading indefinitely when Wine is not configured correctly.
+     *
+     * TODO: Asynchronously connect our sockets so we can interrupt it, maybe
+     */
+    void connect_sockets_guarded() {
+#ifndef WITH_WINEDBG
+        // If the Wine process fails to start, then nothing will connect to the
+        // sockets and we'll be hanging here indefinitely. To prevent this,
+        // we'll periodically poll whether the Wine process is still running,
+        // and throw when it is not. The alternative would be to rewrite this to
+        // using `async_accept`, Boost.Asio timers, and another IO context, but
+        // I feel like this a much simpler solution.
+        host_guard_handler = std::jthread([&](std::stop_token st) {
+            using namespace std::literals::chrono_literals;
+
+            while (!st.stop_requested()) {
+                if (!plugin_host->running()) {
+                    generic_logger.log(
+                        "The Wine host process has exited unexpectedly. Check "
+                        "the "
+                        "output above for more information.");
+                    std::terminate();
+                }
+
+                std::this_thread::sleep_for(20ms);
+            }
+        });
+#endif
+
+        sockets.connect();
+#ifndef WITH_WINEDBG
+        host_guard_handler.request_stop();
+#endif
+    }
+
+    /**
      * The type of the plugin we're dealing with. Passed to the host process and
      * printed in the initialisation message.
      */
@@ -224,7 +265,10 @@ class PluginBridge {
     /**
      * The sockets used for communication with the Wine process.
      *
-     * @see PluginBridge::log_init_message
+     * @remark `sockets.connect()` should not be called directly.
+     * `connect_sockets_guarded()` should be used instead.
+     *
+     * @see PluginBridge::connect_sockets_guarded
      */
     TSockets sockets;
 
@@ -263,4 +307,14 @@ class PluginBridge {
      * STDOUT and STDERR messages.
      */
     std::jthread wine_io_handler;
+
+   private:
+    /**
+     * A thread used during the initialisation process to terminate listening on
+     * the sockets if the Wine process cannot start for whatever reason. This
+     * has to be defined here instead of in the constructor we can't simply
+     * detach the thread as it has to check whether the VST host is still
+     * running.
+     */
+    std::jthread host_guard_handler;
 };
