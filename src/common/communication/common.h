@@ -542,8 +542,6 @@ class AdHocSocketHandler {
      *   same thing as `primary_callback`, but secondary sockets may need some
      *   different handling.
      *
-     * TODO: Add an overload with a single callback
-     *
      * @tparam F A function type in the form of
      *   `void(boost::asio::local::stream_protocol::socket&)`.
      * @tparam G The same as `F`.
@@ -617,6 +615,18 @@ class AdHocSocketHandler {
         std::lock_guard lock(active_secondary_requests_mutex);
         secondary_context.stop();
         acceptor.reset();
+    }
+
+    /**
+     * The same as the above, but with a single callback for incoming
+     * connections on the primary socket and on secondary sockets.
+     *
+     * @overload
+     */
+    template <typename F>
+    void receive_multi(std::optional<std::pair<Logger&, bool>> logging,
+                       F callback) {
+        receive_multi(logging, callback, callback);
     }
 
    private:
