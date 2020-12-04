@@ -53,6 +53,12 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
 
    private:
     /**
+     * Handles callbacks from the plugin to the host over the
+     * `vst_host_callback` sockets.
+     */
+    std::jthread host_callback_handler;
+
+    /**
      * The logging facility used for this instance of yabridge. Wraps around
      * `PluginBridge::generic_logger`.
      */

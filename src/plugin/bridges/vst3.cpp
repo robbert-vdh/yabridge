@@ -37,4 +37,9 @@ Vst3PluginBridge::Vst3PluginBridge()
     // This will block until all sockets have been connected to by the Wine VST
     // host
     connect_sockets_guarded();
+
+    host_callback_handler = std::jthread([&]() {
+        // TODO: Handle callbacks
+        // sockets.vst_host_callback.receive_multi();
+    });
 }

@@ -47,6 +47,11 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
 
     // TODO: We should send a copy of the configuration from the plugin at this
     // point config = sockets.host_vst_control.receive_single<Configuration>();
+
+    control_handler = Win32Thread([&]() {
+        // TODO: Handle control messages
+        // sockets.host_vst_control.receive_multi();
+    });
 }
 
 void Vst3Bridge::run() {

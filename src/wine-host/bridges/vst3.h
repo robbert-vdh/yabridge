@@ -79,4 +79,9 @@ class Vst3Bridge : public HostBridge {
      *       threads to exit.
      */
     Vst3Sockets<Win32Thread> sockets;
+
+    /**
+     * Handles control messages host over the `hsot_vst_control` sockets.
+     */
+    Win32Thread control_handler;
 };
