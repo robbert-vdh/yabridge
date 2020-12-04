@@ -16,4 +16,28 @@
 
 #include "vst3.h"
 
+#include <sstream>
+
+// TODO: Reconsider the output format
+// TODO: Maybe think of an alterantive that's a little less boilerplaty
+
 Vst3Logger::Vst3Logger(Logger& generic_logger) : logger(generic_logger) {}
+
+void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
+        std::ostringstream message;
+        message << get_log_prefix(is_host_vst)
+                << " >> Requesting <Configuration>";
+
+        log(message.str());
+    }
+}
+
+void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
+        std::ostringstream message;
+        message << get_log_prefix(is_host_vst) << "    <Configuration>";
+
+        log(message.str());
+    }
+}

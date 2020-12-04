@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "../serialization/vst3.h"
 #include "common.h"
 
 /**
@@ -37,7 +38,24 @@ class Vst3Logger {
      */
     inline void log_trace(const std::string& message) { logger.log(message); }
 
-    // TODO: Logging interface for VST3 plugins
+    // For every object we send using `Vst3MessageHandler` we have overloads
+    // that print information about the request and the response. The boolean
+    // flag here indicates whether the request was initiated on the host side
+    // (what we'll call a control message).
+
+    void log_request(bool is_host_vst, const WantsConfiguration&);
+
+    void log_response(bool is_host_vst, const Configuration&);
 
     Logger& logger;
+
+   private:
+    /**
+     * Get the `host -> vst` or `vst -> host` prefix based on the boolean flag
+     * we pass to every logging function so we don't have to repeat it
+     * everywhere.
+     */
+    inline std::string get_log_prefix(bool is_host_vst) {
+        return is_host_vst ? "[host -> vst]" : "[vst -> host]";
+    }
 };

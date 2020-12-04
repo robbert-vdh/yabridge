@@ -89,10 +89,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
 
         if (logging) {
             auto [logger, is_host_vst] = *logging;
-            // TODO: Log the request
-            // logger.log_event(is_dispatch, opcode, index, value, payload,
-            // option,
-            //                  value_payload);
+            logger.log_request(is_host_vst, object);
         }
 
         // A socket only handles a single request at a time as to prevent
@@ -111,11 +108,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
 
         if (logging) {
             auto [logger, is_host_vst] = *logging;
-            // TODO: Log the response
-            // logger.log_event_response(is_dispatch, opcode,
-            //                           response.return_value,
-            //                           response.payload,
-            //                           response.value_payload);
+            logger.log_response(!is_host_vst, response);
         }
 
         return response;
@@ -152,23 +145,22 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
             [&](boost::asio::local::stream_protocol::socket& socket) {
                 auto request = read_object<Request>(socket);
                 if (logging) {
-                    auto [logger, is_host_vst] = *logging;
-                    // TODO: Log the request, use the visitor with an auto
-                    //       lambda so we can use the same overloads as we use
-                    //       in `send_message()`
-                    // logger.log_event(is_dispatch, opcode, index, value,
-                    // payload, option,
-                    //                  value_payload);
+                    std::visit(
+                        [&](const auto& object) {
+                            auto [logger, is_host_vst] = *logging;
+                            logger.log_request(is_host_vst, object);
+                        },
+                        request);
                 }
 
                 Response response = callback(request);
                 if (logging) {
-                    // TODO: Log the response, use the visitor with an auto
-                    //       lambda so we can use the same overloads as we use
-                    //       in `send_message()`
-                    // logger.log_event_response(
-                    //     is_dispatch, event.opcode, response.return_value,
-                    //     response.payload, response.value_payload);
+                    std::visit(
+                        [&](const auto& object) {
+                            auto [logger, is_host_vst] = *logging;
+                            logger.log_response(!is_host_vst, object);
+                        },
+                        response);
                 }
 
                 write_object(socket, response);
