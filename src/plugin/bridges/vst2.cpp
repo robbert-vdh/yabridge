@@ -55,9 +55,7 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
       // bridge will crash otherwise
       plugin(),
       host_callback_function(host_callback),
-      // TODO: This is UB, use composition with `generic_logger` instead
-      logger(static_cast<Vst2Logger&&>(Logger::create_from_environment(
-          create_logger_prefix(sockets.base_dir)))) {
+      logger(generic_logger) {
     log_init_message();
 
     // This will block until all sockets have been connected to by the Wine VST

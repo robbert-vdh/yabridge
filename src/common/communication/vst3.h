@@ -174,9 +174,10 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                 write_object(socket, response);
             };
 
-        this->receive_multi(
-            logging ? std::optional(std::ref(logging->first)) : std::nullopt,
-            process_message);
+        this->receive_multi(logging
+                                ? std::optional(std::ref(logging->first.logger))
+                                : std::nullopt,
+                            process_message);
     }
 };
 

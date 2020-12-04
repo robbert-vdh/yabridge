@@ -254,7 +254,8 @@ class EventHandler : public AdHocSocketHandler<Thread> {
             };
 
         this->receive_multi(
-            logging ? std::optional(std::ref(logging->first)) : std::nullopt,
+            logging ? std::optional(std::ref(logging->first.logger))
+                    : std::nullopt,
             [&](boost::asio::local::stream_protocol::socket& socket) {
                 process_event(socket, true);
             },

@@ -27,9 +27,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                                              .string()),
                   true);
           }),
-      // TODO: This is UB, use composition with `generic_logger` instead
-      logger(static_cast<Vst3Logger&&>(Logger::create_from_environment(
-          create_logger_prefix(sockets.base_dir)))) {
+      logger(generic_logger) {
     log_init_message();
 
     // This will block until all sockets have been connected to by the Wine VST

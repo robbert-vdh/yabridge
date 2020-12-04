@@ -18,6 +18,8 @@
 
 #include <sstream>
 
+Vst2Logger::Vst2Logger(Logger& generic_logger) : logger(generic_logger) {}
+
 std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
     if (is_dispatch) {
         // Opcodes for a plugin's dispatch function
@@ -316,7 +318,7 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
 }
 
 void Vst2Logger::log_get_parameter(int index) {
-    if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         std::ostringstream message;
         message << ">> getParameter() " << index;
 
@@ -325,7 +327,7 @@ void Vst2Logger::log_get_parameter(int index) {
 }
 
 void Vst2Logger::log_get_parameter_response(float value) {
-    if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         std::ostringstream message;
         message << "   getParameter() :: " << value;
 
@@ -334,7 +336,7 @@ void Vst2Logger::log_get_parameter_response(float value) {
 }
 
 void Vst2Logger::log_set_parameter(int index, float value) {
-    if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         std::ostringstream message;
         message << ">> setParameter() " << index << " = " << value;
 
@@ -343,7 +345,7 @@ void Vst2Logger::log_set_parameter(int index, float value) {
 }
 
 void Vst2Logger::log_set_parameter_response() {
-    if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         log("   setParameter() :: OK");
     }
 }
@@ -355,7 +357,7 @@ void Vst2Logger::log_event(bool is_dispatch,
                            const EventPayload& payload,
                            float option,
                            const std::optional<EventPayload>& value_payload) {
-    if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         if (should_filter_event(is_dispatch, opcode)) {
             return;
         }
@@ -442,7 +444,7 @@ void Vst2Logger::log_event_response(
     intptr_t return_value,
     const EventResultPayload& payload,
     const std::optional<EventResultPayload>& value_payload) {
-    if (BOOST_UNLIKELY(verbosity >= Verbosity::most_events)) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         if (should_filter_event(is_dispatch, opcode)) {
             return;
         }
@@ -512,7 +514,7 @@ void Vst2Logger::log_event_response(
 }
 
 bool Vst2Logger::should_filter_event(bool is_dispatch, int opcode) const {
-    if (verbosity >= Verbosity::all_events) {
+    if (logger.verbosity >= Logger::Verbosity::all_events) {
         return false;
     }
 

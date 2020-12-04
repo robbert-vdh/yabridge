@@ -14,30 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#pragma once
+#include "vst3.h"
 
-#include "common.h"
-
-/**
- * Wraps around `Logger` to provide VST3 specific logging functionality for
- * debugging plugins. This way we can have all the complex initialisation be
- * performed in one place.
- */
-class Vst3Logger {
-   public:
-    Vst3Logger(Logger& generic_logger);
-
-    /**
-     * @see Logger::log
-     */
-    inline void log(const std::string& message) { logger.log(message); }
-
-    /**
-     * @see Logger::log_trace
-     */
-    inline void log_trace(const std::string& message) { logger.log(message); }
-
-    // TODO: Logging interface for VST3 plugins
-
-    Logger& logger;
-};
+Vst3Logger::Vst3Logger(Logger& generic_logger) : logger(generic_logger) {}

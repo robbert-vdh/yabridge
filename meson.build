@@ -76,7 +76,7 @@ vst2_plugin_sources = [
 vst3_plugin_sources = [
   'src/common/communication/common.cpp',
   'src/common/logging/common.cpp',
-  'src/common/logging/vst2.cpp',
+  'src/common/logging/vst3.cpp',
   'src/common/configuration.cpp',
   'src/common/plugins.cpp',
   'src/common/utils.cpp',

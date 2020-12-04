@@ -33,10 +33,24 @@
 std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode);
 
 /**
- * Provides VST2 specific logging functionality for debugging plugins.
+ * Wraps around `Logger` to provide VST2 specific logging functionality for
+ * debugging plugins. This way we can have all the complex initialisation be
+ * performed in one place.
  */
-class Vst2Logger : public Logger {
+class Vst2Logger {
    public:
+    Vst2Logger(Logger& generic_logger);
+
+    /**
+     * @see Logger::log
+     */
+    inline void log(const std::string& message) { logger.log(message); }
+
+    /**
+     * @see Logger::log_trace
+     */
+    inline void log_trace(const std::string& message) { logger.log(message); }
+
     // The following functions are for logging specific events, they are only
     // enabled for verbosity levels higher than 1 (i.e. `Verbosity::events`)
     void log_get_parameter(int index);
@@ -59,6 +73,11 @@ class Vst2Logger : public Logger {
         intptr_t return_value,
         const EventResultPayload& payload,
         const std::optional<EventResultPayload>& value_payload);
+
+    /**
+     * The underlying logger instance we're wrapping.
+     */
+    Logger& logger;
 
    private:
     /**
