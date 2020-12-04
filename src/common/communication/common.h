@@ -412,10 +412,14 @@ class SocketHandler {
  *
  * @tparam Thread The thread implementation to use. On the Linux side this
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
+ *
+ * TODO: Once we have figured out a way to encapsulate the usage patterns in
+ *       `Vst3Sockets` we should make the constructor, `send()` and
+ *       `receive_multi()` protected again to avoid weirdness
  */
 template <typename Thread>
 class AdHocSocketHandler {
-   protected:
+   public:
     /**
      * Sets up a single primary socket. The sockets won't be active until
      * `connect()` gets called.
@@ -441,7 +445,6 @@ class AdHocSocketHandler {
         }
     }
 
-   public:
     /**
      * Depending on the value of the `listen` argument passed to the
      * constructor, either accept connections made to the sockets on the Linux
@@ -474,7 +477,6 @@ class AdHocSocketHandler {
         socket.close();
     }
 
-   protected:
     /**
      * Serialize and send an event over a socket. This is used for both the host
      * -> plugin 'dispatch' events and the plugin -> host 'audioMaster' host

@@ -55,20 +55,47 @@ class Vst3Sockets : public Sockets {
     Vst3Sockets(boost::asio::io_context& io_context,
                 const boost::filesystem::path& endpoint_base_dir,
                 bool listen)
-        : Sockets(endpoint_base_dir) {}
+        : Sockets(endpoint_base_dir),
+          host_vst_control(io_context,
+                           (base_dir / "host_vst_control.sock").string(),
+                           listen),
+          vst_host_callback(io_context,
+                            (base_dir / "vst_host_callback.sock").string(),
+                            listen) {}
 
     ~Vst3Sockets() { close(); }
 
-    void connect() override {}
+    void connect() override {
+        host_vst_control.connect();
+        vst_host_callback.connect();
+    }
 
     void close() override {
         // Manually close all sockets so we break out of any blocking operations
         // that may still be active
+        host_vst_control.close();
+        vst_host_callback.close();
     }
 
-    // TODO: I still don't know if recursive callbacks are a thing in VST3. If
-    //       not, then we should probably have two `AdHocSocketHandler`s per
-    //       plugin instance (one for each direction, as with `dispatcher()` and
-    //       `audioMaster()` in VST2). Using fewer probably also works, but we
-    //       wouldn't want to have to spawn new sockets during audio processing.
+    // TODO: Since audio processing may be done completely in parallel we might
+    //       want to have a dedicated socket per processor/controller pair. For
+    //       this we would need to figure out how to associate a plugin instance
+    //       with a socket.
+
+    /**
+     * For sending messages from the host to the plugin. After we have a better
+     * idea of what our communication model looks like we'll probably want to
+     * provide an abstraction similar to `EventHandler`.
+     *
+     * This will be listened on by the Wine plugin host when it calls
+     * `receive_multi()`.
+     */
+    AdHocSocketHandler<Thread> host_vst_control;
+
+    /**
+     * For sending callbacks from the plugin back to the host. After we have a
+     * better idea of what our communication model looks like we'll probably
+     * want to provide an abstraction similar to `EventHandler`.
+     */
+    AdHocSocketHandler<Thread> vst_host_callback;
 };
