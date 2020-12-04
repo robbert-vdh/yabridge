@@ -27,6 +27,9 @@ imcomplete list of things that still have to be done before this can be used:
 - Update all the AUR packages.
 - Test the binaries built on GitHub on plain Ubuntu 18.04, are we missing any
   static linking?
+- When this is in a usable enough state to be merged into master, make sure to
+  put a notice up at the top of the readme saying that `libyabridge.so` is now
+  called `libyabridge-vst2.so` for the master branch version.
 
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
