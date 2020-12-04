@@ -16,13 +16,13 @@
 
 #pragma once
 
+#include <variant>
+
 #include <bitsery/ext/std_optional.h>
 #include <bitsery/ext/std_variant.h>
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/vector.h>
 #include <vestige/aeffectx.h>
-
-#include <variant>
 
 #include "../vst24.h"
 #include "common.h"
