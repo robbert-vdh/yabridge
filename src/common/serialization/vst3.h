@@ -66,10 +66,11 @@ void serialize(S& s, ControlRequest& payload) {
  */
 using ControlResponse = std::variant<>;
 
-template <typename S>
-void serialize(S& s, ControlResponse& payload) {
-    s.ext(payload, bitsery::ext::StdVariant{});
-}
+// TODO: Uncomment when this is no longer empty
+// template <typename S>
+// void serialize(S& s, ControlResponse& payload) {
+//     s.ext(payload, bitsery::ext::StdVariant{});
+// }
 
 /**
  * When we do a callback from the Wine VST host to the plugin, this encodes the

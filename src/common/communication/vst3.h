@@ -18,7 +18,167 @@
 
 #include <atomic>
 
+#include "../logging/vst3.h"
+#include "../serialization/vst3.h"
 #include "common.h"
+
+/**
+ * An instance of `AdHocSocketHandler` that encapsulates the simple
+ * communication model we use for sending requests and receiving responses. A
+ * request of type `T`, where `T` is in `{Control,Callback}Request`, should be
+ * answered with an object of type `T::Response`.
+ *
+ * See the docstrings on `EventHandler` and `AdHocSocketHandler` for more
+ * information on how this works internally and why it works the way it does.
+ *
+ * @note The name of this class is not to be confused with VST3's `IMessage` as
+ *   this is very much just general purpose messaging between yabridge's two
+ *   components. Of course, this will handle `IMessage` function calls as well.
+ *
+ * @tparam Thread The thread implementation to use. On the Linux side this
+ *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
+ * @tparam Request Either `ControlRequest` or `CallbackRequest`.
+ * @tparam Response Either `ControlResponse` or `CallbackResponse`, depending on
+ *   the type of `Request`.
+ */
+template <typename Thread, typename Request, typename Response>
+class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
+   public:
+    /**
+     * Sets up a single main socket for this type of events. The sockets won't
+     * be active until `connect()` gets called.
+     *
+     * @param io_context The IO context the main socket should be bound to. A
+     *   new IO context will be created for accepting the additional incoming
+     *   connections.
+     * @param endpoint The socket endpoint used for this event handler.
+     * @param listen If `true`, start listening on the sockets. Incoming
+     *   connections will be accepted when `connect()` gets called. This should
+     *   be set to `true` on the plugin side, and `false` on the Wine host side.
+     *
+     * @see Sockets::connect
+     */
+    Vst3MessageHandler(boost::asio::io_context& io_context,
+                       boost::asio::local::stream_protocol::endpoint endpoint,
+                       bool listen)
+        : AdHocSocketHandler<Thread>(io_context, endpoint, listen) {}
+
+    /**
+     * Serialize and send an event over a socket and return the appropriate
+     * response.
+     *
+     * As described above, if this function is currently being called from
+     * another thread, then this will create a new socket connection and send
+     * the event there instead.
+     *
+     * @param logging A pair containing a logger instance and whether or not
+     *   this is for sending host -> plugin control messages. If set to false,
+     *   then this indicates that this `Vst3MessageHandler` is handling plugin
+     *   -> host callbacks isntead. Optional since it only has to be set on the
+     *   plugin's side.
+     *
+     * TODO: Is it feasible to move `logging` to the constructor instead?
+     *
+     * @relates Vst3MessageHandler::receive_messages
+     */
+    template <typename T>
+    typename T::Response send_message(
+        const T& object,
+        std::optional<std::pair<Vst3Logger&, bool>> logging) {
+        using TResponse = typename T::Response;
+
+        if (logging) {
+            auto [logger, is_host_vst] = *logging;
+            // TODO: Log the request
+            // logger.log_event(is_dispatch, opcode, index, value, payload,
+            // option,
+            //                  value_payload);
+        }
+
+        // A socket only handles a single request at a time as to prevent
+        // messages from arriving out of order. `AdHocSocketHandler::send()`
+        // will either use a long-living primary socket, or if that's currently
+        // in use it will spawn a new socket for us.
+        const TResponse response = this->template send<TResponse>(
+            [&](boost::asio::local::stream_protocol::socket& socket) {
+                write_object(socket, Request(object));
+                const auto response = read_object<Response>(socket);
+
+                // If the other side handled the request correctly, the Response
+                // variant should now contain an object of type `T::Response`
+                return std::get<TResponse>(response);
+            });
+
+        if (logging) {
+            auto [logger, is_host_vst] = *logging;
+            // TODO: Log the response
+            // logger.log_event_response(is_dispatch, opcode,
+            //                           response.return_value,
+            //                           response.payload,
+            //                           response.value_payload);
+        }
+
+        return response;
+    }
+
+    /**
+     * Spawn a new thread to listen for extra connections to `endpoint`, and
+     * then start a blocking loop that handles messages from the primary
+     * `socket`.
+     *
+     * The specified function receives a `Request` variant object containing an
+     * object of type `T`, and it should return the corresponding `Response` of
+     * type `T::Response`.
+     *
+     * @param logging A pair containing a logger instance and whether or not
+     *   this is for sending host -> plugin control messages. If set to false,
+     *   then this indicates that this `Vst3MessageHandler` is handling plugin
+     *   -> host callbacks isntead. Optional since it only has to be set on the
+     *   plugin's side.
+     * @param callback The function used to generate a response out of the
+     *   request.  See the definition of `F` for more information.
+     *
+     * @tparam F A function type in the form of `Reponse(Request)`.
+     *
+     * @relates Vst3MessageHandler::send_event
+     */
+    template <typename F>
+    void receive_messages(std::optional<std::pair<Vst3Logger&, bool>> logging,
+                          F callback) {
+        // Reading, processing, and writing back the response for the requests
+        // we receive works in the same way regardless of which socket we're
+        // using
+        const auto process_message =
+            [&](boost::asio::local::stream_protocol::socket& socket) {
+                auto request = read_object<Request>(socket);
+                if (logging) {
+                    auto [logger, is_host_vst] = *logging;
+                    // TODO: Log the request, use the visitor with an auto
+                    //       lambda so we can use the same overloads as we use
+                    //       in `send_message()`
+                    // logger.log_event(is_dispatch, opcode, index, value,
+                    // payload, option,
+                    //                  value_payload);
+                }
+
+                Response response = callback(request);
+                if (logging) {
+                    // TODO: Log the response, use the visitor with an auto
+                    //       lambda so we can use the same overloads as we use
+                    //       in `send_message()`
+                    // logger.log_event_response(
+                    //     is_dispatch, event.opcode, response.return_value,
+                    //     response.payload, response.value_payload);
+                }
+
+                write_object(socket, response);
+            };
+
+        this->receive_multi(
+            logging ? std::optional(std::ref(logging->first)) : std::nullopt,
+            process_message);
+    }
+};
 
 /**
  * Manages all the sockets used for communicating between the plugin and the
@@ -90,12 +250,14 @@ class Vst3Sockets : public Sockets {
      * This will be listened on by the Wine plugin host when it calls
      * `receive_multi()`.
      */
-    AdHocSocketHandler<Thread> host_vst_control;
+    Vst3MessageHandler<Thread, ControlRequest, ControlResponse>
+        host_vst_control;
 
     /**
      * For sending callbacks from the plugin back to the host. After we have a
      * better idea of what our communication model looks like we'll probably
      * want to provide an abstraction similar to `EventHandler`.
      */
-    AdHocSocketHandler<Thread> vst_host_callback;
+    Vst3MessageHandler<Thread, CallbackRequest, CallbackResponse>
+        vst_host_callback;
 };
