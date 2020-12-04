@@ -42,12 +42,6 @@ class HostProcess {
     virtual ~HostProcess(){};
 
     /**
-     * Return the architecture of the plugin we are loading, i.e. whether it is
-     * 32-bit or 64-bit.
-     */
-    virtual LibArchitecture architecture() = 0;
-
-    /**
      * Return the full path to the host application in use. The host application
      * is chosen depending on the architecture of the plugin's DLL file and on
      * the hosting mode.
@@ -120,7 +114,9 @@ class IndividualHost : public HostProcess {
      *   handled on.
      * @param logger The `Logger` instance the redirected STDIO streams will be
      *   written to.
-     * @param plugin_info The information about the plugin we should launch a
+     * @param plugin_info Information about the plugin we're going to use. Used
+     *   to retrieve the Wine prefix and the plugin's architecture.
+     * @param host_request The information about the plugin we should launch a
      *   host process for. The values in the struct will be used as command line
      *   arguments.
      *
@@ -129,15 +125,15 @@ class IndividualHost : public HostProcess {
      */
     IndividualHost(boost::asio::io_context& io_context,
                    Logger& logger,
-                   const HostRequest& plugin_info);
+                   const PluginInfo& plugin_info,
+                   const HostRequest& host_request);
 
-    LibArchitecture architecture() override;
     boost::filesystem::path path() override;
     bool running() override;
     void terminate() override;
 
    private:
-    LibArchitecture plugin_arch;
+    const PluginInfo& plugin_info;
     boost::filesystem::path host_path;
     boost::process::child host;
 };
@@ -163,6 +159,8 @@ class GroupHost : public HostProcess {
      *   handled on.
      * @param logger The `Logger` instance the redirected STDIO streams will be
      *   written to.
+     * @param plugin_info Information about the plugin we're going to use. Used
+     *   to retrieve the Wine prefix and the plugin's architecture.
      * @param host_request The information about the plugin we should launch a
      *   host process for. This object will be sent to the group host process.
      * @param sockets The socket endpoints that will be used for communication
@@ -172,17 +170,17 @@ class GroupHost : public HostProcess {
      */
     GroupHost(boost::asio::io_context& io_context,
               Logger& logger,
+              const PluginInfo& plugin_info,
               const HostRequest& host_request,
               Sockets& socket_endpoint,
               std::string group_name);
 
-    LibArchitecture architecture() override;
     boost::filesystem::path path() override;
     bool running() override;
     void terminate() override;
 
    private:
-    LibArchitecture plugin_arch;
+    const PluginInfo& plugin_info;
     boost::filesystem::path host_path;
 
     /**

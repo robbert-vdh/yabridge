@@ -48,23 +48,20 @@ class PluginBridge {
      *   Using a lambda here feels wrong, but I can't think of a better
      *   solution right now.
      *
-     * @tparam F A `TSockets(boost::asio::io_context&)` function to create the
-     *   `TSockets` instance.
+     * @tparam F A `TSockets(boost::asio::io_context&, const PluginInfo&)`
+     *   function to create the `TSockets` instance.
      *
      * @throw std::runtime_error Thrown when the Wine plugin host could not be
      *   found, or if it could not locate and load a VST3 module.
      */
     template <typename F>
-    PluginBridge(PluginType plugin_type,
-                 const boost::filesystem::path& plugin_path,
-                 F create_socket_instance)
-        : plugin_type(plugin_type),
-          plugin_path(plugin_path),
+    PluginBridge(PluginType plugin_type, F create_socket_instance)
+        : info(plugin_type),
           io_context(),
-          sockets(create_socket_instance(io_context)),
+          sockets(create_socket_instance(io_context, info)),
           // This is still correct for VST3 plugins because we can configure an
           // entire directory (the module's bundle) at once
-          config(load_config_for(get_this_file_location())),
+          config(load_config_for(info.native_library_path)),
           generic_logger(Logger::create_from_environment(
               create_logger_prefix(sockets.base_dir))),
           plugin_host(
@@ -72,9 +69,10 @@ class PluginBridge {
                   ? std::unique_ptr<HostProcess>(std::make_unique<GroupHost>(
                         io_context,
                         generic_logger,
+                        info,
                         HostRequest{
                             .plugin_type = plugin_type,
-                            .plugin_path = plugin_path.string(),
+                            .plugin_path = info.windows_plugin_path.string(),
                             .endpoint_base_dir = sockets.base_dir.string()},
                         sockets,
                         *config.group))
@@ -82,8 +80,10 @@ class PluginBridge {
                         std::make_unique<IndividualHost>(
                             io_context,
                             generic_logger,
+                            info,
                             HostRequest{.plugin_type = plugin_type,
-                                        .plugin_path = plugin_path.string(),
+                                        .plugin_path =
+                                            info.windows_plugin_path.string(),
                                         .endpoint_base_dir =
                                             sockets.base_dir.string()}))),
           has_realtime_priority(set_realtime_priority()),
@@ -102,9 +102,9 @@ class PluginBridge {
                  << std::endl;
         init_msg << "host:         '" << plugin_host->path().string() << "'"
                  << std::endl;
-        init_msg << "plugin:       '" << plugin_path.string() << "'"
-                 << std::endl;
-        init_msg << "plugin type:  '" << plugin_type_to_string(plugin_type)
+        init_msg << "plugin:       '" << info.windows_plugin_path.string()
+                 << "'" << std::endl;
+        init_msg << "plugin type:  '" << plugin_type_to_string(info.plugin_type)
                  << "'" << std::endl;
         init_msg << "realtime:     '" << (has_realtime_priority ? "yes" : "no")
                  << "'" << std::endl;
@@ -112,14 +112,17 @@ class PluginBridge {
                  << std::endl;
         init_msg << "wine prefix:  '";
 
-        // If the Wine prefix is manually overridden, then this should be made
-        // clear. This follows the behaviour of `set_wineprefix()`.
-        boost::process::environment env = boost::this_process::environment();
-        if (!env["WINEPREFIX"].empty()) {
-            init_msg << env["WINEPREFIX"].to_string() << " <overridden>";
-        } else {
-            init_msg << find_wineprefix().value_or("<default>").string();
-        }
+        std::visit(
+            overload{
+                [&](const OverridenWinePrefix& prefix) {
+                    init_msg << prefix.value.string() << " <overridden>";
+                },
+                [&](const boost::filesystem::path& prefix) {
+                    init_msg << prefix.string();
+                },
+                [&](const DefaultWinePrefix&) { init_msg << "<default>"; },
+            },
+            info.wine_prefix);
         init_msg << "'" << std::endl;
 
         init_msg << "wine version: '" << get_wine_version() << "'" << std::endl;
@@ -139,10 +142,13 @@ class PluginBridge {
         } else {
             init_msg << "individually";
         }
-        if (plugin_host->architecture() == LibArchitecture::dll_32) {
-            init_msg << ", 32-bit";
-        } else {
-            init_msg << ", 64-bit";
+        switch (info.plugin_arch) {
+            case LibArchitecture::dll_32:
+                init_msg << ", 32-bit";
+                break;
+            case LibArchitecture::dll_64:
+                init_msg << ", 64-bit";
+                break;
         }
         init_msg << "'" << std::endl;
 
@@ -239,26 +245,9 @@ class PluginBridge {
     }
 
     /**
-     * The type of the plugin we're dealing with. Passed to the host process and
-     * printed in the initialisation message.
+     * Information about the plugin we're bridging.
      */
-    const PluginType plugin_type;
-
-    /**
-     * The path to the plugin (`.dll` or module) being loaded in the Wine plugin
-     * host.
-     *
-     * Forst VST2 plugins this will be a `.dll` file. For VST3 plugins this is
-     * normally a directory called `MyPlugin.vst3` that contains
-     * `MyPlugin.vst3/Contents/x86-win/MyPlugin.vst3`, but there's also an older
-     * deprecated (but still ubiquitous) format where the top level
-     * `MyPlugin.vst3` is not a directory but a .dll file. This points to either
-     * of those things, and then `VST3::Hosting::Win32Module::create()` will be
-     * able to load it.
-     *
-     * https://developer.steinberg.help/pages/viewpage.action?pageId=9798275
-     */
-    const boost::filesystem::path plugin_path;
+    const PluginInfo info;
 
     boost::asio::io_context io_context;
 

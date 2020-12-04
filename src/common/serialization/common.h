@@ -41,15 +41,6 @@ static_assert(std::is_same_v<intptr_t, int64_t>);
 using native_size_t = uint64_t;
 using native_intptr_t = int64_t;
 
-// The cannonical overloading template for `std::visitor`, not sure why this
-// isn't part of the standard library
-template <class... Ts>
-struct overload : Ts... {
-    using Ts::operator()...;
-};
-template <class... Ts>
-overload(Ts...) -> overload<Ts...>;
-
 /**
  * An object containing the startup options for hosting a plugin. These options
  * are passed to `yabridge-host.exe` as command line arguments, and they are

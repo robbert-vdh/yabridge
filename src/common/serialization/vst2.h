@@ -24,6 +24,7 @@
 #include <bitsery/traits/vector.h>
 #include <vestige/aeffectx.h>
 
+#include "../utils.h"
 #include "../vst24.h"
 #include "common.h"
 

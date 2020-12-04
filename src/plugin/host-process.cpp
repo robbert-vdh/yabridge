@@ -86,20 +86,22 @@ void HostProcess::async_log_pipe_lines(patched_async_pipe& pipe,
 
 IndividualHost::IndividualHost(boost::asio::io_context& io_context,
                                Logger& logger,
-                               const HostRequest& plugin_info)
+                               const PluginInfo& plugin_info,
+                               const HostRequest& host_request)
     : HostProcess(io_context, logger),
-      // FIXME: This will require changing for VST3 bundles
-      plugin_arch(find_dll_architecture(plugin_info.plugin_path)),
-      host_path(find_vst_host(plugin_arch, false)),
+      plugin_info(plugin_info),
+      host_path(find_vst_host(plugin_info.native_library_path,
+                              plugin_info.plugin_arch,
+                              false)),
       host(launch_host(host_path,
-                       plugin_type_to_string(plugin_info.plugin_type),
+                       plugin_type_to_string(host_request.plugin_type),
 #ifdef WITH_WINEDBG
-                       plugin_info.plugin_path.filename(),
+                       host_request.plugin_path.filename(),
 #else
-                       plugin_info.plugin_path,
+                       host_request.plugin_path,
 #endif
-                       plugin_info.endpoint_base_dir,
-                       bp::env = set_wineprefix(),
+                       host_request.endpoint_base_dir,
+                       bp::env = plugin_info.create_host_env(),
                        bp::std_out = stdout_pipe,
                        bp::std_err = stderr_pipe
 #ifdef WITH_WINEDBG
@@ -113,10 +115,6 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
         logger.log("Warning: winedbg does not support paths containing spaces");
     }
 #endif
-}
-
-LibArchitecture IndividualHost::architecture() {
-    return plugin_arch;
 }
 
 fs::path IndividualHost::path() {
@@ -134,13 +132,15 @@ void IndividualHost::terminate() {
 
 GroupHost::GroupHost(boost::asio::io_context& io_context,
                      Logger& logger,
+                     const PluginInfo& plugin_info,
                      const HostRequest& host_request,
                      Sockets& sockets,
                      std::string group_name)
     : HostProcess(io_context, logger),
-      // FIXME: This will require changing for VST3 bundles
-      plugin_arch(find_dll_architecture(host_request.plugin_path)),
-      host_path(find_vst_host(plugin_arch, true)),
+      plugin_info(plugin_info),
+      host_path(find_vst_host(plugin_info.native_library_path,
+                              plugin_info.plugin_arch,
+                              true)),
       sockets(sockets) {
 #ifdef WITH_WINEDBG
     if (plugin_path.string().find(' ') != std::string::npos) {
@@ -156,25 +156,10 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
     // other processes will exit. When a plugin's host process has exited, it
     // will try to connect to the socket once more in the case that another
     // process is now listening on it.
-    const bp::environment host_env = set_wineprefix();
-    fs::path wine_prefix;
-    if (auto wine_prefix_envvar = host_env.find("WINEPREFIX");
-        wine_prefix_envvar != host_env.end()) {
-        // This is a bit ugly, but Boost.Process's environment does not have a
-        // graceful way to check for empty environment variables in const
-        // qualified environments
-        wine_prefix = wine_prefix_envvar->to_string();
-    } else {
-        // Fall back to `~/.wine` if this has not been set or detected. This
-        // would happen if the plugin's .dll file is not inside of a Wine
-        // prefix. If this happens, then the Wine instance will be launched in
-        // the default Wine prefix, so we should reflect that here.
-        wine_prefix = fs::path(host_env.at("HOME").to_string()) / ".wine";
-    }
-
     const fs::path endpoint_base_dir = sockets.base_dir;
     const fs::path group_socket_path =
-        generate_group_endpoint(group_name, wine_prefix, plugin_arch);
+        generate_group_endpoint(group_name, plugin_info.normalize_wine_prefix(),
+                                plugin_info.plugin_arch);
     const auto connect = [&io_context, host_request, endpoint_base_dir,
                           group_socket_path]() {
         boost::asio::local::stream_protocol::socket group_socket(io_context);
@@ -194,7 +179,8 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
         // because it should run independently of this yabridge instance as
         // it will likely outlive it.
         bp::child group_host =
-            launch_host(host_path, group_socket_path, bp::env = host_env,
+            launch_host(host_path, group_socket_path,
+                        bp::env = plugin_info.create_host_env(),
                         bp::std_out = stdout_pipe, bp::std_err = stderr_pipe);
         group_host.detach();
 
@@ -229,10 +215,6 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
                 }
             });
     }
-}
-
-LibArchitecture GroupHost::architecture() {
-    return plugin_arch;
 }
 
 fs::path GroupHost::path() {

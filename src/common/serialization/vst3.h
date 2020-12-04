@@ -21,6 +21,7 @@
 #include <bitsery/ext/std_variant.h>
 
 #include "../configuration.h"
+#include "../utils.h"
 #include "common.h"
 
 // Event handling for our VST3 plugins works slightly different from how we

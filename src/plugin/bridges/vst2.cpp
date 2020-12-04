@@ -40,17 +40,16 @@ Vst2PluginBridge& get_bridge_instance(const AEffect& plugin) {
 }
 
 Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
-    : PluginBridge(PluginType::vst2,
-                   find_vst_plugin(),
-                   [](boost::asio::io_context& io_context) {
-                       return Vst2Sockets<std::jthread>(
-                           io_context,
-                           generate_endpoint_base(find_vst_plugin()
-                                                      .filename()
-                                                      .replace_extension("")
-                                                      .string()),
-                           true);
-                   }),
+    : PluginBridge(
+          PluginType::vst2,
+          [](boost::asio::io_context& io_context, const PluginInfo& info) {
+              return Vst2Sockets<std::jthread>(
+                  io_context,
+                  generate_endpoint_base(info.native_library_path.filename()
+                                             .replace_extension("")
+                                             .string()),
+                  true);
+          }),
       // All the fields should be zero initialized because
       // `Vst2PluginInstance::vstAudioMasterCallback` from Bitwig's plugin
       // bridge will crash otherwise

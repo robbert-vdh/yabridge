@@ -17,18 +17,16 @@
 #include "vst3.h"
 
 Vst3PluginBridge::Vst3PluginBridge()
-    : PluginBridge(PluginType::vst3,
-                   // TODO: This is incorrect for VST3 modules
-                   find_vst_plugin(),
-                   [](boost::asio::io_context& io_context) {
-                       return Vst3Sockets<std::jthread>(
-                           io_context,
-                           generate_endpoint_base(find_vst_plugin()
-                                                      .filename()
-                                                      .replace_extension("")
-                                                      .string()),
-                           true);
-                   }),
+    : PluginBridge(
+          PluginType::vst3,
+          [](boost::asio::io_context& io_context, const PluginInfo& info) {
+              return Vst3Sockets<std::jthread>(
+                  io_context,
+                  generate_endpoint_base(info.native_library_path.filename()
+                                             .replace_extension("")
+                                             .string()),
+                  true);
+          }),
       // TODO: This is UB, use composition with `generic_logger` instead
       logger(static_cast<Vst3Logger&&>(Logger::create_from_environment(
           create_logger_prefix(sockets.base_dir)))) {
