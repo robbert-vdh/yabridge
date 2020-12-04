@@ -38,8 +38,20 @@ Vst3PluginBridge::Vst3PluginBridge()
     // host
     connect_sockets_guarded();
 
+    // Now that communication is set up the Wine host can send callbacks to this
+    // bridge class, and we can send control messages to the Wine host. This
+    // messaging mechanism is how we relay the VST3 communication protocol. As a
+    // first thing, the Wine VST host will ask us for a copy of the
+    // configuration.
     host_callback_handler = std::jthread([&]() {
-        // TODO: Handle callbacks
-        // sockets.vst_host_callback.receive_multi();
+        sockets.vst_host_callback.receive_messages(
+            std::pair<Vst3Logger&, bool>(logger, false),
+            [&](CallbackRequest request) -> CallbackResponse {
+                return std::visit(overload{[&](const WantsConfiguration&)
+                                               -> WantsConfiguration::Response {
+                                      return config;
+                                  }},
+                                  request);
+            });
     });
 }

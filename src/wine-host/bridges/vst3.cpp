@@ -45,16 +45,17 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
 
     sockets.connect();
 
-    // TODO: We should send a copy of the configuration from the plugin at this
-    // point config = sockets.host_vst_control.receive_single<Configuration>();
-
-    control_handler = Win32Thread([&]() {
-        // TODO: Handle control messages
-        // sockets.host_vst_control.receive_multi();
-    });
+    // Fetch this instance's configuration from the plugin to finish the setup
+    // process
+    config = sockets.vst_host_callback.send_message(WantsConfiguration{},
+                                                    std::nullopt);
 }
 
 void Vst3Bridge::run() {
-    // TODO: Do something
+    // TODO: Handle events
+    // sockets.host_vst_control.receive_messages(
+    //     std::nullopt, [&](ControlRequest request) -> ControlResponse {
+    //     });
+
     std::cerr << "TODO: Not yet implemented" << std::endl;
 }

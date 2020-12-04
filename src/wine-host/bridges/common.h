@@ -78,7 +78,10 @@ class HostBridge {
      * Wine window, and embedding that Wine window into a window provided by the
      * host. Should be empty when the editor is not open.
      *
-     * @see should_postpone_message_loop
+     * TODO: This should be moved back to `Vst2Bridge`, `handle_x11_events()``
+     *       and `handle_win32_events()` should be made pure virtual. A single
+     *       `Vst3Bridge` instance will handle multiple plugin instances because
+     *       of the way VST3 works.
      */
     std::optional<Editor> editor;
 };

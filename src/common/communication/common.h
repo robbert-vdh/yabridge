@@ -195,7 +195,11 @@ class Sockets {
     /**
      * Depending on the value of the `listen` argument passed to the
      * constructor, either accept connections made to the sockets on the Linux
-     * side or connect to the sockets on the Wine side
+     * side or connect to the sockets on the Wine side.
+     *
+     * @remark On the plugin side `PluginBridge::connect_sockets_guarded()`
+     *   should be used instead so we can terminate everything in the event that
+     *   Wine fails to start.
      */
     virtual void connect() = 0;
 

@@ -52,6 +52,10 @@ class Vst3Bridge : public HostBridge {
                std::string plugin_dll_path,
                std::string endpoint_base_dir);
 
+    /**
+     * Here we'll listen for and handle incoming control messages until the
+     * sockets get closed.
+     */
     void run() override;
 
    private:
@@ -79,9 +83,4 @@ class Vst3Bridge : public HostBridge {
      *       threads to exit.
      */
     Vst3Sockets<Win32Thread> sockets;
-
-    /**
-     * Handles control messages host over the `hsot_vst_control` sockets.
-     */
-    Win32Thread control_handler;
 };

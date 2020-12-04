@@ -63,6 +63,10 @@ class Vst2Bridge : public HostBridge {
                std::string plugin_dll_path,
                std::string endpoint_base_dir);
 
+    /**
+     * Here we'll handle incoming `dispatch()` messages until the sockets get
+     * closed during `effClose()`.
+     */
     void run() override;
 
     /**
