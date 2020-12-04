@@ -531,9 +531,8 @@ class AdHocSocketHandler {
      * then a blocking loop that handles incoming data from the primary
      * `socket`.
      *
-     * @param logging A pair containing a logger instance and whether or not
-     *   this is for sending `dispatch()` events or host callbacks. Optional
-     *   since it doesn't have to be done on both sides.
+     * @param logger A logger instance for logging connection errors. This
+     *   should only be passed on the plugin side.
      * @param primary_callback A function that will do a single read cycle for
      *   the primary socket socket that should do a single read cycle. This is
      *   called in a loop so it shouldn't do any looping itself.
@@ -547,7 +546,7 @@ class AdHocSocketHandler {
      * @tparam G The same as `F`.
      */
     template <typename F, typename G>
-    void receive_multi(std::optional<std::pair<Logger&, bool>> logging,
+    void receive_multi(std::optional<std::reference_wrapper<Logger>> logger,
                        F primary_callback,
                        G secondary_callback) {
         // As described above we'll handle incoming requests for `socket` on
@@ -568,7 +567,7 @@ class AdHocSocketHandler {
         std::atomic_size_t next_request_id{};
         std::mutex active_secondary_requests_mutex{};
         accept_requests(
-            *acceptor, logging,
+            *acceptor, logger,
             [&](boost::asio::local::stream_protocol::socket secondary_socket) {
                 const size_t request_id = next_request_id.fetch_add(1);
 
@@ -624,9 +623,9 @@ class AdHocSocketHandler {
      * @overload
      */
     template <typename F>
-    void receive_multi(std::optional<std::pair<Logger&, bool>> logging,
+    void receive_multi(std::optional<std::reference_wrapper<Logger>> logger,
                        F callback) {
-        receive_multi(logging, callback, callback);
+        receive_multi(logger, callback, callback);
     }
 
    private:
@@ -636,9 +635,8 @@ class AdHocSocketHandler {
      * called until the IO context gets stopped.
      *
      * @param acceptor The acceptor we will be listening on.
-     * @param logging A pair containing a logger instance and whether or not
-     *   this is for sending `dispatch()` events or host callbacks. Optional
-     *   since it doesn't have to be done on both sides.
+     * @param logger A logger instance for logging connection errors. This
+     *   should only be passed on the plugin side.
      * @param callback A function that handles the new socket connection.
      *
      * @tparam F A function in the form
@@ -648,10 +646,10 @@ class AdHocSocketHandler {
     template <typename F>
     void accept_requests(
         boost::asio::local::stream_protocol::acceptor& acceptor,
-        std::optional<std::pair<Logger&, bool>> logging,
+        std::optional<std::reference_wrapper<Logger>> logger,
         F callback) {
         acceptor.async_accept(
-            [&, logging, callback](
+            [&, logger, callback](
                 const boost::system::error_code& error,
                 boost::asio::local::stream_protocol::socket secondary_socket) {
                 if (error.failed()) {
@@ -659,10 +657,10 @@ class AdHocSocketHandler {
                     // connection will be dropped during shutdown, so we can
                     // silently ignore any related socket errors on the Wine
                     // side
-                    if (logging) {
-                        auto [logger, is_dispatch] = *logging;
-                        logger.log("Failure while accepting connections: " +
-                                   error.message());
+                    if (logger) {
+                        logger->get().log(
+                            "Failure while accepting connections: " +
+                            error.message());
                     }
 
                     return;
@@ -670,7 +668,7 @@ class AdHocSocketHandler {
 
                 callback(std::move(secondary_socket));
 
-                accept_requests(acceptor, logging, callback);
+                accept_requests(acceptor, logger, callback);
             });
     }
 
