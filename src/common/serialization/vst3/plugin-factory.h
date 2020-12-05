@@ -47,6 +47,9 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
      * TODO: Instead of a having a default constructor, we should probably be
      *       passing a callback to this constructor that lets us communicate
      *       with the Wine plugin host.
+     * TODO: Alternative to requiring a bunch of `fu::unique_function<>`
+     *       callbacks would be to make the callback functions pure virtual, and
+     *       then implement those functions directly using `Vst3MessageHandler`.
      */
     YaPluginFactory();
 
@@ -59,7 +62,7 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     explicit YaPluginFactory(
         Steinberg::IPtr<Steinberg::IPluginFactory> factory);
 
-    ~YaPluginFactory();
+    virtual ~YaPluginFactory();
 
     DECLARE_FUNKNOWN_METHODS
 
@@ -68,9 +71,20 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     int32 PLUGIN_API countClasses() override;
     tresult PLUGIN_API getClassInfo(Steinberg::int32 index,
                                     Steinberg::PClassInfo* info) override;
-    tresult PLUGIN_API createInstance(Steinberg::FIDString cid,
-                                      Steinberg::FIDString _iid,
-                                      void** obj) override;
+    // TODO: Figure out how to implement this. Some considerations:
+    //       - We have to sent a control message to the Wine plugin host to ask
+    //         it to create an instance of `_iid`.
+    //       - We then create a `Ya*` implementation of the same interface on
+    //         the plugin side.
+    //       - These two should be wired up so that when the host calls a
+    //         function on it, it should be sent to the instance on the Wine
+    //         plugin host side with the same cid.
+    //       - We should have a list of interfaces we support. When we receive a
+    //         request to create an instance of something we don't support, then
+    //         we should log that and then fail.
+    virtual tresult PLUGIN_API createInstance(Steinberg::FIDString cid,
+                                              Steinberg::FIDString _iid,
+                                              void** obj) override = 0;
 
     // From `IPluginFactory2`
     tresult PLUGIN_API getClassInfo2(int32 index,
@@ -79,7 +93,8 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     // From `IPluginFactory3`
     tresult PLUGIN_API
     getClassInfoUnicode(int32 index, Steinberg::PClassInfoW* info) override;
-    tresult PLUGIN_API setHostContext(Steinberg::FUnknown* context) override;
+    virtual tresult PLUGIN_API
+    setHostContext(Steinberg::FUnknown* context) override = 0;
 
     /**
      * The IIDs that the interface we serialized supports.

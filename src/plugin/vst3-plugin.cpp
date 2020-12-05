@@ -17,6 +17,9 @@
 #include <public.sdk/source/main/pluginfactory.h>
 
 #include "bridges/vst3.h"
+// TODO: Remove include, instantiating and returning the `YaPluginFactory`
+//       should be done in `Vst3PluginBridge`
+#include "src/plugin/bridges/vst3-impls.h"
 
 #include <public.sdk/source/main/linuxmain.cpp>
 
@@ -87,8 +90,8 @@ SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory() {
     // TODO: Remove, this is just for type checking
     if (false) {
         boost::asio::local::stream_protocol::socket* socket;
-        YaPluginFactory* object;
-        write_object(*socket, *object);
+        YaPluginFactoryPluginImpl object(*bridge);
+        write_object(*socket, object);
     }
 
     if (!gPluginFactory) {

@@ -43,9 +43,10 @@ instantiated and managed by the host. The model works as follows:
    can be sent between the native plugin and the Wine plugin host.
 6. If `IFoo` has methods that have side effects (such as instantiating a new
    object), then the implementations of those functions in `YaFoo` will be pure
-   virtual and both the native plugin and the Wine plugin host should provide
-   their own implementation. Since the functions will ever only be called from
-   one of the two sides, the other side can just throw in their implementation.
+   virtual. The side that requested the object (so for the plugin factory that
+   would be on the side of the native plugin) should then provide a `YaFoo{Plugin,Host}Impl`
+   that implements those functions through yabridge's `Vst3MessageHandler`
+   callback interface.
 
 ## Plugin Factory
 

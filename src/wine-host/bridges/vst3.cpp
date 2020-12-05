@@ -17,6 +17,7 @@
 #include "vst3.h"
 
 #include "../boost-fix.h"
+#include "vst3-impls.h"
 
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
@@ -45,8 +46,9 @@ void Vst3Bridge::run() {
     // TODO: Remove, this is just for type checking
     if (false) {
         boost::asio::local::stream_protocol::socket* socket;
-        YaPluginFactory* object;
-        write_object(*socket, *object);
+        Steinberg::IPtr<Steinberg::IPluginFactory> factory;
+        YaPluginFactoryHostImpl object(factory);
+        write_object(*socket, object);
     }
 
     // TODO: Handle events

@@ -120,24 +120,6 @@ tresult PLUGIN_API YaPluginFactory::getClassInfo(Steinberg::int32 index,
 }
 
 tresult PLUGIN_API
-YaPluginFactory::createInstance(Steinberg::FIDString /*cid*/,
-                                Steinberg::FIDString /*_iid*/,
-                                void** /*obj*/) {
-    // TODO: Figure out how to implement this. Some considerations:
-    //       - We have to sent a control message to the Wine plugin host to ask
-    //         it to create an instance of `_iid`.
-    //       - We then create a `Ya*` implementation of the same interface on
-    //         the plugin side.
-    //       - These two should be wired up so that when the host calls a
-    //         function on it, it should be sent to the instance on the Wine
-    //         plugin host side with the same cid.
-    //       - We should have a list of interfaces we support. When we receive a
-    //         request to create an instance of something we don't support, then
-    //         we should log that and then fail.
-    return 0;
-}
-
-tresult PLUGIN_API
 YaPluginFactory::getClassInfo2(int32 /*index*/,
                                Steinberg::PClassInfo2* /*info*/) {
     // TODO: Implement
@@ -148,12 +130,5 @@ tresult PLUGIN_API
 YaPluginFactory::getClassInfoUnicode(int32 /*index*/,
                                      Steinberg::PClassInfoW* /*info*/) {
     // TODO: Implement
-    return 0;
-}
-
-tresult PLUGIN_API
-YaPluginFactory::setHostContext(Steinberg::FUnknown* /*context*/) {
-    // TODO: I guess this should do a callback and set the Wine host's host
-    //       context, right?
     return 0;
 }

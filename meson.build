@@ -82,6 +82,7 @@ vst3_plugin_sources = [
   'src/common/plugins.cpp',
   'src/common/utils.cpp',
   'src/plugin/bridges/vst3.cpp',
+  'src/plugin/bridges/vst3-impls.cpp',
   'src/plugin/host-process.cpp',
   'src/plugin/utils.cpp',
   'src/plugin/vst3-plugin.cpp',
@@ -109,6 +110,7 @@ if with_vst3
     'src/common/logging/vst3.cpp',
     'src/common/serialization/vst3/plugin-factory.cpp',
     'src/wine-host/bridges/vst3.cpp',
+    'src/wine-host/bridges/vst3-impls.cpp',
   ]
 endif
 
