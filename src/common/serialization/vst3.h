@@ -23,6 +23,7 @@
 #include "../configuration.h"
 #include "../utils.h"
 #include "common.h"
+#include "vst3/plugin-factory.h"
 
 // Event handling for our VST3 plugins works slightly different from how we
 // handle VST2 plugins. VST3 does not have a centralized event dispatching
