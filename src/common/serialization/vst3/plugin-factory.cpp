@@ -26,6 +26,10 @@ YaPluginFactory::YaPluginFactory(
     // TODO: We should only copy the interfaces that we support. This should use
     //       the same list as that used in `createInstance()`.
     known_iids.insert(factory->iid);
+    if (Steinberg::PFactoryInfo info;
+        factory->getFactoryInfo(&info) == Steinberg::kResultOk) {
+        factory_info = info;
+    }
 
     auto factory2 = Steinberg::FUnknownPtr<Steinberg::IPluginFactory2>(factory);
     if (!factory2) {
@@ -75,9 +79,13 @@ tresult PLUGIN_API YaPluginFactory::queryInterface(Steinberg::FIDString _iid,
 }
 
 tresult PLUGIN_API
-YaPluginFactory::getFactoryInfo(Steinberg::PFactoryInfo* /*info*/) {
-    // TODO: Implement
-    return 0;
+YaPluginFactory::getFactoryInfo(Steinberg::PFactoryInfo* info) {
+    if (info && factory_info) {
+        *info = *factory_info;
+        return Steinberg::kResultOk;
+    } else {
+        return Steinberg::kNotInitialized;
+    }
 }
 
 int32 PLUGIN_API YaPluginFactory::countClasses() {
@@ -126,6 +134,7 @@ YaPluginFactory::getClassInfoUnicode(int32 /*index*/,
 
 tresult PLUGIN_API
 YaPluginFactory::setHostContext(Steinberg::FUnknown* /*context*/) {
-    // TODO: Implement
+    // TODO: I guess this should do a callback and set the Wine host's host
+    //       context, right?
     return 0;
 }

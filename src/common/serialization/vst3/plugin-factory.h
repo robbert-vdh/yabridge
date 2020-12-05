@@ -18,7 +18,9 @@
 
 #include <set>
 
+#include <bitsery/ext/std_optional.h>
 #include <bitsery/ext/std_set.h>
+#include <bitsery/traits/string.h>
 #include <pluginterfaces/base/ipluginbase.h>
 
 #include "../../bitsery/ext/vst3.h"
@@ -29,6 +31,8 @@ using Steinberg::int32, Steinberg::tresult;
 
 // TODO: After implementing one or two more of these, abstract away some of the
 //       nasty bits
+// TODO: Should we have some clearer way to indicate to us which fields are
+//       going to return copied results directly and which make a callback?
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -82,13 +86,30 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
      */
     std::set<Steinberg::FUID> known_iids;
 
+    // For `IPluginFactory::getFactoryInfo`
+    std::optional<Steinberg::PFactoryInfo> factory_info;
+
     template <typename S>
     void serialize(S& s) {
         s.ext(known_iids, bitsery::ext::StdSet{32},
               [](S& s, Steinberg::FUID& iid) {
                   s.ext(iid, bitsery::ext::FUID{});
               });
+        s.ext(factory_info, bitsery::ext::StdOptional{},
+              [](S& s, Steinberg::PFactoryInfo& info) { s.object(info); });
     }
 };
 
 #pragma GCC diagnostic pop
+
+// Serialization functions have to live in the same namespace as the objects
+// they're serializing
+namespace Steinberg {
+template <typename S>
+void serialize(S& s, PFactoryInfo& factory_info) {
+    s.text1b(factory_info.vendor);
+    s.text1b(factory_info.url);
+    s.text1b(factory_info.email);
+    s.value4b(factory_info.flags);
+}
+}  // namespace Steinberg
