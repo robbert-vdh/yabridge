@@ -20,10 +20,6 @@
 
 #ifndef NOMINMAX
 #define NOMINMAX
-#define NOSERVICE
-#define NOMCX
-#define NOIMM
-#define WIN32_LEAN_AND_MEAN
 #endif
 #include <vestige/aeffectx.h>
 #include <windows.h>

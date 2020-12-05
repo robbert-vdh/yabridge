@@ -31,7 +31,7 @@ compiler_options = [
   '-fvisibility-inlines-hidden',
   # Disable the use of concepts in Boost.Asio until Boost 1.73 gets released
   # https://github.com/boostorg/asio/issues/312
-  '-DBOOST_ASIO_DISABLE_CONCEPTS'
+  '-DBOOST_ASIO_DISABLE_CONCEPTS',
 ]
 
 with_bitbridge = get_option('with-bitbridge')
@@ -176,6 +176,7 @@ if with_vst3
   vst3_sdk_native_dep = declare_dependency(
     link_with : vst3_sdk_native,
     include_directories : vst3_include_dir,
+    compile_args : vst3_compiler_options,
   )
 
   # And another dependency for the host SDK for our Wine host applications
@@ -192,14 +193,9 @@ if with_vst3
   endif
 
   vst3_wine_compiler_options = [
-    # Removes some MSVC-isms for us
-    '-D__MINGW32__',
-    # We don't need all of this stuff from `Windows.h`, and it only causes more
-    # issues
+    # Some stuff from `windows.h` results in conflicting definitions
     '-DNOMINMAX',
-    '-DNOSERVICE',
-    '-DNOMCX',
-    '-DWIN32_LEAN_AND_MEAN',
+    '-DWINE_NOWINSOCK',
   ]
   vst3_base_wine_64bit = static_library(
     'vst3_base_wine_64bit',
@@ -268,7 +264,7 @@ if with_vst3
       # This does mean that we now have a lot of defines in our code, but the
       # alternative would be patching every location in the SDK where they include
       # `windows.h`
-      compile_args : vst3_wine_compiler_options,
+      compile_args : vst3_compiler_options + vst3_wine_compiler_options,
     )
   endif
 endif

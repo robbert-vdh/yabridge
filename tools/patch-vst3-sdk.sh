@@ -25,11 +25,14 @@ fi
 find "$sdk_directory" -type f \( -iname '*.h' -or -iname '*.cpp' \) -print0 |
   xargs -0 sed -i -E 's/^#include <(Windows.h|ShlObj.h)>$/#include <\L\1\E>/'
 
-# We're building with `WIN32_LEAN_AND_MEAN` because some of the definitions in
-# there conflict with the C standard library as provided by GCC. This also
-# excludes the shell API, which the VST3 SDK uses to open URLs.
-sed -i "s/^#include <windows.h>$/#include <windows.h>  \\/\\/ patched for yabridge\\
-#include <shellapi.h>/" "$sdk_directory/public.sdk/source/common/openurl.cpp"
+# Use the attributes and types from GCC
+sed -i 's/defined(__MINGW32__)/defined(__WINE__)/g' "$sdk_directory/pluginterfaces/base/ftypes.h"
+
+# There are some more places where the SDK includes better compatibility with
+# GCC that we can use
+# NOTE: We should **not** define __MINGW32__ globally, since that also breaks
+#       Wine's headers in headache inducing ways
+sed -i 's/defined(__MINGW32__)/defined(__WINE__)/g' "$sdk_directory/public.sdk/source/common/systemclipboard_win32.cpp"
 
 # Use the string manipulation functions from the C standard library
 sed -i 's/\bSMTG_OS_WINDOWS\b/0/g;s/\bSMTG_OS_LINUX\b/1/g' "$sdk_directory/base/source/fstring.cpp"
@@ -60,10 +63,6 @@ replace_char16() {
 replace_char16 "using ConverterFacet = std::codecvt_utf8_utf16<char16_t>;" "$sdk_directory/base/source/fstring.cpp"
 replace_char16 "using Converter = std::wstring_convert<ConverterFacet, char16_t>;" "$sdk_directory/base/source/fstring.cpp"
 replace_char16 "using Converter = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>;" "$sdk_directory/pluginterfaces/base/ustring.cpp"
-
-# The definitions of long doesn't match up between platforms, and the mingw
-# version here is trying to do something funky
-sed -i 's/\b__MINGW32__\b/__NOPE__/g' "$sdk_directory/pluginterfaces/base/funknown.cpp"
 
 # libstdc++fs doesn't work under Winelib, for whatever reason that might be.
 # We'll patch the Win32 module loading to use Boost.Filesystem instead.

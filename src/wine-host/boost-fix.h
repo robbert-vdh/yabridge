@@ -23,13 +23,11 @@
 // it's running under a WIN32 environment. If anyone knows a better way to do
 // this, please let me know!
 
-#pragma push_macro("__MINGW32__")
 #pragma push_macro("WIN32")
 #pragma push_macro("_WIN32")
 #pragma push_macro("__WIN32__")
 #pragma push_macro("_WIN64")
 
-#undef __MINGW32__
 #undef WIN32
 #undef _WIN32
 #undef __WIN32__
@@ -44,7 +42,6 @@
 #include <boost/asio/basic_socket_streambuf.hpp>
 // #include <boost/asio/detail/timer_queue_ptime.hpp>
 
-#pragma pop_macro("__MINGW32__")
 #pragma pop_macro("WIN32")
 #pragma pop_macro("_WIN32")
 #pragma pop_macro("__WIN32__")
