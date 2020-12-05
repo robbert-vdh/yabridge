@@ -24,10 +24,12 @@ tresult PLUGIN_API
 YaPluginFactoryHostImpl::createInstance(Steinberg::FIDString /*cid*/,
                                         Steinberg::FIDString /*_iid*/,
                                         void** /*obj*/) {
-    throw std::runtime_error("Unexpected call to 'createInstance()'");
+    throw std::runtime_error(
+        "Unexpected call to 'IPluginFactory::createInstance()'");
 }
 
 tresult PLUGIN_API
 YaPluginFactoryHostImpl::setHostContext(Steinberg::FUnknown* /*context*/) {
-    throw std::runtime_error("Unexpected call to 'setHostContext()'");
+    throw std::runtime_error(
+        "Unexpected call to 'IPluginFactory3::setHostContext()'");
 }
