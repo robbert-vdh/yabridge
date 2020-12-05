@@ -4,51 +4,52 @@ TODO: Once this is more fleshed out, move this document to `docs/`, and perhaps
 replace this readme with a link to that document.
 
 The VST3 SDK uses an architecture where every object inherits from an interface,
-and every interface inherits from `FUnknown` which offers a sort of query
-interface. Newer versions of an interface with added functionality then inherit
-from the previous version of that interface. Every interface (and thus also
-newer versions of an old interface) get a unique identifier. It then uses a
-smart pointer system (`FUnknownPtr<I>`) that queries whether the `FUnknown`
-matches a certain interface by checking whether the IDs match up, allowing casts
-to that interface if the `FUnkonwn` matches. This means that an
-`IPluginFactory*` may also be an `IPluginFactory2*` or an `IPluginFactory3*`.
-For yabridge we need to be able to pass concrete serializable objects that
-implement these interfaces around.
+and every interface inherits from `FUnknown` which offers a dynamic casting
+interface through `queryInterface()`. Every interface gets a unique identifier.
+It then uses a smart pointer system (`FUnknownPtr<I>`) that queries whether the
+`FUnknown` matches a certain interface by checking whether the IDs match up,
+allowing casts to that interface if the `FUnkonwn` matches.
 
-## Serializing simple objects
+Another important part of this system is interface versioning. Old interfaces
+cannot be changed, so when the SDK adds new functionality to an existing
+interface it defines a new interface that inherits from the old one. The
+`queryInterface()` implementation should then allow casts to all of the
+implemented interface versions.
 
-TODO: Think of a better naming scheme
+Lastly, the interfaces mostly provided a lot of getters for data, but some of
+the interfaces also provide callback functions that should perform some
+operation on the component implementing the interface.
 
-Serializing an object that implements `ISimple` that only stores data and can't
-perform any callbacks works as follows:
+Yabridge's serialization and communication model for VST3 is thus a lot more
+complicated than for VST2 since all of these objects are loosely coupled and are
+instantiated and managed by the host. The model works as follows:
 
-1. We define a class called `YaSimple` that inherits from `ISimple`.
-2. We fetch all data from `ISimple` and store it in `YaSimple`.
-3. `YaSimpl` can then be serialized with bitsery and transmitted like any other
-   object.
+1. For an interface `IFoo`, we provide a possibly abstract implementation called
+   `YaFoo`.
+2. This class has a constructor that takes an `IPtr<IFoo>` interface pointer and
+   copies all of the data from the interface's functions that do not perform any
+   side effects.
+3. `YaFoo` then implements all the boilerplate required for `FUnknown`. This
+   includes the constructor, destructor and methods required for reference
+   counting, as well as the query interface.
+4. If `IFoo` is a versioned interface such as `IPluginFactory3`, the above two
+   steps work slightly differently. When copying the data for a plugin factory,
+   we'll start copying from `IPluginFactory`, and we'll copy data from each
+   newer version of the interface that the `IPtr<IPluginFactory>` supports.
+   During this process we keep track of which interfaces were supported by the
+   native plugin. In our query interface method we then only report support for
+   the same itnerfaces that were supported by `IPtr<IPluginFactory`.
+5. `YaFoo` implements serialization and deserialization through bitsery so it
+   can be sent between the native plugin and the Wine plugin host.
+6. If `IFoo` has methods that have side effects (such as instantiating a new
+   object), then the implementations of those functions in `YaFoo` will be pure
+   virtual and both the native plugin and the Wine plugin host should provide
+   their own implementation. Since the functions will ever only be called from
+   one of the two sides, the other side can just throw in their implementation.
 
-Our
-solution approach for serializing Our solution here is to build an object that's compatible with
-`IPluginFactory3` that copies all data from the original object
+## Plugin Factory
 
-## Serializing versioned interfaces
-
-For serializing versioned interfaces, such as `IPluginFactory3`, we'll do
-something similar:
-
-1. As with simple object, we define a class called `YaPluginFactory` that
-   inherits from `IPluginFactory3`.
-2. Now we start copying data starting with `IPluginFactory`, then moving on to
-   `IPluginFactory2`, and then finally `IPluginFactory3`. When at some point our
-   `FUnknownPtr<I>` returns a null pointer we know that the object doesn't
-   implement that version of the interface and we can stop.
-3. During the copying process we'll also copy over the `iid`. This allows our
-   object to appear as the highest version of the interface we were able to copy
-   from. Doing this avoids complicated inheritance chains in our own
-   implemetnation.
-4. `YaPluginFactory` can then be serialized with bitsery and transmitted like
-   any other object.
-
-## Processors and controllers
-
-TODO: Not sure how this will work yet.
+Aside form the above, the plugin factory is the only place where we may
+potentially report different values from those reported by the Windows VST3
+plugin. If we encounter an itnerface we do not yet support, we will log a
+warning and we'll skip the interface since we wouldn't know how to handle it.
