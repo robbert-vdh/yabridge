@@ -46,7 +46,8 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
      *
      * TODO: Check if we don't need a custom query interface, we probably do.
      */
-    explicit YaPluginFactory(Steinberg::IPluginFactory* factory);
+    explicit YaPluginFactory(
+        Steinberg::IPtr<Steinberg::IPluginFactory> factory);
 
     ~YaPluginFactory();
 

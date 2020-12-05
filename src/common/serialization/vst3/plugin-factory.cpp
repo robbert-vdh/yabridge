@@ -18,10 +18,28 @@
 
 YaPluginFactory::YaPluginFactory(){FUNKNOWN_CTOR}
 
-YaPluginFactory::YaPluginFactory(Steinberg::IPluginFactory* /*factory*/){
+YaPluginFactory::YaPluginFactory(
+    Steinberg::IPtr<Steinberg::IPluginFactory> factory) {
     FUNKNOWN_CTOR
 
-    // TODO: Copy everything from `factory`
+    // TODO: Copy data from `IPluginFactory`
+    known_iids.insert(factory->iid);
+
+    auto factory2 = Steinberg::FUnknownPtr<Steinberg::IPluginFactory2>(factory);
+    if (!factory2) {
+        return;
+    }
+
+    // TODO: Copy data from `IPluginFactory2`
+    known_iids.insert(factory2->iid);
+
+    auto factory3 = Steinberg::FUnknownPtr<Steinberg::IPluginFactory3>(factory);
+    if (!factory3) {
+        return;
+    }
+
+    // TODO: Copy data from `IPluginFactory3`
+    known_iids.insert(factory3->iid);
 }
 
 YaPluginFactory::~YaPluginFactory() {
@@ -55,7 +73,7 @@ tresult PLUGIN_API YaPluginFactory::queryInterface(Steinberg::FIDString _iid,
 }
 
 tresult PLUGIN_API
-YaPluginFactory::getFactoryInfo(Steinberg::PFactoryInfo* info) {
+YaPluginFactory::getFactoryInfo(Steinberg::PFactoryInfo* /*info*/) {
     // TODO: Implement
     return 0;
 }
@@ -65,34 +83,37 @@ int32 PLUGIN_API YaPluginFactory::countClasses() {
     return 0;
 }
 
-tresult PLUGIN_API YaPluginFactory::getClassInfo(Steinberg::int32 index,
-                                                 Steinberg::PClassInfo* info) {
-    // TODO: Implement
-    return 0;
-}
-
-tresult PLUGIN_API YaPluginFactory::createInstance(Steinberg::FIDString cid,
-                                                   Steinberg::FIDString _iid,
-                                                   void** obj) {
+tresult PLUGIN_API
+YaPluginFactory::getClassInfo(Steinberg::int32 /*index*/,
+                              Steinberg::PClassInfo* /*info*/) {
     // TODO: Implement
     return 0;
 }
 
 tresult PLUGIN_API
-YaPluginFactory::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
+YaPluginFactory::createInstance(Steinberg::FIDString /*cid*/,
+                                Steinberg::FIDString /*_iid*/,
+                                void** /*obj*/) {
     // TODO: Implement
     return 0;
 }
 
 tresult PLUGIN_API
-YaPluginFactory::getClassInfoUnicode(int32 index,
-                                     Steinberg::PClassInfoW* info) {
+YaPluginFactory::getClassInfo2(int32 /*index*/,
+                               Steinberg::PClassInfo2* /*info*/) {
     // TODO: Implement
     return 0;
 }
 
 tresult PLUGIN_API
-YaPluginFactory::setHostContext(Steinberg::FUnknown* context) {
+YaPluginFactory::getClassInfoUnicode(int32 /*index*/,
+                                     Steinberg::PClassInfoW* /*info*/) {
+    // TODO: Implement
+    return 0;
+}
+
+tresult PLUGIN_API
+YaPluginFactory::setHostContext(Steinberg::FUnknown* /*context*/) {
     // TODO: Implement
     return 0;
 }
