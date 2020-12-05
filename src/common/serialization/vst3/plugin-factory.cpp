@@ -37,14 +37,15 @@ tresult PLUGIN_API YaPluginFactory::queryInterface(Steinberg::FIDString _iid,
                                                    void** obj) {
     QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
                     Steinberg::IPluginFactory)
-    QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory::iid,
-                    Steinberg::IPluginFactory)
-    if (actual_iid == Steinberg::IPluginFactory2::iid ||
-        actual_iid == Steinberg::IPluginFactory3::iid) {
+    if (known_iids.contains(Steinberg::IPluginFactory::iid)) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory::iid,
+                        Steinberg::IPluginFactory)
+    }
+    if (known_iids.contains(Steinberg::IPluginFactory2::iid)) {
         QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory2::iid,
                         Steinberg::IPluginFactory2)
     }
-    if (actual_iid == Steinberg::IPluginFactory3::iid) {
+    if (known_iids.contains(Steinberg::IPluginFactory3::iid)) {
         QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory3::iid,
                         Steinberg::IPluginFactory3)
     }

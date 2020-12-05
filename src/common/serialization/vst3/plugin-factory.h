@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <set>
+
+#include <bitsery/ext/std_set.h>
 #include <pluginterfaces/base/ipluginbase.h>
 
 #include "../../bitsery/ext/vst3.h"
@@ -68,13 +71,16 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     tresult PLUGIN_API setHostContext(Steinberg::FUnknown* context) override;
 
     /**
-     * The IID of the interface we should report as.
+     * The IIDs that the interface we serialized supports.
      */
-    Steinberg::FUID actual_iid;
+    std::set<Steinberg::FUID> known_iids;
 
     template <typename S>
     void serialize(S& s) {
-        s.ext(actual_iid, bitsery::ext::FUID());
+        s.ext(known_iids, bitsery::ext::StdSet{32},
+              [](S& s, Steinberg::FUID& iid) {
+                  s.ext(iid, bitsery::ext::FUID{});
+              });
     }
 };
 

@@ -138,7 +138,7 @@ class Configuration {
         s.ext(group, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
         s.ext(matched_file, bitsery::ext::StdOptional(),
-              [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath()); });
+              [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath{}); });
         s.ext(matched_pattern, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
 
