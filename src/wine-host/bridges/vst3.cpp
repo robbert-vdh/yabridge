@@ -42,6 +42,13 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
 }
 
 void Vst3Bridge::run() {
+    // TODO: Remove, this is just for type checking
+    if (false) {
+        boost::asio::local::stream_protocol::socket* socket;
+        YaPluginFactory* object;
+        write_object(*socket, *object);
+    }
+
     // TODO: Handle events
     // sockets.host_vst_control.receive_messages(
     //     std::nullopt, [&](ControlRequest request) -> ControlResponse {

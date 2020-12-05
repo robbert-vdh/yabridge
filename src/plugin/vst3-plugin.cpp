@@ -16,9 +16,9 @@
 
 #include <public.sdk/source/main/pluginfactory.h>
 
-#include <public.sdk/source/main/linuxmain.cpp>
-
 #include "bridges/vst3.h"
+
+#include <public.sdk/source/main/linuxmain.cpp>
 
 using Steinberg::gPluginFactory;
 
@@ -70,11 +70,27 @@ bool DeinitModule() {
  * classes, and then recreate it here.
  */
 SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory() {
-    // TODO: Check the VST3::Hosting module loading source to see if
-    //       gPluginFactory is used directly by the host or not.
-    // TODO: We can do all of our allocations and things indie of
-    //       `Vst3PluginBridge`, so this function should call some function on
-    //       Vst3Bridge that does the initialization
+    // The host should have called `InitModule()` first
+    assert(bridge);
+
+    // TODO: Instead of using gPluginFactory we'll use a field in
+    //       `Vst3PluginBridge`
+    // TODO: First thing we should do is query the factory on the Wine side and
+    //       preset a copy of it to the host. The important bits there are that
+    //       we use the same interface version as the one presented the plugin.
+    // TODO: We have two options for the implementation:
+    //       1. We can query the interface version, and then have three
+    //          different implementations for the interface version.
+    //       2. We can implement version 3, but copy the iid from the plugin so
+    //          it always uses the correct version.
+
+    // TODO: Remove, this is just for type checking
+    if (false) {
+        boost::asio::local::stream_protocol::socket* socket;
+        YaPluginFactory* object;
+        write_object(*socket, *object);
+    }
+
     if (!gPluginFactory) {
         // TODO: Here we want to:
         //       1) Load the plugin on the Wine host
