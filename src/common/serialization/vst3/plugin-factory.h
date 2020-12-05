@@ -110,6 +110,11 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
      * For `IPluginFactory2::getClassInfo2`, works the same way as the above.
      */
     std::vector<std::optional<Steinberg::PClassInfo2>> class_infos_2;
+    /**
+     * For `IPluginFactory3::getClassInfoUnicode`, works the same way as the
+     * above.
+     */
+    std::vector<std::optional<Steinberg::PClassInfoW>> class_infos_unicode;
 
     template <typename S>
     void serialize(S& s) {
@@ -125,6 +130,10 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
                     });
         s.container(class_infos_2, 2048,
                     [](S& s, std::optional<Steinberg::PClassInfo2>& info) {
+                        s.ext(info, bitsery::ext::StdOptional{});
+                    });
+        s.container(class_infos_unicode, 2048,
+                    [](S& s, std::optional<Steinberg::PClassInfoW>& info) {
                         s.ext(info, bitsery::ext::StdOptional{});
                     });
     }
@@ -154,6 +163,19 @@ void serialize(S& s, PClassInfo2& class_info) {
     s.text1b(class_info.vendor);
     s.text1b(class_info.version);
     s.text1b(class_info.sdkVersion);
+}
+
+template <typename S>
+void serialize(S& s, PClassInfoW& class_info) {
+    s.container1b(class_info.cid);
+    s.value4b(class_info.cardinality);
+    s.text1b(class_info.category);
+    s.text2b(class_info.name);
+    s.value4b(class_info.classFlags);
+    s.text1b(class_info.subCategories);
+    s.text2b(class_info.vendor);
+    s.text2b(class_info.version);
+    s.text2b(class_info.sdkVersion);
 }
 
 template <typename S>

@@ -60,8 +60,14 @@ YaPluginFactory::YaPluginFactory(
         return;
     }
 
-    // TODO: Copy data from `IPluginFactory3`
     known_iids.insert(factory3->iid);
+    // `IpluginFactory3::getClassInfoUnicode`
+    for (int i = 0; i < num_classes; i++) {
+        Steinberg::PClassInfoW info;
+        if (factory3->getClassInfoUnicode(i, &info) == Steinberg::kResultOk) {
+            class_infos_unicode[i] = info;
+        }
+    }
 }
 
 YaPluginFactory::~YaPluginFactory() {
@@ -110,7 +116,7 @@ int32 PLUGIN_API YaPluginFactory::countClasses() {
 
 tresult PLUGIN_API YaPluginFactory::getClassInfo(Steinberg::int32 index,
                                                  Steinberg::PClassInfo* info) {
-    if (index >= static_cast<int32>(class_infos_1.size())) {
+    if (index >= static_cast<int32>(class_infos_unicode.size())) {
         return Steinberg::kInvalidArgument;
     }
 
@@ -137,8 +143,16 @@ YaPluginFactory::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
 }
 
 tresult PLUGIN_API
-YaPluginFactory::getClassInfoUnicode(int32 /*index*/,
-                                     Steinberg::PClassInfoW* /*info*/) {
-    // TODO: Implement
-    return 0;
+YaPluginFactory::getClassInfoUnicode(int32 index,
+                                     Steinberg::PClassInfoW* info) {
+    if (index >= static_cast<int32>(class_infos_unicode.size())) {
+        return Steinberg::kInvalidArgument;
+    }
+
+    if (class_infos_unicode[index]) {
+        *info = *class_infos_unicode[index];
+        return Steinberg::kResultOk;
+    } else {
+        return Steinberg::kResultFalse;
+    }
 }
