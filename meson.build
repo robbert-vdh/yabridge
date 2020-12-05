@@ -106,6 +106,7 @@ host_sources = [
 
 if with_vst3
   host_sources += [
+    'src/common/logging/vst3.cpp',
     'src/common/serialization/vst3/plugin-factory.cpp',
     'src/wine-host/bridges/vst3.cpp',
   ]

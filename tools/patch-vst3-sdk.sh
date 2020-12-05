@@ -19,11 +19,14 @@ if [[ -z $sdk_directory ]]; then
   exit 1
 fi
 
-# TODO: Debug builds fail now because it's using an unimplemented variation of printf
-
 # Make sure all imports use the correct casing
 find "$sdk_directory" -type f \( -iname '*.h' -or -iname '*.cpp' \) -print0 |
   xargs -0 sed -i -E 's/^#include <(Windows.h|ShlObj.h)>$/#include <\L\1\E>/'
+
+# Use the proper libc functions instead of the MSVC intrinsics. These are also
+# used in `fstring.cpp`, but there we will patch the entire file to use the
+# standard POSIX/GCC string formatting facilities.
+sed -i 's/\b_vsnprintf\b/vsnprintf/g;s/\b_snprintf\b/snprintf/g' "$sdk_directory/base/source/fdebug.cpp"
 
 # Use the attributes and types from GCC
 sed -i 's/defined(__MINGW32__)/defined(__WINE__)/g' "$sdk_directory/pluginterfaces/base/ftypes.h"
@@ -64,16 +67,16 @@ replace_char16 "using ConverterFacet = std::codecvt_utf8_utf16<char16_t>;" "$sdk
 replace_char16 "using Converter = std::wstring_convert<ConverterFacet, char16_t>;" "$sdk_directory/base/source/fstring.cpp"
 replace_char16 "using Converter = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>;" "$sdk_directory/pluginterfaces/base/ustring.cpp"
 
+# Don't try adding `std::u8string` to an `std::vector<std::string>`. MSVC
+# probably coerces them, but GCC doesn't
+sed -i 's/\bgeneric_u8string\b/generic_string/g' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
+
 # libstdc++fs doesn't work under Winelib, for whatever reason that might be.
 # We'll patch the Win32 module loading to use Boost.Filesystem instead.
 sed -i 's/^#include <\(experimental\/\)\?filesystem>$/#include <boost\/filesystem.hpp>/' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
 sed -i 's/^using namespace std\(::experimental\)\?;$/namespace filesystem = boost::filesystem;/' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
 sed -i 's/\bfile_type::directory\b/file_type::directory_file/g' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
 sed -i 's/\bp\.native ()/p.wstring ()/g' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
-
-# Don't try adding `std::u8string` to an `std::vector<std::string>`. MSVC
-# probably coerces them, but GCC doesn't
-sed -i 's/\bgeneric_u8string\b/generic_string/g' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
 
 # Meson requires this program to output something, or else it will error out
 # when trying to encode the empty output
