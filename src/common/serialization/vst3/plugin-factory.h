@@ -88,6 +88,8 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
 
     // For `IPluginFactory::getFactoryInfo`
     std::optional<Steinberg::PFactoryInfo> factory_info;
+    // For `IPluginFactory::countClasses`
+    int num_classes;
 
     template <typename S>
     void serialize(S& s) {
@@ -97,6 +99,7 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
               });
         s.ext(factory_info, bitsery::ext::StdOptional{},
               [](S& s, Steinberg::PFactoryInfo& info) { s.object(info); });
+        s.value4b(num_classes);
     }
 };
 

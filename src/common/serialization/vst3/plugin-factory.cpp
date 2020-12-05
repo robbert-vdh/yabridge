@@ -30,6 +30,7 @@ YaPluginFactory::YaPluginFactory(
         factory->getFactoryInfo(&info) == Steinberg::kResultOk) {
         factory_info = info;
     }
+    num_classes = factory->countClasses();
 
     auto factory2 = Steinberg::FUnknownPtr<Steinberg::IPluginFactory2>(factory);
     if (!factory2) {
@@ -89,8 +90,7 @@ YaPluginFactory::getFactoryInfo(Steinberg::PFactoryInfo* info) {
 }
 
 int32 PLUGIN_API YaPluginFactory::countClasses() {
-    // TODO: Implement
-    return 0;
+    return num_classes;
 }
 
 tresult PLUGIN_API
