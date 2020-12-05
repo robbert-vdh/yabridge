@@ -28,17 +28,7 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
       sockets(main_context.context, endpoint_base_dir, false) {
     std::string error;
     module = VST3::Hosting::Win32Module::create(plugin_dll_path, error);
-
-    // TODO: Do something more useful with this
-    if (module) {
-        // TODO: They use some thin wrappers around the interfaces, we can
-        //       probably reuse these instead of having to make our own
-        VST3::Hosting::FactoryInfo info = module->getFactory().info();
-        std::cout << "Plugin name:  " << module->getName() << std::endl;
-        std::cout << "Vendor:       " << info.vendor() << std::endl;
-        std::cout << "URL:          " << info.url() << std::endl;
-        std::cout << "Send spam to: " << info.email() << std::endl;
-    } else {
+    if (!module) {
         throw std::runtime_error("Could not load the VST3 module for '" +
                                  plugin_dll_path + "': " + error);
     }
