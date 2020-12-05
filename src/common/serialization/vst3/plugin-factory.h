@@ -25,9 +25,7 @@
 
 #include "../../bitsery/ext/vst3.h"
 
-namespace {
 using Steinberg::int32, Steinberg::tresult;
-}  // namespace
 
 // TODO: After implementing one or two more of these, abstract away some of the
 //       nasty bits
@@ -43,14 +41,6 @@ using Steinberg::int32, Steinberg::tresult;
  */
 class YaPluginFactory : public Steinberg::IPluginFactory3 {
    public:
-    /**
-     * TODO: Instead of a having a default constructor, we should probably be
-     *       passing a callback to this constructor that lets us communicate
-     *       with the Wine plugin host.
-     * TODO: Alternative to requiring a bunch of `fu::unique_function<>`
-     *       callbacks would be to make the callback functions pure virtual, and
-     *       then implement those functions directly using `Vst3MessageHandler`.
-     */
     YaPluginFactory();
 
     /**
@@ -116,7 +106,10 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
      * doesn't return a class info.
      */
     std::vector<std::optional<Steinberg::PClassInfo>> class_infos_1;
-    // TODO: Callback interface for `createInstance()`
+    /**
+     * For `IPluginFactory2::getClassInfo2`, works the same way as the above.
+     */
+    std::vector<std::optional<Steinberg::PClassInfo2>> class_infos_2;
 
     template <typename S>
     void serialize(S& s) {
@@ -128,6 +121,10 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
         s.value4b(num_classes);
         s.container(class_infos_1, 2048,
                     [](S& s, std::optional<Steinberg::PClassInfo>& info) {
+                        s.ext(info, bitsery::ext::StdOptional{});
+                    });
+        s.container(class_infos_2, 2048,
+                    [](S& s, std::optional<Steinberg::PClassInfo2>& info) {
                         s.ext(info, bitsery::ext::StdOptional{});
                     });
     }
@@ -144,6 +141,19 @@ void serialize(S& s, PClassInfo& class_info) {
     s.value4b(class_info.cardinality);
     s.text1b(class_info.category);
     s.text1b(class_info.name);
+}
+
+template <typename S>
+void serialize(S& s, PClassInfo2& class_info) {
+    s.container1b(class_info.cid);
+    s.value4b(class_info.cardinality);
+    s.text1b(class_info.category);
+    s.text1b(class_info.name);
+    s.value4b(class_info.classFlags);
+    s.text1b(class_info.subCategories);
+    s.text1b(class_info.vendor);
+    s.text1b(class_info.version);
+    s.text1b(class_info.sdkVersion);
 }
 
 template <typename S>
