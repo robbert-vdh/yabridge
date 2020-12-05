@@ -23,6 +23,8 @@ YaPluginFactory::YaPluginFactory(
     FUNKNOWN_CTOR
 
     // TODO: Copy data from `IPluginFactory`
+    // TODO: We should only copy the interfaces that we support. This should use
+    //       the same list as that used in `createInstance()`.
     known_iids.insert(factory->iid);
 
     auto factory2 = Steinberg::FUnknownPtr<Steinberg::IPluginFactory2>(factory);
@@ -94,7 +96,17 @@ tresult PLUGIN_API
 YaPluginFactory::createInstance(Steinberg::FIDString /*cid*/,
                                 Steinberg::FIDString /*_iid*/,
                                 void** /*obj*/) {
-    // TODO: Implement
+    // TODO: Figure out how to implement this. Some considerations:
+    //       - We have to sent a control message to the Wine plugin host to ask
+    //         it to create an instance of `_iid`.
+    //       - We then create a `Ya*` implementation of the same interface on
+    //         the plugin side.
+    //       - These two should be wired up so that when the host calls a
+    //         function on it, it should be sent to the instance on the Wine
+    //         plugin host side with the same cid.
+    //       - We should have a list of interfaces we support. When we receive a
+    //         request to create an instance of something we don't support, then
+    //         we should log that and then fail.
     return 0;
 }
 

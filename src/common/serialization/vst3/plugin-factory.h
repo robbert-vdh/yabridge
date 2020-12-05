@@ -27,6 +27,9 @@ namespace {
 using Steinberg::int32, Steinberg::tresult;
 }  // namespace
 
+// TODO: After implementing one or two more of these, abstract away some of the
+//       nasty bits
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 
@@ -36,6 +39,11 @@ using Steinberg::int32, Steinberg::tresult;
  */
 class YaPluginFactory : public Steinberg::IPluginFactory3 {
    public:
+    /**
+     * TODO: Instead of a having a default constructor, we should probably be
+     *       passing a callback to this constructor that lets us communicate
+     *       with the Wine plugin host.
+     */
     YaPluginFactory();
 
     /**
@@ -43,8 +51,6 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
      supported
      * interface function more or less of this struct will be left empty, and
      * `iid` will be set accordingly.
-     *
-     * TODO: Check if we don't need a custom query interface, we probably do.
      */
     explicit YaPluginFactory(
         Steinberg::IPtr<Steinberg::IPluginFactory> factory);
