@@ -26,11 +26,23 @@ YaPluginFactory::YaPluginFactory(
     // TODO: We should only copy the interfaces that we support. This should use
     //       the same list as that used in `createInstance()`.
     known_iids.insert(factory->iid);
+
     if (Steinberg::PFactoryInfo info;
         factory->getFactoryInfo(&info) == Steinberg::kResultOk) {
         factory_info = info;
     }
+
     num_classes = factory->countClasses();
+
+    // TODO: At this point we don't know what this class is and thus we can't
+    //       filter unsupported classes, right?
+    class_infos_1.resize(num_classes);
+    for (int i = 0; i < num_classes; i++) {
+        Steinberg::PClassInfo info;
+        if (factory->getClassInfo(i, &info) == Steinberg::kResultOk) {
+            class_infos_1[i] = info;
+        }
+    }
 
     auto factory2 = Steinberg::FUnknownPtr<Steinberg::IPluginFactory2>(factory);
     if (!factory2) {
@@ -93,11 +105,18 @@ int32 PLUGIN_API YaPluginFactory::countClasses() {
     return num_classes;
 }
 
-tresult PLUGIN_API
-YaPluginFactory::getClassInfo(Steinberg::int32 /*index*/,
-                              Steinberg::PClassInfo* /*info*/) {
-    // TODO: Implement
-    return 0;
+tresult PLUGIN_API YaPluginFactory::getClassInfo(Steinberg::int32 index,
+                                                 Steinberg::PClassInfo* info) {
+    if (index >= static_cast<int32>(class_infos_1.size())) {
+        return Steinberg::kInvalidArgument;
+    }
+
+    if (class_infos_1[index]) {
+        *info = *class_infos_1[index];
+        return Steinberg::kResultOk;
+    } else {
+        return Steinberg::kResultFalse;
+    }
 }
 
 tresult PLUGIN_API

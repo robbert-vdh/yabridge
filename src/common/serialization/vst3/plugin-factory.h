@@ -86,10 +86,22 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
      */
     std::set<Steinberg::FUID> known_iids;
 
-    // For `IPluginFactory::getFactoryInfo`
+    /**
+     * For `IPluginFactory::getFactoryInfo`.
+     */
     std::optional<Steinberg::PFactoryInfo> factory_info;
-    // For `IPluginFactory::countClasses`
+    /**
+     * For `IPluginFactory::countClasses`.
+     */
     int num_classes;
+    /**
+     * For `IPluginFactory::getClassInfo`. We need to store all four class info
+     * versions if the plugin can provide them since we don't know which version
+     * of the interface the host will use. Will be `std::nullopt` if the plugin
+     * doesn't return a class info.
+     */
+    std::vector<std::optional<Steinberg::PClassInfo>> class_infos_1;
+    // TODO: Callback interface for `createInstance()`
 
     template <typename S>
     void serialize(S& s) {
@@ -97,9 +109,12 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
               [](S& s, Steinberg::FUID& iid) {
                   s.ext(iid, bitsery::ext::FUID{});
               });
-        s.ext(factory_info, bitsery::ext::StdOptional{},
-              [](S& s, Steinberg::PFactoryInfo& info) { s.object(info); });
+        s.ext(factory_info, bitsery::ext::StdOptional{});
         s.value4b(num_classes);
+        s.container(class_infos_1, 2048,
+                    [](S& s, std::optional<Steinberg::PClassInfo>& info) {
+                        s.ext(info, bitsery::ext::StdOptional{});
+                    });
     }
 };
 
@@ -108,6 +123,14 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
 // Serialization functions have to live in the same namespace as the objects
 // they're serializing
 namespace Steinberg {
+template <typename S>
+void serialize(S& s, PClassInfo& class_info) {
+    s.container1b(class_info.cid);
+    s.value4b(class_info.cardinality);
+    s.text1b(class_info.category);
+    s.text1b(class_info.name);
+}
+
 template <typename S>
 void serialize(S& s, PFactoryInfo& factory_info) {
     s.text1b(factory_info.vendor);
