@@ -86,7 +86,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         const T& object,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
         typename T::Response response_object;
-        send_message(object, response_object, logging);
+        receive_into(object, response_object, logging);
 
         return response_object;
     }
@@ -96,15 +96,13 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
      * an existing object.
      *
      * TODO: We might also need overloads that reuse buffers
-     * TODO: Rename to `receive_into()` to make it more apparent what's
-     *       happening
      *
      * @param response_object The object to deserialize into.
      *
-     * @overload
+     * @overload Vst3MessageHandler::send_message
      */
     template <typename T>
-    typename T::Response& send_message(
+    typename T::Response& receive_into(
         const T& object,
         typename T::Response& response_object,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
