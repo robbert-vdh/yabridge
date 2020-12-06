@@ -58,7 +58,7 @@ struct WantsPluginFactory {
 /**
  * When we send a control message from the plugin to the Wine VST host, this
  * encodes the information we request or the operation we want to perform. A
- * request of type `ControlRequest(T)` should send back a `T::Reponse`.
+ * request of type `ControlRequest(T)` should send back a `T::Response`.
  */
 using ControlRequest = std::variant<WantsPluginFactory>;
 
@@ -70,7 +70,7 @@ void serialize(S& s, ControlRequest& payload) {
 /**
  * When we do a callback from the Wine VST host to the plugin, this encodes the
  * information we want or the operation we want to perform. A request of type
- * `CallbackRequest(T)` should send back a `T::Reponse`.
+ * `CallbackRequest(T)` should send back a `T::Response`.
  */
 using CallbackRequest = std::variant<WantsConfiguration>;
 

@@ -152,11 +152,9 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
      * @param callback The function used to generate a response out of the
      *   request.  See the definition of `F` for more information.
      *
-     * @tparam F A function type in the form of `T::Response(Request(T))`. C++
-     *   doesn't have syntax for this, but the function receives a `Request`
-     *   variant containing a `T`, and the function should return a `T::Reponse`
-     *   object. This way we can directly deserialize into a `T::Reponse` on the
-     *   side that called `send_object(T)`.
+     * @tparam F A function type in the form of `T::Response(T)` for every `T`
+     * in `Request`. This way we can directly deserialize into a `T::Response`
+     * on the side that called `receive_into(T, T::Response&)`.
      *
      * @relates Vst3MessageHandler::send_event
      */
@@ -178,7 +176,14 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                         request);
                 }
 
-                const auto& response = callback(request);
+                // We do the visiting here using a templated lambda. This way we
+                // always know for sure that the function returns the correct
+                // type, and we can scrap a lot of boilerplate elsewhere.
+                const auto& response = std::visit(
+                    [&]<typename T>(const T object) ->
+                    typename T::Response { return callback(object); },
+                    request);
+
                 if (logging) {
                     auto [logger, is_host_vst] = *logging;
                     logger.log_response(!is_host_vst, response);

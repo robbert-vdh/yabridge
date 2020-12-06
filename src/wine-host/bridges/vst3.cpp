@@ -49,11 +49,9 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
 
 void Vst3Bridge::run() {
     sockets.host_vst_control.receive_messages(
-        std::nullopt, [&](ControlRequest request) -> auto& {
-            return std::visit(overload{[&](const WantsPluginFactory&)
-                                           -> WantsPluginFactory::Response {
-                                  return *plugin_factory;
-                              }},
-                              request);
-        });
+        std::nullopt,
+        overload{
+            [&](const WantsPluginFactory&) -> WantsPluginFactory::Response {
+                return *plugin_factory;
+            }});
 }
