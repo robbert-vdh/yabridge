@@ -92,6 +92,8 @@ inline void write_object(Socket& socket, const T& object) {
  * @param socket The Boost.Asio socket to read from.
  * @param buffer The buffer to read into. This is useful for sending audio and
  *   chunk data since that can vary in size by a lot.
+ * @param object The object to serialize into. There are also overrides that
+ *   create a new default initialized `T`
  *
  * @return The deserialized object.
  *
@@ -102,7 +104,7 @@ inline void write_object(Socket& socket, const T& object) {
  * @relates write_object
  */
 template <typename T, typename Socket>
-inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
+inline T read_object(Socket& socket, std::vector<uint8_t>& buffer, T& object) {
     // See the note above on the use of `uint64_t` instead of `size_t`
     std::array<uint64_t, 1> message_length;
     boost::asio::read(socket, boost::asio::buffer(message_length));
@@ -118,7 +120,6 @@ inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
         boost::asio::read(socket, boost::asio::buffer(buffer));
     assert(size == actual_size);
 
-    T object;
     auto [_, success] =
         bitsery::quickDeserialization<InputAdapter<std::vector<uint8_t>>>(
             {buffer.begin(), size}, object);
@@ -132,14 +133,40 @@ inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
 }
 
 /**
- * `read_object()` with a small default buffer for convenience.
+ * `read_object()` into a new default initialized object with an existing
+ * buffer.
+ *
+ * @overload
+ */
+template <typename T, typename Socket>
+inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
+    T object;
+    return read_object<T>(socket, buffer, object);
+}
+
+/**
+ * `read_object()` into an existing object a small default
+ * buffer for convenience.
+ *
+ * @overload
+ */
+template <typename T, typename Socket>
+inline T read_object(Socket& socket, T& object) {
+    std::vector<uint8_t> buffer(64);
+    return read_object<T>(socket, buffer, object);
+}
+
+/**
+ * `read_object()` into a new default initialized object with a small default
+ * buffer for convenience.
  *
  * @overload
  */
 template <typename T, typename Socket>
 inline T read_object(Socket& socket) {
+    T object;
     std::vector<uint8_t> buffer(64);
-    return read_object<T>(socket, buffer);
+    return read_object<T>(socket, buffer, object);
 }
 
 /**
