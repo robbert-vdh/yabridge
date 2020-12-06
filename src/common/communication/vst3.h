@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <atomic>
+#include <variant>
 
 #include "../logging/vst3.h"
 #include "../serialization/vst3.h"
@@ -38,10 +38,8 @@
  * @tparam Thread The thread implementation to use. On the Linux side this
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  * @tparam Request Either `ControlRequest` or `CallbackRequest`.
- * @tparam Response Either `ControlResponse` or `CallbackResponse`, depending on
- *   the type of `Request`.
  */
-template <typename Thread, typename Request, typename Response>
+template <typename Thread, typename Request>
 class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
    public:
     /**
@@ -86,7 +84,9 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         const T& object,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
         typename T::Response response_object;
-        return send_message(object, response_object, logging);
+        send_message(object, response_object, logging);
+
+        return response_object;
     }
 
     /**
@@ -112,23 +112,20 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         // messages from arriving out of order. `AdHocSocketHandler::send()`
         // will either use a long-living primary socket, or if that's currently
         // in use it will spawn a new socket for us.
-        const TResponse response = this->template send<TResponse>(
+        this->template send<std::monostate>(
             [&](boost::asio::local::stream_protocol::socket& socket) {
                 write_object(socket, Request(object));
-                const auto response =
-                    read_object<Response>(socket, response_object);
-
-                // If the other side handled the request correctly, the Response
-                // variant should now contain an object of type `T::Response`
-                return std::get<TResponse>(response);
+                read_object<TResponse>(socket, response_object);
+                // FIXME: We have to return something here, and ML was not yet
+                //        invented when they came up with C++ so void is not
+                //        valid here
+                return std::monostate{};
             });
 
         if (logging) {
             auto [logger, is_host_vst] = *logging;
-            logger.log_response(!is_host_vst, response);
+            logger.log_response(!is_host_vst, response_object);
         }
-
-        return response;
     }
 
     /**
@@ -137,8 +134,8 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
      * `socket`.
      *
      * The specified function receives a `Request` variant object containing an
-     * object of type `T`, and it should return the corresponding `Response` of
-     * type `T::Response`.
+     * object of type `T`, and it should then return the corresponding
+     * `T::Response`.
      *
      * @param logging A pair containing a logger instance and whether or not
      *   this is for sending host -> plugin control messages. If set to false,
@@ -148,7 +145,11 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
      * @param callback The function used to generate a response out of the
      *   request.  See the definition of `F` for more information.
      *
-     * @tparam F A function type in the form of `Reponse(Request)`.
+     * @tparam F A function type in the form of `T::Response(Request(T))`. C++
+     *   doesn't have syntax for this, but the function receives a `Request`
+     *   variant containing a `T`, and the function should return a `T::Reponse`
+     *   object. This way we can directly deserialize into a `T::Reponse` on the
+     *   side that called `send_object(T)`.
      *
      * @relates Vst3MessageHandler::send_event
      */
@@ -170,14 +171,10 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                         request);
                 }
 
-                Response response = callback(request);
+                const auto response = callback(request);
                 if (logging) {
-                    std::visit(
-                        [&](const auto& object) {
-                            auto [logger, is_host_vst] = *logging;
-                            logger.log_response(!is_host_vst, object);
-                        },
-                        response);
+                    auto [logger, is_host_vst] = *logging;
+                    logger.log_response(!is_host_vst, response);
                 }
 
                 write_object(socket, response);
@@ -260,14 +257,12 @@ class Vst3Sockets : public Sockets {
      * This will be listened on by the Wine plugin host when it calls
      * `receive_multi()`.
      */
-    Vst3MessageHandler<Thread, ControlRequest, ControlResponse>
-        host_vst_control;
+    Vst3MessageHandler<Thread, ControlRequest> host_vst_control;
 
     /**
      * For sending callbacks from the plugin back to the host. After we have a
      * better idea of what our communication model looks like we'll probably
      * want to provide an abstraction similar to `EventHandler`.
      */
-    Vst3MessageHandler<Thread, CallbackRequest, CallbackResponse>
-        vst_host_callback;
+    Vst3MessageHandler<Thread, CallbackRequest> vst_host_callback;
 };

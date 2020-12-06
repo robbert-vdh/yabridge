@@ -48,10 +48,7 @@ struct WantsConfiguration {
 /**
  * When we send a control message from the plugin to the Wine VST host, this
  * encodes the information we request or the operation we want to perform. A
- * request of type `T` should send back a `CallbackResponse` containing
- * `T::Reponse`.
- *
- * @relates ControlResponse
+ * request of type `ControlRequest(T)` should send back a `T::Reponse`.
  */
 using ControlRequest = std::variant<>;
 
@@ -61,43 +58,13 @@ void serialize(S& s, ControlRequest& payload) {
 }
 
 /**
- * A response to a control message. Tee `T::Reponse` for the correct type to
- * return here.
- *
- * @relates ControlRrequest
- */
-using ControlResponse = std::variant<>;
-
-// TODO: Uncomment when this is no longer empty
-// template <typename S>
-// void serialize(S& s, ControlResponse& payload) {
-//     s.ext(payload, bitsery::ext::StdVariant{});
-// }
-
-/**
  * When we do a callback from the Wine VST host to the plugin, this encodes the
  * information we want or the operation we want to perform. A request of type
- * `T` should send back a `CallbackResponse` containing `T::Reponse`.
- *
- * @relates CallbackResponse
+ * `CallbackRequest(T)` should send back a `T::Reponse`.
  */
 using CallbackRequest = std::variant<WantsConfiguration>;
 
 template <typename S>
 void serialize(S& s, CallbackRequest& payload) {
     s.ext(payload, bitsery::ext::StdVariant{[](S&, WantsConfiguration&) {}});
-}
-
-/**
- * A response to a callback. Tee `T::Reponse` for the correct type to return
- * here.
- *
- * @relates CallbackRrequest
- */
-using CallbackResponse = std::variant<Configuration>;
-
-template <typename S>
-void serialize(S& s, CallbackResponse& payload) {
-    s.ext(payload, bitsery::ext::StdVariant{
-                       [](S& s, Configuration& config) { s.object(config); }});
 }

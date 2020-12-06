@@ -42,7 +42,7 @@ Vst3PluginBridge::Vst3PluginBridge()
     host_callback_handler = std::jthread([&]() {
         sockets.vst_host_callback.receive_messages(
             std::pair<Vst3Logger&, bool>(logger, false),
-            [&](CallbackRequest request) -> CallbackResponse {
+            [&](CallbackRequest request) -> auto {
                 return std::visit(overload{[&](const WantsConfiguration&)
                                                -> WantsConfiguration::Response {
                                       return config;
