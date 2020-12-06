@@ -70,13 +70,6 @@ Vst3PluginBridge::Vst3PluginBridge()
     // host
     connect_sockets_guarded();
 
-    // Set up the plugin factory, since this is the first thing the host will
-    // request after loading the module
-    plugin_factory = std::make_unique<YaPluginFactoryPluginImpl>(*this);
-    sockets.host_vst_control.receive_into(
-        WantsPluginFactory{}, *plugin_factory,
-        std::pair<Vst3Logger&, bool>(logger, true));
-
     // Now that communication is set up the Wine host can send callbacks to this
     // bridge class, and we can send control messages to the Wine host. This
     // messaging mechanism is how we relay the VST3 communication protocol. As a
@@ -93,4 +86,13 @@ Vst3PluginBridge::Vst3PluginBridge()
                                   request);
             });
     });
+
+    // Set up the plugin factory, since this is the first thing the host will
+    // request after loading the module. Host callback handlers should have
+    // started before this since the Wine plugin host will request a copy of the
+    // configuration during its initialization.
+    plugin_factory = std::make_unique<YaPluginFactoryPluginImpl>(*this);
+    sockets.host_vst_control.receive_into(
+        WantsPluginFactory{}, *plugin_factory,
+        std::pair<Vst3Logger&, bool>(logger, true));
 }
