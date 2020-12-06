@@ -178,7 +178,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                         request);
                 }
 
-                const auto response = callback(request);
+                const auto& response = callback(request);
                 if (logging) {
                     auto [logger, is_host_vst] = *logging;
                     logger.log_response(!is_host_vst, response);

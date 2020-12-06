@@ -36,6 +36,11 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
 
     sockets.connect();
 
+    // Serialize the plugin's plugin factory. The native VST3 plugin will
+    // request a copy of this during its initialization.
+    plugin_factory =
+        std::make_unique<YaPluginFactoryHostImpl>(module->getFactory().get());
+
     // Fetch this instance's configuration from the plugin to finish the setup
     // process
     config = sockets.vst_host_callback.send_message(WantsConfiguration{},
@@ -43,18 +48,12 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
 }
 
 void Vst3Bridge::run() {
-    // TODO: Remove, this is just for type checking
-    if (false) {
-        boost::asio::local::stream_protocol::socket* socket;
-        Steinberg::IPtr<Steinberg::IPluginFactory> factory;
-        YaPluginFactoryHostImpl object(factory);
-        write_object(*socket, object);
-    }
-
-    // TODO: Handle events
-    // sockets.host_vst_control.receive_messages(
-    //     std::nullopt, [&](ControlRequest request) -> ControlResponse {
-    //     });
-
-    std::cerr << "TODO: Not yet implemented" << std::endl;
+    sockets.host_vst_control.receive_messages(
+        std::nullopt, [&](ControlRequest request) -> auto& {
+            return std::visit(overload{[&](const WantsPluginFactory&)
+                                           -> WantsPluginFactory::Response {
+                                  return *plugin_factory;
+                              }},
+                              request);
+        });
 }

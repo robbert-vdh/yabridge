@@ -73,6 +73,10 @@ SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory() {
     // The host should have called `InitModule()` first
     assert(bridge);
 
+    // TODO: I think there is a flag that indicates that the class configuration
+    //       may change, but I don't remember if it's at runtime or every time
+    //       the module is loaded. If it's the former then this will take some
+    //       special handling.
     return bridge->plugin_factory.get();
 
     // TODO: In the normal implementation of this function they manually call
