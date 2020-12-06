@@ -36,7 +36,9 @@ class Vst3Logger {
     /**
      * @see Logger::log_trace
      */
-    inline void log_trace(const std::string& message) { logger.log(message); }
+    inline void log_trace(const std::string& message) {
+        logger.log_trace(message);
+    }
 
     // For every object we send using `Vst3MessageHandler` we have overloads
     // that print information about the request and the response. The boolean

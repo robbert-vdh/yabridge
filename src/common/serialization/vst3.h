@@ -50,8 +50,6 @@ struct WantsConfiguration {
  * copy of the hosted Windows VST3 plugin's `IPluginFactory{,2,3}` interface.
  */
 struct WantsPluginFactory {
-    // TODO: Some things had to be changed to use references since this is an
-    //       abstract class. Check if nothing breaks.
     using Response = YaPluginFactory&;
 };
 

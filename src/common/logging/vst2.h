@@ -49,7 +49,9 @@ class Vst2Logger {
     /**
      * @see Logger::log_trace
      */
-    inline void log_trace(const std::string& message) { logger.log(message); }
+    inline void log_trace(const std::string& message) {
+        logger.log_trace(message);
+    }
 
     // The following functions are for logging specific events, they are only
     // enabled for verbosity levels higher than 1 (i.e. `Verbosity::events`)
