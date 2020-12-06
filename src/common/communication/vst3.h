@@ -85,6 +85,22 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
     typename T::Response send_message(
         const T& object,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
+        typename T::Response response_object;
+        return send_message(object, response_object, logging);
+    }
+
+    /**
+     * `Vst3MessageHandler::send_message()`, but deserializing the response into
+     * an existing object.
+     *
+     * TODO: We might also need overloads that reuse buffers
+     *
+     * @overload
+     */
+    template <typename T>
+    void send_message(const T& object,
+                      typename T::Response& response_object,
+                      std::optional<std::pair<Vst3Logger&, bool>> logging) {
         using TResponse = typename T::Response;
 
         if (logging) {
@@ -99,7 +115,8 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         const TResponse response = this->template send<TResponse>(
             [&](boost::asio::local::stream_protocol::socket& socket) {
                 write_object(socket, Request(object));
-                const auto response = read_object<Response>(socket);
+                const auto response =
+                    read_object<Response>(socket, response_object);
 
                 // If the other side handled the request correctly, the Response
                 // variant should now contain an object of type `T::Response`
