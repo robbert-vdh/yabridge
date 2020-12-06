@@ -69,6 +69,8 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
      * another thread, then this will create a new socket connection and send
      * the event there instead.
      *
+     * @param object The request object to send. Often a marker struct to ask
+     *   for a specific object to be returned.
      * @param logging A pair containing a logger instance and whether or not
      *   this is for sending host -> plugin control messages. If set to false,
      *   then this indicates that this `Vst3MessageHandler` is handling plugin
@@ -94,13 +96,18 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
      * an existing object.
      *
      * TODO: We might also need overloads that reuse buffers
+     * TODO: Rename to `receive_into()` to make it more apparent what's
+     *       happening
+     *
+     * @param response_object The object to deserialize into.
      *
      * @overload
      */
     template <typename T>
-    void send_message(const T& object,
-                      typename T::Response& response_object,
-                      std::optional<std::pair<Vst3Logger&, bool>> logging) {
+    typename T::Response& send_message(
+        const T& object,
+        typename T::Response& response_object,
+        std::optional<std::pair<Vst3Logger&, bool>> logging) {
         using TResponse = typename T::Response;
 
         if (logging) {
@@ -126,6 +133,8 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
             auto [logger, is_host_vst] = *logging;
             logger.log_response(!is_host_vst, response_object);
         }
+
+        return response_object;
     }
 
     /**

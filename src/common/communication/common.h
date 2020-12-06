@@ -104,7 +104,7 @@ inline void write_object(Socket& socket, const T& object) {
  * @relates write_object
  */
 template <typename T, typename Socket>
-inline T read_object(Socket& socket, std::vector<uint8_t>& buffer, T& object) {
+inline T& read_object(Socket& socket, std::vector<uint8_t>& buffer, T& object) {
     // See the note above on the use of `uint64_t` instead of `size_t`
     std::array<uint64_t, 1> message_length;
     boost::asio::read(socket, boost::asio::buffer(message_length));
@@ -141,7 +141,9 @@ inline T read_object(Socket& socket, std::vector<uint8_t>& buffer, T& object) {
 template <typename T, typename Socket>
 inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
     T object;
-    return read_object<T>(socket, buffer, object);
+    read_object<T>(socket, buffer, object);
+
+    return object;
 }
 
 /**
@@ -151,7 +153,7 @@ inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
  * @overload
  */
 template <typename T, typename Socket>
-inline T read_object(Socket& socket, T& object) {
+inline T& read_object(Socket& socket, T& object) {
     std::vector<uint8_t> buffer(64);
     return read_object<T>(socket, buffer, object);
 }
@@ -166,7 +168,9 @@ template <typename T, typename Socket>
 inline T read_object(Socket& socket) {
     T object;
     std::vector<uint8_t> buffer(64);
-    return read_object<T>(socket, buffer, object);
+    read_object<T>(socket, buffer, object);
+
+    return object;
 }
 
 /**
