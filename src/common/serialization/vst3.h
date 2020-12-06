@@ -46,15 +46,23 @@ struct WantsConfiguration {
 };
 
 /**
+ * Marker struct to indicate the other side (the Wine plugin host) should send a
+ * copy of the hosted Windows VST3 plugin's `IPluginFactory{,2,3}` interface.
+ */
+struct WantsPluginFactory {
+    using Response = YaPluginFactory;
+};
+
+/**
  * When we send a control message from the plugin to the Wine VST host, this
  * encodes the information we request or the operation we want to perform. A
  * request of type `ControlRequest(T)` should send back a `T::Reponse`.
  */
-using ControlRequest = std::variant<>;
+using ControlRequest = std::variant<WantsPluginFactory>;
 
 template <typename S>
 void serialize(S& s, ControlRequest& payload) {
-    s.ext(payload, bitsery::ext::StdVariant{});
+    s.ext(payload, bitsery::ext::StdVariant{[](S&, WantsPluginFactory&) {}});
 }
 
 /**

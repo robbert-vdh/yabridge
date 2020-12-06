@@ -86,6 +86,29 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     virtual tresult PLUGIN_API
     setHostContext(Steinberg::FUnknown* context) override = 0;
 
+    template <typename S>
+    void serialize(S& s) {
+        s.ext(known_iids, bitsery::ext::StdSet{32},
+              [](S& s, Steinberg::FUID& iid) {
+                  s.ext(iid, bitsery::ext::FUID{});
+              });
+        s.ext(factory_info, bitsery::ext::StdOptional{});
+        s.value4b(num_classes);
+        s.container(class_infos_1, 2048,
+                    [](S& s, std::optional<Steinberg::PClassInfo>& info) {
+                        s.ext(info, bitsery::ext::StdOptional{});
+                    });
+        s.container(class_infos_2, 2048,
+                    [](S& s, std::optional<Steinberg::PClassInfo2>& info) {
+                        s.ext(info, bitsery::ext::StdOptional{});
+                    });
+        s.container(class_infos_unicode, 2048,
+                    [](S& s, std::optional<Steinberg::PClassInfoW>& info) {
+                        s.ext(info, bitsery::ext::StdOptional{});
+                    });
+    }
+
+   private:
     /**
      * The IIDs that the interface we serialized supports.
      */
@@ -115,28 +138,6 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
      * above.
      */
     std::vector<std::optional<Steinberg::PClassInfoW>> class_infos_unicode;
-
-    template <typename S>
-    void serialize(S& s) {
-        s.ext(known_iids, bitsery::ext::StdSet{32},
-              [](S& s, Steinberg::FUID& iid) {
-                  s.ext(iid, bitsery::ext::FUID{});
-              });
-        s.ext(factory_info, bitsery::ext::StdOptional{});
-        s.value4b(num_classes);
-        s.container(class_infos_1, 2048,
-                    [](S& s, std::optional<Steinberg::PClassInfo>& info) {
-                        s.ext(info, bitsery::ext::StdOptional{});
-                    });
-        s.container(class_infos_2, 2048,
-                    [](S& s, std::optional<Steinberg::PClassInfo2>& info) {
-                        s.ext(info, bitsery::ext::StdOptional{});
-                    });
-        s.container(class_infos_unicode, 2048,
-                    [](S& s, std::optional<Steinberg::PClassInfoW>& info) {
-                        s.ext(info, bitsery::ext::StdOptional{});
-                    });
-    }
 };
 
 #pragma GCC diagnostic pop

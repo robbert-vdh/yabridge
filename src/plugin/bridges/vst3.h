@@ -18,6 +18,7 @@
 
 #include <thread>
 
+#include "../..//common/serialization/vst3/plugin-factory.h"
 #include "../../common/communication/vst3.h"
 #include "../../common/logging/vst3.h"
 #include "common.h"
@@ -63,4 +64,17 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * `PluginBridge::generic_logger`.
      */
     Vst3Logger logger;
+
+   public:
+    /**
+     * Our plugin factory. This will be set up directly after initialization.
+     * All information about the plugin and its supported classes are copied
+     * directly from the Windows VST3 plugin's factory on the Wine side, and
+     * we'll provide an implementation that can send control messages to the
+     * Wine plugin host.
+     *
+     * A pointer to this implementation will be returned to the host in
+     * GetPluginFactory().
+     */
+    std::unique_ptr<YaPluginFactory> plugin_factory;
 };

@@ -44,8 +44,10 @@ class Vst3Logger {
     // (what we'll call a control message).
 
     void log_request(bool is_host_vst, const WantsConfiguration&);
+    void log_request(bool is_host_vst, const WantsPluginFactory&);
 
     void log_response(bool is_host_vst, const Configuration&);
+    void log_response(bool is_host_vst, const YaPluginFactory&);
 
     Logger& logger;
 

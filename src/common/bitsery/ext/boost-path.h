@@ -27,8 +27,6 @@
 namespace bitsery {
 namespace ext {
 
-// TODO: There's probably a better way to do all of this
-
 /**
  * An adapter for serializing and deserializing filesystem paths since they're
  * not mutable.

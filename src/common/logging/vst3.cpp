@@ -17,6 +17,7 @@
 #include "vst3.h"
 
 #include <sstream>
+#include "src/common/serialization/vst3.h"
 
 // TODO: Reconsider the output format
 // TODO: Maybe think of an alterantive that's a little less boilerplaty
@@ -33,10 +34,32 @@ void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     }
 }
 
+void Vst3Logger::log_request(bool is_host_vst, const WantsPluginFactory&) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
+        std::ostringstream message;
+        message << get_log_prefix(is_host_vst)
+                << " >> Requesting <IPluginFactory*>";
+
+        log(message.str());
+    }
+}
+
 void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
     if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         std::ostringstream message;
         message << get_log_prefix(is_host_vst) << "    <Configuration>";
+
+        log(message.str());
+    }
+}
+
+void Vst3Logger::log_response(bool is_host_vst,
+                              const YaPluginFactory& factory) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
+        std::ostringstream message;
+        message << get_log_prefix(is_host_vst) << "    <IPluginFactory*> with "
+                << const_cast<YaPluginFactory&>(factory).countClasses()
+                << " registered classes";
 
         log(message.str());
     }

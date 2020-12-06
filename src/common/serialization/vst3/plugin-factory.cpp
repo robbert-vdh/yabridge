@@ -53,8 +53,6 @@ YaPluginFactory::YaPluginFactory(
     // `IPluginFactory::countClasses`
     num_classes = factory->countClasses();
     // `IPluginFactory::getClassInfo`
-    // TODO: At this point we don't know what this class is and thus we can't
-    //       filter unsupported classes, right?
     class_infos_1.resize(num_classes);
     for (int i = 0; i < num_classes; i++) {
         Steinberg::PClassInfo info;
