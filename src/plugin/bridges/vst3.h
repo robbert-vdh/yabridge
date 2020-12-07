@@ -52,6 +52,17 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      */
     Vst3PluginBridge();
 
+    /**
+     * When the host loads the module it will call `GetPluginFactory()` which
+     * will in turn call this function. The idea is that we return an
+     * `IPluginFactory*` while doing all the reference counting that `IPtr<T>`
+     * would normally do for us ourselves. This means that when the host frees
+     * its last instance of this factory, `plugin_factory` will also be cleared.
+     *
+     * @see plugin_factory
+     */
+    Steinberg::IPluginFactory* get_plugin_factory();
+
    private:
     /**
      * Handles callbacks from the plugin to the host over the
@@ -65,16 +76,16 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      */
     Vst3Logger logger;
 
-   public:
     /**
-     * Our plugin factory. This will be set up directly after initialization.
-     * All information about the plugin and its supported classes are copied
-     * directly from the Windows VST3 plugin's factory on the Wine side, and
-     * we'll provide an implementation that can send control messages to the
-     * Wine plugin host.
+     * Our plugin factory. All information about the plugin and its supported
+     * classes are copied directly from the Windows VST3 plugin's factory on the
+     * Wine side, and we'll provide an implementation that can send control
+     * messages to the Wine plugin host. Even though we're passign plain
+     * pointers around, we should pretend that they're wrapped in the VST3 SDK's
+     * reference counting p pointers so we should do the reference counting
+     * ourselves.
      *
-     * A pointer to this implementation will be returned to the host in
-     * GetPluginFactory().
+     * @related get_plugin_factory
      */
     std::unique_ptr<YaPluginFactory> plugin_factory;
 };

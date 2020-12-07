@@ -24,11 +24,14 @@ YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString /*cid*/,
                                           Steinberg::FIDString /*_iid*/,
                                           void** /*obj*/) {
     // TODO: Send a control message
-    return 0;
+    return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API
 YaPluginFactoryPluginImpl::setHostContext(Steinberg::FUnknown* /*context*/) {
-    // TODO: Send a control message
-    return 0;
+    // TODO: The docs don't clearly specify what this should be doing, but from
+    //       what I've seen this is only used to pass a `IHostApplication`
+    //       instance. That's used to allow the plugin to create objects in the
+    //       host.
+    return Steinberg::kNotImplemented;
 }

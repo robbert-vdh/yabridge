@@ -69,21 +69,5 @@ SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory() {
     // The host should have called `InitModule()` first
     assert(bridge);
 
-    // TODO: I think there is a flag that indicates that the class configuration
-    //       may change, but I don't remember if it's at runtime or every time
-    //       the module is loaded. If it's the former then this will take some
-    //       special handling.
-    return bridge->plugin_factory.get();
-
-    // TODO: In the normal implementation of this function they manually call
-    //       part of the reference counting mechanism. Is this something we also
-    //       have to? And how does the `delete self` in the `removeRef()` play
-    //       with our `std::unique_ptr` (aka, should we also use IPtr here)? The
-    //       normal implementation looks like this:
-    // if (!gPluginFactory) {
-    //     // Instantiate the factory
-    // } else {
-    //     gPluginFactory->addRef();
-    // }
-    // return gPluginFactory;
+    return bridge->get_plugin_factory();
 }
