@@ -19,24 +19,7 @@
 #include <iostream>
 #include <type_traits>
 
-#include <pluginterfaces/base/ftypes.h>
-#include <pluginterfaces/base/funknown.h>
-#include <pluginterfaces/base/ipluginbase.h>
-#include <pluginterfaces/vst/ivstaudioprocessor.h>
-#include <pluginterfaces/vst/ivstcomponent.h>
-#include <pluginterfaces/vst/ivsteditcontroller.h>
 #include <public.sdk/source/vst/utility/stringconvert.h>
-
-/**
- * Return whether yabridge supports this class or not. This way we can skip over
- * any classes that the plugin might support but we have not implemented yet. If
- * we do not support a class, we will log it.
- *
- * @tparam Any of `Steinberg::PClassInfo`, `Steinberg::PClassInfo2` or
- *   `Steinberg::PClassInfoW`.
- */
-template <typename T>
-bool is_supported_interface(const T& class_info);
 
 YaPluginFactory::YaPluginFactory(){FUNKNOWN_CTOR}
 
@@ -56,8 +39,7 @@ YaPluginFactory::YaPluginFactory(
     class_infos_1.resize(num_classes);
     for (int i = 0; i < num_classes; i++) {
         Steinberg::PClassInfo info;
-        if (factory->getClassInfo(i, &info) == Steinberg::kResultOk &&
-            is_supported_interface(info)) {
+        if (factory->getClassInfo(i, &info) == Steinberg::kResultOk) {
             class_infos_1[i] = info;
         }
     }
@@ -69,10 +51,10 @@ YaPluginFactory::YaPluginFactory(
 
     known_iids.insert(factory2->iid);
     // `IpluginFactory2::getClassInfo2`
+    class_infos_2.resize(num_classes);
     for (int i = 0; i < num_classes; i++) {
         Steinberg::PClassInfo2 info;
-        if (factory2->getClassInfo2(i, &info) == Steinberg::kResultOk &&
-            is_supported_interface(info)) {
+        if (factory2->getClassInfo2(i, &info) == Steinberg::kResultOk) {
             class_infos_2[i] = info;
         }
     }
@@ -84,10 +66,10 @@ YaPluginFactory::YaPluginFactory(
 
     known_iids.insert(factory3->iid);
     // `IpluginFactory3::getClassInfoUnicode`
+    class_infos_unicode.resize(num_classes);
     for (int i = 0; i < num_classes; i++) {
         Steinberg::PClassInfoW info;
-        if (factory3->getClassInfoUnicode(i, &info) == Steinberg::kResultOk &&
-            is_supported_interface(info)) {
+        if (factory3->getClassInfoUnicode(i, &info) == Steinberg::kResultOk) {
             class_infos_unicode[i] = info;
         }
     }
@@ -177,38 +159,5 @@ YaPluginFactory::getClassInfoUnicode(int32 index,
         return Steinberg::kResultOk;
     } else {
         return Steinberg::kResultFalse;
-    }
-}
-
-template <typename T>
-bool is_supported_interface(const T& class_info) {
-    // I feel like we're not supposed to use this comparison function, but they
-    // don't offer any other ways to compare FUIDs/TUIDs
-    // TODO: Add these interfaces as we go along
-    if (Steinberg::FUnknownPrivate::iidEqual(class_info.cid,
-                                             Steinberg::Vst::IComponent::iid)
-        // ||
-        // Steinberg::FUnknownPrivate::iidEqual(
-        //     cid, Steinberg::Vst::IAudioProcessor::iid) ||
-        // Steinberg::FUnknownPrivate::iidEqual(
-        //     cid, Steinberg::Vst::IEditController::iid)
-    ) {
-        return true;
-    } else {
-        // TODO: These prints get logged correctly because we do this from the
-        //       Wine side, but for neater logging we should add these to a list
-        //       instead and then print them all when we receive the factory
-        //       instance on the plugin's side
-        std::string class_name = VST3::StringConvert::convert(
-            class_info.name, Steinberg::PClassInfo::kNameSize);
-
-        char interface_id_str[128];
-        Steinberg::FUID(class_info.cid)
-            .print(interface_id_str, Steinberg::FUID::UIDPrintStyle::kFUID);
-
-        std::cerr << "Unsupported interface '" << class_name
-                  << "': " << interface_id_str << std::endl;
-
-        return false;
     }
 }

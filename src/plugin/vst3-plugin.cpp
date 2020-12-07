@@ -14,13 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include <public.sdk/source/main/pluginfactory.h>
-
 #include "bridges/vst3.h"
 
 #include <public.sdk/source/main/linuxmain.cpp>
-
-using Steinberg::gPluginFactory;
 
 // Because VST3 plugins consist of completely independent components that have
 // to be initialized and connected by the host, hosting a VST3 plugin through
