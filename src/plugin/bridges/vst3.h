@@ -86,6 +86,9 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * ourselves.
      *
      * @related get_plugin_factory
+     *
+     * FIXME: We can't use `std::unique_ptr` here because that breaks VST3's
+     *        reference counting mechanism.
      */
     std::unique_ptr<YaPluginFactory> plugin_factory;
 };

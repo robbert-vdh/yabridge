@@ -50,7 +50,16 @@ instantiated and managed by the host. The model works as follows:
 
 ## Plugin Factory
 
-Aside form the above, the plugin factory is the only place where we may
-potentially report different values from those reported by the Windows VST3
-plugin. If we encounter an itnerface we do not yet support, we will log a
-warning and we'll skip the interface since we wouldn't know how to handle it.
+TODO: Explain how we implement `createInstance()`
+
+## Safety notes
+
+- None of the destructors in the interfaces defined by the SDK are marked as
+  virtual because this could apparently [break binary
+  compatibility](https://github.com/steinbergmedia/vst3sdk/issues/21). This
+  means that the destructor of the class that implemented `release()` will be
+  called. This is something to keep in mind when dealing with inheritence.
+- Since everything behind the scenes makes use of these `addRef()` and
+  `release()` reference counting functions, we can't use the standard library's
+  smart pointers when dealing with objects that are shared with the host or with
+  the Windows VST3 plugin.
