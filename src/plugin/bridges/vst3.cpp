@@ -86,7 +86,10 @@ Vst3PluginBridge::Vst3PluginBridge()
 Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
     // Even though we're working with raw pointers here, we should pretend that
     // we're `IPtr<Steinberg::IPluginFactory>` and do the reference counting
-    // ourselves because you can't always safely pass those around
+    // ourselves because you can't always safely pass those around The VST3
+    // interface can't pass smart pointers around because of binary
+    // compatibility, so we'll have to do the reference counting by hand like in
+    // the implementation in `public.sdk/source/main/pluginfactory.h`.
     if (plugin_factory) {
         plugin_factory->addRef();
     } else {
@@ -94,7 +97,7 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
         // will request after loading the module. Host callback handlers should
         // have started before this since the Wine plugin host will request a
         // copy of the configuration during its initialization.
-        plugin_factory = std::make_unique<YaPluginFactoryPluginImpl>(*this);
+        plugin_factory = Steinberg::owned(new YaPluginFactoryPluginImpl(*this));
         sockets.host_vst_control.receive_into(
             WantsPluginFactory{}, *plugin_factory,
             std::pair<Vst3Logger&, bool>(logger, true));

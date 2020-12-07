@@ -62,4 +62,7 @@ TODO: Explain how we implement `createInstance()`
 - Since everything behind the scenes makes use of these `addRef()` and
   `release()` reference counting functions, we can't use the standard library's
   smart pointers when dealing with objects that are shared with the host or with
-  the Windows VST3 plugin.
+  the Windows VST3 plugin. In `IPtr<T>`'s destructor it will call release, and
+  the objects will clean themselfs up with a `delete this;` when the reference
+  count reaches 0. Combining this with the STL cmart pointers this would result
+  in a double free.
