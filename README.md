@@ -69,8 +69,8 @@ repositories](https://wiki.winehq.org/Download) as the versions of Wine provided
 by those distro's repositories will be too old to be used with yabridge.
 
 Most VST plugins first need to be installed in your Wine environment before
-they can be converted by yabridge for use in linux. For a general overview 
-on how to use Wine to install Windows applications, check out Wine's 
+they can be converted by yabridge for use in linux. For a general overview
+on how to use Wine to install Windows applications, check out Wine's
 [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
 
 ### Automatic setup (recommended)
@@ -304,6 +304,10 @@ group = "izotope"
 ```
 
 ## Troubleshooting common issues
+
+- If you have the `WINEPREFIX` environment variable set and you _don't_ want all
+  of your plugins to use that specific Wine prefix then you should unset it to
+  allow yabridge to automatically detect Wine prefixes for you.
 
 - If you're using the copy-based installation method and plugins are getting
   skipped or blacklisted immediately when your VST host is scanning them, then
