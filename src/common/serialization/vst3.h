@@ -30,9 +30,9 @@
 // interface like VST2 does, and it uses a bunch of separate interfaces instead.
 // Instead of having an a single event/result with accompanying payload values
 // for both host -> plugin `dispatcher()` and plugin -> host `audioMaster()`
-// calls, we'll just send request and response payloads directly without any
-// metadata. We also split everything up into host -> plugin 'control' payloads
-// and plugin -> host 'callback' payloads for maintainability's sake.
+// calls, we'll send objects of type `T` that should receive a response of type
+// `T::Response`, where all of the possible `T`s are stored in an
+// `std::variant`. This way we communicate in a completely type safe way.
 
 // TODO: If this approach works, maybe we can also refactor the VST2 handling to
 //       do this since it's a bit safer and easier to read
@@ -43,6 +43,9 @@
  */
 struct WantsConfiguration {
     using Response = Configuration;
+
+    template <typename S>
+    void serialize(S&) {}
 };
 
 /**
@@ -51,6 +54,9 @@ struct WantsConfiguration {
  */
 struct WantsPluginFactory {
     using Response = YaPluginFactory&;
+
+    template <typename S>
+    void serialize(S&) {}
 };
 
 /**
@@ -62,7 +68,9 @@ using ControlRequest = std::variant<WantsPluginFactory>;
 
 template <typename S>
 void serialize(S& s, ControlRequest& payload) {
-    s.ext(payload, bitsery::ext::StdVariant{[](S&, WantsPluginFactory&) {}});
+    // All of the objects in `ControlRequest` should have their own
+    // serialization function.
+    s.ext(payload, bitsery::ext::StdVariant{});
 }
 
 /**
@@ -74,5 +82,7 @@ using CallbackRequest = std::variant<WantsConfiguration>;
 
 template <typename S>
 void serialize(S& s, CallbackRequest& payload) {
-    s.ext(payload, bitsery::ext::StdVariant{[](S&, WantsConfiguration&) {}});
+    // All of the objects in `CallbackRequest` should have their own
+    // serialization function.
+    s.ext(payload, bitsery::ext::StdVariant{});
 }
