@@ -23,6 +23,7 @@
 
 #ifndef NOMINMAX
 #define NOMINMAX
+#define WINE_NOWINSOCK
 #endif
 #include <windows.h>
 

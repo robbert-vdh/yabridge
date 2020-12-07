@@ -22,6 +22,7 @@
 
 #ifndef NOMINMAX
 #define NOMINMAX
+#define WINE_NOWINSOCK
 #endif
 #include <vestige/aeffectx.h>
 #include <windows.h>
