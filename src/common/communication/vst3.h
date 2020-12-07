@@ -179,17 +179,18 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                 // We do the visiting here using a templated lambda. This way we
                 // always know for sure that the function returns the correct
                 // type, and we can scrap a lot of boilerplate elsewhere.
-                const auto& response = std::visit(
-                    [&]<typename T>(const T object) ->
-                    typename T::Response { return callback(object); },
+                std::visit(
+                    [&]<typename T>(const T object) {
+                        typename T::Response response = callback(object);
+
+                        if (logging) {
+                            auto [logger, is_host_vst] = *logging;
+                            logger.log_response(!is_host_vst, response);
+                        }
+
+                        write_object(socket, response);
+                    },
                     request);
-
-                if (logging) {
-                    auto [logger, is_host_vst] = *logging;
-                    logger.log_response(!is_host_vst, response);
-                }
-
-                write_object(socket, response);
             };
 
         this->receive_multi(logging
