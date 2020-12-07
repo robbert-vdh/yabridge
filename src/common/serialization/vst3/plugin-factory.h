@@ -44,8 +44,7 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     YaPluginFactory();
 
     /**
-     * Create a copy of an existing plugin factory. Depending on the
-     supported
+     * Create a copy of an existing plugin factory. Depending on the supported
      * interface function more or less of this struct will be left empty, and
      * `iid` will be set accordingly.
      */
@@ -61,17 +60,10 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     int32 PLUGIN_API countClasses() override;
     tresult PLUGIN_API getClassInfo(Steinberg::int32 index,
                                     Steinberg::PClassInfo* info) override;
-    // TODO: Figure out how to implement this. Some considerations:
-    //       - We have to sent a control message to the Wine plugin host to ask
-    //         it to create an instance of `_iid`.
-    //       - We then create a `Ya*` implementation of the same interface on
-    //         the plugin side.
-    //       - These two should be wired up so that when the host calls a
-    //         function on it, it should be sent to the instance on the Wine
-    //         plugin host side with the same cid.
-    //       - We should have a list of interfaces we support. When we receive a
-    //         request to create an instance of something we don't support, then
-    //         we should log that and then fail.
+    /**
+     * See the implementation in `YaPluginFactoryPluginImpl` for how this is
+     * handled.
+     */
     virtual tresult PLUGIN_API createInstance(Steinberg::FIDString cid,
                                               Steinberg::FIDString _iid,
                                               void** obj) override = 0;
@@ -83,6 +75,10 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     // From `IPluginFactory3`
     tresult PLUGIN_API
     getClassInfoUnicode(int32 index, Steinberg::PClassInfoW* info) override;
+    /**
+     * We'll pass a `IHostApplication` to the Windows VST3 plugin's factory when
+     * this is called so it can send messages.
+     */
     virtual tresult PLUGIN_API
     setHostContext(Steinberg::FUnknown* context) override = 0;
 

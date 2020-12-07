@@ -23,6 +23,7 @@
 #include "../configuration.h"
 #include "../utils.h"
 #include "common.h"
+#include "vst3/component.h"
 #include "vst3/plugin-factory.h"
 
 // Event handling for our VST3 plugins works slightly different from how we
@@ -36,6 +37,21 @@
 
 // TODO: If this approach works, maybe we can also refactor the VST2 handling to
 //       do this since it's a bit safer and easier to read
+
+/**
+ * Request the Wine plugin host to instantiate a new IComponent to pass through
+ * a call to `IPluginFactory::createInstance(cid, IComponent::iid, ...)`.
+ */
+struct CreateInstaneIComponent {
+    using Response = YaComponent&;
+
+    Steinberg::TUID cid;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.container1b(cid);
+    }
+};
 
 /**
  * Marker struct to indicate the other side (the plugin) should send a copy of
@@ -64,7 +80,8 @@ struct WantsPluginFactory {
  * encodes the information we request or the operation we want to perform. A
  * request of type `ControlRequest(T)` should send back a `T::Response`.
  */
-using ControlRequest = std::variant<WantsPluginFactory>;
+using ControlRequest =
+    std::variant<CreateInstaneIComponent, WantsPluginFactory>;
 
 template <typename S>
 void serialize(S& s, ControlRequest& payload) {

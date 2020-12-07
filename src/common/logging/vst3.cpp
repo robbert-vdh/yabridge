@@ -24,6 +24,18 @@
 
 Vst3Logger::Vst3Logger(Logger& generic_logger) : logger(generic_logger) {}
 
+void Vst3Logger::log_request(bool is_host_vst, const CreateInstaneIComponent&) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
+        std::ostringstream message;
+        // TODO: Log the cid in some readable way, if possible
+        message << get_log_prefix(is_host_vst)
+                << " >> IPluginFactory::createComponent(cid, IComponent::iid, "
+                   "&obj)";
+
+        log(message.str());
+    }
+}
+
 void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         std::ostringstream message;
@@ -48,6 +60,16 @@ void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
     if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         std::ostringstream message;
         message << get_log_prefix(is_host_vst) << "    <Configuration>";
+
+        log(message.str());
+    }
+}
+
+void Vst3Logger::log_response(bool is_host_vst, const YaComponent&) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
+        std::ostringstream message;
+        // TODO: Add the instance ID after we implement that
+        message << get_log_prefix(is_host_vst) << "    <IComponent*>";
 
         log(message.str());
     }

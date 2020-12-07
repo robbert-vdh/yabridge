@@ -50,7 +50,7 @@ instantiated and managed by the host. The model works as follows:
 
 ## Plugin Factory
 
-TODO: Explain how we implement `createInstance()`
+TODO: Explain how we implement `createInstance()`, based on the todo comment there.
 
 ## Safety notes
 

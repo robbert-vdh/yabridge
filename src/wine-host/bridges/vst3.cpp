@@ -51,6 +51,33 @@ void Vst3Bridge::run() {
     sockets.host_vst_control.receive_messages(
         std::nullopt,
         overload{
+            [&](const CreateInstaneIComponent& args)
+                -> CreateInstaneIComponent::Response {
+                Steinberg::IPtr<Steinberg::Vst::IComponent> component =
+                    module->getFactory()
+                        .createInstance<Steinberg::Vst::IComponent>(args.cid);
+
+                // TODO: Next steps are:
+                //       - Generate a new unique ID using an atomic size_t and
+                //         fetch-and-add.
+                //       - Add an `std::map<size_t,
+                //         Steinberg::IPtr<Steinberg::Vst::IComponent>`
+                //         to this class and add `component` with the generated
+                //         ID to that.
+                //       - Add that ID to `YaComponent` and set it in the object
+                //         we create here.
+                //       - In case `factory` is a null pointer, allow returning
+                //         `nullopt`. Not sure how that is going to work with
+                //         the deserialization.
+                if (!component) {
+                    // TODO: Handle
+                }
+
+                // TODO: Implement `YaComponentHostImpl` and create an instance
+                //       based on `component`
+                YaComponent* removeme = nullptr;
+                return *removeme;
+            },
             [&](const WantsPluginFactory&) -> WantsPluginFactory::Response {
                 return *plugin_factory;
             }});
