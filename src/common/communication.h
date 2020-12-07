@@ -931,8 +931,8 @@ EventResult passthrough_event(AEffect* plugin, F callback, Event& event) {
         [&](const std::string& s) -> void* {
             return const_cast<char*>(s.c_str());
         },
-        [&](const std::vector<uint8_t>& buffer) -> void* {
-            return const_cast<uint8_t*>(buffer.data());
+        [&](const ChunkData& chunk) -> void* {
+            return const_cast<uint8_t*>(chunk.buffer.data());
         },
         [&](native_size_t& window_handle) -> void* {
             // This is the X11 window handle that the editor should reparent
@@ -982,32 +982,26 @@ EventResult passthrough_event(AEffect* plugin, F callback, Event& event) {
     auto write_payload_fn = overload{
         [&](auto) -> EventResultPayload { return nullptr; },
         [&](const AEffect& updated_plugin) -> EventResultPayload {
-            // This is a bit of a special case! Instead of writing some
-            // return value, we will update values on the native VST
-            // plugin's `AEffect` object. This is triggered by the
-            // `audioMasterIOChanged` callback from the hosted VST plugin.
+            // This is a bit of a special case! Instead of writing some return
+            // value, we will update values on the native VST plugin's `AEffect`
+            // object. This is triggered by the `audioMasterIOChanged` callback
+            // from the hosted VST plugin.
             update_aeffect(*plugin, updated_plugin);
 
             return nullptr;
         },
         [&](DynamicSpeakerArrangement& speaker_arrangement)
             -> EventResultPayload { return speaker_arrangement; },
-        [&](WantsChunkBuffer&) -> EventResultPayload {
-            // In this case the plugin will have written its data stored in
-            // an array to which a pointer is stored in `data`, with the
-            // return value from the event determines how much data the
-            // plugin has written
-            const uint8_t* chunk_data = *static_cast<uint8_t**>(data);
-            return std::vector<uint8_t>(chunk_data, chunk_data + return_value);
-        },
-        [&](VstIOProperties& props) -> EventResultPayload { return props; },
-        [&](VstMidiKeyName& key_name) -> EventResultPayload {
-            return key_name;
-        },
-        [&](VstParameterProperties& props) -> EventResultPayload {
-            return props;
-        },
         [&](WantsAEffectUpdate&) -> EventResultPayload { return *plugin; },
+        [&](WantsChunkBuffer&) -> EventResultPayload {
+            // In this case the plugin will have written its data stored in an
+            // array to which a pointer is stored in `data`, with the return
+            // value from the event determines how much data the plugin has
+            // written
+            const uint8_t* chunk_data = *static_cast<uint8_t**>(data);
+            return ChunkData{
+                std::vector<uint8_t>(chunk_data, chunk_data + return_value)};
+        },
         [&](WantsVstRect&) -> EventResultPayload {
             // The plugin should have written a pointer to a VstRect struct into
             // the data pointer. I haven't seen this fail yet, but since some
@@ -1021,10 +1015,11 @@ EventResult passthrough_event(AEffect* plugin, F callback, Event& event) {
             return *editor_rect;
         },
         [&](WantsVstTimeInfo&) -> EventResultPayload {
-            // Not sure why the VST API has twenty different ways of returning
-            // structs, but in this case the value returned from the callback
-            // function is actually a pointer to a `VstTimeInfo` struct! It can
-            // also be a null pointer if the host doesn't support this.
+            // Not sure why the VST API has twenty different ways of
+            // returning structs, but in this case the value returned from
+            // the callback function is actually a pointer to a
+            // `VstTimeInfo` struct! It can also be a null pointer if the
+            // host doesn't support this.
             const auto time_info =
                 reinterpret_cast<const VstTimeInfo*>(return_value);
             if (!time_info) {
@@ -1035,6 +1030,13 @@ EventResult passthrough_event(AEffect* plugin, F callback, Event& event) {
         },
         [&](WantsString&) -> EventResultPayload {
             return std::string(static_cast<char*>(data));
+        },
+        [&](VstIOProperties& props) -> EventResultPayload { return props; },
+        [&](VstMidiKeyName& key_name) -> EventResultPayload {
+            return key_name;
+        },
+        [&](VstParameterProperties& props) -> EventResultPayload {
+            return props;
         }};
 
     // As mentioned about, the `effSetSpeakerArrangement` and

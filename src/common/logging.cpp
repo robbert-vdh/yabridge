@@ -198,8 +198,8 @@ void Logger::log_event(bool is_dispatch,
                         message << "<" << s.size() << " bytes>";
                     }
                 },
-                [&](const std::vector<uint8_t>& buffer) {
-                    message << "<" << buffer.size() << " byte chunk>";
+                [&](const ChunkData& chunk) {
+                    message << "<" << chunk.buffer.size() << " byte chunk>";
                 },
                 [&](const native_size_t& window_id) {
                     message << "<window " << window_id << ">";
@@ -277,8 +277,8 @@ void Logger::log_event_response(
                         message << ", <" << s.size() << " bytes>";
                     }
                 },
-                [&](const std::vector<uint8_t>& buffer) {
-                    message << ", <" << buffer.size() << " byte chunk>";
+                [&](const ChunkData& chunk) {
+                    message << ", <" << chunk.buffer.size() << " byte chunk>";
                 },
                 [&](const AEffect&) { message << ", <AEffect_object>"; },
                 [&](const DynamicSpeakerArrangement& speaker_arrangement) {

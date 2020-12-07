@@ -173,6 +173,13 @@ void serialize(S& s, VstTimeInfo& time_info) {
 }
 
 /**
+ * Wrapper for chunk data.
+ */
+struct ChunkData {
+    std::vector<uint8_t> buffer;
+};
+
+/**
  * A wrapper around `VstEvents` that stores the data in a vector instead of a
  * C-style array. Needed until bitsery supports C-style arrays
  * https://github.com/fraillt/bitsery/issues/28. An advantage of this approach
@@ -361,9 +368,9 @@ struct WantsString {};
  */
 using EventPayload = std::variant<std::nullptr_t,
                                   std::string,
-                                  std::vector<uint8_t>,
                                   native_size_t,
                                   AEffect,
+                                  ChunkData,
                                   DynamicVstEvents,
                                   DynamicSpeakerArrangement,
                                   WantsAEffectUpdate,
@@ -383,8 +390,8 @@ void serialize(S& s, EventPayload& payload) {
               [](S& s, std::string& string) {
                   s.text1b(string, max_string_length);
               },
-              [](S& s, std::vector<uint8_t>& buffer) {
-                  s.container1b(buffer, binary_buffer_size);
+              [](S& s, ChunkData& chunk) {
+                  s.container1b(chunk.buffer, binary_buffer_size);
               },
               [](S& s, native_size_t& window_handle) {
                   s.value8b(window_handle);
@@ -460,8 +467,8 @@ struct Event {
  */
 using EventResultPayload = std::variant<std::nullptr_t,
                                         std::string,
-                                        std::vector<uint8_t>,
                                         AEffect,
+                                        ChunkData,
                                         DynamicSpeakerArrangement,
                                         VstIOProperties,
                                         VstMidiKeyName,
@@ -477,8 +484,8 @@ void serialize(S& s, EventResultPayload& payload) {
               [](S& s, std::string& string) {
                   s.text1b(string, max_string_length);
               },
-              [](S& s, std::vector<uint8_t>& buffer) {
-                  s.container1b(buffer, binary_buffer_size);
+              [](S& s, ChunkData& chunk) {
+                  s.container1b(chunk.buffer, binary_buffer_size);
               },
               [](S& s, AEffect& effect) { s.object(effect); },
               [&](DynamicSpeakerArrangement& speaker_arrangement) -> void* {

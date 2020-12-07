@@ -203,7 +203,8 @@ class DispatchDataConverter : DefaultDataConverter {
 
                 // When the host passes a chunk it will use the value parameter
                 // to tell us its length
-                return std::vector<uint8_t>(chunk_data, chunk_data + value);
+                return ChunkData{
+                    std::vector<uint8_t>(chunk_data, chunk_data + value)};
             } break;
             case effProcessEvents:
                 return DynamicVstEvents(*static_cast<const VstEvents*>(data));
@@ -299,7 +300,7 @@ class DispatchDataConverter : DefaultDataConverter {
                 // `PluginBridge` and write a pointer to that struct to the data
                 // pointer
                 const auto buffer =
-                    std::get<std::vector<uint8_t>>(response.payload);
+                    std::get<ChunkData>(response.payload).buffer;
                 chunk.assign(buffer.begin(), buffer.end());
 
                 *static_cast<uint8_t**>(data) = chunk.data();
