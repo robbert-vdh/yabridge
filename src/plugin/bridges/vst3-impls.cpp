@@ -16,6 +16,8 @@
 
 #include "vst3-impls.h"
 
+#include <pluginterfaces/vst/ivstcomponent.h>
+
 YaPluginFactoryPluginImpl::YaPluginFactoryPluginImpl(Vst3PluginBridge& bridge)
     : bridge(bridge) {}
 
@@ -49,7 +51,26 @@ YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,
     //          `createInstance()` will have a reference to `Vst3PluginBridge`,
     //          they can also send control messages themselves.
 
-    return Steinberg::kNotImplemented;
+    if (Steinberg::FIDStringsEqual(_iid, Steinberg::Vst::IComponent::iid)) {
+        // TODO: Instantiate an IComponent as described above
+        return Steinberg::kNotImplemented;
+    } else {
+        // When the host requests an interface we do not (yet) implement, we'll
+        // print a recognizable log message. I don't think they include a safe
+        // way to convert a `FIDString/char*` into a `FUID`, so this will have
+        // to do.
+        char iid_string[128] = "<invalid_pointer>";
+        constexpr size_t uid_size = sizeof(Steinberg::TUID);
+        if (_iid && strnlen(_iid, uid_size + 1) == uid_size) {
+            Steinberg::FUID iid = Steinberg::FUID::fromTUID(
+                *reinterpret_cast<const Steinberg::TUID*>(&_iid));
+            iid.print(iid_string, Steinberg::FUID::UIDPrintStyle::kCLASS_UID);
+        }
+
+        bridge.logger.log("[Unknown interface] " + std::string(iid_string));
+
+        return Steinberg::kNotImplemented;
+    }
 }
 
 tresult PLUGIN_API

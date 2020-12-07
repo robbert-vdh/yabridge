@@ -208,9 +208,6 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
  * sockets, and the call to `connect()` will then accept any incoming
  * connections.
  *
- * TODO: I have no idea what the best approach here is yet, so this is very much
- *       subject to change
- *
  * @tparam Thread The thread implementation to use. On the Linux side this
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  */

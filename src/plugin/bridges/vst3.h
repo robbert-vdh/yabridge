@@ -63,18 +63,18 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      */
     Steinberg::IPluginFactory* get_plugin_factory();
 
+    /**
+     * The logging facility used for this instance of yabridge. Wraps around
+     * `PluginBridge::generic_logger`.
+     */
+    Vst3Logger logger;
+
    private:
     /**
      * Handles callbacks from the plugin to the host over the
      * `vst_host_callback` sockets.
      */
     std::jthread host_callback_handler;
-
-    /**
-     * The logging facility used for this instance of yabridge. Wraps around
-     * `PluginBridge::generic_logger`.
-     */
-    Vst3Logger logger;
 
     /**
      * Our plugin factory. All information about the plugin and its supported
