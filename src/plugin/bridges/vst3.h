@@ -80,11 +80,11 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * Our plugin factory. All information about the plugin and its supported
      * classes are copied directly from the Windows VST3 plugin's factory on the
      * Wine side, and we'll provide an implementation that can send control
-     * messages to the Wine plugin host. The VST3 interface only passes raw
-     * pointers around and the receiving side should then use `IPtr<T>::adopt()`
-     * or `owned()` to get back the orignal smart pointer.
+     * messages to the Wine plugin host. As explained in `get_plugin_factory()`,
+     * this cannot be a smart pointer because the factory is supposed to free
+     * itself when the host removes its last adopted `IPtr<IpluginFactory>`.
      *
      * @related get_plugin_factory
      */
-    Steinberg::IPtr<YaPluginFactory> plugin_factory;
+    YaPluginFactory* plugin_factory;
 };

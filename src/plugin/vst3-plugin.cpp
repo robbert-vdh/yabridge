@@ -38,9 +38,6 @@ bool InitModule() {
     assert(bridge == nullptr);
 
     try {
-        // This is the only place where we have to use manual memory management.
-        // The bridge's destructor is called when the `effClose` opcode is
-        // received.
         bridge = new Vst3PluginBridge();
 
         return true;
