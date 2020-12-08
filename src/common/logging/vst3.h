@@ -45,7 +45,7 @@ class Vst3Logger {
     // flag here indicates whether the request was initiated on the host side
     // (what we'll call a control message).
 
-    void log_request(bool is_host_vst, const CreateInstaneIComponent&);
+    void log_request(bool is_host_vst, const YaComponent::Create&);
     void log_request(bool is_host_vst, const WantsConfiguration&);
     void log_request(bool is_host_vst, const WantsPluginFactory&);
 

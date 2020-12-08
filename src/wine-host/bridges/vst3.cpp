@@ -51,8 +51,8 @@ void Vst3Bridge::run() {
     sockets.host_vst_control.receive_messages(
         std::nullopt,
         overload{
-            [&](const CreateInstaneIComponent& args)
-                -> CreateInstaneIComponent::Response {
+            [&](const YaComponent::Create& args)
+                -> YaComponent::Create::Response {
                 Steinberg::IPtr<Steinberg::Vst::IComponent> component =
                     module->getFactory()
                         .createInstance<Steinberg::Vst::IComponent>(args.cid);

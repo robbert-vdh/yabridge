@@ -35,6 +35,22 @@ using Steinberg::TBool, Steinberg::int32, Steinberg::tresult;
  */
 class YaComponent : public Steinberg::Vst::IComponent {
    public:
+    /**
+     * Request the Wine plugin host to instantiate a new IComponent to pass
+     * through a call to `IPluginFactory::createInstance(cid, IComponent::iid,
+     * ...)`.
+     */
+    struct Create {
+        using Response = YaComponent&;
+
+        Steinberg::TUID cid;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.container1b(cid);
+        }
+    };
+
     YaComponent();
 
     /**

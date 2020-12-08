@@ -24,7 +24,7 @@
 
 Vst3Logger::Vst3Logger(Logger& generic_logger) : logger(generic_logger) {}
 
-void Vst3Logger::log_request(bool is_host_vst, const CreateInstaneIComponent&) {
+void Vst3Logger::log_request(bool is_host_vst, const YaComponent::Create&) {
     if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         std::ostringstream message;
         // TODO: Log the cid in some readable way, if possible
