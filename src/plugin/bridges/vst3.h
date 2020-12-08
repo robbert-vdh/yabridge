@@ -64,6 +64,17 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
     Steinberg::IPluginFactory* get_plugin_factory();
 
     /**
+     * Send a control message to the Wine plugin host return the response. This
+     * is a shorthand for `sockets.host_vst_control.send_message` for use in
+     * VST3 interface implementations.
+     */
+    template <typename T>
+    typename T::Response send_message(const T& object) {
+        return sockets.host_vst_control.send_message(
+            object, std::pair<Vst3Logger&, bool>(logger, true));
+    }
+
+    /**
      * The logging facility used for this instance of yabridge. Wraps around
      * `PluginBridge::generic_logger`.
      */
