@@ -17,14 +17,14 @@
 #pragma once
 
 #include <optional>
-#include "src/common/serialization/common.h"
 
 #include <bitsery/ext/pointer.h>
 #include <bitsery/ext/std_optional.h>
 #include <bitsery/traits/array.h>
 #include <pluginterfaces/vst/ivstcomponent.h>
 
-using Steinberg::TBool, Steinberg::int8, Steinberg::int32, Steinberg::tresult;
+#include "../common.h"
+#include "base.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -38,6 +38,9 @@ using Steinberg::TBool, Steinberg::int8, Steinberg::int32, Steinberg::tresult;
  * We might be able to do some caching here with the buss infos, but since that
  * sounds like a huge potential source of errors we'll just do pure callbacks
  * for everything other than the edit controller's class ID.
+ *
+ * TODO: I think it's expected that components also implement `IAudioProcessor`
+ *       and `IConnectionPoint`.
  */
 class YaComponent : public Steinberg::Vst::IComponent {
    public:
@@ -60,8 +63,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
          * The class ID of this component's corresponding editor controller. You
          * can't use C-style array in `std::optional`s.
          */
-        std::optional<std::array<int8, std::extent_v<Steinberg::TUID>>>
-            edit_controller_cid;
+        std::optional<ArrayUID> edit_controller_cid;
 
         template <typename S>
         void serialize(S& s) {
@@ -81,7 +83,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
         // TODO: Create a `native_tvalue` wrapper, and then also add them here
         using Response = std::optional<Arguments>;
 
-        Steinberg::TUID cid;
+        ArrayUID cid;
 
         template <typename S>
         void serialize(S& s) {

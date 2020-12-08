@@ -24,8 +24,7 @@
 #include <pluginterfaces/base/ipluginbase.h>
 
 #include "../../bitsery/ext/vst3.h"
-
-using Steinberg::int32, Steinberg::tresult;
+#include "base.h"
 
 // TODO: After implementing one or two more of these, abstract away some of the
 //       nasty bits

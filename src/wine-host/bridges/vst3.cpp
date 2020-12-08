@@ -53,9 +53,11 @@ void Vst3Bridge::run() {
         overload{
             [&](const YaComponent::Create& args)
                 -> YaComponent::Create::Response {
+                Steinberg::TUID cid;
+                std::copy(args.cid.begin(), args.cid.end(), cid);
                 Steinberg::IPtr<Steinberg::Vst::IComponent> component =
                     module->getFactory()
-                        .createInstance<Steinberg::Vst::IComponent>(args.cid);
+                        .createInstance<Steinberg::Vst::IComponent>(cid);
                 if (component) {
                     std::lock_guard lock(component_instances_mutex);
 
