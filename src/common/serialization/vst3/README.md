@@ -54,7 +54,7 @@ instantiated and managed by the host. The model works as follows:
    that implements those functions through yabridge's `Vst3MessageHandler`
    callback interface.
 
-## Plugin Factory
+## Interface Instantiation
 
 Creating a new instance of an interface using the plugin factory wroks as
 follows:
@@ -72,20 +72,16 @@ follows:
    this operation fails and returns a null pointer, we'll send an `std::nullopt`
    back to indicate that the instantiation was not successful and we relay this
    on the plugin side.
-5. Using the newly created instance (which will be returned by the factory as an
-   `IPtr<IFoo>`), we will instantiate a `YaFoo` object using `YaFooHostImpl`.
-   This will read all simple data members from the `IFoo` smart pointer just
-   like described in the above section. The `YaFoo` object will also gen a
-   unique identifier which we generate on the Wine side using an atomic
-   fetch-and-add on a counter. This way we can refer to this specific isntance
-   when doing callbacks.
-6. Still on the Wine side of things, the `IPtr<IFoo>` will be moved to an
-   `std::map<size_t, IPtr<IFoo>>` with that unique identifier we generated
-   earlier as a key so we can refer to it later.
-7. Finally on the plugin side we will create an `YaFooPluginImpl` object that
-   can send control messages to the Wine plugin host, and then we'll deserialize
-   the `YaFoo` object we receive into that.
-8. A pointer to this `YaFooPluginImpl` then gets returned as the final step of
+5. We will generate a unique instance identifier for the newly generated object
+   so we can refer to it later. We then serialize that identifier along with
+   what other static data is available in `IFoo` in a `YaFoo::Arguments` object.
+6. We then move `IPtr<IFoo>` to an `std::map<size_t, IPtr<IFoo>>` with that
+   unique identifier we generated earlier as a key so we can refer to it later
+   in later function calls.
+7. On the plugin side we can now use the `YaFoo::Arguments` object we received
+   to create a `YaFooPluginImpl` object that can send control messages to the
+   Wine plugin host.
+8. Finally a pointer to this `YaFooPluginImpl` gets returned as the last step of
    the initialization process.
 
 ## Safety notes
