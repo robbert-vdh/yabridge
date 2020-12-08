@@ -20,6 +20,8 @@
 
 // These are implementation of the serialization clases in
 // `src/common/serialization/vst3/` to provide callback support
+// TODO: Split this up in multiple headers. I hoped it might stay small and easy
+//       to oversee. It won't.
 
 class YaPluginFactoryPluginImpl : public YaPluginFactory {
    public:
@@ -28,8 +30,52 @@ class YaPluginFactoryPluginImpl : public YaPluginFactory {
     tresult PLUGIN_API createInstance(Steinberg::FIDString cid,
                                       Steinberg::FIDString _iid,
                                       void** obj) override;
-
     tresult PLUGIN_API setHostContext(Steinberg::FUnknown* context) override;
+
+   private:
+    Vst3PluginBridge& bridge;
+};
+
+class YaComponentPluginImpl : public YaComponent {
+   public:
+    YaComponentPluginImpl(Vst3PluginBridge& bridge,
+                          YaComponent::Arguments&& args);
+
+    /**
+     * When the reference count reaches zero and this destructor is called,
+     * we'll send a request to the Wine plugin host to destroy the corresponding
+     * object.
+     */
+    ~YaComponentPluginImpl();
+
+    /**
+     * We'll override the query interface to log queries for interfaces we do
+     * not (yet) support.
+     */
+    tresult PLUGIN_API queryInterface(const ::Steinberg::TUID _iid,
+                                      void** obj) override;
+
+    tresult PLUGIN_API initialize(FUnknown* context) override;
+    tresult PLUGIN_API terminate() override;
+
+    tresult PLUGIN_API setIoMode(Steinberg::Vst::IoMode mode) override;
+    int32 PLUGIN_API getBusCount(Steinberg::Vst::MediaType type,
+                                 Steinberg::Vst::BusDirection dir) override;
+    tresult PLUGIN_API
+    getBusInfo(Steinberg::Vst::MediaType type,
+               Steinberg::Vst::BusDirection dir,
+               int32 index,
+               Steinberg::Vst::BusInfo& bus /*out*/) override;
+    tresult PLUGIN_API
+    getRoutingInfo(Steinberg::Vst::RoutingInfo& inInfo,
+                   Steinberg::Vst::RoutingInfo& outInfo /*out*/) override;
+    tresult PLUGIN_API activateBus(Steinberg::Vst::MediaType type,
+                                   Steinberg::Vst::BusDirection dir,
+                                   int32 index,
+                                   TBool state) override;
+    tresult PLUGIN_API setActive(TBool state) override;
+    tresult PLUGIN_API setState(Steinberg::IBStream* state) override;
+    tresult PLUGIN_API getState(Steinberg::IBStream* state) override;
 
    private:
     Vst3PluginBridge& bridge;

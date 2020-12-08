@@ -56,3 +56,83 @@ YaPluginFactoryPluginImpl::setHostContext(Steinberg::FUnknown* /*context*/) {
     //       host.
     return Steinberg::kNotImplemented;
 }
+
+YaComponentPluginImpl::YaComponentPluginImpl(Vst3PluginBridge& bridge,
+                                             YaComponent::Arguments&& args)
+    : YaComponent(std::move(args)), bridge(bridge) {}
+
+YaComponentPluginImpl::~YaComponentPluginImpl() {
+    // TODO: Send a control message to destroy the instance on the Wine side
+}
+
+tresult PLUGIN_API
+YaComponentPluginImpl::queryInterface(const ::Steinberg::TUID _iid,
+                                      void** obj) {
+    // TODO: Log when this fails on debug level 1, and on debug level 2 also log
+    //       successful queries. This behaviour should be implemented for all
+    //       interfaces.
+    return YaComponent::queryInterface(_iid, obj);
+}
+
+tresult PLUGIN_API YaComponentPluginImpl::initialize(FUnknown* context) {
+    // TODO: Implement
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API YaComponentPluginImpl::terminate() {
+    // TODO: Implement
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+YaComponentPluginImpl::setIoMode(Steinberg::Vst::IoMode mode) {
+    // TODO: Implement
+    return Steinberg::kNotImplemented;
+}
+
+int32 PLUGIN_API
+YaComponentPluginImpl::getBusCount(Steinberg::Vst::MediaType type,
+                                   Steinberg::Vst::BusDirection dir) {
+    // TODO: Implement
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+YaComponentPluginImpl::getBusInfo(Steinberg::Vst::MediaType type,
+                                  Steinberg::Vst::BusDirection dir,
+                                  int32 index,
+                                  Steinberg::Vst::BusInfo& bus /*out*/) {
+    // TODO: Implement
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API YaComponentPluginImpl::getRoutingInfo(
+    Steinberg::Vst::RoutingInfo& inInfo,
+    Steinberg::Vst::RoutingInfo& outInfo /*out*/) {
+    // TODO: Implement
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+YaComponentPluginImpl::activateBus(Steinberg::Vst::MediaType type,
+                                   Steinberg::Vst::BusDirection dir,
+                                   int32 index,
+                                   TBool state) {
+    // TODO: Implement
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API YaComponentPluginImpl::setActive(TBool state) {
+    // TODO: Implement
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API YaComponentPluginImpl::setState(Steinberg::IBStream* state) {
+    // TODO: Implement
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API YaComponentPluginImpl::getState(Steinberg::IBStream* state) {
+    // TODO: Implement
+    return Steinberg::kNotImplemented;
+}
