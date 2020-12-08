@@ -3,6 +3,12 @@
 TODO: Once this is more fleshed out, move this document to `docs/`, and perhaps
 replace this readme with a link to that document.
 
+TODO: There are now two approaches in use: the factory takes an interface
+pointer for serialization and deserializes into an object directly, and the
+component uses an args struct because the alternative involving pointers is just
+too unsafe (as we also have to communicate additional payload data). This should
+probably be unified into only using the latter appraoch.
+
 The VST3 SDK uses an architecture where every object inherits from an interface,
 and every interface inherits from `FUnknown` which offers a dynamic casting
 interface through `queryInterface()`. Every interface gets a unique identifier.

@@ -66,17 +66,13 @@ void Vst3Bridge::run() {
                 //         ID to that.
                 //       - Add that ID to `YaComponent` and set it in the object
                 //         we create here.
-                //       - In case `factory` is a null pointer, allow returning
-                //         `nullopt`. Not sure how that is going to work with
-                //         the deserialization.
-                if (!component) {
-                    // TODO: Handle
+                if (component) {
+                    // TODO: Generate a unique instance ID
+                    return std::make_optional<YaComponent::Arguments>(
+                        component, 420691337);
+                } else {
+                    return std::nullopt;
                 }
-
-                // TODO: Implement `YaComponentHostImpl` and create an instance
-                //       based on `component`
-                YaComponent* removeme = nullptr;
-                return *removeme;
             },
             [&](const WantsPluginFactory&) -> WantsPluginFactory::Response {
                 return *plugin_factory;

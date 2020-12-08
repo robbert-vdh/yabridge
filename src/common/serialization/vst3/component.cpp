@@ -16,14 +16,19 @@
 
 #include "component.h"
 
-YaComponent::YaComponent(){FUNKNOWN_CTOR}
-
-YaComponent::YaComponent(
-    Steinberg::IPtr<Steinberg::Vst::IComponent> component) {
-    FUNKNOWN_CTOR
-
+YaComponent::Arguments::Arguments(
+    Steinberg::IPtr<Steinberg::Vst::IComponent> component,
+    size_t instance_id)
+    : instance_id(instance_id) {
     // `IComponent::getControllerClassId`
-    component->getControllerClassId(edit_controller_cid);
+    Steinberg::TUID cid;
+    if (component->getControllerClassId(cid) == Steinberg::kResultOk) {
+        edit_controller_cid = std::to_array(cid);
+    }
+}
+
+YaComponent::YaComponent(const Arguments&& args) : arguments(std::move(args)) {
+    FUNKNOWN_CTOR
 
     // Everything else is handled directly through callbacks to minimize the
     // potential for errors
@@ -48,4 +53,14 @@ tresult PLUGIN_API YaComponent::queryInterface(Steinberg::FIDString _iid,
 
     *obj = nullptr;
     return Steinberg::kNoInterface;
+}
+
+tresult PLUGIN_API YaComponent::getControllerClassId(Steinberg::TUID classId) {
+    if (arguments.edit_controller_cid) {
+        std::copy(arguments.edit_controller_cid->begin(),
+                  arguments.edit_controller_cid->end(), classId);
+        return Steinberg::kResultOk;
+    } else {
+        return Steinberg::kNotImplemented;
+    }
 }

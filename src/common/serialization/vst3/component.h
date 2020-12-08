@@ -16,9 +16,15 @@
 
 #pragma once
 
+#include <optional>
+#include "src/common/serialization/common.h"
+
+#include <bitsery/ext/pointer.h>
+#include <bitsery/ext/std_optional.h>
+#include <bitsery/traits/array.h>
 #include <pluginterfaces/vst/ivstcomponent.h>
 
-using Steinberg::TBool, Steinberg::int32, Steinberg::tresult;
+using Steinberg::TBool, Steinberg::int8, Steinberg::int32, Steinberg::tresult;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -36,14 +42,44 @@ using Steinberg::TBool, Steinberg::int32, Steinberg::tresult;
 class YaComponent : public Steinberg::Vst::IComponent {
    public:
     /**
-     * Request the Wine plugin host to instantiate a new IComponent to pass
-     * through a call to `IPluginFactory::createInstance(cid, IComponent::iid,
+     * These are the arguments for creating a `YaComponentPluginImpl`.
+     */
+    struct Arguments {
+        /**
+         * Read arguments from an existing implementation.
+         */
+        Arguments(Steinberg::IPtr<Steinberg::Vst::IComponent> component,
+                  size_t isntance_id);
+
+        /**
+         * The unique identifier for this specific instance.
+         */
+        native_size_t instance_id;
+
+        /**
+         * The class ID of this component's corresponding editor controller. You
+         * can't use C-style array in `std::optional`s.
+         */
+        std::optional<std::array<int8, std::extent_v<Steinberg::TUID>>>
+            edit_controller_cid;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.ext(edit_controller_cid, bitsery::ext::StdOptional{},
+                  [](S& s, auto& cid) { s.container1b(cid); });
+        }
+    };
+
+    /**
+     * Message to request the Wine plugin host to instantiate a new IComponent
+     * to pass through a call to `IPluginFactory::createInstance(cid,
+     * IComponent::iid,
      * ...)`.
      */
     struct Create {
-        // TODO: This should be `std::optional<YaComponent>`, and we need a way
-        //       to deserialize that into an existing YaComponent.
-        using Response = YaComponent&;
+        // TODO: Create a `native_tvalue` wrapper, and then also add them here
+        using Response = std::optional<Arguments>;
 
         Steinberg::TUID cid;
 
@@ -53,12 +89,11 @@ class YaComponent : public Steinberg::Vst::IComponent {
         }
     };
 
-    YaComponent();
-
     /**
-     * Create a copy of an existing component.
+     * Instantiate this instance with arguments read from another interface
+     * implementation.
      */
-    explicit YaComponent(Steinberg::IPtr<Steinberg::Vst::IComponent> component);
+    YaComponent(const Arguments&& args);
 
     /**
      * @remark The plugin side implementation should send a control message to
@@ -97,19 +132,16 @@ class YaComponent : public Steinberg::Vst::IComponent {
     virtual tresult PLUGIN_API
     getState(Steinberg::IBStream* state) override = 0;
 
-    template <typename S>
-    void serialize(S& s) {
-        s.container1b(edit_controller_cid);
-    }
-
    private:
-    /**
-     * The class ID of this component's corresponding editor controller.
-     */
-    Steinberg::TUID edit_controller_cid;
+    Arguments arguments;
 
     // TODO: As explained in a few other places, `YaComponent` objects should be
     //       assigned a unique ID for identification
 };
+
+template <typename S>
+void serialize(S& s, std::optional<YaComponent::Arguments>& args) {
+    s.ext(args, bitsery::ext::StdOptional{});
+}
 
 #pragma GCC diagnostic pop

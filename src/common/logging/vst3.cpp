@@ -56,20 +56,26 @@ void Vst3Logger::log_request(bool is_host_vst, const WantsPluginFactory&) {
     }
 }
 
-void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const std::optional<YaComponent::Arguments>& args) {
     if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         std::ostringstream message;
-        message << get_log_prefix(is_host_vst) << "    <Configuration>";
+        if (args) {
+            message << get_log_prefix(is_host_vst) << "    <IComponent* #"
+                    << args->instance_id << ">";
+        } else {
+            message << get_log_prefix(is_host_vst) << "    <nullptr>";
+        }
 
         log(message.str());
     }
 }
 
-void Vst3Logger::log_response(bool is_host_vst, const YaComponent&) {
+void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
     if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         std::ostringstream message;
-        // TODO: Add the instance ID after we implement that
-        message << get_log_prefix(is_host_vst) << "    <IComponent*>";
+        message << get_log_prefix(is_host_vst) << "    <Configuration>";
 
         log(message.str());
     }
