@@ -50,7 +50,37 @@ instantiated and managed by the host. The model works as follows:
 
 ## Plugin Factory
 
-TODO: Explain how we implement `createInstance()`, based on the todo comment there.
+Creating a new instance of an interface using the plugin factory wroks as
+follows:
+
+1. The host calls `createInterface(cid, _iid, obj)` on an IPluginFactory
+   implementation exposed to the host as described above.
+2. We check which interface we support matches the `_iid`. If we don't support
+   the interface, we'll log a message about it and return that we do not support
+   the itnerface.
+3. If we determine that `_iid` matches `IFoo`, then we'll send a
+   `YaFoo::Create{cid}` to the Wine plugin host process.
+4. The Wine plugin host will then call
+   `module->getFactory().createInstance<IFoo>(cid)` using the Windows VST3
+   plugin's plugin factory to ask it to create an instance of that interface. If
+   this operation fails and returns a null pointer, we'll send an `std::nullopt`
+   back to indicate that the instantiation was not successful and we relay this
+   on the plugin side.
+5. Using the newly created instance (which will be returned by the factory as an
+   `IPtr<IFoo>`), we will instantiate a `YaFoo` object using `YaFooHostImpl`.
+   This will read all simple data members from the `IFoo` smart pointer just
+   like described in the above section. The `YaFoo` object will also gen a
+   unique identifier which we generate on the Wine side using an atomic
+   fetch-and-add on a counter. This way we can refer to this specific isntance
+   when doing callbacks.
+6. Still on the Wine side of things, the `IPtr<IFoo>` will be moved to an
+   `std::map<size_t, IPtr<IFoo>>` with that unique identifier we generated
+   earlier as a key so we can refer to it later.
+7. Finally on the plugin side we will create an `YaFooPluginImpl` object that
+   can send control messages to the Wine plugin host, and then we'll deserialize
+   the `YaFoo` object we receive into that.
+8. A pointer to this `YaFooPluginImpl` then gets returned as the final step of
+   the initialization process.
 
 ## Safety notes
 

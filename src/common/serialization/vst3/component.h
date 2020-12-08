@@ -41,6 +41,8 @@ class YaComponent : public Steinberg::Vst::IComponent {
      * ...)`.
      */
     struct Create {
+        // TODO: This should be `std::optional<YaComponent>`, and we need a way
+        //       to deserialize that into an existing YaComponent.
         using Response = YaComponent&;
 
         Steinberg::TUID cid;
@@ -58,7 +60,11 @@ class YaComponent : public Steinberg::Vst::IComponent {
      */
     explicit YaComponent(Steinberg::IPtr<Steinberg::Vst::IComponent> component);
 
-    virtual ~YaComponent();
+    /**
+     * @remark The plugin side implementation should send a control message to
+     *   clean up the instance on the Wine side in its destructor.
+     */
+    virtual ~YaComponent() = 0;
 
     DECLARE_FUNKNOWN_METHODS
 
