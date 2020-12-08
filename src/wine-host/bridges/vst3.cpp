@@ -65,7 +65,7 @@ void Vst3Bridge::run() {
                     component_instances[instance_id] = std::move(component);
 
                     return std::make_optional<YaComponent::Arguments>(
-                        component, instance_id);
+                        component_instances[instance_id], instance_id);
                 } else {
                     return std::nullopt;
                 }
