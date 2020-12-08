@@ -56,20 +56,14 @@ void Vst3Bridge::run() {
                 Steinberg::IPtr<Steinberg::Vst::IComponent> component =
                     module->getFactory()
                         .createInstance<Steinberg::Vst::IComponent>(args.cid);
-
-                // TODO: Next steps are:
-                //       - Generate a new unique ID using an atomic size_t and
-                //         fetch-and-add.
-                //       - Add an `std::map<size_t,
-                //         Steinberg::IPtr<Steinberg::Vst::IComponent>`
-                //         to this class and add `component` with the generated
-                //         ID to that.
-                //       - Add that ID to `YaComponent` and set it in the object
-                //         we create here.
                 if (component) {
-                    // TODO: Generate a unique instance ID
+                    std::lock_guard lock(component_instances_mutex);
+
+                    const size_t instance_id = generate_instance_id();
+                    component_instances[instance_id] = std::move(component);
+
                     return std::make_optional<YaComponent::Arguments>(
-                        component, 420691337);
+                        component, instance_id);
                 } else {
                     return std::nullopt;
                 }
@@ -77,4 +71,8 @@ void Vst3Bridge::run() {
             [&](const WantsPluginFactory&) -> WantsPluginFactory::Response {
                 return *plugin_factory;
             }});
+}
+
+size_t Vst3Bridge::generate_instance_id() {
+    return current_instance_id.fetch_add(1);
 }

@@ -60,6 +60,13 @@ class Vst3Bridge : public HostBridge {
 
    private:
     /**
+     * Generate a nique instance identifier using an atomic fetch-and-add. This
+     * is used to be able to refer to specific instances created for
+     * `IPluginFactory::createInstance()`.
+     */
+    size_t generate_instance_id();
+
+    /**
      * The IO context used for event handling so that all events and window
      * message handling can be performed from a single thread, even when hosting
      * multiple plugins.
@@ -90,4 +97,22 @@ class Vst3Bridge : public HostBridge {
      * information during its initialization.
      */
     std::unique_ptr<YaPluginFactory> plugin_factory;
+
+    /**
+     * Used to assign unique identifier to instances created for
+     * `IPluginFactory::createInstance()`.
+     *
+     * @related enerate_instance_id
+     */
+    std::atomic_size_t current_instance_id;
+
+    // Below are managed instances we created for
+    // `IPluginFactory::createInstance()`. The keys in all of these maps are the
+    // unique identifiers we generated for them so we can identify specific
+    // instances. The mutexes are used for operations that insert or remove
+    // items, and not for regular access.
+
+    std::map<size_t, Steinberg::IPtr<Steinberg::Vst::IComponent>>
+        component_instances;
+    std::mutex component_instances_mutex;
 };
