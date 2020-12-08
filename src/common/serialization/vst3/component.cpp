@@ -16,6 +16,8 @@
 
 #include "component.h"
 
+YaComponent::Arguments::Arguments() {}
+
 YaComponent::Arguments::Arguments(
     Steinberg::IPtr<Steinberg::Vst::IComponent> component,
     size_t instance_id)

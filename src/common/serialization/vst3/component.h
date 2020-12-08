@@ -48,6 +48,8 @@ class YaComponent : public Steinberg::Vst::IComponent {
      * These are the arguments for creating a `YaComponentPluginImpl`.
      */
     struct Arguments {
+        Arguments();
+
         /**
          * Read arguments from an existing implementation.
          */

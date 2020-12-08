@@ -25,10 +25,19 @@ tresult PLUGIN_API
 YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,
                                           Steinberg::FIDString _iid,
                                           void** obj) {
-    // TODO: Implement as specified in `src/common/serialization/vst3/README.md`
+    // TODO: Do the same thing for other types
+    ArrayUID cid_array;
+    std::copy(cid, cid + sizeof(Steinberg::TUID), cid_array.begin());
     if (Steinberg::FIDStringsEqual(_iid, Steinberg::Vst::IComponent::iid)) {
-        // TODO: Instantiate an IComponent as described above
-        return Steinberg::kNotImplemented;
+        std::optional<YaComponent::Arguments> args =
+            bridge.send_message(YaComponent::Create{.cid = cid_array});
+        if (args) {
+            // I find all of these raw pointers scary
+            *obj = new YaComponentPluginImpl(bridge, std::move(*args));
+            return Steinberg::kResultOk;
+        } else {
+            return Steinberg::kNotImplemented;
+        }
     } else {
         // When the host requests an interface we do not (yet) implement, we'll
         // print a recognizable log message. I don't think they include a safe
