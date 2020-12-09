@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <sstream>
+
 #include "../serialization/vst3.h"
 #include "common.h"
 
@@ -58,11 +60,42 @@ class Vst3Logger {
 
    private:
     /**
-     * Get the `host -> vst` or `vst -> host` prefix based on the boolean flag
-     * we pass to every logging function so we don't have to repeat it
-     * everywhere.
+     * Log a request with a standard prefix based on the boolean flag we pass to
+     * every logging function so we don't have to repeat it everywhere.
      */
-    inline std::string get_log_prefix(bool is_host_vst) {
-        return is_host_vst ? "[host -> vst]" : "[vst -> host]";
+    template <std::invocable<std::ostringstream&> F>
+    void log_request_base(bool is_host_vst, F callback) {
+        if (BOOST_UNLIKELY(logger.verbosity >=
+                           Logger::Verbosity::most_events)) {
+            std::ostringstream message;
+            if (is_host_vst) {
+                message << "[host -> vst] >> ";
+            } else {
+                message << "[vst -> host] >> ";
+            }
+
+            callback(message);
+            log(message.str());
+        }
+    }
+
+    /**
+     * Log a response with a standard prefix based on the boolean flag we pass
+     * to every logging function so we don't have to repeat it everywhere.
+     */
+    template <std::invocable<std::ostringstream&> F>
+    void log_response_base(bool is_host_vst, F callback) {
+        if (BOOST_UNLIKELY(logger.verbosity >=
+                           Logger::Verbosity::most_events)) {
+            std::ostringstream message;
+            if (is_host_vst) {
+                message << "[host -> vst]    ";
+            } else {
+                message << "[vst -> host]    ";
+            }
+
+            callback(message);
+            log(message.str());
+        }
     }
 };

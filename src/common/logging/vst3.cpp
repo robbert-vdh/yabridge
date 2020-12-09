@@ -16,79 +16,54 @@
 
 #include "vst3.h"
 
-#include <sstream>
 #include "src/common/serialization/vst3.h"
 
 // TODO: Reconsider the output format
-// TODO: Maybe think of an alterantive that's a little less boilerplaty
 
 Vst3Logger::Vst3Logger(Logger& generic_logger) : logger(generic_logger) {}
 
 void Vst3Logger::log_request(bool is_host_vst, const YaComponent::Create&) {
-    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
-        std::ostringstream message;
+    log_request_base(is_host_vst, [](auto& message) {
         // TODO: Log the cid in some readable way, if possible
-        message << get_log_prefix(is_host_vst)
-                << " >> IPluginFactory::createComponent(cid, IComponent::iid, "
+        message << "IPluginFactory::createComponent(cid, IComponent::iid, "
                    "&obj)";
-
-        log(message.str());
-    }
+    });
 }
 
 void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
-    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
-        std::ostringstream message;
-        message << get_log_prefix(is_host_vst)
-                << " >> Requesting <Configuration>";
-
-        log(message.str());
-    }
+    log_request_base(is_host_vst, [](auto& message) {
+        message << "Requesting <Configuration>";
+    });
 }
 
 void Vst3Logger::log_request(bool is_host_vst, const WantsPluginFactory&) {
-    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
-        std::ostringstream message;
-        message << get_log_prefix(is_host_vst)
-                << " >> Requesting <IPluginFactory*>";
-
-        log(message.str());
-    }
+    log_request_base(is_host_vst, [](auto& message) {
+        message << "Requesting <IPluginFactory*>";
+    });
 }
 
 void Vst3Logger::log_response(
     bool is_host_vst,
     const std::optional<YaComponent::Arguments>& args) {
-    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
-        std::ostringstream message;
+    log_response_base(is_host_vst, [&](auto& message) {
         if (args) {
-            message << get_log_prefix(is_host_vst) << "    <IComponent* #"
-                    << args->instance_id << ">";
+            message << "<IComponent* #" << args->instance_id << ">";
         } else {
-            message << get_log_prefix(is_host_vst) << "    <nullptr>";
+            message << "<nullptr>";
         }
-
-        log(message.str());
-    }
+    });
 }
 
 void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
-    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
-        std::ostringstream message;
-        message << get_log_prefix(is_host_vst) << "    <Configuration>";
-
-        log(message.str());
-    }
+    log_response_base(is_host_vst,
+                      [](auto& message) { message << "<Configuration"; });
 }
 
 void Vst3Logger::log_response(bool is_host_vst,
                               const YaPluginFactory& factory) {
-    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
-        std::ostringstream message;
-        message << get_log_prefix(is_host_vst) << "    <IPluginFactory*> with "
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << "<IPluginFactory*> with "
                 << const_cast<YaPluginFactory&>(factory).countClasses()
                 << " registered classes";
-
-        log(message.str());
-    }
+    });
 }
