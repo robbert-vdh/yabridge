@@ -106,7 +106,8 @@ template <typename T, typename Socket>
 inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
     // See the note above on the use of `uint64_t` instead of `size_t`
     std::array<uint64_t, 1> message_length;
-    boost::asio::read(socket, boost::asio::buffer(message_length));
+    boost::asio::read(socket, boost::asio::buffer(message_length),
+                      boost::asio::transfer_exactly(sizeof(message_length)));
 
     // Make sure the buffer is large enough
     const size_t size = message_length[0];
@@ -116,8 +117,8 @@ inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
     // merging for us, since local domain sockets have packet limits somewhere
     // in the hundreds of kilobytes
     const auto actual_size =
-        boost::asio::read(socket, boost::asio::buffer(buffer));
-    assert(size == actual_size);
+        boost::asio::read(socket, boost::asio::buffer(buffer),
+                          boost::asio::transfer_exactly(size));
 
     T object;
     auto [_, success] =
