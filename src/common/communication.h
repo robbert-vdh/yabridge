@@ -413,12 +413,8 @@ class EventHandler {
      */
     EventHandler(boost::asio::io_context& io_context,
                  boost::asio::local::stream_protocol::endpoint endpoint,
-                 bool listen,
-                 std::atomic_bool& are_sockets_connected)
-        : io_context(io_context),
-          endpoint(endpoint),
-          socket(io_context),
-          are_sockets_connected(are_sockets_connected) {
+                 bool listen)
+        : io_context(io_context), endpoint(endpoint), socket(io_context) {
         if (listen) {
             boost::filesystem::create_directories(
                 boost::filesystem::path(endpoint.path()).parent_path());
@@ -544,7 +540,7 @@ class EventHandler {
                     // `connect()`. If we get here at any other point then it
                     // means that the plugin side is no longer listening on the
                     // sockets, and we should thus just exit.
-                    if (!are_sockets_connected) {
+                    if (!sent_first_event) {
                         std::lock_guard lock(write_mutex);
 
                         write_object(socket, event);
@@ -557,6 +553,10 @@ class EventHandler {
                 }
             }
         }
+
+        // This was used to always block when sending the first message, because
+        // the other side may not be listening for additional connections yet
+        sent_first_event = true;
 
         if (logging) {
             auto [logger, is_dispatch] = *logging;
@@ -763,10 +763,15 @@ class EventHandler {
      */
     std::mutex write_mutex;
 
+   private:
     /**
-     * @Sockets::are_sockets_connected
+     * Indicates whether or not the remove has processed an event we sent from
+     * this side. When a Windows VST2 plugin performs a host callback in its
+     * constructor, before the native plugin has had time to connect to the
+     * sockets, we want it to always wait for the sockets to come online, but
+     * this fallback behaviour should only happen during initialization.
      */
-    std::atomic_bool& are_sockets_connected;
+    std::atomic_bool sent_first_event = false;
 };
 
 /**
@@ -806,12 +811,10 @@ class Sockets {
         : base_dir(endpoint_base_dir),
           host_vst_dispatch(io_context,
                             (base_dir / "host_vst_dispatch.sock").string(),
-                            listen,
-                            are_sockets_connected),
+                            listen),
           vst_host_callback(io_context,
                             (base_dir / "vst_host_callback.sock").string(),
-                            listen,
-                            are_sockets_connected),
+                            listen),
           host_vst_parameters(io_context,
                               (base_dir / "host_vst_parameters.sock").string(),
                               listen),
@@ -858,16 +861,7 @@ class Sockets {
         host_vst_parameters.connect();
         host_vst_process_replacing.connect();
         host_vst_control.connect();
-
-        are_sockets_connected = true;
     }
-
-    /**
-     * Whether or `connect()` has been called already. When a plugin host a host
-     * callback during its initialization, before the sockets may have been set
-     * up, then we'll want to wait for the sockets to be set up.
-     */
-    inline bool connected() { return are_sockets_connected; }
 
     /**
      * The base directory for our socket endpoints. All `*_endpoint` variables
@@ -907,15 +901,6 @@ class Sockets {
      * the configuration (from `config`) back to the Wine host.
      */
     SocketHandler host_vst_control;
-
-   private:
-    /**
-     * Indicates whether we have already called `connect()` or not. When a
-     * Windows VST2 plugin performs a host callback in its constructor, before
-     * the native plugin has had time to connect to the sockets, we want it to
-     * always wait for the sockets to come online.
-     */
-    std::atomic_bool are_sockets_connected = false;
 };
 
 /**
