@@ -65,6 +65,8 @@ bitsery_dep = subproject('bitsery', version : '5.2.0').get_variable('bitsery_dep
 function2_dep = subproject('function2', version : '4.1.0').get_variable('function2_dep')
 threads_dep = dependency('threads')
 tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('tomlplusplus_dep')
+# The built in threads dependency does not know how to handle winegcc
+wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
 
 include_dir = include_directories('src/include')
@@ -120,10 +122,6 @@ group_host_sources = host_sources + [
   'src/wine-host/group-host.cpp',
 ]
 
-# Get rid of all traces of pthreads in Boost.Asio since this will not play
-# nicely with Wine's own thread system
-compiler_options += ['-DBOOST_ASIO_DISABLE_THREADS', '-DBOOST_ASIO_DISABLE_STD_THREAD']
-
 executable(
   individual_host_name_64bit,
   individual_host_sources,
@@ -135,6 +133,7 @@ executable(
     bitsery_dep,
     function2_dep,
     tomlplusplus_dep,
+    wine_threads_dep,
     xcb_dep
   ],
   cpp_args : compiler_options + ['-m64'],
@@ -152,6 +151,7 @@ executable(
     bitsery_dep,
     function2_dep,
     tomlplusplus_dep,
+    wine_threads_dep,
     xcb_dep
   ],
   cpp_args : compiler_options + ['-m64'],
@@ -197,6 +197,7 @@ if with_bitbridge
       bitsery_dep,
       function2_dep,
       tomlplusplus_dep,
+      wine_threads_dep,
       xcb_dep
     ],
     cpp_args : compiler_options + ['-m32'],
@@ -214,6 +215,7 @@ if with_bitbridge
       bitsery_dep,
       function2_dep,
       tomlplusplus_dep,
+      wine_threads_dep,
       xcb_dep
     ],
     cpp_args : compiler_options + ['-m32'],
