@@ -93,25 +93,27 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
       host_path(find_vst_host(plugin_info.native_library_path,
                               plugin_info.plugin_arch,
                               false)),
-      host(launch_host(host_path,
-                       plugin_type_to_string(host_request.plugin_type),
+      host(launch_host(
+          host_path,
+          plugin_type_to_string(host_request.plugin_type),
 #ifdef WITH_WINEDBG
-                       host_request.plugin_path.filename(),
+          plugin_info.windows_plugin_path.filename(),
 #else
-                       host_request.plugin_path,
+          host_request.plugin_path,
 #endif
-                       host_request.endpoint_base_dir,
-                       bp::env = plugin_info.create_host_env(),
-                       bp::std_out = stdout_pipe,
-                       bp::std_err = stderr_pipe
+          host_request.endpoint_base_dir,
+          bp::env = plugin_info.create_host_env(),
+          bp::std_out = stdout_pipe,
+          bp::std_err = stderr_pipe
 #ifdef WITH_WINEDBG
-                       ,  // winedbg has no reliable way to escape spaces, so
-                          // we'll start the process in the plugin's directory
-                       bp::start_dir = plugin_path.parent_path()
+          ,  // winedbg has no reliable way to escape spaces, so
+             // we'll start the process in the plugin's directory
+          bp::start_dir = plugin_info.windows_plugin_path.parent_path()
 #endif
-                           )) {
+              )) {
 #ifdef WITH_WINEDBG
-    if (plugin_path.filename().string().find(' ') != std::string::npos) {
+    if (plugin_info.windows_plugin_path.filename().string().find(' ') !=
+        std::string::npos) {
         logger.log("Warning: winedbg does not support paths containing spaces");
     }
 #endif
@@ -143,7 +145,8 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
                               true)),
       sockets(sockets) {
 #ifdef WITH_WINEDBG
-    if (plugin_path.string().find(' ') != std::string::npos) {
+    if (plugin_info.windows_plugin_path.string().find(' ') !=
+        std::string::npos) {
         logger.log("Warning: winedbg does not support paths containing spaces");
     }
 #endif
