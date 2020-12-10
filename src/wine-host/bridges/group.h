@@ -276,4 +276,9 @@ class GroupBridge {
      * @see handle_plugin_dispatch
      */
     boost::asio::steady_timer shutdown_timer;
+    /**
+     * A mutex to prevent two threads from simultaneously modifying the shutdown
+     * timer when multiple plugins exit at the same time.
+     */
+    std::mutex shutdown_timer_mutex;
 };

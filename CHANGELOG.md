@@ -35,6 +35,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   plugin to shut down. This could happen when using Kontakt in Bitwig, as Bitwig
   sets a limit on the amount of time a plugin may take to shut down when closing
   Bitwig.
+- Fixed a potential crash or freeze when removing a lot of plugins from a plugin
+  group at exactly the same time.
 
 ## [2.1.0] - 2020-11-20
 
