@@ -116,9 +116,8 @@ inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
     // `boost::asio::read/write` will handle all the packet splitting and
     // merging for us, since local domain sockets have packet limits somewhere
     // in the hundreds of kilobytes
-    const auto actual_size =
-        boost::asio::read(socket, boost::asio::buffer(buffer),
-                          boost::asio::transfer_exactly(size));
+    boost::asio::read(socket, boost::asio::buffer(buffer),
+                      boost::asio::transfer_exactly(size));
 
     T object;
     auto [_, success] =
