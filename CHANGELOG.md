@@ -32,9 +32,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixed an issue where in certain situations Wine processes were left running
   after the host got forcefully terminated before it got a chance to tell the
-  plugin to shut down. This could happen when using Kontakt in Bitwig, since
-  BItwig sets a limit on the amount of time a plugin may take to shut down when
-  closing Bitwig.
+  plugin to shut down. This could happen when using Kontakt in Bitwig, as Bitwig
+  sets a limit on the amount of time a plugin may take to shut down when closing
+  Bitwig.
 
 ## [2.1.0] - 2020-11-20
 
