@@ -141,8 +141,9 @@ void GroupBridge::handle_plugin_dispatch(size_t plugin_id) {
 
     // Defer actually shutting down the process to allow for fast plugin
     // scanning by allowing plugins to reuse the same group host process
+    std::lock_guard lock(shutdown_timer_mutex);
     shutdown_timer.expires_after(2s);
-    shutdown_timer.async_wait([&](const boost::system::error_code& error) {
+    shutdown_timer.async_wait([this](const boost::system::error_code& error) {
         // A previous timer gets canceled automatically when another plugin
         // exits
         if (error.failed()) {

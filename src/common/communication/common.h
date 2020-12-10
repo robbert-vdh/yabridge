@@ -107,7 +107,8 @@ template <typename T, typename Socket>
 inline T& read_object(Socket& socket, std::vector<uint8_t>& buffer, T& object) {
     // See the note above on the use of `uint64_t` instead of `size_t`
     std::array<uint64_t, 1> message_length;
-    boost::asio::read(socket, boost::asio::buffer(message_length));
+    boost::asio::read(socket, boost::asio::buffer(message_length),
+                      boost::asio::transfer_exactly(sizeof(message_length)));
 
     // Make sure the buffer is large enough
     const size_t size = message_length[0];
@@ -116,9 +117,8 @@ inline T& read_object(Socket& socket, std::vector<uint8_t>& buffer, T& object) {
     // `boost::asio::read/write` will handle all the packet splitting and
     // merging for us, since local domain sockets have packet limits somewhere
     // in the hundreds of kilobytes
-    const auto actual_size =
-        boost::asio::read(socket, boost::asio::buffer(buffer));
-    assert(size == actual_size);
+    boost::asio::read(socket, boost::asio::buffer(buffer),
+                      boost::asio::transfer_exactly(size));
 
     auto [_, success] =
         bitsery::quickDeserialization<InputAdapter<std::vector<uint8_t>>>(
@@ -536,7 +536,13 @@ class AdHocSocketHandler {
         //      we might be able to do some optimizations there.
         std::unique_lock lock(write_mutex, std::try_to_lock);
         if (lock.owns_lock()) {
-            return callback(socket);
+            // This was used to always block when sending the first message,
+            // because the other side may not be listening for additional
+            // connections yet
+            auto result = callback(socket);
+            sent_first_event = true;
+
+            return result;
         } else {
             try {
                 boost::asio::local::stream_protocol::socket secondary_socket(
@@ -544,17 +550,31 @@ class AdHocSocketHandler {
                 secondary_socket.connect(endpoint);
 
                 return callback(secondary_socket);
-            } catch (const boost::system::system_error&) {
+            } catch (const boost::system::system_error& e) {
                 // So, what do we do when noone is listening on the endpoint
-                // yet? This can happen with plugin groups when the Wine host
-                // process does an `audioMaster()` call before the plugin is
-                // listening. If that happens we'll fall back to a synchronous
-                // request. This is not very pretty, so if anyone can think of a
-                // better way to structure all of this while still mainting a
-                // long living primary socket please let me know.
-                std::lock_guard lock(write_mutex);
+                // yet? This can happen with plugin groups when the Wine
+                // host process does an `audioMaster()` call before the
+                // plugin is listening. If that happens we'll fall back to a
+                // synchronous request. This is not very pretty, so if
+                // anyone can think of a better way to structure all of this
+                // while still mainting a long living primary socket please
+                // let me know.
+                // Note that this should **only** be done before the call to
+                // `connect()`. If we get here at any other point then it
+                // means that the plugin side is no longer listening on the
+                // sockets, and we should thus just exit.
+                if (!sent_first_event) {
+                    std::lock_guard lock(write_mutex);
 
-                return callback(socket);
+                    auto result = callback(socket);
+                    sent_first_event = true;
+
+                    return result;
+                } else {
+                    // Rethrow the exception if the sockets we're not
+                    // handling the specific case described above
+                    throw e;
+                }
             }
         }
     }
@@ -732,4 +752,13 @@ class AdHocSocketHandler {
      * events will be sent over a new socket instead.
      */
     std::mutex write_mutex;
+
+    /**
+     * Indicates whether or not the remove has processed an event we sent from
+     * this side. When a Windows VST2 plugin performs a host callback in its
+     * constructor, before the native plugin has had time to connect to the
+     * sockets, we want it to always wait for the sockets to come online, but
+     * this fallback behaviour should only happen during initialization.
+     */
+    std::atomic_bool sent_first_event = false;
 };
