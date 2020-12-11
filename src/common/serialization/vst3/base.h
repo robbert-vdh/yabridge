@@ -43,3 +43,46 @@ struct Ack {
     template <typename S>
     void serialize(S&) {}
 };
+
+/**
+ * A wrapper around `Steinberg::tresult` that we can safely share between the
+ * native plugin and the Wine process. Depending on the platform and on whether
+ * or not the VST3 SDK is compiled to be COM compatible, the result codes may
+ * have three different values for the same meaning.
+ */
+class UniversalTResult {
+   public:
+    UniversalTResult(tresult native_result);
+
+    /**
+     * Get the native equivalent for the wrapped `tresult` value.
+     */
+    tresult native() const;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value4b(universal_result);
+    }
+
+   private:
+    /**
+     * These are the non-COM compatible values copied from
+     * `<pluginterfaces/base/funknown.hh`> The actual values h ere don't matter
+     * but hopefully the compiler can be a bit smarter about it this way.
+     */
+    enum class Value {
+        kNoInterface = -1,
+        kResultOk,
+        kResultTrue = kResultOk,
+        kResultFalse,
+        kInvalidArgument,
+        kNotImplemented,
+        kInternalError,
+        kNotInitialized,
+        kOutOfMemory
+    };
+
+    static Value to_universal_result(tresult native_result);
+
+    Value universal_result;
+};
