@@ -56,13 +56,18 @@ void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
 
 void Vst3Logger::log_response(
     bool is_host_vst,
-    const std::optional<YaComponent::CreateArgs>& args) {
+    const std::variant<YaComponent::CreateArgs, UniversalTResult>& result) {
     log_response_base(is_host_vst, [&](auto& message) {
-        if (args) {
-            message << "<IComponent* #" << args->instance_id << ">";
-        } else {
-            message << "<nullptr>";
-        }
+        std::visit(overload{[&](const YaComponent::CreateArgs& args) {
+                                message << "<IComponent* #" << args.instance_id
+                                        << ">";
+                            },
+                            [&](const UniversalTResult& code) {
+                                // TODO: Add a `UniversalTResult::string()` for
+                                //       the human readable representation
+                                message << code.native();
+                            }},
+                   result);
     });
 }
 

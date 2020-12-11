@@ -52,6 +52,15 @@ struct Ack {
  */
 class UniversalTResult {
    public:
+    /**
+     * The default constructor will initialize the value to `kResutlFalse` and
+     * should only ever be used by bitsery in the serialization process.
+     */
+    UniversalTResult();
+
+    /**
+     * Convert a native tresult into a univeral one.
+     */
     UniversalTResult(tresult native_result);
 
     /**

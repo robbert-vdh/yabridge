@@ -17,9 +17,11 @@
 #pragma once
 
 #include <optional>
+#include <variant>
 
 #include <bitsery/ext/pointer.h>
 #include <bitsery/ext/std_optional.h>
+#include <bitsery/ext/std_variant.h>
 #include <bitsery/traits/array.h>
 #include <pluginterfaces/vst/ivstcomponent.h>
 
@@ -82,8 +84,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
      * ...)`.
      */
     struct Create {
-        // TODO: Create a `native_tvalue` wrapper, and then also add them here
-        using Response = std::optional<CreateArgs>;
+        using Response = std::variant<CreateArgs, UniversalTResult>;
 
         ArrayUID cid;
 
@@ -156,9 +157,11 @@ class YaComponent : public Steinberg::Vst::IComponent {
     CreateArgs arguments;
 };
 
-template <typename S>
-void serialize(S& s, std::optional<YaComponent::CreateArgs>& args) {
-    s.ext(args, bitsery::ext::StdOptional{});
-}
-
 #pragma GCC diagnostic pop
+
+template <typename S>
+void serialize(
+    S& s,
+    std::variant<YaComponent::CreateArgs, UniversalTResult>& result) {
+    s.ext(result, bitsery::ext::StdVariant{});
+}

@@ -16,10 +16,10 @@
 
 #include "base.h"
 
+UniversalTResult::UniversalTResult() : universal_result(Value::kResultFalse) {}
+
 UniversalTResult::UniversalTResult(tresult native_result)
-    : universal_result(to_universal_result(native_result)) {
-    //
-}
+    : universal_result(to_universal_result(native_result)) {}
 
 tresult UniversalTResult::native() const {
     static_assert(Steinberg::kResultOk == Steinberg::kResultTrue);

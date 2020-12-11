@@ -31,15 +31,17 @@ YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,
     ArrayUID cid_array;
     std::copy(cid, cid + sizeof(Steinberg::TUID), cid_array.begin());
     if (Steinberg::FIDStringsEqual(_iid, Steinberg::Vst::IComponent::iid)) {
-        std::optional<YaComponent::CreateArgs> args =
+        std::variant<YaComponent::CreateArgs, UniversalTResult> result =
             bridge.send_message(YaComponent::Create{.cid = cid_array});
-        if (args) {
-            // I find all of these raw pointers scary
-            *obj = new YaComponentPluginImpl(bridge, std::move(*args));
-            return Steinberg::kResultOk;
-        } else {
-            return Steinberg::kNotImplemented;
-        }
+        return std::visit(
+            overload{
+                [&](YaComponent::CreateArgs&& args) -> tresult {
+                    // I find all of these raw pointers scary
+                    *obj = new YaComponentPluginImpl(bridge, std::move(args));
+                    return Steinberg::kResultOk;
+                },
+                [&](const UniversalTResult& code) { return code.native(); }},
+            std::move(result));
     } else {
         // When the host requests an interface we do not (yet) implement, we'll
         // print a recognizable log message. I don't think they include a safe
