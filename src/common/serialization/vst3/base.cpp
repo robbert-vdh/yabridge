@@ -55,6 +55,39 @@ tresult UniversalTResult::native() const {
     }
 }
 
+std::string UniversalTResult::string() const {
+    static_assert(Steinberg::kResultOk == Steinberg::kResultTrue);
+    switch (universal_result) {
+        case Value::kNoInterface:
+            return "kNoInterface";
+            break;
+        case Value::kResultOk:
+            return "kResultOk";
+            break;
+        case Value::kResultFalse:
+            return "kResultFalse";
+            break;
+        case Value::kInvalidArgument:
+            return "kInvalidArgument";
+            break;
+        case Value::kNotImplemented:
+            return "kNotImplemented";
+            break;
+        case Value::kInternalError:
+            return "kInternalError";
+            break;
+        case Value::kNotInitialized:
+            return "kNotInitialized";
+            break;
+        case Value::kOutOfMemory:
+            return "kOutOfMemory";
+            break;
+        default:
+            return "<invalid>";
+            break;
+    }
+}
+
 UniversalTResult::Value UniversalTResult::to_universal_result(
     tresult native_result) {
     static_assert(Steinberg::kResultOk == Steinberg::kResultTrue);

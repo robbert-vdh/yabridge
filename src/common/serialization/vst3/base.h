@@ -17,6 +17,7 @@
 #pragma once
 
 #include <array>
+#include <string>
 
 #include <pluginterfaces/base/ftypes.h>
 #include <pluginterfaces/base/funknown.h>
@@ -67,6 +68,11 @@ class UniversalTResult {
      * Get the native equivalent for the wrapped `tresult` value.
      */
     tresult native() const;
+
+    /**
+     * Get the original name for the result, e.g. `kResultOk`.
+     */
+    std::string string() const;
 
     template <typename S>
     void serialize(S& s) {

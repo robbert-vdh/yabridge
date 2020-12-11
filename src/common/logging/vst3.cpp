@@ -63,9 +63,7 @@ void Vst3Logger::log_response(
                                         << ">";
                             },
                             [&](const UniversalTResult& code) {
-                                // TODO: Add a `UniversalTResult::string()` for
-                                //       the human readable representation
-                                message << code.native();
+                                message << code.string();
                             }},
                    result);
     });
