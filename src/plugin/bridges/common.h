@@ -228,8 +228,7 @@ class PluginBridge {
                 if (!plugin_host->running()) {
                     generic_logger.log(
                         "The Wine host process has exited unexpectedly. Check "
-                        "the "
-                        "output above for more information.");
+                        "the output above for more information.");
                     std::terminate();
                 }
 
