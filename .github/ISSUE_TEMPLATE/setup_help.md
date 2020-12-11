@@ -8,6 +8,8 @@ assignees: ""
 
 Thanks for giving yabridge a shot! If you're having issues with plugins not working at all or scans timing out then make sure to check out the [troubleshooting common issues](https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues) section of the readme. `yabridgectl sync` will also try to diagnose most if these issues for you during setup.
 
+Also try our [Discord](https://discord.com/invite/pyNeweqadf) for some quick help or questions.
+
 **Problem description**
 A short description of the current situation.
 
