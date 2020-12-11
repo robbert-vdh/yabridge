@@ -17,7 +17,7 @@
 #include "component.h"
 
 YaComponentPluginImpl::YaComponentPluginImpl(Vst3PluginBridge& bridge,
-                                             YaComponent::Arguments&& args)
+                                             YaComponent::CreateArgs&& args)
     : YaComponent(std::move(args)), bridge(bridge) {}
 
 YaComponentPluginImpl::~YaComponentPluginImpl() {

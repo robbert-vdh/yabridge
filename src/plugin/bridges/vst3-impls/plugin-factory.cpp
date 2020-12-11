@@ -31,7 +31,7 @@ YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,
     ArrayUID cid_array;
     std::copy(cid, cid + sizeof(Steinberg::TUID), cid_array.begin());
     if (Steinberg::FIDStringsEqual(_iid, Steinberg::Vst::IComponent::iid)) {
-        std::optional<YaComponent::Arguments> args =
+        std::optional<YaComponent::CreateArgs> args =
             bridge.send_message(YaComponent::Create{.cid = cid_array});
         if (args) {
             // I find all of these raw pointers scary

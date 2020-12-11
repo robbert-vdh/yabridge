@@ -52,7 +52,7 @@ class Vst3Logger {
     void log_request(bool is_host_vst, const WantsPluginFactory&);
 
     void log_response(bool is_host_vst,
-                      const std::optional<YaComponent::Arguments>&);
+                      const std::optional<YaComponent::CreateArgs>&);
     void log_response(bool is_host_vst, const Configuration&);
     void log_response(bool is_host_vst, const YaPluginFactory&);
 

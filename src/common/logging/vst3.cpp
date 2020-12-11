@@ -44,7 +44,7 @@ void Vst3Logger::log_request(bool is_host_vst, const WantsPluginFactory&) {
 
 void Vst3Logger::log_response(
     bool is_host_vst,
-    const std::optional<YaComponent::Arguments>& args) {
+    const std::optional<YaComponent::CreateArgs>& args) {
     log_response_base(is_host_vst, [&](auto& message) {
         if (args) {
             message << "<IComponent* #" << args->instance_id << ">";

@@ -47,14 +47,14 @@ class YaComponent : public Steinberg::Vst::IComponent {
     /**
      * These are the arguments for creating a `YaComponentPluginImpl`.
      */
-    struct Arguments {
-        Arguments();
+    struct CreateArgs {
+        CreateArgs();
 
         /**
          * Read arguments from an existing implementation.
          */
-        Arguments(Steinberg::IPtr<Steinberg::Vst::IComponent> component,
-                  size_t isntance_id);
+        CreateArgs(Steinberg::IPtr<Steinberg::Vst::IComponent> component,
+                   size_t isntance_id);
 
         /**
          * The unique identifier for this specific instance.
@@ -83,7 +83,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
      */
     struct Create {
         // TODO: Create a `native_tvalue` wrapper, and then also add them here
-        using Response = std::optional<Arguments>;
+        using Response = std::optional<CreateArgs>;
 
         ArrayUID cid;
 
@@ -97,7 +97,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaComponent(const Arguments&& args);
+    YaComponent(const CreateArgs&& args);
 
     /**
      * @remark The plugin side implementation should send a control message to
@@ -137,14 +137,14 @@ class YaComponent : public Steinberg::Vst::IComponent {
     getState(Steinberg::IBStream* state) override = 0;
 
    private:
-    Arguments arguments;
+    CreateArgs arguments;
 
     // TODO: As explained in a few other places, `YaComponent` objects should be
     //       assigned a unique ID for identification
 };
 
 template <typename S>
-void serialize(S& s, std::optional<YaComponent::Arguments>& args) {
+void serialize(S& s, std::optional<YaComponent::CreateArgs>& args) {
     s.ext(args, bitsery::ext::StdOptional{});
 }
 
