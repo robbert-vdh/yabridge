@@ -16,25 +16,7 @@
 
 #pragma once
 
-#include "vst3.h"
-
-// These are implementation of the serialization clases in
-// `src/common/serialization/vst3/` to provide callback support
-// TODO: Split this up in multiple headers. I hoped it might stay small and easy
-//       to oversee. It won't.
-
-class YaPluginFactoryPluginImpl : public YaPluginFactory {
-   public:
-    YaPluginFactoryPluginImpl(Vst3PluginBridge& bridge);
-
-    tresult PLUGIN_API createInstance(Steinberg::FIDString cid,
-                                      Steinberg::FIDString _iid,
-                                      void** obj) override;
-    tresult PLUGIN_API setHostContext(Steinberg::FUnknown* context) override;
-
-   private:
-    Vst3PluginBridge& bridge;
-};
+#include "../vst3.h"
 
 class YaComponentPluginImpl : public YaComponent {
    public:

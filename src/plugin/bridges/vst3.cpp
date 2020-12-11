@@ -17,7 +17,7 @@
 #include "vst3.h"
 
 #include "src/common/serialization/vst3.h"
-#include "vst3-impls.h"
+#include "vst3-impls/plugin-factory.h"
 
 // There are still some design decisions that need some more thought
 // TODO: Check whether `IPlugView::isPlatformTypeSupported` needs special
