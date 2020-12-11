@@ -150,7 +150,7 @@ void GroupBridge::handle_plugin_dispatch(size_t plugin_id) {
                 "All plugins have exited, shutting down the group process");
 
             // main_context.stop();
-            // FIXME: See the comment in `individual-host.cpp` #69
+            // FIXME: See the comment in `individual-host.cpp`
             TerminateProcess(GetCurrentProcess(), 0);
         }
     });

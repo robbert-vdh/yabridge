@@ -92,7 +92,9 @@ main(int argc, char* argv[]) {
         //        get stuck if the host got terminated abruptly. After an entire
         //        day of debugging I still have no idea whether this is a bug in
         //        yabridge, Wine, or those plugins, but just killing off this
-        //        process and all of its threads 'fixes' the issue. #69
+        //        process and all of its threads 'fixes' the issue.
+        //
+        //        https://github.com/robbert-vdh/yabridge/issues/69
         TerminateProcess(GetCurrentProcess(), 0);
     });
 
