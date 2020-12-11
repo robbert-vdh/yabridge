@@ -30,6 +30,14 @@ void Vst3Logger::log_request(bool is_host_vst, const YaComponent::Create&) {
     });
 }
 
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::Destroy& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IPluginFactory* #" << request.instance_id
+                << ">::~IPluginFactory()";
+    });
+}
+
 void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     log_request_base(is_host_vst, [](auto& message) {
         message << "Requesting <Configuration>";
@@ -40,6 +48,10 @@ void Vst3Logger::log_request(bool is_host_vst, const WantsPluginFactory&) {
     log_request_base(is_host_vst, [](auto& message) {
         message << "Requesting <IPluginFactory*>";
     });
+}
+
+void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
+    log_response_base(is_host_vst, [&](auto& message) { message << "ACK"; });
 }
 
 void Vst3Logger::log_response(

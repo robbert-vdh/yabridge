@@ -70,6 +70,13 @@ void Vst3Bridge::run() {
                     return std::nullopt;
                 }
             },
+            [&](const YaComponent::Destroy& request)
+                -> YaComponent::Destroy::Response {
+                std::lock_guard lock(component_instances_mutex);
+                component_instances.erase(request.instance_id);
+
+                return Ack{};
+            },
             [&](const WantsPluginFactory&) -> WantsPluginFactory::Response {
                 return *plugin_factory;
             }});

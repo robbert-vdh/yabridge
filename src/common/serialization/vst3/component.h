@@ -94,6 +94,22 @@ class YaComponent : public Steinberg::Vst::IComponent {
     };
 
     /**
+     * Message to request the Wine plugin host to destroy the IComponent
+     * instance with the given instance ID. Sent from the destructor of
+     * `YaComponentPluginImpl`.
+     */
+    struct Destroy {
+        using Response = Ack;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
+    /**
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
@@ -136,11 +152,8 @@ class YaComponent : public Steinberg::Vst::IComponent {
     virtual tresult PLUGIN_API
     getState(Steinberg::IBStream* state) override = 0;
 
-   private:
+   protected:
     CreateArgs arguments;
-
-    // TODO: As explained in a few other places, `YaComponent` objects should be
-    //       assigned a unique ID for identification
 };
 
 template <typename S>

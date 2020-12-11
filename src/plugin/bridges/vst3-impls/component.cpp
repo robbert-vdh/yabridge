@@ -21,7 +21,8 @@ YaComponentPluginImpl::YaComponentPluginImpl(Vst3PluginBridge& bridge,
     : YaComponent(std::move(args)), bridge(bridge) {}
 
 YaComponentPluginImpl::~YaComponentPluginImpl() {
-    // TODO: Send a control message to destroy the instance on the Wine side
+    bridge.send_message(
+        YaComponent::Destroy{.instance_id = arguments.instance_id});
 }
 
 tresult PLUGIN_API

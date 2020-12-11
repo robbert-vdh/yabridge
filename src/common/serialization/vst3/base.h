@@ -34,3 +34,12 @@ using Steinberg::TBool, Steinberg::int8, Steinberg::int32, Steinberg::tresult;
 using ArrayUID = std::array<
     std::remove_reference_t<decltype(std::declval<Steinberg::TUID>()[0])>,
     std::extent_v<Steinberg::TUID>>;
+
+/**
+ * Empty struct for when we have send a response to some operation without any
+ * result values.
+ */
+struct Ack {
+    template <typename S>
+    void serialize(S&) {}
+};
