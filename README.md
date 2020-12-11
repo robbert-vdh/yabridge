@@ -306,6 +306,10 @@ group = "izotope"
 
 ## Troubleshooting common issues
 
+If your problem is not listed here, then feel free to post on the [issue
+tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask in the
+[Discord](https://discord.gg/pyNeweqadf).
+
 - If you have the `WINEPREFIX` environment variable set and you _don't_ want all
   of your plugins to use that specific Wine prefix then you should unset it to
   allow yabridge to automatically detect Wine prefixes for you.
