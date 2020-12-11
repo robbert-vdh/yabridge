@@ -114,9 +114,17 @@ main(int argc, char* argv[]) {
     Win32Thread worker_thread([&]() {
         bridge->run();
 
-        // When the sockets get closed, this application should
-        // terminate gracefully
-        main_context.stop();
+        // // When the sockets get closed, this application should
+        // // terminate gracefully
+        // main_context.stop();
+        // FIXME: So some of the background threads spawned by the plugin may
+        //        get stuck if the host got terminated abruptly. After an entire
+        //        day of debugging I still have no idea whether this is a bug in
+        //        yabridge, Wine, or those plugins, but just killing off this
+        //        process and all of its threads 'fixes' the issue.
+        //
+        //        https://github.com/robbert-vdh/yabridge/issues/69
+        TerminateProcess(GetCurrentProcess(), 0);
     });
 
     std::cout << "Finished initializing '" << plugin_location << "'"
