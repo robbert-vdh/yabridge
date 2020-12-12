@@ -33,8 +33,8 @@ void Vst3Logger::log_request(bool is_host_vst, const YaComponent::Create&) {
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaComponent::Destroy& request) {
     log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IPluginFactory* #" << request.instance_id
-                << ">::~IPluginFactory()";
+        message << "<IComponent* #" << request.instance_id
+                << ">::~IComponent()";
     });
 }
 
