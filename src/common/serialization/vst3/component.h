@@ -95,6 +95,12 @@ class YaComponent : public Steinberg::Vst::IComponent {
     };
 
     /**
+     * Instantiate this instance with arguments read from another interface
+     * implementation.
+     */
+    YaComponent(const CreateArgs&& args);
+
+    /**
      * Message to request the Wine plugin host to destroy the IComponent
      * instance with the given instance ID. Sent from the destructor of
      * `YaComponentPluginImpl`.
@@ -109,12 +115,6 @@ class YaComponent : public Steinberg::Vst::IComponent {
             s.value8b(instance_id);
         }
     };
-
-    /**
-     * Instantiate this instance with arguments read from another interface
-     * implementation.
-     */
-    YaComponent(const CreateArgs&& args);
 
     /**
      * @remark The plugin side implementation should send a control message to
