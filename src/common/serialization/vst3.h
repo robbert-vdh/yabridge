@@ -68,8 +68,10 @@ struct WantsPluginFactory {
  * encodes the information we request or the operation we want to perform. A
  * request of type `ControlRequest(T)` should send back a `T::Response`.
  */
-using ControlRequest =
-    std::variant<YaComponent::Create, YaComponent::Destroy, WantsPluginFactory>;
+using ControlRequest = std::variant<YaComponent::Create,
+                                    YaComponent::Destroy,
+                                    YaComponent::Terminate,
+                                    WantsPluginFactory>;
 
 template <typename S>
 void serialize(S& s, ControlRequest& payload) {

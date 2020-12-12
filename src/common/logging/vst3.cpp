@@ -38,6 +38,13 @@ void Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::Terminate& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IComponent* #" << request.instance_id << ">::terminate()";
+    });
+}
+
 void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     log_request_base(is_host_vst, [](auto& message) {
         message << "Requesting <Configuration>";

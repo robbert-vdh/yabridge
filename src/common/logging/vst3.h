@@ -49,6 +49,7 @@ class Vst3Logger {
 
     void log_request(bool is_host_vst, const YaComponent::Create&);
     void log_request(bool is_host_vst, const YaComponent::Destroy&);
+    void log_request(bool is_host_vst, const YaComponent::Terminate&);
     void log_request(bool is_host_vst, const WantsConfiguration&);
     void log_request(bool is_host_vst, const WantsPluginFactory&);
 

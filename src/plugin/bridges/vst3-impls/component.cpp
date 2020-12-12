@@ -40,8 +40,10 @@ tresult PLUGIN_API YaComponentPluginImpl::initialize(FUnknown* context) {
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::terminate() {
-    // TODO: Implement
-    return Steinberg::kNotImplemented;
+    return bridge
+        .send_message(
+            YaComponent::Terminate{.instance_id = arguments.instance_id})
+        .native();
 }
 
 tresult PLUGIN_API

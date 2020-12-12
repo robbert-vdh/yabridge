@@ -78,6 +78,10 @@ void Vst3Bridge::run() {
 
                 return Ack{};
             },
+            [&](const YaComponent::Terminate& request)
+                -> YaComponent::Terminate::Response {
+                return component_instances[request.instance_id]->terminate();
+            },
             [&](const WantsPluginFactory&) -> WantsPluginFactory::Response {
                 return *plugin_factory;
             }});

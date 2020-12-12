@@ -79,7 +79,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
 
     /**
      * Message to request the Wine plugin host to instantiate a new IComponent
-     * to pass through a call to `IPluginFactory::createInstance(cid,
+     * to pass through a call to `IComponent::createInstance(cid,
      * IComponent::iid,
      * ...)`.
      */
@@ -126,6 +126,22 @@ class YaComponent : public Steinberg::Vst::IComponent {
 
     // From `IPluginBase`
     virtual tresult PLUGIN_API initialize(FUnknown* context) override = 0;
+
+    /**
+     * Message to pass through a call to `IComponent::terminate()` to the Wine
+     * plugin host.
+     */
+    struct Terminate {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
     virtual tresult PLUGIN_API terminate() override = 0;
 
     // From `IComponent`
