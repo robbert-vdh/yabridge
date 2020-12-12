@@ -49,14 +49,14 @@ class YaComponent : public Steinberg::Vst::IComponent {
     /**
      * These are the arguments for creating a `YaComponentPluginImpl`.
      */
-    struct CreateArgs {
-        CreateArgs();
+    struct ConstructArgs {
+        ConstructArgs();
 
         /**
          * Read arguments from an existing implementation.
          */
-        CreateArgs(Steinberg::IPtr<Steinberg::Vst::IComponent> component,
-                   size_t isntance_id);
+        ConstructArgs(Steinberg::IPtr<Steinberg::Vst::IComponent> component,
+                      size_t isntance_id);
 
         /**
          * The unique identifier for this specific instance.
@@ -83,8 +83,8 @@ class YaComponent : public Steinberg::Vst::IComponent {
      * IComponent::iid,
      * ...)`.
      */
-    struct Create {
-        using Response = std::variant<CreateArgs, UniversalTResult>;
+    struct Construct {
+        using Response = std::variant<ConstructArgs, UniversalTResult>;
 
         ArrayUID cid;
 
@@ -98,14 +98,14 @@ class YaComponent : public Steinberg::Vst::IComponent {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaComponent(const CreateArgs&& args);
+    YaComponent(const ConstructArgs&& args);
 
     /**
      * Message to request the Wine plugin host to destroy the IComponent
      * instance with the given instance ID. Sent from the destructor of
      * `YaComponentPluginImpl`.
      */
-    struct Destroy {
+    struct Destruct {
         using Response = Ack;
 
         native_size_t instance_id;
@@ -170,7 +170,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
     getState(Steinberg::IBStream* state) override = 0;
 
    protected:
-    CreateArgs arguments;
+    ConstructArgs arguments;
 };
 
 #pragma GCC diagnostic pop
@@ -178,6 +178,6 @@ class YaComponent : public Steinberg::Vst::IComponent {
 template <typename S>
 void serialize(
     S& s,
-    std::variant<YaComponent::CreateArgs, UniversalTResult>& result) {
+    std::variant<YaComponent::ConstructArgs, UniversalTResult>& result) {
     s.ext(result, bitsery::ext::StdVariant{});
 }

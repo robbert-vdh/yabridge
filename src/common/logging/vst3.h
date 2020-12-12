@@ -47,8 +47,8 @@ class Vst3Logger {
     // flag here indicates whether the request was initiated on the host side
     // (what we'll call a control message).
 
-    void log_request(bool is_host_vst, const YaComponent::Create&);
-    void log_request(bool is_host_vst, const YaComponent::Destroy&);
+    void log_request(bool is_host_vst, const YaComponent::Construct&);
+    void log_request(bool is_host_vst, const YaComponent::Destruct&);
     void log_request(bool is_host_vst, const YaComponent::Terminate&);
     void log_request(bool is_host_vst, const WantsConfiguration&);
     void log_request(bool is_host_vst, const WantsPluginFactory&);
@@ -56,7 +56,7 @@ class Vst3Logger {
     void log_response(bool is_host_vst, const Ack&);
     void log_response(
         bool is_host_vst,
-        const std::variant<YaComponent::CreateArgs, UniversalTResult>&);
+        const std::variant<YaComponent::ConstructArgs, UniversalTResult>&);
     void log_response(bool is_host_vst, const Configuration&);
     void log_response(bool is_host_vst, const YaPluginFactory&);
 

@@ -17,12 +17,12 @@
 #include "component.h"
 
 YaComponentPluginImpl::YaComponentPluginImpl(Vst3PluginBridge& bridge,
-                                             YaComponent::CreateArgs&& args)
+                                             YaComponent::ConstructArgs&& args)
     : YaComponent(std::move(args)), bridge(bridge) {}
 
 YaComponentPluginImpl::~YaComponentPluginImpl() {
     bridge.send_message(
-        YaComponent::Destroy{.instance_id = arguments.instance_id});
+        YaComponent::Destruct{.instance_id = arguments.instance_id});
 }
 
 tresult PLUGIN_API

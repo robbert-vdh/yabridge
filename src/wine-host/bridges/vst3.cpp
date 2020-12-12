@@ -51,8 +51,8 @@ void Vst3Bridge::run() {
     sockets.host_vst_control.receive_messages(
         std::nullopt,
         overload{
-            [&](const YaComponent::Create& args)
-                -> YaComponent::Create::Response {
+            [&](const YaComponent::Construct& args)
+                -> YaComponent::Construct::Response {
                 Steinberg::TUID cid;
                 std::copy(args.cid.begin(), args.cid.end(), cid);
                 Steinberg::IPtr<Steinberg::Vst::IComponent> component =
@@ -64,15 +64,15 @@ void Vst3Bridge::run() {
                     const size_t instance_id = generate_instance_id();
                     component_instances[instance_id] = std::move(component);
 
-                    return YaComponent::CreateArgs(
+                    return YaComponent::ConstructArgs(
                         component_instances[instance_id], instance_id);
                 } else {
                     // The actual result is lost here
                     return UniversalTResult(Steinberg::kNotImplemented);
                 }
             },
-            [&](const YaComponent::Destroy& request)
-                -> YaComponent::Destroy::Response {
+            [&](const YaComponent::Destruct& request)
+                -> YaComponent::Destruct::Response {
                 std::lock_guard lock(component_instances_mutex);
                 component_instances.erase(request.instance_id);
 

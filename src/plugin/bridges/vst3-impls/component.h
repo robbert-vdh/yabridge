@@ -21,7 +21,7 @@
 class YaComponentPluginImpl : public YaComponent {
    public:
     YaComponentPluginImpl(Vst3PluginBridge& bridge,
-                          YaComponent::CreateArgs&& args);
+                          YaComponent::ConstructArgs&& args);
 
     /**
      * When the reference count reaches zero and this destructor is called,

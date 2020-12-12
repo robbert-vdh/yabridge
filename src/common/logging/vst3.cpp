@@ -22,7 +22,7 @@
 
 Vst3Logger::Vst3Logger(Logger& generic_logger) : logger(generic_logger) {}
 
-void Vst3Logger::log_request(bool is_host_vst, const YaComponent::Create&) {
+void Vst3Logger::log_request(bool is_host_vst, const YaComponent::Construct&) {
     log_request_base(is_host_vst, [](auto& message) {
         // TODO: Log the cid in some readable way, if possible
         message << "IPluginFactory::createComponent(cid, IComponent::iid, "
@@ -31,7 +31,7 @@ void Vst3Logger::log_request(bool is_host_vst, const YaComponent::Create&) {
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::Destroy& request) {
+                             const YaComponent::Destruct& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IComponent* #" << request.instance_id
                 << ">::~IComponent()";
@@ -63,9 +63,9 @@ void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
 
 void Vst3Logger::log_response(
     bool is_host_vst,
-    const std::variant<YaComponent::CreateArgs, UniversalTResult>& result) {
+    const std::variant<YaComponent::ConstructArgs, UniversalTResult>& result) {
     log_response_base(is_host_vst, [&](auto& message) {
-        std::visit(overload{[&](const YaComponent::CreateArgs& args) {
+        std::visit(overload{[&](const YaComponent::ConstructArgs& args) {
                                 message << "<IComponent* #" << args.instance_id
                                         << ">";
                             },

@@ -16,9 +16,9 @@
 
 #include "component.h"
 
-YaComponent::CreateArgs::CreateArgs() {}
+YaComponent::ConstructArgs::ConstructArgs() {}
 
-YaComponent::CreateArgs::CreateArgs(
+YaComponent::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::Vst::IComponent> component,
     size_t instance_id)
     : instance_id(instance_id) {
@@ -29,7 +29,7 @@ YaComponent::CreateArgs::CreateArgs(
     }
 }
 
-YaComponent::YaComponent(const CreateArgs&& args) : arguments(std::move(args)) {
+YaComponent::YaComponent(const ConstructArgs&& args) : arguments(std::move(args)) {
     FUNKNOWN_CTOR
 
     // Everything else is handled directly through callbacks to minimize the
