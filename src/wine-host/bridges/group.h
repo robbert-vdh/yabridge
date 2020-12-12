@@ -139,15 +139,14 @@ class GroupBridge {
      * This check is delayed by a few seconds to prevent having to constantly
      * restart the group process during plugin scanning.
      *
-     * @param plugin_id The ID of this plugin in the `active_plugins` map. The
-     *   thread can fetch the plugin's `Vst2Bridge` instance from that map using
-     *   this identifier.
+     * @param plugin_id The ID of this plugin in the `active_plugins` map. Used
+     *   to unload the plugin and join this thread again after the plugin exits.
      *
      * @note In the case that the process starts but no plugin gets initiated,
      *   then the process will never exit on its own. This should not happen
      *   though.
      */
-    void handle_plugin_dispatch(size_t plugin_id);
+    void handle_plugin_dispatch(size_t plugin_id, Vst2Bridge* bridge);
 
     /**
      * Listen for new requests to spawn plugins within this process and handle

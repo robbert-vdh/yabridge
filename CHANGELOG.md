@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed some plugins, notably the _Spitfire Audio_ plugins, from causing a
+  deadlock when using plugin groups in _REAPER_. Even though this did not seem
+  to cause any issues in other hosts, the race condition that caused this issue
+  could also occur elsewhere.
+
 ## [2.2.0] - 2020-12-11
 
 ### Added
