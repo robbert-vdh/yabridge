@@ -35,6 +35,28 @@ YaComponentPluginImpl::queryInterface(const ::Steinberg::TUID _iid,
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::initialize(FUnknown* context) {
+    // This `context` will likely be an `IHostApplication`. If it is, we will
+    // store it here, and we'll proxy through all calls to it made from the Wine
+    // side. Otherwise we'll still call `IPluginBase::initialize()` but with a
+    // null pointer instead.
+    host_application_context = context;
+    if (host_application_context) {
+        // TODO: Init with `YaHostApplication`
+    } else {
+        context->iid;
+
+        char iid_string[128] = "<invalid_pointer>";
+        if (context) {
+            context->iid.print(iid_string,
+                               Steinberg::FUID::UIDPrintStyle::kCLASS_UID);
+        }
+
+        bridge.logger.log("[Unknown interface] In IPluginBase::initialize(): " +
+                          std::string(iid_string));
+
+        // TODO: Init with null pointer
+    }
+
     // TODO: Implement
     return Steinberg::kNotImplemented;
 }

@@ -128,7 +128,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
     virtual tresult PLUGIN_API initialize(FUnknown* context) override = 0;
 
     /**
-     * Message to pass through a call to `IComponent::terminate()` to the Wine
+     * Message to pass through a call to `IPluginBase::terminate()` to the Wine
      * plugin host.
      */
     struct Terminate {

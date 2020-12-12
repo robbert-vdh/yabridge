@@ -55,7 +55,9 @@ YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,
             iid.print(iid_string, Steinberg::FUID::UIDPrintStyle::kCLASS_UID);
         }
 
-        bridge.logger.log("[Unknown interface] " + std::string(iid_string));
+        bridge.logger.log(
+            "[Unknown interface] In IPluginFactory::createInstance(): " +
+            std::string(iid_string));
 
         return Steinberg::kNotImplemented;
     }

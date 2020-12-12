@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <pluginterfaces/vst/ivsthostapplication.h>
+
 #include "../vst3.h"
 
 class YaComponentPluginImpl : public YaComponent {
@@ -61,4 +63,11 @@ class YaComponentPluginImpl : public YaComponent {
 
    private:
     Vst3PluginBridge& bridge;
+
+    /**
+     * An `IHostApplication` instance if we get one through
+     * `IPluginBase::initialize()`.
+     */
+    Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication>
+        host_application_context;
 };
