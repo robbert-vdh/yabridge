@@ -30,10 +30,13 @@ YaComponentPluginImpl::~YaComponentPluginImpl() {
 
 tresult PLUGIN_API
 YaComponentPluginImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
-    // TODO: Log when this fails on debug level 1, and on debug level 2 also log
-    //       successful queries. This behaviour should be implemented for all
-    //       interfaces.
-    return YaComponent::queryInterface(_iid, obj);
+    const tresult result = YaComponent::queryInterface(_iid, obj);
+    if (result != Steinberg::kResultOk) {
+        bridge.logger.log_unknown_interface("In IComponent::queryInterface()",
+                                            Steinberg::FUID::fromTUID(_iid));
+    }
+
+    return result;
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::initialize(FUnknown* context) {
