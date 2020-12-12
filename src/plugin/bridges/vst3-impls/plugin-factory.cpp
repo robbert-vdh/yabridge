@@ -20,8 +20,10 @@
 
 #include "component.h"
 
-YaPluginFactoryPluginImpl::YaPluginFactoryPluginImpl(Vst3PluginBridge& bridge)
-    : bridge(bridge) {}
+YaPluginFactoryPluginImpl::YaPluginFactoryPluginImpl(
+    Vst3PluginBridge& bridge,
+    YaPluginFactory::ConstructArgs&& args)
+    : YaPluginFactory(std::move(args)), bridge(bridge) {}
 
 tresult PLUGIN_API
 YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,

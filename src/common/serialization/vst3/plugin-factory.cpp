@@ -21,12 +21,10 @@
 
 #include <public.sdk/source/vst/utility/stringconvert.h>
 
-YaPluginFactory::YaPluginFactory(){FUNKNOWN_CTOR}
+YaPluginFactory::ConstructArgs::ConstructArgs() {}
 
-YaPluginFactory::YaPluginFactory(
+YaPluginFactory::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::IPluginFactory> factory) {
-    FUNKNOWN_CTOR
-
     known_iids.insert(factory->iid);
     // `IPluginFactory::getFactoryInfo`
     if (Steinberg::PFactoryInfo info;
@@ -75,7 +73,11 @@ YaPluginFactory::YaPluginFactory(
     }
 }
 
-YaPluginFactory::~YaPluginFactory() {
+YaPluginFactory::YaPluginFactory(const ConstructArgs&& args)
+    : arguments(std::move(args)){FUNKNOWN_CTOR}
+
+      // clang-format just doesn't understand these macros, I guess
+      YaPluginFactory::~YaPluginFactory() {
     FUNKNOWN_DTOR
 }
 
@@ -88,15 +90,15 @@ tresult PLUGIN_API YaPluginFactory::queryInterface(Steinberg::FIDString _iid,
                                                    void** obj) {
     QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
                     Steinberg::IPluginFactory)
-    if (known_iids.contains(Steinberg::IPluginFactory::iid)) {
+    if (arguments.known_iids.contains(Steinberg::IPluginFactory::iid)) {
         QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory::iid,
                         Steinberg::IPluginFactory)
     }
-    if (known_iids.contains(Steinberg::IPluginFactory2::iid)) {
+    if (arguments.known_iids.contains(Steinberg::IPluginFactory2::iid)) {
         QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory2::iid,
                         Steinberg::IPluginFactory2)
     }
-    if (known_iids.contains(Steinberg::IPluginFactory3::iid)) {
+    if (arguments.known_iids.contains(Steinberg::IPluginFactory3::iid)) {
         QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory3::iid,
                         Steinberg::IPluginFactory3)
     }
@@ -107,8 +109,8 @@ tresult PLUGIN_API YaPluginFactory::queryInterface(Steinberg::FIDString _iid,
 
 tresult PLUGIN_API
 YaPluginFactory::getFactoryInfo(Steinberg::PFactoryInfo* info) {
-    if (info && factory_info) {
-        *info = *factory_info;
+    if (info && arguments.factory_info) {
+        *info = *arguments.factory_info;
         return Steinberg::kResultOk;
     } else {
         return Steinberg::kNotInitialized;
@@ -116,17 +118,17 @@ YaPluginFactory::getFactoryInfo(Steinberg::PFactoryInfo* info) {
 }
 
 int32 PLUGIN_API YaPluginFactory::countClasses() {
-    return num_classes;
+    return arguments.num_classes;
 }
 
 tresult PLUGIN_API YaPluginFactory::getClassInfo(Steinberg::int32 index,
                                                  Steinberg::PClassInfo* info) {
-    if (index >= static_cast<int32>(class_infos_unicode.size())) {
+    if (index >= static_cast<int32>(arguments.class_infos_unicode.size())) {
         return Steinberg::kInvalidArgument;
     }
 
-    if (class_infos_1[index]) {
-        *info = *class_infos_1[index];
+    if (arguments.class_infos_1[index]) {
+        *info = *arguments.class_infos_1[index];
         return Steinberg::kResultOk;
     } else {
         return Steinberg::kResultFalse;
@@ -135,12 +137,12 @@ tresult PLUGIN_API YaPluginFactory::getClassInfo(Steinberg::int32 index,
 
 tresult PLUGIN_API
 YaPluginFactory::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
-    if (index >= static_cast<int32>(class_infos_1.size())) {
+    if (index >= static_cast<int32>(arguments.class_infos_1.size())) {
         return Steinberg::kInvalidArgument;
     }
 
-    if (class_infos_2[index]) {
-        *info = *class_infos_2[index];
+    if (arguments.class_infos_2[index]) {
+        *info = *arguments.class_infos_2[index];
         return Steinberg::kResultOk;
     } else {
         return Steinberg::kResultFalse;
@@ -150,12 +152,12 @@ YaPluginFactory::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
 tresult PLUGIN_API
 YaPluginFactory::getClassInfoUnicode(int32 index,
                                      Steinberg::PClassInfoW* info) {
-    if (index >= static_cast<int32>(class_infos_unicode.size())) {
+    if (index >= static_cast<int32>(arguments.class_infos_unicode.size())) {
         return Steinberg::kInvalidArgument;
     }
 
-    if (class_infos_unicode[index]) {
-        *info = *class_infos_unicode[index];
+    if (arguments.class_infos_unicode[index]) {
+        *info = *arguments.class_infos_unicode[index];
         return Steinberg::kResultOk;
     } else {
         return Steinberg::kResultFalse;

@@ -92,13 +92,6 @@ class Vst3Bridge : public HostBridge {
     Vst3Sockets<Win32Thread> sockets;
 
     /**
-     * A plugin factory copied from the Windows VST3 plugin during
-     * initialization. The native VST3 plugin will request a copy of this
-     * information during its initialization.
-     */
-    std::unique_ptr<YaPluginFactory> plugin_factory;
-
-    /**
      * Used to assign unique identifier to instances created for
      * `IPluginFactory::createInstance()`.
      *

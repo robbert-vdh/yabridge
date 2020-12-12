@@ -20,7 +20,8 @@
 
 class YaPluginFactoryPluginImpl : public YaPluginFactory {
    public:
-    YaPluginFactoryPluginImpl(Vst3PluginBridge& bridge);
+    YaPluginFactoryPluginImpl(Vst3PluginBridge& bridge,
+                              YaPluginFactory::ConstructArgs&& args);
 
     tresult PLUGIN_API createInstance(Steinberg::FIDString cid,
                                       Steinberg::FIDString _iid,

@@ -3,12 +3,6 @@
 TODO: Once this is more fleshed out, move this document to `docs/`, and perhaps
 replace this readme with a link to that document.
 
-TODO: There are now two approaches in use: the factory takes an interface
-pointer for serialization and deserializes into an object directly, and the
-component uses an args struct because the alternative involving pointers is just
-too unsafe (as we also have to communicate additional payload data). This should
-probably be unified into only using the latter appraoch.
-
 The VST3 SDK uses an architecture where every object inherits from an interface,
 and every interface inherits from `FUnknown` which offers a dynamic casting
 interface through `queryInterface()`. Every interface gets a unique identifier.
@@ -29,6 +23,11 @@ operation on the component implementing the interface.
 Yabridge's serialization and communication model for VST3 is thus a lot more
 complicated than for VST2 since all of these objects are loosely coupled and are
 instantiated and managed by the host. The model works as follows:
+
+TODO: This is now slightly out of date. Instead of serializing and deserializing
+directly into interface implementations through references, we now only pass
+structs with payload data around to make the receiving process much more
+flexible.
 
 1. For an interface `IFoo`, we provide a possibly abstract implementation called
    `YaFoo`.

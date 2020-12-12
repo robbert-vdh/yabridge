@@ -17,7 +17,6 @@
 #include "vst3.h"
 
 #include "../boost-fix.h"
-#include "vst3-impls.h"
 
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
@@ -35,11 +34,6 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
     }
 
     sockets.connect();
-
-    // Serialize the plugin's plugin factory. The native VST3 plugin will
-    // request a copy of this during its initialization.
-    plugin_factory =
-        std::make_unique<YaPluginFactoryHostImpl>(module->getFactory().get());
 
     // Fetch this instance's configuration from the plugin to finish the setup
     // process
@@ -82,8 +76,10 @@ void Vst3Bridge::run() {
                 -> YaComponent::Terminate::Response {
                 return component_instances[request.instance_id]->terminate();
             },
-            [&](const WantsPluginFactory&) -> WantsPluginFactory::Response {
-                return *plugin_factory;
+            [&](const YaPluginFactory::Construct&)
+                -> YaPluginFactory::Construct::Response {
+                return YaPluginFactory::ConstructArgs(
+                    module->getFactory().get());
             }});
 }
 

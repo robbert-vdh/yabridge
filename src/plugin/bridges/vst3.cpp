@@ -97,10 +97,12 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
         // will request after loading the module. Host callback handlers should
         // have started before this since the Wine plugin host will request a
         // copy of the configuration during its initialization.
-        plugin_factory = new YaPluginFactoryPluginImpl(*this);
-        sockets.host_vst_control.receive_into(
-            WantsPluginFactory{}, *plugin_factory,
-            std::pair<Vst3Logger&, bool>(logger, true));
+        YaPluginFactory::ConstructArgs factory_args =
+            sockets.host_vst_control.send_message(
+                YaPluginFactory::Construct{},
+                std::pair<Vst3Logger&, bool>(logger, true));
+        plugin_factory =
+            new YaPluginFactoryPluginImpl(*this, std::move(factory_args));
     }
 
     return plugin_factory;

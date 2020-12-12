@@ -45,15 +45,15 @@ void Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaPluginFactory::Construct&) {
+    log_request_base(is_host_vst,
+                     [](auto& message) { message << "GetPluginFactory()"; });
+}
+
 void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     log_request_base(is_host_vst, [](auto& message) {
         message << "Requesting <Configuration>";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst, const WantsPluginFactory&) {
-    log_request_base(is_host_vst, [](auto& message) {
-        message << "Requesting <IPluginFactory*>";
     });
 }
 
@@ -76,16 +76,15 @@ void Vst3Logger::log_response(
     });
 }
 
+void Vst3Logger::log_response(bool is_host_vst,
+                              const YaPluginFactory::ConstructArgs& args) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << "<IPluginFactory*> with " << args.num_classes
+                << " registered classes";
+    });
+}
+
 void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
     log_response_base(is_host_vst,
                       [](auto& message) { message << "<Configuration"; });
-}
-
-void Vst3Logger::log_response(bool is_host_vst,
-                              const YaPluginFactory& factory) {
-    log_response_base(is_host_vst, [&](auto& message) {
-        message << "<IPluginFactory*> with "
-                << const_cast<YaPluginFactory&>(factory).countClasses()
-                << " registered classes";
-    });
 }
