@@ -42,6 +42,15 @@ class Vst3Logger {
         logger.log_trace(message);
     }
 
+    /**
+     * Log about encountering an unknown interface. The location and the UID
+     * will be printed when the verbosity level is set to `most_events` or
+     * higher. In case we could not get a FUID (because of null pointers, for
+     * instance), `std::nullopt` should be passed.
+     */
+    void log_unknown_interface(const std::string& where,
+                               const std::optional<Steinberg::FUID>& uid);
+
     // For every object we send using `Vst3MessageHandler` we have overloads
     // that print information about the request and the response. The boolean
     // flag here indicates whether the request was initiated on the host side

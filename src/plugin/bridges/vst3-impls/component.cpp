@@ -29,8 +29,7 @@ YaComponentPluginImpl::~YaComponentPluginImpl() {
 }
 
 tresult PLUGIN_API
-YaComponentPluginImpl::queryInterface(const ::Steinberg::TUID _iid,
-                                      void** obj) {
+YaComponentPluginImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
     // TODO: Log when this fails on debug level 1, and on debug level 2 also log
     //       successful queries. This behaviour should be implemented for all
     //       interfaces.
@@ -46,16 +45,9 @@ tresult PLUGIN_API YaComponentPluginImpl::initialize(FUnknown* context) {
     if (host_application_context) {
         // TODO: Init with `YaHostApplication`
     } else {
-        context->iid;
-
-        char iid_string[128] = "<invalid_pointer>";
-        if (context) {
-            context->iid.print(iid_string,
-                               Steinberg::FUID::UIDPrintStyle::kCLASS_UID);
-        }
-
-        bridge.logger.log("[Unknown interface] In IPluginBase::initialize(): " +
-                          std::string(iid_string));
+        bridge.logger.log_unknown_interface(
+            "In IPluginBase::initialize()",
+            context ? std::optional(context->iid) : std::nullopt);
 
         // TODO: Init with null pointer
     }

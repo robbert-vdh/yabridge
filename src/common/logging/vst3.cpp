@@ -18,9 +18,23 @@
 
 #include "src/common/serialization/vst3.h"
 
-// TODO: Reconsider the output format
-
 Vst3Logger::Vst3Logger(Logger& generic_logger) : logger(generic_logger) {}
+
+void Vst3Logger::log_unknown_interface(
+    const std::string& where,
+    const std::optional<Steinberg::FUID>& uid) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
+        char uid_string[128] = "<invalid_pointer>";
+        if (uid) {
+            uid->print(uid_string, Steinberg::FUID::UIDPrintStyle::kCLASS_UID);
+        }
+
+        std::ostringstream message;
+        message << "[unknown interface] " << where << ": " << uid_string;
+
+        log(message.str());
+    }
+}
 
 void Vst3Logger::log_request(bool is_host_vst, const YaComponent::Construct&) {
     log_request_base(is_host_vst, [](auto& message) {

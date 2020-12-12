@@ -36,7 +36,7 @@ class YaComponentPluginImpl : public YaComponent {
      * We'll override the query interface to log queries for interfaces we do
      * not (yet) support.
      */
-    tresult PLUGIN_API queryInterface(const ::Steinberg::TUID _iid,
+    tresult PLUGIN_API queryInterface(const Steinberg::TUID _iid,
                                       void** obj) override;
 
     tresult PLUGIN_API initialize(FUnknown* context) override;
@@ -66,7 +66,9 @@ class YaComponentPluginImpl : public YaComponent {
 
     /**
      * An `IHostApplication` instance if we get one through
-     * `IPluginBase::initialize()`.
+     * `IPluginBase::initialize()`. This should be the same for all plugin
+     * instances so we should not have to store it here separately, but for the
+     * sake of correctness we will.
      */
     Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication>
         host_application_context;
