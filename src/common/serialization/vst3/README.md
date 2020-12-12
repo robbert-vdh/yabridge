@@ -53,6 +53,11 @@ instantiated and managed by the host. The model works as follows:
    would be on the side of the native plugin) should then provide a `YaFoo{Plugin,Host}Impl`
    that implements those functions through yabridge's `Vst3MessageHandler`
    callback interface.
+7. If the `IFoo` has side effects and thus needs a corresonding 'real' isntance
+   on the other side to communicate to, then `YaFoo{Plugin,Host}Impl` should
+   implement a destructor that destroys the 'real' object when `YaFoo` proxy
+   gets destroyed. See [interface instantiation](#interface-instantiation) for
+   more information.
 
 ## Interface Instantiation
 
@@ -65,7 +70,7 @@ follows:
    the interface, we'll log a message about it and return that we do not support
    the itnerface.
 3. If we determine that `_iid` matches `IFoo`, then we'll send a
-   `YaFoo::Create{cid}` to the Wine plugin host process.
+   `YaFoo::Construct{cid}` to the Wine plugin host process.
 4. The Wine plugin host will then call
    `module->getFactory().createInstance<IFoo>(cid)` using the Windows VST3
    plugin's plugin factory to ask it to create an instance of that interface. If
