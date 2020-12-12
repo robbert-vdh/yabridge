@@ -18,11 +18,14 @@
 
 YaComponentPluginImpl::YaComponentPluginImpl(Vst3PluginBridge& bridge,
                                              YaComponent::ConstructArgs&& args)
-    : YaComponent(std::move(args)), bridge(bridge) {}
+    : YaComponent(std::move(args)), bridge(bridge) {
+    bridge.register_component(arguments.instance_id, *this);
+}
 
 YaComponentPluginImpl::~YaComponentPluginImpl() {
     bridge.send_message(
         YaComponent::Destruct{.instance_id = arguments.instance_id});
+    bridge.unregister_component(arguments.instance_id);
 }
 
 tresult PLUGIN_API
