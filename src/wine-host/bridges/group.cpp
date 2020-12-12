@@ -111,7 +111,7 @@ GroupBridge::~GroupBridge() {
     stdio_context.stop();
 }
 
-void GroupBridge::handle_plugin_dispatch(size_t plugin_id, HostBridge* bridge) {
+void GroupBridge::handle_plugin_run(size_t plugin_id, HostBridge* bridge) {
     // Blocks this thread until the plugin shuts down
     bridge->run();
     logger.log("'" + bridge->plugin_path.string() + "' has exited");
@@ -236,7 +236,7 @@ void GroupBridge::accept_requests() {
                 const size_t plugin_id = next_plugin_id.fetch_add(1);
                 active_plugins[plugin_id] = std::pair(
                     Win32Thread([this, plugin_id, plugin_ptr = bridge.get()]() {
-                        handle_plugin_dispatch(plugin_id, plugin_ptr);
+                        handle_plugin_run(plugin_id, plugin_ptr);
                     }),
                     std::move(bridge));
             } catch (const std::runtime_error& error) {

@@ -148,7 +148,7 @@ class GroupBridge {
      *   then the process will never exit on its own. This should not happen
      *   though.
      */
-    void handle_plugin_dispatch(size_t plugin_id, HostBridge* bridge);
+    void handle_plugin_run(size_t plugin_id, HostBridge* bridge);
 
     /**
      * Listen for new requests to spawn plugins within this process and handle
@@ -164,14 +164,14 @@ class GroupBridge {
      * the yabridge instance can tell if the plugin crashed during
      * initialization, and it will then try to initialize the plugin. After
      * intialization the plugin handling will be handed over to a new thread
-     * running `handle_plugin_dispatch()`. Because of the way the Win32 API
-     * works, all plugins have to be initialized from the same thread, and all
-     * event handling and message loop interaction also has to be done from that
+     * running `handle_plugin_run()`. Because of the way the Win32 API works,
+     * all plugins have to be initialized from the same thread, and all event
+     * handling and message loop interaction also has to be done from that
      * thread, which is why we initialize the plugin here and use the
      * `handle_dispatch()` function to run events within the same
      * `main_context`.
      *
-     * @see handle_plugin_dispatch
+     * @see handle_plugin_run
      */
     void accept_requests();
 
@@ -263,7 +263,7 @@ class GroupBridge {
     std::atomic_size_t next_plugin_id;
     /**
      * A mutex to prevent two threads from simultaneously accessing the plugins
-     * map, and also to prevent `handle_plugin_dispatch()` from terminating the
+     * map, and also to prevent `handle_plugin_run()` from terminating the
      * process because it thinks there are no active plugins left just as a new
      * plugin is being spawned.
      */
@@ -274,7 +274,7 @@ class GroupBridge {
      * scanning without having to start a new group host process for each
      * plugin.
      *
-     * @see handle_plugin_dispatch
+     * @see handle_plugin_run
      */
     boost::asio::steady_timer shutdown_timer;
     /**
