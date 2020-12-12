@@ -1,6 +1,7 @@
 # yabridge
 
 [![Automated builds](https://github.com/robbert-vdh/yabridge/workflows/Automated%20builds/badge.svg?branch=master&event=push)](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)
+[![Discord](https://img.shields.io/discord/786993304197267527.svg?label=Discord&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/pyNeweqadf)
 
 Yet Another way to use Windows VST plugins on Linux. Yabridge seamlessly
 supports running both 64-bit Windows VST2 plugins as well as 32-bit Windows VST2
@@ -328,6 +329,10 @@ group = "izotope"
 ```
 
 ## Troubleshooting common issues
+
+If your problem is not listed here, then feel free to post on the [issue
+tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask in the
+[Discord](https://discord.gg/pyNeweqadf).
 
 - If you have the `WINEPREFIX` environment variable set and you _don't_ want all
   of your plugins to use that specific Wine prefix then you should unset it to

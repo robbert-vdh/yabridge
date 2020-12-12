@@ -111,17 +111,8 @@ GroupBridge::~GroupBridge() {
     stdio_context.stop();
 }
 
-void GroupBridge::handle_plugin_dispatch(size_t plugin_id) {
-    // At this point the `active_plugins` map will already contain the
-    // intialized plugin's `Vst2Bridge` instance and this thread's handle
-    HostBridge* bridge;
-    {
-        std::lock_guard lock(active_plugins_mutex);
-        bridge = active_plugins[plugin_id].second.get();
-    }
-
-    // Blocks this thread until the plugin shuts down, handling all events on
-    // the main IO context
+void GroupBridge::handle_plugin_dispatch(size_t plugin_id, HostBridge* bridge) {
+    // Blocks this thread until the plugin shuts down
     bridge->run();
     logger.log("'" + bridge->plugin_path.string() + "' has exited");
 
@@ -232,16 +223,22 @@ void GroupBridge::accept_requests() {
                            "'");
 
                 // Start listening for dispatcher events sent to the plugin's
-                // socket on another thread. The actual event handling will
-                // still be posted to this IO context so that every plugin's
-                // primary event handling happens on the main thread. Since this
-                // is only used within this context we don't need any locks.
+                // socket on another thread. Parts of the actual event handling
+                // will still be posted to this IO context so that any events
+                // that potentially interact with the Win32 message loop are
+                // handled from the main thread. We also pass a raw pointer to
+                // the plugin so we don't have to immediately look the instance
+                // up in the map again, as this would require us to immediately
+                // lock the map again. This could otherwise result in a deadlock
+                // when using the Spitfire plugins, as they will block the
+                // message loop until `effOpen()` has been called and thus
+                // prevent this lock from happening.
                 const size_t plugin_id = next_plugin_id.fetch_add(1);
-                active_plugins[plugin_id] =
-                    std::pair(Win32Thread([this, plugin_id]() {
-                                  handle_plugin_dispatch(plugin_id);
-                              }),
-                              std::move(bridge));
+                active_plugins[plugin_id] = std::pair(
+                    Win32Thread([this, plugin_id, plugin_ptr = bridge.get()]() {
+                        handle_plugin_dispatch(plugin_id, plugin_ptr);
+                    }),
+                    std::move(bridge));
             } catch (const std::runtime_error& error) {
                 logger.log("Error while initializing '" + request.plugin_path +
                            "':");
