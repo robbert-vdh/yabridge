@@ -72,6 +72,14 @@ void Vst3Bridge::run() {
 
                 return Ack{};
             },
+            [&](const YaComponent::Initialize& request)
+                -> YaComponent::Initialize::Response {
+                // TODO: If `request.host_context_args` has a value, we should
+                //       initialize a proxy object and pass a pointer to that
+                //       instead
+                return component_instances[request.instance_id]->initialize(
+                    nullptr);
+            },
             [&](const YaComponent::Terminate& request)
                 -> YaComponent::Terminate::Response {
                 return component_instances[request.instance_id]->terminate();

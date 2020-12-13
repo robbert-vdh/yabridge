@@ -59,6 +59,7 @@ struct WantsConfiguration {
  */
 using ControlRequest = std::variant<YaComponent::Construct,
                                     YaComponent::Destruct,
+                                    YaComponent::Initialize,
                                     YaComponent::Terminate,
                                     YaPluginFactory::Construct>;
 

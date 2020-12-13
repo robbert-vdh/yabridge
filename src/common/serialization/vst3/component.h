@@ -27,6 +27,7 @@
 
 #include "../common.h"
 #include "base.h"
+#include "host-application.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -125,6 +126,29 @@ class YaComponent : public Steinberg::Vst::IComponent {
     DECLARE_FUNKNOWN_METHODS
 
     // From `IPluginBase`
+
+    /**
+     * Message to pass through a call to `IPluginBase::initialize()` to the Wine
+     * plugin host. if we pass an `IHostApplication` instance, then a proxy
+     * `YaHostApplication` should be created and passed as an argument to
+     * `IPluginBase::initialize()`. If this is absent a null pointer should be
+     * passed. The lifetime of this `YaHostApplication` object should be bound
+     * to the `IComponent` we are proxying.
+     */
+    struct Initialize {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+        std::optional<YaHostApplication::ConstructArgs>
+            host_application_context_args;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.ext(host_application_context_args, bitsery::ext::StdOptional{});
+        }
+    };
+
     virtual tresult PLUGIN_API initialize(FUnknown* context) override = 0;
 
     /**

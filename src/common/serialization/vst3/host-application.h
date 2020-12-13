@@ -68,7 +68,7 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
         void serialize(S& s) {
             s.value8b(component_instance_id);
             s.ext(name, bitsery::ext::StdOptional{},
-                  [](S& s, std::string& name) {
+                  [](S& s, std::u16string& name) {
                       s.text2b(name, std::extent_v<Steinberg::Vst::String128>);
                   });
         }
@@ -78,9 +78,9 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
      * Instantiate this instance with arguments read from an actual host
      * context.
      *
-     * @note Since this is passed as part of ``IPluginBase::intialize()` and
-     *   `IPluginFactory3::setHostContext()``, there are no direct `Construct`
-     *   or `Destruct` messages. This object's lifetime is bound to that of the
+     * @note Since this is passed as part of `IPluginBase::intialize()` and
+     *   `IPluginFactory3::setHostContext()`, there are no direct `Construct` or
+     *   `Destruct` messages. This object's lifetime is bound to that of the
      *   objects they are passed to. If those objects get dropped, then the host
      *   contexts should also be dropped.
      *

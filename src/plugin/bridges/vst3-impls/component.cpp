@@ -45,18 +45,24 @@ tresult PLUGIN_API YaComponentPluginImpl::initialize(FUnknown* context) {
     // side. Otherwise we'll still call `IPluginBase::initialize()` but with a
     // null pointer instead.
     host_application_context = context;
+
+    std::optional<YaHostApplication::ConstructArgs>
+        host_application_context_args = std::nullopt;
     if (host_application_context) {
-        // TODO: Init with `YaHostApplication`
+        host_application_context_args = YaHostApplication::ConstructArgs(
+            host_application_context, arguments.instance_id);
     } else {
         bridge.logger.log_unknown_interface(
             "In IPluginBase::initialize()",
             context ? std::optional(context->iid) : std::nullopt);
-
-        // TODO: Init with null pointer
     }
 
-    // TODO: Implement
-    return Steinberg::kNotImplemented;
+    return bridge
+        .send_message(YaComponent::Initialize{
+            .instance_id = arguments.instance_id,
+            .host_application_context_args =
+                std::move(host_application_context_args)})
+        .native();
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::terminate() {

@@ -53,6 +53,19 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::Initialize& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IComponent* #" << request.instance_id << ">::initialize(";
+        if (request.host_application_context_args) {
+            message << "IHostApplication*";
+        } else {
+            message << "nullptr";
+        }
+        message << ")";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
                              const YaComponent::Terminate& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IComponent* #" << request.instance_id << ">::terminate()";
