@@ -25,6 +25,34 @@
 #include "common.h"
 
 /**
+ * A holder for an `IComponent` instance created from the factory along with any
+ * host context proxy objects belonging to it, and several predefined
+ * `FUnknownPtrs` so we don't have to do these dynamic casts all the times..
+ */
+struct ComponentInstance {
+    ComponentInstance();
+
+    ComponentInstance(Steinberg::IPtr<Steinberg::Vst::IComponent> component);
+
+    /**
+     * If the host passes an `IHostApplication` during
+     * `IPluginBase::initialize()`, we'll store a proxy object here and then
+     * pass it to `component->initialize()`.
+     */
+    Steinberg::IPtr<YaHostApplication> hsot_application_context;
+
+    /**
+     * The `IComponent` instance we created.
+     */
+    Steinberg::IPtr<Steinberg::Vst::IComponent> component;
+
+    // All smart pointers below are created from `component`. They will be null
+    // pointers if `component` did not implement the interface.
+
+    // TODO: Implement things like `IConnectionPoint` and `IAudioProcessor`
+};
+
+/**
  * This hosts a Windows VST3 plugin, forwards messages sent by the Linux VST
  * plugin and provides host callback function for the plugin to talk back.
  */
@@ -112,22 +140,6 @@ class Vst3Bridge : public HostBridge {
     // instances. The mutexes are used for operations that insert or remove
     // items, and not for regular access.
 
-    std::map<size_t, Steinberg::IPtr<Steinberg::Vst::IComponent>>
-        component_instances;
+    std::map<size_t, ComponentInstance> component_instances;
     std::mutex component_instances_mutex;
-
-    /**
-     * If an `IHostApplication` was passed during
-     * `{IPluginBase,IComponent}::initialize()`, then we'll store a proxy object
-     * here. The instance ID is the same as the corresponding instance ID in
-     * `component_instances`. When an instance gets removed from
-     * `component_instances`, it should also be removed from here.
-     *
-     * XXX: If it turns out we need to keep track of more of these kinds of
-     *      objects, then we should create a wrapper so that everything can stay
-     *      in `component_instances`
-     */
-    std::map<size_t, Steinberg::IPtr<YaHostApplication>>
-        component_host_application_context_instances;
-    std::mutex component_host_application_context_instance_mutex;
 };

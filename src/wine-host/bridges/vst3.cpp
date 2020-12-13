@@ -22,6 +22,12 @@
 
 #include "vst3-impls/host-application.h"
 
+ComponentInstance::ComponentInstance() {}
+
+ComponentInstance::ComponentInstance(
+    Steinberg::IPtr<Steinberg::Vst::IComponent> component)
+    : component(component) {}
+
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
                        std::string endpoint_base_dir)
@@ -44,6 +50,11 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
 }
 
 void Vst3Bridge::run() {
+    // XXX: In theory all of thise should be safe assuming the host doesn't do
+    //      anything weird. We're using mutexes when inserting and removing
+    //      things, but for correctness we should have a multiple-readers
+    //      single-writer style lock since concurrent reads and writes can also
+    //      be unsafe.
     sockets.host_vst_control.receive_messages(
         std::nullopt,
         overload{
@@ -61,7 +72,8 @@ void Vst3Bridge::run() {
                     component_instances[instance_id] = std::move(component);
 
                     return YaComponent::ConstructArgs(
-                        component_instances[instance_id], instance_id);
+                        component_instances[instance_id].component,
+                        instance_id);
                 } else {
                     // The actual result is lost here
                     return UniversalTResult(Steinberg::kNotImplemented);
@@ -69,15 +81,8 @@ void Vst3Bridge::run() {
             },
             [&](const YaComponent::Destruct& request)
                 -> YaComponent::Destruct::Response {
-                std::scoped_lock lock(
-                    component_instances_mutex,
-                    component_host_application_context_instance_mutex);
+                std::lock_guard lock(component_instances_mutex);
                 component_instances.erase(request.instance_id);
-                if (component_host_application_context_instances.contains(
-                        request.instance_id)) {
-                    component_host_application_context_instances.erase(
-                        request.instance_id);
-                }
 
                 return Ack{};
             },
@@ -88,40 +93,39 @@ void Vst3Bridge::run() {
                 // be cleaned up again during `YaComponent::Destruct`.
                 Steinberg::FUnknown* context = nullptr;
                 if (request.host_application_context_args) {
-                    // TODO: Is this safe? These Steinberg smart pointers are
-                    //       scary
-                    component_host_application_context_instances
-                        [request.instance_id] =
-                            Steinberg::owned(new YaHostApplicationHostImpl(
-                                *this,
-                                std::move(
-                                    *request.host_application_context_args)));
-                    context = component_host_application_context_instances
-                        [request.instance_id];
+                    component_instances[request.instance_id]
+                        .hsot_application_context =
+                        Steinberg::owned(new YaHostApplicationHostImpl(
+                            *this,
+                            std::move(*request.host_application_context_args)));
+                    context = component_instances[request.instance_id]
+                                  .hsot_application_context;
                 }
 
-                return component_instances[request.instance_id]->initialize(
-                    context);
+                return component_instances[request.instance_id]
+                    .component->initialize(context);
             },
             [&](const YaComponent::Terminate& request)
                 -> YaComponent::Terminate::Response {
-                return component_instances[request.instance_id]->terminate();
+                return component_instances[request.instance_id]
+                    .component->terminate();
             },
             [&](const YaComponent::SetIoMode& request)
                 -> YaComponent::SetIoMode::Response {
-                return component_instances[request.instance_id]->setIoMode(
-                    request.mode);
+                return component_instances[request.instance_id]
+                    .component->setIoMode(request.mode);
             },
             [&](const YaComponent::GetBusCount& request)
                 -> YaComponent::GetBusCount::Response {
-                return component_instances[request.instance_id]->getBusCount(
-                    request.type, request.dir);
+                return component_instances[request.instance_id]
+                    .component->getBusCount(request.type, request.dir);
             },
             [&](YaComponent::GetBusInfo& request)
                 -> YaComponent::GetBusInfo::Response {
                 const tresult result =
-                    component_instances[request.instance_id]->getBusInfo(
-                        request.type, request.dir, request.index, request.bus);
+                    component_instances[request.instance_id]
+                        .component->getBusInfo(request.type, request.dir,
+                                               request.index, request.bus);
 
                 return YaComponent::GetBusInfoResponse{
                     .result = result, .updated_bus = request.bus};
