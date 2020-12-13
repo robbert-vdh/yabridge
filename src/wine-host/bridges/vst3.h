@@ -108,4 +108,19 @@ class Vst3Bridge : public HostBridge {
     std::map<size_t, Steinberg::IPtr<Steinberg::Vst::IComponent>>
         component_instances;
     std::mutex component_instances_mutex;
+
+    /**
+     * If an `IHostApplication` was passed during
+     * `{IPluginBase,IComponent}::initialize()`, then we'll store a proxy object
+     * here. The instance ID is the same as the corresponding instance ID in
+     * `component_instances`. When an instance gets removed from
+     * `component_instances`, it should also be removed from here.
+     *
+     * XXX: If it turns out we need to keep track of more of these kinds of
+     *      objects, then we should create a wrapper so that everything can stay
+     *      in `component_instances`
+     */
+    std::map<size_t, Steinberg::IPtr<YaHostApplication>>
+        component_host_application_context_instances;
+    std::mutex component_host_application_context_instance_mutex;
 };

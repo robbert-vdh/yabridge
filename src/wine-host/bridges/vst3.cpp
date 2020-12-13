@@ -20,6 +20,8 @@
 
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
+#include "vst3-impls/host-application.h"
+
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
                        std::string endpoint_base_dir)
@@ -67,18 +69,39 @@ void Vst3Bridge::run() {
             },
             [&](const YaComponent::Destruct& request)
                 -> YaComponent::Destruct::Response {
-                std::lock_guard lock(component_instances_mutex);
+                std::scoped_lock lock(
+                    component_instances_mutex,
+                    component_host_application_context_instance_mutex);
                 component_instances.erase(request.instance_id);
+                if (component_host_application_context_instances.contains(
+                        request.instance_id)) {
+                    component_host_application_context_instances.erase(
+                        request.instance_id);
+                }
 
                 return Ack{};
             },
-            [&](const YaComponent::Initialize& request)
+            [&](YaComponent::Initialize& request)
                 -> YaComponent::Initialize::Response {
-                // TODO: If `request.host_context_args` has a value, we should
-                //       initialize a proxy object and pass a pointer to that
-                //       instead
+                // If we got passed a host context, we'll create a proxy object
+                // and pass that to the initialize function. This object should
+                // be cleaned up again during `YaComponent::Destruct`.
+                Steinberg::FUnknown* context = nullptr;
+                if (request.host_application_context_args) {
+                    // TODO: Is this safe? These Steinberg smart pointers are
+                    //       scary
+                    component_host_application_context_instances
+                        [request.instance_id] =
+                            Steinberg::owned(new YaHostApplicationHostImpl(
+                                *this,
+                                std::move(
+                                    *request.host_application_context_args)));
+                    context = component_host_application_context_instances
+                        [request.instance_id];
+                }
+
                 return component_instances[request.instance_id]->initialize(
-                    nullptr);
+                    context);
             },
             [&](const YaComponent::Terminate& request)
                 -> YaComponent::Terminate::Response {

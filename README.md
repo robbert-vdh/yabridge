@@ -18,7 +18,7 @@ imcomplete list of things that still have to be done before this can be used:
 - Left to implement:
   - `YaHostApplicationHostImpl::createComponent`.
   - `IPluginFactory3::setHostContext()` using the same host application context proxy method.
-  - The rest of `IComponent`'s functions after implementing `intialize()`
+  - The rest of `IComponent`'s functions
   - `IPluginFactory3::setHostContext()`
   - All other mandatory interfaces
   - All other optional interfaces

@@ -180,7 +180,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                 // always know for sure that the function returns the correct
                 // type, and we can scrap a lot of boilerplate elsewhere.
                 std::visit(
-                    [&]<typename T>(const T object) {
+                    [&]<typename T>(T object) {
                         typename T::Response response = callback(object);
 
                         if (logging) {
