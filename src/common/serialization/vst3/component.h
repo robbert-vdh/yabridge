@@ -171,6 +171,25 @@ class YaComponent : public Steinberg::Vst::IComponent {
 
     // From `IComponent`
     tresult PLUGIN_API getControllerClassId(Steinberg::TUID classId) override;
+
+    /**
+     * Message to pass through a call to `IComponent::setIoMode(IoMode)` to the
+     * Wine plugin host.
+     */
+    struct SetIoMode {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::IoMode mode;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(mode);
+        }
+    };
+
     virtual tresult PLUGIN_API
     setIoMode(Steinberg::Vst::IoMode mode) override = 0;
     virtual int32 PLUGIN_API

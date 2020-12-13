@@ -61,6 +61,7 @@ using ControlRequest = std::variant<YaComponent::Construct,
                                     YaComponent::Destruct,
                                     YaComponent::Initialize,
                                     YaComponent::Terminate,
+                                    YaComponent::SetIoMode,
                                     YaPluginFactory::Construct,
                                     YaPluginFactory::SetHostContext>;
 

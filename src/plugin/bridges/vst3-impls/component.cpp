@@ -74,9 +74,10 @@ tresult PLUGIN_API YaComponentPluginImpl::terminate() {
 
 tresult PLUGIN_API
 YaComponentPluginImpl::setIoMode(Steinberg::Vst::IoMode mode) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IComponent::setIoMode()");
-    return Steinberg::kNotImplemented;
+    return bridge
+        .send_message(YaComponent::SetIoMode{
+            .instance_id = arguments.instance_id, .mode = mode})
+        .native();
 }
 
 int32 PLUGIN_API

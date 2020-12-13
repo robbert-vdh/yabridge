@@ -107,6 +107,11 @@ void Vst3Bridge::run() {
                 -> YaComponent::Terminate::Response {
                 return component_instances[request.instance_id]->terminate();
             },
+            [&](const YaComponent::SetIoMode& request)
+                -> YaComponent::SetIoMode::Response {
+                return component_instances[request.instance_id]->setIoMode(
+                    request.mode);
+            },
             [&](const YaPluginFactory::Construct&)
                 -> YaPluginFactory::Construct::Response {
                 return YaPluginFactory::ConstructArgs(
