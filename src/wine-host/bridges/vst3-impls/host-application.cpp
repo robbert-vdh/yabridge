@@ -43,5 +43,6 @@ YaHostApplicationHostImpl::createInstance(Steinberg::TUID cid,
                                           Steinberg::TUID _iid,
                                           void** obj) {
     // TODO: Implement
+    std::cerr << "TODO: IHostApplication::createInstance()" << std::endl;
     return Steinberg::kNotImplemented;
 }

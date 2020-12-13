@@ -75,6 +75,7 @@ tresult PLUGIN_API YaComponentPluginImpl::terminate() {
 tresult PLUGIN_API
 YaComponentPluginImpl::setIoMode(Steinberg::Vst::IoMode mode) {
     // TODO: Implement
+    bridge.logger.log("TODO: IComponent::setIoMode()");
     return Steinberg::kNotImplemented;
 }
 
@@ -82,6 +83,7 @@ int32 PLUGIN_API
 YaComponentPluginImpl::getBusCount(Steinberg::Vst::MediaType type,
                                    Steinberg::Vst::BusDirection dir) {
     // TODO: Implement
+    bridge.logger.log("TODO: IComponent::getBusCount()");
     return Steinberg::kNotImplemented;
 }
 
@@ -98,6 +100,7 @@ tresult PLUGIN_API YaComponentPluginImpl::getRoutingInfo(
     Steinberg::Vst::RoutingInfo& inInfo,
     Steinberg::Vst::RoutingInfo& outInfo /*out*/) {
     // TODO: Implement
+    bridge.logger.log("TODO: IComponent::getRoutingInfo()");
     return Steinberg::kNotImplemented;
 }
 
@@ -107,20 +110,24 @@ YaComponentPluginImpl::activateBus(Steinberg::Vst::MediaType type,
                                    int32 index,
                                    TBool state) {
     // TODO: Implement
+    bridge.logger.log("TODO: IComponent::activateBus()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::setActive(TBool state) {
     // TODO: Implement
+    bridge.logger.log("TODO: IComponent::setActive()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::setState(Steinberg::IBStream* state) {
     // TODO: Implement
+    bridge.logger.log("TODO: IComponent::setState()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::getState(Steinberg::IBStream* state) {
     // TODO: Implement
+    bridge.logger.log("TODO: IComponent::getState()");
     return Steinberg::kNotImplemented;
 }
