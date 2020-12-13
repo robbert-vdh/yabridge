@@ -94,7 +94,7 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
      * and we also track a `YaHostApplicationHostImpl` for the component with
      * instance id `x`, then that should also be dropped.
      */
-    ~YaHostApplication();
+    virtual ~YaHostApplication();
 
     DECLARE_FUNKNOWN_METHODS
 

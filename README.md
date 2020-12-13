@@ -16,8 +16,8 @@ This branch is still very far removed from being in a usable state. Below is an
 imcomplete list of things that still have to be done before this can be used:
 
 - Left to implement:
-  - `IHostApplication` implementations for both `IPluginBase::initialize()` as
-    well as for `IPluginFactory3::setHostContext()`.
+  - `YaHostApplicationHostImpl::createComponent`.
+  - `IPluginFactory3::setHostContext()` using the same host application context proxy method.
   - The rest of `IComponent`'s functions after implementing `intialize()`
   - `IPluginFactory3::setHostContext()`
   - All other mandatory interfaces

@@ -116,6 +116,7 @@ if with_vst3
     'src/common/serialization/vst3/component.cpp',
     'src/common/serialization/vst3/host-application.cpp',
     'src/common/serialization/vst3/plugin-factory.cpp',
+    'src/wine-host/bridges/vst3-impls/host-application.cpp',
     'src/wine-host/bridges/vst3.cpp',
   ]
 endif
