@@ -216,6 +216,45 @@ class YaComponent : public Steinberg::Vst::IComponent {
     virtual int32 PLUGIN_API
     getBusCount(Steinberg::Vst::MediaType type,
                 Steinberg::Vst::BusDirection dir) override = 0;
+
+    /**
+     * The response code and returned bus information for a call to
+     * `IComponent::getBusInfo(type, dir, index, bus <out>)`.
+     */
+    struct GetBusInfoResponse {
+        UniversalTResult result;
+        Steinberg::Vst::BusInfo updated_bus;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(updated_bus);
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IComponent::getBusInfo(type, dir,
+     * index, bus <out>)` to the Wine plugin host.
+     */
+    struct GetBusInfo {
+        using Response = GetBusInfoResponse;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::BusType type;
+        Steinberg::Vst::BusDirection dir;
+        int32 index;
+        Steinberg::Vst::BusInfo bus;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(type);
+            s.value4b(dir);
+            s.object(bus);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getBusInfo(Steinberg::Vst::MediaType type,
                Steinberg::Vst::BusDirection dir,
@@ -246,3 +285,17 @@ void serialize(
     std::variant<YaComponent::ConstructArgs, UniversalTResult>& result) {
     s.ext(result, bitsery::ext::StdVariant{});
 }
+
+namespace Steinberg {
+namespace Vst {
+template <typename S>
+void serialize(S& s, Steinberg::Vst::BusInfo& info) {
+    s.value4b(info.mediaType);
+    s.value4b(info.direction);
+    s.value4b(info.channelCount);
+    s.container2b(info.name);
+    s.value4b(info.busType);
+    s.value4b(info.flags);
+}
+}  // namespace Vst
+}  // namespace Steinberg
