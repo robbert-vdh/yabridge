@@ -134,9 +134,10 @@ YaComponentPluginImpl::activateBus(Steinberg::Vst::MediaType type,
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::setActive(TBool state) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IComponent::setActive()");
-    return Steinberg::kNotImplemented;
+    return bridge
+        .send_message(YaComponent::SetActive{
+            .instance_id = arguments.instance_id, .state = state})
+        .native();
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::setState(Steinberg::IBStream* state) {

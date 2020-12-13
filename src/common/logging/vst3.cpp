@@ -120,7 +120,16 @@ void Vst3Logger::log_request(bool is_host_vst,
         message << "<IComponent* #" << request.instance_id
                 << ">::activateBus(type = " << request.type
                 << ", dir = " << request.dir << ", index = " << request.index
-                << ", state = " << (request.state ? "true" : "false") << ">)";
+                << ", state = " << (request.state ? "true" : "false") << ")";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::SetActive& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IComponent* #" << request.instance_id
+                << ">::setActive(state = " << (request.state ? "true" : "false")
+                << ")";
     });
 }
 

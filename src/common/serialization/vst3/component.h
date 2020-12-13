@@ -330,6 +330,25 @@ class YaComponent : public Steinberg::Vst::IComponent {
                                            Steinberg::Vst::BusDirection dir,
                                            int32 index,
                                            TBool state) override = 0;
+
+    /**
+     * Message to pass through a call to `IComponent::setActive(state)` to the
+     * Wine plugin host.
+     */
+    struct SetActive {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        TBool state;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value1b(state);
+        }
+    };
+
     virtual tresult PLUGIN_API setActive(TBool state) override = 0;
     virtual tresult PLUGIN_API
     setState(Steinberg::IBStream* state) override = 0;
