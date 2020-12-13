@@ -15,7 +15,15 @@ highly compatible, while also staying easy to debug and maintain.
 This branch is still very far removed from being in a usable state. Below is an
 imcomplete list of things that still have to be done before this can be used:
 
-- Actually start implementing VST3 support.
+- Left to implement:
+  - `IHostApplication` for both `IPluginBase::initialize()` as well as for
+    `IPluginFactory3::setHostContext()`.
+  - The rest of `IComponent`'s functions after implementing `intialize()`
+  - `IPluginFactory3::setHostContext()`
+  - All other mandatory interfaces
+  - All other optional interfaces
+- Fully implemented:
+  - Nothing yet
 - Update the GitHub Actions workflows.
 - Update yabridgectl to handle buth VST2 and VST3 plugins.
 - Update all documentation to refer to VST2 and VST3 support separately, and
