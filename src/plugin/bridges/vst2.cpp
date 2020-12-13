@@ -444,8 +444,8 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     std::vector<std::vector<T>> input_buffers(plugin.numInputs,
                                               std::vector<T>(sample_frames));
     for (int channel = 0; channel < plugin.numInputs; channel++) {
-        std::copy(inputs[channel], inputs[channel] + sample_frames,
-                  input_buffers[channel].begin());
+        std::copy_n(inputs[channel], sample_frames,
+                    input_buffers[channel].begin());
     }
 
     const AudioBuffers request{input_buffers, sample_frames};
