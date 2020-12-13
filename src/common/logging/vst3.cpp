@@ -39,7 +39,8 @@ void Vst3Logger::log_unknown_interface(
 void Vst3Logger::log_request(bool is_host_vst, const YaComponent::Construct&) {
     log_request_base(is_host_vst, [](auto& message) {
         // TODO: Log the cid in some readable way, if possible
-        message << "IPluginFactory::createComponent(cid, IComponent::iid, "
+        message << "IPluginFactory::createComponent(cid = ..., _iid = "
+                   "IComponent::iid, "
                    "&obj)";
     });
 }
@@ -55,7 +56,8 @@ void Vst3Logger::log_request(bool is_host_vst,
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaComponent::Initialize& request) {
     log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IComponent* #" << request.instance_id << ">::initialize(";
+        message << "<IComponent* #" << request.instance_id
+                << ">::initialize(context = ";
         if (request.host_application_context_args) {
             message << "IHostApplication*";
         } else {
