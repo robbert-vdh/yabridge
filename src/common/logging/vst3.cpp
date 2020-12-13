@@ -75,24 +75,26 @@ void Vst3Logger::log_request(bool is_host_vst,
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaComponent::SetIoMode& request) {
     log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IComponent* #" << request.instance_id << ">::setIoMode("
-                << request.mode << ")";
+        message << "<IComponent* #" << request.instance_id
+                << ">::setIoMode(mode = " << request.mode << ")";
     });
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaComponent::GetBusCount& request) {
     log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IComponent* #" << request.instance_id << ">::getBusCount("
-                << request.type << ", " << request.dir << ")";
+        message << "<IComponent* #" << request.instance_id
+                << ">::getBusCount(type = " << request.type
+                << ", dir = " << request.dir << ")";
     });
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaComponent::GetBusInfo& request) {
     log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IComponent* #" << request.instance_id << ">::getBusInfo("
-                << request.type << ", " << request.dir << ", " << request.index
+        message << "<IComponent* #" << request.instance_id
+                << ">::getBusInfo(type = " << request.type
+                << ", dir = " << request.dir << ", index = " << request.index
                 << ", &bus)";
     });
 }
