@@ -127,9 +127,9 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     YaPluginFactory(const ConstructArgs&& args);
 
     /**
-     * We do not need to implement the destructor, since when the sockets are
-     * closed, RAII will clean up the Windows VST3 module we loaded along with
-     * its factory for us.
+     * We do not need to implement the destructor in
+     * `YaPluginFactoryPluginImpl`, since when the sockets are closed, RAII will
+     * clean up the Windows VST3 module we loaded along with its factory for us.
      */
     virtual ~YaPluginFactory();
 

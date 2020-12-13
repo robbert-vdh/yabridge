@@ -79,6 +79,7 @@ vst3_plugin_sources = [
   'src/common/logging/vst3.cpp',
   'src/common/serialization/vst3/base.cpp',
   'src/common/serialization/vst3/component.cpp',
+  'src/common/serialization/vst3/host-application.cpp',
   'src/common/serialization/vst3/plugin-factory.cpp',
   'src/common/configuration.cpp',
   'src/common/plugins.cpp',
@@ -113,6 +114,7 @@ if with_vst3
     'src/common/logging/vst3.cpp',
     'src/common/serialization/vst3/base.cpp',
     'src/common/serialization/vst3/component.cpp',
+    'src/common/serialization/vst3/host-application.cpp',
     'src/common/serialization/vst3/plugin-factory.cpp',
     'src/wine-host/bridges/vst3.cpp',
   ]
