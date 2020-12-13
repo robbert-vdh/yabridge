@@ -65,6 +65,7 @@ using ControlRequest = std::variant<YaComponent::Construct,
                                     YaComponent::GetBusCount,
                                     YaComponent::GetBusInfo,
                                     YaComponent::GetRoutingInfo,
+                                    YaComponent::ActivateBus,
                                     YaPluginFactory::Construct,
                                     YaPluginFactory::SetHostContext>;
 

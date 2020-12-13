@@ -123,9 +123,14 @@ YaComponentPluginImpl::activateBus(Steinberg::Vst::MediaType type,
                                    Steinberg::Vst::BusDirection dir,
                                    int32 index,
                                    TBool state) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IComponent::activateBus()");
-    return Steinberg::kNotImplemented;
+    return bridge
+        .send_message(
+            YaComponent::ActivateBus{.instance_id = arguments.instance_id,
+                                     .type = type,
+                                     .dir = dir,
+                                     .index = index,
+                                     .state = state})
+        .native();
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::setActive(TBool state) {

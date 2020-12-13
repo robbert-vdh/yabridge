@@ -301,6 +301,31 @@ class YaComponent : public Steinberg::Vst::IComponent {
     virtual tresult PLUGIN_API
     getRoutingInfo(Steinberg::Vst::RoutingInfo& inInfo,
                    Steinberg::Vst::RoutingInfo& outInfo /*out*/) override = 0;
+
+    /**
+     * Message to pass through a call to `IComponent::activateBus(type, dir,
+     * index, state)` to the Wine plugin host.
+     */
+    struct ActivateBus {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::MediaType type;
+        Steinberg::Vst::BusDirection dir;
+        int32 index;
+        TBool state;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(type);
+            s.value4b(dir);
+            s.value4b(index);
+            s.value1b(state);
+        }
+    };
+
     virtual tresult PLUGIN_API activateBus(Steinberg::Vst::MediaType type,
                                            Steinberg::Vst::BusDirection dir,
                                            int32 index,
