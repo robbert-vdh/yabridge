@@ -18,14 +18,17 @@
 
 #include <array>
 #include <string>
+#include <vector>
 
 #include <pluginterfaces/base/ftypes.h>
 #include <pluginterfaces/base/funknown.h>
+#include <pluginterfaces/base/ibstream.h>
 
 // Yet Another layer of includes, but these are some VST3-specific typedefs that
 // we'll need for all of our interfaces
 
-using Steinberg::TBool, Steinberg::int8, Steinberg::int32, Steinberg::tresult;
+using Steinberg::TBool, Steinberg::int8, Steinberg::int32, Steinberg::int64,
+    Steinberg::tresult;
 
 /**
  * Both `TUID` (`int8_t[16]`) and `FIDString` (`char*`) are hard to work with
@@ -35,6 +38,13 @@ using Steinberg::TBool, Steinberg::int8, Steinberg::int32, Steinberg::tresult;
 using ArrayUID = std::array<
     std::remove_reference_t<decltype(std::declval<Steinberg::TUID>()[0])>,
     std::extent_v<Steinberg::TUID>>;
+
+/**
+ * The maximum size for an `IBStream` we can serialize. Allows for up to 50 MB
+ * of preset data. Hopefully no plugin will come anywhere near this limit, but
+ * it will add up when plugins start to include audio samples in their presets.
+ */
+constexpr size_t max_vector_stream_size = 50 << 20;
 
 /**
  * Empty struct for when we have send a response to some operation without any
@@ -101,3 +111,54 @@ class UniversalTResult {
 
     Value universal_result;
 };
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+
+/**
+ * Serialize an `IBStream` into an `std::vector<uint8_t>`, and allow the
+ * receiving side to use it as an `IBStream` again. `ISizeableStream` is defined
+ * but then for whatever reason never used, but we'll implement it anyways.
+ */
+class VectorStream : public Steinberg::IBStream,
+                     public Steinberg::ISizeableStream {
+   public:
+    VectorStream();
+
+    /**
+     * Read an existing stream.
+     */
+    VectorStream(Steinberg::IBStream* stream);
+
+    virtual ~VectorStream();
+
+    DECLARE_FUNKNOWN_METHODS
+
+    // From `IBstream`
+    tresult PLUGIN_API read(void* buffer,
+                            int32 numBytes,
+                            int32* numBytesRead = nullptr) override;
+    tresult PLUGIN_API write(void* buffer,
+                             int32 numBytes,
+                             int32* numBytesWritten = nullptr) override;
+    tresult PLUGIN_API seek(int64 pos,
+                            int32 mode,
+                            int64* result = nullptr) override;
+    tresult PLUGIN_API tell(int64* pos) override;
+
+    // From `ISizeableStream`
+    tresult PLUGIN_API getStreamSize(int64& size) override;
+    tresult PLUGIN_API setStreamSize(int64 size) override;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.container1b(buffer, max_vector_stream_size);
+        // The seek position should always be initialized at 0
+    }
+
+   private:
+    std::vector<uint8_t> buffer;
+    size_t seek_position;
+};
+
+#pragma GCC diagnostic pop
