@@ -108,9 +108,14 @@ YaComponentPluginImpl::getBusInfo(Steinberg::Vst::MediaType type,
 tresult PLUGIN_API YaComponentPluginImpl::getRoutingInfo(
     Steinberg::Vst::RoutingInfo& inInfo,
     Steinberg::Vst::RoutingInfo& outInfo /*out*/) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IComponent::getRoutingInfo()");
-    return Steinberg::kNotImplemented;
+    const GetRoutingInfoResponse response = bridge.send_message(
+        YaComponent::GetRoutingInfo{.instance_id = arguments.instance_id,
+                                    .in_info = inInfo,
+                                    .out_info = outInfo});
+
+    inInfo = response.updated_in_info;
+    outInfo = response.updated_out_info;
+    return response.result.native();
 }
 
 tresult PLUGIN_API

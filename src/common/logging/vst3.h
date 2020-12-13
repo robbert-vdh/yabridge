@@ -63,6 +63,7 @@ class Vst3Logger {
     void log_request(bool is_host_vst, const YaComponent::SetIoMode&);
     void log_request(bool is_host_vst, const YaComponent::GetBusCount&);
     void log_request(bool is_host_vst, const YaComponent::GetBusInfo&);
+    void log_request(bool is_host_vst, const YaComponent::GetRoutingInfo&);
     void log_request(bool is_host_vst, const YaPluginFactory::Construct&);
     void log_request(bool is_host_vst, const YaPluginFactory::SetHostContext&);
     void log_request(bool is_host_vst, const WantsConfiguration&);
@@ -72,6 +73,8 @@ class Vst3Logger {
         bool is_host_vst,
         const std::variant<YaComponent::ConstructArgs, UniversalTResult>&);
     void log_response(bool is_host_vst, const YaComponent::GetBusInfoResponse&);
+    void log_response(bool is_host_vst,
+                      const YaComponent::GetRoutingInfoResponse&);
     void log_response(bool is_host_vst, const YaPluginFactory::ConstructArgs&);
     void log_response(bool is_host_vst, const Configuration&);
 

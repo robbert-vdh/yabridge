@@ -130,6 +130,18 @@ void Vst3Bridge::run() {
                 return YaComponent::GetBusInfoResponse{
                     .result = result, .updated_bus = request.bus};
             },
+            [&](YaComponent::GetRoutingInfo& request)
+                -> YaComponent::GetRoutingInfo::Response {
+                const tresult result =
+                    component_instances[request.instance_id]
+                        .component->getRoutingInfo(request.in_info,
+                                                   request.out_info);
+
+                return YaComponent::GetRoutingInfoResponse{
+                    .result = result,
+                    .updated_in_info = request.in_info,
+                    .updated_out_info = request.out_info};
+            },
             [&](const YaPluginFactory::Construct&)
                 -> YaPluginFactory::Construct::Response {
                 return YaPluginFactory::ConstructArgs(

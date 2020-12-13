@@ -100,6 +100,19 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetRoutingInfo& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IComponent* #" << request.instance_id
+                << ">::getRoutingInfo(inInfo = <RoutingInfo& for bus "
+                << request.in_info.busIndex << " and channel "
+                << request.in_info.channel
+                << ">, outInfo = <RoutingInfo& for bus "
+                << request.out_info.busIndex << " and channel "
+                << request.out_info.channel << ">)";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginFactory::Construct&) {
     log_request_base(is_host_vst,
                      [](auto& message) { message << "GetPluginFactory()"; });
@@ -143,6 +156,22 @@ void Vst3Logger::log_response(bool is_host_vst,
         message << response.result.string();
         if (response.result.native() == Steinberg::kResultOk) {
             message << ", <BusInfo>";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaComponent::GetRoutingInfoResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result.native() == Steinberg::kResultOk) {
+            message << ", <RoutingInfo& for bus "
+                    << response.updated_in_info.busIndex << " and channel "
+                    << response.updated_in_info.channel
+                    << ", <RoutingInfo& for bus "
+                    << response.updated_out_info.busIndex << " and channel "
+                    << response.updated_out_info.channel << ">";
         }
     });
 }
