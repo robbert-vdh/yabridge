@@ -3,12 +3,15 @@
 TODO: Once this is more fleshed out, move this document to `docs/`, and perhaps
 replace this readme with a link to that document.
 
-The VST3 SDK uses an architecture where every object inherits from an interface,
-and every interface inherits from `FUnknown` which offers a dynamic casting
-interface through `queryInterface()`. Every interface gets a unique identifier.
-It then uses a smart pointer system (`FUnknownPtr<I>`) that queries whether the
-`FUnknown` matches a certain interface by checking whether the IDs match up,
-allowing casts to that interface if the `FUnkonwn` matches.
+The VST3 SDK uses an architecture where every concrete object inherits from an
+interface, and every interface inherits from `FUnknown`. `FUnkonwn` offers a
+dynamic casting interface through `queryInterface()` and a reference counting
+mechanism that calls `delete this;` when the reference count reaches 0. Every
+interface gets a unique identifier. It then uses a smart pointer system
+(`FUnknownPtr<I>`) that queries whether the `FUnknown` matches a certain
+interface by checking whether the IDs match up, allowing casts to that interface
+if the `FUnkonwn` matches. Those smart pointers also use that reference counting
+mechanism to destroy the object when the last pointer gets dropped.
 
 Another important part of this system is interface versioning. Old interfaces
 cannot be changed, so when the SDK adds new functionality to an existing
@@ -16,52 +19,63 @@ interface it defines a new interface that inherits from the old one. The
 `queryInterface()` implementation should then allow casts to all of the
 implemented interface versions.
 
-Lastly, the interfaces mostly provided a lot of getters for data, but some of
-the interfaces also provide callback functions that should perform some
-operation on the component implementing the interface.
+Lastly, the interfaces provide both getters for static, non-chancing data (such
+as the classes registered in a plugin factory) as well as functions that perform
+side effects or return dynamically changing data (such as the input/output
+configuration for an audio processor).
 
 Yabridge's serialization and communication model for VST3 is thus a lot more
 complicated than for VST2 since all of these objects are loosely coupled and are
-instantiated and managed by the host. The model works as follows:
-
-TODO: This is now slightly out of date. Instead of serializing and deserializing
-directly into interface implementations through references, we now only pass
-structs with payload data around to make the receiving process much more
-flexible.
+instantiated and managed by the host. The basic model works as follows:
 
 1. For an interface `IFoo`, we provide a possibly abstract implementation called
    `YaFoo`.
-2. This class has a constructor that takes an `IPtr<IFoo>` interface pointer and
-   copies all of the data from the interface's functions that do not perform any
-   side effects.
-3. `YaFoo` then implements all the boilerplate required for `FUnknown`. This
-   includes the constructor, destructor and methods required for reference
-   counting, as well as the query interface.
-4. If `IFoo` is a versioned interface such as `IPluginFactory3`, the above two
-   steps work slightly differently. When copying the data for a plugin factory,
-   we'll start copying from `IPluginFactory`, and we'll copy data from each
-   newer version of the interface that the `IPtr<IPluginFactory>` supports.
+2. When we want to _proxy_ an interface from one side to the other (let's assume
+   we want to allow the native VST3 host to call functions on the `IFoo`
+   provided by the Windows VST3 plugin), we need to provide a `YaFoo`
+   implementation on the native plugin side that can do callbacks to the
+   corresponding `IFoo` object in the Wine plugin host. For most objects, this
+   works by first generating a unique identifier to be able to refer to this
+   specific `IFoo` instance, and then serializing that identifier together with
+   any static payload data into a `YaFoo::ConstructArgs` object. This
+   `YaFoo::ConstructArgs` copies this data through a `IPtr<IFoo>` smart pointer
+   to the original object we're proxying. This object can be serialized and
+   transmitted to the other side using bitsery.
+3. The original `IFoo` we are proxying gets added to an
+   `std::map<size_t, IPtr<IFoo>>` (in our assumed scenario, this happens on the
+   Wine plugin host's side) with the key being that unique instance identifier
+   we generated so we can refer to it later on.
+4. `YaFoo` implements all the boilerplate required for `FUnknown`. This includes
+   the constructor, destructor and methods required for reference counting, as
+   well as the query interface. It also implements any static lookup functions
+   that can be performed using the data contained in a `YaFoo::ConstructArgs`
+   object. Any functions that perform side effects or return dynamic data and
+   thus require a callback or control message are marked as pure virtual. These
+   callbacks can be performed through yabridge's `Vst3MessageHandler` message
+   handling interface. For the sake of clarity, we use the term _callback_ for
+   `plugin -> host` function calls and _control message_ for `host -> plugin`
+   function calls.
+5. The side that requested the object (which we assume to be the native plugin
+   here), creates a _proxy object_ called `YaFoo{Plugin,Host}Impl`, so
+   `YaFooPluginImpl` in this case. This is an instance of `YaFoo` and thus
+   `IFoo`, so we can pass it as an `IFoo` pointer to the host. This object takes
+   those `YaFoo::ConstructArgs` and a reference to the bridge instance so it can
+   do callbacks or send control messages.
+6. If `IFoo` is a versioned interface such as `IPluginFactory{,2,3}`, the
+   creation of `YaFoo::ConstrctArgs` and the definition of `YaFoo`'s query
+   interface work slightly differently. When copying the data for a plugin
+   factory, we'll start copying from `IPluginFactory`, and we'll copy data from
+   each newer version of the interface that the `IPtr<IPluginFactory>` supports.
    During this process we keep track of which interfaces were supported by the
-   native plugin. In our query interface method we then only report support for
-   the same itnerfaces that were supported by `IPtr<IPluginFactory`.
-5. `YaFoo` implements serialization and deserialization through bitsery so it
-   can be sent between the native plugin and the Wine plugin host.
-6. If `IFoo` has methods that have side effects (such as instantiating a new
-   object), then the implementations of those functions in `YaFoo` will be pure
-   virtual. The side that requested the object (so for the plugin factory that
-   would be on the side of the native plugin) should then provide a `YaFoo{Plugin,Host}Impl`
-   that implements those functions through yabridge's `Vst3MessageHandler`
-   callback interface.
-7. If the `IFoo` has side effects and thus needs a corresonding 'real' isntance
-   on the other side to communicate to, then `YaFoo{Plugin,Host}Impl` should
-   implement a destructor that destroys the 'real' object when `YaFoo` proxy
-   gets destroyed. See [interface instantiation](#interface-instantiation) for
-   more information.
+   native plugin in a `known_iids` set. In our query interface method we then
+   only report support for the same interfaces that were supported by the
+   original `IPtr<IPluginFactory` we're proxying.
 
 ## Interface Instantiation
 
 Creating a new instance of an interface using the plugin factory wroks as
-follows:
+follows. This describes the object lifecycle. The actual serialization and
+proxying is described in the section above.
 
 1. The host calls `createInterface(cid, _iid, obj)` on an IPluginFactory
    implementation exposed to the host as described above.
@@ -73,12 +87,13 @@ follows:
 4. The Wine plugin host will then call
    `module->getFactory().createInstance<IFoo>(cid)` using the Windows VST3
    plugin's plugin factory to ask it to create an instance of that interface. If
-   this operation fails and returns a null pointer, we'll send an `std::nullopt`
-   back to indicate that the instantiation was not successful and we relay this
-   on the plugin side.
-5. We will generate a unique instance identifier for the newly generated object
-   so we can refer to it later. We then serialize that identifier along with
-   what other static data is available in `IFoo` in a `YaFoo::Arguments` object.
+   this operation fails and returns a null pointer, we'll send a
+   `kNotImplemented` result code back to indicate that the instantiation was not
+   successful and we relay this on the plugin side.
+5. As mentioned above, we will generate a unique instance identifier for the
+   newly generated object so we can refer to it later. We then serialize that
+   identifier along with what other static data is available in `IFoo` in a
+   `YaFoo::ConstructArgs` object.
 6. We then move `IPtr<IFoo>` to an `std::map<size_t, IPtr<IFoo>>` with that
    unique identifier we generated earlier as a key so we can refer to it later
    in later function calls.
