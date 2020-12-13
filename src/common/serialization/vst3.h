@@ -61,7 +61,8 @@ using ControlRequest = std::variant<YaComponent::Construct,
                                     YaComponent::Destruct,
                                     YaComponent::Initialize,
                                     YaComponent::Terminate,
-                                    YaPluginFactory::Construct>;
+                                    YaPluginFactory::Construct,
+                                    YaPluginFactory::SetHostContext>;
 
 template <typename S>
 void serialize(S& s, ControlRequest& payload) {

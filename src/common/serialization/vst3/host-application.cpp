@@ -20,7 +20,7 @@ YaHostApplication::ConstructArgs::ConstructArgs() {}
 
 YaHostApplication::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::Vst::IHostApplication> context,
-    size_t component_instance_id)
+    std::optional<size_t> component_instance_id)
     : component_instance_id(component_instance_id) {
     Steinberg::Vst::String128 name_array;
     if (context->getName(name_array) == Steinberg::kResultOk) {

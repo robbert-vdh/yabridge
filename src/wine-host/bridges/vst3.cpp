@@ -111,6 +111,19 @@ void Vst3Bridge::run() {
                 -> YaPluginFactory::Construct::Response {
                 return YaPluginFactory::ConstructArgs(
                     module->getFactory().get());
+            },
+            [&](YaPluginFactory::SetHostContext& request)
+                -> YaPluginFactory::SetHostContext::Response {
+                plugin_factory_host_application_context =
+                    Steinberg::owned(new YaHostApplicationHostImpl(
+                        *this,
+                        std::move(request.host_application_context_args)));
+
+                Steinberg::FUnknownPtr<Steinberg::IPluginFactory3> factory_3(
+                    module->getFactory().get());
+                assert(factory_3);
+                return factory_3->setHostContext(
+                    plugin_factory_host_application_context);
             }});
 }
 

@@ -43,7 +43,8 @@
  * for everything other than the edit controller's class ID.
  *
  * TODO: I think it's expected that components also implement `IAudioProcessor`
- *       and `IConnectionPoint`.
+ *       and `IConnectionPoint`. We should use the same approach as in the
+ *       plugin factory to implement multiple, possibly optional, interfaces.
  */
 class YaComponent : public Steinberg::Vst::IComponent {
    public:
@@ -57,7 +58,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
          * Read arguments from an existing implementation.
          */
         ConstructArgs(Steinberg::IPtr<Steinberg::Vst::IComponent> component,
-                      size_t isntance_id);
+                      size_t instance_id);
 
         /**
          * The unique identifier for this specific instance.

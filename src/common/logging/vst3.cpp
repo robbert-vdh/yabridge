@@ -78,6 +78,13 @@ void Vst3Logger::log_request(bool is_host_vst,
                      [](auto& message) { message << "GetPluginFactory()"; });
 }
 
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaPluginFactory::SetHostContext&) {
+    log_request_base(is_host_vst, [](auto& message) {
+        message << "IPluginFactory3::setHostContext(IHostApplication*)";
+    });
+}
+
 void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     log_request_base(is_host_vst, [](auto& message) {
         message << "Requesting <Configuration>";

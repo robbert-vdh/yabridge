@@ -48,16 +48,15 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
          * Read arguments from an existing implementation.
          */
         ConstructArgs(Steinberg::IPtr<Steinberg::Vst::IHostApplication> context,
-                      size_t component_isntance_id);
+                      std::optional<size_t> component_instance_id);
 
         /**
          * The unique instance identifier of the component this host context has
-         * been passed to and thus belongs to.
-         *
-         * TODO: When we implement `IPluginFactory3::setHostContext()` this
-         *       should be made optional.
+         * been passed to and thus belongs to, if we are handling
+         * `IpluginBase::initialize()`. When handling
+         * `IPluginFactory::setHostContext()` this will be empty.
          */
-        native_size_t component_instance_id;
+        std::optional<native_size_t> component_instance_id;
 
         /**
          * For `IHostApplication::getName`.
@@ -66,7 +65,10 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
 
         template <typename S>
         void serialize(S& s) {
-            s.value8b(component_instance_id);
+            s.ext(component_instance_id, bitsery::ext::StdOptional{},
+                  [](S& s, native_size_t& instance_id) {
+                      s.value8b(instance_id);
+                  });
             s.ext(name, bitsery::ext::StdOptional{},
                   [](S& s, std::u16string& name) {
                       s.text2b(name, std::extent_v<Steinberg::Vst::String128>);

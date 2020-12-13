@@ -99,6 +99,13 @@ class Vst3Bridge : public HostBridge {
      */
     std::atomic_size_t current_instance_id;
 
+    /**
+     * The host application context proxy object if we got passed a host
+     * application context during a call to `IPluginFactory3::setHostContext()`
+     * by the host.
+     */
+    Steinberg::IPtr<YaHostApplication> plugin_factory_host_application_context;
+
     // Below are managed instances we created for
     // `IPluginFactory::createInstance()`. The keys in all of these maps are the
     // unique identifiers we generated for them so we can identify specific

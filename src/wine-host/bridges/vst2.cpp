@@ -100,7 +100,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     sockets.connect();
 
     // Initialize after communication has been set up
-    // We'll try to do the same `get_bridge_isntance` trick as in
+    // We'll try to do the same `get_bridge_instance` trick as in
     // `plugin/plugin.cpp`, but since the plugin will probably call the host
     // callback while it's initializing we sadly have to use a global here.
     {

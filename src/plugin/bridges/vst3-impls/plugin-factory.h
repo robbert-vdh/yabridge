@@ -30,4 +30,11 @@ class YaPluginFactoryPluginImpl : public YaPluginFactory {
 
    private:
     Vst3PluginBridge& bridge;
+
+    /**
+     * An `IHostApplication` instance if we get one through
+     * `IPluginFactory3::setHostContext()`.
+     */
+    Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication>
+        host_application_context;
 };

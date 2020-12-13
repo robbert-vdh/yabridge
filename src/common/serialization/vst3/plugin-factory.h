@@ -25,6 +25,7 @@
 
 #include "../../bitsery/ext/vst3.h"
 #include "base.h"
+#include "host-application.h"
 
 // TODO: After implementing one or two more of these, abstract away some of the
 //       nasty bits
@@ -155,10 +156,26 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     // From `IPluginFactory3`
     tresult PLUGIN_API
     getClassInfoUnicode(int32 index, Steinberg::PClassInfoW* info) override;
+
     /**
-     * We'll pass a `IHostApplication` to the Windows VST3 plugin's factory when
-     * this is called so it can send messages.
+     * Message to pass through a call to `IPluginFactory3::setHostContext()` to
+     * the Wine plugin host. A proxy `YaHostApplication` should be created on
+     * the Wine plugin host and then passed as an argument to
+     * `IPluginFactory3::setHostContext()`. If the host called
+     * `IPluginFactory3::setHostContext()` with something other than an
+     * `IHostApplication*`, we return an error immediately and log the call.
      */
+    struct SetHostContext {
+        using Response = UniversalTResult;
+
+        YaHostApplication::ConstructArgs host_application_context_args;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(host_application_context_args);
+        }
+    };
+
     virtual tresult PLUGIN_API
     setHostContext(Steinberg::FUnknown* context) override = 0;
 

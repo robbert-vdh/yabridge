@@ -380,7 +380,7 @@ class Vst2Sockets : public Sockets {
  * @param plugin The `AEffect` instance that should be passed to the callback
  *   function. During `WantsAEffect` we'll send back a copy of this, and when we
  *   get sent an `AEffect` instance (e.g. during `audioMasterIOChanged()`) we'll
- *   write the updated values to this isntance.
+ *   write the updated values to this instance.
  * @param callback The function to call with the arguments received from the
  *   socket, either `AEffect::dispatcher()` or `audioMasterCallback()`.
  *
