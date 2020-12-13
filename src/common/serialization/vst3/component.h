@@ -192,6 +192,27 @@ class YaComponent : public Steinberg::Vst::IComponent {
 
     virtual tresult PLUGIN_API
     setIoMode(Steinberg::Vst::IoMode mode) override = 0;
+
+    /**
+     * Message to pass through a call to `IComponent::getBusCount(type, dir)` to
+     * the Wine plugin host.
+     */
+    struct GetBusCount {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::BusType type;
+        Steinberg::Vst::BusDirection dir;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(type);
+            s.value4b(dir);
+        }
+    };
+
     virtual int32 PLUGIN_API
     getBusCount(Steinberg::Vst::MediaType type,
                 Steinberg::Vst::BusDirection dir) override = 0;

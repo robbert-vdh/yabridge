@@ -81,6 +81,14 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetBusCount& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IComponent* #" << request.instance_id << ">::getBusCount("
+                << request.type << ", " << request.dir << ")";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginFactory::Construct&) {
     log_request_base(is_host_vst,
                      [](auto& message) { message << "GetPluginFactory()"; });

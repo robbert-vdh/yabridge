@@ -112,6 +112,11 @@ void Vst3Bridge::run() {
                 return component_instances[request.instance_id]->setIoMode(
                     request.mode);
             },
+            [&](const YaComponent::GetBusCount& request)
+                -> YaComponent::GetBusCount::Response {
+                return component_instances[request.instance_id]->getBusCount(
+                    request.type, request.dir);
+            },
             [&](const YaPluginFactory::Construct&)
                 -> YaPluginFactory::Construct::Response {
                 return YaPluginFactory::ConstructArgs(

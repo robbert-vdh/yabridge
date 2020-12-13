@@ -83,9 +83,10 @@ YaComponentPluginImpl::setIoMode(Steinberg::Vst::IoMode mode) {
 int32 PLUGIN_API
 YaComponentPluginImpl::getBusCount(Steinberg::Vst::MediaType type,
                                    Steinberg::Vst::BusDirection dir) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IComponent::getBusCount()");
-    return Steinberg::kNotImplemented;
+    return bridge
+        .send_message(YaComponent::GetBusCount{
+            .instance_id = arguments.instance_id, .type = type, .dir = dir})
+        .native();
 }
 
 tresult PLUGIN_API
