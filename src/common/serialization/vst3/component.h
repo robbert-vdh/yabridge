@@ -17,14 +17,17 @@
 #pragma once
 
 #include <optional>
+#include <set>
 #include <variant>
 
 #include <bitsery/ext/pointer.h>
 #include <bitsery/ext/std_optional.h>
+#include <bitsery/ext/std_set.h>
 #include <bitsery/ext/std_variant.h>
 #include <bitsery/traits/array.h>
 #include <pluginterfaces/vst/ivstcomponent.h>
 
+#include "../../bitsery/ext/vst3.h"
 #include "../common.h"
 #include "base.h"
 #include "host-application.h"
@@ -55,7 +58,9 @@ class YaComponent : public Steinberg::Vst::IComponent {
         ConstructArgs();
 
         /**
-         * Read arguments from an existing implementation.
+         * Read arguments from an existing implementation. Depending on the
+         * supported interface function more or less of this struct will be left
+         * empty, and `known_iids` will be set accordingly.
          */
         ConstructArgs(Steinberg::IPtr<Steinberg::Vst::IComponent> component,
                       size_t instance_id);
@@ -66,6 +71,11 @@ class YaComponent : public Steinberg::Vst::IComponent {
         native_size_t instance_id;
 
         /**
+         * The IIDs that the interface we serialized supports.
+         */
+        std::set<Steinberg::FUID> known_iids;
+
+        /**
          * The class ID of this component's corresponding editor controller. You
          * can't use C-style array in `std::optional`s.
          */
@@ -74,6 +84,10 @@ class YaComponent : public Steinberg::Vst::IComponent {
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
+            s.ext(known_iids, bitsery::ext::StdSet{32},
+                  [](S& s, Steinberg::FUID& iid) {
+                      s.ext(iid, bitsery::ext::FUID{});
+                  });
             s.ext(edit_controller_cid, bitsery::ext::StdOptional{},
                   [](S& s, auto& cid) { s.container1b(cid); });
         }

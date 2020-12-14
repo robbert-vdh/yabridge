@@ -22,11 +22,14 @@ YaComponent::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::Vst::IComponent> component,
     size_t instance_id)
     : instance_id(instance_id) {
+    known_iids.insert(component->iid);
     // `IComponent::getControllerClassId`
     Steinberg::TUID cid;
     if (component->getControllerClassId(cid) == Steinberg::kResultOk) {
         edit_controller_cid = std::to_array(cid);
     }
+
+    // TODO: Add support of IAudioProcessor
 }
 
 YaComponent::YaComponent(const ConstructArgs&& args) : arguments(std::move(args)) {
@@ -48,10 +51,13 @@ IMPLEMENT_REFCOUNT(YaComponent)
 tresult PLUGIN_API YaComponent::queryInterface(Steinberg::FIDString _iid,
                                                void** obj) {
     QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid, Steinberg::IPluginBase)
-    QUERY_INTERFACE(_iid, obj, Steinberg::IPluginBase::iid,
-                    Steinberg::IPluginBase)
-    QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IComponent::iid,
-                    Steinberg::Vst::IComponent)
+    if (arguments.known_iids.contains(Steinberg::Vst::IComponent::iid)) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::IPluginBase::iid,
+                        Steinberg::IPluginBase)
+        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IComponent::iid,
+                        Steinberg::Vst::IComponent)
+    }
+    // TODO: Add IAudioProcessor
 
     *obj = nullptr;
     return Steinberg::kNoInterface;

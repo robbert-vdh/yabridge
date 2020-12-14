@@ -48,7 +48,7 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
         /**
          * Create a copy of an existing plugin factory. Depending on the
          * supported interface function more or less of this struct will be left
-         * empty, and `iid` will be set accordingly.
+         * empty, and `known_iids` will be set accordingly.
          */
         ConstructArgs(Steinberg::IPtr<Steinberg::IPluginFactory> factory);
 

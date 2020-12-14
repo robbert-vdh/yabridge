@@ -70,6 +70,10 @@ instantiated and managed by the host. The basic model works as follows:
    native plugin in a `known_iids` set. In our query interface method we then
    only report support for the same interfaces that were supported by the
    original `IPtr<IPluginFactory` we're proxying.
+7. The same mechanism that we use for versioning is also used for objects that
+   commonly implement multiple interfaces. A common example of this is an
+   `IComponent` (which inherits from `IPluginBase`) also implementing
+   `IAudioProcessor` and `IConnectionPoint`.
 
 ## Interface Instantiation
 
