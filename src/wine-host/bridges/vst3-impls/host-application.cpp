@@ -29,6 +29,7 @@ YaHostApplicationHostImpl::YaHostApplicationHostImpl(
 tresult PLUGIN_API
 YaHostApplicationHostImpl::queryInterface(const Steinberg::TUID _iid,
                                           void** obj) {
+    // TODO: Successful queries should also be logged
     const tresult result = YaHostApplication::queryInterface(_iid, obj);
     if (result != Steinberg::kResultOk) {
         std::cerr << "TODO: Implement unknown interface logging on Wine side"

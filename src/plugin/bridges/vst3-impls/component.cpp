@@ -30,6 +30,7 @@ YaComponentPluginImpl::~YaComponentPluginImpl() {
 
 tresult PLUGIN_API
 YaComponentPluginImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
+    // TODO: Successful queries should also be logged
     const tresult result = YaComponent::queryInterface(_iid, obj);
     if (result != Steinberg::kResultOk) {
         bridge.logger.log_unknown_interface("In IComponent::queryInterface()",
