@@ -441,7 +441,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
         switch (opcode) {
             case audioMasterGetTime:
                 // Write the returned `VstTimeInfo` struct into a field and
-                // make the function return a poitner to it in the function
+                // make the function return a pointer to it in the function
                 // below. Depending on whether the host supported the
                 // requested time information this operations returns either
                 // a null pointer or a pointer to a `VstTimeInfo` object.

@@ -141,9 +141,10 @@ tresult PLUGIN_API YaComponentPluginImpl::setActive(TBool state) {
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::setState(Steinberg::IBStream* state) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IComponent::setState()");
-    return Steinberg::kNotImplemented;
+    return bridge
+        .send_message(YaComponent::SetState{
+            .instance_id = arguments.instance_id, .state = state})
+        .native();
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::getState(Steinberg::IBStream* state) {

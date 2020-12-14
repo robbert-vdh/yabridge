@@ -30,6 +30,11 @@ YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,
                                           Steinberg::FIDString _iid,
                                           void** obj) {
     // TODO: Do the same thing for other types
+
+    // These arw pointers are scary. The idea here is that we return a newly
+    // initialized object (that initializes itself with a reference count of 1),
+    // and then the receiving side will use `Steinberg::owned()` to adopt it to
+    // an `IPtr<T>`.
     ArrayUID cid_array;
     std::copy(cid, cid + sizeof(Steinberg::TUID), cid_array.begin());
     if (Steinberg::FIDStringsEqual(_iid, Steinberg::Vst::IComponent::iid)) {
@@ -38,8 +43,8 @@ YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,
         return std::visit(
             overload{
                 [&](YaComponent::ConstructArgs&& args) -> tresult {
-                    // I find all of these raw pointers scary
-                    *obj = new YaComponentPluginImpl(bridge, std::move(args));
+                    *obj = static_cast<Steinberg::Vst::IComponent*>(
+                        new YaComponentPluginImpl(bridge, std::move(args)));
                     return Steinberg::kResultOk;
                 },
                 [&](const UniversalTResult& code) { return code.native(); }},

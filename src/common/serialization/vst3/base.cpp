@@ -175,6 +175,10 @@ tresult PLUGIN_API VectorStream::queryInterface(Steinberg::FIDString _iid,
     return Steinberg::kNoInterface;
 }
 
+size_t VectorStream::size() const {
+    return buffer.size();
+}
+
 tresult PLUGIN_API VectorStream::read(void* buffer,
                                       int32 numBytes,
                                       int32* numBytesRead) {

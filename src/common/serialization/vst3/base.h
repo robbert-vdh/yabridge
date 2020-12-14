@@ -134,6 +134,11 @@ class VectorStream : public Steinberg::IBStream,
 
     DECLARE_FUNKNOWN_METHODS
 
+    /**
+     * Return the buffer's, used in the logging messages.
+     */
+    size_t size() const;
+
     // From `IBstream`
     tresult PLUGIN_API read(void* buffer,
                             int32 numBytes,
