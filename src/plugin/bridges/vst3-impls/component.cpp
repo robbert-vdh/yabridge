@@ -162,9 +162,18 @@ tresult PLUGIN_API YaComponentPluginImpl::setBusArrangements(
     int32 numIns,
     Steinberg::Vst::SpeakerArrangement* outputs,
     int32 numOuts) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IAudioProcessor::setBusArrangements()");
-    return Steinberg::kNotImplemented;
+    assert(inputs && outputs);
+    return bridge
+        .send_message(YaComponent::SetBusArrangements{
+            .instance_id = arguments.instance_id,
+            .inputs = std::vector<Steinberg::Vst::SpeakerArrangement>(
+                inputs, &inputs[numIns]),
+            .num_ins = numIns,
+            .outputs = std::vector<Steinberg::Vst::SpeakerArrangement>(
+                outputs, &outputs[numOuts]),
+            .num_outs = numOuts,
+        })
+        .native();
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::getBusArrangement(

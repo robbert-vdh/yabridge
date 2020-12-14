@@ -40,6 +40,11 @@ using ArrayUID = std::array<
     std::extent_v<Steinberg::TUID>>;
 
 /**
+ * The maximum number of speakers or busses we support.
+ */
+constexpr size_t max_num_speakers = 16384;
+
+/**
  * The maximum size for an `IBStream` we can serialize. Allows for up to 50 MB
  * of preset data. Hopefully no plugin will come anywhere near this limit, but
  * it will add up when plugins start to include audio samples in their presets.

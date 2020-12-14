@@ -152,6 +152,17 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::SetBusArrangements& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::setBusArrangements(inputs = [SpeakerArrangement; "
+                << request.inputs.size() << "], numIns = " << request.num_ins
+                << ", outputs = [SpeakerArrangement; " << request.outputs.size()
+                << "], numOuts = " << request.num_outs << ")";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginFactory::Construct&) {
     log_request_base(is_host_vst,
                      [](auto& message) { message << "GetPluginFactory()"; });

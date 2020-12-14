@@ -192,7 +192,7 @@ class YaComponent : public Steinberg::Vst::IComponent,
     tresult PLUGIN_API getControllerClassId(Steinberg::TUID classId) override;
 
     /**
-     * Message to pass through a call to `IComponent::setIoMode(IoMode)` to the
+     * Message to pass through a call to `IComponent::setIoMode(mode)` to the
      * Wine plugin host.
      */
     struct SetIoMode {
@@ -282,7 +282,7 @@ class YaComponent : public Steinberg::Vst::IComponent,
 
     /**
      * The response code and returned routing information for a call to
-     * `IComponent::getRoutingInfo(inInfo, outInfo <out>)`.
+     * `IComponent::getRoutingInfo(in_info, out_info <out>)`.
      */
     struct GetRoutingInfoResponse {
         UniversalTResult result;
@@ -298,8 +298,8 @@ class YaComponent : public Steinberg::Vst::IComponent,
     };
 
     /**
-     * Message to pass through a call to `IComponent::getRoutingInfo(inInfo,
-     * outInfo <out>)` to the Wine plugin host.
+     * Message to pass through a call to `IComponent::getRoutingInfo(in_info,
+     * out_info <out>)` to the Wine plugin host.
      */
     struct GetRoutingInfo {
         using Response = GetRoutingInfoResponse;
@@ -425,6 +425,33 @@ class YaComponent : public Steinberg::Vst::IComponent,
     getState(Steinberg::IBStream* state) override = 0;
 
     // From `IAudioProcessor`
+
+    /**
+     * Message to pass through a call to
+     * `IAudioProcessor::setBusArrangements(inputs, num_ins, outputs, num_outs)`
+     * to the Wine plugin host.
+     */
+    struct SetBusArrangements {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        // These are orginally C-style heap arrays, not normal pointers
+        std::vector<Steinberg::Vst::SpeakerArrangement> inputs;
+        int32 num_ins;
+        std::vector<Steinberg::Vst::SpeakerArrangement> outputs;
+        int32 num_outs;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.container8b(inputs, max_num_speakers);
+            s.value4b(num_ins);
+            s.container8b(outputs, max_num_speakers);
+            s.value4b(num_outs);
+        }
+    };
+
     virtual tresult PLUGIN_API
     setBusArrangements(Steinberg::Vst::SpeakerArrangement* inputs,
                        int32 numIns,
