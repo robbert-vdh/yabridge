@@ -28,12 +28,8 @@
  * This is the default VST host application. It will load the specified VST2
  * plugin, and then connect back to the `libyabridge.so` instance that spawned
  * this over the socket.
- *
- * The explicit calling convention is needed to work around a bug introduced in
- * Wine 5.7: https://bugs.winehq.org/show_bug.cgi?id=49138
  */
-int __cdecl __attribute__((visibility("default")))
-main(int argc, char* argv[]) {
+int __attribute__((visibility("default"))) main(int argc, char* argv[]) {
     set_realtime_priority();
 
     // We pass the name of the VST plugin .dll file to load and the base

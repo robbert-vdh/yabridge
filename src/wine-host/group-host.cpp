@@ -35,12 +35,8 @@
  * After that initialization step both the regular individual plugin host and
  * this group plugin host will function identically on both the plugin and the
  * Wine VST host side.
- *
- * The explicit calling convention is needed to work around a bug introduced in
- * Wine 5.7: https://bugs.winehq.org/show_bug.cgi?id=49138
  */
-int __cdecl __attribute__((visibility("default")))
-main(int argc, char* argv[]) {
+int __attribute__((visibility("default"))) main(int argc, char* argv[]) {
     set_realtime_priority();
 
     // Instead of directly hosting a plugin, this process will receive a UNIX
