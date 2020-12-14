@@ -71,7 +71,7 @@ class PrimitiveWrapper {
     PrimitiveWrapper() {}
     PrimitiveWrapper(T value) : value(value) {}
 
-    operator T() { return value; }
+    operator T() const { return value; }
 
     template <typename S>
     void serialize(S& s) {

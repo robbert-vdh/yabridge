@@ -207,10 +207,6 @@ void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     });
 }
 
-void Vst3Logger::log_response(bool is_host_vst, const uint32& value) {
-    log_response_base(is_host_vst, [&](auto& message) { message << value; });
-}
-
 void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
     log_response_base(is_host_vst, [&](auto& message) { message << "ACK"; });
 }

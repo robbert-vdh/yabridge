@@ -77,7 +77,6 @@ class Vst3Logger {
     void log_request(bool is_host_vst, const YaPluginFactory::SetHostContext&);
     void log_request(bool is_host_vst, const WantsConfiguration&);
 
-    void log_response(bool is_host_vst, const uint32&);
     void log_response(bool is_host_vst, const Ack&);
     void log_response(
         bool is_host_vst,
@@ -90,6 +89,13 @@ class Vst3Logger {
                       const YaComponent::GetBusArrangementResponse&);
     void log_response(bool is_host_vst, const YaPluginFactory::ConstructArgs&);
     void log_response(bool is_host_vst, const Configuration&);
+
+    template <typename T>
+    void log_response(bool is_host_vst, const PrimitiveWrapper<T>& value) {
+        // For logging all primitive return values other than `tresult`
+        log_response_base(is_host_vst,
+                          [&](auto& message) { message << value; });
+    }
 
     Logger& logger;
 
