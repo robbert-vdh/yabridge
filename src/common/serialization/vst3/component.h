@@ -46,9 +46,12 @@
  * sounds like a huge potential source of errors we'll just do pure callbacks
  * for everything other than the edit controller's class ID.
  *
- * TODO: I think it's expected that components also implement `IAudioProcessor`
- *       and `IConnectionPoint`. We should use the same approach as in the
- *       plugin factory to implement multiple, possibly optional, interfaces.
+ * TODO: Amplement IConnectionPoint
+ * TODO: How should we support IComponents without a seperate edit controller?
+ *       Can we just use a separate `YaEditController` that just points to the
+ *       same implementation (with the same CID)? Check the reference
+ *       implementation in the framework to see how this is initialized, make
+ *       sure we support the reference w workflow.
  */
 class YaComponent : public Steinberg::Vst::IComponent,
                     public Steinberg::Vst::IAudioProcessor {
