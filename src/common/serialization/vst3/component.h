@@ -522,6 +522,23 @@ class YaComponent : public Steinberg::Vst::IComponent,
 
     virtual tresult PLUGIN_API
     canProcessSampleSize(int32 symbolicSampleSize) override = 0;
+
+    /**
+     * Message to pass through a call to
+     * `IAudioProcessor::getLatencySamples()` to the Wine
+     * plugin host.
+     */
+    struct GetLatencySamples {
+        using Response = PrimitiveWrapper<uint32>;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
     virtual uint32 PLUGIN_API getLatencySamples() override = 0;
     virtual tresult PLUGIN_API
     setupProcessing(Steinberg::Vst::ProcessSetup& setup) override = 0;

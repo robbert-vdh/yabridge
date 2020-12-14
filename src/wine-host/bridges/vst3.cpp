@@ -190,6 +190,11 @@ void Vst3Bridge::run() {
                     .audio_processor->canProcessSampleSize(
                         request.symbolic_sample_size);
             },
+            [&](YaComponent::GetLatencySamples& request)
+                -> YaComponent::GetLatencySamples::Response {
+                return component_instances[request.instance_id]
+                    .audio_processor->getLatencySamples();
+            },
             [&](const YaPluginFactory::Construct&)
                 -> YaPluginFactory::Construct::Response {
                 return YaPluginFactory::ConstructArgs(

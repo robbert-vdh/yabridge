@@ -201,9 +201,8 @@ YaComponentPluginImpl::canProcessSampleSize(int32 symbolicSampleSize) {
 }
 
 uint32 PLUGIN_API YaComponentPluginImpl::getLatencySamples() {
-    // TODO: Implement
-    bridge.logger.log("TODO: IAudioProcessor::getLatencySamples()");
-    return 0;
+    return bridge.send_message(
+        YaComponent::GetLatencySamples{.instance_id = arguments.instance_id});
 }
 
 tresult PLUGIN_API

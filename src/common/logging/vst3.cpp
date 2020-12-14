@@ -181,6 +181,14 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetLatencySamples& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::getLatencySamples()";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginFactory::Construct&) {
     log_request_base(is_host_vst,
                      [](auto& message) { message << "GetPluginFactory()"; });
@@ -197,6 +205,10 @@ void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     log_request_base(is_host_vst, [](auto& message) {
         message << "Requesting <Configuration>";
     });
+}
+
+void Vst3Logger::log_response(bool is_host_vst, const uint32& value) {
+    log_response_base(is_host_vst, [&](auto& message) { message << value; });
 }
 
 void Vst3Logger::log_response(bool is_host_vst, const Ack&) {

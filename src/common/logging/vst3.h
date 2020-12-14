@@ -72,10 +72,12 @@ class Vst3Logger {
     void log_request(bool is_host_vst, const YaComponent::GetBusArrangement&);
     void log_request(bool is_host_vst,
                      const YaComponent::CanProcessSampleSize&);
+    void log_request(bool is_host_vst, const YaComponent::GetLatencySamples&);
     void log_request(bool is_host_vst, const YaPluginFactory::Construct&);
     void log_request(bool is_host_vst, const YaPluginFactory::SetHostContext&);
     void log_request(bool is_host_vst, const WantsConfiguration&);
 
+    void log_response(bool is_host_vst, const uint32&);
     void log_response(bool is_host_vst, const Ack&);
     void log_response(
         bool is_host_vst,
