@@ -200,6 +200,11 @@ void Vst3Bridge::run() {
                 return component_instances[request.instance_id]
                     .audio_processor->setupProcessing(request.setup);
             },
+            [&](const YaComponent::SetProcessing& request)
+                -> YaComponent::SetProcessing::Response {
+                return component_instances[request.instance_id]
+                    .audio_processor->setProcessing(request.state);
+            },
             [&](const YaPluginFactory::Construct&)
                 -> YaPluginFactory::Construct::Response {
                 return YaPluginFactory::ConstructArgs(

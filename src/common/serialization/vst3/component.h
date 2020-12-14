@@ -560,6 +560,25 @@ class YaComponent : public Steinberg::Vst::IComponent,
 
     virtual tresult PLUGIN_API
     setupProcessing(Steinberg::Vst::ProcessSetup& setup) override = 0;
+
+    /**
+     * Message to pass through a call to `IAudioProcessor::setProcessing(state)`
+     * to the Wine plugin host.
+     */
+    struct SetProcessing {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        TBool state;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value1b(state);
+        }
+    };
+
     virtual tresult PLUGIN_API setProcessing(TBool state) override = 0;
     virtual tresult PLUGIN_API
     process(Steinberg::Vst::ProcessData& data) override = 0;

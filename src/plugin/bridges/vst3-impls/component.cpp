@@ -194,9 +194,8 @@ YaComponentPluginImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::setProcessing(TBool state) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IAudioProcessor::setProcessing()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaComponent::SetProcessing{
+        .instance_id = arguments.instance_id, .state = state});
 }
 
 tresult PLUGIN_API

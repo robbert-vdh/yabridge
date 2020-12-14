@@ -201,6 +201,15 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::SetProcessing& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::setProcessing(state = "
+                << (request.state ? "true" : "false") << ")";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginFactory::Construct&) {
     log_request_base(is_host_vst,
                      [](auto& message) { message << "GetPluginFactory()"; });

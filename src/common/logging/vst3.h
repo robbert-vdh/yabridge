@@ -74,6 +74,7 @@ class Vst3Logger {
                      const YaComponent::CanProcessSampleSize&);
     void log_request(bool is_host_vst, const YaComponent::GetLatencySamples&);
     void log_request(bool is_host_vst, const YaComponent::SetupProcessing&);
+    void log_request(bool is_host_vst, const YaComponent::SetProcessing&);
     void log_request(bool is_host_vst, const YaPluginFactory::Construct&);
     void log_request(bool is_host_vst, const YaPluginFactory::SetHostContext&);
     void log_request(bool is_host_vst, const WantsConfiguration&);
