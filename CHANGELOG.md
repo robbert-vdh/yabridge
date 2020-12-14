@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2020-12-12
+
+### Changed
+
+- Changed part of the build process considering [this Wine
+  bug](https://bugs.winehq.org/show_bug.cgi?id=49138). Building with Wine 5.7
+  and 5.8 required a change, but that change now breaks builds using Wine 6.0
+  and up, so this change has been reverted.
+
 ## [2.2.1] - 2020-12-12
 
 ### Fixed
