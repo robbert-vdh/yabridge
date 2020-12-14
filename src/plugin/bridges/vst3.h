@@ -56,6 +56,12 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
     Vst3PluginBridge();
 
     /**
+     * Terminate the Wine plugin host process and drop all work when the module
+     * gets unloaded.
+     */
+    ~Vst3PluginBridge();
+
+    /**
      * When the host loads the module it will call `GetPluginFactory()` which
      * will in turn call this function. The idea is that we return an
      * `IPluginFactory*` while doing all the reference counting that `IPtr<T>`

@@ -396,6 +396,8 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
             // been caused by pipes and sockets being closed.
             io_context.stop();
 
+            // TODO: For consistency with the VST3 version, move the above to
+            //       the destructor
             delete this;
 
             return return_value;

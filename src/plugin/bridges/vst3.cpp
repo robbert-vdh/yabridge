@@ -83,6 +83,12 @@ Vst3PluginBridge::Vst3PluginBridge()
     });
 }
 
+Vst3PluginBridge::~Vst3PluginBridge() {
+    // Drop all work make sure all sockets are closed
+    plugin_host->terminate();
+    io_context.stop();
+}
+
 Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
     // Even though we're working with raw pointers here, we should pretend that
     // we're `IPtr<Steinberg::IPluginFactory>` and do the reference counting
