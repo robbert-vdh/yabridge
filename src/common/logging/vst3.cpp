@@ -230,7 +230,7 @@ void Vst3Logger::log_response(bool is_host_vst,
                               const YaComponent::GetBusInfoResponse& response) {
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
-        if (response.result.native() == Steinberg::kResultOk) {
+        if (response.result == Steinberg::kResultOk) {
             message << ", <BusInfo>";
         }
     });
@@ -241,7 +241,7 @@ void Vst3Logger::log_response(
     const YaComponent::GetRoutingInfoResponse& response) {
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
-        if (response.result.native() == Steinberg::kResultOk) {
+        if (response.result == Steinberg::kResultOk) {
             message << ", <RoutingInfo& for bus "
                     << response.updated_in_info.busIndex << " and channel "
                     << response.updated_in_info.channel
@@ -256,7 +256,7 @@ void Vst3Logger::log_response(bool is_host_vst,
                               const YaComponent::GetStateResponse& response) {
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
-        if (response.result.native() == Steinberg::kResultOk) {
+        if (response.result == Steinberg::kResultOk) {
             message << ", <IBStream* containing "
                     << response.updated_state.size() << " bytes>";
         }
@@ -268,7 +268,7 @@ void Vst3Logger::log_response(
     const YaComponent::GetBusArrangementResponse& response) {
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
-        if (response.result.native() == Steinberg::kResultOk) {
+        if (response.result == Steinberg::kResultOk) {
             message << ", <SpeakerArrangement>";
         }
     });

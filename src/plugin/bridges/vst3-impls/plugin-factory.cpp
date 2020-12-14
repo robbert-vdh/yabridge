@@ -47,7 +47,7 @@ YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,
                         new YaComponentPluginImpl(bridge, std::move(args)));
                     return Steinberg::kResultOk;
                 },
-                [&](const UniversalTResult& code) { return code.native(); }},
+                [&](const UniversalTResult& code) -> tresult { return code; }},
             std::move(result));
     } else {
         // When the host requests an interface we do not (yet) implement, we'll
@@ -81,11 +81,9 @@ YaPluginFactoryPluginImpl::setHostContext(Steinberg::FUnknown* context) {
         YaHostApplication::ConstructArgs host_application_context_args(
             host_application_context, std::nullopt);
 
-        return bridge
-            .send_message(YaPluginFactory::SetHostContext{
-                .host_application_context_args =
-                    std::move(host_application_context_args)})
-            .native();
+        return bridge.send_message(YaPluginFactory::SetHostContext{
+            .host_application_context_args =
+                std::move(host_application_context_args)});
     } else {
         bridge.logger.log_unknown_interface(
             "In IPluginFactory3::setHostContext(), ignoring",

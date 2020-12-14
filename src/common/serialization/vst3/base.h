@@ -104,7 +104,7 @@ class UniversalTResult {
     /**
      * Get the native equivalent for the wrapped `tresult` value.
      */
-    tresult native() const;
+    operator tresult() const;
 
     /**
      * Get the original name for the result, e.g. `kResultOk`.

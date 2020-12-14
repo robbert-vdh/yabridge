@@ -24,7 +24,7 @@ UniversalTResult::UniversalTResult() : universal_result(Value::kResultFalse) {}
 UniversalTResult::UniversalTResult(tresult native_result)
     : universal_result(to_universal_result(native_result)) {}
 
-tresult UniversalTResult::native() const {
+UniversalTResult::operator tresult() const {
     static_assert(Steinberg::kResultOk == Steinberg::kResultTrue);
     switch (universal_result) {
         case Value::kNoInterface:

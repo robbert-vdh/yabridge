@@ -58,27 +58,21 @@ tresult PLUGIN_API YaComponentPluginImpl::initialize(FUnknown* context) {
             context ? std::optional(context->iid) : std::nullopt);
     }
 
-    return bridge
-        .send_message(YaComponent::Initialize{
-            .instance_id = arguments.instance_id,
-            .host_application_context_args =
-                std::move(host_application_context_args)})
-        .native();
+    return bridge.send_message(
+        YaComponent::Initialize{.instance_id = arguments.instance_id,
+                                .host_application_context_args =
+                                    std::move(host_application_context_args)});
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::terminate() {
-    return bridge
-        .send_message(
-            YaComponent::Terminate{.instance_id = arguments.instance_id})
-        .native();
+    return bridge.send_message(
+        YaComponent::Terminate{.instance_id = arguments.instance_id});
 }
 
 tresult PLUGIN_API
 YaComponentPluginImpl::setIoMode(Steinberg::Vst::IoMode mode) {
-    return bridge
-        .send_message(YaComponent::SetIoMode{
-            .instance_id = arguments.instance_id, .mode = mode})
-        .native();
+    return bridge.send_message(YaComponent::SetIoMode{
+        .instance_id = arguments.instance_id, .mode = mode});
 }
 
 int32 PLUGIN_API
@@ -101,7 +95,7 @@ YaComponentPluginImpl::getBusInfo(Steinberg::Vst::MediaType type,
                                 .bus = bus});
 
     bus = response.updated_bus;
-    return response.result.native();
+    return response.result;
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::getRoutingInfo(
@@ -114,7 +108,7 @@ tresult PLUGIN_API YaComponentPluginImpl::getRoutingInfo(
 
     inInfo = response.updated_in_info;
     outInfo = response.updated_out_info;
-    return response.result.native();
+    return response.result;
 }
 
 tresult PLUGIN_API
@@ -122,28 +116,22 @@ YaComponentPluginImpl::activateBus(Steinberg::Vst::MediaType type,
                                    Steinberg::Vst::BusDirection dir,
                                    int32 index,
                                    TBool state) {
-    return bridge
-        .send_message(
-            YaComponent::ActivateBus{.instance_id = arguments.instance_id,
-                                     .type = type,
-                                     .dir = dir,
-                                     .index = index,
-                                     .state = state})
-        .native();
+    return bridge.send_message(
+        YaComponent::ActivateBus{.instance_id = arguments.instance_id,
+                                 .type = type,
+                                 .dir = dir,
+                                 .index = index,
+                                 .state = state});
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::setActive(TBool state) {
-    return bridge
-        .send_message(YaComponent::SetActive{
-            .instance_id = arguments.instance_id, .state = state})
-        .native();
+    return bridge.send_message(YaComponent::SetActive{
+        .instance_id = arguments.instance_id, .state = state});
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::setState(Steinberg::IBStream* state) {
-    return bridge
-        .send_message(YaComponent::SetState{
-            .instance_id = arguments.instance_id, .state = state})
-        .native();
+    return bridge.send_message(YaComponent::SetState{
+        .instance_id = arguments.instance_id, .state = state});
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::getState(Steinberg::IBStream* state) {
@@ -152,7 +140,7 @@ tresult PLUGIN_API YaComponentPluginImpl::getState(Steinberg::IBStream* state) {
 
     assert(response.updated_state.write_back(state) == Steinberg::kResultOk);
 
-    return response.result.native();
+    return response.result;
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::setBusArrangements(
@@ -161,17 +149,15 @@ tresult PLUGIN_API YaComponentPluginImpl::setBusArrangements(
     Steinberg::Vst::SpeakerArrangement* outputs,
     int32 numOuts) {
     assert(inputs && outputs);
-    return bridge
-        .send_message(YaComponent::SetBusArrangements{
-            .instance_id = arguments.instance_id,
-            .inputs = std::vector<Steinberg::Vst::SpeakerArrangement>(
-                inputs, &inputs[numIns]),
-            .num_ins = numIns,
-            .outputs = std::vector<Steinberg::Vst::SpeakerArrangement>(
-                outputs, &outputs[numOuts]),
-            .num_outs = numOuts,
-        })
-        .native();
+    return bridge.send_message(YaComponent::SetBusArrangements{
+        .instance_id = arguments.instance_id,
+        .inputs = std::vector<Steinberg::Vst::SpeakerArrangement>(
+            inputs, &inputs[numIns]),
+        .num_ins = numIns,
+        .outputs = std::vector<Steinberg::Vst::SpeakerArrangement>(
+            outputs, &outputs[numOuts]),
+        .num_outs = numOuts,
+    });
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::getBusArrangement(
@@ -186,16 +172,14 @@ tresult PLUGIN_API YaComponentPluginImpl::getBusArrangement(
 
     arr = response.updated_arr;
 
-    return response.result.native();
+    return response.result;
 }
 
 tresult PLUGIN_API
 YaComponentPluginImpl::canProcessSampleSize(int32 symbolicSampleSize) {
-    return bridge
-        .send_message(YaComponent::CanProcessSampleSize{
-            .instance_id = arguments.instance_id,
-            .symbolic_sample_size = symbolicSampleSize})
-        .native();
+    return bridge.send_message(YaComponent::CanProcessSampleSize{
+        .instance_id = arguments.instance_id,
+        .symbolic_sample_size = symbolicSampleSize});
 }
 
 uint32 PLUGIN_API YaComponentPluginImpl::getLatencySamples() {
