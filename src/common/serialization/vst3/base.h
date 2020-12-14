@@ -61,6 +61,28 @@ struct Ack {
 };
 
 /**
+ * A simple wrapper around primitive values for serialization purposes. Bitsery
+ * doesn't seem to like serializing plain primitives using `s.object()` even if
+ * you define a serialization function.
+ */
+template <typename T>
+class PrimitiveWrapper {
+   public:
+    PrimitiveWrapper() {}
+    PrimitiveWrapper(T value) : value(value) {}
+
+    operator T() { return value; }
+
+    template <typename S>
+    void serialize(S& s) {
+        s.template value<sizeof(T)>(value);
+    }
+
+   private:
+    T value;
+};
+
+/**
  * A wrapper around `Steinberg::tresult` that we can safely share between the
  * native plugin and the Wine process. Depending on the platform and on whether
  * or not the VST3 SDK is compiled to be COM compatible, the result codes may
