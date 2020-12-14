@@ -69,7 +69,7 @@ template <typename T>
 class PrimitiveWrapper {
    public:
     PrimitiveWrapper() {}
-    PrimitiveWrapper(T value) : value(value) {}
+    PrimitiveWrapper(T&& value) : value(value) {}
 
     operator T() const { return value; }
 
