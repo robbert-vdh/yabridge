@@ -25,6 +25,7 @@
 #include <bitsery/ext/std_set.h>
 #include <bitsery/ext/std_variant.h>
 #include <bitsery/traits/array.h>
+#include <pluginterfaces/vst/ivstaudioprocessor.h>
 #include <pluginterfaces/vst/ivstcomponent.h>
 
 #include "../../bitsery/ext/vst3.h"
@@ -49,7 +50,8 @@
  *       and `IConnectionPoint`. We should use the same approach as in the
  *       plugin factory to implement multiple, possibly optional, interfaces.
  */
-class YaComponent : public Steinberg::Vst::IComponent {
+class YaComponent : public Steinberg::Vst::IComponent,
+                    public Steinberg::Vst::IAudioProcessor {
    public:
     /**
      * These are the arguments for creating a `YaComponentPluginImpl`.
@@ -418,6 +420,26 @@ class YaComponent : public Steinberg::Vst::IComponent {
 
     virtual tresult PLUGIN_API
     getState(Steinberg::IBStream* state) override = 0;
+
+    // From `IAudioProcessor`
+    virtual tresult PLUGIN_API
+    setBusArrangements(Steinberg::Vst::SpeakerArrangement* inputs,
+                       int32 numIns,
+                       Steinberg::Vst::SpeakerArrangement* outputs,
+                       int32 numOuts) override = 0;
+    virtual tresult PLUGIN_API
+    getBusArrangement(Steinberg::Vst::BusDirection dir,
+                      int32 index,
+                      Steinberg::Vst::SpeakerArrangement& arr) override = 0;
+    virtual tresult PLUGIN_API
+    canProcessSampleSize(int32 symbolicSampleSize) override = 0;
+    virtual uint32 PLUGIN_API getLatencySamples() override = 0;
+    virtual tresult PLUGIN_API
+    setupProcessing(Steinberg::Vst::ProcessSetup& setup) override = 0;
+    virtual tresult PLUGIN_API setProcessing(TBool state) override = 0;
+    virtual tresult PLUGIN_API
+    process(Steinberg::Vst::ProcessData& data) override = 0;
+    virtual uint32 PLUGIN_API getTailSamples() override = 0;
 
    protected:
     ConstructArgs arguments;

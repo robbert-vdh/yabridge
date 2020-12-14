@@ -28,7 +28,7 @@
 // we'll need for all of our interfaces
 
 using Steinberg::TBool, Steinberg::int8, Steinberg::int32, Steinberg::int64,
-    Steinberg::tresult;
+    Steinberg::uint32, Steinberg::tresult;
 
 /**
  * Both `TUID` (`int8_t[16]`) and `FIDString` (`char*`) are hard to work with

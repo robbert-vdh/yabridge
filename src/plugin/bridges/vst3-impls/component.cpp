@@ -155,3 +155,61 @@ tresult PLUGIN_API YaComponentPluginImpl::getState(Steinberg::IBStream* state) {
 
     return response.result.native();
 }
+
+tresult PLUGIN_API YaComponentPluginImpl::setBusArrangements(
+    Steinberg::Vst::SpeakerArrangement* inputs,
+    int32 numIns,
+    Steinberg::Vst::SpeakerArrangement* outputs,
+    int32 numOuts) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IAudioProcessor::setBusArrangements()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API YaComponentPluginImpl::getBusArrangement(
+    Steinberg::Vst::BusDirection dir,
+    int32 index,
+    Steinberg::Vst::SpeakerArrangement& arr) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IAudioProcessor::getBusArrangement()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+YaComponentPluginImpl::canProcessSampleSize(int32 symbolicSampleSize) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IAudioProcessor::canProcessSampleSize()");
+    return Steinberg::kNotImplemented;
+}
+
+uint32 PLUGIN_API YaComponentPluginImpl::getLatencySamples() {
+    // TODO: Implement
+    bridge.logger.log("TODO: IAudioProcessor::getLatencySamples()");
+    return 0;
+}
+
+tresult PLUGIN_API
+YaComponentPluginImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IAudioProcessor::setupProcessing()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API YaComponentPluginImpl::setProcessing(TBool state) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IAudioProcessor::setProcessing()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+YaComponentPluginImpl::process(Steinberg::Vst::ProcessData& data) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IAudioProcessor::process()");
+    return Steinberg::kNotImplemented;
+}
+
+uint32 PLUGIN_API YaComponentPluginImpl::getTailSamples() {
+    // TODO: Implement
+    bridge.logger.log("TODO: IAudioProcessor::getTailSamples()");
+    return 0;
+}

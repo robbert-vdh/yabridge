@@ -61,6 +61,23 @@ class YaComponentPluginImpl : public YaComponent {
     tresult PLUGIN_API setState(Steinberg::IBStream* state) override;
     tresult PLUGIN_API getState(Steinberg::IBStream* state) override;
 
+    tresult PLUGIN_API
+    setBusArrangements(Steinberg::Vst::SpeakerArrangement* inputs,
+                       int32 numIns,
+                       Steinberg::Vst::SpeakerArrangement* outputs,
+                       int32 numOuts) override;
+    tresult PLUGIN_API
+    getBusArrangement(Steinberg::Vst::BusDirection dir,
+                      int32 index,
+                      Steinberg::Vst::SpeakerArrangement& arr) override;
+    tresult PLUGIN_API canProcessSampleSize(int32 symbolicSampleSize) override;
+    uint32 PLUGIN_API getLatencySamples() override;
+    tresult PLUGIN_API
+    setupProcessing(Steinberg::Vst::ProcessSetup& setup) override;
+    tresult PLUGIN_API setProcessing(TBool state) override;
+    tresult PLUGIN_API process(Steinberg::Vst::ProcessData& data) override;
+    uint32 PLUGIN_API getTailSamples() override;
+
    private:
     Vst3PluginBridge& bridge;
 
