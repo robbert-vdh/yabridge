@@ -206,7 +206,6 @@ YaComponentPluginImpl::process(Steinberg::Vst::ProcessData& data) {
 }
 
 uint32 PLUGIN_API YaComponentPluginImpl::getTailSamples() {
-    // TODO: Implement
-    bridge.logger.log("TODO: IAudioProcessor::getTailSamples()");
-    return 0;
+    return bridge.send_message(
+        YaComponent::GetTailSamples{.instance_id = arguments.instance_id});
 }

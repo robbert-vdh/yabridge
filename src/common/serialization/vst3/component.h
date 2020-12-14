@@ -582,6 +582,22 @@ class YaComponent : public Steinberg::Vst::IComponent,
     virtual tresult PLUGIN_API setProcessing(TBool state) override = 0;
     virtual tresult PLUGIN_API
     process(Steinberg::Vst::ProcessData& data) override = 0;
+
+    /**
+     * Message to pass through a call to `IAudioProcessor::getTailSamples()`
+     * to the Wine plugin host.
+     */
+    struct GetTailSamples {
+        using Response = PrimitiveWrapper<uint32>;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
     virtual uint32 PLUGIN_API getTailSamples() override = 0;
 
    protected:

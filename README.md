@@ -17,7 +17,9 @@ imcomplete list of things that still have to be done before this can be used:
 
 - Left to implement:
   - `YaHostApplicationHostImpl::createComponent`.
-  - `IAudioProcessor` and `IConnectionPoint` to supplement `IComponent`
+  - `IAudioProcessor::process()` along with every interface and struct involved
+    in `ProcessData`
+  - `IConnectionPoint` to supplement `IComponent`
   - `IEditController{,2}`
   - All other mandatory interfaces
   - All other optional interfaces

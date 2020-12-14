@@ -37,7 +37,7 @@ void Vst3Logger::log_unknown_interface(
 }
 
 void Vst3Logger::log_request(bool is_host_vst, const YaComponent::Construct&) {
-    log_request_base(is_host_vst, [](auto& message) {
+    log_request_base(is_host_vst, [&](auto& message) {
         // TODO: Log the CID on verbosity level 2, and then also report all CIDs
         //       in the plugin factory
         message << "IPluginFactory::createComponent(cid = ..., _iid = "
@@ -210,20 +210,28 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetTailSamples& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::getTailSamples()";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginFactory::Construct&) {
     log_request_base(is_host_vst,
-                     [](auto& message) { message << "GetPluginFactory()"; });
+                     [&](auto& message) { message << "GetPluginFactory()"; });
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginFactory::SetHostContext&) {
-    log_request_base(is_host_vst, [](auto& message) {
+    log_request_base(is_host_vst, [&](auto& message) {
         message << "IPluginFactory3::setHostContext(IHostApplication*)";
     });
 }
 
 void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
-    log_request_base(is_host_vst, [](auto& message) {
+    log_request_base(is_host_vst, [&](auto& message) {
         message << "Requesting <Configuration>";
     });
 }
@@ -305,5 +313,5 @@ void Vst3Logger::log_response(bool is_host_vst,
 
 void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
     log_response_base(is_host_vst,
-                      [](auto& message) { message << "<Configuration"; });
+                      [&](auto& message) { message << "<Configuration"; });
 }
