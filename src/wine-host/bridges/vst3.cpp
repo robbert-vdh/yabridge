@@ -169,7 +169,6 @@ void Vst3Bridge::run() {
             },
             [&](YaComponent::SetBusArrangements& request)
                 -> YaComponent::SetBusArrangements::Response {
-                VectorStream stream;
                 return component_instances[request.instance_id]
                     .audio_processor->setBusArrangements(
                         request.inputs.data(), request.num_ins,
@@ -184,6 +183,12 @@ void Vst3Bridge::run() {
 
                 return YaComponent::GetBusArrangementResponse{
                     .result = result, .updated_arr = request.arr};
+            },
+            [&](YaComponent::CanProcessSampleSize& request)
+                -> YaComponent::CanProcessSampleSize::Response {
+                return component_instances[request.instance_id]
+                    .audio_processor->canProcessSampleSize(
+                        request.symbolic_sample_size);
             },
             [&](const YaPluginFactory::Construct&)
                 -> YaPluginFactory::Construct::Response {

@@ -500,6 +500,26 @@ class YaComponent : public Steinberg::Vst::IComponent,
     getBusArrangement(Steinberg::Vst::BusDirection dir,
                       int32 index,
                       Steinberg::Vst::SpeakerArrangement& arr) override = 0;
+
+    /**
+     * Message to pass through a call to
+     * `IAudioProcessor::canProcessSampleSize(symbolic_sample_size)` to the Wine
+     * plugin host.
+     */
+    struct CanProcessSampleSize {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        int32 symbolic_sample_size;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(symbolic_sample_size);
+        }
+    };
+
     virtual tresult PLUGIN_API
     canProcessSampleSize(int32 symbolicSampleSize) override = 0;
     virtual uint32 PLUGIN_API getLatencySamples() override = 0;

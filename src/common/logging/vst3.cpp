@@ -167,7 +167,16 @@ void Vst3Logger::log_request(bool is_host_vst,
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IAudioProcessor* #" << request.instance_id
                 << ">::getBusArrangement(dir = " << request.dir
-                << ", index = " << request.index << ", &arr";
+                << ", index = " << request.index << ", &arr)";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::CanProcessSampleSize& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::canProcessSampleSize(symbolicSampleSize = "
+                << request.symbolic_sample_size << ")";
     });
 }
 

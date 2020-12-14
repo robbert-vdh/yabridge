@@ -193,9 +193,11 @@ tresult PLUGIN_API YaComponentPluginImpl::getBusArrangement(
 
 tresult PLUGIN_API
 YaComponentPluginImpl::canProcessSampleSize(int32 symbolicSampleSize) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IAudioProcessor::canProcessSampleSize()");
-    return Steinberg::kNotImplemented;
+    return bridge
+        .send_message(YaComponent::CanProcessSampleSize{
+            .instance_id = arguments.instance_id,
+            .symbolic_sample_size = symbolicSampleSize})
+        .native();
 }
 
 uint32 PLUGIN_API YaComponentPluginImpl::getLatencySamples() {
