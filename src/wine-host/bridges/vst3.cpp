@@ -158,6 +158,15 @@ void Vst3Bridge::run() {
                 return component_instances[request.instance_id]
                     .component->setState(&request.state);
             },
+            [&](YaComponent::GetState& request)
+                -> YaComponent::GetState::Response {
+                VectorStream stream;
+                const tresult result = component_instances[request.instance_id]
+                                           .component->getState(&stream);
+
+                return YaComponent::GetStateResponse{
+                    .result = result, .updated_state = std::move(stream)};
+            },
             [&](const YaPluginFactory::Construct&)
                 -> YaPluginFactory::Construct::Response {
                 return YaPluginFactory::ConstructArgs(

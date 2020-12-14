@@ -143,6 +143,14 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetState& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IComponent* #" << request.instance_id
+                << ">::getState(state = <IBStream*>)";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginFactory::Construct&) {
     log_request_base(is_host_vst,
                      [](auto& message) { message << "GetPluginFactory()"; });
@@ -202,6 +210,17 @@ void Vst3Logger::log_response(
                     << ", <RoutingInfo& for bus "
                     << response.updated_out_info.busIndex << " and channel "
                     << response.updated_out_info.channel << ">";
+        }
+    });
+}
+
+void Vst3Logger::log_response(bool is_host_vst,
+                              const YaComponent::GetStateResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result.native() == Steinberg::kResultOk) {
+            message << ", <IBStream* containing "
+                    << response.updated_state.size() << " bytes>";
         }
     });
 }

@@ -371,6 +371,37 @@ class YaComponent : public Steinberg::Vst::IComponent {
 
     virtual tresult PLUGIN_API
     setState(Steinberg::IBStream* state) override = 0;
+
+    /**
+     * The response code and written state for a call to
+     * `IComponent::getState(state)`.
+     */
+    struct GetStateResponse {
+        UniversalTResult result;
+        VectorStream updated_state;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(updated_state);
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IComponent::getState(state)` to the
+     * Wine plugin host.
+     */
+    struct GetState {
+        using Response = GetStateResponse;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getState(Steinberg::IBStream* state) override = 0;
 

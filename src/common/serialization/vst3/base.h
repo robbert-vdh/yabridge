@@ -140,7 +140,7 @@ class VectorStream : public Steinberg::IBStream,
      * Write the vector buffer back to an IBStream. After writing the seek
      * position will be left at the end of the stream.
      */
-    tresult write_back(Steinberg::IBStream* stream);
+    tresult write_back(Steinberg::IBStream* stream) const;
 
     /**
      * Return the buffer's, used in the logging messages.

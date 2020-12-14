@@ -148,7 +148,10 @@ tresult PLUGIN_API YaComponentPluginImpl::setState(Steinberg::IBStream* state) {
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::getState(Steinberg::IBStream* state) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IComponent::getState()");
-    return Steinberg::kNotImplemented;
+    const GetStateResponse response = bridge.send_message(
+        YaComponent::GetState{.instance_id = arguments.instance_id});
+
+    assert(response.updated_state.write_back(state) == Steinberg::kResultOk);
+
+    return response.result.native();
 }
