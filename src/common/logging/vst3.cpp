@@ -189,6 +189,18 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::SetupProcessing& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::setupProcessing(setup = <SetupProcessing with mode = "
+                << request.setup.processMode << ", symbolic_sample_size = "
+                << request.setup.symbolicSampleSize
+                << ", max_buffer_size = " << request.setup.maxSamplesPerBlock
+                << " and sample_rate = " << request.setup.sampleRate << ">)";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginFactory::Construct&) {
     log_request_base(is_host_vst,
                      [](auto& message) { message << "GetPluginFactory()"; });

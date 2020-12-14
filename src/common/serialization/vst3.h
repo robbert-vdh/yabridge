@@ -73,6 +73,7 @@ using ControlRequest = std::variant<YaComponent::Construct,
                                     YaComponent::GetBusArrangement,
                                     YaComponent::CanProcessSampleSize,
                                     YaComponent::GetLatencySamples,
+                                    YaComponent::SetupProcessing,
                                     YaPluginFactory::Construct,
                                     YaPluginFactory::SetHostContext>;
 

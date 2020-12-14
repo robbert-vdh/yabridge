@@ -524,9 +524,8 @@ class YaComponent : public Steinberg::Vst::IComponent,
     canProcessSampleSize(int32 symbolicSampleSize) override = 0;
 
     /**
-     * Message to pass through a call to
-     * `IAudioProcessor::getLatencySamples()` to the Wine
-     * plugin host.
+     * Message to pass through a call to `IAudioProcessor::getLatencySamples()`
+     * to the Wine plugin host.
      */
     struct GetLatencySamples {
         using Response = PrimitiveWrapper<uint32>;
@@ -540,6 +539,25 @@ class YaComponent : public Steinberg::Vst::IComponent,
     };
 
     virtual uint32 PLUGIN_API getLatencySamples() override = 0;
+
+    /**
+     * Message to pass through a call to
+     * `IAudioProcessor::setupProcessing(setup)` to the Wine plugin host.
+     */
+    struct SetupProcessing {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ProcessSetup setup;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.object(setup);
+        }
+    };
+
     virtual tresult PLUGIN_API
     setupProcessing(Steinberg::Vst::ProcessSetup& setup) override = 0;
     virtual tresult PLUGIN_API setProcessing(TBool state) override = 0;
@@ -577,6 +595,14 @@ void serialize(S& s, Steinberg::Vst::RoutingInfo& info) {
     s.value4b(info.mediaType);
     s.value4b(info.busIndex);
     s.value4b(info.channel);
+}
+
+template <typename S>
+void serialize(S& s, Steinberg::Vst::ProcessSetup& setup) {
+    s.value4b(setup.processMode);
+    s.value4b(setup.symbolicSampleSize);
+    s.value4b(setup.maxSamplesPerBlock);
+    s.value8b(setup.sampleRate);
 }
 }  // namespace Vst
 }  // namespace Steinberg

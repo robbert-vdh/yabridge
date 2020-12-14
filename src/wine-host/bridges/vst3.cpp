@@ -184,16 +184,21 @@ void Vst3Bridge::run() {
                 return YaComponent::GetBusArrangementResponse{
                     .result = result, .updated_arr = request.arr};
             },
-            [&](YaComponent::CanProcessSampleSize& request)
+            [&](const YaComponent::CanProcessSampleSize& request)
                 -> YaComponent::CanProcessSampleSize::Response {
                 return component_instances[request.instance_id]
                     .audio_processor->canProcessSampleSize(
                         request.symbolic_sample_size);
             },
-            [&](YaComponent::GetLatencySamples& request)
+            [&](const YaComponent::GetLatencySamples& request)
                 -> YaComponent::GetLatencySamples::Response {
                 return component_instances[request.instance_id]
                     .audio_processor->getLatencySamples();
+            },
+            [&](YaComponent::SetupProcessing& request)
+                -> YaComponent::SetupProcessing::Response {
+                return component_instances[request.instance_id]
+                    .audio_processor->setupProcessing(request.setup);
             },
             [&](const YaPluginFactory::Construct&)
                 -> YaPluginFactory::Construct::Response {

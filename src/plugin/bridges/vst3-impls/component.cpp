@@ -189,9 +189,8 @@ uint32 PLUGIN_API YaComponentPluginImpl::getLatencySamples() {
 
 tresult PLUGIN_API
 YaComponentPluginImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IAudioProcessor::setupProcessing()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaComponent::SetupProcessing{
+        .instance_id = arguments.instance_id, .setup = setup});
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::setProcessing(TBool state) {
