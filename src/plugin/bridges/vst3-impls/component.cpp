@@ -180,9 +180,15 @@ tresult PLUGIN_API YaComponentPluginImpl::getBusArrangement(
     Steinberg::Vst::BusDirection dir,
     int32 index,
     Steinberg::Vst::SpeakerArrangement& arr) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IAudioProcessor::getBusArrangement()");
-    return Steinberg::kNotImplemented;
+    const GetBusArrangementResponse response = bridge.send_message(
+        YaComponent::GetBusArrangement{.instance_id = arguments.instance_id,
+                                       .dir = dir,
+                                       .index = index,
+                                       .arr = arr});
+
+    arr = response.updated_arr;
+
+    return response.result.native();
 }
 
 tresult PLUGIN_API

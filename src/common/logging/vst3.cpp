@@ -163,6 +163,15 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetBusArrangement& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::getBusArrangement(dir = " << request.dir
+                << ", index = " << request.index << ", &arr";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginFactory::Construct&) {
     log_request_base(is_host_vst,
                      [](auto& message) { message << "GetPluginFactory()"; });
@@ -233,6 +242,17 @@ void Vst3Logger::log_response(bool is_host_vst,
         if (response.result.native() == Steinberg::kResultOk) {
             message << ", <IBStream* containing "
                     << response.updated_state.size() << " bytes>";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaComponent::GetBusArrangementResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result.native() == Steinberg::kResultOk) {
+            message << ", <SpeakerArrangement>";
         }
     });
 }

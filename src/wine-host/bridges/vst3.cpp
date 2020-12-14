@@ -175,6 +175,16 @@ void Vst3Bridge::run() {
                         request.inputs.data(), request.num_ins,
                         request.outputs.data(), request.num_outs);
             },
+            [&](YaComponent::GetBusArrangement& request)
+                -> YaComponent::GetBusArrangement::Response {
+                const tresult result =
+                    component_instances[request.instance_id]
+                        .audio_processor->getBusArrangement(
+                            request.dir, request.index, request.arr);
+
+                return YaComponent::GetBusArrangementResponse{
+                    .result = result, .updated_arr = request.arr};
+            },
             [&](const YaPluginFactory::Construct&)
                 -> YaPluginFactory::Construct::Response {
                 return YaPluginFactory::ConstructArgs(

@@ -457,6 +457,45 @@ class YaComponent : public Steinberg::Vst::IComponent,
                        int32 numIns,
                        Steinberg::Vst::SpeakerArrangement* outputs,
                        int32 numOuts) override = 0;
+
+    /**
+     * The response code and written state for a call to
+     * `IAudioProcessor::getBusArrangement(dir, index, arr)`.
+     */
+    struct GetBusArrangementResponse {
+        UniversalTResult result;
+        Steinberg::Vst::SpeakerArrangement updated_arr;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.value8b(updated_arr);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IAudioProcessor::getBusArrangement(dir, index, arr)` to the Wine
+     * plugin host.
+     */
+    struct GetBusArrangement {
+        using Response = GetBusArrangementResponse;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::BusDirection dir;
+        int32 index;
+        Steinberg::Vst::SpeakerArrangement arr;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(dir);
+            s.value4b(index);
+            s.value8b(arr);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getBusArrangement(Steinberg::Vst::BusDirection dir,
                       int32 index,
