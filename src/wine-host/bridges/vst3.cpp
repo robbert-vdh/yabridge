@@ -26,7 +26,7 @@ ComponentInstance::ComponentInstance() {}
 
 ComponentInstance::ComponentInstance(
     Steinberg::IPtr<Steinberg::Vst::IComponent> component)
-    : component(component) {}
+    : component(component), audio_processor(component) {}
 
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
                        std::string plugin_dll_path,

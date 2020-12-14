@@ -49,7 +49,7 @@ struct ComponentInstance {
     // All smart pointers below are created from `component`. They will be null
     // pointers if `component` did not implement the interface.
 
-    // TODO: Implement things like `IConnectionPoint` and `IAudioProcessor`
+    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audio_processor;
 };
 
 /**
