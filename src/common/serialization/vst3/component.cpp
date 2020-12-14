@@ -29,7 +29,12 @@ YaComponent::ConstructArgs::ConstructArgs(
         edit_controller_cid = std::to_array(cid);
     }
 
-    // TODO: Add support of IAudioProcessor
+    // There's no static data we can copy from the audio processor
+    if (auto audio_processor =
+            Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor>(
+                component)) {
+        known_iids.insert(Steinberg::Vst::IAudioProcessor::iid);
+    }
 }
 
 YaComponent::YaComponent(const ConstructArgs&& args) : arguments(std::move(args)) {
@@ -57,7 +62,10 @@ tresult PLUGIN_API YaComponent::queryInterface(Steinberg::FIDString _iid,
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IComponent::iid,
                         Steinberg::Vst::IComponent)
     }
-    // TODO: Add IAudioProcessor
+    if (arguments.known_iids.contains(Steinberg::Vst::IAudioProcessor::iid)) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IAudioProcessor::iid,
+                        Steinberg::Vst::IAudioProcessor)
+    }
 
     *obj = nullptr;
     return Steinberg::kNoInterface;
