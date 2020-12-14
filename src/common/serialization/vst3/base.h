@@ -127,12 +127,20 @@ class VectorStream : public Steinberg::IBStream,
 
     /**
      * Read an existing stream.
+     *
+     * @throw std::runtime_error If we couldn't read from the stream.
      */
     VectorStream(Steinberg::IBStream* stream);
 
     virtual ~VectorStream();
 
     DECLARE_FUNKNOWN_METHODS
+
+    /**
+     * Write the vector buffer back to an IBStream. After writing the seek
+     * position will be left at the end of the stream.
+     */
+    tresult write_back(Steinberg::IBStream* stream);
 
     /**
      * Return the buffer's, used in the logging messages.

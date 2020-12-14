@@ -175,6 +175,22 @@ tresult PLUGIN_API VectorStream::queryInterface(Steinberg::FIDString _iid,
     return Steinberg::kNoInterface;
 }
 
+tresult VectorStream::write_back(Steinberg::IBStream* stream) {
+    if (!stream) {
+        return Steinberg::kInvalidArgument;
+    }
+
+    int32 num_bytes_written;
+    assert(stream->seek(0, kIBSeekSet) == Steinberg::kResultOk);
+    assert(stream->write(buffer.data(), buffer.size(), &num_bytes_written) ==
+           Steinberg::kResultOk);
+
+    assert(num_bytes_written == 0 ||
+           static_cast<size_t>(num_bytes_written) == buffer.size());
+
+    return Steinberg::kResultOk;
+}
+
 size_t VectorStream::size() const {
     return buffer.size();
 }
