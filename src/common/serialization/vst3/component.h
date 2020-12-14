@@ -217,7 +217,7 @@ class YaComponent : public Steinberg::Vst::IComponent,
      * the Wine plugin host.
      */
     struct GetBusCount {
-        using Response = UniversalTResult;
+        using Response = PrimitiveWrapper<int32>;
 
         native_size_t instance_id;
 
