@@ -24,13 +24,7 @@ YaHostApplication::ConstructArgs::ConstructArgs(
     : component_instance_id(component_instance_id) {
     Steinberg::Vst::String128 name_array;
     if (context->getName(name_array) == Steinberg::kResultOk) {
-#ifdef __WINE__
-        // Who even invented UTF-16
-        static_assert(sizeof(Steinberg::Vst::TChar) == sizeof(char16_t));
-        name = std::u16string(reinterpret_cast<const char16_t*>(name_array));
-#else
-        name = std::u16string(static_cast<const char16_t*>(name_array));
-#endif
+        name = tchar_string_to_u16string(name_array);
     }
 }
 

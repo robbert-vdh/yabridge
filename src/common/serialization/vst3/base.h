@@ -23,6 +23,7 @@
 #include <pluginterfaces/base/ftypes.h>
 #include <pluginterfaces/base/funknown.h>
 #include <pluginterfaces/base/ibstream.h>
+#include <pluginterfaces/vst/vsttypes.h>
 
 // Yet Another layer of includes, but these are some VST3-specific typedefs that
 // we'll need for all of our interfaces
@@ -50,6 +51,12 @@ constexpr size_t max_num_speakers = 16384;
  * it will add up when plugins start to include audio samples in their presets.
  */
 constexpr size_t max_vector_stream_size = 50 << 20;
+
+/**
+ * Convert a UTF-16 C-style string to an `std::u16string`. Who event invented
+ * UTF-16?
+ */
+std::u16string tchar_string_to_u16string(const Steinberg::Vst::TChar* string);
 
 /**
  * Empty struct for when we have send a response to some operation without any

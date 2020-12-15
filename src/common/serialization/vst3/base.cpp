@@ -19,6 +19,16 @@
 
 #include "base.h"
 
+std::u16string tchar_string_to_u16string(const Steinberg::Vst::TChar* string) {
+#ifdef __WINE__
+    // This is great, thanks Steinberg
+    static_assert(sizeof(Steinberg::Vst::TChar) == sizeof(char16_t));
+    return std::u16string(reinterpret_cast<const char16_t*>(string));
+#else
+    return std::u16string(static_cast<const char16_t*>(string));
+#endif
+}
+
 UniversalTResult::UniversalTResult() : universal_result(Value::kResultFalse) {}
 
 UniversalTResult::UniversalTResult(tresult native_result)
