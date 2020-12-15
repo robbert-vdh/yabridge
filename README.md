@@ -10,6 +10,11 @@ communication through [plugin groups](#plugin-groups). Its modern concurrent
 architecture and focus on transparency allows yabridge to be both fast and
 highly compatible, while also staying easy to debug and maintain.
 
+VST3 support for yabridge is still very far removed from being in a usable
+state, but you can track the progress in the
+[feature/vst3](https://github.com/robbert-vdh/yabridge/tree/feature/vst3)
+branch.
+
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
 ### Table of contents
