@@ -84,6 +84,7 @@ vst3_plugin_sources = [
   'src/common/serialization/vst3/param-value-queue.cpp',
   'src/common/serialization/vst3/parameter-changes.cpp',
   'src/common/serialization/vst3/plugin-factory.cpp',
+  'src/common/serialization/vst3/process-data.cpp',
   'src/common/configuration.cpp',
   'src/common/plugins.cpp',
   'src/common/utils.cpp',
@@ -122,6 +123,7 @@ if with_vst3
     'src/common/serialization/vst3/param-value-queue.cpp',
     'src/common/serialization/vst3/parameter-changes.cpp',
     'src/common/serialization/vst3/plugin-factory.cpp',
+    'src/common/serialization/vst3/process-data.cpp',
     'src/wine-host/bridges/vst3-impls/host-application.cpp',
     'src/wine-host/bridges/vst3.cpp',
   ]

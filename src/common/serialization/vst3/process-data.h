@@ -57,9 +57,11 @@ class YaAudioBusBuffers {
      * call. Constructed as part of `YaProcessData`. Since `AudioBusBuffers`
      * contains an untagged union for storing single and double precision
      * floating point values, the original `ProcessData`'s `symbolicSampleSize`
-     * field determines which variant of that union to use.
+     * field determines which variant of that union to use. Similarly the
+     * `ProcessData`' `numSamples` field determines the extent of these arrays.
      */
     YaAudioBusBuffers(Steinberg::Vst::SymbolicSampleSizes sample_size,
+                      int32 num_samples,
                       const Steinberg::Vst::AudioBusBuffers& data);
 
     /**
@@ -93,6 +95,14 @@ class YaAudioBusBuffers {
      * The `AudioBusBuffers` object we reconstruct during `get()`.
      */
     Steinberg::Vst::AudioBusBuffers reconstructed_buffers;
+
+    // Used in reconstructed_buffers, because we need to store pointers to the
+    // inner vectors in `buffers`. We're using a union instead of void pointers
+    // here to have at least some resemblance of type safety.
+    union {
+        std::vector<float*> float_buffer_pointers;
+        std::vector<double*> double_buffer_pointers;
+    };
 
     /**
      * A bitfield for silent channels copied directly from the input struct.
