@@ -16,6 +16,8 @@
 
 #include "event-list.h"
 
+#include "src/common/utils.h"
+
 YaDataEvent::YaDataEvent() {}
 
 YaDataEvent::YaDataEvent(const Steinberg::Vst::DataEvent& event)
@@ -69,4 +71,97 @@ Steinberg::Vst::ScaleEvent YaScaleEvent::get() const {
         .root = root,
         .textLen = static_cast<uint16>(text.size()),
         .text = u16string_to_tchar_pointer(text)};
+}
+
+YaEvent::YaEvent() {}
+
+YaEvent::YaEvent(const Steinberg::Vst::Event& event)
+    : bus_index(event.busIndex),
+      sample_offset(event.sampleOffset),
+      ppq_position(event.ppqPosition),
+      flags(event.flags) {
+    // Now we need the correct event type
+    switch (event.type) {
+        case Steinberg::Vst::Event::kNoteOnEvent:
+            payload = event.noteOn;
+            break;
+        case Steinberg::Vst::Event::kNoteOffEvent:
+            payload = event.noteOff;
+            break;
+        case Steinberg::Vst::Event::kDataEvent:
+            payload = YaDataEvent(event.data);
+            break;
+        case Steinberg::Vst::Event::kPolyPressureEvent:
+            payload = event.polyPressure;
+            break;
+        case Steinberg::Vst::Event::kNoteExpressionValueEvent:
+            payload = event.noteExpressionValue;
+            break;
+        case Steinberg::Vst::Event::kNoteExpressionTextEvent:
+            payload = YaNoteExpressionTextEvent(event.noteExpressionText);
+            break;
+        case Steinberg::Vst::Event::kChordEvent:
+            payload = YaChordEvent(event.chord);
+            break;
+        case Steinberg::Vst::Event::kScaleEvent:
+            payload = YaScaleEvent(event.scale);
+            break;
+        case Steinberg::Vst::Event::kLegacyMIDICCOutEvent:
+            payload = event.midiCCOut;
+            break;
+        default:
+            // XXX: When encountering something we don't know about, should we
+            //      throw or silently ignore it? We can't properly log about
+            //      this directly from here.
+            break;
+    }
+}
+
+Steinberg::Vst::Event YaEvent::get() const {
+    Steinberg::Vst::Event event{.busIndex = bus_index,
+                                .sampleOffset = sample_offset,
+                                .ppqPosition = ppq_position,
+                                .flags = flags};
+    std::visit(
+        overload{
+            [&](const Steinberg::Vst::NoteOnEvent& specific_event) {
+                event.type = Steinberg::Vst::Event::kNoteOnEvent;
+                event.noteOn = specific_event;
+            },
+            [&](const Steinberg::Vst::NoteOffEvent& specific_event) {
+                event.type = Steinberg::Vst::Event::kNoteOffEvent;
+                event.noteOff = specific_event;
+            },
+            [&](const YaDataEvent& specific_event) {
+                event.type = Steinberg::Vst::Event::kDataEvent;
+                event.data = specific_event.get();
+            },
+            [&](const Steinberg::Vst::PolyPressureEvent& specific_event) {
+                event.type = Steinberg::Vst::Event::kPolyPressureEvent;
+                event.polyPressure = specific_event;
+            },
+            [&](const Steinberg::Vst::NoteExpressionValueEvent&
+                    specific_event) {
+                event.type = Steinberg::Vst::Event::kNoteExpressionValueEvent;
+                event.noteExpressionValue = specific_event;
+            },
+            [&](const YaNoteExpressionTextEvent& specific_event) {
+                event.type = Steinberg::Vst::Event::kNoteExpressionTextEvent;
+                event.noteExpressionText = specific_event.get();
+            },
+            [&](const YaChordEvent& specific_event) {
+                event.type = Steinberg::Vst::Event::kChordEvent;
+                event.chord = specific_event.get();
+            },
+            [&](const YaScaleEvent& specific_event) {
+                event.type = Steinberg::Vst::Event::kScaleEvent;
+                event.scale = specific_event.get();
+            },
+            [&](const Steinberg::Vst::LegacyMIDICCOutEvent& specific_event) {
+                event.type = Steinberg::Vst::Event::kLegacyMIDICCOutEvent;
+                event.midiCCOut = specific_event;
+            }},
+        payload);
+
+    return event;
 }

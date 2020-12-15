@@ -180,7 +180,7 @@ struct YaEvent {
     int32 bus_index;
     int32 sample_offset;
     Steinberg::Vst::TQuarterNotes ppq_position;
-    Steinberg::Vst::Event::EventFlags flags;
+    uint16 flags;
 
     // `Event` stores an event type and a union, we'll encode both in a variant.
     // We can use simple types directly, and we need serializable wrappers
