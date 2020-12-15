@@ -28,8 +28,9 @@
 // Yet Another layer of includes, but these are some VST3-specific typedefs that
 // we'll need for all of our interfaces
 
-using Steinberg::TBool, Steinberg::int8, Steinberg::int32, Steinberg::int64,
-    Steinberg::uint32, Steinberg::uint64, Steinberg::tresult;
+using Steinberg::TBool, Steinberg::int8, Steinberg::int16, Steinberg::int32,
+    Steinberg::int64, Steinberg::uint8, Steinberg::uint32, Steinberg::uint64,
+    Steinberg::tresult;
 
 /**
  * Both `TUID` (`int8_t[16]`) and `FIDString` (`char*`) are hard to work with
