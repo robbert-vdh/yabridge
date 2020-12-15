@@ -22,6 +22,9 @@
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
 
 #include "base.h"
+#include "parameter-changes.h"
+
+// This header provides serialization wrappers around `ProcessData`
 
 /**
  * A serializable wrapper around `AudioBusBuffers` back by `std::vector<T>`s.
@@ -115,14 +118,16 @@ class YaAudioBusBuffers {
  * @see YaProcessData
  */
 struct YaProcessDataResponse {
-    UniversalTResult result;
+    std::vector<YaAudioBusBuffers> outputs;
+    // TODO: Don't forget to check for null before writing these back
+    YaParameterChanges output_parameter_changes;
 
-    // TODO: Add the output fields and a function to write these back to a
-    //       `ProcessData&`
+    // TODO: Add events
 
     template <typename S>
     void serialize(S& s) {
-        s.object(result);
+        s.container(outputs, max_num_speakers);
+        s.container(output_parameter_changes, 1 << 16);
     }
 };
 
@@ -161,10 +166,9 @@ class YaProcessData {
         s.value4b(process_mode);
         s.value4b(symbolic_sample_size);
         s.value4b(num_samples);
-        s.container(
-            inputs, max_num_speakers,
-            [](S& s, YaAudioBusBuffers& buffers) { s.object(buffers); });
+        s.container(inputs, max_num_speakers);
         s.container4b(outputs_num_channels, max_num_speakers);
+        s.container(input_parameter_changes, 1 << 16);
     }
 
    private:
@@ -177,6 +181,7 @@ class YaProcessData {
      * The processing mode copied directly from the input struct.
      */
     Steinberg::Vst::ProcessModes process_mode;
+
     /**
      * The symbolic sample size (see `Steinberg::Vst::SymbolicSampleSizes`) is
      * important. The audio buffers are represented by as a C-style untagged
@@ -184,16 +189,19 @@ class YaProcessData {
      * arrays. This field determines which of those variants should be used.
      */
     Steinberg::Vst::SymbolicSampleSizes symbolic_sample_size;
+
     /**
      * The number of samples in each audio buffer.
      */
     int32 num_samples;
+
     /**
      * In `ProcessData` they use C-style heap arrays, so they have to store the
      * number of input/output busses, and then also store pointers to the first
      * audio buffer object. We can combine these two into vectors.
      */
     std::vector<YaAudioBusBuffers> inputs;
+
     /**
      * For the outputs we only have to keep track of how many output channels
      * each bus has. From this and from `num_samples` we can reconstruct the
@@ -201,13 +209,14 @@ class YaProcessData {
      */
     std::vector<int32> outputs_num_channels;
 
+    /**
+     * Incoming parameter changes.
+     */
+    YaParameterChanges input_parameter_changes;
+
     // TODO: Add these (but since these require interface implementations we'll
     //       do it in a second round)
     /*
-    IParameterChanges*
-        inputParameterChanges;  ///< incoming parameter changes for this block
-    IParameterChanges* outputParameterChanges;  ///< outgoing parameter changes
-                                                ///< for this block (optional)
     IEventList* inputEvents;   ///< incoming events for this block (optional)
     IEventList* outputEvents;  ///< outgoing events for this block (optional)
     ProcessContext*
