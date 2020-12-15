@@ -18,8 +18,12 @@
 
 YaParamValueQueue::YaParamValueQueue(){FUNKNOWN_CTOR}
 
-YaParamValueQueue::YaParamValueQueue(
-    Steinberg::Vst::IParamValueQueue& original_queue)
+YaParamValueQueue::YaParamValueQueue(Steinberg::Vst::ParamID parameter_id)
+    : parameter_id(parameter_id){FUNKNOWN_CTOR}
+
+      // clang-format /really/ doesn't like these macros
+      YaParamValueQueue::YaParamValueQueue(Steinberg::Vst::IParamValueQueue &
+                                           original_queue)
     : parameter_id(original_queue.getParameterId()),
       queue(original_queue.getPointCount()) {
     FUNKNOWN_CTOR

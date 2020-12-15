@@ -37,9 +37,15 @@ class YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
     YaParamValueQueue();
 
     /**
+     * Create an empty queue for a specific parameter. Used in
+     * `YaParameterChanges::addParameterData`.
+     */
+    YaParamValueQueue(Steinberg::Vst::ParamID parameter_id);
+
+    /**
      * Read data from an existing `IParamValueQueue` object.
      */
-    YaParamValueQueue(Steinberg::Vst::IParamValueQueue&);
+    YaParamValueQueue(Steinberg::Vst::IParamValueQueue& original_queue);
 
     ~YaParamValueQueue();
 
