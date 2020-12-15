@@ -26,6 +26,7 @@ imcomplete list of things that still have to be done before this can be used:
 - Fully implemented:
   - `GetPluginFactory()` and `IPluginFactory{,2,3}`
   - `IPluginBase` and `IComponent`
+  - `IParamValueQueue`
 - Update the GitHub Actions workflows.
 - Update yabridgectl to handle buth VST2 and VST3 plugins.
 - Update all documentation to refer to VST2 and VST3 support separately, and

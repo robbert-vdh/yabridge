@@ -107,6 +107,14 @@ proxying is described in the section above.
 8. Finally a pointer to this `YaFooPluginImpl` gets returned as the last step of
    the initialization process.
 
+## Simple objects
+
+For serializing objects of interfaces that purely contain getters and setters
+(and thus don't need to perform any host callbacks), we'll simply have a
+constructor that takes the `IFoo` by `IPtr` or reference (depending on how it's
+used in the SDK) and reads the data from it to create a serializable copy of
+that object.
+
 ## Safety notes
 
 - None of the destructors in the interfaces defined by the SDK are marked as
