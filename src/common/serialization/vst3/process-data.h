@@ -18,10 +18,12 @@
 
 #include <variant>
 
+#include <bitsery/ext/std_optional.h>
 #include <bitsery/ext/std_variant.h>
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
 
 #include "base.h"
+#include "event-list.h"
 #include "parameter-changes.h"
 
 // This header provides serialization wrappers around `ProcessData`
@@ -119,15 +121,16 @@ class YaAudioBusBuffers {
  */
 struct YaProcessDataResponse {
     std::vector<YaAudioBusBuffers> outputs;
-    // TODO: Don't forget to check for null before writing these back
-    YaParameterChanges output_parameter_changes;
+    std::optional<YaParameterChanges> output_parameter_changes;
+    std::optional<YaEventList> output_events;
 
-    // TODO: Add events
+    // TODO: Add function to write these back to the host's `ProcessData`
 
     template <typename S>
     void serialize(S& s) {
         s.container(outputs, max_num_speakers);
-        s.container(output_parameter_changes, 1 << 16);
+        s.ext(output_parameter_changes, bitsery::ext::StdOptional{});
+        s.ext(output_events, bitsery::ext::StdOptional{});
     }
 };
 
@@ -168,7 +171,8 @@ class YaProcessData {
         s.value4b(num_samples);
         s.container(inputs, max_num_speakers);
         s.container4b(outputs_num_channels, max_num_speakers);
-        s.container(input_parameter_changes, 1 << 16);
+        s.object(input_parameter_changes);
+        s.ext(input_events, bitsery::ext::StdOptional{});
     }
 
    private:
@@ -214,11 +218,14 @@ class YaProcessData {
      */
     YaParameterChanges input_parameter_changes;
 
+    /**
+     * Incoming events.
+     */
+    std::optional<YaEventList> input_events;
+
     // TODO: Add these (but since these require interface implementations we'll
     //       do it in a second round)
     /*
-    IEventList* inputEvents;   ///< incoming events for this block (optional)
-    IEventList* outputEvents;  ///< outgoing events for this block (optional)
     ProcessContext*
         processContext;  ///< processing context (optional, but most welcome)
     */
