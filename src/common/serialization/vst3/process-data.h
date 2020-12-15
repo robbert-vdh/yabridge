@@ -48,7 +48,7 @@ class YaAudioBusBuffers {
      * Create a new, zero initialize audio bus buffers object. Used to
      * reconstruct the output buffers during `YaProcessData::get()`.
      */
-    YaAudioBusBuffers(Steinberg::Vst::SymbolicSampleSizes sample_size,
+    YaAudioBusBuffers(int32 sample_size,
                       size_t num_channels,
                       size_t num_samples);
 
@@ -60,7 +60,7 @@ class YaAudioBusBuffers {
      * field determines which variant of that union to use. Similarly the
      * `ProcessData`' `numSamples` field determines the extent of these arrays.
      */
-    YaAudioBusBuffers(Steinberg::Vst::SymbolicSampleSizes sample_size,
+    YaAudioBusBuffers(int32 sample_size,
                       int32 num_samples,
                       const Steinberg::Vst::AudioBusBuffers& data);
 
@@ -96,13 +96,11 @@ class YaAudioBusBuffers {
      */
     Steinberg::Vst::AudioBusBuffers reconstructed_buffers;
 
-    // Used in reconstructed_buffers, because we need to store pointers to the
-    // inner vectors in `buffers`. We're using a union instead of void pointers
-    // here to have at least some resemblance of type safety.
-    union {
-        std::vector<float*> float_buffer_pointers;
-        std::vector<double*> double_buffer_pointers;
-    };
+    /**
+     * We need these during the reconstruction process to provide a pointer to
+     * an array of pointers to the actual buffers.
+     */
+    std::vector<void*> buffer_pointers;
 
     /**
      * A bitfield for silent channels copied directly from the input struct.
@@ -195,7 +193,7 @@ class YaProcessData {
     /**
      * The processing mode copied directly from the input struct.
      */
-    Steinberg::Vst::ProcessModes process_mode;
+    int32 process_mode;
 
     /**
      * The symbolic sample size (see `Steinberg::Vst::SymbolicSampleSizes`) is
@@ -203,7 +201,7 @@ class YaProcessData {
      * union of array of either single or double precision floating point
      * arrays. This field determines which of those variants should be used.
      */
-    Steinberg::Vst::SymbolicSampleSizes symbolic_sample_size;
+    int32 symbolic_sample_size;
 
     /**
      * The number of samples in each audio buffer.
