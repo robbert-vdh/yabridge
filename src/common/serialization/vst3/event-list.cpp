@@ -50,12 +50,14 @@ YaChordEvent::YaChordEvent() {}
 YaChordEvent::YaChordEvent(const Steinberg::Vst::ChordEvent& event)
     : root(event.root),
       bass_note(event.bassNote),
+      mask(event.mask),
       text(tchar_pointer_to_u16string(event.text, event.textLen)) {}
 
 Steinberg::Vst::ChordEvent YaChordEvent::get() const {
     return Steinberg::Vst::ChordEvent{
         .root = root,
         .bassNote = bass_note,
+        .mask = mask,
         .textLen = static_cast<uint16>(text.size()),
         .text = u16string_to_tchar_pointer(text)};
 }
@@ -64,11 +66,13 @@ YaScaleEvent::YaScaleEvent() {}
 
 YaScaleEvent::YaScaleEvent(const Steinberg::Vst::ScaleEvent& event)
     : root(event.root),
+      mask(event.mask),
       text(tchar_pointer_to_u16string(event.text, event.textLen)) {}
 
 Steinberg::Vst::ScaleEvent YaScaleEvent::get() const {
     return Steinberg::Vst::ScaleEvent{
         .root = root,
+        .mask = mask,
         .textLen = static_cast<uint16>(text.size()),
         .text = u16string_to_tchar_pointer(text)};
 }
@@ -118,10 +122,14 @@ YaEvent::YaEvent(const Steinberg::Vst::Event& event)
 }
 
 Steinberg::Vst::Event YaEvent::get() const {
+    // We of course can't fully initialize a field with an untagged union
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
     Steinberg::Vst::Event event{.busIndex = bus_index,
                                 .sampleOffset = sample_offset,
                                 .ppqPosition = ppq_position,
                                 .flags = flags};
+#pragma GCC diagnostic pop
     std::visit(
         overload{
             [&](const Steinberg::Vst::NoteOnEvent& specific_event) {
