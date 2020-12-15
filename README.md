@@ -26,7 +26,8 @@ imcomplete list of things that still have to be done before this can be used:
 - Fully implemented:
   - `GetPluginFactory()` and `IPluginFactory{,2,3}`
   - `IPluginBase` and `IComponent`
-  - `IParameterChanges` and `IParamValueQueue`
+  - `IParameterChanges`, `IParamValueQueue`, `IEventList`, and all event types
+    in VST 3.7.1
 - Update the GitHub Actions workflows.
 - Update yabridgectl to handle buth VST2 and VST3 plugins.
 - Update all documentation to refer to VST2 and VST3 support separately, and

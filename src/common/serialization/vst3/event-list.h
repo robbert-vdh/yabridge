@@ -221,7 +221,7 @@ class YaEventList : public Steinberg::Vst::IEventList {
     /**
      * Read data from an existing `IEventList` object.
      */
-    YaEventList(Steinberg::Vst::IEventList& original_events);
+    YaEventList(Steinberg::Vst::IEventList& event_list);
 
     ~YaEventList();
 
@@ -229,8 +229,6 @@ class YaEventList : public Steinberg::Vst::IEventList {
 
     // From `IEventList`
     virtual int32 PLUGIN_API getEventCount() override;
-    // We're making the assumption here that events are immutable (which should
-    // be the case, but it's never mentioned anywhere)
     virtual tresult PLUGIN_API
     getEvent(int32 index, Steinberg::Vst::Event& e /*out*/) override;
     virtual tresult PLUGIN_API
@@ -243,6 +241,12 @@ class YaEventList : public Steinberg::Vst::IEventList {
 
    private:
     std::vector<YaEvent> events;
+
+    /**
+     * On the first `getEvent()` call we'll reconstruct these from `events` all
+     * at once. These event objects may not outlive this event list.
+     */
+    std::vector<Steinberg::Vst::Event> reconstructed_events;
 };
 
 namespace Steinberg {

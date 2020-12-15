@@ -165,3 +165,63 @@ Steinberg::Vst::Event YaEvent::get() const {
 
     return event;
 }
+
+YaEventList::YaEventList(){FUNKNOWN_CTOR}
+
+YaEventList::YaEventList(Steinberg::Vst::IEventList& event_list) {
+    FUNKNOWN_CTOR
+
+    events.reserve(event_list.getEventCount());
+
+    // Copy over all events. Everything gets converted to `YaEvent`s.
+    Steinberg::Vst::Event event;
+    for (int i = 0; i < event_list.getEventCount(); i++) {
+        // We're skipping the `kResultOk` assertions here
+        event_list.getEvent(i, event);
+        events.push_back(event);
+    }
+}
+
+YaEventList::~YaEventList() {
+    FUNKNOWN_DTOR
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
+IMPLEMENT_FUNKNOWN_METHODS(YaEventList,
+                           Steinberg::Vst::IEventList,
+                           Steinberg::Vst::IEventList::iid)
+#pragma GCC diagnostic pop
+
+int32 PLUGIN_API YaEventList::getEventCount() {
+    return events.size();
+}
+
+tresult PLUGIN_API YaEventList::getEvent(int32 index,
+                                         Steinberg::Vst::Event& e /*out*/) {
+    if (index < 0 || index >= static_cast<int32>(events.size())) {
+        return Steinberg::kInvalidArgument;
+    }
+
+    // On the first call to this, we'll reconstruct `Event` objects out of our
+    // `YaEvent`s all at once. This is also done if for whatever reason the
+    // plugin `getEvent()`s an event it just added.
+    const size_t num_already_reconstructed_events = reconstructed_events.size();
+    if (index >= static_cast<int32>(num_already_reconstructed_events)) {
+        reconstructed_events.resize(events.size());
+        std::transform(
+            events.begin() + num_already_reconstructed_events, events.end(),
+            reconstructed_events.begin() + num_already_reconstructed_events,
+            [](const YaEvent& event) { return event.get(); });
+    }
+
+    e = reconstructed_events[index];
+
+    return Steinberg::kResultOk;
+}
+
+tresult PLUGIN_API YaEventList::addEvent(Steinberg::Vst::Event& e /*in*/) {
+    events.push_back(e);
+
+    return Steinberg::kResultOk;
+}

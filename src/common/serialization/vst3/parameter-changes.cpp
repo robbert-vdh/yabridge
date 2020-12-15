@@ -23,7 +23,7 @@ YaParameterChanges::YaParameterChanges(
     FUNKNOWN_CTOR
 
     // Copy over all parameter changne queues. Everything gets converted to
-    // `YaParamValueQueue`s
+    // `YaParamValueQueue`s.
     queues.reserve(original_queues.getParameterCount());
     for (int i = 0; i < original_queues.getParameterCount(); i++) {
         queues.push_back(*original_queues.getParameterData(i));
