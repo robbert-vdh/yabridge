@@ -10,13 +10,13 @@ communication through [plugin groups](#plugin-groups). Its modern concurrent
 architecture and focus on transparency allows yabridge to be both fast and
 highly compatible, while also staying easy to debug and maintain.
 
-## TODO
+## TODOs
 
 This branch is still very far removed from being in a usable state. Below is an
-imcomplete list of things that still have to be done before this can be used:
+incomplete list of things that still have to be done before this can be used:
 
-- Left to implement:
-  - `YaHostApplicationHostImpl::createComponent`.
+- Interfaces left to implement:
+  - `YaHostApplicationHostImpl::createComponent()`
   - `IAudioProcessor::process()` along with every interface and struct involved
     in `ProcessData`
   - `IConnectionPoint` to supplement `IComponent`
@@ -28,15 +28,19 @@ imcomplete list of things that still have to be done before this can be used:
   - `IPluginBase` and `IComponent`
   - `IParameterChanges`, `IParamValueQueue`, `IEventList`, and all event types
     in VST 3.7.1
+  - `IBStream`
+- Finalize the VST3 [design
+  document](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/src/common/serialization/vst3/README.md)
+  and move it to `docs/`.
 - Update the GitHub Actions workflows.
 - Update yabridgectl to handle buth VST2 and VST3 plugins.
 - Update all documentation to refer to VST2 and VST3 support separately, and
   figure out how to do this in the least confusing way possible.
 - Mention that this update will break all existing symlinks and that the old
   `libyabridge.so` file should be removed when upgrading.
-- Pay close attention to the plugin groups section, since VST3 plugins by design
-  cannot be hosted completely individually (as in, each plugin is basically in
-  its own group).
+- Pay close attention when updating the plugin groups section of the readme,
+  since VST3 plugins by design cannot be hosted completely individually (as in,
+  each plugin is basically in its own group).
 - Update all the AUR packages.
 - Test the binaries built on GitHub on plain Ubuntu 18.04, are we missing any
   static linking?
