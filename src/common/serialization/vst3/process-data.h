@@ -173,6 +173,7 @@ class YaProcessData {
         s.container4b(outputs_num_channels, max_num_speakers);
         s.object(input_parameter_changes);
         s.ext(input_events, bitsery::ext::StdOptional{});
+        s.ext(process_context, bitsery::ext::StdOptional{});
     }
 
    private:
@@ -223,10 +224,51 @@ class YaProcessData {
      */
     std::optional<YaEventList> input_events;
 
-    // TODO: Add these (but since these require interface implementations we'll
-    //       do it in a second round)
-    /*
-    ProcessContext*
-        processContext;  ///< processing context (optional, but most welcome)
-    */
+    /**
+     * Some more information about the project and transport.
+     */
+    std::optional<Steinberg::Vst::ProcessContext> process_context;
 };
+
+namespace Steinberg {
+namespace Vst {
+template <typename S>
+void serialize(S& s, Steinberg::Vst::ProcessContext& process_context) {
+    // The docs don't mention that things ever got added to this context (and
+    // that some fields thus may not exist for all hosts), so we'll just
+    // directly serialize everything. If it does end up being the case that new
+    // fields were added here we should serialize based on the bits set in the
+    // flags bitfield.
+    s.value4b(process_context.state);
+    s.value8b(process_context.sampleRate);
+    s.value8b(process_context.projectTimeSamples);
+    s.value8b(process_context.systemTime);
+    s.value8b(process_context.continousTimeSamples);
+    s.value8b(process_context.projectTimeMusic);
+    s.value8b(process_context.barPositionMusic);
+    s.value8b(process_context.cycleStartMusic);
+    s.value8b(process_context.cycleEndMusic);
+    s.value8b(process_context.tempo);
+    s.value4b(process_context.timeSigNumerator);
+    s.value4b(process_context.timeSigDenominator);
+    s.object(process_context.chord);
+    s.value4b(process_context.smpteOffsetSubframes);
+    s.value4b(process_context.smpteOffsetSubframes);
+    s.object(process_context.frameRate);
+    s.value4b(process_context.samplesToNextClock);
+}
+
+template <typename S>
+void serialize(S& s, Steinberg::Vst::Chord& chord) {
+    s.value1b(chord.keyNote);
+    s.value1b(chord.rootNote);
+    s.value2b(chord.chordMask);
+}
+
+template <typename S>
+void serialize(S& s, Steinberg::Vst::FrameRate& frame_rate) {
+    s.value1b(frame_rate.framesPerSecond);
+    s.value1b(frame_rate.flags);
+}
+}  // namespace Vst
+}  // namespace Steinberg
