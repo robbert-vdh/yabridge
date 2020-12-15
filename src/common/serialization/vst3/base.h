@@ -29,8 +29,8 @@
 // we'll need for all of our interfaces
 
 using Steinberg::TBool, Steinberg::int8, Steinberg::int16, Steinberg::int32,
-    Steinberg::int64, Steinberg::uint8, Steinberg::uint32, Steinberg::uint64,
-    Steinberg::tresult;
+    Steinberg::int64, Steinberg::uint8, Steinberg::uint16, Steinberg::uint32,
+    Steinberg::uint64, Steinberg::tresult;
 
 /**
  * Both `TUID` (`int8_t[16]`) and `FIDString` (`char*`) are hard to work with
@@ -57,7 +57,21 @@ constexpr size_t max_vector_stream_size = 50 << 20;
  * Convert a UTF-16 C-style string to an `std::u16string`. Who event invented
  * UTF-16?
  */
-std::u16string tchar_string_to_u16string(const Steinberg::Vst::TChar* string);
+std::u16string tchar_pointer_to_u16string(const Steinberg::Vst::TChar* string);
+
+/**
+ * Same as the above, but with a fixed string length.
+ *
+ * @overload
+ */
+std::u16string tchar_pointer_to_u16string(const Steinberg::Vst::TChar* string,
+                                          uint32 length);
+
+/**
+ * Convert an `std::u16string` back to a null terminated `TChar*` string.
+ */
+const Steinberg::Vst::TChar* u16string_to_tchar_pointer(
+    const std::u16string& string);
 
 /**
  * Empty struct for when we have send a response to some operation without any

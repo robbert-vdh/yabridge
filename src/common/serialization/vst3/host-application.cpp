@@ -24,7 +24,7 @@ YaHostApplication::ConstructArgs::ConstructArgs(
     : component_instance_id(component_instance_id) {
     Steinberg::Vst::String128 name_array;
     if (context->getName(name_array) == Steinberg::kResultOk) {
-        name = tchar_string_to_u16string(name_array);
+        name = tchar_pointer_to_u16string(name_array);
     }
 }
 

@@ -45,12 +45,12 @@ struct YaDataEvent {
     Steinberg::Vst::DataEvent get() const;
 
     uint32 type;
-    std::vector<uint8> data;
+    std::vector<uint8> buffer;
 
     template <typename S>
     void serialize(S& s) {
         s.value4b(type);
-        s.container1b(data, 1 << 16);
+        s.container1b(buffer, 1 << 16);
     }
 };
 

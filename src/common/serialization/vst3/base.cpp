@@ -19,13 +19,33 @@
 
 #include "base.h"
 
-std::u16string tchar_string_to_u16string(const Steinberg::Vst::TChar* string) {
+std::u16string tchar_pointer_to_u16string(const Steinberg::Vst::TChar* string) {
 #ifdef __WINE__
     // This is great, thanks Steinberg
     static_assert(sizeof(Steinberg::Vst::TChar) == sizeof(char16_t));
     return std::u16string(reinterpret_cast<const char16_t*>(string));
 #else
     return std::u16string(static_cast<const char16_t*>(string));
+#endif
+}
+
+std::u16string tchar_pointer_to_u16string(const Steinberg::Vst::TChar* string,
+                                          uint32 length) {
+#ifdef __WINE__
+    static_assert(sizeof(Steinberg::Vst::TChar) == sizeof(char16_t));
+    return std::u16string(reinterpret_cast<const char16_t*>(string), length);
+#else
+    return std::u16string(static_cast<const char16_t*>(string), length);
+#endif
+}
+
+const Steinberg::Vst::TChar* u16string_to_tchar_pointer(
+    const std::u16string& string) {
+#ifdef __WINE__
+    static_assert(sizeof(Steinberg::Vst::TChar) == sizeof(char16_t));
+    return reinterpret_cast<const Steinberg::Vst::TChar*>(string.c_str());
+#else
+    return static_cast<const Steinberg::Vst::TChar*>(string.c_str());
 #endif
 }
 
