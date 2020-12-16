@@ -60,6 +60,59 @@ void Vst3Bridge::run() {
     sockets.host_vst_control.receive_messages(
         std::nullopt,
         overload{
+            [&](YaAudioProcessor::SetBusArrangements& request)
+                -> YaAudioProcessor::SetBusArrangements::Response {
+                return component_instances[request.instance_id]
+                    .audio_processor->setBusArrangements(
+                        request.inputs.data(), request.num_ins,
+                        request.outputs.data(), request.num_outs);
+            },
+            [&](YaAudioProcessor::GetBusArrangement& request)
+                -> YaAudioProcessor::GetBusArrangement::Response {
+                const tresult result =
+                    component_instances[request.instance_id]
+                        .audio_processor->getBusArrangement(
+                            request.dir, request.index, request.arr);
+
+                return YaAudioProcessor::GetBusArrangementResponse{
+                    .result = result, .updated_arr = request.arr};
+            },
+            [&](const YaAudioProcessor::CanProcessSampleSize& request)
+                -> YaAudioProcessor::CanProcessSampleSize::Response {
+                return component_instances[request.instance_id]
+                    .audio_processor->canProcessSampleSize(
+                        request.symbolic_sample_size);
+            },
+            [&](const YaAudioProcessor::GetLatencySamples& request)
+                -> YaAudioProcessor::GetLatencySamples::Response {
+                return component_instances[request.instance_id]
+                    .audio_processor->getLatencySamples();
+            },
+            [&](YaAudioProcessor::SetupProcessing& request)
+                -> YaAudioProcessor::SetupProcessing::Response {
+                return component_instances[request.instance_id]
+                    .audio_processor->setupProcessing(request.setup);
+            },
+            [&](const YaAudioProcessor::SetProcessing& request)
+                -> YaAudioProcessor::SetProcessing::Response {
+                return component_instances[request.instance_id]
+                    .audio_processor->setProcessing(request.state);
+            },
+            [&](YaAudioProcessor::Process& request)
+                -> YaAudioProcessor::Process::Response {
+                const tresult result =
+                    component_instances[request.instance_id]
+                        .audio_processor->process(request.data.get());
+
+                return YaAudioProcessor::ProcessResponse{
+                    .result = result,
+                    .output_data = request.data.move_outputs_to_response()};
+            },
+            [&](const YaAudioProcessor::GetTailSamples& request)
+                -> YaAudioProcessor::GetTailSamples::Response {
+                return component_instances[request.instance_id]
+                    .audio_processor->getTailSamples();
+            },
             [&](const YaComponent::Construct& args)
                 -> YaComponent::Construct::Response {
                 Steinberg::TUID cid;
@@ -87,30 +140,6 @@ void Vst3Bridge::run() {
                 component_instances.erase(request.instance_id);
 
                 return Ack{};
-            },
-            [&](YaPluginBase::Initialize& request)
-                -> YaPluginBase::Initialize::Response {
-                // If we got passed a host context, we'll create a proxy object
-                // and pass that to the initialize function. This object should
-                // be cleaned up again during `YaComponent::Destruct`.
-                Steinberg::FUnknown* context = nullptr;
-                if (request.host_application_context_args) {
-                    component_instances[request.instance_id]
-                        .hsot_application_context =
-                        Steinberg::owned(new YaHostApplicationHostImpl(
-                            *this,
-                            std::move(*request.host_application_context_args)));
-                    context = component_instances[request.instance_id]
-                                  .hsot_application_context;
-                }
-
-                return component_instances[request.instance_id]
-                    .plugin_base->initialize(context);
-            },
-            [&](const YaPluginBase::Terminate& request)
-                -> YaPluginBase::Terminate::Response {
-                return component_instances[request.instance_id]
-                    .plugin_base->terminate();
             },
             [&](const YaComponent::SetIoMode& request)
                 -> YaComponent::SetIoMode::Response {
@@ -169,58 +198,29 @@ void Vst3Bridge::run() {
                 return YaComponent::GetStateResponse{
                     .result = result, .updated_state = std::move(stream)};
             },
-            [&](YaComponent::SetBusArrangements& request)
-                -> YaComponent::SetBusArrangements::Response {
-                return component_instances[request.instance_id]
-                    .audio_processor->setBusArrangements(
-                        request.inputs.data(), request.num_ins,
-                        request.outputs.data(), request.num_outs);
-            },
-            [&](YaComponent::GetBusArrangement& request)
-                -> YaComponent::GetBusArrangement::Response {
-                const tresult result =
+            [&](YaPluginBase::Initialize& request)
+                -> YaPluginBase::Initialize::Response {
+                // If we got passed a host context, we'll create a proxy object
+                // and pass that to the initialize function. This object should
+                // be cleaned up again during `YaComponent::Destruct`.
+                Steinberg::FUnknown* context = nullptr;
+                if (request.host_application_context_args) {
                     component_instances[request.instance_id]
-                        .audio_processor->getBusArrangement(
-                            request.dir, request.index, request.arr);
+                        .hsot_application_context =
+                        Steinberg::owned(new YaHostApplicationHostImpl(
+                            *this,
+                            std::move(*request.host_application_context_args)));
+                    context = component_instances[request.instance_id]
+                                  .hsot_application_context;
+                }
 
-                return YaComponent::GetBusArrangementResponse{
-                    .result = result, .updated_arr = request.arr};
-            },
-            [&](const YaComponent::CanProcessSampleSize& request)
-                -> YaComponent::CanProcessSampleSize::Response {
                 return component_instances[request.instance_id]
-                    .audio_processor->canProcessSampleSize(
-                        request.symbolic_sample_size);
+                    .plugin_base->initialize(context);
             },
-            [&](const YaComponent::GetLatencySamples& request)
-                -> YaComponent::GetLatencySamples::Response {
+            [&](const YaPluginBase::Terminate& request)
+                -> YaPluginBase::Terminate::Response {
                 return component_instances[request.instance_id]
-                    .audio_processor->getLatencySamples();
-            },
-            [&](YaComponent::SetupProcessing& request)
-                -> YaComponent::SetupProcessing::Response {
-                return component_instances[request.instance_id]
-                    .audio_processor->setupProcessing(request.setup);
-            },
-            [&](const YaComponent::SetProcessing& request)
-                -> YaComponent::SetProcessing::Response {
-                return component_instances[request.instance_id]
-                    .audio_processor->setProcessing(request.state);
-            },
-            [&](YaComponent::Process& request)
-                -> YaComponent::Process::Response {
-                const tresult result =
-                    component_instances[request.instance_id]
-                        .audio_processor->process(request.data.get());
-
-                return YaComponent::ProcessResponse{
-                    .result = result,
-                    .output_data = request.data.move_outputs_to_response()};
-            },
-            [&](const YaComponent::GetTailSamples& request)
-                -> YaComponent::GetTailSamples::Response {
-                return component_instances[request.instance_id]
-                    .audio_processor->getTailSamples();
+                    .plugin_base->terminate();
             },
             [&](const YaPluginFactory::Construct&)
                 -> YaPluginFactory::Construct::Response {

@@ -22,8 +22,8 @@ YaComponent::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::Vst::IComponent> component,
     size_t instance_id)
     : instance_id(instance_id),
-      audio_processor_supported(
-          Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor>(component)) {
+      audio_processor_args(component),
+      plugin_base_args(component) {
     // `IComponent::getControllerClassId`
     Steinberg::TUID cid;
     if (component->getControllerClassId(cid) == Steinberg::kResultOk) {
@@ -32,7 +32,8 @@ YaComponent::ConstructArgs::ConstructArgs(
 }
 
 YaComponent::YaComponent(const ConstructArgs&& args)
-    : YaPluginBase(std::move(args.plugin_base_args)),
+    : YaAudioProcessor(std::move(args.audio_processor_args)),
+      YaPluginBase(std::move(args.plugin_base_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
       YaComponent::~YaComponent() {
@@ -61,7 +62,7 @@ tresult PLUGIN_API YaComponent::queryInterface(Steinberg::FIDString _iid,
     }
     QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IComponent::iid,
                     Steinberg::Vst::IComponent)
-    if (arguments.audio_processor_supported) {
+    if (YaAudioProcessor::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IAudioProcessor::iid,
                         Steinberg::Vst::IAudioProcessor)
     }

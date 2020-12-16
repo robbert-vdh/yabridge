@@ -9,9 +9,10 @@ VST3 interfaces are implemented as follows:
 
 | Yabridge class      | Included in   | Interfaces                                             |
 | ------------------- | ------------- | ------------------------------------------------------ |
-| `YaComponent`       |               | `IComponent`, `IAudioProcessor`                        |
-| `YaHostApplication` |               | `iHostAPplication`                                     |
+| `YaComponent`       |               | `IComponent`                                           |
+| `YaAudioProcessor`  | `YaComponent` | `IAudioProcessor`                                      |
 | `YaPluginBase`      | `YaComponent` | `IPluginBase`                                          |
+| `YaHostApplication` |               | `iHostAPplication`                                     |
 | `YaPluginFactory`   |               | `IPluginFactory`, `IPluginFactory2`, `IPluginFactory3` |
 
 The following interfaces are implemented purely fur serialization purposes:

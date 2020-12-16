@@ -40,9 +40,8 @@ class YaPluginBase : public Steinberg::IPluginBase {
         ConstructArgs();
 
         /**
-         * Read arguments from an existing implementation. Depending on the
-         * supported interface function more or less of this struct will be left
-         * empty, and `known_iids` will be set accordingly.
+         * Check whether an existing implementation implements `IPluginBase` and
+         * read arguments from it.
          */
         ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
 

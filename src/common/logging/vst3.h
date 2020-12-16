@@ -56,6 +56,19 @@ class Vst3Logger {
     // flag here indicates whether the request was initiated on the host side
     // (what we'll call a control message).
 
+    void log_request(bool is_host_vst,
+                     const YaAudioProcessor::SetBusArrangements&);
+    void log_request(bool is_host_vst,
+                     const YaAudioProcessor::GetBusArrangement&);
+    void log_request(bool is_host_vst,
+                     const YaAudioProcessor::CanProcessSampleSize&);
+    void log_request(bool is_host_vst,
+                     const YaAudioProcessor::GetLatencySamples&);
+    void log_request(bool is_host_vst,
+                     const YaAudioProcessor::SetupProcessing&);
+    void log_request(bool is_host_vst, const YaAudioProcessor::SetProcessing&);
+    void log_request(bool is_host_vst, const YaAudioProcessor::Process&);
+    void log_request(bool is_host_vst, const YaAudioProcessor::GetTailSamples&);
     void log_request(bool is_host_vst, const YaComponent::Construct&);
     void log_request(bool is_host_vst, const YaComponent::Destruct&);
     void log_request(bool is_host_vst, const YaComponent::SetIoMode&);
@@ -66,15 +79,6 @@ class Vst3Logger {
     void log_request(bool is_host_vst, const YaComponent::SetActive&);
     void log_request(bool is_host_vst, const YaComponent::SetState&);
     void log_request(bool is_host_vst, const YaComponent::GetState&);
-    void log_request(bool is_host_vst, const YaComponent::SetBusArrangements&);
-    void log_request(bool is_host_vst, const YaComponent::GetBusArrangement&);
-    void log_request(bool is_host_vst,
-                     const YaComponent::CanProcessSampleSize&);
-    void log_request(bool is_host_vst, const YaComponent::GetLatencySamples&);
-    void log_request(bool is_host_vst, const YaComponent::SetupProcessing&);
-    void log_request(bool is_host_vst, const YaComponent::SetProcessing&);
-    void log_request(bool is_host_vst, const YaComponent::Process&);
-    void log_request(bool is_host_vst, const YaComponent::GetTailSamples&);
     void log_request(bool is_host_vst, const YaPluginBase::Initialize&);
     void log_request(bool is_host_vst, const YaPluginBase::Terminate&);
     void log_request(bool is_host_vst, const YaPluginFactory::Construct&);
@@ -82,6 +86,10 @@ class Vst3Logger {
     void log_request(bool is_host_vst, const WantsConfiguration&);
 
     void log_response(bool is_host_vst, const Ack&);
+    void log_response(bool is_host_vst,
+                      const YaAudioProcessor::GetBusArrangementResponse&);
+    void log_response(bool is_host_vst,
+                      const YaAudioProcessor::ProcessResponse&);
     void log_response(
         bool is_host_vst,
         const std::variant<YaComponent::ConstructArgs, UniversalTResult>&);
@@ -89,9 +97,6 @@ class Vst3Logger {
     void log_response(bool is_host_vst,
                       const YaComponent::GetRoutingInfoResponse&);
     void log_response(bool is_host_vst, const YaComponent::GetStateResponse&);
-    void log_response(bool is_host_vst,
-                      const YaComponent::GetBusArrangementResponse&);
-    void log_response(bool is_host_vst, const YaComponent::ProcessResponse&);
     void log_response(bool is_host_vst, const YaPluginFactory::ConstructArgs&);
     void log_response(bool is_host_vst, const Configuration&);
 

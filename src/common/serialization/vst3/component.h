@@ -25,15 +25,14 @@
 #include <bitsery/ext/std_set.h>
 #include <bitsery/ext/std_variant.h>
 #include <bitsery/traits/array.h>
-#include <pluginterfaces/vst/ivstaudioprocessor.h>
 #include <pluginterfaces/vst/ivstcomponent.h>
 
 #include "../../bitsery/ext/vst3.h"
 #include "../common.h"
+#include "audio-processor.h"
 #include "base.h"
 #include "host-application.h"
 #include "plugin-base.h"
-#include "process-data.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -55,8 +54,8 @@
  *       the SDK's `AudioEffect` component.
  */
 class YaComponent : public Steinberg::Vst::IComponent,
-                    public YaPluginBase,
-                    public Steinberg::Vst::IAudioProcessor {
+                    public YaAudioProcessor,
+                    public YaPluginBase {
    public:
     /**
      * These are the arguments for creating a `YaComponentPluginImpl`.
@@ -77,10 +76,8 @@ class YaComponent : public Steinberg::Vst::IComponent,
          */
         native_size_t instance_id;
 
+        YaAudioProcessor::ConstructArgs audio_processor_args;
         YaPluginBase::ConstructArgs plugin_base_args;
-
-        // TODO: Remove, transitional
-        bool audio_processor_supported;
 
         /**
          * The class ID of this component's corresponding editor controller. You
@@ -91,8 +88,8 @@ class YaComponent : public Steinberg::Vst::IComponent,
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
+            s.object(audio_processor_args);
             s.object(plugin_base_args);
-            s.value1b(audio_processor_supported);
             s.ext(edit_controller_cid, bitsery::ext::StdOptional{},
                   [](S& s, auto& cid) { s.container1b(cid); });
         }
@@ -101,8 +98,7 @@ class YaComponent : public Steinberg::Vst::IComponent,
     /**
      * Message to request the Wine plugin host to instantiate a new IComponent
      * to pass through a call to `IComponent::createInstance(cid,
-     * IComponent::iid,
-     * ...)`.
+     * IComponent::iid, ...)`.
      */
     struct Construct {
         using Response = std::variant<ConstructArgs, UniversalTResult>;
@@ -145,7 +141,6 @@ class YaComponent : public Steinberg::Vst::IComponent,
 
     DECLARE_FUNKNOWN_METHODS
 
-    // From `IComponent`
     tresult PLUGIN_API getControllerClassId(Steinberg::TUID classId) override;
 
     /**
@@ -381,222 +376,6 @@ class YaComponent : public Steinberg::Vst::IComponent,
     virtual tresult PLUGIN_API
     getState(Steinberg::IBStream* state) override = 0;
 
-    // From `IAudioProcessor`
-
-    /**
-     * Message to pass through a call to
-     * `IAudioProcessor::setBusArrangements(inputs, num_ins, outputs, num_outs)`
-     * to the Wine plugin host.
-     */
-    struct SetBusArrangements {
-        using Response = UniversalTResult;
-
-        native_size_t instance_id;
-
-        // These are orginally C-style heap arrays, not normal pointers
-        std::vector<Steinberg::Vst::SpeakerArrangement> inputs;
-        int32 num_ins;
-        std::vector<Steinberg::Vst::SpeakerArrangement> outputs;
-        int32 num_outs;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-            s.container8b(inputs, max_num_speakers);
-            s.value4b(num_ins);
-            s.container8b(outputs, max_num_speakers);
-            s.value4b(num_outs);
-        }
-    };
-
-    virtual tresult PLUGIN_API
-    setBusArrangements(Steinberg::Vst::SpeakerArrangement* inputs,
-                       int32 numIns,
-                       Steinberg::Vst::SpeakerArrangement* outputs,
-                       int32 numOuts) override = 0;
-
-    /**
-     * The response code and written state for a call to
-     * `IAudioProcessor::getBusArrangement(dir, index, arr)`.
-     */
-    struct GetBusArrangementResponse {
-        UniversalTResult result;
-        Steinberg::Vst::SpeakerArrangement updated_arr;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.object(result);
-            s.value8b(updated_arr);
-        }
-    };
-
-    /**
-     * Message to pass through a call to
-     * `IAudioProcessor::getBusArrangement(dir, index, arr)` to the Wine
-     * plugin host.
-     */
-    struct GetBusArrangement {
-        using Response = GetBusArrangementResponse;
-
-        native_size_t instance_id;
-
-        Steinberg::Vst::BusDirection dir;
-        int32 index;
-        Steinberg::Vst::SpeakerArrangement arr;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-            s.value4b(dir);
-            s.value4b(index);
-            s.value8b(arr);
-        }
-    };
-
-    virtual tresult PLUGIN_API
-    getBusArrangement(Steinberg::Vst::BusDirection dir,
-                      int32 index,
-                      Steinberg::Vst::SpeakerArrangement& arr) override = 0;
-
-    /**
-     * Message to pass through a call to
-     * `IAudioProcessor::canProcessSampleSize(symbolic_sample_size)` to the Wine
-     * plugin host.
-     */
-    struct CanProcessSampleSize {
-        using Response = UniversalTResult;
-
-        native_size_t instance_id;
-
-        int32 symbolic_sample_size;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-            s.value4b(symbolic_sample_size);
-        }
-    };
-
-    virtual tresult PLUGIN_API
-    canProcessSampleSize(int32 symbolicSampleSize) override = 0;
-
-    /**
-     * Message to pass through a call to `IAudioProcessor::getLatencySamples()`
-     * to the Wine plugin host.
-     */
-    struct GetLatencySamples {
-        using Response = PrimitiveWrapper<uint32>;
-
-        native_size_t instance_id;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-        }
-    };
-
-    virtual uint32 PLUGIN_API getLatencySamples() override = 0;
-
-    /**
-     * Message to pass through a call to
-     * `IAudioProcessor::setupProcessing(setup)` to the Wine plugin host.
-     */
-    struct SetupProcessing {
-        using Response = UniversalTResult;
-
-        native_size_t instance_id;
-
-        Steinberg::Vst::ProcessSetup setup;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-            s.object(setup);
-        }
-    };
-
-    virtual tresult PLUGIN_API
-    setupProcessing(Steinberg::Vst::ProcessSetup& setup) override = 0;
-
-    /**
-     * Message to pass through a call to `IAudioProcessor::setProcessing(state)`
-     * to the Wine plugin host.
-     */
-    struct SetProcessing {
-        using Response = UniversalTResult;
-
-        native_size_t instance_id;
-
-        TBool state;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-            s.value1b(state);
-        }
-    };
-
-    virtual tresult PLUGIN_API setProcessing(TBool state) override = 0;
-
-    /**
-     * The response code and all the output data resulting from a call to
-     * `IAudioProcessor::process(data)`.
-     */
-    struct ProcessResponse {
-        UniversalTResult result;
-        YaProcessDataResponse output_data;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.object(result);
-            s.object(output_data);
-        }
-    };
-
-    /**
-     * Message to pass through a call to `IAudioProcessor::process(data)` to the
-     * Wine plugin host. This `YaProcessData` object wraps around all input
-     * audio buffers, parameter changes and events along with all context data
-     * provided by the host so we can send it to the Wine plugin host. We can
-     * then use `YaProcessData::get()` on the Wine plugin host side to
-     * reconstruct the original `ProcessData` object, and we then finally use
-     * `YaProcessData::move_outputs_to_response()` to create a response object
-     * that we can write back to the `ProcessData` object provided by the host.
-     */
-    struct Process {
-        using Response = ProcessResponse;
-
-        native_size_t instance_id;
-
-        YaProcessData data;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-            s.object(data);
-        }
-    };
-
-    virtual tresult PLUGIN_API
-    process(Steinberg::Vst::ProcessData& data) override = 0;
-
-    /**
-     * Message to pass through a call to `IAudioProcessor::getTailSamples()`
-     * to the Wine plugin host.
-     */
-    struct GetTailSamples {
-        using Response = PrimitiveWrapper<uint32>;
-
-        native_size_t instance_id;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-        }
-    };
-
-    virtual uint32 PLUGIN_API getTailSamples() override = 0;
-
    protected:
     ConstructArgs arguments;
 };
@@ -609,32 +388,3 @@ void serialize(
     std::variant<YaComponent::ConstructArgs, UniversalTResult>& result) {
     s.ext(result, bitsery::ext::StdVariant{});
 }
-
-namespace Steinberg {
-namespace Vst {
-template <typename S>
-void serialize(S& s, Steinberg::Vst::BusInfo& info) {
-    s.value4b(info.mediaType);
-    s.value4b(info.direction);
-    s.value4b(info.channelCount);
-    s.container2b(info.name);
-    s.value4b(info.busType);
-    s.value4b(info.flags);
-}
-
-template <typename S>
-void serialize(S& s, Steinberg::Vst::RoutingInfo& info) {
-    s.value4b(info.mediaType);
-    s.value4b(info.busIndex);
-    s.value4b(info.channel);
-}
-
-template <typename S>
-void serialize(S& s, Steinberg::Vst::ProcessSetup& setup) {
-    s.value4b(setup.processMode);
-    s.value4b(setup.symbolicSampleSize);
-    s.value4b(setup.maxSamplesPerBlock);
-    s.value8b(setup.sampleRate);
-}
-}  // namespace Vst
-}  // namespace Steinberg

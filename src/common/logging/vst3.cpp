@@ -36,6 +36,82 @@ void Vst3Logger::log_unknown_interface(
     }
 }
 
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::SetBusArrangements& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::setBusArrangements(inputs = [SpeakerArrangement; "
+                << request.inputs.size() << "], numIns = " << request.num_ins
+                << ", outputs = [SpeakerArrangement; " << request.outputs.size()
+                << "], numOuts = " << request.num_outs << ")";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetBusArrangement& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::getBusArrangement(dir = " << request.dir
+                << ", index = " << request.index << ", &arr)";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::CanProcessSampleSize& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::canProcessSampleSize(symbolicSampleSize = "
+                << request.symbolic_sample_size << ")";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetLatencySamples& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::getLatencySamples()";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::SetupProcessing& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::setupProcessing(setup = <SetupProcessing with mode = "
+                << request.setup.processMode << ", symbolic_sample_size = "
+                << request.setup.symbolicSampleSize
+                << ", max_buffer_size = " << request.setup.maxSamplesPerBlock
+                << " and sample_rate = " << request.setup.sampleRate << ">)";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::SetProcessing& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::setProcessing(state = "
+                << (request.state ? "true" : "false") << ")";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::Process& request) {
+    // TODO: Only log this on log level 2
+    log_request_base(is_host_vst, [&](auto& message) {
+        // TODO: Log about the process data
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::process(TODO)";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetTailSamples& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::getTailSamples()";
+    });
+}
+
 void Vst3Logger::log_request(bool is_host_vst, const YaComponent::Construct&) {
     log_request_base(is_host_vst, [&](auto& message) {
         // TODO: Log the CID on verbosity level 2, and then also report all CIDs
@@ -131,82 +207,6 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::SetBusArrangements& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IAudioProcessor* #" << request.instance_id
-                << ">::setBusArrangements(inputs = [SpeakerArrangement; "
-                << request.inputs.size() << "], numIns = " << request.num_ins
-                << ", outputs = [SpeakerArrangement; " << request.outputs.size()
-                << "], numOuts = " << request.num_outs << ")";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::GetBusArrangement& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IAudioProcessor* #" << request.instance_id
-                << ">::getBusArrangement(dir = " << request.dir
-                << ", index = " << request.index << ", &arr)";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::CanProcessSampleSize& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IAudioProcessor* #" << request.instance_id
-                << ">::canProcessSampleSize(symbolicSampleSize = "
-                << request.symbolic_sample_size << ")";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::GetLatencySamples& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IAudioProcessor* #" << request.instance_id
-                << ">::getLatencySamples()";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::SetupProcessing& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IAudioProcessor* #" << request.instance_id
-                << ">::setupProcessing(setup = <SetupProcessing with mode = "
-                << request.setup.processMode << ", symbolic_sample_size = "
-                << request.setup.symbolicSampleSize
-                << ", max_buffer_size = " << request.setup.maxSamplesPerBlock
-                << " and sample_rate = " << request.setup.sampleRate << ">)";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::SetProcessing& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IAudioProcessor* #" << request.instance_id
-                << ">::setProcessing(state = "
-                << (request.state ? "true" : "false") << ")";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::Process& request) {
-    // TODO: Only log this on log level 2
-    log_request_base(is_host_vst, [&](auto& message) {
-        // TODO: Log about the process data
-        message << "<IAudioProcessor* #" << request.instance_id
-                << ">::process(TODO)";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::GetTailSamples& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IAudioProcessor* #" << request.instance_id
-                << ">::getTailSamples()";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IPluginBase* #" << request.instance_id
@@ -243,6 +243,28 @@ void Vst3Logger::log_request(bool is_host_vst,
 void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "Requesting <Configuration>";
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaAudioProcessor::GetBusArrangementResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", <SpeakerArrangement>";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaAudioProcessor::ProcessResponse& response) {
+    // TODO: Only log this on verbosity level 2
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+
+        // TODO: Log response
     });
 }
 
@@ -299,27 +321,6 @@ void Vst3Logger::log_response(bool is_host_vst,
             message << ", <IBStream* containing "
                     << response.updated_state.size() << " bytes>";
         }
-    });
-}
-
-void Vst3Logger::log_response(
-    bool is_host_vst,
-    const YaComponent::GetBusArrangementResponse& response) {
-    log_response_base(is_host_vst, [&](auto& message) {
-        message << response.result.string();
-        if (response.result == Steinberg::kResultOk) {
-            message << ", <SpeakerArrangement>";
-        }
-    });
-}
-
-void Vst3Logger::log_response(bool is_host_vst,
-                              const YaComponent::ProcessResponse& response) {
-    // TODO: Only log this on verbosity level 2
-    log_response_base(is_host_vst, [&](auto& message) {
-        message << response.result.string();
-
-        // TODO: Log response
     });
 }
 

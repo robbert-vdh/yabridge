@@ -40,6 +40,77 @@ YaComponentPluginImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
     return result;
 }
 
+tresult PLUGIN_API YaComponentPluginImpl::setBusArrangements(
+    Steinberg::Vst::SpeakerArrangement* inputs,
+    int32 numIns,
+    Steinberg::Vst::SpeakerArrangement* outputs,
+    int32 numOuts) {
+    assert(inputs && outputs);
+    return bridge.send_message(YaAudioProcessor::SetBusArrangements{
+        .instance_id = arguments.instance_id,
+        .inputs = std::vector<Steinberg::Vst::SpeakerArrangement>(
+            inputs, &inputs[numIns]),
+        .num_ins = numIns,
+        .outputs = std::vector<Steinberg::Vst::SpeakerArrangement>(
+            outputs, &outputs[numOuts]),
+        .num_outs = numOuts,
+    });
+}
+
+tresult PLUGIN_API YaComponentPluginImpl::getBusArrangement(
+    Steinberg::Vst::BusDirection dir,
+    int32 index,
+    Steinberg::Vst::SpeakerArrangement& arr) {
+    const GetBusArrangementResponse response =
+        bridge.send_message(YaAudioProcessor::GetBusArrangement{
+            .instance_id = arguments.instance_id,
+            .dir = dir,
+            .index = index,
+            .arr = arr});
+
+    arr = response.updated_arr;
+
+    return response.result;
+}
+
+tresult PLUGIN_API
+YaComponentPluginImpl::canProcessSampleSize(int32 symbolicSampleSize) {
+    return bridge.send_message(YaAudioProcessor::CanProcessSampleSize{
+        .instance_id = arguments.instance_id,
+        .symbolic_sample_size = symbolicSampleSize});
+}
+
+uint32 PLUGIN_API YaComponentPluginImpl::getLatencySamples() {
+    return bridge.send_message(YaAudioProcessor::GetLatencySamples{
+        .instance_id = arguments.instance_id});
+}
+
+tresult PLUGIN_API
+YaComponentPluginImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
+    return bridge.send_message(YaAudioProcessor::SetupProcessing{
+        .instance_id = arguments.instance_id, .setup = setup});
+}
+
+tresult PLUGIN_API YaComponentPluginImpl::setProcessing(TBool state) {
+    return bridge.send_message(YaAudioProcessor::SetProcessing{
+        .instance_id = arguments.instance_id, .state = state});
+}
+
+tresult PLUGIN_API
+YaComponentPluginImpl::process(Steinberg::Vst::ProcessData& data) {
+    ProcessResponse response = bridge.send_message(YaAudioProcessor::Process{
+        .instance_id = arguments.instance_id, .data = data});
+
+    response.output_data.write_back_outputs(data);
+
+    return response.result;
+}
+
+uint32 PLUGIN_API YaComponentPluginImpl::getTailSamples() {
+    return bridge.send_message(
+        YaAudioProcessor::GetTailSamples{.instance_id = arguments.instance_id});
+}
+
 tresult PLUGIN_API
 YaComponentPluginImpl::setIoMode(Steinberg::Vst::IoMode mode) {
     return bridge.send_message(YaComponent::SetIoMode{
@@ -141,74 +212,4 @@ tresult PLUGIN_API YaComponentPluginImpl::initialize(FUnknown* context) {
 tresult PLUGIN_API YaComponentPluginImpl::terminate() {
     return bridge.send_message(
         YaPluginBase::Terminate{.instance_id = arguments.instance_id});
-}
-
-tresult PLUGIN_API YaComponentPluginImpl::setBusArrangements(
-    Steinberg::Vst::SpeakerArrangement* inputs,
-    int32 numIns,
-    Steinberg::Vst::SpeakerArrangement* outputs,
-    int32 numOuts) {
-    assert(inputs && outputs);
-    return bridge.send_message(YaComponent::SetBusArrangements{
-        .instance_id = arguments.instance_id,
-        .inputs = std::vector<Steinberg::Vst::SpeakerArrangement>(
-            inputs, &inputs[numIns]),
-        .num_ins = numIns,
-        .outputs = std::vector<Steinberg::Vst::SpeakerArrangement>(
-            outputs, &outputs[numOuts]),
-        .num_outs = numOuts,
-    });
-}
-
-tresult PLUGIN_API YaComponentPluginImpl::getBusArrangement(
-    Steinberg::Vst::BusDirection dir,
-    int32 index,
-    Steinberg::Vst::SpeakerArrangement& arr) {
-    const GetBusArrangementResponse response = bridge.send_message(
-        YaComponent::GetBusArrangement{.instance_id = arguments.instance_id,
-                                       .dir = dir,
-                                       .index = index,
-                                       .arr = arr});
-
-    arr = response.updated_arr;
-
-    return response.result;
-}
-
-tresult PLUGIN_API
-YaComponentPluginImpl::canProcessSampleSize(int32 symbolicSampleSize) {
-    return bridge.send_message(YaComponent::CanProcessSampleSize{
-        .instance_id = arguments.instance_id,
-        .symbolic_sample_size = symbolicSampleSize});
-}
-
-uint32 PLUGIN_API YaComponentPluginImpl::getLatencySamples() {
-    return bridge.send_message(
-        YaComponent::GetLatencySamples{.instance_id = arguments.instance_id});
-}
-
-tresult PLUGIN_API
-YaComponentPluginImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
-    return bridge.send_message(YaComponent::SetupProcessing{
-        .instance_id = arguments.instance_id, .setup = setup});
-}
-
-tresult PLUGIN_API YaComponentPluginImpl::setProcessing(TBool state) {
-    return bridge.send_message(YaComponent::SetProcessing{
-        .instance_id = arguments.instance_id, .state = state});
-}
-
-tresult PLUGIN_API
-YaComponentPluginImpl::process(Steinberg::Vst::ProcessData& data) {
-    ProcessResponse response = bridge.send_message(YaComponent::Process{
-        .instance_id = arguments.instance_id, .data = data});
-
-    response.output_data.write_back_outputs(data);
-
-    return response.result;
-}
-
-uint32 PLUGIN_API YaComponentPluginImpl::getTailSamples() {
-    return bridge.send_message(
-        YaComponent::GetTailSamples{.instance_id = arguments.instance_id});
 }
