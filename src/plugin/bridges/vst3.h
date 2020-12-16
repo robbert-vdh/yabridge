@@ -135,7 +135,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      *
      * @related get_plugin_factory
      */
-    YaPluginFactory* plugin_factory;
+    YaPluginFactory* plugin_factory = nullptr;
 
    private:
     /**
