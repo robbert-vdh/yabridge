@@ -17,8 +17,6 @@ incomplete list of things that still have to be done before this can be used:
 
 - Interfaces left to implement:
   - `YaHostApplicationHostImpl::createComponent()`
-  - `IAudioProcessor::process()` along with every interface and struct involved
-    in `ProcessData`
   - `IConnectionPoint` to supplement `IComponent`
   - `IEditController{,2}`
   - All other mandatory interfaces
@@ -26,11 +24,12 @@ incomplete list of things that still have to be done before this can be used:
 - Fully implemented:
   - `GetPluginFactory()` and `IPluginFactory{,2,3}`
   - `IPluginBase` and `IComponent`
-  - Everything surrounding `ProcessData`, `ProcessingContext` and
-    `AudioBusBuffers`
-  - `IParameterChanges`, `IParamValueQueue`, `IEventList`, and all event types
-    in VST 3.7.1
-  - `IBStream`
+    - `IBStream`
+  - `IAudioProcessor`
+    - Everything surrounding `ProcessData`, `ProcessingContext` and
+      `AudioBusBuffers`
+    - `IParameterChanges`, `IParamValueQueue`, `IEventList`, and all event types
+      in VST 3.7.1
 - Finalize the VST3 [design
   document](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/src/common/serialization/vst3/README.md)
   and move it to `docs/`.

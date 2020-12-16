@@ -357,8 +357,8 @@ void serialize(S& s, Steinberg::Vst::Chord& chord) {
 
 template <typename S>
 void serialize(S& s, Steinberg::Vst::FrameRate& frame_rate) {
-    s.value1b(frame_rate.framesPerSecond);
-    s.value1b(frame_rate.flags);
+    s.value4b(frame_rate.framesPerSecond);
+    s.value4b(frame_rate.flags);
 }
 }  // namespace Vst
 }  // namespace Steinberg

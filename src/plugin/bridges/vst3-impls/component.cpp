@@ -200,9 +200,12 @@ tresult PLUGIN_API YaComponentPluginImpl::setProcessing(TBool state) {
 
 tresult PLUGIN_API
 YaComponentPluginImpl::process(Steinberg::Vst::ProcessData& data) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IAudioProcessor::process()");
-    return Steinberg::kNotImplemented;
+    ProcessResponse response = bridge.send_message(YaComponent::Process{
+        .instance_id = arguments.instance_id, .data = data});
+
+    response.output_data.write_back_outputs(data);
+
+    return response.result;
 }
 
 uint32 PLUGIN_API YaComponentPluginImpl::getTailSamples() {

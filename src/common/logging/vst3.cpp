@@ -210,6 +210,16 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::Process& request) {
+    // TODO: Only log this on log level 2
+    log_request_base(is_host_vst, [&](auto& message) {
+        // TODO: Log about the process data
+        message << "<IAudioProcessor* #" << request.instance_id
+                << ">::process(TODO)";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
                              const YaComponent::GetTailSamples& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IAudioProcessor* #" << request.instance_id
@@ -300,6 +310,16 @@ void Vst3Logger::log_response(
         if (response.result == Steinberg::kResultOk) {
             message << ", <SpeakerArrangement>";
         }
+    });
+}
+
+void Vst3Logger::log_response(bool is_host_vst,
+                              const YaComponent::ProcessResponse& response) {
+    // TODO: Only log this on verbosity level 2
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+
+        // TODO: Log response
     });
 }
 

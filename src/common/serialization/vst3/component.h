@@ -581,6 +581,46 @@ class YaComponent : public Steinberg::Vst::IComponent,
     };
 
     virtual tresult PLUGIN_API setProcessing(TBool state) override = 0;
+
+    /**
+     * The response code and all the output data resulting from a call to
+     * `IAudioProcessor::process(data)`.
+     */
+    struct ProcessResponse {
+        UniversalTResult result;
+        YaProcessDataResponse output_data;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(output_data);
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IAudioProcessor::process(data)` to the
+     * Wine plugin host. This `YaProcessData` object wraps around all input
+     * audio buffers, parameter changes and events along with all context data
+     * provided by the host so we can send it to the Wine plugin host. We can
+     * then use `YaProcessData::get()` on the Wine plugin host side to
+     * reconstruct the original `ProcessData` object, and we then finally use
+     * `YaProcessData::move_outputs_to_response()` to create a response object
+     * that we can write back to the `ProcessData` object provided by the host.
+     */
+    struct Process {
+        using Response = ProcessResponse;
+
+        native_size_t instance_id;
+
+        YaProcessData data;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.object(data);
+        }
+    };
+
     virtual tresult PLUGIN_API
     process(Steinberg::Vst::ProcessData& data) override = 0;
 

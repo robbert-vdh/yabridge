@@ -75,7 +75,7 @@ using ControlRequest = std::variant<YaComponent::Construct,
                                     YaComponent::GetLatencySamples,
                                     YaComponent::SetupProcessing,
                                     YaComponent::SetProcessing,
-                                    // TODO: YaComponent::Process
+                                    YaComponent::Process,
                                     YaComponent::GetTailSamples,
                                     YaPluginFactory::Construct,
                                     YaPluginFactory::SetHostContext>;
