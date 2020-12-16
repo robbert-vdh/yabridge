@@ -21,15 +21,8 @@ incomplete list of things that still have to be done before this can be used:
   - `IEditController{,2}`
   - All other mandatory interfaces
   - All other optional interfaces
-- Fully implemented:
-  - `GetPluginFactory()` and `IPluginFactory{,2,3}`
-  - `IPluginBase` and `IComponent`
-    - `IBStream`
-  - `IAudioProcessor`
-    - Everything surrounding `ProcessData`, `ProcessingContext` and
-      `AudioBusBuffers`
-    - `IParameterChanges`, `IParamValueQueue`, `IEventList`, and all event types
-      in VST 3.7.1
+- Fully implemented: see [this
+  document](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/src/common/serialization/vst3/README.md)
 - Update the GitHub Actions workflows.
 - Update yabridgectl to handle buth VST2 and VST3 plugins.
 - Update all documentation to refer to VST2 and VST3 support separately, and
