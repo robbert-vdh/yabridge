@@ -1,7 +1,6 @@
 # VST3 serialization
 
-TODO: Once this is more fleshed out, move this document to `docs/`, and perhaps
-replace this readme with a link to that document.
+TODO: Flesh this out further
 
 The VST3 SDK uses an architecture where every concrete object inherits from an
 interface, and every interface inherits from `FUnknown`. `FUnkonwn` offers a

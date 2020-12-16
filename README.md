@@ -30,9 +30,6 @@ incomplete list of things that still have to be done before this can be used:
       `AudioBusBuffers`
     - `IParameterChanges`, `IParamValueQueue`, `IEventList`, and all event types
       in VST 3.7.1
-- Finalize the VST3 [design
-  document](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/src/common/serialization/vst3/README.md)
-  and move it to `docs/`.
 - Update the GitHub Actions workflows.
 - Update yabridgectl to handle buth VST2 and VST3 plugins.
 - Update all documentation to refer to VST2 and VST3 support separately, and
