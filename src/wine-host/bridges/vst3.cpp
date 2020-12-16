@@ -26,7 +26,9 @@ ComponentInstance::ComponentInstance() {}
 
 ComponentInstance::ComponentInstance(
     Steinberg::IPtr<Steinberg::Vst::IComponent> component)
-    : component(component), audio_processor(component) {}
+    : component(component),
+      plugin_base(component),
+      audio_processor(component) {}
 
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
@@ -86,8 +88,8 @@ void Vst3Bridge::run() {
 
                 return Ack{};
             },
-            [&](YaComponent::Initialize& request)
-                -> YaComponent::Initialize::Response {
+            [&](YaPluginBase::Initialize& request)
+                -> YaPluginBase::Initialize::Response {
                 // If we got passed a host context, we'll create a proxy object
                 // and pass that to the initialize function. This object should
                 // be cleaned up again during `YaComponent::Destruct`.
@@ -103,12 +105,12 @@ void Vst3Bridge::run() {
                 }
 
                 return component_instances[request.instance_id]
-                    .component->initialize(context);
+                    .plugin_base->initialize(context);
             },
-            [&](const YaComponent::Terminate& request)
-                -> YaComponent::Terminate::Response {
+            [&](const YaPluginBase::Terminate& request)
+                -> YaPluginBase::Terminate::Response {
                 return component_instances[request.instance_id]
-                    .component->terminate();
+                    .plugin_base->terminate();
             },
             [&](const YaComponent::SetIoMode& request)
                 -> YaComponent::SetIoMode::Response {

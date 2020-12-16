@@ -28,6 +28,9 @@
  * A holder for an `IComponent` instance created from the factory along with any
  * host context proxy objects belonging to it, and several predefined
  * `FUnknownPtrs` so we don't have to do these dynamic casts all the times..
+ *
+ * TODO: When implementing `IEditController`, change this to use `IPluginBase`
+ *       as the base interface.
  */
 struct ComponentInstance {
     ComponentInstance();
@@ -37,7 +40,7 @@ struct ComponentInstance {
     /**
      * If the host passes an `IHostApplication` during
      * `IPluginBase::initialize()`, we'll store a proxy object here and then
-     * pass it to `component->initialize()`.
+     * pass it to `plugin_base->initialize()`.
      */
     Steinberg::IPtr<YaHostApplication> hsot_application_context;
 
@@ -49,6 +52,7 @@ struct ComponentInstance {
     // All smart pointers below are created from `component`. They will be null
     // pointers if `component` did not implement the interface.
 
+    Steinberg::FUnknownPtr<Steinberg::IPluginBase> plugin_base;
     Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audio_processor;
 };
 

@@ -40,35 +40,6 @@ YaComponentPluginImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
     return result;
 }
 
-tresult PLUGIN_API YaComponentPluginImpl::initialize(FUnknown* context) {
-    // This `context` will likely be an `IHostApplication`. If it is, we will
-    // store it here, and we'll proxy through all calls to it made from the Wine
-    // side. Otherwise we'll still call `IPluginBase::initialize()` but with a
-    // null pointer instead.
-    host_application_context = context;
-
-    std::optional<YaHostApplication::ConstructArgs>
-        host_application_context_args = std::nullopt;
-    if (host_application_context) {
-        host_application_context_args = YaHostApplication::ConstructArgs(
-            host_application_context, arguments.instance_id);
-    } else {
-        bridge.logger.log_unknown_interface(
-            "In IPluginBase::initialize()",
-            context ? std::optional(context->iid) : std::nullopt);
-    }
-
-    return bridge.send_message(
-        YaComponent::Initialize{.instance_id = arguments.instance_id,
-                                .host_application_context_args =
-                                    std::move(host_application_context_args)});
-}
-
-tresult PLUGIN_API YaComponentPluginImpl::terminate() {
-    return bridge.send_message(
-        YaComponent::Terminate{.instance_id = arguments.instance_id});
-}
-
 tresult PLUGIN_API
 YaComponentPluginImpl::setIoMode(Steinberg::Vst::IoMode mode) {
     return bridge.send_message(YaComponent::SetIoMode{
@@ -141,6 +112,35 @@ tresult PLUGIN_API YaComponentPluginImpl::getState(Steinberg::IBStream* state) {
     assert(response.updated_state.write_back(state) == Steinberg::kResultOk);
 
     return response.result;
+}
+
+tresult PLUGIN_API YaComponentPluginImpl::initialize(FUnknown* context) {
+    // This `context` will likely be an `IHostApplication`. If it is, we will
+    // store it here, and we'll proxy through all calls to it made from the Wine
+    // side. Otherwise we'll still call `IPluginBase::initialize()` but with a
+    // null pointer instead.
+    host_application_context = context;
+
+    std::optional<YaHostApplication::ConstructArgs>
+        host_application_context_args = std::nullopt;
+    if (host_application_context) {
+        host_application_context_args = YaHostApplication::ConstructArgs(
+            host_application_context, arguments.instance_id);
+    } else {
+        bridge.logger.log_unknown_interface(
+            "In IPluginBase::initialize()",
+            context ? std::optional(context->iid) : std::nullopt);
+    }
+
+    return bridge.send_message(
+        YaPluginBase::Initialize{.instance_id = arguments.instance_id,
+                                 .host_application_context_args =
+                                     std::move(host_application_context_args)});
+}
+
+tresult PLUGIN_API YaComponentPluginImpl::terminate() {
+    return bridge.send_message(
+        YaPluginBase::Terminate{.instance_id = arguments.instance_id});
 }
 
 tresult PLUGIN_API YaComponentPluginImpl::setBusArrangements(

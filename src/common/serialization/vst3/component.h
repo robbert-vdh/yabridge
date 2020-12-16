@@ -32,6 +32,7 @@
 #include "../common.h"
 #include "base.h"
 #include "host-application.h"
+#include "plugin-base.h"
 #include "process-data.h"
 
 #pragma GCC diagnostic push
@@ -43,18 +44,18 @@
  * used for serialization, and on the plugin side have an implementation that
  * can send control messages.
  *
+ * This implements all interfaces that an `IComponent` might also implement.
+ *
  * We might be able to do some caching here with the buss infos, but since that
  * sounds like a huge potential source of errors we'll just do pure callbacks
  * for everything other than the edit controller's class ID.
  *
- * TODO: Amplement IConnectionPoint
- * TODO: How should we support IComponents without a seperate edit controller?
- *       Can we just use a separate `YaEditController` that just points to the
- *       same implementation (with the same CID)? Check the reference
- *       implementation in the framework to see how this is initialized, make
- *       sure we support the reference w workflow.
+ * TODO: Rework this into `YaPluginMonolith`
+ * TODO: Eventually this should (optionally) implement everything supported by
+ *       the SDK's `AudioEffect` component.
  */
 class YaComponent : public Steinberg::Vst::IComponent,
+                    public YaPluginBase,
                     public Steinberg::Vst::IAudioProcessor {
    public:
     /**
@@ -76,10 +77,10 @@ class YaComponent : public Steinberg::Vst::IComponent,
          */
         native_size_t instance_id;
 
-        /**
-         * The IIDs that the interface we serialized supports.
-         */
-        std::set<Steinberg::FUID> known_iids;
+        YaPluginBase::ConstructArgs plugin_base_args;
+
+        // TODO: Remove, transitional
+        bool audio_processor_supported;
 
         /**
          * The class ID of this component's corresponding editor controller. You
@@ -90,10 +91,8 @@ class YaComponent : public Steinberg::Vst::IComponent,
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
-            s.ext(known_iids, bitsery::ext::StdSet{32},
-                  [](S& s, Steinberg::FUID& iid) {
-                      s.ext(iid, bitsery::ext::FUID{});
-                  });
+            s.object(plugin_base_args);
+            s.value1b(audio_processor_supported);
             s.ext(edit_controller_cid, bitsery::ext::StdOptional{},
                   [](S& s, auto& cid) { s.container1b(cid); });
         }
@@ -145,49 +144,6 @@ class YaComponent : public Steinberg::Vst::IComponent,
     virtual ~YaComponent() = 0;
 
     DECLARE_FUNKNOWN_METHODS
-
-    // From `IPluginBase`
-
-    /**
-     * Message to pass through a call to `IPluginBase::initialize()` to the Wine
-     * plugin host. if we pass an `IHostApplication` instance, then a proxy
-     * `YaHostApplication` should be created and passed as an argument to
-     * `IPluginBase::initialize()`. If this is absent a null pointer should be
-     * passed. The lifetime of this `YaHostApplication` object should be bound
-     * to the `IComponent` we are proxying.
-     */
-    struct Initialize {
-        using Response = UniversalTResult;
-
-        native_size_t instance_id;
-        std::optional<YaHostApplication::ConstructArgs>
-            host_application_context_args;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-            s.ext(host_application_context_args, bitsery::ext::StdOptional{});
-        }
-    };
-
-    virtual tresult PLUGIN_API initialize(FUnknown* context) override = 0;
-
-    /**
-     * Message to pass through a call to `IPluginBase::terminate()` to the Wine
-     * plugin host.
-     */
-    struct Terminate {
-        using Response = UniversalTResult;
-
-        native_size_t instance_id;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-        }
-    };
-
-    virtual tresult PLUGIN_API terminate() override = 0;
 
     // From `IComponent`
     tresult PLUGIN_API getControllerClassId(Steinberg::TUID classId) override;

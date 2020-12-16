@@ -55,27 +55,6 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::Initialize& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IComponent* #" << request.instance_id
-                << ">::initialize(context = ";
-        if (request.host_application_context_args) {
-            message << "<IHostApplication*>";
-        } else {
-            message << "<nullptr>";
-        }
-        message << ")";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::Terminate& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IComponent* #" << request.instance_id << ">::terminate()";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
                              const YaComponent::SetIoMode& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IComponent* #" << request.instance_id
@@ -224,6 +203,27 @@ void Vst3Logger::log_request(bool is_host_vst,
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IAudioProcessor* #" << request.instance_id
                 << ">::getTailSamples()";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaPluginBase::Initialize& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IPluginBase* #" << request.instance_id
+                << ">::initialize(context = ";
+        if (request.host_application_context_args) {
+            message << "<IHostApplication*>";
+        } else {
+            message << "<nullptr>";
+        }
+        message << ")";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaPluginBase::Terminate& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IPluginBase* #" << request.instance_id << ">::terminate()";
     });
 }
 

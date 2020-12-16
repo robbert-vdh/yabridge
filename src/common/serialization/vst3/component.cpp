@@ -21,30 +21,21 @@ YaComponent::ConstructArgs::ConstructArgs() {}
 YaComponent::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::Vst::IComponent> component,
     size_t instance_id)
-    : instance_id(instance_id) {
-    known_iids.insert(component->iid);
+    : instance_id(instance_id),
+      audio_processor_supported(
+          Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor>(component)) {
     // `IComponent::getControllerClassId`
     Steinberg::TUID cid;
     if (component->getControllerClassId(cid) == Steinberg::kResultOk) {
         edit_controller_cid = std::to_array(cid);
     }
-
-    // There's no static data we can copy from the audio processor
-    if (auto audio_processor =
-            Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor>(
-                component)) {
-        known_iids.insert(Steinberg::Vst::IAudioProcessor::iid);
-    }
 }
 
-YaComponent::YaComponent(const ConstructArgs&& args) : arguments(std::move(args)) {
-    FUNKNOWN_CTOR
+YaComponent::YaComponent(const ConstructArgs&& args)
+    : YaPluginBase(std::move(args.plugin_base_args)),
+      arguments(std::move(args)){FUNKNOWN_CTOR}
 
-    // Everything else is handled directly through callbacks to minimize the
-    // potential for errors
-}
-
-YaComponent::~YaComponent() {
+      YaComponent::~YaComponent() {
     FUNKNOWN_DTOR
 }
 
@@ -55,14 +46,22 @@ IMPLEMENT_REFCOUNT(YaComponent)
 
 tresult PLUGIN_API YaComponent::queryInterface(Steinberg::FIDString _iid,
                                                void** obj) {
-    QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid, Steinberg::IPluginBase)
-    if (arguments.known_iids.contains(Steinberg::Vst::IComponent::iid)) {
-        QUERY_INTERFACE(_iid, obj, Steinberg::IPluginBase::iid,
-                        Steinberg::IPluginBase)
-        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IComponent::iid,
-                        Steinberg::Vst::IComponent)
+    QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
+                    Steinberg::Vst::IComponent)
+    if (YaPluginBase::supported()) {
+        // We had to expand the macro here because we need to cast through
+        // `YaPluginBase`, since `IpluginBase` is also a base of `IComponent`
+        if (Steinberg::FUnknownPrivate ::iidEqual(
+                _iid, Steinberg::IPluginBase::iid)) {
+            addRef();
+            *obj = static_cast<Steinberg ::IPluginBase*>(
+                static_cast<YaPluginBase*>(this));
+            return ::Steinberg ::kResultOk;
+        }
     }
-    if (arguments.known_iids.contains(Steinberg::Vst::IAudioProcessor::iid)) {
+    QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IComponent::iid,
+                    Steinberg::Vst::IComponent)
+    if (arguments.audio_processor_supported) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IAudioProcessor::iid,
                         Steinberg::Vst::IAudioProcessor)
     }

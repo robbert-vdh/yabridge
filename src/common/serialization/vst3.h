@@ -59,8 +59,6 @@ struct WantsConfiguration {
  */
 using ControlRequest = std::variant<YaComponent::Construct,
                                     YaComponent::Destruct,
-                                    YaComponent::Initialize,
-                                    YaComponent::Terminate,
                                     YaComponent::SetIoMode,
                                     YaComponent::GetBusCount,
                                     YaComponent::GetBusInfo,
@@ -77,6 +75,8 @@ using ControlRequest = std::variant<YaComponent::Construct,
                                     YaComponent::SetProcessing,
                                     YaComponent::Process,
                                     YaComponent::GetTailSamples,
+                                    YaPluginBase::Initialize,
+                                    YaPluginBase::Terminate,
                                     YaPluginFactory::Construct,
                                     YaPluginFactory::SetHostContext>;
 

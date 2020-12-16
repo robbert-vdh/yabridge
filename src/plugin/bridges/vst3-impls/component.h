@@ -39,9 +39,7 @@ class YaComponentPluginImpl : public YaComponent {
     tresult PLUGIN_API queryInterface(const Steinberg::TUID _iid,
                                       void** obj) override;
 
-    tresult PLUGIN_API initialize(FUnknown* context) override;
-    tresult PLUGIN_API terminate() override;
-
+    // From `IComponent`
     tresult PLUGIN_API setIoMode(Steinberg::Vst::IoMode mode) override;
     int32 PLUGIN_API getBusCount(Steinberg::Vst::MediaType type,
                                  Steinberg::Vst::BusDirection dir) override;
@@ -60,6 +58,10 @@ class YaComponentPluginImpl : public YaComponent {
     tresult PLUGIN_API setActive(TBool state) override;
     tresult PLUGIN_API setState(Steinberg::IBStream* state) override;
     tresult PLUGIN_API getState(Steinberg::IBStream* state) override;
+
+    // From `IPluginBase`
+    tresult PLUGIN_API initialize(FUnknown* context) override;
+    tresult PLUGIN_API terminate() override;
 
     tresult PLUGIN_API
     setBusArrangements(Steinberg::Vst::SpeakerArrangement* inputs,
