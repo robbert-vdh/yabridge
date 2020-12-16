@@ -104,6 +104,10 @@ class YaAudioBusBuffers {
 
     /**
      * A bitfield for silent channels copied directly from the input struct.
+     *
+     * We could have done some optimizations to avoid unnecessary copying when
+     * these silence flags are set, but since it's an optional feature we
+     * shouldn't risk it.
      */
     uint64 silence_flags;
 
@@ -128,6 +132,8 @@ class YaAudioBusBuffers {
  * @see YaProcessData
  */
 struct YaProcessDataResponse {
+    // These fields are directly moved from a `YaProcessData` object. See the
+    // docstrings there for more information
     std::vector<YaAudioBusBuffers> outputs;
     std::optional<YaParameterChanges> output_parameter_changes;
     std::optional<YaEventList> output_events;
@@ -168,7 +174,9 @@ class YaProcessData {
 
     /**
      * **Move** all output written by the Windows VST3 plugin to a response
-     * object that can be used to write those results back to the host.
+     * object that can be used to write those results back to the host. This
+     * should of course be done after making a call to the `IAudioProcessor`'s
+     * `process()` function with the object obtained using `get()`.
      */
     YaProcessDataResponse move_outputs_to_response();
 
@@ -180,15 +188,18 @@ class YaProcessData {
         s.container(inputs, max_num_speakers);
         s.container4b(outputs_num_channels, max_num_speakers);
         s.object(input_parameter_changes);
+        s.value1b(output_parameter_changes_supported);
         s.ext(input_events, bitsery::ext::StdOptional{});
+        s.value1b(output_events_supported);
         s.ext(process_context, bitsery::ext::StdOptional{});
+
+        // We of course won't serialize the `reconstructed_process_data` and all
+        // of the `output*` fields defined below it
     }
 
    private:
-    /**
-     * The process data we reconstruct from the other fields during `get()`.
-     */
-    Steinberg::Vst::ProcessData reconstructed_process_data;
+    // These fields are input and context data read from the original
+    // `ProcessData` object
 
     /**
      * The processing mode copied directly from the input struct.
@@ -228,14 +239,62 @@ class YaProcessData {
     YaParameterChanges input_parameter_changes;
 
     /**
+     * Whether the host supports output parameter changes (depending on whether
+     * `outputParameterChanges` was a null pointer or not).
+     */
+    bool output_parameter_changes_supported;
+
+    /**
      * Incoming events.
      */
     std::optional<YaEventList> input_events;
 
     /**
+     * Whether the host supports output events (depending on whether
+     * `outputEvents` was a null pointer or not).
+     */
+    bool output_events_supported;
+
+    /**
      * Some more information about the project and transport.
      */
     std::optional<Steinberg::Vst::ProcessContext> process_context;
+
+    // These last few members are used on the Wine plugin host side to
+    // reconstruct the original `ProcessData` object. Here we also initialize
+    // these `output*` fields so the Windows VST3 plugin can write to them
+    // though a regular `ProcessData` object. Finally we can wrap these output
+    // fields back into a `YaProcessDataResponse` using
+    // `move_outputs_to_response()`. so they can be serialized and written back
+    // to the host's `ProcessData` object.
+
+    /**
+     * The process data we reconstruct from the other fields during `get()`.
+     */
+    Steinberg::Vst::ProcessData reconstructed_process_data;
+
+    // These are the same fields as in `YaProcessDataResponse`. We'll generate
+    // these as part of creating `reconstructed_process_data`, and they will be
+    // moved into a response object during `move_outputs_to_response()`.
+
+    /**
+     * The outputs. Will be created based on `outputs_num_channels` (which
+     * determines how many output busses there are and how many channels each
+     * bus has) and `num_samples`.
+     */
+    std::vector<YaAudioBusBuffers> outputs;
+
+    /**
+     * The output parameter changes. Will be initialized depending on
+     * `output_parameter_changes_supported`.
+     */
+    std::optional<YaParameterChanges> output_parameter_changes;
+
+    /**
+     * The output events. Will be initialized depending on
+     * `output_events_supported`.
+     */
+    std::optional<YaEventList> output_events;
 };
 
 namespace Steinberg {

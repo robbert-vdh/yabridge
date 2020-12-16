@@ -99,9 +99,11 @@ YaProcessData::YaProcessData(const Steinberg::Vst::ProcessData& process_data)
       num_samples(process_data.numSamples),
       outputs_num_channels(process_data.numOutputs),
       input_parameter_changes(*process_data.inputParameterChanges),
+      output_parameter_changes_supported(process_data.outputParameterChanges),
       input_events(process_data.inputEvents ? std::make_optional<YaEventList>(
                                                   *process_data.inputEvents)
                                             : std::nullopt),
+      output_events_supported(process_data.outputEvents),
       process_context(process_data.processContext
                           ? std::make_optional<Steinberg::Vst::ProcessContext>(
                                 *process_data.processContext)
