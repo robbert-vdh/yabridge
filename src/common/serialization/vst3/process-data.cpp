@@ -183,4 +183,9 @@ Steinberg::Vst::ProcessData& YaProcessData::get() {
     return reconstructed_process_data;
 }
 
-// TODO: Response creation
+YaProcessDataResponse YaProcessData::move_outputs_to_response() {
+    return YaProcessDataResponse{
+        .outputs = std::move(outputs),
+        .output_parameter_changes = std::move(output_parameter_changes),
+        .output_events = std::move(output_events)};
+}
