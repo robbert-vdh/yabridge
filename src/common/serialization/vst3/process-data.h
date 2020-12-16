@@ -72,6 +72,13 @@ class YaAudioBusBuffers {
      */
     Steinberg::Vst::AudioBusBuffers get();
 
+    /**
+     * Write these buffers and the silence flag back to an `AudioBusBuffers
+     * object provided by the host.
+     */
+    void write_back_outputs(
+        Steinberg::Vst::AudioBusBuffers& output_buffers) const;
+
     template <typename S>
     void serialize(S& s) {
         s.value8b(silence_flags);
@@ -134,7 +141,10 @@ struct YaProcessDataResponse {
     std::optional<YaParameterChanges> output_parameter_changes;
     std::optional<YaEventList> output_events;
 
-    // TODO: Add function to write these back to the host's `ProcessData`
+    /**
+     * Write all of this output data back to the host's `ProcessData` object.
+     */
+    void write_back_outputs(Steinberg::Vst::ProcessData& process_data);
 
     template <typename S>
     void serialize(S& s) {

@@ -92,6 +92,45 @@ Steinberg::Vst::AudioBusBuffers YaAudioBusBuffers::get() {
     return reconstructed_buffers;
 }
 
+void YaAudioBusBuffers::write_back_outputs(
+    Steinberg::Vst::AudioBusBuffers& output_buffers) const {
+    output_buffers.silenceFlags = silence_flags;
+    std::visit(
+        overload{
+            [&](const std::vector<std::vector<double>>& buffers) {
+                for (int channel = 0; channel < output_buffers.numChannels;
+                     channel++) {
+                    std::copy(buffers[channel].begin(), buffers[channel].end(),
+                              output_buffers.channelBuffers64[channel]);
+                }
+            },
+            [&](const std::vector<std::vector<float>>& buffers) {
+                for (int channel = 0; channel < output_buffers.numChannels;
+                     channel++) {
+                    std::copy(buffers[channel].begin(), buffers[channel].end(),
+                              output_buffers.channelBuffers32[channel]);
+                }
+            },
+        },
+        buffers);
+}
+
+void YaProcessDataResponse::write_back_outputs(
+    Steinberg::Vst::ProcessData& process_data) {
+    for (int i = 0; i < process_data.numOutputs; i++) {
+        outputs[i].write_back_outputs(process_data.outputs[i]);
+    }
+
+    if (output_parameter_changes && process_data.outputParameterChanges) {
+        output_parameter_changes->write_back_outputs(
+            *process_data.outputParameterChanges);
+    }
+
+    if (output_events && process_data.outputEvents) {
+        output_events->write_back_outputs(*process_data.outputEvents);
+    }
+}
+
 YaProcessData::YaProcessData() {}
 
 YaProcessData::YaProcessData(const Steinberg::Vst::ProcessData& process_data)

@@ -45,6 +45,13 @@ class YaParameterChanges : public Steinberg::Vst::IParameterChanges {
 
     DECLARE_FUNKNOWN_METHODS
 
+    /**
+     * Write these changes back to an output parameter changes queue on the
+     * `ProcessData` object provided by the host.
+     */
+    void write_back_outputs(
+        Steinberg::Vst::IParameterChanges& output_queues) const;
+
     // From `IParameterChanges`
     int32 PLUGIN_API getParameterCount() override;
     Steinberg::Vst::IParamValueQueue* PLUGIN_API

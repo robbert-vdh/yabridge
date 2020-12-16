@@ -26,6 +26,8 @@ incomplete list of things that still have to be done before this can be used:
 - Fully implemented:
   - `GetPluginFactory()` and `IPluginFactory{,2,3}`
   - `IPluginBase` and `IComponent`
+  - Everything surrounding `ProcessData`, `ProcessingContext` and
+    `AudioBusBuffers`
   - `IParameterChanges`, `IParamValueQueue`, `IEventList`, and all event types
     in VST 3.7.1
   - `IBStream`

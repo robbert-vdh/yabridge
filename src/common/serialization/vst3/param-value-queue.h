@@ -51,6 +51,13 @@ class YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
 
     DECLARE_FUNKNOWN_METHODS
 
+    /**
+     * Write this queue back the output parameter changes object on the
+     * `ProcessData` object provided by the host.
+     */
+    void write_back_outputs(
+        Steinberg::Vst::IParamValueQueue& output_queue) const;
+
     // From `IParamValueQueue`
     Steinberg::Vst::ParamID PLUGIN_API getParameterId() override;
     int32 PLUGIN_API getPointCount() override;
@@ -72,12 +79,12 @@ class YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
         });
     }
 
-   private:
     /**
      * For `IParamValueQueue::getParameterId`.
      */
     Steinberg::Vst::ParamID parameter_id;
 
+   private:
     /**
      * The actual parameter changes queue. The specification doesn't mention
      * that this should be a priority queue or something, but I'd assume both

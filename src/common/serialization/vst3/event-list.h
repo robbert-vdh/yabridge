@@ -227,6 +227,12 @@ class YaEventList : public Steinberg::Vst::IEventList {
 
     DECLARE_FUNKNOWN_METHODS
 
+    /**
+     * Write these events an output events queue on the `ProcessData` object
+     * provided by the host.
+     */
+    void write_back_outputs(Steinberg::Vst::IEventList& output_events) const;
+
     // From `IEventList`
     virtual int32 PLUGIN_API getEventCount() override;
     virtual tresult PLUGIN_API

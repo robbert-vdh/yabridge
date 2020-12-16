@@ -41,6 +41,19 @@ IMPLEMENT_FUNKNOWN_METHODS(YaParameterChanges,
                            Steinberg::Vst::IParameterChanges::iid)
 #pragma GCC diagnostic pop
 
+void YaParameterChanges::write_back_outputs(
+    Steinberg::Vst::IParameterChanges& output_queues) const {
+    for (auto& queue : queues) {
+        // We don't need this, but the SDK requires us to need this
+        int32 output_queue_index;
+        if (Steinberg::Vst::IParamValueQueue* output_queue =
+                output_queues.addParameterData(queue.parameter_id,
+                                               output_queue_index)) {
+            queue.write_back_outputs(*output_queue);
+        }
+    }
+}
+
 int32 PLUGIN_API YaParameterChanges::getParameterCount() {
     return queues.size();
 }

@@ -47,6 +47,16 @@ IMPLEMENT_FUNKNOWN_METHODS(YaParamValueQueue,
                            Steinberg::Vst::IParamValueQueue::iid)
 #pragma GCC diagnostic pop
 
+void YaParamValueQueue::write_back_outputs(
+    Steinberg::Vst::IParamValueQueue& output_queue) const {
+    // We don't need this value
+    int32 index;
+    for (const auto& [sample_offset, value] : queue) {
+        // We don't check for `kResultOk` here
+        output_queue.addPoint(sample_offset, value, index);
+    }
+}
+
 Steinberg::Vst::ParamID PLUGIN_API YaParamValueQueue::getParameterId() {
     return parameter_id;
 }

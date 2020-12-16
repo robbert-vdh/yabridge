@@ -194,6 +194,17 @@ YaEventList::~YaEventList() {
     FUNKNOWN_DTOR
 }
 
+void YaEventList::write_back_outputs(
+    Steinberg::Vst::IEventList& output_events) const {
+    // TODO: I assume the host is responsible for directly copying heap data
+    //       (e.g. text) in these events and they're not supposed to stay
+    //       around, right? If not, then we'll find out very quickly.
+    for (auto& event : events) {
+        Steinberg::Vst::Event reconstructed_event = event.get();
+        output_events.addEvent(reconstructed_event);
+    }
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
 IMPLEMENT_FUNKNOWN_METHODS(YaEventList,
