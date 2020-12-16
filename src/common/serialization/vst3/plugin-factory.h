@@ -54,6 +54,9 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
 
         /**
          * The IIDs that the interface we serialized supports.
+         *
+         * TODO: Replace this with a set of boolean flags, just like we're doing
+         *       with the other interfaces.
          */
         std::set<Steinberg::FUID> known_iids;
 
