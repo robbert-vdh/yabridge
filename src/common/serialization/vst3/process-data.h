@@ -67,9 +67,10 @@ class YaAudioBusBuffers {
     /**
      * Reconstruct the original `AudioBusBuffers` object passed to the
      * constructor and return it. This is used as part of
-     * `YaProcessData::get()`.
+     * `YaProcessData::get()`. The object contains pointers to `buffers`, so it
+     * may not outlive this object.
      */
-    Steinberg::Vst::AudioBusBuffers& get();
+    Steinberg::Vst::AudioBusBuffers get();
 
     template <typename S>
     void serialize(S& s) {
@@ -91,11 +92,6 @@ class YaAudioBusBuffers {
     }
 
    private:
-    /**
-     * The `AudioBusBuffers` object we reconstruct during `get()`.
-     */
-    Steinberg::Vst::AudioBusBuffers reconstructed_buffers;
-
     /**
      * We need these during the reconstruction process to provide a pointer to
      * an array of pointers to the actual buffers.
@@ -260,19 +256,6 @@ class YaProcessData {
      */
     std::optional<Steinberg::Vst::ProcessContext> process_context;
 
-    // These last few members are used on the Wine plugin host side to
-    // reconstruct the original `ProcessData` object. Here we also initialize
-    // these `output*` fields so the Windows VST3 plugin can write to them
-    // though a regular `ProcessData` object. Finally we can wrap these output
-    // fields back into a `YaProcessDataResponse` using
-    // `move_outputs_to_response()`. so they can be serialized and written back
-    // to the host's `ProcessData` object.
-
-    /**
-     * The process data we reconstruct from the other fields during `get()`.
-     */
-    Steinberg::Vst::ProcessData reconstructed_process_data;
-
     // These are the same fields as in `YaProcessDataResponse`. We'll generate
     // these as part of creating `reconstructed_process_data`, and they will be
     // moved into a response object during `move_outputs_to_response()`.
@@ -295,6 +278,36 @@ class YaProcessData {
      * `output_events_supported`.
      */
     std::optional<YaEventList> output_events;
+
+    // These last few members are used on the Wine plugin host side to
+    // reconstruct the original `ProcessData` object. Here we also initialize
+    // these `output*` fields so the Windows VST3 plugin can write to them
+    // though a regular `ProcessData` object. Finally we can wrap these output
+    // fields back into a `YaProcessDataResponse` using
+    // `move_outputs_to_response()`. so they can be serialized and written back
+    // to the host's `ProcessData` object.
+
+    /**
+     * Obtained by calling `.get()` on every `YaAudioBusBuffers` object in
+     * `intputs`. These objects contain pointers to the data in `inputs` and may
+     * thus not outlive them.
+     */
+    std::vector<Steinberg::Vst::AudioBusBuffers> inputs_audio_bus_buffers;
+
+    /**
+     * Obtained by calling `.get()` on every `YaAudioBusBuffers` object in
+     * `outputs`. These objects contain pointers to the data in `outputs` and
+     * may thus not outlive them. These are created in a two step process, since
+     * we first have to create `outputs` from `outputs_num_channels` before we
+     * can transform it into a structure the Windows VST3 plugin can work with.
+     * Hooray for heap arrays.
+     */
+    std::vector<Steinberg::Vst::AudioBusBuffers> outputs_audio_bus_buffers;
+
+    /**
+     * The process data we reconstruct from the other fields during `get()`.
+     */
+    Steinberg::Vst::ProcessData reconstructed_process_data;
 };
 
 namespace Steinberg {

@@ -62,7 +62,8 @@ YaAudioBusBuffers::YaAudioBusBuffers(
     }
 }
 
-Steinberg::Vst::AudioBusBuffers& YaAudioBusBuffers::get() {
+Steinberg::Vst::AudioBusBuffers YaAudioBusBuffers::get() {
+    Steinberg::Vst::AudioBusBuffers reconstructed_buffers;
     reconstructed_buffers.silenceFlags = silence_flags;
     std::visit(overload{
                    [&](std::vector<std::vector<double>>& buffers) {
@@ -120,4 +121,66 @@ YaProcessData::YaProcessData(const Steinberg::Vst::ProcessData& process_data)
     }
 }
 
-// TODO: Reconstruction
+Steinberg::Vst::ProcessData& YaProcessData::get() {
+    // We'll have to transform out `YaAudioBusBuffers` objects into an array of
+    // `AudioBusBuffers` object so the plugin can deal with them. These objects
+    // contain pointers to those original objects and thus don't store any
+    // buffer data themselves.
+    inputs_audio_bus_buffers.clear();
+    for (auto& buffers : inputs) {
+        inputs_audio_bus_buffers.push_back(buffers.get());
+    }
+
+    // We'll do the same with with the outputs, but we'll first have to
+    // initialize zeroed out buffers for the plugin to work with since we didn't
+    // serialize those directly
+    outputs.clear();
+    outputs_audio_bus_buffers.clear();
+    for (auto& num_channels : outputs_num_channels) {
+        YaAudioBusBuffers& buffers = outputs.emplace_back(
+            symbolic_sample_size, num_channels, num_samples);
+        outputs_audio_bus_buffers.push_back(buffers.get());
+    }
+
+    reconstructed_process_data.processMode = process_mode;
+    reconstructed_process_data.symbolicSampleSize = symbolic_sample_size;
+    reconstructed_process_data.numSamples = num_samples;
+    reconstructed_process_data.numInputs = inputs.size();
+    reconstructed_process_data.numOutputs = outputs_num_channels.size();
+    reconstructed_process_data.inputs = inputs_audio_bus_buffers.data();
+    reconstructed_process_data.outputs = outputs_audio_bus_buffers.data();
+
+    reconstructed_process_data.inputParameterChanges = &input_parameter_changes;
+    if (output_parameter_changes_supported) {
+        output_parameter_changes.emplace();
+        reconstructed_process_data.outputParameterChanges =
+            &*output_parameter_changes;
+    } else {
+        output_parameter_changes.reset();
+        reconstructed_process_data.outputParameterChanges = nullptr;
+    }
+
+    if (input_events) {
+        reconstructed_process_data.inputEvents = &*input_events;
+    } else {
+        reconstructed_process_data.inputEvents = nullptr;
+    }
+
+    if (output_events_supported) {
+        output_events.emplace();
+        reconstructed_process_data.outputEvents = &*output_events;
+    } else {
+        output_events.reset();
+        reconstructed_process_data.outputEvents = nullptr;
+    }
+
+    if (process_context) {
+        reconstructed_process_data.processContext = &*process_context;
+    } else {
+        reconstructed_process_data.processContext = nullptr;
+    }
+
+    return reconstructed_process_data;
+}
+
+// TODO: Response creation
