@@ -77,8 +77,6 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
      *   -> host callbacks isntead. Optional since it only has to be set on the
      *   plugin's side.
      *
-     * TODO: Is it feasible to move `logging` to the constructor instead?
-     *
      * @relates Vst3MessageHandler::receive_messages
      */
     template <typename T>

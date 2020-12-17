@@ -16,10 +16,7 @@
 
 #pragma once
 
-#include <set>
-
 #include <bitsery/ext/std_optional.h>
-#include <bitsery/ext/std_set.h>
 #include <bitsery/traits/string.h>
 #include <pluginterfaces/base/ipluginbase.h>
 
@@ -27,15 +24,12 @@
 #include "base.h"
 #include "host-application.h"
 
-// TODO: After implementing one or two more of these, abstract away some of the
-//       nasty bits
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 
 /**
  * Wraps around `IPluginFactory{1,2,3}` for serialization purposes. See
- * `README.md` for more information on how this works.
+ * `docs/vst3.md` for more information on how this works.
  */
 class YaPluginFactory : public Steinberg::IPluginFactory3 {
    public:
@@ -53,12 +47,14 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
         ConstructArgs(Steinberg::IPtr<Steinberg::IPluginFactory> factory);
 
         /**
-         * The IIDs that the interface we serialized supports.
-         *
-         * TODO: Replace this with a set of boolean flags, just like we're doing
-         *       with the other interfaces.
+         * Whether `factory` supported `IPluginFactory2`.
          */
-        std::set<Steinberg::FUID> known_iids;
+        bool supports_plugin_factory_2;
+
+        /**
+         * Whether `factory` supported `IPluginFactory3`.
+         */
+        bool supports_plugin_factory_3;
 
         /**
          * For `IPluginFactory::getFactoryInfo`.
@@ -92,10 +88,8 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
 
         template <typename S>
         void serialize(S& s) {
-            s.ext(known_iids, bitsery::ext::StdSet{32},
-                  [](S& s, Steinberg::FUID& iid) {
-                      s.ext(iid, bitsery::ext::FUID{});
-                  });
+            s.value1b(supports_plugin_factory_2);
+            s.value1b(supports_plugin_factory_3);
             s.ext(factory_info, bitsery::ext::StdOptional{});
             s.value4b(num_classes);
             s.container(class_infos_1, 2048,

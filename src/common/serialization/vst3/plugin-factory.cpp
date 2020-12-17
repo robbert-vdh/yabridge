@@ -25,7 +25,6 @@ YaPluginFactory::ConstructArgs::ConstructArgs() {}
 
 YaPluginFactory::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::IPluginFactory> factory) {
-    known_iids.insert(factory->iid);
     // `IPluginFactory::getFactoryInfo`
     if (Steinberg::PFactoryInfo info;
         factory->getFactoryInfo(&info) == Steinberg::kResultOk) {
@@ -47,7 +46,7 @@ YaPluginFactory::ConstructArgs::ConstructArgs(
         return;
     }
 
-    known_iids.insert(factory2->iid);
+    supports_plugin_factory_2 = true;
     // `IpluginFactory2::getClassInfo2`
     class_infos_2.resize(num_classes);
     for (int i = 0; i < num_classes; i++) {
@@ -62,7 +61,7 @@ YaPluginFactory::ConstructArgs::ConstructArgs(
         return;
     }
 
-    known_iids.insert(factory3->iid);
+    supports_plugin_factory_3 = true;
     // `IpluginFactory3::getClassInfoUnicode`
     class_infos_unicode.resize(num_classes);
     for (int i = 0; i < num_classes; i++) {
@@ -90,15 +89,13 @@ tresult PLUGIN_API YaPluginFactory::queryInterface(Steinberg::FIDString _iid,
                                                    void** obj) {
     QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
                     Steinberg::IPluginFactory)
-    if (arguments.known_iids.contains(Steinberg::IPluginFactory::iid)) {
-        QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory::iid,
-                        Steinberg::IPluginFactory)
-    }
-    if (arguments.known_iids.contains(Steinberg::IPluginFactory2::iid)) {
+    QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory::iid,
+                    Steinberg::IPluginFactory)
+    if (arguments.supports_plugin_factory_2) {
         QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory2::iid,
                         Steinberg::IPluginFactory2)
     }
-    if (arguments.known_iids.contains(Steinberg::IPluginFactory3::iid)) {
+    if (arguments.supports_plugin_factory_3) {
         QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory3::iid,
                         Steinberg::IPluginFactory3)
     }
