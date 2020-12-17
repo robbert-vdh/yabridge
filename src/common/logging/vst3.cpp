@@ -367,7 +367,7 @@ void Vst3Logger::log_response(
             }
             num_output_channels << "]";
 
-            message << "<AudioBusBuffers array with "
+            message << ", <AudioBusBuffers array with "
                     << num_output_channels.str() << " channels>";
 
             if (response.output_data.output_parameter_changes) {
