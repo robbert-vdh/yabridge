@@ -18,6 +18,7 @@
 
 #include "src/common/serialization/vst3.h"
 #include "vst3-impls/plugin-factory.h"
+#include "vst3-impls/plugin-proxy.h"
 
 // There are still some design decisions that need some more thought
 // TODO: Check whether `IPlugView::isPlatformTypeSupported` needs special
@@ -114,14 +115,13 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
     return plugin_factory;
 }
 
-void Vst3PluginBridge::register_component(size_t instance_id,
-                                          Vst3PluginProxyImpl& component) {
-    std::lock_guard lock(component_instances_mutex);
-    component_instances.emplace(instance_id,
-                                std::ref<Vst3PluginProxyImpl>(component));
+void Vst3PluginBridge::register_plugin_proxy(Vst3PluginProxyImpl& component) {
+    std::lock_guard lock(plugin_proxies_mutex);
+    plugin_proxies.emplace(component.instance_id(),
+                           std::ref<Vst3PluginProxyImpl>(component));
 }
 
-void Vst3PluginBridge::unregister_component(size_t instance_id) {
-    std::lock_guard lock(component_instances_mutex);
-    component_instances.erase(instance_id);
+void Vst3PluginBridge::unregister_plugin_proxy(size_t instance_id) {
+    std::lock_guard lock(plugin_proxies_mutex);
+    plugin_proxies.erase(instance_id);
 }

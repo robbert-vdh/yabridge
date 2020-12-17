@@ -39,6 +39,8 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API queryInterface(const Steinberg::TUID _iid,
                                       void** obj) override;
 
+    inline size_t instance_id() { return arguments.instance_id; }
+
     // From `IAudioProcessor`
     tresult PLUGIN_API
     setBusArrangements(Steinberg::Vst::SpeakerArrangement* inputs,

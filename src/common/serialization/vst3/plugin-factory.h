@@ -34,7 +34,7 @@
 class YaPluginFactory : public Steinberg::IPluginFactory3 {
    public:
     /**
-     * These are the arguments for creating a `YaPluginFactoryPluginImpl`.
+     * These are the arguments for creating a `YaPluginFactoryImpl`.
      */
     struct ConstructArgs {
         ConstructArgs();
@@ -125,9 +125,9 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     YaPluginFactory(const ConstructArgs&& args);
 
     /**
-     * We do not need to implement the destructor in
-     * `YaPluginFactoryPluginImpl`, since when the sockets are closed, RAII will
-     * clean up the Windows VST3 module we loaded along with its factory for us.
+     * We do not need to implement the destructor in `YaPluginFactoryImpl`,
+     * since when the sockets are closed, RAII will clean up the Windows VST3
+     * module we loaded along with its factory for us.
      */
     virtual ~YaPluginFactory();
 
@@ -139,8 +139,7 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     tresult PLUGIN_API getClassInfo(Steinberg::int32 index,
                                     Steinberg::PClassInfo* info) override;
     /**
-     * See the implementation in `YaPluginFactoryPluginImpl` for how this is
-     * handled.
+     * See the implementation in `YaPluginFactoryImpl` for how this is handled.
      */
     virtual tresult PLUGIN_API createInstance(Steinberg::FIDString cid,
                                               Steinberg::FIDString _iid,

@@ -19,13 +19,13 @@
 Vst3PluginProxyImpl::Vst3PluginProxyImpl(Vst3PluginBridge& bridge,
                                          Vst3PluginProxy::ConstructArgs&& args)
     : Vst3PluginProxy(std::move(args)), bridge(bridge) {
-    bridge.register_component(arguments.instance_id, *this);
+    bridge.register_plugin_proxy(*this);
 }
 
 Vst3PluginProxyImpl::~Vst3PluginProxyImpl() {
     bridge.send_message(
         Vst3PluginProxy::Destruct{.instance_id = arguments.instance_id});
-    bridge.unregister_component(arguments.instance_id);
+    bridge.unregister_plugin_proxy(arguments.instance_id);
 }
 
 tresult PLUGIN_API
