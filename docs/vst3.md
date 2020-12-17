@@ -1,13 +1,8 @@
 # VST3 serialization
 
-TODO: Flesh this out further
+TODO: Flesh this out further, update the instantiation part, make the proxying part clearer
 
 TODO: Link to `src/common/serialization/vst3/README.md`
-
-TODO: Mention the new `Ya<Base>::supports()` mechanism for the monolithic proxy
-objects through multiple inheritance
-
-TODO: Explain the monolith
 
 The VST3 SDK uses an architecture where every concrete object inherits from an
 interface, and every interface inherits from `FUnknown`. `FUnkonwn` offers a
@@ -34,52 +29,45 @@ Yabridge's serialization and communication model for VST3 is thus a lot more
 complicated than for VST2 since all of these objects are loosely coupled and are
 instantiated and managed by the host. The basic model works as follows:
 
-1. For an interface `IFoo`, we provide a possibly abstract implementation called
-   `YaFoo`.
-2. When we want to _proxy_ an interface from one side to the other (let's assume
-   we want to allow the native VST3 host to call functions on the `IFoo`
-   provided by the Windows VST3 plugin), we need to provide a `YaFoo`
-   implementation on the native plugin side that can do callbacks to the
-   corresponding `IFoo` object in the Wine plugin host. For most objects, this
-   works by first generating a unique identifier to be able to refer to this
-   specific `IFoo` instance, and then serializing that identifier together with
-   any static payload data into a `YaFoo::ConstructArgs` object. This
-   `YaFoo::ConstructArgs` copies this data through a `IPtr<IFoo>` smart pointer
-   to the original object we're proxying. This object can be serialized and
-   transmitted to the other side using bitsery.
-3. The original `IFoo` we are proxying gets added to an
-   `std::map<size_t, IPtr<IFoo>>` (in our assumed scenario, this happens on the
-   Wine plugin host's side) with the key being that unique instance identifier
-   we generated so we can refer to it later on.
-4. `YaFoo` implements all the boilerplate required for `FUnknown`. This includes
-   the constructor, destructor and methods required for reference counting, as
-   well as the query interface. It also implements any static lookup functions
-   that can be performed using the data contained in a `YaFoo::ConstructArgs`
-   object. Any functions that perform side effects or return dynamic data and
-   thus require a callback or control message are marked as pure virtual. These
-   callbacks can be performed through yabridge's `Vst3MessageHandler` message
-   handling interface. For the sake of clarity, we use the term _callback_ for
-   `plugin -> host` function calls and _control message_ for `host -> plugin`
-   function calls.
-5. The side that requested the object (which we assume to be the native plugin
-   here), creates a _proxy object_ called `YaFoo{Plugin,Host}Impl`, so
-   `YaFooPluginImpl` in this case. This is an instance of `YaFoo` and thus
-   `IFoo`, so we can pass it as an `IFoo` pointer to the host. This object takes
-   those `YaFoo::ConstructArgs` and a reference to the bridge instance so it can
-   do callbacks or send control messages.
-6. If `IFoo` is a versioned interface such as `IPluginFactory{,2,3}`, the
+1. The main idea behind yabridge's VST3 implementation is that we define
+   monolithic proxy objects that can proxy any object created by the Windows
+   VST3 plugin. These proxy objects indirectly inherit from all applicable
+   interfaces defiend in the VST3 SDK. `Vst3PluginProxy` implements all
+   interfaces that can be implemented by plugins, and `Vst3HostProxy` implements
+   all interfaces that are to be implemented by the host.
+2. For every interface `IFoo`, we provide an abstract implementation called
+   `YaFoo`. This implementation mostly contain message object we use to make
+   specific function calls on the actual objects we are proxying. The
+   implementation also comes with a function that takes an `FUnknown` pointer,
+   checks whether the object behind that pointer supports `IFoo`, and then
+   stores the result along with any potential static payload data as a
+   `YaFoo::ConstrctArgs` object.
+3. Proxy object are instantiated while handling
+   `IPluginFactory::createInstance()` for `Vst3PluginProxy`, and during
+   `IPluginBase::initialize()` and `IPluginFactory::setHostContext()` for
+   `Vst3HostProxy`. On the receiving side of those functions (where we call the
+   actual function implemented by the plugin or the host), we receive an
+   `IPtr<T>` smart pointer to an object provided by the host or the plugin. We
+   use this object to iterate over every applicable `YaFoo` as mentioend above.
+   All of these `YaFoo::ConstructArgs` objects along with a unique identifier
+   for this specific object are then serialized and transmitted to the other
+   side. With this information we can create a proxy object that supports all
+   the same interfaces (and thus allows calls to the functions in those
+   interfaces) as the original object we are proxying.
+4. As mentioend, every object we instantiate gets assigned a unique identifier.
+   When dealign with objects created by the Windows VST3 plugin, the object's
+   `FUnknown` pointer will be stored in an `std::map<size_t, PluginObject>` map.
+   This way we can refer to it later on when we receive a request to call a
+   specific function on the plugin.
+5. If `IFoo` is a versioned interface such as `IPluginFactory{,2,3}`, the
    creation of `YaFoo::ConstrctArgs` and the definition of `YaFoo`'s query
    interface work slightly differently. When copying the data for a plugin
    factory, we'll start copying from `IPluginFactory`, and we'll copy data from
    each newer version of the interface that the `IPtr<IPluginFactory>` supports.
    During this process we keep track of which interfaces were supported by the
-   native plugin in a `known_iids` set. In our query interface method we then
-   only report support for the same interfaces that were supported by the
-   original `IPtr<IPluginFactory` we're proxying.
-7. The same mechanism that we use for versioning is also used for objects that
-   commonly implement multiple interfaces. A common example of this is an
-   `IComponent` (which inherits from `IPluginBase`) also implementing
-   `IAudioProcessor` and `IConnectionPoint`.
+   native plugin. In our query interface method we then only report support for
+   the same interface versions that were supported by the original
+   `IPtr<IPluginFactory>` we are proxying.
 
 ## Interface Instantiation
 
@@ -87,7 +75,7 @@ Creating a new instance of an interface using the plugin factory wroks as
 follows. This describes the object lifecycle. The actual serialization and
 proxying is described in the section above.
 
-1. The host calls `createInterface(cid, _iid, obj)` on an IPluginFactory
+1. The host calls `createInterface(cid, _iid, obj)` on an `IPluginFactory`
    implementation exposed to the host as described above.
 2. We check which interface we support matches the `_iid`. If we don't support
    the interface, we'll log a message about it and return that we do not support
