@@ -124,6 +124,43 @@ class YaEditController2 : public Steinberg::Vst::IEditController,
     };
 
     virtual int32 PLUGIN_API getParameterCount() override = 0;
+
+    /**
+     * The response code and returned parameter information for a call to
+     * `IEditController::getParameterINfo(param_index, &info)`.
+     */
+    struct GetParameterInfoResponse {
+        UniversalTResult result;
+        Steinberg::Vst::ParameterInfo updated_info;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(updated_info);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IEditController::getParameterINfo(param_index, &info)` to the Wine
+     * plugin host.
+     */
+    struct GetParameterInfo {
+        using Response = GetParameterInfoResponse;
+
+        native_size_t instance_id;
+
+        int32 param_index;
+        Steinberg::Vst::ParameterInfo info;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(param_index);
+            s.object(info);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getParameterInfo(int32 paramIndex,
                      Steinberg::Vst::ParameterInfo& info /*out*/) override = 0;
@@ -163,3 +200,19 @@ class YaEditController2 : public Steinberg::Vst::IEditController,
 };
 
 #pragma GCC diagnostic pop
+
+namespace Steinberg {
+namespace Vst {
+template <typename S>
+void serialize(S& s, ParameterInfo& info) {
+    s.value4b(info.id);
+    s.container2b(info.title);
+    s.container2b(info.shortTitle);
+    s.container2b(info.units);
+    s.value4b(info.stepCount);
+    s.value8b(info.defaultNormalizedValue);
+    s.value4b(info.unitId);
+    s.value4b(info.flags);
+}
+}  // namespace Vst
+}  // namespace Steinberg

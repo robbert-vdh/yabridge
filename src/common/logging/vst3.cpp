@@ -16,6 +16,8 @@
 
 #include "vst3.h"
 
+#include <public.sdk/source/vst/utility/stringconvert.h>
+
 #include "src/common/serialization/vst3.h"
 
 Vst3Logger::Vst3Logger(Logger& generic_logger) : logger(generic_logger) {}
@@ -283,6 +285,16 @@ void Vst3Logger::log_request(
     });
 }
 
+void Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaEditController2::GetParameterInfo& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IEditController* #" << request.instance_id
+                << ">::getParameterInfo(paramIndex = " << request.param_index
+                << ", &info)";
+    });
+}
+
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     log_request_base(is_host_vst, [&](auto& message) {
@@ -430,6 +442,19 @@ void Vst3Logger::log_response(
                     << ", <RoutingInfo& for bus "
                     << response.updated_out_info.busIndex << " and channel "
                     << response.updated_out_info.channel << ">";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaEditController2::GetParameterInfoResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            std::string title =
+                VST3::StringConvert::convert(response.updated_info.title);
+            message << ", <ParameterInfo for '" << title << "'>";
         }
     });
 }

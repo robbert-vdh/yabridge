@@ -202,9 +202,15 @@ int32 PLUGIN_API Vst3PluginProxyImpl::getParameterCount() {
 tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
     int32 paramIndex,
     Steinberg::Vst::ParameterInfo& info /*out*/) {
-    // TODO: Implement
-    bridge.logger.log("TODO IEditController::getParameterInfo()");
-    return Steinberg::kNotImplemented;
+    const GetParameterInfoResponse response =
+        bridge.send_message(YaEditController2::GetParameterInfo{
+            .instance_id = arguments.instance_id,
+            .param_index = paramIndex,
+            .info = info});
+
+    info = response.updated_info;
+
+    return response.result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getParamStringByValue(

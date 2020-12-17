@@ -237,10 +237,20 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .edit_controller->setComponentState(&request.state);
             },
-            [&](YaEditController2::GetParameterCount& request)
+            [&](const YaEditController2::GetParameterCount& request)
                 -> YaEditController2::GetParameterCount::Response {
                 return object_instances[request.instance_id]
                     .edit_controller->getParameterCount();
+            },
+            [&](YaEditController2::GetParameterInfo& request)
+                -> YaEditController2::GetParameterInfo::Response {
+                const tresult result =
+                    object_instances[request.instance_id]
+                        .edit_controller->getParameterInfo(request.param_index,
+                                                           request.info);
+
+                return YaEditController2::GetParameterInfoResponse{
+                    .result = result, .updated_info = request.info};
             },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
