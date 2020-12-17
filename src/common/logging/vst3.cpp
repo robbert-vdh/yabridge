@@ -425,5 +425,5 @@ void Vst3Logger::log_response(bool is_host_vst,
 
 void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
     log_response_base(is_host_vst,
-                      [&](auto& message) { message << "<Configuration"; });
+                      [&](auto& message) { message << "<Configuration>"; });
 }
