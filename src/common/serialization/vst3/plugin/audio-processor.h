@@ -19,10 +19,10 @@
 #include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
 
-#include "../common.h"
-#include "base.h"
-#include "host-application.h"
-#include "process-data.h"
+#include "../../common.h"
+#include "../base.h"
+#include "../host-application.h"
+#include "../process-data.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"

@@ -20,9 +20,9 @@
 #include <bitsery/traits/array.h>
 #include <pluginterfaces/vst/ivstcomponent.h>
 
-#include "../../bitsery/ext/vst3.h"
-#include "../common.h"
-#include "base.h"
+#include "../../../bitsery/ext/vst3.h"
+#include "../../common.h"
+#include "../base.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"

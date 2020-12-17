@@ -20,11 +20,11 @@
 #include <pluginterfaces/vst/ivstcomponent.h>
 
 #include "../common.h"
-#include "audio-processor.h"
 #include "base.h"
-#include "component.h"
 #include "host-application.h"
-#include "plugin-base.h"
+#include "plugin/audio-processor.h"
+#include "plugin/component.h"
+#include "plugin/plugin-base.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"

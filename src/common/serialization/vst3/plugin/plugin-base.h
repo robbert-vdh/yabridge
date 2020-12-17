@@ -19,9 +19,9 @@
 #include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/base/ipluginbase.h>
 
-#include "../common.h"
-#include "base.h"
-#include "host-application.h"
+#include "../../common.h"
+#include "../base.h"
+#include "../host-application.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
