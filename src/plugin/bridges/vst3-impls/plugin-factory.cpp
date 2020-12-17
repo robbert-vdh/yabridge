@@ -28,14 +28,26 @@ tresult PLUGIN_API
 YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
                                     Steinberg::FIDString _iid,
                                     void** obj) {
+    if (!_iid || !cid) {
+        return Steinberg::kInvalidArgument;
+    }
+
     ArrayUID cid_array;
     std::copy(cid, cid + sizeof(Steinberg::TUID), cid_array.begin());
 
+    // FIXME: `_iid` in Bitwig Studio 3.3.1 is not null terminated, and the
+    //        comparison below will thus fail since the strings have different
+    //        lengths. We'll temporarily work around this, and if this end sup
+    //        not being us doing something strange then we should report it.
+    constexpr size_t uid_size = sizeof(Steinberg::TUID);
+    std::string iid_string(_iid, uid_size);
+
     Vst3PluginProxy::Construct::Interface requested_interface;
-    if (Steinberg::FIDStringsEqual(_iid, Steinberg::Vst::IComponent::iid)) {
+    if (Steinberg::FIDStringsEqual(iid_string.c_str(),
+                                   Steinberg::Vst::IComponent::iid)) {
         requested_interface = Vst3PluginProxy::Construct::Interface::IComponent;
     } else if (Steinberg::FIDStringsEqual(
-                   _iid, Steinberg::Vst::IEditController::iid)) {
+                   iid_string.c_str(), Steinberg::Vst::IEditController::iid)) {
         requested_interface =
             Vst3PluginProxy::Construct::Interface::IEditController;
     } else {
@@ -44,7 +56,6 @@ YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
         // way to convert a `FIDString/char*` into a `FUID`, so this will have
         // to do.
         std::optional<Steinberg::FUID> uid;
-        constexpr size_t uid_size = sizeof(Steinberg::TUID);
         if (_iid && strnlen(_iid, uid_size) >= uid_size) {
             uid = Steinberg::FUID::fromTUID(
                 *reinterpret_cast<const Steinberg::TUID*>(&*_iid));
