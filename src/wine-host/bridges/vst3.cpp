@@ -106,6 +106,36 @@ void Vst3Bridge::run() {
 
                 return Ack{};
             },
+            [&](Vst3PluginProxy::SetState& request)
+                -> Vst3PluginProxy::SetState::Response {
+                // This same function is defined in both `IComponent` and
+                // `IEditController`, so the host is calling one or the other
+                if (object_instances[request.instance_id].component) {
+                    return object_instances[request.instance_id]
+                        .component->setState(&request.state);
+                } else {
+                    return object_instances[request.instance_id]
+                        .edit_controller->setState(&request.state);
+                }
+            },
+            [&](Vst3PluginProxy::GetState& request)
+                -> Vst3PluginProxy::GetState::Response {
+                VectorStream stream;
+                tresult result;
+
+                // This same function is defined in both `IComponent` and
+                // `IEditController`, so the host is calling one or the other
+                if (object_instances[request.instance_id].component) {
+                    result = object_instances[request.instance_id]
+                                 .component->getState(&stream);
+                } else {
+                    result = object_instances[request.instance_id]
+                                 .edit_controller->getState(&stream);
+                }
+
+                return Vst3PluginProxy::GetStateResponse{
+                    .result = result, .updated_state = std::move(stream)};
+            },
             [&](YaAudioProcessor::SetBusArrangements& request)
                 -> YaAudioProcessor::SetBusArrangements::Response {
                 return object_instances[request.instance_id]
@@ -200,21 +230,6 @@ void Vst3Bridge::run() {
                 -> YaComponent::SetActive::Response {
                 return object_instances[request.instance_id]
                     .component->setActive(request.state);
-            },
-            [&](YaComponent::SetState& request)
-                -> YaComponent::SetState::Response {
-                return object_instances[request.instance_id]
-                    .component->setState(&request.state);
-            },
-            [&](YaComponent::GetState& request)
-                -> YaComponent::GetState::Response {
-                VectorStream stream;
-                const tresult result =
-                    object_instances[request.instance_id].component->getState(
-                        &stream);
-
-                return YaComponent::GetStateResponse{
-                    .result = result, .updated_state = std::move(stream)};
             },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {

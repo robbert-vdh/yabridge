@@ -150,6 +150,58 @@ class Vst3PluginProxy : public YaAudioProcessor,
 
     DECLARE_FUNKNOWN_METHODS
 
+    // We'll define messages for functions that have identical definitions in
+    // multiple interfaces below. When the Wine plugin host process handles
+    // these it should check which of the interfaces is supported on the host.
+
+    /**
+     * Message to pass through a call to
+     * `{IComponent,IEditController}::setState(state)` to the Wine plugin host.
+     */
+    struct SetState {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        VectorStream state;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.object(state);
+        }
+    };
+
+    /**
+     * The response code and written state for a call to
+     * `{IComponent,IEditController}::getState(state)`.
+     */
+    struct GetStateResponse {
+        UniversalTResult result;
+        VectorStream updated_state;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(updated_state);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `{IComponent,IEditController}::getState(state)` to the Wine plugin host.
+     */
+    struct GetState {
+        using Response = GetStateResponse;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
    protected:
     ConstructArgs arguments;
 };

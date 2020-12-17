@@ -60,6 +60,23 @@ void Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+void Vst3Logger::log_request(bool is_host_vst,
+                             const Vst3PluginProxy::SetState& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<{IComponent,IEditController}* #" << request.instance_id
+                << ">::setState(state = <IBStream* containing "
+                << request.state.size() << "bytes>)";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const Vst3PluginProxy::GetState& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<{IComponent,IEditController}* #" << request.instance_id
+                << ">::getState(state = <IBStream*>)";
+    });
+}
+
 void Vst3Logger::log_request(
     bool is_host_vst,
     const YaAudioProcessor::SetBusArrangements& request) {
@@ -248,23 +265,6 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::SetState& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IComponent* #" << request.instance_id
-                << ">::setState(state = <IBStream* containing "
-                << request.state.size() << "bytes>)";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::GetState& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IComponent* #" << request.instance_id
-                << ">::getState(state = <IBStream*>)";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IPluginBase* #" << request.instance_id
@@ -320,6 +320,18 @@ void Vst3Logger::log_response(bool is_host_vst,
                                 message << code.string();
                             }},
                    result);
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const Vst3PluginProxy::GetStateResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", <IBStream* containing "
+                    << response.updated_state.size() << " bytes>";
+        }
     });
 }
 
@@ -399,17 +411,6 @@ void Vst3Logger::log_response(
                     << ", <RoutingInfo& for bus "
                     << response.updated_out_info.busIndex << " and channel "
                     << response.updated_out_info.channel << ">";
-        }
-    });
-}
-
-void Vst3Logger::log_response(bool is_host_vst,
-                              const YaComponent::GetStateResponse& response) {
-    log_response_base(is_host_vst, [&](auto& message) {
-        message << response.result.string();
-        if (response.result == Steinberg::kResultOk) {
-            message << ", <IBStream* containing "
-                    << response.updated_state.size() << " bytes>";
         }
     });
 }

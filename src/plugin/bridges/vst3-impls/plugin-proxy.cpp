@@ -171,21 +171,22 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setActive(TBool state) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setState(Steinberg::IBStream* state) {
-    return bridge.send_message(YaComponent::SetState{
+    // Since both interfaces contain this function, this is used for both
+    // `IComponent::setState()` as well as `IEditController::setState()`
+    return bridge.send_message(Vst3PluginProxy::SetState{
         .instance_id = arguments.instance_id, .state = state});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
+    // Since both interfaces contain this function, this is used for both
+    // `IComponent::getState()` as well as `IEditController::getState()`
     const GetStateResponse response = bridge.send_message(
-        YaComponent::GetState{.instance_id = arguments.instance_id});
+        Vst3PluginProxy::GetState{.instance_id = arguments.instance_id});
 
     assert(response.updated_state.write_back(state) == Steinberg::kResultOk);
 
     return response.result;
 }
-
-// FIXME: Fix `{set,get}State()` for `IEditController` as mentioned in the
-//        header
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setComponentState(Steinberg::IBStream* state) {

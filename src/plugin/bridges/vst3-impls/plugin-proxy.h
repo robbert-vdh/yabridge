@@ -81,12 +81,9 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
 
     // From `IEditController`
     tresult PLUGIN_API setComponentState(Steinberg::IBStream* state) override;
-    // FIXME: These are duplicate, we need to change the implementation to call
-    //        this on either `object_instances[instance_id].component` or
-    //        `object_instances[instance_id].edit_controller` depending on which
-    //        one exists.
-    // tresult PLUGIN_API setState(Steinberg::IBStream* state) override;
-    // tresult PLUGIN_API getState(Steinberg::IBStream* state) override;
+    // `IEditController` also contains `getState()` and `setState()`  functions.
+    // These are identical to those defiend in `IComponent` and they're thus
+    // handled in in the same function.
     int32 PLUGIN_API getParameterCount() override;
     tresult PLUGIN_API
     getParameterInfo(int32 paramIndex,

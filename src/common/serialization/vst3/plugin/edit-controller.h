@@ -80,10 +80,16 @@ class YaEditController2 : public Steinberg::Vst::IEditController,
 
     virtual tresult PLUGIN_API
     setComponentState(Steinberg::IBStream* state) override = 0;
+
+    // `setState()` and `getState()` are defiend in both `IComponent` and
+    // `IEditController`. Since an object can only ever implement one or the
+    // other, the messages for calling either are defined directly on
+    // `Vst3PluginProxy`.
     virtual tresult PLUGIN_API
     setState(Steinberg::IBStream* state) override = 0;
     virtual tresult PLUGIN_API
     getState(Steinberg::IBStream* state) override = 0;
+
     virtual int32 PLUGIN_API getParameterCount() override = 0;
     virtual tresult PLUGIN_API
     getParameterInfo(int32 paramIndex,
