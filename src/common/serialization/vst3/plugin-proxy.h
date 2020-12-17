@@ -93,20 +93,29 @@ class Vst3PluginProxy : public YaAudioProcessor,
     /**
      * Message to request the Wine plugin host to instantiate a new IComponent
      * to pass through a call to `IComponent::createInstance(cid,
-     * IComponent::iid, ...)`.
+     * <requested_interface>::iid, ...)`.
      */
     struct Construct {
         using Response = std::variant<ConstructArgs, UniversalTResult>;
 
         ArrayUID cid;
 
-        // TODO: Add an enum class to reify the type of object we want to
-        //       instantiate so we can initialize things other than
-        //       `IComponent`, like `IEditController.`
+        /**
+         * The interface the host was trying to instantiate an object for.
+         * Technically the host can create any kind of object, but these are the
+         * objects that are actually used.
+         */
+        enum class Interface {
+            IComponent,
+            IEditController,
+        };
+
+        Interface requested_interface;
 
         template <typename S>
         void serialize(S& s) {
             s.container1b(cid);
+            s.value4b(requested_interface);
         }
     };
 

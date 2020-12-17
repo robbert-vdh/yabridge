@@ -60,15 +60,29 @@ void Vst3Bridge::run() {
     sockets.host_vst_control.receive_messages(
         std::nullopt,
         overload{
-            [&](const Vst3PluginProxy::Construct& args)
+            [&](const Vst3PluginProxy::Construct& request)
                 -> Vst3PluginProxy::Construct::Response {
                 Steinberg::TUID cid;
-                std::copy(args.cid.begin(), args.cid.end(), cid);
-                // TODO: Change this to allow creating different tyeps of
-                //       objects
-                Steinberg::IPtr<Steinberg::FUnknown> object =
-                    module->getFactory()
-                        .createInstance<Steinberg::Vst::IComponent>(cid);
+                std::copy(request.cid.begin(), request.cid.end(), cid);
+
+                // Even though we're requesting a specific interface (to mimic
+                // what the host is doing), we're immediately upcasting it to an
+                // `FUnknown` so we can create a perfect proxy object.
+                Steinberg::IPtr<Steinberg::FUnknown> object;
+                switch (request.requested_interface) {
+                    case Vst3PluginProxy::Construct::Interface::IComponent:
+                        object =
+                            module->getFactory()
+                                .createInstance<Steinberg::Vst::IComponent>(
+                                    cid);
+                        break;
+                    case Vst3PluginProxy::Construct::Interface::IEditController:
+                        object = module->getFactory()
+                                     .createInstance<
+                                         Steinberg::Vst::IEditController>(cid);
+                        break;
+                }
+
                 if (object) {
                     std::lock_guard lock(object_instances_mutex);
 

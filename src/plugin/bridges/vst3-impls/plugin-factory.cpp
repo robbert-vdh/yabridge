@@ -28,26 +28,16 @@ tresult PLUGIN_API
 YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
                                     Steinberg::FIDString _iid,
                                     void** obj) {
-    // TODO: Do the same thing for other types
-
-    // These arw pointers are scary. The idea here is that we return a newly
-    // initialized object (that initializes itself with a reference count of 1),
-    // and then the receiving side will use `Steinberg::owned()` to adopt it to
-    // an `IPtr<T>`.
     ArrayUID cid_array;
     std::copy(cid, cid + sizeof(Steinberg::TUID), cid_array.begin());
+
+    Vst3PluginProxy::Construct::Interface requested_interface;
     if (Steinberg::FIDStringsEqual(_iid, Steinberg::Vst::IComponent::iid)) {
-        std::variant<Vst3PluginProxy::ConstructArgs, UniversalTResult> result =
-            bridge.send_message(Vst3PluginProxy::Construct{.cid = cid_array});
-        return std::visit(
-            overload{
-                [&](Vst3PluginProxy::ConstructArgs&& args) -> tresult {
-                    *obj = static_cast<Steinberg::Vst::IComponent*>(
-                        new Vst3PluginProxyImpl(bridge, std::move(args)));
-                    return Steinberg::kResultOk;
-                },
-                [&](const UniversalTResult& code) -> tresult { return code; }},
-            std::move(result));
+        requested_interface = Vst3PluginProxy::Construct::Interface::IComponent;
+    } else if (Steinberg::FIDStringsEqual(
+                   _iid, Steinberg::Vst::IEditController::iid)) {
+        requested_interface =
+            Vst3PluginProxy::Construct::Interface::IEditController;
     } else {
         // When the host requests an interface we do not (yet) implement, we'll
         // print a recognizable log message. I don't think they include a safe
@@ -65,6 +55,38 @@ YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
 
         return Steinberg::kNotImplemented;
     }
+
+    std::variant<Vst3PluginProxy::ConstructArgs, UniversalTResult> result =
+        bridge.send_message(Vst3PluginProxy::Construct{
+            .cid = cid_array, .requested_interface = requested_interface});
+
+    return std::visit(
+        overload{
+            [&](Vst3PluginProxy::ConstructArgs&& args) -> tresult {
+                // These pointers are scary. The idea here is that we return a
+                // newly initialized object (that initializes itself with a
+                // reference count of 1), and then the receiving side will use
+                // `Steinberg::owned()` to adopt it to an `IPtr<T>`.
+                Vst3PluginProxyImpl* proxy_object =
+                    new Vst3PluginProxyImpl(bridge, std::move(args));
+
+                // We return a properly downcasted version of the proxy object
+                // we just created
+                switch (requested_interface) {
+                    case Vst3PluginProxy::Construct::Interface::IComponent:
+                        *obj = static_cast<Steinberg::Vst::IComponent*>(
+                            proxy_object);
+                        break;
+                    case Vst3PluginProxy::Construct::Interface::IEditController:
+                        *obj = static_cast<Steinberg::Vst::IEditController*>(
+                            proxy_object);
+                        break;
+                }
+
+                return Steinberg::kResultOk;
+            },
+            [&](const UniversalTResult& code) -> tresult { return code; }},
+        std::move(result));
 }
 
 tresult PLUGIN_API

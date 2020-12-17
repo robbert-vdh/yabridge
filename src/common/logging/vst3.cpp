@@ -34,24 +34,29 @@ void Vst3Logger::log_unknown_interface(
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const Vst3PluginProxy::Construct& args) {
+                             const Vst3PluginProxy::Construct& request) {
     log_request_base(is_host_vst, [&](auto& message) {
-        // TODO: When adding the enum class for instantiating different types,
-        //       make sure to reflect those in the constructor and destructor
-        //       logging
         message << "IPluginFactory::createComponent(cid = "
-                << format_uid(Steinberg::FUID::fromTUID(args.cid.data()))
-                << ", _iid = "
-                   "IComponent::iid, "
-                   "&obj)";
+                << format_uid(Steinberg::FUID::fromTUID(request.cid.data()))
+                << ", _iid = ";
+        switch (request.requested_interface) {
+            case Vst3PluginProxy::Construct::Interface::IComponent:
+                message << "IComponent::iid";
+                break;
+            case Vst3PluginProxy::Construct::Interface::IEditController:
+                message << "IEditController::iid";
+                break;
+        }
+        message << ", &obj)";
     });
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
                              const Vst3PluginProxy::Destruct& request) {
     log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IComponent* #" << request.instance_id
-                << ">::~IComponent()";
+        // We don't know what class this instance was originally instantiated
+        // as, but it also doesn't really matter
+        message << "<FUnknown* #" << request.instance_id << ">::~FUnknown()";
     });
 }
 
