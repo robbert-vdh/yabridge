@@ -122,7 +122,7 @@ class Vst3Logger {
             if (is_host_vst) {
                 message << "[host -> vst] >> ";
             } else {
-                message << "[vst -> host] >> ";
+                message << "[host <- vst] >> ";
             }
 
             callback(message);
@@ -142,7 +142,7 @@ class Vst3Logger {
             if (is_host_vst) {
                 message << "[host -> vst]    ";
             } else {
-                message << "[vst -> host]    ";
+                message << "[host <- vst]    ";
             }
 
             callback(message);
