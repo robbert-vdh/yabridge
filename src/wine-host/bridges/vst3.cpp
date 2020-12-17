@@ -16,8 +16,11 @@
 
 #include "vst3.h"
 
+#include <future>
+
 #include "../boost-fix.h"
 
+#include <boost/asio/dispatch.hpp>
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
 #include "vst3-impls/host-application.h"
@@ -102,9 +105,24 @@ void Vst3Bridge::run() {
             },
             [&](const Vst3PluginProxy::Destruct& request)
                 -> Vst3PluginProxy::Destruct::Response {
-                std::lock_guard lock(object_instances_mutex);
-                object_instances.erase(request.instance_id);
+                std::promise<void> latch;
 
+                boost::asio::dispatch(main_context.context, [&]() {
+                    // Remove the instance from within the main IO context so
+                    // removing it doesn't interfere with the Win32 message loop
+                    std::lock_guard lock(object_instances_mutex);
+                    object_instances.erase(request.instance_id);
+
+                    latch.set_value();
+                });
+
+                // XXX: I don't think we have to wait for the object to be
+                //      deleted most of the time, but I can imagine a situation
+                //      where the plugin does a host callback triggered by a
+                //      Win32 timer in between where the above closure is being
+                //      executed and when the actual host application context on
+                //      the plugin side gets deallocated.
+                latch.get_future().wait();
                 return Ack{};
             },
             [&](Vst3PluginProxy::SetState& request)
