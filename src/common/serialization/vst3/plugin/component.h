@@ -72,7 +72,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
      */
     YaComponent(const ConstructArgs&& args);
 
-    inline bool supported() { return arguments.supported; }
+    inline bool supported() const { return arguments.supported; }
 
     tresult PLUGIN_API getControllerClassId(Steinberg::TUID classId) override;
 

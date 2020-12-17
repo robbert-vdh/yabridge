@@ -1,1 +1,0 @@
-Vst3PluginProxyVst3PluginProxyVst3PluginProxyVst3PluginProxy

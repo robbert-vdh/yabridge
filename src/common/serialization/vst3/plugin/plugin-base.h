@@ -62,7 +62,7 @@ class YaPluginBase : public Steinberg::IPluginBase {
      */
     YaPluginBase(const ConstructArgs&& args);
 
-    inline bool supported() { return arguments.supported; }
+    inline bool supported() const { return arguments.supported; }
 
     /**
      * Message to pass through a call to `IPluginBase::initialize()` to the Wine

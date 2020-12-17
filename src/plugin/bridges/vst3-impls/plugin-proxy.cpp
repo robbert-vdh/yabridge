@@ -184,6 +184,114 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
     return response.result;
 }
 
+// FIXME: Fix `{set,get}State()` for `IEditController` as mentioned in the
+//        header
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::setComponentState(Steinberg::IBStream* state) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController::setComponentState()");
+    return Steinberg::kNotImplemented;
+}
+
+int32 PLUGIN_API Vst3PluginProxyImpl::getParameterCount() {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController::getParameterCount()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
+    int32 paramIndex,
+    Steinberg::Vst::ParameterInfo& info /*out*/) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController::getParameterInfo()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::getParamStringByValue(
+    Steinberg::Vst::ParamID id,
+    Steinberg::Vst::ParamValue valueNormalized /*in*/,
+    Steinberg::Vst::String128 string /*out*/) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController::getParamStringByValue()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::getParamValueByString(
+    Steinberg::Vst::ParamID id,
+    Steinberg::Vst::TChar* string /*in*/,
+    Steinberg::Vst::ParamValue& valueNormalized /*out*/) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController::getParamValueByString()");
+    return Steinberg::kNotImplemented;
+}
+
+Steinberg::Vst::ParamValue PLUGIN_API
+Vst3PluginProxyImpl::normalizedParamToPlain(
+    Steinberg::Vst::ParamID id,
+    Steinberg::Vst::ParamValue valueNormalized) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController::normalizedParamToPlain()");
+    return Steinberg::kNotImplemented;
+}
+
+Steinberg::Vst::ParamValue PLUGIN_API
+Vst3PluginProxyImpl::plainParamToNormalized(
+    Steinberg::Vst::ParamID id,
+    Steinberg::Vst::ParamValue plainValue) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController::plainParamToNormalized()");
+    return Steinberg::kNotImplemented;
+}
+
+Steinberg::Vst::ParamValue PLUGIN_API
+Vst3PluginProxyImpl::getParamNormalized(Steinberg::Vst::ParamID id) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController::getParamNormalized()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::setParamNormalized(Steinberg::Vst::ParamID id,
+                                        Steinberg::Vst::ParamValue value) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController::setParamNormalized()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
+    Steinberg::Vst::IComponentHandler* handler) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController::setComponentHandler()");
+    return Steinberg::kNotImplemented;
+}
+
+Steinberg::IPlugView* PLUGIN_API
+Vst3PluginProxyImpl::createView(Steinberg::FIDString name) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController::createView()");
+    return nullptr;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::setKnobMode(Steinberg::Vst::KnobMode mode) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController2::setKnobMode()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::openHelp(TBool onlyCheck) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController2::openHelp()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::openAboutBox(TBool onlyCheck) {
+    // TODO: Implement
+    bridge.logger.log("TODO IEditController2::openAboutBox()");
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
     // This `context` will likely be an `IHostApplication`. If it is, we will
     // store it here, and we'll proxy through all calls to it made from the Wine

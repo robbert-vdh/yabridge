@@ -24,6 +24,7 @@
 #include "host-application.h"
 #include "plugin/audio-processor.h"
 #include "plugin/component.h"
+#include "plugin/edit-controller.h"
 #include "plugin/plugin-base.h"
 
 #pragma GCC diagnostic push
@@ -54,6 +55,7 @@
  */
 class Vst3PluginProxy : public YaAudioProcessor,
                         public YaComponent,
+                        public YaEditController2,
                         public YaPluginBase {
    public:
     /**
@@ -75,12 +77,14 @@ class Vst3PluginProxy : public YaAudioProcessor,
 
         YaAudioProcessor::ConstructArgs audio_processor_args;
         YaComponent::ConstructArgs component_args;
+        YaEditController2::ConstructArgs edit_controller_2_args;
         YaPluginBase::ConstructArgs plugin_base_args;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
             s.object(audio_processor_args);
+            s.object(edit_controller_2_args);
             s.object(component_args);
             s.object(plugin_base_args);
         }

@@ -79,6 +79,47 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API setState(Steinberg::IBStream* state) override;
     tresult PLUGIN_API getState(Steinberg::IBStream* state) override;
 
+    // From `IEditController`
+    tresult PLUGIN_API setComponentState(Steinberg::IBStream* state) override;
+    // FIXME: These are duplicate, we need to change the implementation to call
+    //        this on either `object_instances[instance_id].component` or
+    //        `object_instances[instance_id].edit_controller` depending on which
+    //        one exists.
+    // tresult PLUGIN_API setState(Steinberg::IBStream* state) override;
+    // tresult PLUGIN_API getState(Steinberg::IBStream* state) override;
+    int32 PLUGIN_API getParameterCount() override;
+    tresult PLUGIN_API
+    getParameterInfo(int32 paramIndex,
+                     Steinberg::Vst::ParameterInfo& info /*out*/) override;
+    tresult PLUGIN_API
+    getParamStringByValue(Steinberg::Vst::ParamID id,
+                          Steinberg::Vst::ParamValue valueNormalized /*in*/,
+                          Steinberg::Vst::String128 string /*out*/) override;
+    tresult PLUGIN_API getParamValueByString(
+        Steinberg::Vst::ParamID id,
+        Steinberg::Vst::TChar* string /*in*/,
+        Steinberg::Vst::ParamValue& valueNormalized /*out*/) override;
+    Steinberg::Vst::ParamValue PLUGIN_API
+    normalizedParamToPlain(Steinberg::Vst::ParamID id,
+                           Steinberg::Vst::ParamValue valueNormalized) override;
+    Steinberg::Vst::ParamValue PLUGIN_API
+    plainParamToNormalized(Steinberg::Vst::ParamID id,
+                           Steinberg::Vst::ParamValue plainValue) override;
+    Steinberg::Vst::ParamValue PLUGIN_API
+    getParamNormalized(Steinberg::Vst::ParamID id) override;
+    tresult PLUGIN_API
+    setParamNormalized(Steinberg::Vst::ParamID id,
+                       Steinberg::Vst::ParamValue value) override;
+    tresult PLUGIN_API
+    setComponentHandler(Steinberg::Vst::IComponentHandler* handler) override;
+    Steinberg::IPlugView* PLUGIN_API
+    createView(Steinberg::FIDString name) override;
+
+    // From `IEditController2`
+    tresult PLUGIN_API setKnobMode(Steinberg::Vst::KnobMode mode) override;
+    tresult PLUGIN_API openHelp(TBool onlyCheck) override;
+    tresult PLUGIN_API openAboutBox(TBool onlyCheck) override;
+
     // From `IPluginBase`
     tresult PLUGIN_API initialize(FUnknown* context) override;
     tresult PLUGIN_API terminate() override;
