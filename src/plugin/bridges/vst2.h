@@ -49,6 +49,12 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      */
     Vst2PluginBridge(audioMasterCallback host_callback);
 
+    /**
+     * Terminate the Wine plugin host process and drop all work when the module
+     * gets unloaded.
+     */
+    ~Vst2PluginBridge();
+
     // The four below functions are the handlers from the VST2 API. They are
     // called through proxy functions in `plugin.cpp`.
 

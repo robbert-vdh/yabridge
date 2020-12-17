@@ -19,10 +19,6 @@
 #include "../../common/communication/vst2.h"
 #include "../utils.h"
 
-// I'd rather use std::filesystem instead, but Boost.Process depends on
-// boost::filesystem
-namespace fs = boost::filesystem;
-
 intptr_t dispatch_proxy(AEffect*, int, int, intptr_t, void*, float);
 void process_proxy(AEffect*, float**, float**, int);
 void process_replacing_proxy(AEffect*, float**, float**, int);
@@ -117,6 +113,15 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
     sockets.host_vst_control.send(config);
 
     update_aeffect(plugin, initialized_plugin);
+}
+
+Vst2PluginBridge::~Vst2PluginBridge() {
+    // Drop all work make sure all sockets are closed
+    plugin_host->terminate();
+
+    // The `stop()` method will cause the IO context to just drop all of its
+    // outstanding work immediately
+    io_context.stop();
 }
 
 class DispatchDataConverter : DefaultDataConverter {
@@ -389,15 +394,6 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
                 logger.log("The plugin crashed during shutdown, ignoring");
             }
 
-            plugin_host->terminate();
-
-            // The `stop()` method will cause the IO context to just drop all of
-            // its work immediately and not throw any exceptions that would have
-            // been caused by pipes and sockets being closed.
-            io_context.stop();
-
-            // TODO: For consistency with the VST3 version, move the above to
-            //       the destructor
             delete this;
 
             return return_value;
