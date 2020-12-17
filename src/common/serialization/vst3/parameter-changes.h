@@ -46,6 +46,12 @@ class YaParameterChanges : public Steinberg::Vst::IParameterChanges {
     DECLARE_FUNKNOWN_METHODS
 
     /**
+     * Return the number of parameter we have parameter change queues for. Used
+     * in debug logs.
+     */
+    size_t num_parameters() const;
+
+    /**
      * Write these changes back to an output parameter changes queue on the
      * `ProcessData` object provided by the host.
      */

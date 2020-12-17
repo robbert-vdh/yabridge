@@ -119,12 +119,60 @@ void Vst3Logger::log_request(bool is_host_vst,
 
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaAudioProcessor::Process& request) {
-    // TODO: Only log this on log level 2
-    log_request_base(is_host_vst, [&](auto& message) {
-        // TODO: Log about the process data
-        message << "<IAudioProcessor* #" << request.instance_id
-                << ">::process(TODO)";
-    });
+    log_request_base(
+        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
+            // This is incredibly verbose, but if you're really a plugin that
+            // handles processing in a weird way you're going to need all of
+            // this
+
+            std::ostringstream num_input_channels;
+            num_input_channels << "[";
+            for (bool is_first = true;
+                 const auto& buffers : request.data.inputs) {
+                num_input_channels << (is_first ? "" : ", ")
+                                   << buffers.num_channels();
+                is_first = false;
+            }
+            num_input_channels << "]";
+
+            std::ostringstream num_output_channels;
+            num_output_channels << "[";
+            for (bool is_first = true;
+                 const auto& num_channels : request.data.outputs_num_channels) {
+                num_output_channels << (is_first ? "" : ", ") << num_channels;
+                is_first = false;
+            }
+            num_output_channels << "]";
+
+            message << "<IAudioProcessor* #" << request.instance_id
+                    << ">::process(data = <ProcessData with input_channels = "
+                    << num_input_channels.str()
+                    << ", output_channels = " << num_output_channels.str()
+                    << ", num_samples = " << request.data.process_mode
+                    << ", input_parameter_changes = <IParameterChanges* for "
+                    << request.data.input_parameter_changes.num_parameters()
+                    << " parameters>, output_parameter_changes = "
+                    << (request.data.output_parameter_changes_supported
+                            ? "<IParameterChanges*>"
+                            : "nullptr")
+                    << ", input_events = ";
+            if (request.data.input_events) {
+                message << "<IEventList* with "
+                        << request.data.input_events->num_events()
+                        << " events>";
+            } else {
+                message << "nullptr";
+            }
+            message << ", output_events = "
+                    << (request.data.output_events_supported ? "<IEventList*>"
+                                                             : "nullptr")
+                    << ", process_context = "
+                    << (request.data.process_context ? "<ProcessContext*>"
+                                                     : "nullptr")
+                    << ", process_mode = " << request.data.process_mode
+                    << ", symbolic_sample_size = "
+                    << request.data.symbolic_sample_size << ">)";
+        });
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
@@ -284,12 +332,44 @@ void Vst3Logger::log_response(
 void Vst3Logger::log_response(
     bool is_host_vst,
     const YaAudioProcessor::ProcessResponse& response) {
-    // TODO: Only log this on verbosity level 2
-    log_response_base(is_host_vst, [&](auto& message) {
-        message << response.result.string();
+    log_response_base(
+        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
+            message << response.result.string();
 
-        // TODO: Log response
-    });
+            // This is incredibly verbose, but if you're really a plugin that
+            // handles processing in a weird way you're going to need all of
+            // this
+
+            std::ostringstream num_output_channels;
+            num_output_channels << "[";
+            for (bool is_first = true;
+                 const auto& buffers : response.output_data.outputs) {
+                num_output_channels << (is_first ? "" : ", ")
+                                    << buffers.num_channels();
+                is_first = false;
+            }
+            num_output_channels << "]";
+
+            message << "<AudioBusBuffers array with "
+                    << num_output_channels.str() << " channels>";
+
+            if (response.output_data.output_parameter_changes) {
+                message << ", <IParameterChanges* for "
+                        << response.output_data.output_parameter_changes
+                               ->num_parameters()
+                        << " parameters>";
+            } else {
+                message << ", host does not support parameter outputs";
+            }
+
+            if (response.output_data.output_events) {
+                message << ", <IEventList* with "
+                        << response.output_data.output_events->num_events()
+                        << " events>";
+            } else {
+                message << ", host does not support event outputs";
+            }
+        });
 }
 
 void Vst3Logger::log_response(bool is_host_vst,

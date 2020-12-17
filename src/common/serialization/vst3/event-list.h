@@ -228,6 +228,11 @@ class YaEventList : public Steinberg::Vst::IEventList {
     DECLARE_FUNKNOWN_METHODS
 
     /**
+     * Return the number of events we store. Used in debug logs.
+     */
+    size_t num_events() const;
+
+    /**
      * Write these events an output events queue on the `ProcessData` object
      * provided by the host.
      */

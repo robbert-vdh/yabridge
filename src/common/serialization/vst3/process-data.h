@@ -73,6 +73,11 @@ class YaAudioBusBuffers {
     Steinberg::Vst::AudioBusBuffers get();
 
     /**
+     * Return the number of channels in `buffers`. Only used for debug logs.
+     */
+    size_t num_channels() const;
+
+    /**
      * Write these buffers and the silence flag back to an `AudioBusBuffers
      * object provided by the host.
      */
@@ -203,7 +208,6 @@ class YaProcessData {
         // of the `output*` fields defined below it
     }
 
-   private:
     // These fields are input and context data read from the original
     // `ProcessData` object
 
@@ -266,6 +270,7 @@ class YaProcessData {
      */
     std::optional<Steinberg::Vst::ProcessContext> process_context;
 
+   private:
     // These are the same fields as in `YaProcessDataResponse`. We'll generate
     // these as part of creating `reconstructed_process_data`, and they will be
     // moved into a response object during `move_outputs_to_response()`.

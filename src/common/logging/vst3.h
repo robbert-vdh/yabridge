@@ -115,9 +115,10 @@ class Vst3Logger {
      * every logging function so we don't have to repeat it everywhere.
      */
     template <std::invocable<std::ostringstream&> F>
-    void log_request_base(bool is_host_vst, F callback) {
-        if (BOOST_UNLIKELY(logger.verbosity >=
-                           Logger::Verbosity::most_events)) {
+    void log_request_base(bool is_host_vst,
+                          Logger::Verbosity min_verbosity,
+                          F callback) {
+        if (BOOST_UNLIKELY(logger.verbosity >= min_verbosity)) {
             std::ostringstream message;
             if (is_host_vst) {
                 message << "[host -> vst] >> ";
@@ -130,14 +131,20 @@ class Vst3Logger {
         }
     }
 
+    template <std::invocable<std::ostringstream&> F>
+    void log_request_base(bool is_host_vst, F callback) {
+        log_request_base(is_host_vst, Logger::Verbosity::most_events, callback);
+    }
+
     /**
      * Log a response with a standard prefix based on the boolean flag we pass
      * to every logging function so we don't have to repeat it everywhere.
      */
     template <std::invocable<std::ostringstream&> F>
-    void log_response_base(bool is_host_vst, F callback) {
-        if (BOOST_UNLIKELY(logger.verbosity >=
-                           Logger::Verbosity::most_events)) {
+    void log_response_base(bool is_host_vst,
+                           Logger::Verbosity min_verbosity,
+                           F callback) {
+        if (BOOST_UNLIKELY(logger.verbosity >= min_verbosity)) {
             std::ostringstream message;
             if (is_host_vst) {
                 message << "[host -> vst]    ";
@@ -148,5 +155,11 @@ class Vst3Logger {
             callback(message);
             log(message.str());
         }
+    }
+
+    template <std::invocable<std::ostringstream&> F>
+    void log_response_base(bool is_host_vst, F callback) {
+        log_response_base(is_host_vst, Logger::Verbosity::most_events,
+                          callback);
     }
 };

@@ -190,8 +190,10 @@ YaEventList::YaEventList(Steinberg::Vst::IEventList& event_list) {
     }
 }
 
-YaEventList::~YaEventList() {
-    FUNKNOWN_DTOR
+YaEventList::~YaEventList(){FUNKNOWN_DTOR}
+
+size_t YaEventList::num_events() const {
+    return events.size();
 }
 
 void YaEventList::write_back_outputs(

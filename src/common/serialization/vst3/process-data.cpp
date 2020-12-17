@@ -92,6 +92,11 @@ Steinberg::Vst::AudioBusBuffers YaAudioBusBuffers::get() {
     return reconstructed_buffers;
 }
 
+size_t YaAudioBusBuffers::num_channels() const {
+    return std::visit([&](const auto& buffers) { return buffers.size(); },
+                      buffers);
+}
+
 void YaAudioBusBuffers::write_back_outputs(
     Steinberg::Vst::AudioBusBuffers& output_buffers) const {
     output_buffers.silenceFlags = silence_flags;
