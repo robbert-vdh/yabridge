@@ -45,9 +45,9 @@ YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
         // to do.
         std::optional<Steinberg::FUID> uid;
         constexpr size_t uid_size = sizeof(Steinberg::TUID);
-        if (_iid && strnlen(_iid, uid_size + 1) == uid_size) {
+        if (_iid && strnlen(_iid, uid_size) >= uid_size) {
             uid = Steinberg::FUID::fromTUID(
-                *reinterpret_cast<const Steinberg::TUID*>(&_iid));
+                *reinterpret_cast<const Steinberg::TUID*>(&*_iid));
         }
 
         bridge.logger.log_unknown_interface(
