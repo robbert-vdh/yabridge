@@ -272,7 +272,7 @@ void Vst3Logger::log_request(
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IEditController* #" << request.instance_id
                 << ">::setComponentState(state = <IBStream* containing "
-                << request.state.size() << "bytes>)";
+                << request.state.size() << " bytes>)";
     });
 }
 
