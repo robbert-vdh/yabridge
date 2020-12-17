@@ -22,13 +22,13 @@
 
 #include "vst3-impls/host-application.h"
 
-ComponentInstance::ComponentInstance() {}
+PluginObject::PluginObject() {}
 
-ComponentInstance::ComponentInstance(
-    Steinberg::IPtr<Steinberg::Vst::IComponent> component)
-    : component(component),
-      plugin_base(component),
-      audio_processor(component) {}
+PluginObject::PluginObject(Steinberg::IPtr<Steinberg::FUnknown> object)
+    : object(object),
+      audio_processor(object),
+      component(object),
+      plugin_base(object) {}
 
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
@@ -64,33 +64,36 @@ void Vst3Bridge::run() {
                 -> Vst3PluginProxy::Construct::Response {
                 Steinberg::TUID cid;
                 std::copy(args.cid.begin(), args.cid.end(), cid);
-                Steinberg::IPtr<Steinberg::Vst::IComponent> component =
+                // TODO: Change this to allow creating different tyeps of
+                //       objects
+                Steinberg::IPtr<Steinberg::FUnknown> object =
                     module->getFactory()
                         .createInstance<Steinberg::Vst::IComponent>(cid);
-                if (component) {
-                    std::lock_guard lock(component_instances_mutex);
+                if (object) {
+                    std::lock_guard lock(object_instances_mutex);
 
                     const size_t instance_id = generate_instance_id();
-                    component_instances[instance_id] = std::move(component);
+                    object_instances[instance_id] = std::move(object);
 
+                    // This is where the magic happens. Here we deduce which
+                    // interfaces are supported by this object so we can create
+                    // a one-to-one proxy of it.
                     return Vst3PluginProxy::ConstructArgs(
-                        component_instances[instance_id].component,
-                        instance_id);
+                        object_instances[instance_id].object, instance_id);
                 } else {
-                    // The actual result is lost here
-                    return UniversalTResult(Steinberg::kNotImplemented);
+                    return UniversalTResult(Steinberg::kResultFalse);
                 }
             },
             [&](const Vst3PluginProxy::Destruct& request)
                 -> Vst3PluginProxy::Destruct::Response {
-                std::lock_guard lock(component_instances_mutex);
-                component_instances.erase(request.instance_id);
+                std::lock_guard lock(object_instances_mutex);
+                object_instances.erase(request.instance_id);
 
                 return Ack{};
             },
             [&](YaAudioProcessor::SetBusArrangements& request)
                 -> YaAudioProcessor::SetBusArrangements::Response {
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .audio_processor->setBusArrangements(
                         request.inputs.data(), request.num_ins,
                         request.outputs.data(), request.num_outs);
@@ -98,7 +101,7 @@ void Vst3Bridge::run() {
             [&](YaAudioProcessor::GetBusArrangement& request)
                 -> YaAudioProcessor::GetBusArrangement::Response {
                 const tresult result =
-                    component_instances[request.instance_id]
+                    object_instances[request.instance_id]
                         .audio_processor->getBusArrangement(
                             request.dir, request.index, request.arr);
 
@@ -107,29 +110,29 @@ void Vst3Bridge::run() {
             },
             [&](const YaAudioProcessor::CanProcessSampleSize& request)
                 -> YaAudioProcessor::CanProcessSampleSize::Response {
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .audio_processor->canProcessSampleSize(
                         request.symbolic_sample_size);
             },
             [&](const YaAudioProcessor::GetLatencySamples& request)
                 -> YaAudioProcessor::GetLatencySamples::Response {
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .audio_processor->getLatencySamples();
             },
             [&](YaAudioProcessor::SetupProcessing& request)
                 -> YaAudioProcessor::SetupProcessing::Response {
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .audio_processor->setupProcessing(request.setup);
             },
             [&](const YaAudioProcessor::SetProcessing& request)
                 -> YaAudioProcessor::SetProcessing::Response {
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .audio_processor->setProcessing(request.state);
             },
             [&](YaAudioProcessor::Process& request)
                 -> YaAudioProcessor::Process::Response {
                 const tresult result =
-                    component_instances[request.instance_id]
+                    object_instances[request.instance_id]
                         .audio_processor->process(request.data.get());
 
                 return YaAudioProcessor::ProcessResponse{
@@ -138,25 +141,24 @@ void Vst3Bridge::run() {
             },
             [&](const YaAudioProcessor::GetTailSamples& request)
                 -> YaAudioProcessor::GetTailSamples::Response {
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .audio_processor->getTailSamples();
             },
             [&](const YaComponent::SetIoMode& request)
                 -> YaComponent::SetIoMode::Response {
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .component->setIoMode(request.mode);
             },
             [&](const YaComponent::GetBusCount& request)
                 -> YaComponent::GetBusCount::Response {
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .component->getBusCount(request.type, request.dir);
             },
             [&](YaComponent::GetBusInfo& request)
                 -> YaComponent::GetBusInfo::Response {
                 const tresult result =
-                    component_instances[request.instance_id]
-                        .component->getBusInfo(request.type, request.dir,
-                                               request.index, request.bus);
+                    object_instances[request.instance_id].component->getBusInfo(
+                        request.type, request.dir, request.index, request.bus);
 
                 return YaComponent::GetBusInfoResponse{
                     .result = result, .updated_bus = request.bus};
@@ -164,7 +166,7 @@ void Vst3Bridge::run() {
             [&](YaComponent::GetRoutingInfo& request)
                 -> YaComponent::GetRoutingInfo::Response {
                 const tresult result =
-                    component_instances[request.instance_id]
+                    object_instances[request.instance_id]
                         .component->getRoutingInfo(request.in_info,
                                                    request.out_info);
 
@@ -175,25 +177,26 @@ void Vst3Bridge::run() {
             },
             [&](const YaComponent::ActivateBus& request)
                 -> YaComponent::ActivateBus::Response {
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .component->activateBus(request.type, request.dir,
                                             request.index, request.state);
             },
             [&](const YaComponent::SetActive& request)
                 -> YaComponent::SetActive::Response {
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .component->setActive(request.state);
             },
             [&](YaComponent::SetState& request)
                 -> YaComponent::SetState::Response {
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .component->setState(&request.state);
             },
             [&](YaComponent::GetState& request)
                 -> YaComponent::GetState::Response {
                 VectorStream stream;
-                const tresult result = component_instances[request.instance_id]
-                                           .component->getState(&stream);
+                const tresult result =
+                    object_instances[request.instance_id].component->getState(
+                        &stream);
 
                 return YaComponent::GetStateResponse{
                     .result = result, .updated_state = std::move(stream)};
@@ -206,21 +209,21 @@ void Vst3Bridge::run() {
                 // TODO: This needs changing when we get to `Vst3HostProxy`
                 Steinberg::FUnknown* context = nullptr;
                 if (request.host_application_context_args) {
-                    component_instances[request.instance_id]
+                    object_instances[request.instance_id]
                         .hsot_application_context =
                         Steinberg::owned(new YaHostApplicationHostImpl(
                             *this,
                             std::move(*request.host_application_context_args)));
-                    context = component_instances[request.instance_id]
+                    context = object_instances[request.instance_id]
                                   .hsot_application_context;
                 }
 
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .plugin_base->initialize(context);
             },
             [&](const YaPluginBase::Terminate& request)
                 -> YaPluginBase::Terminate::Response {
-                return component_instances[request.instance_id]
+                return object_instances[request.instance_id]
                     .plugin_base->terminate();
             },
             [&](const YaPluginFactory::Construct&)

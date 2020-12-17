@@ -25,17 +25,17 @@
 #include "common.h"
 
 /**
- * A holder for an `IComponent` instance created from the factory along with any
- * host context proxy objects belonging to it, and several predefined
- * `FUnknownPtrs` so we don't have to do these dynamic casts all the times..
- *
- * TODO: When implementing `IEditController`, change this to use `IPluginBase`
- *       as the base interface.
+ * A holder for plugin object instance created from the factory. This stores all
+ * relevant interface smart pointers to that object so we can handle control
+ * messages sent by the plugin without having to do these expensive casts all
+ * the time. This also stores any additional context data, such as the
+ * `IHostApplication` instance passed to the plugin during
+ * `IPluginBase::initialize()`.
  */
-struct ComponentInstance {
-    ComponentInstance();
+struct PluginObject {
+    PluginObject();
 
-    ComponentInstance(Steinberg::IPtr<Steinberg::Vst::IComponent> component);
+    PluginObject(Steinberg::IPtr<Steinberg::FUnknown> object);
 
     /**
      * If the host passes an `IHostApplication` during
@@ -45,15 +45,16 @@ struct ComponentInstance {
     Steinberg::IPtr<YaHostApplication> hsot_application_context;
 
     /**
-     * The `IComponent` instance we created.
+     * The base object we cast from.
      */
-    Steinberg::IPtr<Steinberg::Vst::IComponent> component;
+    Steinberg::IPtr<Steinberg::FUnknown> object;
 
     // All smart pointers below are created from `component`. They will be null
     // pointers if `component` did not implement the interface.
 
-    Steinberg::FUnknownPtr<Steinberg::IPluginBase> plugin_base;
     Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audio_processor;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IComponent> component;
+    Steinberg::FUnknownPtr<Steinberg::IPluginBase> plugin_base;
 };
 
 /**
@@ -138,12 +139,15 @@ class Vst3Bridge : public HostBridge {
      */
     Steinberg::IPtr<YaHostApplication> plugin_factory_host_application_context;
 
-    // Below are managed instances we created for
-    // `IPluginFactory::createInstance()`. The keys in all of these maps are the
-    // unique identifiers we generated for them so we can identify specific
-    // instances. The mutexes are used for operations that insert or remove
-    // items, and not for regular access.
-
-    std::map<size_t, ComponentInstance> component_instances;
-    std::mutex component_instances_mutex;
+    /**
+     * These are all the objects we have created through the Windows VST3
+     * plugins' plugin factory. The keys in all of these maps are the unique
+     * identifiers we generated for them so we can identify specific instances.
+     * During the proxy object's destructor (on the plugin side), we'll get a
+     * request to remove the corresponding plugin object from this map. This
+     * will cause all pointers to it to get dropped and the object to be cleaned
+     * up.
+     */
+    std::map<size_t, PluginObject> object_instances;
+    std::mutex object_instances_mutex;
 };
