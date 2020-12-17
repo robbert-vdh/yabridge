@@ -264,6 +264,16 @@ void Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+void Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaEditController2::SetComponentState& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IEditController* #" << request.instance_id
+                << ">::setComponentState(state = <IBStream* containing "
+                << request.state.size() << "bytes>)";
+    });
+}
+
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     log_request_base(is_host_vst, [&](auto& message) {

@@ -78,6 +78,24 @@ class YaEditController2 : public Steinberg::Vst::IEditController,
 
     // From `IEditController`
 
+    /**
+     * Message to pass through a call to
+     * `IEditController::setComponentState(state)` to the Wine plugin host.
+     */
+    struct SetComponentState {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        VectorStream state;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.object(state);
+        }
+    };
+
     virtual tresult PLUGIN_API
     setComponentState(Steinberg::IBStream* state) override = 0;
 

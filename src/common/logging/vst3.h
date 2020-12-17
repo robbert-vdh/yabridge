@@ -79,6 +79,8 @@ class Vst3Logger {
     void log_request(bool is_host_vst, const YaComponent::GetRoutingInfo&);
     void log_request(bool is_host_vst, const YaComponent::ActivateBus&);
     void log_request(bool is_host_vst, const YaComponent::SetActive&);
+    void log_request(bool is_host_vst,
+                     const YaEditController2::SetComponentState&);
     void log_request(bool is_host_vst, const YaPluginBase::Initialize&);
     void log_request(bool is_host_vst, const YaPluginBase::Terminate&);
     void log_request(bool is_host_vst, const YaPluginFactory::Construct&);

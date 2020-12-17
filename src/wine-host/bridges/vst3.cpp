@@ -232,6 +232,11 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .component->setActive(request.state);
             },
+            [&](YaEditController2::SetComponentState& request)
+                -> YaEditController2::SetComponentState::Response {
+                return object_instances[request.instance_id]
+                    .edit_controller->setComponentState(&request.state);
+            },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
                 // If we got passed a host context, we'll create a proxy object

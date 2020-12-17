@@ -190,9 +190,8 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setComponentState(Steinberg::IBStream* state) {
-    // TODO: Implement
-    bridge.logger.log("TODO IEditController::setComponentState()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaEditController2::SetComponentState{
+        .instance_id = arguments.instance_id, .state = state});
 }
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getParameterCount() {
