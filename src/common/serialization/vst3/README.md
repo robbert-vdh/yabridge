@@ -7,14 +7,14 @@ serialization works.
 
 VST3 interfaces are implemented as follows:
 
-| Yabridge class      | Included in        | Interfaces                                             |
-| ------------------- | ------------------ | ------------------------------------------------------ |
-| `YaPluginMonolith`  |                    | All of the below                                       |
-| `YaAudioProcessor`  | `YaPluginMonolith` | `IAudioProcessor`                                      |
-| `YaComponent`       | `YaPluginMonolith` | `IComponent`                                           |
-| `YaPluginBase`      | `YaPluginMonolith` | `IPluginBase`                                          |
-| `YaHostApplication` |                    | `iHostAPplication`                                     |
-| `YaPluginFactory`   |                    | `IPluginFactory`, `IPluginFactory2`, `IPluginFactory3` |
+| Yabridge class      | Included in       | Interfaces                                             |
+| ------------------- | ----------------- | ------------------------------------------------------ |
+| `Vst3PluginProxy`   |                   | All of the below:                                      |
+| `YaAudioProcessor`  | `Vst3PluginProxy` | `IAudioProcessor`                                      |
+| `YaComponent`       | `Vst3PluginProxy` | `IComponent`                                           |
+| `YaPluginBase`      | `Vst3PluginProxy` | `IPluginBase`                                          |
+| `YaHostApplication` |                   | `iHostAPplication`                                     |
+| `YaPluginFactory`   |                   | `IPluginFactory`, `IPluginFactory2`, `IPluginFactory3` |
 
 The following interfaces are implemented purely fur serialization purposes:
 

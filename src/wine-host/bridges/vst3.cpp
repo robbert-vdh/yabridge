@@ -60,8 +60,8 @@ void Vst3Bridge::run() {
     sockets.host_vst_control.receive_messages(
         std::nullopt,
         overload{
-            [&](const YaPluginMonolith::Construct& args)
-                -> YaPluginMonolith::Construct::Response {
+            [&](const Vst3PluginProxy::Construct& args)
+                -> Vst3PluginProxy::Construct::Response {
                 Steinberg::TUID cid;
                 std::copy(args.cid.begin(), args.cid.end(), cid);
                 Steinberg::IPtr<Steinberg::Vst::IComponent> component =
@@ -73,7 +73,7 @@ void Vst3Bridge::run() {
                     const size_t instance_id = generate_instance_id();
                     component_instances[instance_id] = std::move(component);
 
-                    return YaPluginMonolith::ConstructArgs(
+                    return Vst3PluginProxy::ConstructArgs(
                         component_instances[instance_id].component,
                         instance_id);
                 } else {
@@ -81,8 +81,8 @@ void Vst3Bridge::run() {
                     return UniversalTResult(Steinberg::kNotImplemented);
                 }
             },
-            [&](const YaPluginMonolith::Destruct& request)
-                -> YaPluginMonolith::Destruct::Response {
+            [&](const Vst3PluginProxy::Destruct& request)
+                -> Vst3PluginProxy::Destruct::Response {
                 std::lock_guard lock(component_instances_mutex);
                 component_instances.erase(request.instance_id);
 
@@ -202,8 +202,8 @@ void Vst3Bridge::run() {
                 -> YaPluginBase::Initialize::Response {
                 // If we got passed a host context, we'll create a proxy object
                 // and pass that to the initialize function. This object should
-                // be cleaned up again during `YaPluginMonolith::Destruct`.
-                // TOOD: This needs changing when we get to `YaHostMonolith`
+                // be cleaned up again during `Vst3PluginProxy::Destruct`.
+                // TODO: This needs changing when we get to `Vst3HostProxy`
                 Steinberg::FUnknown* context = nullptr;
                 if (request.host_application_context_args) {
                     component_instances[request.instance_id]

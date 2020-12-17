@@ -18,11 +18,10 @@
 
 #include "../vst3.h"
 
-// TODO Rename to YaPluginFactoryImpl
-class YaPluginFactoryPluginImpl : public YaPluginFactory {
+class YaPluginFactoryImpl : public YaPluginFactory {
    public:
-    YaPluginFactoryPluginImpl(Vst3PluginBridge& bridge,
-                              YaPluginFactory::ConstructArgs&& args);
+    YaPluginFactoryImpl(Vst3PluginBridge& bridge,
+                        YaPluginFactory::ConstructArgs&& args);
 
     tresult PLUGIN_API createInstance(Steinberg::FIDString cid,
                                       Steinberg::FIDString _iid,

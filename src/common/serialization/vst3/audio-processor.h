@@ -29,7 +29,7 @@
 
 /**
  * Wraps around `IAudioProcessor` for serialization purposes. This is
- * instantiated as part of `YaPluginMonolith`.
+ * instantiated as part of `Vst3PluginProxy`.
  */
 class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
    public:

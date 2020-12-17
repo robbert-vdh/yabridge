@@ -108,17 +108,17 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
                 YaPluginFactory::Construct{},
                 std::pair<Vst3Logger&, bool>(logger, true));
         plugin_factory =
-            new YaPluginFactoryPluginImpl(*this, std::move(factory_args));
+            new YaPluginFactoryImpl(*this, std::move(factory_args));
     }
 
     return plugin_factory;
 }
 
 void Vst3PluginBridge::register_component(size_t instance_id,
-                                          YaPluginMonolithImpl& component) {
+                                          Vst3PluginProxyImpl& component) {
     std::lock_guard lock(component_instances_mutex);
     component_instances.emplace(instance_id,
-                                std::ref<YaPluginMonolithImpl>(component));
+                                std::ref<Vst3PluginProxyImpl>(component));
 }
 
 void Vst3PluginBridge::unregister_component(size_t instance_id) {

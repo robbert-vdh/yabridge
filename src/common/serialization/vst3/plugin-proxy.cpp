@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "plugin-monolith.h"
+#include "plugin-proxy.h"
 
-YaPluginMonolith::ConstructArgs::ConstructArgs() {}
+Vst3PluginProxy::ConstructArgs::ConstructArgs() {}
 
-YaPluginMonolith::ConstructArgs::ConstructArgs(
+Vst3PluginProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
     size_t instance_id)
     : instance_id(instance_id),
@@ -26,23 +26,23 @@ YaPluginMonolith::ConstructArgs::ConstructArgs(
       component_args(object),
       plugin_base_args(object) {}
 
-YaPluginMonolith::YaPluginMonolith(const ConstructArgs&& args)
+Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
     : YaAudioProcessor(std::move(args.audio_processor_args)),
       YaComponent(std::move(args.component_args)),
       YaPluginBase(std::move(args.plugin_base_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
-      YaPluginMonolith::~YaPluginMonolith() {
+      Vst3PluginProxy::~Vst3PluginProxy() {
     FUNKNOWN_DTOR
 }
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_REFCOUNT(YaPluginMonolith)
+IMPLEMENT_REFCOUNT(Vst3PluginProxy)
 #pragma GCC diagnostic pop
 
-tresult PLUGIN_API YaPluginMonolith::queryInterface(Steinberg::FIDString _iid,
-                                                    void** obj) {
+tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
+                                                   void** obj) {
     if (YaPluginBase::supported()) {
         // We had to expand the macro here because we need to cast through
         // `YaPluginBase`, since `IpluginBase` is also a base of `IComponent`

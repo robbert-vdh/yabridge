@@ -14,25 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "component.h"
+#include "plugin-proxy.h"
 
-YaPluginMonolithImpl::YaPluginMonolithImpl(
-    Vst3PluginBridge& bridge,
-    YaPluginMonolith::ConstructArgs&& args)
-    : YaPluginMonolith(std::move(args)), bridge(bridge) {
+Vst3PluginProxyImpl::Vst3PluginProxyImpl(Vst3PluginBridge& bridge,
+                                         Vst3PluginProxy::ConstructArgs&& args)
+    : Vst3PluginProxy(std::move(args)), bridge(bridge) {
     bridge.register_component(arguments.instance_id, *this);
 }
 
-YaPluginMonolithImpl::~YaPluginMonolithImpl() {
+Vst3PluginProxyImpl::~Vst3PluginProxyImpl() {
     bridge.send_message(
-        YaPluginMonolith::Destruct{.instance_id = arguments.instance_id});
+        Vst3PluginProxy::Destruct{.instance_id = arguments.instance_id});
     bridge.unregister_component(arguments.instance_id);
 }
 
 tresult PLUGIN_API
-YaPluginMonolithImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
+Vst3PluginProxyImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
     // TODO: Successful queries should also be logged
-    const tresult result = YaPluginMonolith::queryInterface(_iid, obj);
+    const tresult result = Vst3PluginProxy::queryInterface(_iid, obj);
     if (result != Steinberg::kResultOk) {
         bridge.logger.log_unknown_interface("In IComponent::queryInterface()",
                                             Steinberg::FUID::fromTUID(_iid));
@@ -41,7 +40,7 @@ YaPluginMonolithImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
     return result;
 }
 
-tresult PLUGIN_API YaPluginMonolithImpl::setBusArrangements(
+tresult PLUGIN_API Vst3PluginProxyImpl::setBusArrangements(
     Steinberg::Vst::SpeakerArrangement* inputs,
     int32 numIns,
     Steinberg::Vst::SpeakerArrangement* outputs,
@@ -58,7 +57,7 @@ tresult PLUGIN_API YaPluginMonolithImpl::setBusArrangements(
     });
 }
 
-tresult PLUGIN_API YaPluginMonolithImpl::getBusArrangement(
+tresult PLUGIN_API Vst3PluginProxyImpl::getBusArrangement(
     Steinberg::Vst::BusDirection dir,
     int32 index,
     Steinberg::Vst::SpeakerArrangement& arr) {
@@ -75,30 +74,30 @@ tresult PLUGIN_API YaPluginMonolithImpl::getBusArrangement(
 }
 
 tresult PLUGIN_API
-YaPluginMonolithImpl::canProcessSampleSize(int32 symbolicSampleSize) {
+Vst3PluginProxyImpl::canProcessSampleSize(int32 symbolicSampleSize) {
     return bridge.send_message(YaAudioProcessor::CanProcessSampleSize{
         .instance_id = arguments.instance_id,
         .symbolic_sample_size = symbolicSampleSize});
 }
 
-uint32 PLUGIN_API YaPluginMonolithImpl::getLatencySamples() {
+uint32 PLUGIN_API Vst3PluginProxyImpl::getLatencySamples() {
     return bridge.send_message(YaAudioProcessor::GetLatencySamples{
         .instance_id = arguments.instance_id});
 }
 
 tresult PLUGIN_API
-YaPluginMonolithImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
+Vst3PluginProxyImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
     return bridge.send_message(YaAudioProcessor::SetupProcessing{
         .instance_id = arguments.instance_id, .setup = setup});
 }
 
-tresult PLUGIN_API YaPluginMonolithImpl::setProcessing(TBool state) {
+tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {
     return bridge.send_message(YaAudioProcessor::SetProcessing{
         .instance_id = arguments.instance_id, .state = state});
 }
 
 tresult PLUGIN_API
-YaPluginMonolithImpl::process(Steinberg::Vst::ProcessData& data) {
+Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
     ProcessResponse response = bridge.send_message(YaAudioProcessor::Process{
         .instance_id = arguments.instance_id, .data = data});
 
@@ -107,29 +106,28 @@ YaPluginMonolithImpl::process(Steinberg::Vst::ProcessData& data) {
     return response.result;
 }
 
-uint32 PLUGIN_API YaPluginMonolithImpl::getTailSamples() {
+uint32 PLUGIN_API Vst3PluginProxyImpl::getTailSamples() {
     return bridge.send_message(
         YaAudioProcessor::GetTailSamples{.instance_id = arguments.instance_id});
 }
 
-tresult PLUGIN_API
-YaPluginMonolithImpl::setIoMode(Steinberg::Vst::IoMode mode) {
+tresult PLUGIN_API Vst3PluginProxyImpl::setIoMode(Steinberg::Vst::IoMode mode) {
     return bridge.send_message(YaComponent::SetIoMode{
         .instance_id = arguments.instance_id, .mode = mode});
 }
 
 int32 PLUGIN_API
-YaPluginMonolithImpl::getBusCount(Steinberg::Vst::MediaType type,
-                                  Steinberg::Vst::BusDirection dir) {
+Vst3PluginProxyImpl::getBusCount(Steinberg::Vst::MediaType type,
+                                 Steinberg::Vst::BusDirection dir) {
     return bridge.send_message(YaComponent::GetBusCount{
         .instance_id = arguments.instance_id, .type = type, .dir = dir});
 }
 
 tresult PLUGIN_API
-YaPluginMonolithImpl::getBusInfo(Steinberg::Vst::MediaType type,
-                                 Steinberg::Vst::BusDirection dir,
-                                 int32 index,
-                                 Steinberg::Vst::BusInfo& bus /*out*/) {
+Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
+                                Steinberg::Vst::BusDirection dir,
+                                int32 index,
+                                Steinberg::Vst::BusInfo& bus /*out*/) {
     const GetBusInfoResponse response = bridge.send_message(
         YaComponent::GetBusInfo{.instance_id = arguments.instance_id,
                                 .type = type,
@@ -141,7 +139,7 @@ YaPluginMonolithImpl::getBusInfo(Steinberg::Vst::MediaType type,
     return response.result;
 }
 
-tresult PLUGIN_API YaPluginMonolithImpl::getRoutingInfo(
+tresult PLUGIN_API Vst3PluginProxyImpl::getRoutingInfo(
     Steinberg::Vst::RoutingInfo& inInfo,
     Steinberg::Vst::RoutingInfo& outInfo /*out*/) {
     const GetRoutingInfoResponse response = bridge.send_message(
@@ -155,10 +153,10 @@ tresult PLUGIN_API YaPluginMonolithImpl::getRoutingInfo(
 }
 
 tresult PLUGIN_API
-YaPluginMonolithImpl::activateBus(Steinberg::Vst::MediaType type,
-                                  Steinberg::Vst::BusDirection dir,
-                                  int32 index,
-                                  TBool state) {
+Vst3PluginProxyImpl::activateBus(Steinberg::Vst::MediaType type,
+                                 Steinberg::Vst::BusDirection dir,
+                                 int32 index,
+                                 TBool state) {
     return bridge.send_message(
         YaComponent::ActivateBus{.instance_id = arguments.instance_id,
                                  .type = type,
@@ -167,17 +165,17 @@ YaPluginMonolithImpl::activateBus(Steinberg::Vst::MediaType type,
                                  .state = state});
 }
 
-tresult PLUGIN_API YaPluginMonolithImpl::setActive(TBool state) {
+tresult PLUGIN_API Vst3PluginProxyImpl::setActive(TBool state) {
     return bridge.send_message(YaComponent::SetActive{
         .instance_id = arguments.instance_id, .state = state});
 }
 
-tresult PLUGIN_API YaPluginMonolithImpl::setState(Steinberg::IBStream* state) {
+tresult PLUGIN_API Vst3PluginProxyImpl::setState(Steinberg::IBStream* state) {
     return bridge.send_message(YaComponent::SetState{
         .instance_id = arguments.instance_id, .state = state});
 }
 
-tresult PLUGIN_API YaPluginMonolithImpl::getState(Steinberg::IBStream* state) {
+tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
     const GetStateResponse response = bridge.send_message(
         YaComponent::GetState{.instance_id = arguments.instance_id});
 
@@ -186,7 +184,7 @@ tresult PLUGIN_API YaPluginMonolithImpl::getState(Steinberg::IBStream* state) {
     return response.result;
 }
 
-tresult PLUGIN_API YaPluginMonolithImpl::initialize(FUnknown* context) {
+tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
     // This `context` will likely be an `IHostApplication`. If it is, we will
     // store it here, and we'll proxy through all calls to it made from the Wine
     // side. Otherwise we'll still call `IPluginBase::initialize()` but with a
@@ -210,7 +208,7 @@ tresult PLUGIN_API YaPluginMonolithImpl::initialize(FUnknown* context) {
                                      std::move(host_application_context_args)});
 }
 
-tresult PLUGIN_API YaPluginMonolithImpl::terminate() {
+tresult PLUGIN_API Vst3PluginProxyImpl::terminate() {
     return bridge.send_message(
         YaPluginBase::Terminate{.instance_id = arguments.instance_id});
 }

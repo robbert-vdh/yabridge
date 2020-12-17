@@ -24,7 +24,7 @@
 #include "common.h"
 
 // Forward declaration
-class YaPluginMonolithImpl;
+class Vst3PluginProxyImpl;
 
 /**
  * This handles the communication between the native host and a VST3 plugin
@@ -86,8 +86,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      *
      * TODO: REname to `register_instance` or `register_object`
      */
-    void register_component(size_t instance_id,
-                            YaPluginMonolithImpl& component);
+    void register_component(size_t instance_id, Vst3PluginProxyImpl& component);
 
     /**
      * Remove a previously registered `YaComponentPluginImpl` from the list of
@@ -151,7 +150,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * `register_component()` in the constractor, and an instance is then
      * removed through a call to `unregister_component()` in the destructor.
      */
-    std::map<size_t, std::reference_wrapper<YaPluginMonolithImpl>>
+    std::map<size_t, std::reference_wrapper<Vst3PluginProxyImpl>>
         component_instances;
     std::mutex component_instances_mutex;
 };

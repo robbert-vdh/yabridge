@@ -29,7 +29,7 @@
 /**
  * Wraps around `IPluginBase` for serialization purposes. Both components and
  * edit controllers inherit from this. This is instantiated as part of
- * `YaPluginMonolith`.
+ * `Vst3PluginProxy`.
  */
 class YaPluginBase : public Steinberg::IPluginBase {
    public:

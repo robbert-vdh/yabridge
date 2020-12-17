@@ -18,17 +18,16 @@
 
 #include <pluginterfaces/vst/ivstcomponent.h>
 
-#include "component.h"
+#include "plugin-proxy.h"
 
-YaPluginFactoryPluginImpl::YaPluginFactoryPluginImpl(
-    Vst3PluginBridge& bridge,
-    YaPluginFactory::ConstructArgs&& args)
+YaPluginFactoryImpl::YaPluginFactoryImpl(Vst3PluginBridge& bridge,
+                                         YaPluginFactory::ConstructArgs&& args)
     : YaPluginFactory(std::move(args)), bridge(bridge) {}
 
 tresult PLUGIN_API
-YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,
-                                          Steinberg::FIDString _iid,
-                                          void** obj) {
+YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
+                                    Steinberg::FIDString _iid,
+                                    void** obj) {
     // TODO: Do the same thing for other types
 
     // These arw pointers are scary. The idea here is that we return a newly
@@ -38,13 +37,13 @@ YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,
     ArrayUID cid_array;
     std::copy(cid, cid + sizeof(Steinberg::TUID), cid_array.begin());
     if (Steinberg::FIDStringsEqual(_iid, Steinberg::Vst::IComponent::iid)) {
-        std::variant<YaPluginMonolith::ConstructArgs, UniversalTResult> result =
-            bridge.send_message(YaPluginMonolith::Construct{.cid = cid_array});
+        std::variant<Vst3PluginProxy::ConstructArgs, UniversalTResult> result =
+            bridge.send_message(Vst3PluginProxy::Construct{.cid = cid_array});
         return std::visit(
             overload{
-                [&](YaPluginMonolith::ConstructArgs&& args) -> tresult {
+                [&](Vst3PluginProxy::ConstructArgs&& args) -> tresult {
                     *obj = static_cast<Steinberg::Vst::IComponent*>(
-                        new YaPluginMonolithImpl(bridge, std::move(args)));
+                        new Vst3PluginProxyImpl(bridge, std::move(args)));
                     return Steinberg::kResultOk;
                 },
                 [&](const UniversalTResult& code) -> tresult { return code; }},
@@ -69,7 +68,7 @@ YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,
 }
 
 tresult PLUGIN_API
-YaPluginFactoryPluginImpl::setHostContext(Steinberg::FUnknown* context) {
+YaPluginFactoryImpl::setHostContext(Steinberg::FUnknown* context) {
     // This `context` will likely be an `IHostApplication`. If it is, we will
     // store it for future calls, create a proxy object on the Wine side, and
     // then pass it to the Windows VST3 plugin's plugin factory using the same

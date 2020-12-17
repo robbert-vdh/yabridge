@@ -29,7 +29,7 @@
 
 /**
  * Wraps around `IComponent` for serialization purposes. This is instantiated as
- * part of `YaPluginMonolith`. Event though `IComponent` inherits from
+ * part of `Vst3PluginProxy`. Event though `IComponent` inherits from
  * `IPlguinBase`, we'll implement that separately in `YaPluginBase` because
  * `IEditController` also inherits from `IPluginBase`.
  */

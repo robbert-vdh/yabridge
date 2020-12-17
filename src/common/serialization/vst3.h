@@ -24,7 +24,7 @@
 #include "../utils.h"
 #include "common.h"
 #include "vst3/plugin-factory.h"
-#include "vst3/plugin-monolith.h"
+#include "vst3/plugin-proxy.h"
 
 // Event handling for our VST3 plugins works slightly different from how we
 // handle VST2 plugins. VST3 does not have a centralized event dispatching
@@ -57,8 +57,8 @@ struct WantsConfiguration {
  * encodes the information we request or the operation we want to perform. A
  * request of type `ControlRequest(T)` should send back a `T::Response`.
  */
-using ControlRequest = std::variant<YaPluginMonolith::Construct,
-                                    YaPluginMonolith::Destruct,
+using ControlRequest = std::variant<Vst3PluginProxy::Construct,
+                                    Vst3PluginProxy::Destruct,
                                     YaAudioProcessor::SetBusArrangements,
                                     YaAudioProcessor::GetBusArrangement,
                                     YaAudioProcessor::CanProcessSampleSize,

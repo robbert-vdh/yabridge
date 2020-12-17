@@ -36,7 +36,7 @@
  * both the native plugin side as well as the Wine plugin host side.
  *
  * TODO: When implementing more host interfaces, also rework this into a
- *       monolith class like with the plugin.
+ *       monolithic proxy class like with the plugin.
  */
 class YaHostApplication : public Steinberg::Vst::IHostApplication {
    public:
