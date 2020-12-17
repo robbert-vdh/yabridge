@@ -54,6 +54,7 @@ struct PluginObject {
 
     Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audio_processor;
     Steinberg::FUnknownPtr<Steinberg::Vst::IComponent> component;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IEditController> edit_controller;
     Steinberg::FUnknownPtr<Steinberg::IPluginBase> plugin_base;
 };
 

@@ -28,6 +28,7 @@ PluginObject::PluginObject(Steinberg::IPtr<Steinberg::FUnknown> object)
     : object(object),
       audio_processor(object),
       component(object),
+      edit_controller(object),
       plugin_base(object) {}
 
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
