@@ -24,10 +24,7 @@ void Vst3Logger::log_unknown_interface(
     const std::string& where,
     const std::optional<Steinberg::FUID>& uid) {
     if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
-        char uid_string[128] = "<invalid_pointer>";
-        if (uid) {
-            uid->print(uid_string, Steinberg::FUID::UIDPrintStyle::kCLASS_UID);
-        }
+        std::string uid_string = uid ? format_uid(*uid) : "<unknown_pointer>";
 
         std::ostringstream message;
         message << "[unknown interface] " << where << ": " << uid_string;

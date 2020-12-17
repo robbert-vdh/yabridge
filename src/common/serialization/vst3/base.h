@@ -54,6 +54,11 @@ constexpr size_t max_num_speakers = 16384;
 constexpr size_t max_vector_stream_size = 50 << 20;
 
 /**
+ * Format a FUID as a simple hexadecimal four-tuple.
+ */
+std::string format_uid(const Steinberg::FUID& uid);
+
+/**
  * Convert a UTF-16 C-style string to an `std::u16string`. Who event invented
  * UTF-16?
  */
