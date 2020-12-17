@@ -23,8 +23,8 @@
 #include "../configuration.h"
 #include "../utils.h"
 #include "common.h"
-#include "vst3/component.h"
 #include "vst3/plugin-factory.h"
+#include "vst3/plugin-monolith.h"
 
 // Event handling for our VST3 plugins works slightly different from how we
 // handle VST2 plugins. VST3 does not have a centralized event dispatching
@@ -57,8 +57,16 @@ struct WantsConfiguration {
  * encodes the information we request or the operation we want to perform. A
  * request of type `ControlRequest(T)` should send back a `T::Response`.
  */
-using ControlRequest = std::variant<YaComponent::Construct,
-                                    YaComponent::Destruct,
+using ControlRequest = std::variant<YaPluginMonolith::Construct,
+                                    YaPluginMonolith::Destruct,
+                                    YaAudioProcessor::SetBusArrangements,
+                                    YaAudioProcessor::GetBusArrangement,
+                                    YaAudioProcessor::CanProcessSampleSize,
+                                    YaAudioProcessor::GetLatencySamples,
+                                    YaAudioProcessor::SetupProcessing,
+                                    YaAudioProcessor::SetProcessing,
+                                    YaAudioProcessor::Process,
+                                    YaAudioProcessor::GetTailSamples,
                                     YaComponent::SetIoMode,
                                     YaComponent::GetBusCount,
                                     YaComponent::GetBusInfo,
@@ -67,14 +75,6 @@ using ControlRequest = std::variant<YaComponent::Construct,
                                     YaComponent::SetActive,
                                     YaComponent::SetState,
                                     YaComponent::GetState,
-                                    YaComponent::SetBusArrangements,
-                                    YaComponent::GetBusArrangement,
-                                    YaComponent::CanProcessSampleSize,
-                                    YaComponent::GetLatencySamples,
-                                    YaComponent::SetupProcessing,
-                                    YaComponent::SetProcessing,
-                                    YaComponent::Process,
-                                    YaComponent::GetTailSamples,
                                     YaPluginBase::Initialize,
                                     YaPluginBase::Terminate,
                                     YaPluginFactory::Construct,

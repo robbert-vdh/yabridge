@@ -56,6 +56,8 @@ class Vst3Logger {
     // flag here indicates whether the request was initiated on the host side
     // (what we'll call a control message).
 
+    void log_request(bool is_host_vst, const YaPluginMonolith::Construct&);
+    void log_request(bool is_host_vst, const YaPluginMonolith::Destruct&);
     void log_request(bool is_host_vst,
                      const YaAudioProcessor::SetBusArrangements&);
     void log_request(bool is_host_vst,
@@ -69,8 +71,6 @@ class Vst3Logger {
     void log_request(bool is_host_vst, const YaAudioProcessor::SetProcessing&);
     void log_request(bool is_host_vst, const YaAudioProcessor::Process&);
     void log_request(bool is_host_vst, const YaAudioProcessor::GetTailSamples&);
-    void log_request(bool is_host_vst, const YaComponent::Construct&);
-    void log_request(bool is_host_vst, const YaComponent::Destruct&);
     void log_request(bool is_host_vst, const YaComponent::SetIoMode&);
     void log_request(bool is_host_vst, const YaComponent::GetBusCount&);
     void log_request(bool is_host_vst, const YaComponent::GetBusInfo&);
@@ -86,13 +86,13 @@ class Vst3Logger {
     void log_request(bool is_host_vst, const WantsConfiguration&);
 
     void log_response(bool is_host_vst, const Ack&);
+    void log_response(
+        bool is_host_vst,
+        const std::variant<YaPluginMonolith::ConstructArgs, UniversalTResult>&);
     void log_response(bool is_host_vst,
                       const YaAudioProcessor::GetBusArrangementResponse&);
     void log_response(bool is_host_vst,
                       const YaAudioProcessor::ProcessResponse&);
-    void log_response(
-        bool is_host_vst,
-        const std::variant<YaComponent::ConstructArgs, UniversalTResult>&);
     void log_response(bool is_host_vst, const YaComponent::GetBusInfoResponse&);
     void log_response(bool is_host_vst,
                       const YaComponent::GetRoutingInfoResponse&);

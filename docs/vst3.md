@@ -7,6 +7,8 @@ TODO: Link to `src/common/serialization/vst3/README.md`
 TODO: Mention the new `Ya<Base>::supports()` mechanism for monolithic interfaces
 through multiple inheritance
 
+TODO: Explain the monolith.
+
 The VST3 SDK uses an architecture where every concrete object inherits from an
 interface, and every interface inherits from `FUnknown`. `FUnkonwn` offers a
 dynamic casting interface through `queryInterface()` and a reference counting

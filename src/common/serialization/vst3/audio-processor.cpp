@@ -19,9 +19,9 @@
 YaAudioProcessor::ConstructArgs::ConstructArgs() {}
 
 YaAudioProcessor::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> component)
+    Steinberg::IPtr<Steinberg::FUnknown> object)
     : supported(
-          Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor>(component)) {}
+          Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor>(object)) {}
 
 YaAudioProcessor::YaAudioProcessor(const ConstructArgs&& args)
     : arguments(std::move(args)) {}

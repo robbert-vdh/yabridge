@@ -19,8 +19,8 @@
 YaPluginBase::ConstructArgs::ConstructArgs() {}
 
 YaPluginBase::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> component)
-    : supported(Steinberg::FUnknownPtr<Steinberg::IPluginBase>(component)) {}
+    Steinberg::IPtr<Steinberg::FUnknown> object)
+    : supported(Steinberg::FUnknownPtr<Steinberg::IPluginBase>(object)) {}
 
 YaPluginBase::YaPluginBase(const ConstructArgs&& args)
     : arguments(std::move(args)) {}

@@ -115,10 +115,10 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
 }
 
 void Vst3PluginBridge::register_component(size_t instance_id,
-                                          YaComponentPluginImpl& component) {
+                                          YaPluginMonolithImpl& component) {
     std::lock_guard lock(component_instances_mutex);
     component_instances.emplace(instance_id,
-                                std::ref<YaComponentPluginImpl>(component));
+                                std::ref<YaPluginMonolithImpl>(component));
 }
 
 void Vst3PluginBridge::unregister_component(size_t instance_id) {

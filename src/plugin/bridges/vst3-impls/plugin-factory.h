@@ -18,6 +18,7 @@
 
 #include "../vst3.h"
 
+// TODO Rename to YaPluginFactoryImpl
 class YaPluginFactoryPluginImpl : public YaPluginFactory {
    public:
     YaPluginFactoryPluginImpl(Vst3PluginBridge& bridge,

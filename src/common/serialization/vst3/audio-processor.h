@@ -29,7 +29,7 @@
 
 /**
  * Wraps around `IAudioProcessor` for serialization purposes. This is
- * instantiated as part of `YaComponent`.
+ * instantiated as part of `YaPluginMonolith`.
  */
 class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
    public:
@@ -40,8 +40,8 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
         ConstructArgs();
 
         /**
-         * Check whether an existing implementation implements `IPluginBase` and
-         * read arguments from it.
+         * Check whether an existing implementation implements `IAudioProcessor`
+         * and read arguments from it.
          */
         ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
 

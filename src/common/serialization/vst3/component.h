@@ -16,68 +16,41 @@
 
 #pragma once
 
-#include <optional>
-#include <set>
-#include <variant>
-
-#include <bitsery/ext/pointer.h>
 #include <bitsery/ext/std_optional.h>
-#include <bitsery/ext/std_set.h>
-#include <bitsery/ext/std_variant.h>
 #include <bitsery/traits/array.h>
 #include <pluginterfaces/vst/ivstcomponent.h>
 
 #include "../../bitsery/ext/vst3.h"
 #include "../common.h"
-#include "audio-processor.h"
 #include "base.h"
-#include "host-application.h"
-#include "plugin-base.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 
 /**
- * Wraps around `IComponent` for serialization purposes. See `README.md` for
- * more information on how this works. On the Wine plugin host side this is only
- * used for serialization, and on the plugin side have an implementation that
- * can send control messages.
- *
- * This implements all interfaces that an `IComponent` might also implement.
- *
- * We might be able to do some caching here with the buss infos, but since that
- * sounds like a huge potential source of errors we'll just do pure callbacks
- * for everything other than the edit controller's class ID.
- *
- * TODO: Rework this into `YaPluginMonolith`
- * TODO: Eventually this should (optionally) implement everything supported by
- *       the SDK's `AudioEffect` component.
+ * Wraps around `IComponent` for serialization purposes. This is instantiated as
+ * part of `YaPluginMonolith`. Event though `IComponent` inherits from
+ * `IPlguinBase`, we'll implement that separately in `YaPluginBase` because
+ * `IEditController` also inherits from `IPluginBase`.
  */
-class YaComponent : public Steinberg::Vst::IComponent,
-                    public YaAudioProcessor,
-                    public YaPluginBase {
+class YaComponent : public Steinberg::Vst::IComponent {
    public:
     /**
-     * These are the arguments for creating a `YaComponentPluginImpl`.
+     * These are the arguments for creating a `YaComponent`.
      */
     struct ConstructArgs {
         ConstructArgs();
 
         /**
-         * Read arguments from an existing implementation. Depending on the
-         * supported interface function more or less of this struct will be left
-         * empty, and `known_iids` will be set accordingly.
+         * Check whether an existing implementation implements `IComponent` and
+         * read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::Vst::IComponent> component,
-                      size_t instance_id);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
 
         /**
-         * The unique identifier for this specific instance.
+         * Whether the object supported this interface.
          */
-        native_size_t instance_id;
-
-        YaAudioProcessor::ConstructArgs audio_processor_args;
-        YaPluginBase::ConstructArgs plugin_base_args;
+        bool supported;
 
         /**
          * The class ID of this component's corresponding editor controller. You
@@ -87,27 +60,9 @@ class YaComponent : public Steinberg::Vst::IComponent,
 
         template <typename S>
         void serialize(S& s) {
-            s.value8b(instance_id);
-            s.object(audio_processor_args);
-            s.object(plugin_base_args);
+            s.value1b(supported);
             s.ext(edit_controller_cid, bitsery::ext::StdOptional{},
                   [](S& s, auto& cid) { s.container1b(cid); });
-        }
-    };
-
-    /**
-     * Message to request the Wine plugin host to instantiate a new IComponent
-     * to pass through a call to `IComponent::createInstance(cid,
-     * IComponent::iid, ...)`.
-     */
-    struct Construct {
-        using Response = std::variant<ConstructArgs, UniversalTResult>;
-
-        ArrayUID cid;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.container1b(cid);
         }
     };
 
@@ -117,29 +72,7 @@ class YaComponent : public Steinberg::Vst::IComponent,
      */
     YaComponent(const ConstructArgs&& args);
 
-    /**
-     * Message to request the Wine plugin host to destroy the IComponent
-     * instance with the given instance ID. Sent from the destructor of
-     * `YaComponentPluginImpl`.
-     */
-    struct Destruct {
-        using Response = Ack;
-
-        native_size_t instance_id;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-        }
-    };
-
-    /**
-     * @remark The plugin side implementation should send a control message to
-     *   clean up the instance on the Wine side in its destructor.
-     */
-    virtual ~YaComponent() = 0;
-
-    DECLARE_FUNKNOWN_METHODS
+    inline bool supported() { return arguments.supported; }
 
     tresult PLUGIN_API getControllerClassId(Steinberg::TUID classId) override;
 
@@ -381,10 +314,3 @@ class YaComponent : public Steinberg::Vst::IComponent,
 };
 
 #pragma GCC diagnostic pop
-
-template <typename S>
-void serialize(
-    S& s,
-    std::variant<YaComponent::ConstructArgs, UniversalTResult>& result) {
-    s.ext(result, bitsery::ext::StdVariant{});
-}

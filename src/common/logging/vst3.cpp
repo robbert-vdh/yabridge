@@ -37,7 +37,30 @@ void Vst3Logger::log_unknown_interface(
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::SetBusArrangements& request) {
+                             const YaPluginMonolith::Construct&) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        // TODO: Log the CID on verbosity level 2, and then also report all CIDs
+        //       in the plugin factory
+        // TODO: When adding the enum class for instantiating different types,
+        //       make sure to reflect those in the constructor and destructor
+        //       logging
+        message << "IPluginFactory::createComponent(cid = ..., _iid = "
+                   "IComponent::iid, "
+                   "&obj)";
+    });
+}
+
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaPluginMonolith::Destruct& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IComponent* #" << request.instance_id
+                << ">::~IComponent()";
+    });
+}
+
+void Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaAudioProcessor::SetBusArrangements& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IAudioProcessor* #" << request.instance_id
                 << ">::setBusArrangements(inputs = [SpeakerArrangement; "
@@ -48,7 +71,7 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::GetBusArrangement& request) {
+                             const YaAudioProcessor::GetBusArrangement& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IAudioProcessor* #" << request.instance_id
                 << ">::getBusArrangement(dir = " << request.dir
@@ -57,7 +80,7 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::CanProcessSampleSize& request) {
+                             const YaAudioProcessor::CanProcessSampleSize& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IAudioProcessor* #" << request.instance_id
                 << ">::canProcessSampleSize(symbolicSampleSize = "
@@ -65,8 +88,9 @@ void Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
-void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::GetLatencySamples& request) {
+void Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaAudioProcessor::GetLatencySamples& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IAudioProcessor* #" << request.instance_id
                 << ">::getLatencySamples()";
@@ -74,7 +98,7 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::SetupProcessing& request) {
+                             const YaAudioProcessor::SetupProcessing& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IAudioProcessor* #" << request.instance_id
                 << ">::setupProcessing(setup = <SetupProcessing with mode = "
@@ -86,7 +110,7 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::SetProcessing& request) {
+                             const YaAudioProcessor::SetProcessing& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IAudioProcessor* #" << request.instance_id
                 << ">::setProcessing(state = "
@@ -95,7 +119,7 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::Process& request) {
+                             const YaAudioProcessor::Process& request) {
     // TODO: Only log this on log level 2
     log_request_base(is_host_vst, [&](auto& message) {
         // TODO: Log about the process data
@@ -105,28 +129,10 @@ void Vst3Logger::log_request(bool is_host_vst,
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::GetTailSamples& request) {
+                             const YaAudioProcessor::GetTailSamples& request) {
     log_request_base(is_host_vst, [&](auto& message) {
         message << "<IAudioProcessor* #" << request.instance_id
                 << ">::getTailSamples()";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst, const YaComponent::Construct&) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        // TODO: Log the CID on verbosity level 2, and then also report all CIDs
-        //       in the plugin factory
-        message << "IPluginFactory::createComponent(cid = ..., _iid = "
-                   "IComponent::iid, "
-                   "&obj)";
-    });
-}
-
-void Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::Destruct& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << "<IComponent* #" << request.instance_id
-                << ">::~IComponent()";
     });
 }
 
@@ -246,6 +252,26 @@ void Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     });
 }
 
+void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
+    log_response_base(is_host_vst, [&](auto& message) { message << "ACK"; });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const std::variant<YaPluginMonolith::ConstructArgs, UniversalTResult>&
+        result) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        std::visit(overload{[&](const YaPluginMonolith::ConstructArgs& args) {
+                                message << "<IComponent* #" << args.instance_id
+                                        << ">";
+                            },
+                            [&](const UniversalTResult& code) {
+                                message << code.string();
+                            }},
+                   result);
+    });
+}
+
 void Vst3Logger::log_response(
     bool is_host_vst,
     const YaAudioProcessor::GetBusArrangementResponse& response) {
@@ -265,25 +291,6 @@ void Vst3Logger::log_response(
         message << response.result.string();
 
         // TODO: Log response
-    });
-}
-
-void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
-    log_response_base(is_host_vst, [&](auto& message) { message << "ACK"; });
-}
-
-void Vst3Logger::log_response(
-    bool is_host_vst,
-    const std::variant<YaComponent::ConstructArgs, UniversalTResult>& result) {
-    log_response_base(is_host_vst, [&](auto& message) {
-        std::visit(overload{[&](const YaComponent::ConstructArgs& args) {
-                                message << "<IComponent* #" << args.instance_id
-                                        << ">";
-                            },
-                            [&](const UniversalTResult& code) {
-                                message << code.string();
-                            }},
-                   result);
     });
 }
 

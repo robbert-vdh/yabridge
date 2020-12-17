@@ -20,17 +20,17 @@
 
 #include "../vst3.h"
 
-class YaComponentPluginImpl : public YaComponent {
+class YaPluginMonolithImpl : public YaPluginMonolith {
    public:
-    YaComponentPluginImpl(Vst3PluginBridge& bridge,
-                          YaComponent::ConstructArgs&& args);
+    YaPluginMonolithImpl(Vst3PluginBridge& bridge,
+                         YaPluginMonolith::ConstructArgs&& args);
 
     /**
      * When the reference count reaches zero and this destructor is called,
      * we'll send a request to the Wine plugin host to destroy the corresponding
      * object.
      */
-    ~YaComponentPluginImpl();
+    ~YaPluginMonolithImpl();
 
     /**
      * We'll override the query interface to log queries for interfaces we do

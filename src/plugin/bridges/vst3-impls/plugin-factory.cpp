@@ -38,13 +38,13 @@ YaPluginFactoryPluginImpl::createInstance(Steinberg::FIDString cid,
     ArrayUID cid_array;
     std::copy(cid, cid + sizeof(Steinberg::TUID), cid_array.begin());
     if (Steinberg::FIDStringsEqual(_iid, Steinberg::Vst::IComponent::iid)) {
-        std::variant<YaComponent::ConstructArgs, UniversalTResult> result =
-            bridge.send_message(YaComponent::Construct{.cid = cid_array});
+        std::variant<YaPluginMonolith::ConstructArgs, UniversalTResult> result =
+            bridge.send_message(YaPluginMonolith::Construct{.cid = cid_array});
         return std::visit(
             overload{
-                [&](YaComponent::ConstructArgs&& args) -> tresult {
+                [&](YaPluginMonolith::ConstructArgs&& args) -> tresult {
                     *obj = static_cast<Steinberg::Vst::IComponent*>(
-                        new YaComponentPluginImpl(bridge, std::move(args)));
+                        new YaPluginMonolithImpl(bridge, std::move(args)));
                     return Steinberg::kResultOk;
                 },
                 [&](const UniversalTResult& code) -> tresult { return code; }},
