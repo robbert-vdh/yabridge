@@ -108,6 +108,21 @@ class YaEditController2 : public Steinberg::Vst::IEditController,
     virtual tresult PLUGIN_API
     getState(Steinberg::IBStream* state) override = 0;
 
+    /**
+     * Message to pass through a call to `IEditController::getParameterCount()`
+     * to the Wine plugin host.
+     */
+    struct GetParameterCount {
+        using Response = PrimitiveWrapper<int32>;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
     virtual int32 PLUGIN_API getParameterCount() override = 0;
     virtual tresult PLUGIN_API
     getParameterInfo(int32 paramIndex,

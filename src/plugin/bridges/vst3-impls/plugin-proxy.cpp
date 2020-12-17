@@ -195,9 +195,8 @@ Vst3PluginProxyImpl::setComponentState(Steinberg::IBStream* state) {
 }
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getParameterCount() {
-    // TODO: Implement
-    bridge.logger.log("TODO IEditController::getParameterCount()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaEditController2::GetParameterCount{
+        .instance_id = arguments.instance_id});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
