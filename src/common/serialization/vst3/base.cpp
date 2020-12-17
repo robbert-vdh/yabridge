@@ -195,7 +195,7 @@ VectorStream::VectorStream(Steinberg::IBStream* stream) {
 
     int32 num_bytes_read;
     buffer.resize(size);
-    assert(stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekSet) !=
+    assert(stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekSet) ==
            Steinberg::kResultOk);
     assert(stream->read(buffer.data(), size, &num_bytes_read) ==
            Steinberg::kResultOk);
