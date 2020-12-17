@@ -22,9 +22,10 @@
 
 #include "vst3-impls/host-application.h"
 
-PluginObject::PluginObject() {}
+InstanceInterfaces::InstanceInterfaces() {}
 
-PluginObject::PluginObject(Steinberg::IPtr<Steinberg::FUnknown> object)
+InstanceInterfaces::InstanceInterfaces(
+    Steinberg::IPtr<Steinberg::FUnknown> object)
     : object(object),
       audio_processor(object),
       component(object),

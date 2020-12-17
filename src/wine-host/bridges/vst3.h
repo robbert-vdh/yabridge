@@ -32,10 +32,10 @@
  * `IHostApplication` instance passed to the plugin during
  * `IPluginBase::initialize()`.
  */
-struct PluginObject {
-    PluginObject();
+struct InstanceInterfaces {
+    InstanceInterfaces();
 
-    PluginObject(Steinberg::IPtr<Steinberg::FUnknown> object);
+    InstanceInterfaces(Steinberg::IPtr<Steinberg::FUnknown> object);
 
     /**
      * If the host passes an `IHostApplication` during
@@ -149,6 +149,6 @@ class Vst3Bridge : public HostBridge {
      * will cause all pointers to it to get dropped and the object to be cleaned
      * up.
      */
-    std::map<size_t, PluginObject> object_instances;
+    std::map<size_t, InstanceInterfaces> object_instances;
     std::mutex object_instances_mutex;
 };
