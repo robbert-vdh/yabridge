@@ -355,7 +355,7 @@ void Vst3Logger::log_response(bool is_host_vst,
                                                  UniversalTResult>& result) {
     log_response_base(is_host_vst, [&](auto& message) {
         std::visit(overload{[&](const Vst3PluginProxy::ConstructArgs& args) {
-                                message << "<IComponent* #" << args.instance_id
+                                message << "<FUnknown* #" << args.instance_id
                                         << ">";
                             },
                             [&](const UniversalTResult& code) {
