@@ -295,6 +295,17 @@ void Vst3Logger::log_request(
     });
 }
 
+void Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaEditController2::GetParamStringByValue& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << "<IEditController* #" << request.instance_id
+                << ">::getParamStringByValue(id = " << request.id
+                << ", valueNormalized = " << request.value_normalized
+                << ", &string)";
+    });
+}
+
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     log_request_base(is_host_vst, [&](auto& message) {
@@ -455,6 +466,18 @@ void Vst3Logger::log_response(
             std::string title =
                 VST3::StringConvert::convert(response.updated_info.title);
             message << ", <ParameterInfo for '" << title << "'>";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaEditController2::GetParamStringByValueResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            std::string title = VST3::StringConvert::convert(response.string);
+            message << ", \"" << title << "\"";
         }
     });
 }

@@ -127,7 +127,7 @@ class YaEditController2 : public Steinberg::Vst::IEditController,
 
     /**
      * The response code and returned parameter information for a call to
-     * `IEditController::getParameterINfo(param_index, &info)`.
+     * `IEditController::getParameterInfo(param_index, &info)`.
      */
     struct GetParameterInfoResponse {
         UniversalTResult result;
@@ -142,7 +142,7 @@ class YaEditController2 : public Steinberg::Vst::IEditController,
 
     /**
      * Message to pass through a call to
-     * `IEditController::getParameterINfo(param_index, &info)` to the Wine
+     * `IEditController::getParameterInfo(param_index, &info)` to the Wine
      * plugin host.
      */
     struct GetParameterInfo {
@@ -164,6 +164,45 @@ class YaEditController2 : public Steinberg::Vst::IEditController,
     virtual tresult PLUGIN_API
     getParameterInfo(int32 paramIndex,
                      Steinberg::Vst::ParameterInfo& info /*out*/) override = 0;
+
+    /**
+     * The response code and returned parameter information for a call to
+     * `IEditController::getParamStringByValue(id, value_normalized,
+     * &string)`.
+     */
+    struct GetParamStringByValueResponse {
+        UniversalTResult result;
+
+        std::u16string string;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.container2b(string, std::extent_v<Steinberg::Vst::String128>);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IEditController::getParamStringByValue(id, value_normalized, &string)`
+     * to the Wine plugin host.
+     */
+    struct GetParamStringByValue {
+        using Response = GetParamStringByValueResponse;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ParamID id;
+        Steinberg::Vst::ParamValue value_normalized;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(id);
+            s.value8b(value_normalized);
+        }
+    };
+
     virtual tresult PLUGIN_API getParamStringByValue(
         Steinberg::Vst::ParamID id,
         Steinberg::Vst::ParamValue valueNormalized /*in*/,
