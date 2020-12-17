@@ -27,11 +27,11 @@ std::string format_uid(const Steinberg::FUID& uid) {
     uid.to4Int(l1, l2, l3, l4);
 
     std::ostringstream formatted_uid;
-    formatted_uid << std::hex << std::uppercase << "(0x" << std::setfill('0')
+    formatted_uid << std::hex << std::uppercase << "{0x" << std::setfill('0')
                   << std::setw(8) << l1 << ", 0x" << std::setfill('0')
                   << std::setw(8) << l2 << ", 0x" << std::setfill('0')
                   << std::setw(8) << l3 << ", 0x" << std::setfill('0')
-                  << std::setw(8) << l4 << ")";
+                  << std::setw(8) << l4 << "}";
 
     return formatted_uid.str();
 }

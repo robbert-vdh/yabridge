@@ -34,14 +34,14 @@ void Vst3Logger::log_unknown_interface(
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
-                             const Vst3PluginProxy::Construct&) {
+                             const Vst3PluginProxy::Construct& args) {
     log_request_base(is_host_vst, [&](auto& message) {
-        // TODO: Log the CID on verbosity level 2, and then also report all CIDs
-        //       in the plugin factory
         // TODO: When adding the enum class for instantiating different types,
         //       make sure to reflect those in the constructor and destructor
         //       logging
-        message << "IPluginFactory::createComponent(cid = ..., _iid = "
+        message << "IPluginFactory::createComponent(cid = "
+                << format_uid(Steinberg::FUID::fromTUID(args.cid.data()))
+                << ", _iid = "
                    "IComponent::iid, "
                    "&obj)";
     });
