@@ -193,7 +193,7 @@ VectorStream::VectorStream(Steinberg::IBStream* stream) {
     int64 size;
     assert(stream->tell(&size) == Steinberg::kResultOk);
 
-    int32 num_bytes_read;
+    int32 num_bytes_read = 0;
     buffer.resize(size);
     assert(stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekSet) ==
            Steinberg::kResultOk);
@@ -227,14 +227,12 @@ tresult VectorStream::write_back(Steinberg::IBStream* stream) const {
         return Steinberg::kInvalidArgument;
     }
 
-    int32 num_bytes_written;
+    int32 num_bytes_written = 0;
     assert(stream->seek(0, kIBSeekSet) == Steinberg::kResultOk);
-    // When writing zero bytes, some hosts will return `kResultFalse`
-    if (stream->write(const_cast<uint8_t*>(buffer.data()), buffer.size(),
-                      &num_bytes_written) == Steinberg::kResultOk) {
-        assert(num_bytes_written == 0 ||
-               static_cast<size_t>(num_bytes_written) == buffer.size());
-    }
+    assert(stream->write(const_cast<uint8_t*>(buffer.data()), buffer.size(),
+                         &num_bytes_written) == Steinberg::kResultOk);
+    assert(num_bytes_written == 0 ||
+           static_cast<size_t>(num_bytes_written) == buffer.size());
 
     return Steinberg::kResultOk;
 }
@@ -276,7 +274,7 @@ tresult PLUGIN_API VectorStream::write(void* buffer,
     }
 
     std::copy_n(reinterpret_cast<uint8_t*>(buffer), numBytes,
-                &this->buffer[seek_position]);
+                this->buffer.begin() + seek_position);
 
     seek_position += numBytes;
     if (numBytesWritten) {

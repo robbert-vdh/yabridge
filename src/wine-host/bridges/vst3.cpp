@@ -139,7 +139,7 @@ void Vst3Bridge::run() {
             },
             [&](Vst3PluginProxy::GetState& request)
                 -> Vst3PluginProxy::GetState::Response {
-                VectorStream stream;
+                VectorStream stream{};
                 tresult result;
 
                 // This same function is defined in both `IComponent` and
@@ -288,6 +288,8 @@ void Vst3Bridge::run() {
                 // and pass that to the initialize function. This object should
                 // be cleaned up again during `Vst3PluginProxy::Destruct`.
                 // TODO: This needs changing when we get to `Vst3HostProxy`
+                // TODO: Does this have to be run from the UI thread? Figure out
+                //       if it does
                 Steinberg::FUnknown* context = nullptr;
                 if (request.host_application_context_args) {
                     object_instances[request.instance_id]
