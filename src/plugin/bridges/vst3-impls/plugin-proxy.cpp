@@ -286,9 +286,8 @@ Steinberg::Vst::ParamValue PLUGIN_API
 Vst3PluginProxyImpl::plainParamToNormalized(
     Steinberg::Vst::ParamID id,
     Steinberg::Vst::ParamValue plainValue) {
-    // TODO: Implement
-    bridge.logger.log("TODO IEditController::plainParamToNormalized()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaEditController2::PlainParamToNormalized{
+        .instance_id = instance_id(), .id = id, .plain_value = plainValue});
 }
 
 Steinberg::Vst::ParamValue PLUGIN_API

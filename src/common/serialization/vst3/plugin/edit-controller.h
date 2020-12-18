@@ -275,6 +275,28 @@ class YaEditController2 : public Steinberg::Vst::IEditController,
     virtual Steinberg::Vst::ParamValue PLUGIN_API normalizedParamToPlain(
         Steinberg::Vst::ParamID id,
         Steinberg::Vst::ParamValue valueNormalized) override = 0;
+
+    /**
+     * Message to pass through a call to
+     * `IEditController::plainParamToNormalized(id, plain_value)` to the Wine
+     * plugin host.
+     */
+    struct PlainParamToNormalized {
+        using Response = PrimitiveWrapper<Steinberg::Vst::ParamValue>;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ParamID id;
+        Steinberg::Vst::ParamValue plain_value;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(id);
+            s.value8b(plain_value);
+        }
+    };
+
     virtual Steinberg::Vst::ParamValue PLUGIN_API
     plainParamToNormalized(Steinberg::Vst::ParamID id,
                            Steinberg::Vst::ParamValue plainValue) override = 0;

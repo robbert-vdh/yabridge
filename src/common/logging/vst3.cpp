@@ -344,6 +344,17 @@ void Vst3Logger::log_request(
     });
 }
 
+void Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaEditController2::PlainParamToNormalized& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IEditController::plainParamToNormalized(id = "
+                << request.id << ", plainValue = " << request.plain_value
+                << ")";
+    });
+}
+
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     log_request_base(is_host_vst, [&](auto& message) {
