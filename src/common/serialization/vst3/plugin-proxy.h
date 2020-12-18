@@ -24,6 +24,7 @@
 #include "host-application.h"
 #include "plugin/audio-processor.h"
 #include "plugin/component.h"
+#include "plugin/connection-point.h"
 #include "plugin/edit-controller.h"
 #include "plugin/plugin-base.h"
 
@@ -55,6 +56,7 @@
  */
 class Vst3PluginProxy : public YaAudioProcessor,
                         public YaComponent,
+                        public YaConnectionPoint,
                         public YaEditController2,
                         public YaPluginBase {
    public:
@@ -77,6 +79,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
 
         YaAudioProcessor::ConstructArgs audio_processor_args;
         YaComponent::ConstructArgs component_args;
+        YaConnectionPoint::ConstructArgs connection_point_args;
         YaEditController2::ConstructArgs edit_controller_2_args;
         YaPluginBase::ConstructArgs plugin_base_args;
 
@@ -84,8 +87,9 @@ class Vst3PluginProxy : public YaAudioProcessor,
         void serialize(S& s) {
             s.value8b(instance_id);
             s.object(audio_processor_args);
-            s.object(edit_controller_2_args);
             s.object(component_args);
+            s.object(connection_point_args);
+            s.object(edit_controller_2_args);
             s.object(plugin_base_args);
         }
     };

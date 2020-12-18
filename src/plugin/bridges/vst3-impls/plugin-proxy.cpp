@@ -188,6 +188,25 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
     return response.result;
 }
 
+tresult PLUGIN_API Vst3PluginProxyImpl::connect(IConnectionPoint* other) {
+    // TODO: Implement
+    bridge.logger.log("TODO IConnectionPoint::connect()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::disconnect(IConnectionPoint* other) {
+    // TODO: Implement
+    bridge.logger.log("TODO IConnectionPoint::disconnect()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::notify(Steinberg::Vst::IMessage* message) {
+    // TODO: Implement
+    bridge.logger.log("TODO IConnectionPoint::notify()");
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setComponentState(Steinberg::IBStream* state) {
     return bridge.send_message(YaEditController2::SetComponentState{

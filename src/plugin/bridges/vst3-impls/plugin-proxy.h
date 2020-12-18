@@ -79,6 +79,11 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API setState(Steinberg::IBStream* state) override;
     tresult PLUGIN_API getState(Steinberg::IBStream* state) override;
 
+    // From `IConnectionPoint`
+    tresult PLUGIN_API connect(IConnectionPoint* other) override;
+    tresult PLUGIN_API disconnect(IConnectionPoint* other) override;
+    tresult PLUGIN_API notify(Steinberg::Vst::IMessage* message) override;
+
     // From `IEditController`
     tresult PLUGIN_API setComponentState(Steinberg::IBStream* state) override;
     // `IEditController` also contains `getState()` and `setState()`  functions.
