@@ -94,6 +94,8 @@ class Vst3Logger {
                      const YaEditController2::NormalizedParamToPlain&);
     void log_request(bool is_host_vst,
                      const YaEditController2::PlainParamToNormalized&);
+    void log_request(bool is_host_vst,
+                     const YaEditController2::GetParamNormalized&);
     void log_request(bool is_host_vst, const YaPluginBase::Initialize&);
     void log_request(bool is_host_vst, const YaPluginBase::Terminate&);
     void log_request(bool is_host_vst, const YaPluginFactory::Construct&);

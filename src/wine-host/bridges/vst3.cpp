@@ -318,6 +318,10 @@ void Vst3Bridge::run() {
                     .edit_controller->plainParamToNormalized(
                         request.id, request.plain_value);
             },
+            [&](const YaEditController2::GetParamNormalized& request) {
+                return object_instances[request.instance_id]
+                    .edit_controller->getParamNormalized(request.id);
+            },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
                 // If we got passed a host context, we'll create a proxy object
