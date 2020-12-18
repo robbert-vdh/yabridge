@@ -212,7 +212,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
         }
     };
 
-   protected:
+   private:
     ConstructArgs arguments;
 };
 
