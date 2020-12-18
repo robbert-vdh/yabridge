@@ -276,9 +276,10 @@ Steinberg::Vst::ParamValue PLUGIN_API
 Vst3PluginProxyImpl::normalizedParamToPlain(
     Steinberg::Vst::ParamID id,
     Steinberg::Vst::ParamValue valueNormalized) {
-    // TODO: Implement
-    bridge.logger.log("TODO IEditController::normalizedParamToPlain()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaEditController2::NormalizedParamToPlain{
+        .instance_id = instance_id(),
+        .id = id,
+        .value_normalized = valueNormalized});
 }
 
 Steinberg::Vst::ParamValue PLUGIN_API
@@ -339,10 +340,10 @@ tresult PLUGIN_API Vst3PluginProxyImpl::openAboutBox(TBool onlyCheck) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
-    // This `context` will likely be an `IHostApplication`. If it is, we will
-    // store it here, and we'll proxy through all calls to it made from the Wine
-    // side. Otherwise we'll still call `IPluginBase::initialize()` but with a
-    // null pointer instead.
+    // This `context` will likely be an `IHostApplication`. If it is, we
+    // will store it here, and we'll proxy through all calls to it made from
+    // the Wine side. Otherwise we'll still call `IPluginBase::initialize()`
+    // but with a null pointer instead.
     host_application_context = context;
 
     std::optional<YaHostApplication::ConstructArgs>

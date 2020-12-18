@@ -281,7 +281,7 @@ void Vst3Bridge::run() {
                 return YaEditController2::GetParameterInfoResponse{
                     .result = result, .updated_info = request.info};
             },
-            [&](YaEditController2::GetParamStringByValue& request)
+            [&](const YaEditController2::GetParamStringByValue& request)
                 -> YaEditController2::GetParamStringByValue::Response {
                 Steinberg::Vst::String128 string{0};
                 const tresult result =
@@ -293,7 +293,7 @@ void Vst3Bridge::run() {
                     .result = result,
                     .string = tchar_pointer_to_u16string(string)};
             },
-            [&](YaEditController2::GetParamValueByString& request)
+            [&](const YaEditController2::GetParamValueByString& request)
                 -> YaEditController2::GetParamValueByString::Response {
                 Steinberg::Vst::ParamValue value_normalized;
                 const tresult result =
@@ -307,6 +307,11 @@ void Vst3Bridge::run() {
 
                 return YaEditController2::GetParamValueByStringResponse{
                     .result = result, .value_normalized = value_normalized};
+            },
+            [&](const YaEditController2::NormalizedParamToPlain& request) {
+                return object_instances[request.instance_id]
+                    .edit_controller->normalizedParamToPlain(
+                        request.id, request.value_normalized);
             },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
