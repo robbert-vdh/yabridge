@@ -189,9 +189,24 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::connect(IConnectionPoint* other) {
-    // TODO: Implement
-    bridge.logger.log("TODO IConnectionPoint::connect()");
-    return Steinberg::kNotImplemented;
+    // When the host is trying to connect two plugin proxy objects, we can just
+    // identify the other object by its instance IDs and then connect the
+    // objects in the Wine plugin host directly
+    if (auto other_proxy = dynamic_cast<Vst3PluginProxy*>(other)) {
+        // TODO: Remove debug
+        bridge.logger.log("Host is trying to connect us with instance " +
+                          std::to_string(other_proxy->instance_id()));
+
+        // TODO: Implement
+        bridge.logger.log("TODO IConnectionPoint::connect()");
+        return Steinberg::kNotImplemented;
+    } else {
+        // TODO: Add support for `ConnectionProxy` and similar objects
+        bridge.logger.log(
+            "WARNING: The host passed a proxy proxy object to "
+            "'IConnectionPoint::connect()'. This is currently not supported.");
+        return Steinberg::kNotImplemented;
+    }
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::disconnect(IConnectionPoint* other) {

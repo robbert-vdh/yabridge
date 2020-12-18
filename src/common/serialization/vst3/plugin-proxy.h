@@ -154,6 +154,12 @@ class Vst3PluginProxy : public YaAudioProcessor,
 
     DECLARE_FUNKNOWN_METHODS
 
+    /**
+     * Get this object's instance ID. Used in `IConnectionPoint` to identify and
+     * connect specific objects.
+     */
+    inline size_t instance_id() const { return arguments.instance_id; }
+
     // We'll define messages for functions that have identical definitions in
     // multiple interfaces below. When the Wine plugin host process handles
     // these it should check which of the interfaces is supported on the host.
