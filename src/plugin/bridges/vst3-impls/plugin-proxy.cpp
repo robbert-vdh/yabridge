@@ -247,6 +247,9 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParamStringByValue(
     Steinberg::Vst::ParamID id,
     Steinberg::Vst::ParamValue valueNormalized /*in*/,
     Steinberg::Vst::String128 string /*out*/) {
+    // FIXME: In Bitwig we sometimes write old values when moving a knob very
+    //        quickly. The issue is not that responses are received out of
+    //        order.
     const GetParamStringByValueResponse response =
         bridge.send_message(YaEditController2::GetParamStringByValue{
             .instance_id = instance_id(),
