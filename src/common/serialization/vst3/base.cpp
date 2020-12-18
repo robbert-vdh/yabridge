@@ -229,10 +229,12 @@ tresult VectorStream::write_back(Steinberg::IBStream* stream) const {
 
     int32 num_bytes_written = 0;
     assert(stream->seek(0, kIBSeekSet) == Steinberg::kResultOk);
-    assert(stream->write(const_cast<uint8_t*>(buffer.data()), buffer.size(),
-                         &num_bytes_written) == Steinberg::kResultOk);
-    assert(num_bytes_written == 0 ||
-           static_cast<size_t>(num_bytes_written) == buffer.size());
+    if (stream->write(const_cast<uint8_t*>(buffer.data()), buffer.size(),
+                      &num_bytes_written) == Steinberg::kResultOk) {
+        // Some implementations will return `kResultFalse` when writing 0 bytes
+        assert(num_bytes_written == 0 ||
+               static_cast<size_t>(num_bytes_written) == buffer.size());
+    }
 
     return Steinberg::kResultOk;
 }
