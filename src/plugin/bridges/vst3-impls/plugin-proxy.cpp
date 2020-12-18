@@ -263,9 +263,13 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParamValueByString(
     Steinberg::Vst::ParamID id,
     Steinberg::Vst::TChar* string /*in*/,
     Steinberg::Vst::ParamValue& valueNormalized /*out*/) {
-    // TODO: Implement
-    bridge.logger.log("TODO IEditController::getParamValueByString()");
-    return Steinberg::kNotImplemented;
+    const GetParamValueByStringResponse response =
+        bridge.send_message(YaEditController2::GetParamValueByString{
+            .instance_id = instance_id(), .id = id, .string = string});
+
+    valueNormalized = response.value_normalized;
+
+    return response.result;
 }
 
 Steinberg::Vst::ParamValue PLUGIN_API

@@ -88,6 +88,8 @@ class Vst3Logger {
                      const YaEditController2::GetParameterInfo&);
     void log_request(bool is_host_vst,
                      const YaEditController2::GetParamStringByValue&);
+    void log_request(bool is_host_vst,
+                     const YaEditController2::GetParamValueByString&);
     void log_request(bool is_host_vst, const YaPluginBase::Initialize&);
     void log_request(bool is_host_vst, const YaPluginBase::Terminate&);
     void log_request(bool is_host_vst, const YaPluginFactory::Construct&);
@@ -111,6 +113,8 @@ class Vst3Logger {
                       const YaEditController2::GetParameterInfoResponse&);
     void log_response(bool is_host_vst,
                       const YaEditController2::GetParamStringByValueResponse&);
+    void log_response(bool is_host_vst,
+                      const YaEditController2::GetParamValueByStringResponse&);
     void log_response(bool is_host_vst, const YaPluginFactory::ConstructArgs&);
     void log_response(bool is_host_vst, const Configuration&);
 

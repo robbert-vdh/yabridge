@@ -207,6 +207,45 @@ class YaEditController2 : public Steinberg::Vst::IEditController,
         Steinberg::Vst::ParamID id,
         Steinberg::Vst::ParamValue valueNormalized /*in*/,
         Steinberg::Vst::String128 string /*out*/) override = 0;
+
+    /**
+     * The response code and returned parameter information for a call to
+     * `IEditController::getParamValueByString(id, string,
+     * &&value_normalized)`.
+     */
+    struct GetParamValueByStringResponse {
+        UniversalTResult result;
+
+        Steinberg::Vst::ParamValue value_normalized;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.value8b(value_normalized);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IEditController::getParamValueByString(id, string, &value_normalized)`
+     * to the Wine plugin host.
+     */
+    struct GetParamValueByString {
+        using Response = GetParamValueByStringResponse;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ParamID id;
+        std::u16string string;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(id);
+            s.container2b(string, std::extent_v<Steinberg::Vst::String128>);
+        }
+    };
+
     virtual tresult PLUGIN_API getParamValueByString(
         Steinberg::Vst::ParamID id,
         Steinberg::Vst::TChar* string /*in*/,

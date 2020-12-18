@@ -321,6 +321,18 @@ void Vst3Logger::log_request(
     });
 }
 
+void Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaEditController2::GetParamValueByString& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        std::string param_title = VST3::StringConvert::convert(request.string);
+        message << request.instance_id
+                << ": IEditController::getParamValueByString(id = "
+                << request.id << ", string = " << param_title
+                << ", &valueNormalized)";
+    });
+}
+
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     log_request_base(is_host_vst, [&](auto& message) {
@@ -478,9 +490,9 @@ void Vst3Logger::log_response(
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            std::string title =
+            std::string param_title =
                 VST3::StringConvert::convert(response.updated_info.title);
-            message << ", <ParameterInfo for '" << title << "'>";
+            message << ", <ParameterInfo for '" << param_title << "'>";
         }
     });
 }
@@ -491,8 +503,19 @@ void Vst3Logger::log_response(
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            std::string title = VST3::StringConvert::convert(response.string);
-            message << ", \"" << title << "\"";
+            std::string value = VST3::StringConvert::convert(response.string);
+            message << ", \"" << value << "\"";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaEditController2::GetParamValueByStringResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", " << response.value_normalized << std::endl;
         }
     });
 }

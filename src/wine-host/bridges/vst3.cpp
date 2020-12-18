@@ -293,6 +293,21 @@ void Vst3Bridge::run() {
                     .result = result,
                     .string = tchar_pointer_to_u16string(string)};
             },
+            [&](YaEditController2::GetParamValueByString& request)
+                -> YaEditController2::GetParamValueByString::Response {
+                Steinberg::Vst::ParamValue value_normalized;
+                const tresult result =
+                    object_instances[request.instance_id]
+                        .edit_controller->getParamValueByString(
+                            request.id,
+                            const_cast<Steinberg::Vst::TChar*>(
+                                u16string_to_tchar_pointer(
+                                    request.string.c_str())),
+                            value_normalized);
+
+                return YaEditController2::GetParamValueByStringResponse{
+                    .result = result, .value_normalized = value_normalized};
+            },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
                 // If we got passed a host context, we'll create a proxy object
