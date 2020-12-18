@@ -107,12 +107,14 @@ void Vst3Logger::log_request(
 void Vst3Logger::log_request(
     bool is_host_vst,
     const YaAudioProcessor::CanProcessSampleSize& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message
-            << request.instance_id
-            << ": IAudioProcessor::canProcessSampleSize(symbolicSampleSize = "
-            << request.symbolic_sample_size << ")";
-    });
+    log_request_base(
+        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
+            message
+                << request.instance_id
+                << ": IAudioProcessor::canProcessSampleSize(symbolicSampleSize "
+                   "= "
+                << request.symbolic_sample_size << ")";
+        });
 }
 
 void Vst3Logger::log_request(
@@ -207,9 +209,11 @@ void Vst3Logger::log_request(bool is_host_vst,
 
 void Vst3Logger::log_request(bool is_host_vst,
                              const YaAudioProcessor::GetTailSamples& request) {
-    log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id << ": IAudioProcessor::getTailSamples()";
-    });
+    log_request_base(is_host_vst, Logger::Verbosity::all_events,
+                     [&](auto& message) {
+                         message << request.instance_id
+                                 << ": IAudioProcessor::getTailSamples()";
+                     });
 }
 
 void Vst3Logger::log_request(bool is_host_vst,
