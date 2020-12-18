@@ -12,6 +12,7 @@ VST3 interfaces are implemented as follows:
 | `Vst3PluginProxy`   |                   | All of the below:                                      |
 | `YaAudioProcessor`  | `Vst3PluginProxy` | `IAudioProcessor`                                      |
 | `YaComponent`       | `Vst3PluginProxy` | `IComponent`                                           |
+| `YaConnectionPoint` | `Vst3PluginProxy` | `IConnectionPoint`                                     |
 | `YaEditController`  | `Vst3PluginProxy` | `IEditController`, `IEditController2`                  |
 | `YaPluginBase`      | `Vst3PluginProxy` | `IPluginBase`                                          |
 | `YaHostApplication` |                   | `iHostAPplication`                                     |
