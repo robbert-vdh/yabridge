@@ -97,6 +97,8 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
+    // TODO: Check whether reusing a `YaProcessData` object make a difference in
+    //       terms of performance
     ProcessResponse response = bridge.send_message(
         YaAudioProcessor::Process{.instance_id = instance_id(), .data = data});
 
