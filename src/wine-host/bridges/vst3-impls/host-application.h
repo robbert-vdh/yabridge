@@ -20,9 +20,9 @@
 
 #include "../vst3.h"
 
-class YaHostApplicationHostImpl : public YaHostApplication {
+class YaHostApplicationImpl : public YaHostApplication {
    public:
-    YaHostApplicationHostImpl(Vst3Bridge& bridge,
+    YaHostApplicationImpl(Vst3Bridge& bridge,
                               YaHostApplication::ConstructArgs&& args);
 
     /**

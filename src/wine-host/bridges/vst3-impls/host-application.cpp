@@ -18,7 +18,7 @@
 
 #include <iostream>
 
-YaHostApplicationHostImpl::YaHostApplicationHostImpl(
+YaHostApplicationImpl::YaHostApplicationImpl(
     Vst3Bridge& bridge,
     YaHostApplication::ConstructArgs&& args)
     : YaHostApplication(std::move(args)), bridge(bridge) {
@@ -27,8 +27,9 @@ YaHostApplicationHostImpl::YaHostApplicationHostImpl(
 }
 
 tresult PLUGIN_API
-YaHostApplicationHostImpl::queryInterface(const Steinberg::TUID _iid,
-                                          void** obj) {
+YaHostApplicationImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
+    // I don't think it's expected of a host to implement multiple interfaces on
+    // this object, so if we do get a call here it's important that it's logged
     // TODO: Successful queries should also be logged
     const tresult result = YaHostApplication::queryInterface(_iid, obj);
     if (result != Steinberg::kResultOk) {
@@ -39,10 +40,9 @@ YaHostApplicationHostImpl::queryInterface(const Steinberg::TUID _iid,
     return result;
 }
 
-tresult PLUGIN_API
-YaHostApplicationHostImpl::createInstance(Steinberg::TUID cid,
-                                          Steinberg::TUID _iid,
-                                          void** obj) {
+tresult PLUGIN_API YaHostApplicationImpl::createInstance(Steinberg::TUID cid,
+                                                         Steinberg::TUID _iid,
+                                                         void** obj) {
     // TODO: Implement
     std::cerr << "TODO: IHostApplication::createInstance()" << std::endl;
     return Steinberg::kNotImplemented;

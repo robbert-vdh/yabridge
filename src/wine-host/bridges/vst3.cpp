@@ -298,14 +298,15 @@ void Vst3Bridge::run() {
                 // If we got passed a host context, we'll create a proxy object
                 // and pass that to the initialize function. This object should
                 // be cleaned up again during `Vst3PluginProxy::Destruct`.
-                // TODO: This needs changing when we get to `Vst3HostProxy`
+                // TODO: This needs changing if it turns out we need a
+                //       `Vst3HostProxy`
                 // TODO: Does this have to be run from the UI thread? Figure out
                 //       if it does
                 Steinberg::FUnknown* context = nullptr;
                 if (request.host_application_context_args) {
                     object_instances[request.instance_id]
                         .hsot_application_context =
-                        Steinberg::owned(new YaHostApplicationHostImpl(
+                        Steinberg::owned(new YaHostApplicationImpl(
                             *this,
                             std::move(*request.host_application_context_args)));
                     context = object_instances[request.instance_id]
@@ -328,7 +329,7 @@ void Vst3Bridge::run() {
             [&](YaPluginFactory::SetHostContext& request)
                 -> YaPluginFactory::SetHostContext::Response {
                 plugin_factory_host_application_context =
-                    Steinberg::owned(new YaHostApplicationHostImpl(
+                    Steinberg::owned(new YaHostApplicationImpl(
                         *this,
                         std::move(request.host_application_context_args)));
 

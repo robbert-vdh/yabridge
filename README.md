@@ -16,7 +16,7 @@ This branch is still very far removed from being in a usable state. Below is an
 incomplete list of things that still have to be done before this can be used:
 
 - Interfaces left to implement:
-  - `YaHostApplicationHostImpl::createComponent()`
+  - `IHostApplication::createComponent()`
   - The other parts of `IConnectionPoint`, including support for host provided proxies
   - Finish implementing `IEditController{,2}`
   - All other mandatory interfaces

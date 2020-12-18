@@ -35,6 +35,10 @@ instantiated and managed by the host. The basic model works as follows:
    interfaces defiend in the VST3 SDK. `Vst3PluginProxy` implements all
    interfaces that can be implemented by plugins, and `Vst3HostProxy` implements
    all interfaces that are to be implemented by the host.
+
+   TODO: Find out if `Vst3HostProxy` is needed, or if objects provided by the
+   host never implement multiple interfaces (which I think might be the case)
+
 2. For every interface `IFoo`, we provide an abstract implementation called
    `YaFoo`. This implementation mostly contain message object we use to make
    specific function calls on the actual objects we are proxying. The
@@ -45,15 +49,15 @@ instantiated and managed by the host. The basic model works as follows:
 3. Proxy object are instantiated while handling
    `IPluginFactory::createInstance()` for `Vst3PluginProxy`, and during
    `IPluginBase::initialize()` and `IPluginFactory::setHostContext()` for
-   `Vst3HostProxy`. On the receiving side of those functions (where we call the
-   actual function implemented by the plugin or the host), we receive an
-   `IPtr<T>` smart pointer to an object provided by the host or the plugin. We
-   use this object to iterate over every applicable `YaFoo` as mentioend above.
-   All of these `YaFoo::ConstructArgs` objects along with a unique identifier
-   for this specific object are then serialized and transmitted to the other
-   side. With this information we can create a proxy object that supports all
-   the same interfaces (and thus allows calls to the functions in those
-   interfaces) as the original object we are proxying.
+   `Vst3HostProxy` (TODO: Same here). On the receiving side of those functions
+   (where we call the actual function implemented by the plugin or the host), we
+   receive an `IPtr<T>` smart pointer to an object provided by the host or the
+   plugin. We use this object to iterate over every applicable `YaFoo` as
+   mentioend above. All of these `YaFoo::ConstructArgs` objects along with a
+   unique identifier for this specific object are then serialized and
+   transmitted to the other side. With this information we can create a proxy
+   object that supports all the same interfaces (and thus allows calls to the
+   functions in those interfaces) as the original object we are proxying.
 4. As mentioend, every object we instantiate gets assigned a unique identifier.
    When dealign with objects created by the Windows VST3 plugin, the object's
    `FUnknown` pointer will be stored in an `std::map<size_t, PluginObject>` map.
