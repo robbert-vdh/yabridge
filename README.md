@@ -17,7 +17,7 @@ incomplete list of things that still have to be done before this can be used:
 
 - Interfaces left to implement:
   - `YaHostApplicationHostImpl::createComponent()`
-  - `IConnectionPoint` to supplement `IComponent`
+  - The other parts of `IConnectionPoint`, including support for host provided proxies
   - Finish implementing `IEditController{,2}`
   - All other mandatory interfaces
   - All other optional interfaces

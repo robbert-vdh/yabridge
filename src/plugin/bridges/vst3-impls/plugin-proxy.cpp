@@ -193,13 +193,9 @@ tresult PLUGIN_API Vst3PluginProxyImpl::connect(IConnectionPoint* other) {
     // identify the other object by its instance IDs and then connect the
     // objects in the Wine plugin host directly
     if (auto other_proxy = dynamic_cast<Vst3PluginProxy*>(other)) {
-        // TODO: Remove debug
-        bridge.logger.log("Host is trying to connect us with instance " +
-                          std::to_string(other_proxy->instance_id()));
-
-        // TODO: Implement
-        bridge.logger.log("TODO IConnectionPoint::connect()");
-        return Steinberg::kNotImplemented;
+        return bridge.send_message(YaConnectionPoint::Connect{
+            .instance_id = arguments.instance_id,
+            .other_instance_id = other_proxy->instance_id()});
     } else {
         // TODO: Add support for `ConnectionProxy` and similar objects
         bridge.logger.log(

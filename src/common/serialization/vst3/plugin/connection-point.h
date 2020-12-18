@@ -67,6 +67,29 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IConnectionPoint::connect(other_instance_id)` to the Wine plugin host.
+     */
+    struct Connect {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        /**
+         * The other object this object should be connected to. When connecting
+         * two `Vst3PluginProxy` objects, we can directly connect the underlying
+         * objects on the Wine side.
+         */
+        native_size_t other_instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value8b(other_instance_id);
+        }
+    };
+
     virtual tresult PLUGIN_API connect(IConnectionPoint* other) override = 0;
     virtual tresult PLUGIN_API disconnect(IConnectionPoint* other) override = 0;
     virtual tresult PLUGIN_API

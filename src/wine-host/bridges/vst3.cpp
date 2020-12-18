@@ -32,6 +32,7 @@ InstanceInterfaces::InstanceInterfaces(
     : object(object),
       audio_processor(object),
       component(object),
+      connection_point(object),
       edit_controller(object),
       plugin_base(object) {}
 
@@ -249,6 +250,16 @@ void Vst3Bridge::run() {
                 -> YaComponent::SetActive::Response {
                 return object_instances[request.instance_id]
                     .component->setActive(request.state);
+            },
+            [&](const YaConnectionPoint::Connect& request)
+                -> YaConnectionPoint::Connect::Response {
+                // We can directly connect the underlying objects
+                // TODO: Add support for connecting objects through a proxy
+                //       object provided by the host
+                return object_instances[request.instance_id]
+                    .connection_point->connect(
+                        object_instances[request.other_instance_id]
+                            .connection_point);
             },
             [&](YaEditController2::SetComponentState& request)
                 -> YaEditController2::SetComponentState::Response {
