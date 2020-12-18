@@ -139,6 +139,10 @@ class Vst3Logger {
     /**
      * Log a request with a standard prefix based on the boolean flag we pass to
      * every logging function so we don't have to repeat it everywhere.
+     *
+     * TODO: Make these logging messages return a boolean based on whether or
+     *       not it was filtered out. Don't show the responses for filtered out
+     *       messages.
      */
     template <std::invocable<std::ostringstream&> F>
     void log_request_base(bool is_host_vst,
