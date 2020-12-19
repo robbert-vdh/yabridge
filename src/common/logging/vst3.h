@@ -115,6 +115,7 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaComponentHandler::EndEdit&);
     bool log_request(bool is_host_vst,
                      const YaComponentHandler::RestartComponent&);
+    bool log_request(bool is_host_vst, const YaHostApplication::GetName&);
 
     void log_response(bool is_host_vst, const Ack&);
     void log_response(
@@ -137,6 +138,9 @@ class Vst3Logger {
                       const YaEditController::GetParamValueByStringResponse&);
     void log_response(bool is_host_vst, const YaPluginFactory::ConstructArgs&);
     void log_response(bool is_host_vst, const Configuration&);
+
+    void log_response(bool is_host_vst,
+                      const YaHostApplication::GetNameResponse&);
 
     template <typename T>
     void log_response(bool is_host_vst, const PrimitiveWrapper<T>& value) {

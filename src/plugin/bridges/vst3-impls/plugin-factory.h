@@ -28,6 +28,11 @@ class YaPluginFactoryImpl : public YaPluginFactory {
                                       void** obj) override;
     tresult PLUGIN_API setHostContext(Steinberg::FUnknown* context) override;
 
+    // The following pointers are cast from `host_context` if `setHostContext()`
+    // has been called
+
+    Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication> host_application;
+
    private:
     Vst3PluginBridge& bridge;
 

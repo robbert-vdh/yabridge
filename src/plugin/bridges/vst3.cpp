@@ -83,6 +83,24 @@ Vst3PluginBridge::Vst3PluginBridge()
                 [&](const WantsConfiguration&) -> WantsConfiguration::Response {
                     return config;
                 },
+                [&](const YaHostApplication::GetName& request)
+                    -> YaHostApplication::GetName::Response {
+                    tresult result;
+                    Steinberg::Vst::String128 name{0};
+                    if (request.owner_instance_id) {
+                        result = plugin_proxies.at(*request.owner_instance_id)
+                                     .get()
+                                     .host_application->getName(name);
+                    } else {
+                        result =
+                            plugin_factory->host_application->getName(name);
+                    }
+
+                    return YaHostApplication::GetNameResponse{
+                        .result = result,
+                        .name = tchar_pointer_to_u16string(name),
+                    };
+                },
                 [&](const YaComponentHandler::BeginEdit& request)
                     -> YaComponentHandler::BeginEdit::Response {
                     return plugin_proxies.at(request.owner_instance_id)

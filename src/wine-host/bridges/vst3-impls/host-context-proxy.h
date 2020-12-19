@@ -31,6 +31,7 @@ class Vst3HostContextProxyImpl : public Vst3HostContextProxy {
                                       void** obj) override;
 
     // From `IHostApplication`
+    tresult PLUGIN_API getName(Steinberg::Vst::String128 name) override;
     tresult PLUGIN_API createInstance(Steinberg::TUID cid,
                                       Steinberg::TUID _iid,
                                       void** obj) override;

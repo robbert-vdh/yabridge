@@ -23,8 +23,9 @@
 #include "../../common/logging/vst3.h"
 #include "common.h"
 
-// Forward declaration
+// Forward declarations
 class Vst3PluginProxyImpl;
+class YaPluginFactoryImpl;
 
 /**
  * This handles the communication between the native host and a VST3 plugin
@@ -134,7 +135,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      *
      * @related get_plugin_factory
      */
-    YaPluginFactory* plugin_factory = nullptr;
+    YaPluginFactoryImpl* plugin_factory = nullptr;
 
    private:
     /**

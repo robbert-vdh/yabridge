@@ -106,6 +106,10 @@ YaPluginFactoryImpl::setHostContext(Steinberg::FUnknown* context) {
     // context.
     host_context = context;
 
+    // Automatically converted smart pointers for when the plugin performs a
+    // callback later
+    host_application = host_context;
+
     std::optional<Vst3HostContextProxy::ConstructArgs> host_context_args{};
     if (host_context) {
         host_context_args =

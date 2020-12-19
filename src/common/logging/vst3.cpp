@@ -487,6 +487,19 @@ bool Vst3Logger::log_request(
     });
 }
 
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaHostApplication::GetName& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        // This can be called either from a plugin object or from the plugin's
+        // plugin factory
+        if (request.owner_instance_id) {
+            message << *request.owner_instance_id << ": ";
+        }
+
+        message << "IHostApplication::getName(&name)";
+    });
+}
+
 void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
     log_response_base(is_host_vst, [&](auto& message) { message << "ACK"; });
 }
@@ -643,4 +656,16 @@ void Vst3Logger::log_response(bool is_host_vst,
 void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
     log_response_base(is_host_vst,
                       [&](auto& message) { message << "<Configuration>"; });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaHostApplication::GetNameResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            std::string value = VST3::StringConvert::convert(response.name);
+            message << ", \"" << value << "\"";
+        }
+    });
 }

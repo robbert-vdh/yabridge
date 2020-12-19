@@ -130,6 +130,11 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      */
     Steinberg::IPtr<Steinberg::Vst::IComponentHandler> component_handler;
 
+    // The following pointers are cast from `host_context` if `setHostContext()`
+    // has been called
+
+    Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication> host_application;
+
    private:
     Vst3PluginBridge& bridge;
 

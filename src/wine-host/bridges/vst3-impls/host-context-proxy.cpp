@@ -43,6 +43,17 @@ Vst3HostContextProxyImpl::queryInterface(const Steinberg::TUID _iid,
 }
 
 tresult PLUGIN_API
+Vst3HostContextProxyImpl::getName(Steinberg::Vst::String128 name) {
+    const GetNameResponse response = bridge.send_message(
+        YaHostApplication::GetName{.owner_instance_id = owner_instance_id()});
+
+    std::copy(response.name.begin(), response.name.end(), name);
+    name[response.name.size()] = 0;
+
+    return response.result;
+}
+
+tresult PLUGIN_API
 Vst3HostContextProxyImpl::createInstance(Steinberg::TUID cid,
                                          Steinberg::TUID _iid,
                                          void** obj) {
