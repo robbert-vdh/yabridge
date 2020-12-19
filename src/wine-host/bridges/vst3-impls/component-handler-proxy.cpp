@@ -62,7 +62,6 @@ Vst3ComponentHandlerProxyImpl::endEdit(Steinberg::Vst::ParamID id) {
 
 tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::restartComponent(int32 flags) {
-    // TODO: Implement
-    std::cerr << "TODO: IComponentHandler::restartComponent()" << std::endl;
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaComponentHandler::RestartComponent{
+        .owner_instance_id = owner_instance_id(), .flags = flags});
 }

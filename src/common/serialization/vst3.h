@@ -108,7 +108,8 @@ void serialize(S& s, ControlRequest& payload) {
 using CallbackRequest = std::variant<WantsConfiguration,
                                      YaComponentHandler::BeginEdit,
                                      YaComponentHandler::PerformEdit,
-                                     YaComponentHandler::EndEdit>;
+                                     YaComponentHandler::EndEdit,
+                                     YaComponentHandler::RestartComponent>;
 
 template <typename S>
 void serialize(S& s, CallbackRequest& payload) {

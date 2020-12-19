@@ -113,6 +113,8 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaComponentHandler::BeginEdit&);
     bool log_request(bool is_host_vst, const YaComponentHandler::PerformEdit&);
     bool log_request(bool is_host_vst, const YaComponentHandler::EndEdit&);
+    bool log_request(bool is_host_vst,
+                     const YaComponentHandler::RestartComponent&);
 
     void log_response(bool is_host_vst, const Ack&);
     void log_response(

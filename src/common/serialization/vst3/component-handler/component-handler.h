@@ -125,6 +125,26 @@ class YaComponentHandler : public Steinberg::Vst::IComponentHandler {
     };
 
     virtual tresult PLUGIN_API endEdit(Steinberg::Vst::ParamID id) override = 0;
+
+    /**
+     * Message to pass through a call to
+     * `IComponentHandler::restartComponent(flags)` to the component handler
+     * provided by the host.
+     */
+    struct RestartComponent {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        int32 flags;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value4b(flags);
+        }
+    };
+
     virtual tresult PLUGIN_API restartComponent(int32 flags) override = 0;
 
    protected:
