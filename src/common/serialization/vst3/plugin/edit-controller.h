@@ -31,11 +31,11 @@
  * Steinberg forgot to inherit `IEditController2` from `IEditController` event
  * if it says it does in the docs, so we'll pretend they just that.
  */
-class YaEditController2 : public Steinberg::Vst::IEditController,
-                          public Steinberg::Vst::IEditController2 {
+class YaEditController : public Steinberg::Vst::IEditController,
+                         public Steinberg::Vst::IEditController2 {
    public:
     /**
-     * These are the arguments for creating a `YaEditController2`.
+     * These are the arguments for creating a `YaEditController`.
      */
     struct ConstructArgs {
         ConstructArgs();
@@ -67,7 +67,7 @@ class YaEditController2 : public Steinberg::Vst::IEditController,
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaEditController2(const ConstructArgs&& args);
+    YaEditController(const ConstructArgs&& args);
 
     inline bool supported_version_1() const {
         return arguments.supported_version_1;

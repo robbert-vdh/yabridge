@@ -270,40 +270,40 @@ void Vst3Bridge::run() {
                         object_instances[request.other_instance_id]
                             .connection_point);
             },
-            [&](YaEditController2::SetComponentState& request)
-                -> YaEditController2::SetComponentState::Response {
+            [&](YaEditController::SetComponentState& request)
+                -> YaEditController::SetComponentState::Response {
                 return object_instances[request.instance_id]
                     .edit_controller->setComponentState(&request.state);
             },
-            [&](const YaEditController2::GetParameterCount& request)
-                -> YaEditController2::GetParameterCount::Response {
+            [&](const YaEditController::GetParameterCount& request)
+                -> YaEditController::GetParameterCount::Response {
                 return object_instances[request.instance_id]
                     .edit_controller->getParameterCount();
             },
-            [&](YaEditController2::GetParameterInfo& request)
-                -> YaEditController2::GetParameterInfo::Response {
+            [&](YaEditController::GetParameterInfo& request)
+                -> YaEditController::GetParameterInfo::Response {
                 const tresult result =
                     object_instances[request.instance_id]
                         .edit_controller->getParameterInfo(request.param_index,
                                                            request.info);
 
-                return YaEditController2::GetParameterInfoResponse{
+                return YaEditController::GetParameterInfoResponse{
                     .result = result, .updated_info = request.info};
             },
-            [&](const YaEditController2::GetParamStringByValue& request)
-                -> YaEditController2::GetParamStringByValue::Response {
+            [&](const YaEditController::GetParamStringByValue& request)
+                -> YaEditController::GetParamStringByValue::Response {
                 Steinberg::Vst::String128 string{0};
                 const tresult result =
                     object_instances[request.instance_id]
                         .edit_controller->getParamStringByValue(
                             request.id, request.value_normalized, string);
 
-                return YaEditController2::GetParamStringByValueResponse{
+                return YaEditController::GetParamStringByValueResponse{
                     .result = result,
                     .string = tchar_pointer_to_u16string(string)};
             },
-            [&](const YaEditController2::GetParamValueByString& request)
-                -> YaEditController2::GetParamValueByString::Response {
+            [&](const YaEditController::GetParamValueByString& request)
+                -> YaEditController::GetParamValueByString::Response {
                 Steinberg::Vst::ParamValue value_normalized;
                 const tresult result =
                     object_instances[request.instance_id]
@@ -314,24 +314,24 @@ void Vst3Bridge::run() {
                                     request.string.c_str())),
                             value_normalized);
 
-                return YaEditController2::GetParamValueByStringResponse{
+                return YaEditController::GetParamValueByStringResponse{
                     .result = result, .value_normalized = value_normalized};
             },
-            [&](const YaEditController2::NormalizedParamToPlain& request) {
+            [&](const YaEditController::NormalizedParamToPlain& request) {
                 return object_instances[request.instance_id]
                     .edit_controller->normalizedParamToPlain(
                         request.id, request.value_normalized);
             },
-            [&](const YaEditController2::PlainParamToNormalized& request) {
+            [&](const YaEditController::PlainParamToNormalized& request) {
                 return object_instances[request.instance_id]
                     .edit_controller->plainParamToNormalized(
                         request.id, request.plain_value);
             },
-            [&](const YaEditController2::GetParamNormalized& request) {
+            [&](const YaEditController::GetParamNormalized& request) {
                 return object_instances[request.instance_id]
                     .edit_controller->getParamNormalized(request.id);
             },
-            [&](const YaEditController2::SetParamNormalized& request) {
+            [&](const YaEditController::SetParamNormalized& request) {
                 return object_instances[request.instance_id]
                     .edit_controller->setParamNormalized(request.id,
                                                          request.value);

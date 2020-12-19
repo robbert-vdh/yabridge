@@ -85,23 +85,23 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaConnectionPoint::Connect&);
     bool log_request(bool is_host_vst, const YaConnectionPoint::Disconnect&);
     bool log_request(bool is_host_vst,
-                     const YaEditController2::SetComponentState&);
+                     const YaEditController::SetComponentState&);
     bool log_request(bool is_host_vst,
-                     const YaEditController2::GetParameterCount&);
+                     const YaEditController::GetParameterCount&);
     bool log_request(bool is_host_vst,
-                     const YaEditController2::GetParameterInfo&);
+                     const YaEditController::GetParameterInfo&);
     bool log_request(bool is_host_vst,
-                     const YaEditController2::GetParamStringByValue&);
+                     const YaEditController::GetParamStringByValue&);
     bool log_request(bool is_host_vst,
-                     const YaEditController2::GetParamValueByString&);
+                     const YaEditController::GetParamValueByString&);
     bool log_request(bool is_host_vst,
-                     const YaEditController2::NormalizedParamToPlain&);
+                     const YaEditController::NormalizedParamToPlain&);
     bool log_request(bool is_host_vst,
-                     const YaEditController2::PlainParamToNormalized&);
+                     const YaEditController::PlainParamToNormalized&);
     bool log_request(bool is_host_vst,
-                     const YaEditController2::GetParamNormalized&);
+                     const YaEditController::GetParamNormalized&);
     bool log_request(bool is_host_vst,
-                     const YaEditController2::SetParamNormalized&);
+                     const YaEditController::SetParamNormalized&);
     bool log_request(bool is_host_vst, const YaPluginBase::Initialize&);
     bool log_request(bool is_host_vst, const YaPluginBase::Terminate&);
     bool log_request(bool is_host_vst, const YaPluginFactory::Construct&);
@@ -122,11 +122,11 @@ class Vst3Logger {
     void log_response(bool is_host_vst,
                       const YaComponent::GetRoutingInfoResponse&);
     void log_response(bool is_host_vst,
-                      const YaEditController2::GetParameterInfoResponse&);
+                      const YaEditController::GetParameterInfoResponse&);
     void log_response(bool is_host_vst,
-                      const YaEditController2::GetParamStringByValueResponse&);
+                      const YaEditController::GetParamStringByValueResponse&);
     void log_response(bool is_host_vst,
-                      const YaEditController2::GetParamValueByStringResponse&);
+                      const YaEditController::GetParamValueByStringResponse&);
     void log_response(bool is_host_vst, const YaPluginFactory::ConstructArgs&);
     void log_response(bool is_host_vst, const Configuration&);
 

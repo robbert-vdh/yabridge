@@ -16,14 +16,14 @@
 
 #include "edit-controller.h"
 
-YaEditController2::ConstructArgs::ConstructArgs() {}
+YaEditController::ConstructArgs::ConstructArgs() {}
 
-YaEditController2::ConstructArgs::ConstructArgs(
+YaEditController::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object)
     : supported_version_1(
           Steinberg::FUnknownPtr<Steinberg::Vst::IEditController>(object)),
       supported_version_2(
           Steinberg::FUnknownPtr<Steinberg::Vst::IEditController2>(object)) {}
 
-YaEditController2::YaEditController2(const ConstructArgs&& args)
+YaEditController::YaEditController(const ConstructArgs&& args)
     : arguments(std::move(args)) {}

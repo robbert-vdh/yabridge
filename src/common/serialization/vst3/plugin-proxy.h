@@ -57,7 +57,7 @@
 class Vst3PluginProxy : public YaAudioProcessor,
                         public YaComponent,
                         public YaConnectionPoint,
-                        public YaEditController2,
+                        public YaEditController,
                         public YaPluginBase {
    public:
     /**
@@ -80,7 +80,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
         YaAudioProcessor::ConstructArgs audio_processor_args;
         YaComponent::ConstructArgs component_args;
         YaConnectionPoint::ConstructArgs connection_point_args;
-        YaEditController2::ConstructArgs edit_controller_2_args;
+        YaEditController::ConstructArgs edit_controller_2_args;
         YaPluginBase::ConstructArgs plugin_base_args;
 
         template <typename S>

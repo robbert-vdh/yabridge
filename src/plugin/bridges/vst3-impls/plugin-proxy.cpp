@@ -231,22 +231,22 @@ Vst3PluginProxyImpl::notify(Steinberg::Vst::IMessage* message) {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setComponentState(Steinberg::IBStream* state) {
-    return bridge.send_message(YaEditController2::SetComponentState{
+    return bridge.send_message(YaEditController::SetComponentState{
         .instance_id = instance_id(), .state = state});
 }
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getParameterCount() {
     return bridge.send_message(
-        YaEditController2::GetParameterCount{.instance_id = instance_id()});
+        YaEditController::GetParameterCount{.instance_id = instance_id()});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
     int32 paramIndex,
     Steinberg::Vst::ParameterInfo& info /*out*/) {
     const GetParameterInfoResponse response = bridge.send_message(
-        YaEditController2::GetParameterInfo{.instance_id = instance_id(),
-                                            .param_index = paramIndex,
-                                            .info = info});
+        YaEditController::GetParameterInfo{.instance_id = instance_id(),
+                                           .param_index = paramIndex,
+                                           .info = info});
 
     info = response.updated_info;
 
@@ -258,7 +258,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParamStringByValue(
     Steinberg::Vst::ParamValue valueNormalized /*in*/,
     Steinberg::Vst::String128 string /*out*/) {
     const GetParamStringByValueResponse response =
-        bridge.send_message(YaEditController2::GetParamStringByValue{
+        bridge.send_message(YaEditController::GetParamStringByValue{
             .instance_id = instance_id(),
             .id = id,
             .value_normalized = valueNormalized});
@@ -274,7 +274,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParamValueByString(
     Steinberg::Vst::TChar* string /*in*/,
     Steinberg::Vst::ParamValue& valueNormalized /*out*/) {
     const GetParamValueByStringResponse response =
-        bridge.send_message(YaEditController2::GetParamValueByString{
+        bridge.send_message(YaEditController::GetParamValueByString{
             .instance_id = instance_id(), .id = id, .string = string});
 
     valueNormalized = response.value_normalized;
@@ -286,7 +286,7 @@ Steinberg::Vst::ParamValue PLUGIN_API
 Vst3PluginProxyImpl::normalizedParamToPlain(
     Steinberg::Vst::ParamID id,
     Steinberg::Vst::ParamValue valueNormalized) {
-    return bridge.send_message(YaEditController2::NormalizedParamToPlain{
+    return bridge.send_message(YaEditController::NormalizedParamToPlain{
         .instance_id = instance_id(),
         .id = id,
         .value_normalized = valueNormalized});
@@ -296,20 +296,20 @@ Steinberg::Vst::ParamValue PLUGIN_API
 Vst3PluginProxyImpl::plainParamToNormalized(
     Steinberg::Vst::ParamID id,
     Steinberg::Vst::ParamValue plainValue) {
-    return bridge.send_message(YaEditController2::PlainParamToNormalized{
+    return bridge.send_message(YaEditController::PlainParamToNormalized{
         .instance_id = instance_id(), .id = id, .plain_value = plainValue});
 }
 
 Steinberg::Vst::ParamValue PLUGIN_API
 Vst3PluginProxyImpl::getParamNormalized(Steinberg::Vst::ParamID id) {
-    return bridge.send_message(YaEditController2::GetParamNormalized{
+    return bridge.send_message(YaEditController::GetParamNormalized{
         .instance_id = instance_id(), .id = id});
 }
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setParamNormalized(Steinberg::Vst::ParamID id,
                                         Steinberg::Vst::ParamValue value) {
-    return bridge.send_message(YaEditController2::SetParamNormalized{
+    return bridge.send_message(YaEditController::SetParamNormalized{
         .instance_id = instance_id(), .id = id, .value = value});
 }
 

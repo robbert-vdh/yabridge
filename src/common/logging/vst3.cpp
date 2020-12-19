@@ -297,7 +297,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
-    const YaEditController2::SetComponentState& request) {
+    const YaEditController::SetComponentState& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
                 << ": IEditController::setComponentState(state = <IBStream* "
@@ -308,7 +308,7 @@ bool Vst3Logger::log_request(
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
-    const YaEditController2::GetParameterCount& request) {
+    const YaEditController::GetParameterCount& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
                 << ": IEditController::getParameterCount()";
@@ -317,7 +317,7 @@ bool Vst3Logger::log_request(
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
-    const YaEditController2::GetParameterInfo& request) {
+    const YaEditController::GetParameterInfo& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
                 << ": IEditController::getParameterInfo(paramIndex = "
@@ -327,7 +327,7 @@ bool Vst3Logger::log_request(
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
-    const YaEditController2::GetParamStringByValue& request) {
+    const YaEditController::GetParamStringByValue& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
                 << ": IEditController::getParamStringByValue(id = "
@@ -339,7 +339,7 @@ bool Vst3Logger::log_request(
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
-    const YaEditController2::GetParamValueByString& request) {
+    const YaEditController::GetParamValueByString& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         std::string param_title = VST3::StringConvert::convert(request.string);
         message << request.instance_id
@@ -351,7 +351,7 @@ bool Vst3Logger::log_request(
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
-    const YaEditController2::NormalizedParamToPlain& request) {
+    const YaEditController::NormalizedParamToPlain& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
                 << ": IEditController::normalizedParamToPlain(id = "
@@ -362,7 +362,7 @@ bool Vst3Logger::log_request(
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
-    const YaEditController2::PlainParamToNormalized& request) {
+    const YaEditController::PlainParamToNormalized& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
                 << ": IEditController::plainParamToNormalized(id = "
@@ -373,7 +373,7 @@ bool Vst3Logger::log_request(
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
-    const YaEditController2::GetParamNormalized& request) {
+    const YaEditController::GetParamNormalized& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
                 << ": IEditController::getParamNormalized(id = " << request.id
@@ -383,7 +383,7 @@ bool Vst3Logger::log_request(
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
-    const YaEditController2::SetParamNormalized& request) {
+    const YaEditController::SetParamNormalized& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
                 << ": IEditController::setParamNormalized(id = " << request.id
@@ -542,7 +542,7 @@ void Vst3Logger::log_response(
 
 void Vst3Logger::log_response(
     bool is_host_vst,
-    const YaEditController2::GetParameterInfoResponse& response) {
+    const YaEditController::GetParameterInfoResponse& response) {
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
@@ -555,7 +555,7 @@ void Vst3Logger::log_response(
 
 void Vst3Logger::log_response(
     bool is_host_vst,
-    const YaEditController2::GetParamStringByValueResponse& response) {
+    const YaEditController::GetParamStringByValueResponse& response) {
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
@@ -567,7 +567,7 @@ void Vst3Logger::log_response(
 
 void Vst3Logger::log_response(
     bool is_host_vst,
-    const YaEditController2::GetParamValueByStringResponse& response) {
+    const YaEditController::GetParamValueByStringResponse& response) {
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
