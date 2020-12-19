@@ -48,9 +48,10 @@ Vst3ComponentHandlerProxyImpl::beginEdit(Steinberg::Vst::ParamID id) {
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::performEdit(
     Steinberg::Vst::ParamID id,
     Steinberg::Vst::ParamValue valueNormalized) {
-    // TODO: Implement
-    std::cerr << "TODO: IComponentHandler::performEdit()" << std::endl;
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaComponentHandler::PerformEdit{
+        .owner_instance_id = owner_instance_id(),
+        .id = id,
+        .value_normalized = valueNormalized});
 }
 
 tresult PLUGIN_API

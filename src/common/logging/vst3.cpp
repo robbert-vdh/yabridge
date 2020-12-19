@@ -450,7 +450,16 @@ bool Vst3Logger::log_request(bool is_host_vst,
                              const YaComponentHandler::BeginEdit& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.owner_instance_id
-                << ": IComponentHandler::beginEdit(" << request.id << ")";
+                << ": IComponentHandler::beginEdit(id = " << request.id << ")";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponentHandler::PerformEdit& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IComponentHandler::performEdit(id = " << request.id
+                << ", valueNormalized = " << request.value_normalized << ")";
     });
 }
 

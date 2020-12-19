@@ -89,6 +89,13 @@ Vst3PluginBridge::Vst3PluginBridge()
                         .get()
                         .component_handler->beginEdit(request.id);
                 },
+                [&](const YaComponentHandler::PerformEdit& request)
+                    -> YaComponentHandler::PerformEdit::Response {
+                    return plugin_proxies.at(request.owner_instance_id)
+                        .get()
+                        .component_handler->performEdit(
+                            request.id, request.value_normalized);
+                },
             });
     });
 }
