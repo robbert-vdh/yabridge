@@ -210,6 +210,16 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .audio_processor->getTailSamples();
             },
+            [&](const YaComponent::GetControllerClassId& request)
+                -> YaComponent::GetControllerClassId::Response {
+                Steinberg::TUID cid;
+                const tresult result =
+                    object_instances[request.instance_id]
+                        .component->getControllerClassId(cid);
+
+                return YaComponent::GetControllerClassIdResponse{
+                    .result = result, .editor_cid = std::to_array(cid)};
+            },
             [&](const YaComponent::SetIoMode& request)
                 -> YaComponent::SetIoMode::Response {
                 return object_instances[request.instance_id]

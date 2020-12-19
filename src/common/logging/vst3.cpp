@@ -217,6 +217,14 @@ bool Vst3Logger::log_request(bool is_host_vst,
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetControllerClassId& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IComponent::getControllerClassId(&classId)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
                              const YaComponent::SetIoMode& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
@@ -579,6 +587,19 @@ void Vst3Logger::log_response(
                     << " events>";
         } else {
             message << ", host does not support event outputs";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaComponent::GetControllerClassIdResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", "
+                    << format_uid(Steinberg::FUID::fromTUID(
+                           response.editor_cid.data()));
         }
     });
 }

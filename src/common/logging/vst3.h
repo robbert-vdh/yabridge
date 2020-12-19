@@ -76,6 +76,8 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaAudioProcessor::SetProcessing&);
     bool log_request(bool is_host_vst, const YaAudioProcessor::Process&);
     bool log_request(bool is_host_vst, const YaAudioProcessor::GetTailSamples&);
+    bool log_request(bool is_host_vst,
+                     const YaComponent::GetControllerClassId&);
     bool log_request(bool is_host_vst, const YaComponent::SetIoMode&);
     bool log_request(bool is_host_vst, const YaComponent::GetBusCount&);
     bool log_request(bool is_host_vst, const YaComponent::GetBusInfo&);
@@ -127,6 +129,8 @@ class Vst3Logger {
                       const YaAudioProcessor::GetBusArrangementResponse&);
     void log_response(bool is_host_vst,
                       const YaAudioProcessor::ProcessResponse&);
+    void log_response(bool is_host_vst,
+                      const YaComponent::GetControllerClassIdResponse&);
     void log_response(bool is_host_vst, const YaComponent::GetBusInfoResponse&);
     void log_response(bool is_host_vst,
                       const YaComponent::GetRoutingInfoResponse&);

@@ -20,31 +20,7 @@ YaComponent::ConstructArgs::ConstructArgs() {}
 
 YaComponent::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object)
-    : supported(false) {
-    if (auto component =
-            Steinberg::FUnknownPtr<Steinberg::Vst::IComponent>(object)) {
-        supported = true;
-
-        // `IComponent::getControllerClassId`
-        Steinberg::TUID cid;
-        if (component->getControllerClassId(cid) == Steinberg::kResultOk) {
-            edit_controller_cid = std::to_array(cid);
-        }
-    }
-}
+    : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IComponent>(object)) {}
 
 YaComponent::YaComponent(const ConstructArgs&& args)
     : arguments(std::move(args)) {}
-
-tresult PLUGIN_API YaComponent::getControllerClassId(Steinberg::TUID classId) {
-    // TODO: This is now not being logged at all. It's probably better if we
-    //       just drop these two functions that output cached data directly.
-    //       They'll only be used once or twice anyways.
-    if (arguments.edit_controller_cid) {
-        std::copy(arguments.edit_controller_cid->begin(),
-                  arguments.edit_controller_cid->end(), classId);
-        return Steinberg::kResultOk;
-    } else {
-        return Steinberg::kNotImplemented;
-    }
-}

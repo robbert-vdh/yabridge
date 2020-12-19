@@ -116,6 +116,16 @@ uint32 PLUGIN_API Vst3PluginProxyImpl::getTailSamples() {
         YaAudioProcessor::GetTailSamples{.instance_id = instance_id()});
 }
 
+tresult PLUGIN_API
+Vst3PluginProxyImpl::getControllerClassId(Steinberg::TUID classId) {
+    const GetControllerClassIdResponse response = bridge.send_message(
+        YaComponent::GetControllerClassId{.instance_id = instance_id()});
+
+    std::copy(response.editor_cid.begin(), response.editor_cid.end(), classId);
+
+    return response.result;
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::setIoMode(Steinberg::Vst::IoMode mode) {
     return bridge.send_message(
         YaComponent::SetIoMode{.instance_id = instance_id(), .mode = mode});

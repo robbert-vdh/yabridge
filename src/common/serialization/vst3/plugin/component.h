@@ -52,17 +52,9 @@ class YaComponent : public Steinberg::Vst::IComponent {
          */
         bool supported;
 
-        /**
-         * The class ID of this component's corresponding editor controller. You
-         * can't use C-style array in `std::optional`s.
-         */
-        std::optional<ArrayUID> edit_controller_cid;
-
         template <typename S>
         void serialize(S& s) {
             s.value1b(supported);
-            s.ext(edit_controller_cid, bitsery::ext::StdOptional{},
-                  [](S& s, auto& cid) { s.container1b(cid); });
         }
     };
 
@@ -74,7 +66,38 @@ class YaComponent : public Steinberg::Vst::IComponent {
 
     inline bool supported() const { return arguments.supported; }
 
-    tresult PLUGIN_API getControllerClassId(Steinberg::TUID classId) override;
+    /**
+     * The response code and returned CID for a call to
+     * `IComponent::getControllerClassId()`.
+     */
+    struct GetControllerClassIdResponse {
+        UniversalTResult result;
+        ArrayUID editor_cid;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.container1b(editor_cid);
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IComponent::getControllerClassId()` to
+     * the Wine plugin host.
+     */
+    struct GetControllerClassId {
+        using Response = GetControllerClassIdResponse;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
+    virtual tresult PLUGIN_API
+    getControllerClassId(Steinberg::TUID classId) override = 0;
 
     /**
      * Message to pass through a call to `IComponent::setIoMode(mode)` to the

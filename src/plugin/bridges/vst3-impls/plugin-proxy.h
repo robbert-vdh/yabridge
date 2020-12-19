@@ -56,6 +56,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     uint32 PLUGIN_API getTailSamples() override;
 
     // From `IComponent`
+    tresult PLUGIN_API getControllerClassId(Steinberg::TUID classId) override;
     tresult PLUGIN_API setIoMode(Steinberg::Vst::IoMode mode) override;
     int32 PLUGIN_API getBusCount(Steinberg::Vst::MediaType type,
                                  Steinberg::Vst::BusDirection dir) override;
