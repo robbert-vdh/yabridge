@@ -56,9 +56,8 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::performEdit(
 
 tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::endEdit(Steinberg::Vst::ParamID id) {
-    // TODO: Implement
-    std::cerr << "TODO: IComponentHandler::endEdit()" << std::endl;
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaComponentHandler::EndEdit{
+        .owner_instance_id = owner_instance_id(), .id = id});
 }
 
 tresult PLUGIN_API

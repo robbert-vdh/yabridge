@@ -105,6 +105,25 @@ class YaComponentHandler : public Steinberg::Vst::IComponentHandler {
     virtual tresult PLUGIN_API
     performEdit(Steinberg::Vst::ParamID id,
                 Steinberg::Vst::ParamValue valueNormalized) override = 0;
+
+    /**
+     * Message to pass through a call to `IComponentHandler::endEdit(id)` to the
+     * component handler provided by the host.
+     */
+    struct EndEdit {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        Steinberg::Vst::ParamID id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value4b(id);
+        }
+    };
+
     virtual tresult PLUGIN_API endEdit(Steinberg::Vst::ParamID id) override = 0;
     virtual tresult PLUGIN_API restartComponent(int32 flags) override = 0;
 
