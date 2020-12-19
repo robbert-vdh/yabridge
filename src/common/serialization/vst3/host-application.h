@@ -35,6 +35,10 @@
  * this proxy will be passed through to the actual object. This is used to proxy
  * both the host application context passed during `IPluginBase::intialize()` as
  * well as for the 'global' context in `IPluginFactory3::setHostContext()`.
+ *
+ * TODO: Create a `Vst3HostContextProxy`, and make this to only interface it
+ *       inherits. For uniformity's sake it's a good idea to have every kind of
+ *       object we directly instantiate be in the same form.
  */
 class YaHostApplication : public Steinberg::Vst::IHostApplication {
    public:
