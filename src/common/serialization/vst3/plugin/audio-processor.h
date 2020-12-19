@@ -21,7 +21,6 @@
 
 #include "../../common.h"
 #include "../base.h"
-#include "../host-application.h"
 #include "../process-data.h"
 
 #pragma GCC diagnostic push

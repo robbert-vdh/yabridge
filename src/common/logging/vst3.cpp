@@ -411,8 +411,8 @@ bool Vst3Logger::log_request(bool is_host_vst,
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
                 << ": IPluginBase::initialize(context = ";
-        if (request.host_application_context_args) {
-            message << "<IHostApplication*>";
+        if (request.host_context_args) {
+            message << "<FUnknown*>";
         } else {
             message << "<nullptr>";
         }
@@ -434,9 +434,15 @@ bool Vst3Logger::log_request(bool is_host_vst,
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaPluginFactory::SetHostContext&) {
+                             const YaPluginFactory::SetHostContext& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
-        message << "IPluginFactory3::setHostContext(IHostApplication*)";
+        message << "IPluginFactory3::setHostContext(";
+        if (request.host_context_args) {
+            message << "<FUnknown*>";
+        } else {
+            message << "<nullptr>";
+        }
+        message << ")";
     });
 }
 

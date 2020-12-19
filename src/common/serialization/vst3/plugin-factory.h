@@ -22,7 +22,7 @@
 
 #include "../../bitsery/ext/vst3.h"
 #include "base.h"
-#include "host-application.h"
+#include "host-context-proxy.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -155,20 +155,22 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
 
     /**
      * Message to pass through a call to `IPluginFactory3::setHostContext()` to
-     * the Wine plugin host. A proxy `YaHostApplication` should be created on
-     * the Wine plugin host and then passed as an argument to
-     * `IPluginFactory3::setHostContext()`. If the host called
-     * `IPluginFactory3::setHostContext()` with something other than an
-     * `IHostApplication*`, we return an error immediately and log the call.
+     * the Wine plugin host. A `Vst3HostContextProxy` should be created on the
+     * Wine plugin host and then passed as an argument to
+     * `IPluginFactory3::setHostContext()`.
      */
     struct SetHostContext {
         using Response = UniversalTResult;
 
-        YaHostApplication::ConstructArgs host_application_context_args;
+        /**
+         * Arguments for creating a proxy host context object. If we got passed
+         * an null pointer we'll reflect that.
+         */
+        std::optional<Vst3HostContextProxy::ConstructArgs> host_context_args;
 
         template <typename S>
         void serialize(S& s) {
-            s.object(host_application_context_args);
+            s.ext(host_context_args, bitsery::ext::StdOptional{});
         }
     };
 

@@ -16,42 +16,36 @@
 
 #pragma once
 
-#include <type_traits>
-
-#include <bitsery/ext/std_optional.h>
-#include <bitsery/traits/string.h>
-#include <pluginterfaces/vst/ivsthostapplication.h>
-
 #include "../common.h"
-#include "base.h"
+#include "host-context/host-application.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 
 /**
- * Wraps around `IHostApplication` for serialization purposes. An instance of
- * this proxy object will be initialized on the Wine plugin host side after the
- * host passes an actual instance to the plugin, and all function calls made to
- * this proxy will be passed through to the actual object. This is used to proxy
- * both the host application context passed during `IPluginBase::intialize()` as
- * well as for the 'global' context in `IPluginFactory3::setHostContext()`.
- *
- * TODO: Create a `Vst3HostContextProxy`, and make this to only interface it
- *       inherits. For uniformity's sake it's a good idea to have every kind of
- *       object we directly instantiate be in the same form.
+ * An abstract class that optionally implements all interfaces a `context`
+ * object passed to `IPluginBase::intialize()` or
+ * `IPluginFactory3::setHostContext()` might implement. This works exactly the
+ * same as `Vst3PluginProxy`, but instead of proxying for an object provided by
+ * the plugin we are proxying for the `FUnknown*` argument passed to plugin by
+ * the host. When we are proxying for a host context object passed to
+ * `IPluginBase::initialize()` we'll keep track of the object instance ID the
+ * actual context object belongs to.
  */
-class YaHostApplication : public Steinberg::Vst::IHostApplication {
+class Vst3HostContextProxy : public YaHostApplication {
    public:
     /**
-     * These are the arguments for constructing a `YaHostApplicationImpl`.
+     * These are the arguments for constructing a
+     * `Vst3HostContextProxyImpl`.
      */
     struct ConstructArgs {
         ConstructArgs();
 
         /**
-         * Read arguments from an existing implementation.
+         * Read from an existing object. We will try to mimic this object, so
+         * we'll support any interfaces this object also supports.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::Vst::IHostApplication> context,
+        ConstructArgs(Steinberg::IPtr<FUnknown> object,
                       std::optional<size_t> owner_instance_id);
 
         /**
@@ -61,10 +55,7 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
          */
         std::optional<native_size_t> owner_instance_id;
 
-        /**
-         * For `IHostApplication::getName`.
-         */
-        std::optional<std::u16string> name;
+        YaHostApplication::ConstructArgs host_application_args;
 
         template <typename S>
         void serialize(S& s) {
@@ -72,10 +63,7 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
                   [](S& s, native_size_t& instance_id) {
                       s.value8b(instance_id);
                   });
-            s.ext(name, bitsery::ext::StdOptional{},
-                  [](S& s, std::u16string& name) {
-                      s.text2b(name, std::extent_v<Steinberg::Vst::String128>);
-                  });
+            s.object(host_application_args);
         }
     };
 
@@ -89,25 +77,27 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
      *   objects they are passed to. If those objects get dropped, then the host
      *   contexts should also be dropped.
      */
-    YaHostApplication(const ConstructArgs&& args);
+    Vst3HostContextProxy(const ConstructArgs&& args);
 
     /**
      * The lifetime of this object should be bound to the object we created it
      * for. When for instance the `Vst3PluginProxy` instance with id `n` gets
-     * dropped, the corresponding `YaHostApplicationImpl` then that should also
-     * be dropped.
+     * dropped a corresponding `Vst3HostContextProxyImpl` should also be
+     * dropped.
      */
-    virtual ~YaHostApplication();
+    virtual ~Vst3HostContextProxy() = 0;
 
     DECLARE_FUNKNOWN_METHODS
 
-    // From `IHostApplication`
-    tresult PLUGIN_API getName(Steinberg::Vst::String128 name) override;
-    virtual tresult PLUGIN_API createInstance(Steinberg::TUID cid,
-                                              Steinberg::TUID _iid,
-                                              void** obj) override = 0;
+    /**
+     * Get the instance ID of the owner of this object, if this is not the
+     * global host context passed to the module's plugin factory.
+     */
+    inline std::optional<size_t> owner_instance_id() const {
+        return arguments.owner_instance_id;
+    }
 
-   protected:
+   private:
     ConstructArgs arguments;
 };
 

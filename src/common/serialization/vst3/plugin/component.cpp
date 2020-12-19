@@ -19,10 +19,10 @@
 YaComponent::ConstructArgs::ConstructArgs() {}
 
 YaComponent::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object) {
-    auto component = Steinberg::FUnknownPtr<Steinberg::Vst::IComponent>(object);
-
-    if (component) {
+    Steinberg::IPtr<Steinberg::FUnknown> object)
+    : supported(false) {
+    if (auto component =
+            Steinberg::FUnknownPtr<Steinberg::Vst::IComponent>(object)) {
         supported = true;
 
         // `IComponent::getControllerClassId`

@@ -24,7 +24,7 @@
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
 #include "vst3-impls/component-handler-proxy.h"
-#include "vst3-impls/host-application.h"
+#include "vst3-impls/host-context-proxy.h"
 
 InstanceInterfaces::InstanceInterfaces() {}
 
@@ -371,21 +371,19 @@ void Vst3Bridge::run() {
                 //       `Vst3HostProxy`
                 // TODO: Does this have to be run from the UI thread? Figure out
                 //       if it does
-                if (request.host_application_context_args) {
-                    object_instances[request.instance_id]
-                        .host_application_context =
-                        Steinberg::owned(new YaHostApplicationImpl(
-                            *this,
-                            std::move(*request.host_application_context_args)));
+                if (request.host_context_args) {
+                    object_instances[request.instance_id].host_context_proxy =
+                        Steinberg::owned(new Vst3HostContextProxyImpl(
+                            *this, std::move(*request.host_context_args)));
                 } else {
-                    object_instances[request.instance_id]
-                        .host_application_context = nullptr;
+                    object_instances[request.instance_id].host_context_proxy =
+                        nullptr;
                 }
 
                 return object_instances[request.instance_id]
                     .plugin_base->initialize(
                         object_instances[request.instance_id]
-                            .host_application_context);
+                            .host_context_proxy);
             },
             [&](const YaPluginBase::Terminate& request)
                 -> YaPluginBase::Terminate::Response {
@@ -399,16 +397,19 @@ void Vst3Bridge::run() {
             },
             [&](YaPluginFactory::SetHostContext& request)
                 -> YaPluginFactory::SetHostContext::Response {
-                plugin_factory_host_application_context =
-                    Steinberg::owned(new YaHostApplicationImpl(
-                        *this,
-                        std::move(request.host_application_context_args)));
+                if (request.host_context_args) {
+                    plugin_factory_host_context =
+                        Steinberg::owned(new Vst3HostContextProxyImpl(
+                            *this, std::move(*request.host_context_args)));
+                } else {
+                    plugin_factory_host_context = nullptr;
+                }
 
                 Steinberg::FUnknownPtr<Steinberg::IPluginFactory3> factory_3(
                     module->getFactory().get());
+
                 assert(factory_3);
-                return factory_3->setHostContext(
-                    plugin_factory_host_application_context);
+                return factory_3->setHostContext(plugin_factory_host_context);
             }});
 }
 

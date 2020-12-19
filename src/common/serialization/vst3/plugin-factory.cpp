@@ -41,7 +41,7 @@ YaPluginFactory::ConstructArgs::ConstructArgs(
         }
     }
 
-    auto factory2 = Steinberg::FUnknownPtr<Steinberg::IPluginFactory2>(factory);
+    Steinberg::FUnknownPtr<Steinberg::IPluginFactory2> factory2(factory);
     if (!factory2) {
         return;
     }
@@ -56,7 +56,7 @@ YaPluginFactory::ConstructArgs::ConstructArgs(
         }
     }
 
-    auto factory3 = Steinberg::FUnknownPtr<Steinberg::IPluginFactory3>(factory);
+    Steinberg::FUnknownPtr<Steinberg::IPluginFactory3> factory3(factory);
     if (!factory3) {
         return;
     }

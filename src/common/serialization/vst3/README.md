@@ -22,7 +22,8 @@ VST3 host interfaces are implemented as follows:
 
 | yabridge class              | Included in                 | Interfaces          |
 | --------------------------- | --------------------------- | ------------------- |
-| `YaHostApplication`         |                             | `IHostApplication`  |
+| `Vst3HostContextProxy`      |                             | All of the below:   |
+| `YaHostApplication`         | `Vst3HostContextProxy`      | `IHostApplication`  |
 | `Vst3ComponentHandlerProxy` |                             | All of the below:   |
 | `YaComponentHandler`        | `Vst3ComponentHandlerProxy` | `IComponentHandler` |
 

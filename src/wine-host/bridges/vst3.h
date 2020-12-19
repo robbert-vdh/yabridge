@@ -38,12 +38,12 @@ struct InstanceInterfaces {
     InstanceInterfaces(Steinberg::IPtr<Steinberg::FUnknown> object);
 
     /**
-     * If the host passes an `IHostApplication` during
+     * If the host passes a host context object during
      * `IPluginBase::initialize()`, we'll store a proxy object here and then
      * pass it to `plugin_base->initialize()`. Will be initialized with a null
      * pointer until used.
      */
-    Steinberg::IPtr<YaHostApplication> host_application_context;
+    Steinberg::IPtr<Vst3HostContextProxy> host_context_proxy;
 
     /**
      * After a call to `IEditController::setComponentHandler()`, we'll create a
@@ -155,11 +155,10 @@ class Vst3Bridge : public HostBridge {
     std::atomic_size_t current_instance_id;
 
     /**
-     * The host application context proxy object if we got passed a host
-     * application context during a call to `IPluginFactory3::setHostContext()`
-     * by the host.
+     * The host context proxy object if we got passed a host context during a
+     * call to `IPluginFactory3::setHostContext()` by the host.
      */
-    Steinberg::IPtr<YaHostApplication> plugin_factory_host_application_context;
+    Steinberg::IPtr<Vst3HostContextProxy> plugin_factory_host_context;
 
     /**
      * These are all the objects we have created through the Windows VST3

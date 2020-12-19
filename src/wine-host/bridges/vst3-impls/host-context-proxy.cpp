@@ -14,24 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "host-application.h"
+#include "host-context-proxy.h"
 
 #include <iostream>
 
-YaHostApplicationImpl::YaHostApplicationImpl(
+Vst3HostContextProxyImpl::Vst3HostContextProxyImpl(
     Vst3Bridge& bridge,
-    YaHostApplication::ConstructArgs&& args)
-    : YaHostApplication(std::move(args)), bridge(bridge) {
+    Vst3HostContextProxy::ConstructArgs&& args)
+    : Vst3HostContextProxy(std::move(args)), bridge(bridge) {
     // The lifecycle is thos object is managed together with that of the plugin
-    // object instance this belongs to
+    // object instance instance this belongs to
 }
 
 tresult PLUGIN_API
-YaHostApplicationImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
+Vst3HostContextProxyImpl::queryInterface(const Steinberg::TUID _iid,
+                                         void** obj) {
     // I don't think it's expected of a host to implement multiple interfaces on
     // this object, so if we do get a call here it's important that it's logged
     // TODO: Successful queries should also be logged
-    const tresult result = YaHostApplication::queryInterface(_iid, obj);
+    const tresult result = Vst3HostContextProxy::queryInterface(_iid, obj);
     if (result != Steinberg::kResultOk) {
         std::cerr << "TODO: Implement unknown interface logging on Wine side"
                   << std::endl;
@@ -40,9 +41,10 @@ YaHostApplicationImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
     return result;
 }
 
-tresult PLUGIN_API YaHostApplicationImpl::createInstance(Steinberg::TUID cid,
-                                                         Steinberg::TUID _iid,
-                                                         void** obj) {
+tresult PLUGIN_API
+Vst3HostContextProxyImpl::createInstance(Steinberg::TUID cid,
+                                         Steinberg::TUID _iid,
+                                         void** obj) {
     // TODO: Implement
     std::cerr << "TODO: IHostApplication::createInstance()" << std::endl;
     return Steinberg::kNotImplemented;

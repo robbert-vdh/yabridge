@@ -19,37 +19,22 @@
 YaHostApplication::ConstructArgs::ConstructArgs() {}
 
 YaHostApplication::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::Vst::IHostApplication> context,
-    std::optional<size_t> owner_instance_id)
-    : owner_instance_id(owner_instance_id) {
-    Steinberg::Vst::String128 name_array;
-    if (context->getName(name_array) == Steinberg::kResultOk) {
-        name = tchar_pointer_to_u16string(name_array);
+    Steinberg::IPtr<Steinberg::FUnknown> object)
+    : supported(false) {
+    if (auto host_application =
+            Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication>(object)) {
+        supported = true;
+
+        // `IHostApplication::getName`
+        Steinberg::Vst::String128 name_array;
+        if (host_application->getName(name_array) == Steinberg::kResultOk) {
+            name = tchar_pointer_to_u16string(name_array);
+        }
     }
 }
 
 YaHostApplication::YaHostApplication(const ConstructArgs&& args)
-    : arguments(std::move(args)){FUNKNOWN_CTOR}
-
-      YaHostApplication::~YaHostApplication() {
-    FUNKNOWN_DTOR
-}
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_REFCOUNT(YaHostApplication)
-#pragma GCC diagnostic pop
-
-tresult PLUGIN_API YaHostApplication::queryInterface(Steinberg::FIDString _iid,
-                                                     void** obj) {
-    QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
-                    Steinberg::Vst::IHostApplication);
-    QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IHostApplication::iid,
-                    Steinberg::Vst::IHostApplication)
-
-    *obj = nullptr;
-    return Steinberg::kNoInterface;
-}
+    : arguments(std::move(args)) {}
 
 tresult PLUGIN_API YaHostApplication::getName(Steinberg::Vst::String128 name) {
     if (arguments.name) {

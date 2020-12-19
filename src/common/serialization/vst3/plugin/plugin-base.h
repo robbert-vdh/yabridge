@@ -21,7 +21,7 @@
 
 #include "../../common.h"
 #include "../base.h"
-#include "../host-application.h"
+#include "../host-context-proxy.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -66,23 +66,23 @@ class YaPluginBase : public Steinberg::IPluginBase {
 
     /**
      * Message to pass through a call to `IPluginBase::initialize()` to the Wine
-     * plugin host. if we pass an `IHostApplication` instance, then a proxy
-     * `YaHostApplication` should be created and passed as an argument to
-     * `IPluginBase::initialize()`. If this is absent a null pointer should be
-     * passed. The lifetime of this `YaHostApplication` object should be bound
-     * to the `IComponent` we are proxying.
+     * plugin host. We will read what interfaces the passed context object
+     * implements so we can then create a proxy object on the Wine side that the
+     * plugin can use to make callbacks with. The lifetime of this
+     * `Vst3HostContextProxy` object should be bound to the `IComponent` we are
+     * proxying.
      */
     struct Initialize {
         using Response = UniversalTResult;
 
         native_size_t instance_id;
-        std::optional<YaHostApplication::ConstructArgs>
-            host_application_context_args;
+
+        std::optional<Vst3HostContextProxy::ConstructArgs> host_context_args;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
-            s.ext(host_application_context_args, bitsery::ext::StdOptional{});
+            s.ext(host_context_args, bitsery::ext::StdOptional{});
         }
     };
 

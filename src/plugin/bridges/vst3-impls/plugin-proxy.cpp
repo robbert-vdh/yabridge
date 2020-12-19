@@ -315,18 +315,18 @@ Vst3PluginProxyImpl::setParamNormalized(Steinberg::Vst::ParamID id,
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
     Steinberg::Vst::IComponentHandler* handler) {
+    // We'll store the pointer for when the plugin later makes a callback to
+    // this component handler
+    component_handler = handler;
+
     std::optional<Vst3ComponentHandlerProxy::ConstructArgs>
         component_handler_proxy_args = std::nullopt;
     if (handler) {
-        // We'll store the pointer for when the plugin later makes a callback to
-        // this component handler
-        component_handler = handler;
-
         component_handler_proxy_args = Vst3ComponentHandlerProxy::ConstructArgs(
             component_handler, instance_id());
     } else {
         bridge.logger.log(
-            "Null pointer passed to 'IEditController::setComponentHandler'");
+            "Null pointer passed to 'IEditController::setComponentHandler()'");
     }
 
     return bridge.send_message(YaEditController::SetComponentHandler{
@@ -362,27 +362,23 @@ tresult PLUGIN_API Vst3PluginProxyImpl::openAboutBox(TBool onlyCheck) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
-    // This `context` will likely be an `IHostApplication`. If it is, we
-    // will store it here, and we'll proxy through all calls to it made from
-    // the Wine side. Otherwise we'll still call `IPluginBase::initialize()`
-    // but with a null pointer instead.
-    host_application_context = context;
+    // We will create a proxy object that that supports all the same interfaces
+    // as `context`, and then we'll store `context` in this object. We can then
+    // use it to handle callbacks made by the Windows VST3 plugin to this
+    // context.
+    host_context = context;
 
-    std::optional<YaHostApplication::ConstructArgs>
-        host_application_context_args = std::nullopt;
-    if (host_application_context) {
-        host_application_context_args = YaHostApplication::ConstructArgs(
-            host_application_context, instance_id());
+    std::optional<Vst3HostContextProxy::ConstructArgs> host_context_args{};
+    if (host_context) {
+        host_context_args =
+            Vst3HostContextProxy::ConstructArgs(host_context, instance_id());
     } else {
-        bridge.logger.log_unknown_interface(
-            "In IPluginBase::initialize()",
-            context ? std::optional(context->iid) : std::nullopt);
+        bridge.logger.log("Null pointer passed to 'IPluginBase::initialize()'");
     }
 
-    return bridge.send_message(
-        YaPluginBase::Initialize{.instance_id = instance_id(),
-                                 .host_application_context_args =
-                                     std::move(host_application_context_args)});
+    return bridge.send_message(YaPluginBase::Initialize{
+        .instance_id = instance_id(),
+        .host_context_args = std::move(host_context_args)});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::terminate() {

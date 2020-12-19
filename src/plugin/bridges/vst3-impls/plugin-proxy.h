@@ -123,15 +123,6 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API terminate() override;
 
     /**
-     * An `IHostApplication` instance if we get one through
-     * `IPluginBase::initialize()`. This should be the same for all plugin
-     * instances so we should not have to store it here separately, but for the
-     * sake of correctness we will.
-     */
-    Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication>
-        host_application_context;
-
-    /**
      * The component handler the host passed to us during
      * `IEditController::setComponentHandler()`. When the plugin makes a
      * callback on a component handler proxy object, we'll pass the call through
@@ -141,4 +132,13 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
 
    private:
     Vst3PluginBridge& bridge;
+
+    /**
+     * An host context if we get passed one through `IPluginBase::initialize()`.
+     * We'll read which interfaces it supports and we'll then create a proxy
+     * object that supports those same interfaces. This should be the same for
+     * all plugin instances so we should not have to store it here separately,
+     * but for the sake of correctness we will.
+     */
+    Steinberg::IPtr<Steinberg::FUnknown> host_context;
 };

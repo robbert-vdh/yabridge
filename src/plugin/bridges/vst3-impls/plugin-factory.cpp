@@ -100,24 +100,21 @@ YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
 
 tresult PLUGIN_API
 YaPluginFactoryImpl::setHostContext(Steinberg::FUnknown* context) {
-    // This `context` will likely be an `IHostApplication`. If it is, we will
-    // store it for future calls, create a proxy object on the Wine side, and
-    // then pass it to the Windows VST3 plugin's plugin factory using the same
-    // function. If we get passed anything else we'll just return instead since
-    // there's nothing we can do with it.
-    host_application_context = context;
+    // We will create a proxy object that that supports all the same interfaces
+    // as `context`, and then we'll store `context` in this object. We can then
+    // use it to handle callbacks made by the Windows VST3 plugin to this
+    // context.
+    host_context = context;
 
-    if (host_application_context) {
-        YaHostApplication::ConstructArgs host_application_context_args(
-            host_application_context, std::nullopt);
-
-        return bridge.send_message(YaPluginFactory::SetHostContext{
-            .host_application_context_args =
-                std::move(host_application_context_args)});
+    std::optional<Vst3HostContextProxy::ConstructArgs> host_context_args{};
+    if (host_context) {
+        host_context_args =
+            Vst3HostContextProxy::ConstructArgs(host_context, std::nullopt);
     } else {
-        bridge.logger.log_unknown_interface(
-            "In IPluginFactory3::setHostContext(), ignoring",
-            context ? std::optional(context->iid) : std::nullopt);
-        return Steinberg::kNotImplemented;
+        bridge.logger.log(
+            "Null pointer passed to 'IPluginFactory3::setHostContext()'");
     }
+
+    return bridge.send_message(YaPluginFactory::SetHostContext{
+        .host_context_args = std::move(host_context_args)});
 }
