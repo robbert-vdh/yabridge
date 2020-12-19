@@ -61,7 +61,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
                         public YaPluginBase {
    public:
     /**
-     * These are the arguments for creating a `Vst3PluginProxyImpl`.
+     * These are the arguments for constructing a `Vst3PluginProxyImpl`.
      */
     struct ConstructArgs {
         ConstructArgs();

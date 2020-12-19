@@ -41,8 +41,7 @@
 class YaHostApplication : public Steinberg::Vst::IHostApplication {
    public:
     /**
-     * These are the arguments for creating a
-     * `YaYaHostApplication{Plugin,Host}Impl`.
+     * These are the arguments for constructing a `YaHostApplicationImpl`.
      */
     struct ConstructArgs {
         ConstructArgs();

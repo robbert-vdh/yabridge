@@ -34,7 +34,7 @@
 class YaPluginFactory : public Steinberg::IPluginFactory3 {
    public:
     /**
-     * These are the arguments for creating a `YaPluginFactoryImpl`.
+     * These are the arguments for constructing a `YaPluginFactoryImpl`.
      */
     struct ConstructArgs {
         ConstructArgs();
