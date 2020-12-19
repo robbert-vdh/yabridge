@@ -102,7 +102,7 @@ void Vst3Bridge::run() {
                     std::lock_guard lock(object_instances_mutex);
 
                     const size_t instance_id = generate_instance_id();
-                    object_instances[instance_id] = std::move(object);
+                    object_instances.emplace(instance_id, std::move(object));
 
                     // This is where the magic happens. Here we deduce which
                     // interfaces are supported by this object so we can create
@@ -410,6 +410,41 @@ void Vst3Bridge::run() {
 
                 return object_instances[request.owner_instance_id]
                     .plug_view->isPlatformTypeSupported(type.c_str());
+            },
+            [&](const YaPlugView::Attached& request)
+                -> YaPlugView::Attached::Response {
+                const std::string type =
+                    request.type == Steinberg::kPlatformTypeX11EmbedWindowID
+                        ? Steinberg::kPlatformTypeHWND
+                        : request.type;
+
+                // Just like with VST2 plugins, we'll embed a Wine window into
+                // the X11 window provided by the host
+                // TODO: The docs say that we should support XEmbed (and we're
+                //       purposely avoiding that because Wine's implementation
+                //       doesn't work correctly). Check if this causes issues,
+                //       and if it's actually needed (for instance when the host
+                //       resizes the window without informing the plugin)
+                const auto x11_handle = static_cast<size_t>(request.parent);
+                const std::string window_class =
+                    "yabridge plugin " + sockets.base_dir.string() + " " +
+                    std::to_string(request.owner_instance_id);
+                Editor& editor_instance =
+                    object_instances[request.owner_instance_id].editor.emplace(
+                        config, window_class, x11_handle);
+
+                const tresult result =
+                    object_instances[request.owner_instance_id]
+                        .plug_view->attached(editor_instance.get_win32_handle(),
+                                             type.c_str());
+
+                // Get rid of the editor again if the plugin didn't embed itself
+                // in it
+                if (result != Steinberg::kResultOk) {
+                    object_instances[request.owner_instance_id].editor.reset();
+                }
+
+                return result;
             },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {

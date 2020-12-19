@@ -70,6 +70,12 @@ struct InstanceInterfaces {
      */
     Steinberg::IPtr<Steinberg::IPlugView> plug_view;
 
+    /**
+     * This instance's editor, if it has an open editor. Embedding here works
+     * exactly the same as how it works for VST2 plugins.
+     */
+    std::optional<Editor> editor;
+
     // All smart pointers below are created from `component`. They will be null
     // pointers if `component` did not implement the interface.
 

@@ -84,6 +84,32 @@ class YaPlugView : public Steinberg::IPlugView {
 
     virtual tresult PLUGIN_API
     isPlatformTypeSupported(Steinberg::FIDString type) override = 0;
+
+    /**
+     * Message to pass through a call to `IPlugView::attached(parent, type)` to
+     * the Wine plugin host. Like mentioned above we will substitute
+     * `kPlatformStringWin` for `kPlatformStringLinux`.
+     */
+    struct Attached {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        /**
+         * The parent handle passed by the host. This will be an
+         * `xcb_window_id`, and we'll embed the Wine window into it ourselves.
+         */
+        native_size_t parent;
+        std::string type;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value8b(parent);
+            s.text1b(type, 128);
+        }
+    };
+
     virtual tresult PLUGIN_API attached(void* parent,
                                         Steinberg::FIDString type) override = 0;
     virtual tresult PLUGIN_API removed() override = 0;

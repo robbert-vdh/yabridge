@@ -50,9 +50,12 @@ Vst3PlugViewProxyImpl::isPlatformTypeSupported(Steinberg::FIDString type) {
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::attached(void* parent,
                                                    Steinberg::FIDString type) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IPlugView::attached()");
-    return Steinberg::kNotImplemented;
+    // We will embed the Wine Win32 window into the X11 window provided by the
+    // host
+    return bridge.send_message(
+        YaPlugView::Attached{.owner_instance_id = owner_instance_id(),
+                             .parent = reinterpret_cast<native_size_t>(parent),
+                             .type = type});
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::removed() {
