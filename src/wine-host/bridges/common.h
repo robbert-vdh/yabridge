@@ -16,7 +16,9 @@
 
 #pragma once
 
-#include "../editor.h"
+#include "../boost-fix.h"
+
+#include <boost/filesystem.hpp>
 
 /**
  * The base for the Wine plugin host bridge interface for all plugin types. This
@@ -47,7 +49,7 @@ class HostBridge {
      * Handle X11 events for the editor window if it is open. This can safely be
      * run from any thread.
      */
-    void handle_x11_events();
+    virtual void handle_x11_events() = 0;
 
     /**
      * Run the message loop for this plugin. This is only used for the
@@ -63,25 +65,12 @@ class HostBridge {
      * we have to make sure to always run this loop. The only exception is a in
      * specific situation that can cause a race condition in some plugins
      * because of incorrect assumptions made by the plugin. See the dostring for
-     * `HostBridge::editor` for more information.
+     * `Vst2Bridge::editor` for more information.
      */
-    void handle_win32_events();
+    virtual void handle_win32_events() = 0;
 
     /**
      * The path to the .dll being loaded in the Wine plugin host.
      */
     const boost::filesystem::path plugin_path;
-
-   protected:
-    /**
-     * The plugin editor window. Allows embedding the plugin's editor into a
-     * Wine window, and embedding that Wine window into a window provided by the
-     * host. Should be empty when the editor is not open.
-     *
-     * TODO: This should be moved back to `Vst2Bridge`, `handle_x11_events()``
-     *       and `handle_win32_events()` should be made pure virtual. A single
-     *       `Vst3Bridge` instance will handle multiple plugin instances because
-     *       of the way VST3 works.
-     */
-    std::optional<Editor> editor;
 };

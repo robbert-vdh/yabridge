@@ -423,6 +423,23 @@ void Vst3Bridge::run() {
             }});
 }
 
+void Vst3Bridge::handle_x11_events() {
+    // TODO: Implement editors
+}
+
+void Vst3Bridge::handle_win32_events() {
+    // TODO: Implement editors
+
+    MSG msg;
+
+    for (int i = 0;
+         i < max_win32_messages && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
+         i++) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+}
+
 size_t Vst3Bridge::generate_instance_id() {
     return current_instance_id.fetch_add(1);
 }

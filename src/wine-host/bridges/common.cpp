@@ -18,24 +18,3 @@
 
 HostBridge::HostBridge(boost::filesystem::path plugin_path)
     : plugin_path(plugin_path) {}
-
-void HostBridge::handle_win32_events() {
-    if (editor) {
-        editor->handle_win32_events();
-    } else {
-        MSG msg;
-
-        for (int i = 0; i < max_win32_messages &&
-                        PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-             i++) {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-    }
-}
-
-void HostBridge::handle_x11_events() {
-    if (editor) {
-        editor->handle_x11_events();
-    }
-}

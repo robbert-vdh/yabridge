@@ -29,6 +29,7 @@
 
 #include "../../common/communication/vst2.h"
 #include "../../common/configuration.h"
+#include "../editor.h"
 #include "../utils.h"
 #include "common.h"
 
@@ -65,6 +66,9 @@ class Vst2Bridge : public HostBridge {
      * closed during `effClose()`.
      */
     void run() override;
+
+    void handle_x11_events() override;
+    void handle_win32_events() override;
 
     /**
      * Forward the host callback made by the plugin to the host and return the
@@ -143,6 +147,13 @@ class Vst2Bridge : public HostBridge {
      *       threads to exit.
      */
     Vst2Sockets<Win32Thread> sockets;
+
+    /**
+     * The plugin editor window. Allows embedding the plugin's editor into a
+     * Wine window, and embedding that Wine window into a window provided by the
+     * host. Should be empty when the editor is not open.
+     */
+    std::optional<Editor> editor;
 
     /**
      * The MIDI events that have been received **and processed** since the last

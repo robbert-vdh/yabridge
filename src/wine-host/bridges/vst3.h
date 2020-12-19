@@ -22,6 +22,7 @@
 
 #include "../../common/communication/vst3.h"
 #include "../../common/configuration.h"
+#include "../editor.h"
 #include "common.h"
 
 /**
@@ -102,6 +103,9 @@ class Vst3Bridge : public HostBridge {
      * sockets get closed.
      */
     void run() override;
+
+    void handle_x11_events() override;
+    void handle_win32_events() override;
 
     /**
      * Send a callback message to the host return the response. This is a

@@ -27,6 +27,7 @@
 #include <thread>
 
 #include "../common/logging/common.h"
+#include "../utils.h"
 #include "common.h"
 
 /**
