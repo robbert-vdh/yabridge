@@ -22,6 +22,7 @@
 #include "../../common.h"
 #include "../base.h"
 #include "../component-handler-proxy.h"
+#include "../plug-view-proxy.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -361,6 +362,40 @@ class YaEditController : public Steinberg::Vst::IEditController {
 
     virtual tresult PLUGIN_API setComponentHandler(
         Steinberg::Vst::IComponentHandler* handler) override = 0;
+
+    /**
+     * The `IPlugView` proxy arguments returned from a call to
+     * `IEditController::createView(name)`. If not empty, then we'll use this to
+     * construct a proxy object that can send control messages to the plugin
+     * instance's actual `IPlugView` object.
+     */
+    struct CreateViewResponse {
+        std::optional<Vst3PlugViewProxy::ConstructArgs> plug_view_args;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.ext(plug_view_args, bitsery::ext::StdOptional{});
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IEditController::createView(name)` to
+     * the Wine plugin host.
+     */
+    struct CreateView {
+        using Response = CreateViewResponse;
+
+        native_size_t instance_id;
+
+        std::string name;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.text1b(name, 128);
+        }
+    };
+
     virtual Steinberg::IPlugView* PLUGIN_API
     createView(Steinberg::FIDString name) override = 0;
 

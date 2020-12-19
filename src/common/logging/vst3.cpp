@@ -415,6 +415,15 @@ bool Vst3Logger::log_request(
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaEditController::CreateView& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IEditController::createView(name = " << request.name
+                << ")";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
@@ -661,7 +670,19 @@ void Vst3Logger::log_response(
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            message << ", " << response.value_normalized << std::endl;
+            message << ", " << response.value_normalized;
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaEditController::CreateViewResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        if (response.plug_view_args) {
+            message << "<IPlugView*>";
+        } else {
+            message << "<nullptr>";
         }
     });
 }

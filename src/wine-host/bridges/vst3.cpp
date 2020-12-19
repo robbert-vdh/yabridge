@@ -371,6 +371,25 @@ void Vst3Bridge::run() {
                         object_instances[request.instance_id]
                             .component_handler_proxy);
             },
+            [&](const YaEditController::CreateView& request)
+                -> YaEditController::CreateView::Response {
+                object_instances[request.instance_id].plug_view =
+                    Steinberg::owned(
+                        object_instances[request.instance_id]
+                            .edit_controller->createView(request.name.c_str()));
+
+                // We'll create a proxy so the host can call functions on this
+                // `IPlugView` object
+                return YaEditController::CreateViewResponse{
+                    .plug_view_args =
+                        (object_instances[request.instance_id].plug_view
+                             ? std::make_optional<
+                                   Vst3PlugViewProxy::ConstructArgs>(
+                                   object_instances[request.instance_id]
+                                       .plug_view,
+                                   request.instance_id)
+                             : std::nullopt)};
+            },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
                 // If we got passed a host context, we'll create a proxy object

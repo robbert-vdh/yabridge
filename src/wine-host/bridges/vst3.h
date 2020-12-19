@@ -60,6 +60,16 @@ struct InstanceInterfaces {
      */
     Steinberg::IPtr<Steinberg::FUnknown> object;
 
+    /**
+     * The `IPlugView` object the plugin returned from a call to
+     * `IEditController::createView()`.
+     *
+     * XXX: Technically VST3 supports multiple named views, so we could have
+     *      multiple different view for a single plugin. This is not used within
+     *      the SDK, so a single pointer should be fine for now.
+     */
+    Steinberg::IPtr<Steinberg::IPlugView> plug_view;
+
     // All smart pointers below are created from `component`. They will be null
     // pointers if `component` did not implement the interface.
 
