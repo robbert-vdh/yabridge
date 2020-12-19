@@ -37,6 +37,9 @@ YaHostApplication::YaHostApplication(const ConstructArgs&& args)
     : arguments(std::move(args)) {}
 
 tresult PLUGIN_API YaHostApplication::getName(Steinberg::Vst::String128 name) {
+    // TODO: This is now not being logged at all. It's probably better if we
+    //       just drop these two functions that output cached data directly.
+    //       They'll only be used once or twice anyways.
     if (arguments.name) {
         // Terminate with a null byte. There are no nice functions for copying
         // UTF-16 strings (because who would use those?).
