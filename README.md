@@ -24,7 +24,6 @@ incomplete list of things that still have to be done before this can be used:
   - All other optional interfaces
 - Fully implemented: see [this
   document](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/src/common/serialization/vst3/README.md)
-- Update the GitHub Actions workflows.
 - Update yabridgectl to handle buth VST2 and VST3 plugins.
 - Update all documentation to refer to VST2 and VST3 support separately, and
   figure out how to do this in the least confusing way possible.
@@ -33,7 +32,7 @@ incomplete list of things that still have to be done before this can be used:
 - Pay close attention when updating the plugin groups section of the readme,
   since VST3 plugins by design cannot be hosted completely individually (as in,
   each plugin is basically in its own group).
-- Update all the AUR packages.
+- Update all the AUR packages for the `libyabridge-vst{2,3}.so` changes.
 - Test the binaries built on GitHub on plain Ubuntu 18.04, are we missing any
   static linking?
 - When this is in a usable enough state to be merged into master, make sure to
