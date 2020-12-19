@@ -40,9 +40,19 @@ struct InstanceInterfaces {
     /**
      * If the host passes an `IHostApplication` during
      * `IPluginBase::initialize()`, we'll store a proxy object here and then
-     * pass it to `plugin_base->initialize()`.
+     * pass it to `plugin_base->initialize()`. Will be initialized with a null
+     * pointer until used.
      */
-    Steinberg::IPtr<YaHostApplication> hsot_application_context;
+    Steinberg::IPtr<YaHostApplication> host_application_context;
+
+    /**
+     * After a call to `IEditController::setComponentHandler()`, we'll create a
+     * proxy of that component handler just like we did for the plugin object.
+     * When the plugin calls a function on this object, we make a callback to
+     * the original object provided by the host. Will be initialized with a null
+     * pointer until used.
+     */
+    Steinberg::IPtr<Vst3ComponentHandlerProxy> component_handler_proxy;
 
     /**
      * The base object we cast from.

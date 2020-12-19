@@ -315,9 +315,24 @@ Vst3PluginProxyImpl::setParamNormalized(Steinberg::Vst::ParamID id,
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
     Steinberg::Vst::IComponentHandler* handler) {
-    // TODO: Implement
-    bridge.logger.log("TODO IEditController::setComponentHandler()");
-    return Steinberg::kNotImplemented;
+    std::optional<Vst3ComponentHandlerProxy::ConstructArgs>
+        component_handler_proxy_args = std::nullopt;
+    if (handler) {
+        // We'll store the pointer for when the plugin later makes a callback to
+        // this component handler
+        component_handler = handler;
+
+        component_handler_proxy_args = Vst3ComponentHandlerProxy::ConstructArgs(
+            host_application_context, instance_id());
+    } else {
+        bridge.logger.log(
+            "Null pointer passed to 'IEditController::setComponentHandler'");
+    }
+
+    return bridge.send_message(YaEditController::SetComponentHandler{
+        .instance_id = instance_id(),
+        .component_handler_proxy_args =
+            std::move(component_handler_proxy_args)});
 }
 
 Steinberg::IPlugView* PLUGIN_API

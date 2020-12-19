@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/vst/ivsteditcontroller.h>
 
 #include "../../common.h"
 #include "../base.h"
+#include "../component-handler-proxy.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -328,6 +330,35 @@ class YaEditController : public Steinberg::Vst::IEditController {
     virtual tresult PLUGIN_API
     setParamNormalized(Steinberg::Vst::ParamID id,
                        Steinberg::Vst::ParamValue value) override = 0;
+
+    /**
+     * Message to pass through a call to
+     * `IEditController::setComponentHandler(handler)` to the Wine plugin host.
+     * Like when creating a proxy for a plugin object, we'll read all supported
+     * interfaces form the component handler instance passed by the host. We'll
+     * then create a perfect proxy on the plugin side, that can do callbacks to
+     * the actual component handler passed by the host.
+     */
+    struct SetComponentHandler {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        /**
+         * Arguments for instantiating the proxy object. Even though it should
+         * never happen, if the host passed a null pointer to this function
+         * we'll mimic that as well.
+         */
+        std::optional<Vst3ComponentHandlerProxy::ConstructArgs>
+            component_handler_proxy_args;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.ext(component_handler_proxy_args, bitsery::ext::StdOptional{});
+        }
+    };
+
     virtual tresult PLUGIN_API setComponentHandler(
         Steinberg::Vst::IComponentHandler* handler) override = 0;
     virtual Steinberg::IPlugView* PLUGIN_API

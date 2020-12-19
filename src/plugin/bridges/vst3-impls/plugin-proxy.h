@@ -133,4 +133,12 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      */
     Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication>
         host_application_context;
+
+    /**
+     * The component handler the host passed to us during
+     * `IEditController::setComponentHandler()`. When the plugin makes a
+     * callback on a component handler proxy object, we'll pass the call through
+     * to this object.
+     */
+    Steinberg::IPtr<Steinberg::Vst::IComponentHandler> component_handler;
 };

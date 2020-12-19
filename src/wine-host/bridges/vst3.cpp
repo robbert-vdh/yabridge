@@ -23,6 +23,7 @@
 #include <boost/asio/dispatch.hpp>
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
+#include "vst3-impls/component-handler-proxy.h"
 #include "vst3-impls/host-application.h"
 
 InstanceInterfaces::InstanceInterfaces() {}
@@ -336,28 +337,55 @@ void Vst3Bridge::run() {
                     .edit_controller->setParamNormalized(request.id,
                                                          request.value);
             },
+            [&](YaEditController::SetComponentHandler& request)
+                -> YaEditController::SetComponentHandler::Response {
+                // If we got passed a component handler, we'll create a proxy
+                // object and pass that to the initialize function. The lifetime
+                // of this object is tied to that of the actual plugin object
+                // we're proxying for.
+                // TODO: Does this have to be run from the UI thread? Figure out
+                //       if it does
+                if (request.component_handler_proxy_args) {
+                    object_instances[request.instance_id]
+                        .component_handler_proxy =
+                        Steinberg::owned(new Vst3ComponentHandlerProxyImpl(
+                            *this,
+                            std::move(*request.component_handler_proxy_args)));
+                } else {
+                    object_instances[request.instance_id]
+                        .component_handler_proxy = nullptr;
+                }
+
+                return object_instances[request.instance_id]
+                    .edit_controller->setComponentHandler(
+                        object_instances[request.instance_id]
+                            .component_handler_proxy);
+            },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
                 // If we got passed a host context, we'll create a proxy object
-                // and pass that to the initialize function. This object should
-                // be cleaned up again during `Vst3PluginProxy::Destruct`.
+                // and pass that to the initialize function. The lifetime of
+                // this object is tied to that of the actual plugin object we're
+                // proxying for.
                 // TODO: This needs changing if it turns out we need a
                 //       `Vst3HostProxy`
                 // TODO: Does this have to be run from the UI thread? Figure out
                 //       if it does
-                Steinberg::FUnknown* context = nullptr;
                 if (request.host_application_context_args) {
                     object_instances[request.instance_id]
-                        .hsot_application_context =
+                        .host_application_context =
                         Steinberg::owned(new YaHostApplicationImpl(
                             *this,
                             std::move(*request.host_application_context_args)));
-                    context = object_instances[request.instance_id]
-                                  .hsot_application_context;
+                } else {
+                    object_instances[request.instance_id]
+                        .host_application_context = nullptr;
                 }
 
                 return object_instances[request.instance_id]
-                    .plugin_base->initialize(context);
+                    .plugin_base->initialize(
+                        object_instances[request.instance_id]
+                            .host_application_context);
             },
             [&](const YaPluginBase::Terminate& request)
                 -> YaPluginBase::Terminate::Response {
