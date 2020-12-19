@@ -507,11 +507,17 @@ void Vst3Bridge::run() {
 }
 
 void Vst3Bridge::handle_x11_events() {
-    // TODO: Implement editors
+    std::lock_guard lock(object_instances_mutex);
+
+    for (const auto& [instance_id, object] : object_instances) {
+        if (object.editor) {
+            object.editor->handle_x11_events();
+        }
+    }
 }
 
 void Vst3Bridge::handle_win32_events() {
-    // TODO: Implement editors
+    // TODO: Remove this function from the `Editor`
 
     MSG msg;
 
