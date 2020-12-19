@@ -32,7 +32,8 @@ Vst3ComponentHandlerProxyImpl::queryInterface(const Steinberg::TUID _iid,
     // TODO: Successful queries should also be logged
     const tresult result = Vst3ComponentHandlerProxy::queryInterface(_iid, obj);
     if (result != Steinberg::kResultOk) {
-        std::cerr << "TODO: Implement unknown interface logging on Wine side"
+        std::cerr << "TODO: Implement unknown interface logging on Wine side "
+                     "for Vst3ComponentHandlerProxyImpl::queryInterface"
                   << std::endl;
     }
 

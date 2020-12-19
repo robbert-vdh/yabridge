@@ -34,7 +34,8 @@ Vst3HostContextProxyImpl::queryInterface(const Steinberg::TUID _iid,
     // TODO: Successful queries should also be logged
     const tresult result = Vst3HostContextProxy::queryInterface(_iid, obj);
     if (result != Steinberg::kResultOk) {
-        std::cerr << "TODO: Implement unknown interface logging on Wine side"
+        std::cerr << "TODO: Implement unknown interface logging on Wine side "
+                     "for Vst3HostContextProxyImpl::queryInterface"
                   << std::endl;
     }
 
