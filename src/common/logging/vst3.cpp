@@ -226,11 +226,14 @@ bool Vst3Logger::log_request(bool is_host_vst,
 
 bool Vst3Logger::log_request(bool is_host_vst,
                              const YaComponent::GetBusCount& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id
-                << ": IComponent::getBusCount(type = " << request.type
-                << ", dir = " << request.dir << ")";
-    });
+    // JUCE-based hosts will call this every processing cycle, for some reason
+    // (it shouldn't be allwoed to change during processing, right?)
+    return log_request_base(
+        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
+            message << request.instance_id
+                    << ": IComponent::getBusCount(type = " << request.type
+                    << ", dir = " << request.dir << ")";
+        });
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
