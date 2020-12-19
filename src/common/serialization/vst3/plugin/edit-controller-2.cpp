@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "edit-controller.h"
+#include "edit-controller-2.h"
 
-YaEditController::ConstructArgs::ConstructArgs() {}
+YaEditController2::ConstructArgs::ConstructArgs() {}
 
-YaEditController::ConstructArgs::ConstructArgs(
+YaEditController2::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object)
     : supported(
-          Steinberg::FUnknownPtr<Steinberg::Vst::IEditController>(object)) {}
+          Steinberg::FUnknownPtr<Steinberg::Vst::IEditController2>(object)) {}
 
-YaEditController::YaEditController(const ConstructArgs&& args)
+YaEditController2::YaEditController2(const ConstructArgs&& args)
     : arguments(std::move(args)) {}

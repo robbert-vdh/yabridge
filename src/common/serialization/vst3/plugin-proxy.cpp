@@ -25,6 +25,7 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
       audio_processor_args(object),
       component_args(object),
       connection_point_args(object),
+      edit_controller_args(object),
       edit_controller_2_args(object),
       plugin_base_args(object) {}
 
@@ -32,7 +33,8 @@ Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
     : YaAudioProcessor(std::move(args.audio_processor_args)),
       YaComponent(std::move(args.component_args)),
       YaConnectionPoint(std::move(args.connection_point_args)),
-      YaEditController(std::move(args.edit_controller_2_args)),
+      YaEditController(std::move(args.edit_controller_args)),
+      YaEditController2(std::move(args.edit_controller_2_args)),
       YaPluginBase(std::move(args.plugin_base_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
@@ -77,11 +79,11 @@ tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IConnectionPoint::iid,
                         Steinberg::Vst::IConnectionPoint)
     }
-    if (YaEditController::supported_version_1()) {
+    if (YaEditController::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IEditController::iid,
                         Steinberg::Vst::IEditController)
     }
-    if (YaEditController::supported_version_2()) {
+    if (YaEditController2::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IEditController2::iid,
                         Steinberg::Vst::IEditController2)
     }

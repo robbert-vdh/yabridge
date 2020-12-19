@@ -14,7 +14,8 @@ VST3 plugin interfaces are implemented as follows:
 | `YaAudioProcessor`  | `Vst3PluginProxy` | `IAudioProcessor`                                      |
 | `YaComponent`       | `Vst3PluginProxy` | `IComponent`                                           |
 | `YaConnectionPoint` | `Vst3PluginProxy` | `IConnectionPoint`                                     |
-| `YaEditController`  | `Vst3PluginProxy` | `IEditController`, `IEditController2`                  |
+| `YaEditController`  | `Vst3PluginProxy` | `IEditController`                                      |
+| `YaEditController2` | `Vst3PluginProxy` | `IEditController2`                                     |
 | `YaPluginBase`      | `Vst3PluginProxy` | `IPluginBase`                                          |
 
 VST3 host interfaces are implemented as follows:

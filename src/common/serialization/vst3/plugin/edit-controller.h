@@ -25,14 +25,10 @@
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 
 /**
- * Wraps around `IEditController{,2}` for serialization purposes. This is
+ * Wraps around `IEditController` for serialization purposes. This is
  * instantiated as part of `Vst3PluginProxy`.
- *
- * Steinberg forgot to inherit `IEditController2` from `IEditController` event
- * if it says it does in the docs, so we'll pretend they just that.
  */
-class YaEditController : public Steinberg::Vst::IEditController,
-                         public Steinberg::Vst::IEditController2 {
+class YaEditController : public Steinberg::Vst::IEditController {
    public:
     /**
      * These are the arguments for creating a `YaEditController`.
@@ -41,25 +37,19 @@ class YaEditController : public Steinberg::Vst::IEditController,
         ConstructArgs();
 
         /**
-         * Check whether an existing implementation implements `IEditController`
-         * and `IEditController2` and read arguments from it.
+         * Check whether an existing implementation implements
+         * `IEditController` and read arguments from it.
          */
         ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
 
         /**
-         * Whether the object supported `IEditController`.
+         * Whether the object supported this interface.
          */
-        bool supported_version_1;
-
-        /**
-         * Whether the object supported `IEditController2`.
-         */
-        bool supported_version_2;
+        bool supported;
 
         template <typename S>
         void serialize(S& s) {
-            s.value1b(supported_version_1);
-            s.value1b(supported_version_2);
+            s.value1b(supported);
         }
     };
 
@@ -69,14 +59,7 @@ class YaEditController : public Steinberg::Vst::IEditController,
      */
     YaEditController(const ConstructArgs&& args);
 
-    inline bool supported_version_1() const {
-        return arguments.supported_version_1;
-    }
-    inline bool supported_version_2() const {
-        return arguments.supported_version_2;
-    }
-
-    // From `IEditController`
+    inline bool supported() const { return arguments.supported; }
 
     /**
      * Message to pass through a call to
@@ -349,13 +332,6 @@ class YaEditController : public Steinberg::Vst::IEditController,
         Steinberg::Vst::IComponentHandler* handler) override = 0;
     virtual Steinberg::IPlugView* PLUGIN_API
     createView(Steinberg::FIDString name) override = 0;
-
-    // From `IEditController2`
-
-    virtual tresult PLUGIN_API
-    setKnobMode(Steinberg::Vst::KnobMode mode) override = 0;
-    virtual tresult PLUGIN_API openHelp(TBool onlyCheck) override = 0;
-    virtual tresult PLUGIN_API openAboutBox(TBool onlyCheck) override = 0;
 
    protected:
     ConstructArgs arguments;
