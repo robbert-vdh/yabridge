@@ -323,7 +323,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
         component_handler = handler;
 
         component_handler_proxy_args = Vst3ComponentHandlerProxy::ConstructArgs(
-            host_application_context, instance_id());
+            component_handler, instance_id());
     } else {
         bridge.logger.log(
             "Null pointer passed to 'IEditController::setComponentHandler'");
