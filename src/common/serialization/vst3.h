@@ -23,6 +23,7 @@
 #include "../configuration.h"
 #include "../utils.h"
 #include "common.h"
+#include "vst3/component-handler-proxy.h"
 #include "vst3/plugin-factory.h"
 #include "vst3/plugin-proxy.h"
 

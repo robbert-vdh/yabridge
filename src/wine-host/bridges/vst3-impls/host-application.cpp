@@ -22,8 +22,8 @@ YaHostApplicationImpl::YaHostApplicationImpl(
     Vst3Bridge& bridge,
     YaHostApplication::ConstructArgs&& args)
     : YaHostApplication(std::move(args)), bridge(bridge) {
-    // The lifecycle is thos object is managed together with that of the
-    // `IComponent` instance this belongs to
+    // The lifecycle is thos object is managed together with that of the plugin
+    // object instance this belongs to
 }
 
 tresult PLUGIN_API

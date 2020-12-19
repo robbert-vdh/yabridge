@@ -18,10 +18,11 @@
 
 #include "../vst3.h"
 
-class YaHostApplicationImpl : public YaHostApplication {
+class Vst3ComponentHandlerProxyImpl : public Vst3ComponentHandlerProxy {
    public:
-    YaHostApplicationImpl(Vst3Bridge& bridge,
-                          YaHostApplication::ConstructArgs&& args);
+    Vst3ComponentHandlerProxyImpl(
+        Vst3Bridge& bridge,
+        Vst3ComponentHandlerProxy::ConstructArgs&& args);
 
     /**
      * We'll override the query interface to log queries for interfaces we do
@@ -30,9 +31,13 @@ class YaHostApplicationImpl : public YaHostApplication {
     tresult PLUGIN_API queryInterface(const Steinberg::TUID _iid,
                                       void** obj) override;
 
-    tresult PLUGIN_API createInstance(Steinberg::TUID cid,
-                                      Steinberg::TUID _iid,
-                                      void** obj) override;
+    // From `IComponentHandler`
+    tresult PLUGIN_API beginEdit(Steinberg::Vst::ParamID id) override;
+    tresult PLUGIN_API
+    performEdit(Steinberg::Vst::ParamID id,
+                Steinberg::Vst::ParamValue valueNormalized) override;
+    tresult PLUGIN_API endEdit(Steinberg::Vst::ParamID id) override;
+    tresult PLUGIN_API restartComponent(int32 flags) override;
 
    private:
     Vst3Bridge& bridge;

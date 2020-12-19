@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <pluginterfaces/vst/ivsthostapplication.h>
-
 #include "../vst3.h"
 
 class Vst3PluginProxyImpl : public Vst3PluginProxy {
