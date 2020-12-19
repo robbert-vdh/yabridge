@@ -429,22 +429,32 @@ void Vst3Bridge::run() {
                 const std::string window_class =
                     "yabridge plugin " + sockets.base_dir.string() + " " +
                     std::to_string(request.owner_instance_id);
-                Editor& editor_instance =
-                    object_instances[request.owner_instance_id].editor.emplace(
-                        config, window_class, x11_handle);
 
-                const tresult result =
-                    object_instances[request.owner_instance_id]
-                        .plug_view->attached(editor_instance.get_win32_handle(),
-                                             type.c_str());
+                // Creating the window and having the plugin embed in it should
+                // be done in the main UI thread
+                std::promise<tresult> attach_result{};
+                boost::asio::dispatch(main_context.context, [&]() {
+                    Editor& editor_instance =
+                        object_instances[request.owner_instance_id]
+                            .editor.emplace(config, window_class, x11_handle);
 
-                // Get rid of the editor again if the plugin didn't embed itself
-                // in it
-                if (result != Steinberg::kResultOk) {
-                    object_instances[request.owner_instance_id].editor.reset();
-                }
+                    const tresult result =
+                        object_instances[request.owner_instance_id]
+                            .plug_view->attached(
+                                editor_instance.get_win32_handle(),
+                                type.c_str());
 
-                return result;
+                    // Get rid of the editor again if the plugin didn't embed
+                    // itself in it
+                    if (result != Steinberg::kResultOk) {
+                        object_instances[request.owner_instance_id]
+                            .editor.reset();
+                    }
+
+                    attach_result.set_value(result);
+                });
+
+                return attach_result.get_future().get();
             },
             [&](YaPlugView::GetSize& request) -> YaPlugView::GetSize::Response {
                 const tresult result =
