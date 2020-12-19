@@ -18,9 +18,6 @@
 
 #include <iostream>
 
-// The Win32 API requires you to hardcode identifiers for tiemrs
-constexpr size_t idle_timer_id = 1337;
-
 /**
  * The most significant bit in an event's response type is used to indicate
  * whether the event source.
@@ -84,8 +81,7 @@ WindowClass::~WindowClass() {
 
 Editor::Editor(const Configuration& config,
                const std::string& window_class_name,
-               const size_t parent_window_handle,
-               AEffect* effect)
+               const size_t parent_window_handle)
     : x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
       client_area(get_maximum_screen_dimensions(*x11_connection)),
       window_class(window_class_name),
@@ -110,12 +106,10 @@ Editor::Editor(const Configuration& config,
       // If `config.editor_double_embed` is set, then we'll also create a child
       // window in `win32_child_handle`. If we do this before calling
       // `ShowWindow()` on `win32_handle` we'll run into X11 errors.
-      idle_timer(win32_handle.get(), idle_timer_id, 100),
+      win32_child_handle(std::nullopt),
       parent_window(parent_window_handle),
       wine_window(get_x11_handle(win32_handle.get())),
-      topmost_window(find_topmost_window(*x11_connection, parent_window)),
-      // Needed to send update messages on a timer
-      plugin(effect) {
+      topmost_window(find_topmost_window(*x11_connection, parent_window)) {
     xcb_generic_error_t* error;
 
     // Used for input focus grabbing to only grab focus when the window is
@@ -225,10 +219,6 @@ HWND Editor::get_win32_handle() const {
     }
 }
 
-void Editor::send_idle_event() {
-    plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0);
-}
-
 void Editor::handle_win32_events() const {
     MSG msg;
 
@@ -236,21 +226,11 @@ void Editor::handle_win32_events() const {
     // with child GUI components. So far limiting this to `max_win32_messages`
     // messages has only been needed for Waves plugins as they otherwise cause
     // an infinite message loop.
+    // TODO: If the timer is no longer needed, then we can drop this entire
+    //       function
     for (int i = 0;
          i < max_win32_messages && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
          i++) {
-        // This timer would periodically send `effEditIdle` events so the editor
-        // remains responsive even during blocking GUI operations such as open
-        // dropdowns or message boxes. This is only needed when the GUI is
-        // actually blocked and it will be dispatched by the messaging loop of
-        // the blocking GUI component. Since we're not touching the
-        // `effEditIdle` event sent by the host we can always filter this timer
-        // event out in this event loop.
-        if (msg.message == WM_TIMER && msg.wParam == idle_timer_id &&
-            msg.hwnd == win32_handle.get()) {
-            continue;
-        }
-
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
@@ -469,20 +449,6 @@ LRESULT CALLBACK window_proc(HWND handle,
             // window handle so we can access our VST plugin instance later.
             SetWindowLongPtr(handle, GWLP_USERDATA,
                              reinterpret_cast<size_t>(editor));
-        } break;
-        case WM_TIMER: {
-            auto editor = reinterpret_cast<Editor*>(
-                GetWindowLongPtr(handle, GWLP_USERDATA));
-            if (!editor || wParam != idle_timer_id) {
-                break;
-            }
-
-            // We'll send idle messages on a timer. This way the plugin will get
-            // keep periodically updating its editor either when the host sends
-            // `effEditIdle` themself, or periodically when the GUI is being
-            // blocked by a dropdown or a message box.
-            editor->send_idle_event();
-            return 0;
         } break;
         // In case the WM does not support the EWMH active window property,
         // we'll fall back to grabbing focus when the user clicks on the window

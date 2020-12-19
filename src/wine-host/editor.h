@@ -16,22 +16,21 @@
 
 #pragma once
 
-// Use the native version of xcb
-#pragma push_macro("_WIN32")
-#undef _WIN32
-#include <xcb/xcb.h>
-#pragma pop_macro("_WIN32")
+#include <memory>
+#include <optional>
+#include <string>
 
 #ifndef NOMINMAX
 #define NOMINMAX
 #define WINE_NOWINSOCK
 #endif
-#include <vestige/aeffectx.h>
 #include <windows.h>
 
-#include <memory>
-#include <optional>
-#include <string>
+// Use the native version of xcb
+#pragma push_macro("_WIN32")
+#undef _WIN32
+#include <xcb/xcb.h>
+#pragma pop_macro("_WIN32")
 
 #include "../common/configuration.h"
 #include "utils.h"
@@ -101,15 +100,12 @@ class Editor {
      *   windows.
      * @param parent_window_handle The X11 window handle passed by the VST host
      *   for the editor to embed itself into.
-     * @param effect The plugin this window is being created for. Used to send
-     *   `effEditIdle` messages on a timer.
      *
      * @see win32_handle
      */
     Editor(const Configuration& config,
            const std::string& window_class_name,
-           const size_t parent_window_handle,
-           AEffect* effect);
+           const size_t parent_window_handle);
 
     ~Editor();
 
@@ -130,13 +126,6 @@ class Editor {
      * cached in `supports_ewmh_active_window_cache`.
      */
     bool supports_ewmh_active_window() const;
-
-    /**
-     * Send a single `effEditIdle` event to the plugin to allow it to update its
-     * GUI state. This is called periodically from a timer while the GUI is
-     * being blocked, and also called explicitly by the host on a timer.
-     */
-    void send_idle_event();
 
     /**
      * Pump messages from the editor loop loop until all events are process.
@@ -226,15 +215,6 @@ class Editor {
 #pragma GCC diagnostic pop
 
     /**
-     * The Win32 API will block the `DispatchMessage` call when opening e.g. a
-     * dropdown, but it will still allow timers to be run so the GUI can still
-     * update in the background. Because of this we send `effEditIdle` to the
-     * plugin on a timer. The refresh rate is purposely fairly low since the
-     * host will call `effEditIdle()` explicitely when the plugin is not busy.
-     */
-    Win32Timer idle_timer;
-
-    /**
      * The window handle of the editor window created by the DAW.
      */
     const xcb_window_t parent_window;
@@ -251,11 +231,6 @@ class Editor {
      * being dragged around.
      */
     const xcb_window_t topmost_window;
-
-    /**
-     *Needed to handle idle updates through a timer
-     */
-    AEffect* plugin;
 
     /**
      * The atom corresponding to `_NET_ACTIVE_WINDOW`.

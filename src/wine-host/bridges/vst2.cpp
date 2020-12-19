@@ -42,10 +42,12 @@ std::mutex current_bridge_instance_mutex;
 /**
  * Opcodes that should always be handled on the main thread because they may
  * involve GUI operations.
+ *
+ * XXX: We removed effEditIdle from here and everything still seems to work
+ *      fine. Verify that this didn't break any plugins.
  */
 const std::set<int> unsafe_opcodes{effOpen,     effClose,     effEditGetRect,
-                                   effEditOpen, effEditClose, effEditIdle,
-                                   effEditTop};
+                                   effEditOpen, effEditClose, effEditTop};
 
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);
@@ -391,7 +393,7 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             const std::string window_class =
                 "yabridge plugin " + sockets.base_dir.string();
             Editor& editor_instance =
-                editor.emplace(config, window_class, x11_handle, plugin);
+                editor.emplace(config, window_class, x11_handle);
 
             return plugin->dispatcher(plugin, opcode, index, value,
                                       editor_instance.get_win32_handle(),
