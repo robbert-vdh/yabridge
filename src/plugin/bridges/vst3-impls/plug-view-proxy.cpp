@@ -43,26 +43,26 @@ Vst3PlugViewProxyImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
 tresult PLUGIN_API
 Vst3PlugViewProxyImpl::isPlatformTypeSupported(Steinberg::FIDString type) {
     // TODO: Implement
-    bridge.logger.log("TODO: IPluginView::isPlatformTypeSupported()");
+    bridge.logger.log("TODO: IPlugView::isPlatformTypeSupported()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::attached(void* parent,
                                                    Steinberg::FIDString type) {
     // TODO: Implement
-    bridge.logger.log("TODO: IPluginView::attached()");
+    bridge.logger.log("TODO: IPlugView::attached()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::removed() {
     // TODO: Implement
-    bridge.logger.log("TODO: IPluginView::removed()");
+    bridge.logger.log("TODO: IPlugView::removed()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onWheel(float distance) {
     // TODO: Implement
-    bridge.logger.log("TODO: IPluginView::onWheel()");
+    bridge.logger.log("TODO: IPlugView::onWheel()");
     return Steinberg::kNotImplemented;
 }
 
@@ -70,7 +70,7 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::onKeyDown(char16 key,
                                                     int16 keyCode,
                                                     int16 modifiers) {
     // TODO: Implement
-    bridge.logger.log("TODO: IPluginView::onKeyDown()");
+    bridge.logger.log("TODO: IPlugView::onKeyDown()");
     return Steinberg::kNotImplemented;
 }
 
@@ -78,44 +78,44 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::onKeyUp(char16 key,
                                                   int16 keyCode,
                                                   int16 modifiers) {
     // TODO: Implement
-    bridge.logger.log("TODO: IPluginView::onKeyUp()");
+    bridge.logger.log("TODO: IPlugView::onKeyUp()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::getSize(Steinberg::ViewRect* size) {
     // TODO: Implement
-    bridge.logger.log("TODO: IPluginView::getSize()");
+    bridge.logger.log("TODO: IPlugView::getSize()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onSize(Steinberg::ViewRect* newSize) {
     // TODO: Implement
-    bridge.logger.log("TODO: IPluginView::onSize()");
+    bridge.logger.log("TODO: IPlugView::onSize()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onFocus(TBool state) {
     // TODO: Implement
-    bridge.logger.log("TODO: IPluginView::onFocus()");
+    bridge.logger.log("TODO: IPlugView::onFocus()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API
 Vst3PlugViewProxyImpl::setFrame(Steinberg::IPlugFrame* frame) {
     // TODO: Implement
-    bridge.logger.log("TODO: IPluginView::setFrame()");
+    bridge.logger.log("TODO: IPlugView::setFrame()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::canResize() {
     // TODO: Implement
-    bridge.logger.log("TODO: IPluginView::canResize()");
+    bridge.logger.log("TODO: IPlugView::canResize()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API
 Vst3PlugViewProxyImpl::checkSizeConstraint(Steinberg::ViewRect* rect) {
     // TODO: Implement
-    bridge.logger.log("TODO: IPluginView::checkSizeConstraint()");
+    bridge.logger.log("TODO: IPlugView::checkSizeConstraint()");
     return Steinberg::kNotImplemented;
 }
