@@ -17,11 +17,8 @@
 #pragma once
 
 #include <bitsery/ext/std_variant.h>
-#include <pluginterfaces/vst/ivstcomponent.h>
 
 #include "../common.h"
-#include "base.h"
-#include "host-application.h"
 #include "plugin/audio-processor.h"
 #include "plugin/component.h"
 #include "plugin/connection-point.h"

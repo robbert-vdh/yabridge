@@ -90,8 +90,8 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
     /**
      * The lifetime of this object should be bound to the object we created it
      * for. When for instance the `Vst3PluginProxy` instance with id `n` gets
-     * dropped and we also track a `YaHostApplicationImpl` for the component
-     * with instance id `n`, then that should also be dropped.
+     * dropped, the corresponding `YaHostApplicationImpl` then that should also
+     * be dropped.
      */
     virtual ~YaHostApplication();
 

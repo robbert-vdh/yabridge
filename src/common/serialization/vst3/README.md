@@ -19,11 +19,14 @@ VST3 plugin interfaces are implemented as follows:
 
 VST3 host interfaces are implemented as follows:
 
-| yabridge class      | Interfaces         |
-| ------------------- | ------------------ |
-| `YaHostApplication` | `IHostApplication` |
+| yabridge class              | Included in                 | Interfaces          |
+| --------------------------- | --------------------------- | ------------------- |
+| `YaHostApplication`         |                             | `IHostApplication`  |
+| `Vst3ComponentHandlerProxy` |                             | All of the below:   |
+| `YaComponentHandler`        | `Vst3ComponentHandlerProxy` | `IComponentHandler` |
 
-The following (host) interfaces are also implemented for serialization purposes:
+The following host interfaces are passed as function arguments and are thus also
+implemented for serialization purposes:
 
 | yabridge class       | Interfaces          | Notes                                                                  |
 | -------------------- | ------------------- | ---------------------------------------------------------------------- |
