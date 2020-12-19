@@ -61,6 +61,27 @@ class YaPlugView : public Steinberg::IPlugView {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IPlugView::isPlatformTypeSupported(type)` to the Wine plugin host. We
+     * will of course change `kPlatformStringLinux` for `kPlatformStringWin`,
+     * because why would a Windows VST3 plugin have X11 support? (and how would
+     * that even work)
+     */
+    struct IsPlatformTypeSupported {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        std::string type;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.text1b(type, 128);
+        }
+    };
+
     virtual tresult PLUGIN_API
     isPlatformTypeSupported(Steinberg::FIDString type) override = 0;
     virtual tresult PLUGIN_API attached(void* parent,

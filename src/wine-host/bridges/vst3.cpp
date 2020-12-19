@@ -398,6 +398,19 @@ void Vst3Bridge::run() {
                                    request.instance_id)
                              : std::nullopt)};
             },
+            [&](const YaPlugView::IsPlatformTypeSupported& request)
+                -> YaPlugView::IsPlatformTypeSupported::Response {
+                // The host will of course want to pass an X11 window ID for the
+                // plugin to embed itself in, so we'll have to translate this to
+                // a HWND
+                const std::string type =
+                    request.type == Steinberg::kPlatformTypeX11EmbedWindowID
+                        ? Steinberg::kPlatformTypeHWND
+                        : request.type;
+
+                return object_instances[request.owner_instance_id]
+                    .plug_view->isPlatformTypeSupported(type.c_str());
+            },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
                 // If we got passed a host context, we'll create a proxy object

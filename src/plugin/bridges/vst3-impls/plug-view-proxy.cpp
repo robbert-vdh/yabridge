@@ -42,9 +42,10 @@ Vst3PlugViewProxyImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
 
 tresult PLUGIN_API
 Vst3PlugViewProxyImpl::isPlatformTypeSupported(Steinberg::FIDString type) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IPlugView::isPlatformTypeSupported()");
-    return Steinberg::kNotImplemented;
+    // We'll swap the X11 window ID platform type string for the Win32 HWND
+    // equivalent on the Wine side
+    return bridge.send_message(YaPlugView::IsPlatformTypeSupported{
+        .owner_instance_id = owner_instance_id(), .type = type});
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::attached(void* parent,
