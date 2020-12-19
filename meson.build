@@ -101,6 +101,7 @@ vst3_plugin_sources = [
   'src/common/utils.cpp',
   'src/plugin/bridges/vst3.cpp',
   'src/plugin/bridges/vst3-impls/plugin-factory.cpp',
+  'src/plugin/bridges/vst3-impls/plug-view-proxy.cpp',
   'src/plugin/bridges/vst3-impls/plugin-proxy.cpp',
   'src/plugin/host-process.cpp',
   'src/plugin/utils.cpp',
