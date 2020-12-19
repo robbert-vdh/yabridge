@@ -28,18 +28,20 @@ tresult PLUGIN_API
 YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
                                     Steinberg::FIDString _iid,
                                     void** obj) {
-    if (!_iid || !cid) {
+    constexpr size_t uid_size = sizeof(Steinberg::TUID);
+    if (!cid || !_iid || strnlen(cid, uid_size) < uid_size ||
+        strnlen(_iid, uid_size) < uid_size) {
         return Steinberg::kInvalidArgument;
     }
 
     ArrayUID cid_array;
-    std::copy(cid, cid + sizeof(Steinberg::TUID), cid_array.begin());
+    std::copy(cid, cid + std::extent_v<Steinberg::TUID>, cid_array.begin());
 
     // FIXME: `_iid` in Bitwig Studio 3.3.1 is not null terminated, and the
     //        comparison below will thus fail since the strings have different
-    //        lengths. We'll temporarily work around this, and if this end sup
-    //        not being us doing something strange then we should report it.
-    constexpr size_t uid_size = sizeof(Steinberg::TUID);
+    //        lengths. Since it looks like the module implementation that comes
+    //        with the SDK has this same issue I think it might just be a case
+    //        of Steinberg not following its own specifications.
     std::string iid_string(_iid, uid_size);
 
     Vst3PluginProxy::Construct::Interface requested_interface;
@@ -55,12 +57,8 @@ YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
         // print a recognizable log message. I don't think they include a safe
         // way to convert a `FIDString/char*` into a `FUID`, so this will have
         // to do.
-        std::optional<Steinberg::FUID> uid;
-        if (_iid && strnlen(_iid, uid_size) >= uid_size) {
-            uid = Steinberg::FUID::fromTUID(
-                *reinterpret_cast<const Steinberg::TUID*>(&*_iid));
-        }
-
+        const Steinberg::FUID uid = Steinberg::FUID::fromTUID(
+            *reinterpret_cast<const Steinberg::TUID*>(&*_iid));
         bridge.logger.log_unknown_interface(
             "In IPluginFactory::createInstance()", uid);
 
