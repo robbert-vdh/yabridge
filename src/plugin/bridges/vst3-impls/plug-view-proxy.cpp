@@ -87,9 +87,19 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::onKeyUp(char16 key,
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::getSize(Steinberg::ViewRect* size) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IPlugView::getSize()");
-    return Steinberg::kNotImplemented;
+    if (size) {
+        const GetSizeResponse response =
+            bridge.send_message(YaPlugView::GetSize{
+                .owner_instance_id = owner_instance_id(), .size = *size});
+
+        *size = response.updated_size;
+
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to 'IPlugView::getSize()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onSize(Steinberg::ViewRect* newSize) {

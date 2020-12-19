@@ -111,6 +111,7 @@ class Vst3Logger {
     bool log_request(bool is_host_vst,
                      const YaPlugView::IsPlatformTypeSupported&);
     bool log_request(bool is_host_vst, const YaPlugView::Attached&);
+    bool log_request(bool is_host_vst, const YaPlugView::GetSize&);
     bool log_request(bool is_host_vst, const YaPluginBase::Initialize&);
     bool log_request(bool is_host_vst, const YaPluginBase::Terminate&);
     bool log_request(bool is_host_vst, const YaPluginFactory::Construct&);
@@ -147,6 +148,7 @@ class Vst3Logger {
                       const YaEditController::GetParamValueByStringResponse&);
     void log_response(bool is_host_vst,
                       const YaEditController::CreateViewResponse&);
+    void log_response(bool is_host_vst, const YaPlugView::GetSizeResponse&);
     void log_response(bool is_host_vst, const YaPluginFactory::ConstructArgs&);
     void log_response(bool is_host_vst, const Configuration&);
 

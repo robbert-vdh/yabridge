@@ -120,6 +120,39 @@ class YaPlugView : public Steinberg::IPlugView {
     virtual tresult PLUGIN_API onKeyUp(char16 key,
                                        int16 keyCode,
                                        int16 modifiers) override = 0;
+
+    /**
+     * The response code and editor size returned by a call to
+     * `IPlugView::getSize(&size)`.
+     */
+    struct GetSizeResponse {
+        UniversalTResult result;
+        Steinberg::ViewRect updated_size;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(updated_size);
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IPlugView::getSize(&size)`.
+     */
+    struct GetSize {
+        using Response = GetSizeResponse;
+
+        native_size_t owner_instance_id;
+
+        Steinberg::ViewRect size;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.object(size);
+        }
+    };
+
     virtual tresult PLUGIN_API getSize(Steinberg::ViewRect* size) override = 0;
     virtual tresult PLUGIN_API
     onSize(Steinberg::ViewRect* newSize) override = 0;
@@ -135,3 +168,13 @@ class YaPlugView : public Steinberg::IPlugView {
 };
 
 #pragma GCC diagnostic pop
+
+namespace Steinberg {
+template <typename S>
+void serialize(S& s, ViewRect& rect) {
+    s.value4b(rect.left);
+    s.value4b(rect.top);
+    s.value4b(rect.right);
+    s.value4b(rect.bottom);
+}
+}  // namespace Steinberg

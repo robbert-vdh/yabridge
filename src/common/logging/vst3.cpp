@@ -462,6 +462,13 @@ bool Vst3Logger::log_request(bool is_host_vst,
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaPlugView::GetSize& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id << ": IPlugView::getSize(size*)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
@@ -721,6 +728,19 @@ void Vst3Logger::log_response(
             message << "<IPlugView*>";
         } else {
             message << "<nullptr>";
+        }
+    });
+}
+
+void Vst3Logger::log_response(bool is_host_vst,
+                              const YaPlugView::GetSizeResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", <ViewRect* with left = " << response.updated_size.left
+                    << ", top = " << response.updated_size.top
+                    << ", right = " << response.updated_size.right
+                    << ", bottom = " << response.updated_size.bottom << ">";
         }
     });
 }

@@ -446,6 +446,14 @@ void Vst3Bridge::run() {
 
                 return result;
             },
+            [&](YaPlugView::GetSize& request) -> YaPlugView::GetSize::Response {
+                const tresult result =
+                    object_instances[request.owner_instance_id]
+                        .plug_view->getSize(&request.size);
+
+                return YaPlugView::GetSizeResponse{
+                    .result = result, .updated_size = request.size};
+            },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
                 // If we got passed a host context, we'll create a proxy object
