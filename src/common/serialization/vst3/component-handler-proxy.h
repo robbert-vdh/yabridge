@@ -17,13 +17,7 @@
 #pragma once
 
 #include "../common.h"
-#include "base.h"
-#include "host-application.h"
-#include "plugin/audio-processor.h"
-#include "plugin/component.h"
-#include "plugin/connection-point.h"
-#include "plugin/edit-controller.h"
-#include "plugin/plugin-base.h"
+#include "component-handler/component-handler.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -36,7 +30,7 @@
  * plugin we are proxying for the `IComponentHandler*` argument passed to plugin
  * by the host.
  */
-class Vst3ComponentHandlerProxy {
+class Vst3ComponentHandlerProxy : public YaComponentHandler {
    public:
     /**
      * These are the arguments for constructing a
@@ -60,22 +54,12 @@ class Vst3ComponentHandlerProxy {
          */
         native_size_t owner_instance_id;
 
-        // TODO:
-        // YaAudioProcessor::ConstructArgs audio_processor_args;
-        // YaComponent::ConstructArgs component_args;
-        // YaConnectionPoint::ConstructArgs connection_point_args;
-        // YaEditController::ConstructArgs edit_controller_2_args;
-        // YaPluginBase::ConstructArgs plugin_base_args;
+        YaComponentHandler::ConstructArgs component_handler_args;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
-            // TODO:
-            // s.object(audio_processor_args);
-            // s.object(component_args);
-            // s.object(connection_point_args);
-            // s.object(edit_controller_2_args);
-            // s.object(plugin_base_args);
+            s.object(component_handler_args);
         }
     };
 
