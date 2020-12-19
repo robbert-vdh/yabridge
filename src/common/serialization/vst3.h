@@ -105,7 +105,8 @@ void serialize(S& s, ControlRequest& payload) {
  * information we want or the operation we want to perform. A request of type
  * `CallbackRequest(T)` should send back a `T::Response`.
  */
-using CallbackRequest = std::variant<WantsConfiguration>;
+using CallbackRequest =
+    std::variant<WantsConfiguration, YaComponentHandler::BeginEdit>;
 
 template <typename S>
 void serialize(S& s, CallbackRequest& payload) {

@@ -79,8 +79,17 @@ Vst3PluginBridge::Vst3PluginBridge()
     host_callback_handler = std::jthread([&]() {
         sockets.vst_host_callback.receive_messages(
             std::pair<Vst3Logger&, bool>(logger, false),
-            overload{[&](const WantsConfiguration&)
-                         -> WantsConfiguration::Response { return config; }});
+            overload{
+                [&](const WantsConfiguration&) -> WantsConfiguration::Response {
+                    return config;
+                },
+                [&](const YaComponentHandler::BeginEdit& request)
+                    -> YaComponentHandler::BeginEdit::Response {
+                    return plugin_proxies.at(request.owner_instance_id)
+                        .get()
+                        .component_handler->beginEdit(request.id);
+                },
+            });
     });
 }
 

@@ -446,6 +446,14 @@ bool Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     });
 }
 
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponentHandler::BeginEdit& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IComponentHandler::beginEdit(" << request.id << ")";
+    });
+}
+
 void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
     log_response_base(is_host_vst, [&](auto& message) { message << "ACK"; });
 }

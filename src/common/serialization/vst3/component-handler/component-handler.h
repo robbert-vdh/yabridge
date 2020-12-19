@@ -61,6 +61,24 @@ class YaComponentHandler : public Steinberg::Vst::IComponentHandler {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to `IComponentHandler::beginEdit(id)` to
+     * the component handler provided by the host.
+     */
+    struct BeginEdit {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        Steinberg::Vst::ParamID id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value4b(id);
+        }
+    };
+
     virtual tresult PLUGIN_API
     beginEdit(Steinberg::Vst::ParamID id) override = 0;
     virtual tresult PLUGIN_API

@@ -122,9 +122,6 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API initialize(FUnknown* context) override;
     tresult PLUGIN_API terminate() override;
 
-   private:
-    Vst3PluginBridge& bridge;
-
     /**
      * An `IHostApplication` instance if we get one through
      * `IPluginBase::initialize()`. This should be the same for all plugin
@@ -141,4 +138,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * to this object.
      */
     Steinberg::IPtr<Steinberg::Vst::IComponentHandler> component_handler;
+
+   private:
+    Vst3PluginBridge& bridge;
 };

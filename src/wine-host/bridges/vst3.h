@@ -103,6 +103,16 @@ class Vst3Bridge : public HostBridge {
      */
     void run() override;
 
+    /**
+     * Send a callback message to the host return the response. This is a
+     * shorthand for `sockets.vst_host_callback.send_message` for use in VST3
+     * interface implementations.
+     */
+    template <typename T>
+    typename T::Response send_message(const T& object) {
+        return sockets.vst_host_callback.send_message(object, std::nullopt);
+    }
+
    private:
     /**
      * Generate a nique instance identifier using an atomic fetch-and-add. This
