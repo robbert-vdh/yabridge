@@ -17,24 +17,23 @@
 #pragma once
 
 #include "../common.h"
-#include "component-handler/component-handler.h"
+#include "plug-view/plug-view.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 
 /**
- * An abstract class that implements `IComponentHandler`, and optionally also
- * all other VST3 interfaces an object passed to
- * `IEditController::setComponentHandler()`. This works exactly the same as
- * `Vst3PluginProxy`, but instead of proxying for an object provided by the
- * plugin we are proxying for the `IComponentHandler*` argument passed to plugin
- * by the host.
+ * An abstract class that implements `IPlugView`, and optionally also all
+ * extensions to `IPlugView` depending on what the plugin's implementation
+ * supports. This provides a proxy for the `IPlugView*` returned by a plugin on
+ * `IEditController::createView()`, and it works exactly the same as
+ * `Vst3PluginProxy`.
  */
-class Vst3ComponentHandlerProxy : public YaComponentHandler {
+class Vst3PlugViewProxy : public YaPlugView {
    public:
     /**
      * These are the arguments for constructing a
-     * `Vst3ComponentHandlerProxyImpl`.
+     * `Vst3PlugViewProxyImpl`.
      */
     struct ConstructArgs {
         ConstructArgs();
@@ -47,19 +46,18 @@ class Vst3ComponentHandlerProxy : public YaComponentHandler {
                       size_t owner_instance_id);
 
         /**
-         * The unique instance identifier of the proxy object instance this
-         * component handler has been passed to and thus belongs to. This way we
-         * can refer to the correct 'actual' `IComponentHandler` instance when
-         * the plugin does a callback.
+         * The unique instance identifier of the proxy object that returned this
+         * `IPlugView*`. This way we can refer to the correct 'actual'
+         * `IPlugView*` when the host calls a function on this object.
          */
         native_size_t owner_instance_id;
 
-        YaComponentHandler::ConstructArgs component_handler_args;
+        YaPlugView::ConstructArgs plug_view_args;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
-            s.object(component_handler_args);
+            s.object(plug_view_args);
         }
     };
 
@@ -67,21 +65,18 @@ class Vst3ComponentHandlerProxy : public YaComponentHandler {
      * Instantiate this instance with arguments read from an actual component
      * handler.
      *
-     * @note Since this is passed as part of
-     *   `IEditController::setComponentHandler()`, there are no direct
-     *   `Construct` or `Destruct` messages. This object's lifetime is bound to
-     *   that of the objects they are passed to. If those objects get dropped,
-     *   then the host contexts should also be dropped.
+     * @note Since this is passed as part of `IEditController::createView()`,
+     *   there are is no direct `Construct`
+     *   message. The destructor should still send a message to drop the
+     *   original smart pointer.
      */
-    Vst3ComponentHandlerProxy(const ConstructArgs&& args);
+    Vst3PlugViewProxy(const ConstructArgs&& args);
 
     /**
-     * The lifetime of this object should be bound to the object we created it
-     * for. When for instance the `Vst3PluginProxy` instance with id `n` gets
-     * dropped a corresponding `Vst3ComponentHandlerProxyImpl` should also be
-     * dropped.
+     * @remark The plugin side implementation should send a control message to
+     *   clean up the instance on the Wine side in its destructor.
      */
-    virtual ~Vst3ComponentHandlerProxy();
+    virtual ~Vst3PlugViewProxy() = 0;
 
     DECLARE_FUNKNOWN_METHODS
 

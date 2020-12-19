@@ -85,7 +85,7 @@ class Vst3HostContextProxy : public YaHostApplication {
      * dropped a corresponding `Vst3HostContextProxyImpl` should also be
      * dropped.
      */
-    virtual ~Vst3HostContextProxy() = 0;
+    virtual ~Vst3HostContextProxy();
 
     DECLARE_FUNKNOWN_METHODS
 
