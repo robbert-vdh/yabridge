@@ -16,6 +16,8 @@
 
 #include "plugin-proxy.h"
 
+#include "plug-view-proxy.h"
+
 Vst3PluginProxyImpl::Vst3PluginProxyImpl(Vst3PluginBridge& bridge,
                                          Vst3PluginProxy::ConstructArgs&& args)
     : Vst3PluginProxy(std::move(args)), bridge(bridge) {
@@ -355,27 +357,35 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
 
 Steinberg::IPlugView* PLUGIN_API
 Vst3PluginProxyImpl::createView(Steinberg::FIDString name) {
-    // TODO: Implement
-    bridge.logger.log("TODO IEditController::createView()");
-    return nullptr;
+    CreateViewResponse response =
+        bridge.send_message(YaEditController::CreateView{
+            .instance_id = instance_id(), .name = name});
+
+    if (response.plug_view_args) {
+        // The host should manage this. Returning raw pointers feels scary.
+        return new Vst3PlugViewProxyImpl(bridge,
+                                         std::move(*response.plug_view_args));
+    } else {
+        return nullptr;
+    }
 }
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setKnobMode(Steinberg::Vst::KnobMode mode) {
     // TODO: Implement
-    bridge.logger.log("TODO IEditController2::setKnobMode()");
+    bridge.logger.log("TODO: IEditController2::setKnobMode()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::openHelp(TBool onlyCheck) {
     // TODO: Implement
-    bridge.logger.log("TODO IEditController2::openHelp()");
+    bridge.logger.log("TODO: IEditController2::openHelp()");
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::openAboutBox(TBool onlyCheck) {
     // TODO: Implement
-    bridge.logger.log("TODO IEditController2::openAboutBox()");
+    bridge.logger.log("TODO: IEditController2::openAboutBox()");
     return Steinberg::kNotImplemented;
 }
 

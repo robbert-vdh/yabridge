@@ -19,7 +19,8 @@ incomplete list of things that still have to be done before this can be used:
   - `IHostApplication::createComponent()`
   - `IConnectionPoint::notify()`, and support for indirectly connecting
     components through message passing proxies
-  - Finish implementing `IEditController{,2}`
+  - `IPlugView`
+  - `IEditController2`
   - All other mandatory interfaces
   - All other optional interfaces
 - Fully implemented: see [this
