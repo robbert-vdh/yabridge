@@ -23,7 +23,7 @@
 class YaHostApplicationImpl : public YaHostApplication {
    public:
     YaHostApplicationImpl(Vst3Bridge& bridge,
-                              YaHostApplication::ConstructArgs&& args);
+                          YaHostApplication::ConstructArgs&& args);
 
     /**
      * We'll override the query interface to log queries for interfaces we do

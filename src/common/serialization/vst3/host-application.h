@@ -29,14 +29,12 @@
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 
 /**
- * Wraps around `IHostApplication` for serialization purposes. See `README.md`
- * for more information on how this works. This is used both to proxy the host
- * application context passed during `IPluginBase::intialize()` as well as for
- * `IPluginFactory3::setHostContext()`. This interface is thus implemented on
- * both the native plugin side as well as the Wine plugin host side.
- *
- * TODO: When implementing more host interfaces, also rework this into a
- *       monolithic proxy class like with the plugin.
+ * Wraps around `IHostApplication` for serialization purposes. An instance of
+ * this proxy object will be initialized on the Wine plugin host side after the
+ * host passes an actual instance to the plugin, and all function calls made to
+ * this proxy will be passed through to the actual object. This is used to proxy
+ * both the host application context passed during `IPluginBase::intialize()` as
+ * well as for the 'global' context in `IPluginFactory3::setHostContext()`.
  */
 class YaHostApplication : public Steinberg::Vst::IHostApplication {
    public:
@@ -50,15 +48,14 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
          * Read arguments from an existing implementation.
          */
         ConstructArgs(Steinberg::IPtr<Steinberg::Vst::IHostApplication> context,
-                      std::optional<size_t> component_instance_id);
+                      std::optional<size_t> owner_instance_id);
 
         /**
-         * The unique instance identifier of the component this host context has
-         * been passed to and thus belongs to, if we are handling
-         * `IpluginBase::initialize()`. When handling
-         * `IPluginFactory::setHostContext()` this will be empty.
+         * The unique instance identifier of the proxy object instance this host
+         * context has been passed to and thus belongs to. If we are handling
+         * When handling `IPluginFactory::setHostContext()` this will be empty.
          */
-        std::optional<native_size_t> component_instance_id;
+        std::optional<native_size_t> owner_instance_id;
 
         /**
          * For `IHostApplication::getName`.
@@ -67,7 +64,7 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
 
         template <typename S>
         void serialize(S& s) {
-            s.ext(component_instance_id, bitsery::ext::StdOptional{},
+            s.ext(owner_instance_id, bitsery::ext::StdOptional{},
                   [](S& s, native_size_t& instance_id) {
                       s.value8b(instance_id);
                   });
@@ -87,8 +84,6 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
      *   `Destruct` messages. This object's lifetime is bound to that of the
      *   objects they are passed to. If those objects get dropped, then the host
      *   contexts should also be dropped.
-     *
-     * TODO: Check if this ends up working out this way
      */
     YaHostApplication(const ConstructArgs&& args);
 

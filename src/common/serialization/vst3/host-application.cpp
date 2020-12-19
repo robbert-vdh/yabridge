@@ -20,8 +20,8 @@ YaHostApplication::ConstructArgs::ConstructArgs() {}
 
 YaHostApplication::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::Vst::IHostApplication> context,
-    std::optional<size_t> component_instance_id)
-    : component_instance_id(component_instance_id) {
+    std::optional<size_t> owner_instance_id)
+    : owner_instance_id(owner_instance_id) {
     Steinberg::Vst::String128 name_array;
     if (context->getName(name_array) == Steinberg::kResultOk) {
         name = tchar_pointer_to_u16string(name_array);
