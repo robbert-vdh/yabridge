@@ -45,14 +45,18 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setBusArrangements(
     int32 numIns,
     Steinberg::Vst::SpeakerArrangement* outputs,
     int32 numOuts) {
-    assert(inputs && outputs);
+    // NOTE: Ardour passes a null pointer when `numIns` or `numOuts` is 0, so we
+    //       need to work around that
     return bridge.send_message(YaAudioProcessor::SetBusArrangements{
         .instance_id = instance_id(),
-        .inputs = std::vector<Steinberg::Vst::SpeakerArrangement>(
-            inputs, &inputs[numIns]),
+        .inputs = (inputs ? std::vector<Steinberg::Vst::SpeakerArrangement>(
+                                inputs, &inputs[numIns])
+                          : std::vector<Steinberg::Vst::SpeakerArrangement>()),
         .num_ins = numIns,
-        .outputs = std::vector<Steinberg::Vst::SpeakerArrangement>(
-            outputs, &outputs[numOuts]),
+        .outputs =
+            (outputs ? std::vector<Steinberg::Vst::SpeakerArrangement>(
+                           outputs, &outputs[numOuts])
+                     : std::vector<Steinberg::Vst::SpeakerArrangement>()),
         .num_outs = numOuts,
     });
 }
