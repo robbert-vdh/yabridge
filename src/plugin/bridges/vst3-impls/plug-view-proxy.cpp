@@ -22,11 +22,10 @@ Vst3PlugViewProxyImpl::Vst3PlugViewProxyImpl(
     : Vst3PlugViewProxy(std::move(args)), bridge(bridge) {}
 
 Vst3PlugViewProxyImpl::~Vst3PlugViewProxyImpl() {
-    // TODO: Implement this:
-    // // Also drop the plug view smart pointer on the Wine side when this gets
-    // // dropped
-    // bridge.send_message(
-    //     Vst3PlugViewProxy::Destruct{.instance_id = instance_id()});
+    // Also drop the plug view smart pointer on the Wine side when this gets
+    // dropped
+    bridge.send_message(
+        Vst3PlugViewProxy::Destruct{.owner_instance_id = owner_instance_id()});
 }
 
 tresult PLUGIN_API

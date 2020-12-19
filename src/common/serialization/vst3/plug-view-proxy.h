@@ -73,6 +73,22 @@ class Vst3PlugViewProxy : public YaPlugView {
     Vst3PlugViewProxy(const ConstructArgs&& args);
 
     /**
+     * Message to request the Wine plugin host to destroy the `IPlugView*`
+     * returned by the object with the given instance ID. Sent from the
+     * destructor of `Vst3PlugViewProxyImpl`.
+     */
+    struct Destruct {
+        using Response = Ack;
+
+        native_size_t owner_instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+        }
+    };
+
+    /**
      * @remark The plugin side implementation should send a control message to
      *   clean up the instance on the Wine side in its destructor.
      */

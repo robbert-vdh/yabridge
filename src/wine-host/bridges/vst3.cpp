@@ -67,6 +67,14 @@ void Vst3Bridge::run() {
     sockets.host_vst_control.receive_messages(
         std::nullopt,
         overload{
+            [&](const Vst3PlugViewProxy::Destruct& request)
+                -> Vst3PlugViewProxy::Destruct::Response {
+                // When the pointer gets dropped by the host, we want to drop it
+                // here as well
+                object_instances[request.owner_instance_id].plug_view.reset();
+
+                return Ack{};
+            },
             [&](const Vst3PluginProxy::Construct& request)
                 -> Vst3PluginProxy::Construct::Response {
                 Steinberg::TUID cid;

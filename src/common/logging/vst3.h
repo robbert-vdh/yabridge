@@ -59,6 +59,7 @@ class Vst3Logger {
     // `log_request()` call returned `true`. This way we can filter out the
     // log message for the response together with the request.
 
+    bool log_request(bool is_host_vst, const Vst3PlugViewProxy::Destruct&);
     bool log_request(bool is_host_vst, const Vst3PluginProxy::Construct&);
     bool log_request(bool is_host_vst, const Vst3PluginProxy::Destruct&);
     bool log_request(bool is_host_vst, const Vst3PluginProxy::SetState&);

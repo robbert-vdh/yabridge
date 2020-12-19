@@ -59,7 +59,8 @@ struct WantsConfiguration {
  * encodes the information we request or the operation we want to perform. A
  * request of type `ControlRequest(T)` should send back a `T::Response`.
  */
-using ControlRequest = std::variant<Vst3PluginProxy::Construct,
+using ControlRequest = std::variant<Vst3PlugViewProxy::Destruct,
+                                    Vst3PluginProxy::Construct,
                                     Vst3PluginProxy::Destruct,
                                     Vst3PluginProxy::SetState,
                                     Vst3PluginProxy::GetState,
