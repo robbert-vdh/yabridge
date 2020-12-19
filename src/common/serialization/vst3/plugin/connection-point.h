@@ -70,6 +70,8 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
     /**
      * Message to pass through a call to
      * `IConnectionPoint::connect(other_instance_id)` to the Wine plugin host.
+     * At the moment this is only implemented for directly connecting objects
+     * created by the plugin without any proxies in between them.
      */
     struct Connect {
         using Response = UniversalTResult;
@@ -91,6 +93,31 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
     };
 
     virtual tresult PLUGIN_API connect(IConnectionPoint* other) override = 0;
+
+    /**
+     * Message to pass through a call to
+     * `IConnectionPoint::disconnect(other_instance_id)` to the Wine plugin
+     * host. At the moment this is only implemented for directly connecting
+     * objects created by the plugin without any proxies in between them.
+     */
+    struct Disconnect {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        /**
+         * The other object backed by a `Vst3PluginProxy` this object was
+         * connected to and should be disconnected from. When connecting.
+         */
+        native_size_t other_instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value8b(other_instance_id);
+        }
+    };
+
     virtual tresult PLUGIN_API disconnect(IConnectionPoint* other) override = 0;
     virtual tresult PLUGIN_API
     notify(Steinberg::Vst::IMessage* message) override = 0;

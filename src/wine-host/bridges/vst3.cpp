@@ -261,6 +261,15 @@ void Vst3Bridge::run() {
                         object_instances[request.other_instance_id]
                             .connection_point);
             },
+            [&](const YaConnectionPoint::Disconnect& request)
+                -> YaConnectionPoint::Disconnect::Response {
+                // TODO: Add support for connecting objects through a proxy
+                //       object provided by the host
+                return object_instances[request.instance_id]
+                    .connection_point->disconnect(
+                        object_instances[request.other_instance_id]
+                            .connection_point);
+            },
             [&](YaEditController2::SetComponentState& request)
                 -> YaEditController2::SetComponentState::Response {
                 return object_instances[request.instance_id]

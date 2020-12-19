@@ -23,7 +23,7 @@ VST3 host interfaces are implemented as follows:
 | ------------------- | ------------------ |
 | `YaHostApplication` | `IHostApplication` |
 
-The following (host) interfaces are also implemented fur serialization purposes:
+The following (host) interfaces are also implemented for serialization purposes:
 
 | yabridge class       | Interfaces          | Notes                                                                  |
 | -------------------- | ------------------- | ---------------------------------------------------------------------- |

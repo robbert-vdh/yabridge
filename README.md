@@ -17,7 +17,8 @@ incomplete list of things that still have to be done before this can be used:
 
 - Interfaces left to implement:
   - `IHostApplication::createComponent()`
-  - The other parts of `IConnectionPoint`, including support for host provided proxies
+  - `IConnectionPoint::notify()`, and support for indirectly connecting
+    components through message passing proxies
   - Finish implementing `IEditController{,2}`
   - All other mandatory interfaces
   - All other optional interfaces

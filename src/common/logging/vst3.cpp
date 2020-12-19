@@ -283,6 +283,15 @@ void Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+void Vst3Logger::log_request(bool is_host_vst,
+                             const YaConnectionPoint::Disconnect& request) {
+    log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IConnectionPoint::disconnect(other = <IConnectionPoint* #"
+                << request.other_instance_id << ">)";
+    });
+}
+
 void Vst3Logger::log_request(
     bool is_host_vst,
     const YaEditController2::SetComponentState& request) {

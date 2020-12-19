@@ -207,9 +207,19 @@ tresult PLUGIN_API Vst3PluginProxyImpl::connect(IConnectionPoint* other) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::disconnect(IConnectionPoint* other) {
-    // TODO: Implement
-    bridge.logger.log("TODO IConnectionPoint::disconnect()");
-    return Steinberg::kNotImplemented;
+    // See `Vst3PluginProxyImpl::connect()`
+    if (auto other_proxy = dynamic_cast<Vst3PluginProxy*>(other)) {
+        return bridge.send_message(YaConnectionPoint::Disconnect{
+            .instance_id = instance_id(),
+            .other_instance_id = other_proxy->instance_id()});
+    } else {
+        // TODO: Add support for `ConnectionProxy` and similar objects
+        bridge.logger.log(
+            "WARNING: The host passed a proxy proxy object to "
+            "'IConnectionPoint::disconnect()'. This is currently not "
+            "supported.");
+        return Steinberg::kNotImplemented;
+    }
 }
 
 tresult PLUGIN_API
