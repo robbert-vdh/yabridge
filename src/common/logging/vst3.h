@@ -55,55 +55,58 @@ class Vst3Logger {
     // that print information about the request and the response. The boolean
     // flag here indicates whether the request was initiated on the host side
     // (what we'll call a control message).
+    // `log_response()` should only be called if the corresponding
+    // `log_request()` call returned `true`. This way we can filter out the
+    // log message for the response together with the request.
 
-    void log_request(bool is_host_vst, const Vst3PluginProxy::Construct&);
-    void log_request(bool is_host_vst, const Vst3PluginProxy::Destruct&);
-    void log_request(bool is_host_vst, const Vst3PluginProxy::SetState&);
-    void log_request(bool is_host_vst, const Vst3PluginProxy::GetState&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst, const Vst3PluginProxy::Construct&);
+    bool log_request(bool is_host_vst, const Vst3PluginProxy::Destruct&);
+    bool log_request(bool is_host_vst, const Vst3PluginProxy::SetState&);
+    bool log_request(bool is_host_vst, const Vst3PluginProxy::GetState&);
+    bool log_request(bool is_host_vst,
                      const YaAudioProcessor::SetBusArrangements&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst,
                      const YaAudioProcessor::GetBusArrangement&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst,
                      const YaAudioProcessor::CanProcessSampleSize&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst,
                      const YaAudioProcessor::GetLatencySamples&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst,
                      const YaAudioProcessor::SetupProcessing&);
-    void log_request(bool is_host_vst, const YaAudioProcessor::SetProcessing&);
-    void log_request(bool is_host_vst, const YaAudioProcessor::Process&);
-    void log_request(bool is_host_vst, const YaAudioProcessor::GetTailSamples&);
-    void log_request(bool is_host_vst, const YaComponent::SetIoMode&);
-    void log_request(bool is_host_vst, const YaComponent::GetBusCount&);
-    void log_request(bool is_host_vst, const YaComponent::GetBusInfo&);
-    void log_request(bool is_host_vst, const YaComponent::GetRoutingInfo&);
-    void log_request(bool is_host_vst, const YaComponent::ActivateBus&);
-    void log_request(bool is_host_vst, const YaComponent::SetActive&);
-    void log_request(bool is_host_vst, const YaConnectionPoint::Connect&);
-    void log_request(bool is_host_vst, const YaConnectionPoint::Disconnect&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst, const YaAudioProcessor::SetProcessing&);
+    bool log_request(bool is_host_vst, const YaAudioProcessor::Process&);
+    bool log_request(bool is_host_vst, const YaAudioProcessor::GetTailSamples&);
+    bool log_request(bool is_host_vst, const YaComponent::SetIoMode&);
+    bool log_request(bool is_host_vst, const YaComponent::GetBusCount&);
+    bool log_request(bool is_host_vst, const YaComponent::GetBusInfo&);
+    bool log_request(bool is_host_vst, const YaComponent::GetRoutingInfo&);
+    bool log_request(bool is_host_vst, const YaComponent::ActivateBus&);
+    bool log_request(bool is_host_vst, const YaComponent::SetActive&);
+    bool log_request(bool is_host_vst, const YaConnectionPoint::Connect&);
+    bool log_request(bool is_host_vst, const YaConnectionPoint::Disconnect&);
+    bool log_request(bool is_host_vst,
                      const YaEditController2::SetComponentState&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst,
                      const YaEditController2::GetParameterCount&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst,
                      const YaEditController2::GetParameterInfo&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst,
                      const YaEditController2::GetParamStringByValue&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst,
                      const YaEditController2::GetParamValueByString&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst,
                      const YaEditController2::NormalizedParamToPlain&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst,
                      const YaEditController2::PlainParamToNormalized&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst,
                      const YaEditController2::GetParamNormalized&);
-    void log_request(bool is_host_vst,
+    bool log_request(bool is_host_vst,
                      const YaEditController2::SetParamNormalized&);
-    void log_request(bool is_host_vst, const YaPluginBase::Initialize&);
-    void log_request(bool is_host_vst, const YaPluginBase::Terminate&);
-    void log_request(bool is_host_vst, const YaPluginFactory::Construct&);
-    void log_request(bool is_host_vst, const YaPluginFactory::SetHostContext&);
-    void log_request(bool is_host_vst, const WantsConfiguration&);
+    bool log_request(bool is_host_vst, const YaPluginBase::Initialize&);
+    bool log_request(bool is_host_vst, const YaPluginBase::Terminate&);
+    bool log_request(bool is_host_vst, const YaPluginFactory::Construct&);
+    bool log_request(bool is_host_vst, const YaPluginFactory::SetHostContext&);
+    bool log_request(bool is_host_vst, const WantsConfiguration&);
 
     void log_response(bool is_host_vst, const Ack&);
     void log_response(
@@ -141,12 +144,11 @@ class Vst3Logger {
      * Log a request with a standard prefix based on the boolean flag we pass to
      * every logging function so we don't have to repeat it everywhere.
      *
-     * TODO: Make these logging messages return a boolean based on whether or
-     *       not it was filtered out. Don't show the responses for filtered out
-     *       messages.
+     * Returns `true` if the log message was displayed, and the response should
+     * thus also be logged.
      */
     template <std::invocable<std::ostringstream&> F>
-    void log_request_base(bool is_host_vst,
+    bool log_request_base(bool is_host_vst,
                           Logger::Verbosity min_verbosity,
                           F callback) {
         if (BOOST_UNLIKELY(logger.verbosity >= min_verbosity)) {
@@ -159,38 +161,36 @@ class Vst3Logger {
 
             callback(message);
             log(message.str());
+
+            return true;
+        } else {
+            return false;
         }
     }
 
     template <std::invocable<std::ostringstream&> F>
-    void log_request_base(bool is_host_vst, F callback) {
-        log_request_base(is_host_vst, Logger::Verbosity::most_events, callback);
+    bool log_request_base(bool is_host_vst, F callback) {
+        return log_request_base(is_host_vst, Logger::Verbosity::most_events,
+                                callback);
     }
 
     /**
      * Log a response with a standard prefix based on the boolean flag we pass
      * to every logging function so we don't have to repeat it everywhere.
+     *
+     * This should only be called when the corresonding `log_request()` returned
+     * `true`.
      */
     template <std::invocable<std::ostringstream&> F>
-    void log_response_base(bool is_host_vst,
-                           Logger::Verbosity min_verbosity,
-                           F callback) {
-        if (BOOST_UNLIKELY(logger.verbosity >= min_verbosity)) {
-            std::ostringstream message;
-            if (is_host_vst) {
-                message << "[host -> vst]    ";
-            } else {
-                message << "[host <- vst]    ";
-            }
-
-            callback(message);
-            log(message.str());
-        }
-    }
-
-    template <std::invocable<std::ostringstream&> F>
     void log_response_base(bool is_host_vst, F callback) {
-        log_response_base(is_host_vst, Logger::Verbosity::most_events,
-                          callback);
+        std::ostringstream message;
+        if (is_host_vst) {
+            message << "[host -> vst]    ";
+        } else {
+            message << "[host <- vst]    ";
+        }
+
+        callback(message);
+        log(message.str());
     }
 };

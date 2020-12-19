@@ -106,9 +106,13 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
         using TResponse = typename T::Response;
 
+        // Since a lot of messages just return a `tresult`, we can't filter out
+        // responses based on the response message type. Instead, we'll just
+        // only print the responses when the request was not filtered out.
+        bool should_log_response = false;
         if (logging) {
             auto [logger, is_host_vst] = *logging;
-            logger.log_request(is_host_vst, object);
+            should_log_response = logger.log_request(is_host_vst, object);
         }
 
         // A socket only handles a single request at a time as to prevent
@@ -125,7 +129,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                 return std::monostate{};
             });
 
-        if (logging) {
+        if (should_log_response) {
             auto [logger, is_host_vst] = *logging;
             logger.log_response(!is_host_vst, response_object);
         }
@@ -165,11 +169,14 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         const auto process_message =
             [&](boost::asio::local::stream_protocol::socket& socket) {
                 auto request = read_object<Request>(socket);
+
+                // See the comment in `receive_into()` for more information
+                bool should_log_response = false;
                 if (logging) {
-                    std::visit(
+                    should_log_response = std::visit(
                         [&](const auto& object) {
                             auto [logger, is_host_vst] = *logging;
-                            logger.log_request(is_host_vst, object);
+                            return logger.log_request(is_host_vst, object);
                         },
                         request);
                 }
@@ -181,7 +188,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                     [&]<typename T>(T object) {
                         typename T::Response response = callback(object);
 
-                        if (logging) {
+                        if (should_log_response) {
                             auto [logger, is_host_vst] = *logging;
                             logger.log_response(!is_host_vst, response);
                         }
