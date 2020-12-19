@@ -28,9 +28,9 @@ tresult PLUGIN_API
 YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
                                     Steinberg::FIDString _iid,
                                     void** obj) {
+    // Class IDs may be padded with null bytes
     constexpr size_t uid_size = sizeof(Steinberg::TUID);
-    if (!cid || !_iid || strnlen(cid, uid_size) < uid_size ||
-        strnlen(_iid, uid_size) < uid_size) {
+    if (!cid || !_iid || strnlen(_iid, uid_size) < uid_size) {
         return Steinberg::kInvalidArgument;
     }
 
