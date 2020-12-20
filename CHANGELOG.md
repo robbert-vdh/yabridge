@@ -8,6 +8,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased] - 2020-12-12
 
+### Added
+
+- Added the `with-vst3` option to control whether yabridge should be built with
+  VST3 support. This is enabled by default.
+
 ### Changed
 
 - Changed part of the build process considering [this Wine
@@ -35,8 +40,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   resutling in very bad performance. See the [compatibility
   options](https://github.com/robbert-vdh/yabridge#compatibility-options)
   section of the readme for more information on how to enable this.
-- Added the `with-vst3` option to control whether yabridge should be built with
-  VST3 support. This is enabled by default.
 
 ### Changed
 
