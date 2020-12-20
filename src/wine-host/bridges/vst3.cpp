@@ -86,20 +86,35 @@ void Vst3Bridge::run() {
                 // Even though we're requesting a specific interface (to mimic
                 // what the host is doing), we're immediately upcasting it to an
                 // `FUnknown` so we can create a perfect proxy object.
-                Steinberg::IPtr<Steinberg::FUnknown> object;
-                switch (request.requested_interface) {
-                    case Vst3PluginProxy::Construct::Interface::IComponent:
-                        object =
-                            module->getFactory()
-                                .createInstance<Steinberg::Vst::IComponent>(
-                                    cid);
-                        break;
-                    case Vst3PluginProxy::Construct::Interface::IEditController:
-                        object = module->getFactory()
-                                     .createInstance<
-                                         Steinberg::Vst::IEditController>(cid);
-                        break;
-                }
+                // We create the object from the GUI thread in case it
+                // immediatly starts timers or something (even though it
+                // shouldn't)
+                Steinberg::IPtr<Steinberg::FUnknown> object =
+                    main_context
+                        .run_in_context<Steinberg::IPtr<Steinberg::FUnknown>>(
+                            [&]() -> Steinberg::IPtr<Steinberg::FUnknown> {
+                                switch (request.requested_interface) {
+                                    case Vst3PluginProxy::Construct::Interface::
+                                        IComponent:
+                                        return module->getFactory()
+                                            .createInstance<
+                                                Steinberg::Vst::IComponent>(
+                                                cid);
+                                        break;
+                                    case Vst3PluginProxy::Construct::Interface::
+                                        IEditController:
+                                        return module->getFactory()
+                                            .createInstance<
+                                                Steinberg::Vst::
+                                                    IEditController>(cid);
+                                        break;
+                                    default:
+                                        // Unreachable
+                                        return nullptr;
+                                        break;
+                                }
+                            })
+                        .get();
 
                 if (object) {
                     std::lock_guard lock(object_instances_mutex);
@@ -490,15 +505,26 @@ void Vst3Bridge::run() {
                         nullptr;
                 }
 
-                return object_instances[request.instance_id]
-                    .plugin_base->initialize(
-                        object_instances[request.instance_id]
-                            .host_context_proxy);
+                // XXX: Should `IPlugView::{initialize,terminate}` be run from
+                //      the main UI thread? I can see how plugins would want to
+                //      start timers from here.
+                return main_context
+                    .run_in_context<tresult>([&]() {
+                        return object_instances[request.instance_id]
+                            .plugin_base->initialize(
+                                object_instances[request.instance_id]
+                                    .host_context_proxy);
+                    })
+                    .get();
             },
             [&](const YaPluginBase::Terminate& request)
                 -> YaPluginBase::Terminate::Response {
-                return object_instances[request.instance_id]
-                    .plugin_base->terminate();
+                return main_context
+                    .run_in_context<tresult>([&]() {
+                        return object_instances[request.instance_id]
+                            .plugin_base->terminate();
+                    })
+                    .get();
             },
             [&](const YaPluginFactory::Construct&)
                 -> YaPluginFactory::Construct::Response {
