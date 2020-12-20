@@ -10,6 +10,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+TODO: Add the relevant entries here for yabridge's VST3 support
+
 - Added the `with-vst3` option to control whether yabridge should be built with
   VST3 support. This is enabled by default.
 
