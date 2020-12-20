@@ -66,9 +66,15 @@ void Vst3Bridge::run() {
         overload{
             [&](const Vst3PlugViewProxy::Destruct& request)
                 -> Vst3PlugViewProxy::Destruct::Response {
-                // When the pointer gets dropped by the host, we want to drop it
-                // here as well
-                object_instances[request.owner_instance_id].plug_view.reset();
+                // XXX: Not sure if his has to be run form the UI thread
+                main_context
+                    .run_in_context([&]() {
+                        // When the pointer gets dropped by the host, we want to
+                        // drop it here as well
+                        object_instances[request.owner_instance_id]
+                            .plug_view.reset();
+                    })
+                    .wait();
 
                 return Ack{};
             },
@@ -376,10 +382,16 @@ void Vst3Bridge::run() {
             },
             [&](const YaEditController::CreateView& request)
                 -> YaEditController::CreateView::Response {
-                object_instances[request.instance_id].plug_view =
-                    Steinberg::owned(
-                        object_instances[request.instance_id]
-                            .edit_controller->createView(request.name.c_str()));
+                // Instantiate the object from the GUI thread
+                main_context
+                    .run_in_context([&]() {
+                        object_instances[request.instance_id].plug_view =
+                            Steinberg::owned(
+                                object_instances[request.instance_id]
+                                    .edit_controller->createView(
+                                        request.name.c_str()));
+                    })
+                    .wait();
 
                 // We'll create a proxy so the host can call functions on this
                 // `IPlugView` object
