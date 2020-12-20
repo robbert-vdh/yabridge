@@ -15,6 +15,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- `libyabridge.so` is now called `libyabridge-vst2.so`. If you're using
+  yabridgectl then nothing changes here. To avoid any confusion in the future
+  it's adviced to remove the old `libyabridge.so` file when upgrading.
 - Changed part of the build process considering [this Wine
   bug](https://bugs.winehq.org/show_bug.cgi?id=49138). Building with Wine 5.7
   and 5.8 required a change, but that change now breaks builds using Wine 6.0
