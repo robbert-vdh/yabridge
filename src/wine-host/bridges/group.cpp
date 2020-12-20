@@ -122,7 +122,7 @@ void GroupBridge::handle_plugin_run(size_t plugin_id, HostBridge* bridge) {
     // potentially corrupt our heap. This way we can also properly join the
     // thread again. If no active plugins remain, then we'll terminate the
     // process.
-    boost::asio::post(main_context.context, [this, plugin_id]() {
+    main_context.schedule_task([this, plugin_id]() {
         std::lock_guard lock(active_plugins_mutex);
 
         // The join is implicit because we're using Win32Thread (which mimics

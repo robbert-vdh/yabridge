@@ -18,6 +18,7 @@
 
 #include "boost-fix.h"
 
+#include <future>
 #include <memory>
 #include <optional>
 
@@ -27,6 +28,7 @@
 #endif
 #include <windows.h>
 
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/io_context.hpp>
 #include <function2/function2.hpp>
 
@@ -63,6 +65,52 @@ class MainContext {
     void stop();
 
     /**
+     * Asynchronously execute a function inside of this main IO context and
+     * return the results as a future. This is used to make sure that operations
+     * that may involve the Win32 message loop are all run from the same thread.
+     */
+    template <typename T, typename F>
+    std::future<T> run_in_context(F fn) {
+        std::promise<T> result{};
+        std::future<T> future = result.get_future();
+        boost::asio::dispatch(context,
+                              [result = std::move(result), fn]() mutable {
+                                  result.set_value(fn());
+                              });
+
+        return future;
+    }
+
+    /**
+     * The same as the above, but without returning a value. This allows us to
+     * wait for the task to have been run.
+     *
+     * @overload
+     */
+    template <typename F>
+    std::future<void> run_in_context(F fn) {
+        std::promise<void> result{};
+        std::future<void> future = result.get_future();
+        boost::asio::dispatch(context,
+                              [result = std::move(result), fn]() mutable {
+                                  fn();
+                                  result.set_value();
+                              });
+
+        return future;
+    }
+
+    /**
+     * Run a task within the IO context. The difference with `run_in_context()`
+     * is that this version does not guarantee that it's going to be executed as
+     * soon as possible, and thus we also won't return a future.
+     */
+    template <typename F>
+    void schedule_task(F fn) {
+        boost::asio::post(context, fn);
+    }
+
+    /**
      * Start a timer to handle events every `event_loop_interval` milliseconds.
      *
      * @param handler The function that should be executed in the IO context
@@ -88,8 +136,8 @@ class MainContext {
     }
 
     /**
-     * The raw IO context. Can and should be used directly for everything that's
-     * not the event handling loop.
+     * The raw IO context. Used to bind our sockets onto. Running things within
+     * this IO context should be done with the functions above.
      */
     boost::asio::io_context context;
 

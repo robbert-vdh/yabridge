@@ -16,8 +16,6 @@
 
 #include "vst2.h"
 
-#include <boost/asio/dispatch.hpp>
-#include <future>
 #include <iostream>
 #include <set>
 
@@ -333,15 +331,13 @@ void Vst2Bridge::run() {
                         // instantiated and where the Win32 message loop is
                         // handled.
                         if (unsafe_opcodes.contains(opcode)) {
-                            std::promise<intptr_t> dispatch_result;
-                            boost::asio::dispatch(main_context.context, [&]() {
-                                const intptr_t result = dispatch_wrapper(
-                                    plugin, opcode, index, value, data, option);
-
-                                dispatch_result.set_value(result);
-                            });
-
-                            return dispatch_result.get_future().get();
+                            return main_context
+                                .run_in_context<intptr_t>([&]() {
+                                    return dispatch_wrapper(plugin, opcode,
+                                                            index, value, data,
+                                                            option);
+                                })
+                                .get();
                         } else {
                             return dispatch_wrapper(plugin, opcode, index,
                                                     value, data, option);

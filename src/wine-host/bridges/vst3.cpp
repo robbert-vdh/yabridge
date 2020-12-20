@@ -16,11 +16,8 @@
 
 #include "vst3.h"
 
-#include <future>
-
 #include "../boost-fix.h"
 
-#include <boost/asio/dispatch.hpp>
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
 #include "vst3-impls/component-handler-proxy.h"
@@ -115,16 +112,15 @@ void Vst3Bridge::run() {
             },
             [&](const Vst3PluginProxy::Destruct& request)
                 -> Vst3PluginProxy::Destruct::Response {
-                std::promise<void> latch;
-
-                boost::asio::dispatch(main_context.context, [&]() {
-                    // Remove the instance from within the main IO context so
-                    // removing it doesn't interfere with the Win32 message loop
-                    std::lock_guard lock(object_instances_mutex);
-                    object_instances.erase(request.instance_id);
-
-                    latch.set_value();
-                });
+                main_context
+                    .run_in_context([&]() {
+                        // Remove the instance from within the main IO context
+                        // so removing it doesn't interfere with the Win32
+                        // message loop
+                        std::lock_guard lock(object_instances_mutex);
+                        object_instances.erase(request.instance_id);
+                    })
+                    .wait();
 
                 // XXX: I don't think we have to wait for the object to be
                 //      deleted most of the time, but I can imagine a situation
@@ -132,7 +128,6 @@ void Vst3Bridge::run() {
                 //      Win32 timer in between where the above closure is being
                 //      executed and when the actual host application context on
                 //      the plugin side gets deallocated.
-                latch.get_future().wait();
                 return Ack{};
             },
             [&](Vst3PluginProxy::SetState& request)
@@ -432,29 +427,29 @@ void Vst3Bridge::run() {
 
                 // Creating the window and having the plugin embed in it should
                 // be done in the main UI thread
-                std::promise<tresult> attach_result{};
-                boost::asio::dispatch(main_context.context, [&]() {
-                    Editor& editor_instance =
-                        object_instances[request.owner_instance_id]
-                            .editor.emplace(config, window_class, x11_handle);
+                return main_context
+                    .run_in_context<tresult>([&]() {
+                        Editor& editor_instance =
+                            object_instances[request.owner_instance_id]
+                                .editor.emplace(config, window_class,
+                                                x11_handle);
 
-                    const tresult result =
-                        object_instances[request.owner_instance_id]
-                            .plug_view->attached(
-                                editor_instance.get_win32_handle(),
-                                type.c_str());
+                        const tresult result =
+                            object_instances[request.owner_instance_id]
+                                .plug_view->attached(
+                                    editor_instance.get_win32_handle(),
+                                    type.c_str());
 
-                    // Get rid of the editor again if the plugin didn't embed
-                    // itself in it
-                    if (result != Steinberg::kResultOk) {
-                        object_instances[request.owner_instance_id]
-                            .editor.reset();
-                    }
+                        // Get rid of the editor again if the plugin didn't
+                        // embed itself in it
+                        if (result != Steinberg::kResultOk) {
+                            object_instances[request.owner_instance_id]
+                                .editor.reset();
+                        }
 
-                    attach_result.set_value(result);
-                });
-
-                return attach_result.get_future().get();
+                        return result;
+                    })
+                    .get();
             },
             [&](YaPlugView::GetSize& request) -> YaPlugView::GetSize::Response {
                 const tresult result =
