@@ -346,6 +346,10 @@ void Editor::set_input_focus(bool grab) const {
     // back to that window when the user moves their mouse outside of the Wine
     // window while the host's window is still active (that's an important
     // detail, since plugins may have dialogs).
+    // FIXME: This should not be done for VST3 plugins since keyboard handling
+    //        is part of `IPlugView`. Or at least, that's the idea. We have to
+    //        figure out if plugins (and especially text input in things like
+    //        FabFilter plugins) work without this.
     xcb_set_input_focus(x11_connection.get(), XCB_INPUT_FOCUS_PARENT,
                         grab ? parent_window : topmost_window,
                         XCB_CURRENT_TIME);
