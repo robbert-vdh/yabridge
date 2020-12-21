@@ -149,6 +149,20 @@ class Vst3Bridge : public HostBridge {
     size_t generate_instance_id();
 
     /**
+     * Assign a unique identifier to an object and add it to `object_instances`.
+     * This will also set up listeners for `IAudioProcessor` and `IComponent`
+     * function calls.
+     */
+    size_t register_object_instance(
+        Steinberg::IPtr<Steinberg::FUnknown> object);
+
+    /**
+     * Remove an object from `object_instances`. Will also tear down the
+     * `IAudioProcessor`/`IComponent` socket if it had one.
+     */
+    void unregister_object_instance(size_t instance_id);
+
+    /**
      * The IO context used for event handling so that all events and window
      * message handling can be performed from a single thread, even when hosting
      * multiple plugins.

@@ -120,191 +120,7 @@ void Vst3Bridge::run() {
                     return UniversalTResult(Steinberg::kResultFalse);
                 }
 
-                std::lock_guard lock(object_instances_mutex);
-
-                const size_t instance_id = generate_instance_id();
-                object_instances.emplace(instance_id, std::move(object));
-
-                // If the object supports `IComponent` or `IAudioProcessor`,
-                // then we'll set up a dedicated thread for function calls for
-                // those interfaces.
-                if (object_instances[instance_id].audio_processor ||
-                    object_instances[instance_id].component) {
-                    std::promise<void> socket_listening_latch;
-                    object_instances[instance_id]
-                        .audio_processor_handler = Win32Thread([&,
-                                                                instance_id]() {
-                        // TODO: Move this somewhere else, because this is
-                        //       obviously ridiculous
-                        sockets.add_audio_processor_and_listen(
-                            instance_id, socket_listening_latch,
-                            overload{
-                                [&](YaAudioProcessor::SetBusArrangements&
-                                        request)
-                                    -> YaAudioProcessor::SetBusArrangements::
-                                        Response {
-                                            return object_instances
-                                                [request.instance_id]
-                                                    .audio_processor
-                                                    ->setBusArrangements(
-                                                        request.inputs.data(),
-                                                        request.num_ins,
-                                                        request.outputs.data(),
-                                                        request.num_outs);
-                                        },
-                                [&](YaAudioProcessor::GetBusArrangement&
-                                        request)
-                                    -> YaAudioProcessor::GetBusArrangement::
-                                        Response {
-                                            const tresult result =
-                                                object_instances
-                                                    [request.instance_id]
-                                                        .audio_processor
-                                                        ->getBusArrangement(
-                                                            request.dir,
-                                                            request.index,
-                                                            request.arr);
-
-                                            return YaAudioProcessor::
-                                                GetBusArrangementResponse{
-                                                    .result = result,
-                                                    .updated_arr = request.arr};
-                                        },
-                                [&](const YaAudioProcessor::
-                                        CanProcessSampleSize& request)
-                                    -> YaAudioProcessor::CanProcessSampleSize::
-                                        Response {
-                                            return object_instances
-                                                [request.instance_id]
-                                                    .audio_processor
-                                                    ->canProcessSampleSize(
-                                                        request
-                                                            .symbolic_sample_size);
-                                        },
-                                [&](const YaAudioProcessor::GetLatencySamples&
-                                        request)
-                                    -> YaAudioProcessor::GetLatencySamples::
-                                        Response {
-                                            return object_instances
-                                                [request.instance_id]
-                                                    .audio_processor
-                                                    ->getLatencySamples();
-                                        },
-                                [&](YaAudioProcessor::SetupProcessing& request)
-                                    -> YaAudioProcessor::SetupProcessing::
-                                        Response {
-                                            return object_instances
-                                                [request.instance_id]
-                                                    .audio_processor
-                                                    ->setupProcessing(
-                                                        request.setup);
-                                        },
-                                [&](const YaAudioProcessor::SetProcessing&
-                                        request)
-                                    -> YaAudioProcessor::SetProcessing::
-                                        Response {
-                                            return object_instances
-                                                [request.instance_id]
-                                                    .audio_processor
-                                                    ->setProcessing(
-                                                        request.state);
-                                        },
-                                [&](YaAudioProcessor::Process& request)
-                                    -> YaAudioProcessor::Process::Response {
-                                    const tresult result =
-                                        object_instances[request.instance_id]
-                                            .audio_processor->process(
-                                                request.data.get());
-
-                                    return YaAudioProcessor::ProcessResponse{
-                                        .result = result,
-                                        .output_data =
-                                            request.data
-                                                .move_outputs_to_response()};
-                                },
-                                [&](const YaAudioProcessor::GetTailSamples&
-                                        request)
-                                    -> YaAudioProcessor::GetTailSamples::
-                                        Response {
-                                            return object_instances
-                                                [request.instance_id]
-                                                    .audio_processor
-                                                    ->getTailSamples();
-                                        },
-                                [&](const YaComponent::GetControllerClassId&
-                                        request)
-                                    -> YaComponent::GetControllerClassId::
-                                        Response {
-                                            Steinberg::TUID cid;
-                                            const tresult result =
-                                                object_instances
-                                                    [request.instance_id]
-                                                        .component
-                                                        ->getControllerClassId(
-                                                            cid);
-
-                                            return YaComponent::
-                                                GetControllerClassIdResponse{
-                                                    .result = result,
-                                                    .editor_cid =
-                                                        std::to_array(cid)};
-                                        },
-                                [&](const YaComponent::SetIoMode& request)
-                                    -> YaComponent::SetIoMode::Response {
-                                    return object_instances[request.instance_id]
-                                        .component->setIoMode(request.mode);
-                                },
-                                [&](const YaComponent::GetBusCount& request)
-                                    -> YaComponent::GetBusCount::Response {
-                                    return object_instances[request.instance_id]
-                                        .component->getBusCount(request.type,
-                                                                request.dir);
-                                },
-                                [&](YaComponent::GetBusInfo& request)
-                                    -> YaComponent::GetBusInfo::Response {
-                                    const tresult result =
-                                        object_instances[request.instance_id]
-                                            .component->getBusInfo(
-                                                request.type, request.dir,
-                                                request.index, request.bus);
-
-                                    return YaComponent::GetBusInfoResponse{
-                                        .result = result,
-                                        .updated_bus = request.bus};
-                                },
-                                [&](YaComponent::GetRoutingInfo& request)
-                                    -> YaComponent::GetRoutingInfo::Response {
-                                    const tresult result =
-                                        object_instances[request.instance_id]
-                                            .component->getRoutingInfo(
-                                                request.in_info,
-                                                request.out_info);
-
-                                    return YaComponent::GetRoutingInfoResponse{
-                                        .result = result,
-                                        .updated_in_info = request.in_info,
-                                        .updated_out_info = request.out_info};
-                                },
-                                [&](const YaComponent::ActivateBus& request)
-                                    -> YaComponent::ActivateBus::Response {
-                                    return object_instances[request.instance_id]
-                                        .component->activateBus(
-                                            request.type, request.dir,
-                                            request.index, request.state);
-                                },
-                                [&](const YaComponent::SetActive& request)
-                                    -> YaComponent::SetActive::Response {
-                                    return object_instances[request.instance_id]
-                                        .component->setActive(request.state);
-                                },
-                            });
-                    });
-
-                    // Wait for the new socket to be listening on before
-                    // continuing. Otherwise the native plugin may try to
-                    // connect to it before our thread is up and running.
-                    socket_listening_latch.get_future().wait();
-                }
+                const size_t instance_id = register_object_instance(object);
 
                 // This is where the magic happens. Here we deduce which
                 // interfaces are supported by this object so we can create
@@ -314,28 +130,7 @@ void Vst3Bridge::run() {
             },
             [&](const Vst3PluginProxy::Destruct& request)
                 -> Vst3PluginProxy::Destruct::Response {
-                // Tear the dedicated audio processing socket down again if we
-                // created one while handling `Vst3PluginProxy::Construct`
-                if (object_instances[request.instance_id].audio_processor ||
-                    object_instances[request.instance_id].component) {
-                    sockets.remove_audio_processor(request.instance_id);
-                }
-
-                // Remove the instance from within the main IO context so
-                // removing it doesn't interfere with the Win32 message loop
-                main_context
-                    .run_in_context([&]() {
-                        std::lock_guard lock(object_instances_mutex);
-                        object_instances.erase(request.instance_id);
-                    })
-                    .wait();
-
-                // XXX: I don't think we have to wait for the object to be
-                //      deleted most of the time, but I can imagine a situation
-                //      where the plugin does a host callback triggered by a
-                //      Win32 timer in between where the above closure is being
-                //      executed and when the actual host application context on
-                //      the plugin side gets deallocated.
+                unregister_object_instance(request.instance_id);
                 return Ack{};
             },
             [&](Vst3PluginProxy::SetState& request)
@@ -656,4 +451,168 @@ void Vst3Bridge::handle_win32_events() {
 
 size_t Vst3Bridge::generate_instance_id() {
     return current_instance_id.fetch_add(1);
+}
+
+size_t Vst3Bridge::register_object_instance(
+    Steinberg::IPtr<Steinberg::FUnknown> object) {
+    std::lock_guard lock(object_instances_mutex);
+
+    const size_t instance_id = generate_instance_id();
+    object_instances.emplace(instance_id, std::move(object));
+
+    // If the object supports `IComponent` or `IAudioProcessor`,
+    // then we'll set up a dedicated thread for function calls for
+    // those interfaces.
+    if (object_instances[instance_id].audio_processor ||
+        object_instances[instance_id].component) {
+        std::promise<void> socket_listening_latch;
+
+        object_instances[instance_id]
+            .audio_processor_handler = Win32Thread([&, instance_id]() {
+            sockets.add_audio_processor_and_listen(
+                instance_id, socket_listening_latch,
+                overload{
+                    [&](YaAudioProcessor::SetBusArrangements& request)
+                        -> YaAudioProcessor::SetBusArrangements::Response {
+                        return object_instances[request.instance_id]
+                            .audio_processor->setBusArrangements(
+                                request.inputs.data(), request.num_ins,
+                                request.outputs.data(), request.num_outs);
+                    },
+                    [&](YaAudioProcessor::GetBusArrangement& request)
+                        -> YaAudioProcessor::GetBusArrangement::Response {
+                        const tresult result =
+                            object_instances[request.instance_id]
+                                .audio_processor->getBusArrangement(
+                                    request.dir, request.index, request.arr);
+
+                        return YaAudioProcessor::GetBusArrangementResponse{
+                            .result = result, .updated_arr = request.arr};
+                    },
+                    [&](const YaAudioProcessor::CanProcessSampleSize& request)
+                        -> YaAudioProcessor::CanProcessSampleSize::Response {
+                        return object_instances[request.instance_id]
+                            .audio_processor->canProcessSampleSize(
+                                request.symbolic_sample_size);
+                    },
+                    [&](const YaAudioProcessor::GetLatencySamples& request)
+                        -> YaAudioProcessor::GetLatencySamples::Response {
+                        return object_instances[request.instance_id]
+                            .audio_processor->getLatencySamples();
+                    },
+                    [&](YaAudioProcessor::SetupProcessing& request)
+                        -> YaAudioProcessor::SetupProcessing::Response {
+                        return object_instances[request.instance_id]
+                            .audio_processor->setupProcessing(request.setup);
+                    },
+                    [&](const YaAudioProcessor::SetProcessing& request)
+                        -> YaAudioProcessor::SetProcessing::Response {
+                        return object_instances[request.instance_id]
+                            .audio_processor->setProcessing(request.state);
+                    },
+                    [&](YaAudioProcessor::Process& request)
+                        -> YaAudioProcessor::Process::Response {
+                        const tresult result =
+                            object_instances[request.instance_id]
+                                .audio_processor->process(request.data.get());
+
+                        return YaAudioProcessor::ProcessResponse{
+                            .result = result,
+                            .output_data =
+                                request.data.move_outputs_to_response()};
+                    },
+                    [&](const YaAudioProcessor::GetTailSamples& request)
+                        -> YaAudioProcessor::GetTailSamples::Response {
+                        return object_instances[request.instance_id]
+                            .audio_processor->getTailSamples();
+                    },
+                    [&](const YaComponent::GetControllerClassId& request)
+                        -> YaComponent::GetControllerClassId::Response {
+                        Steinberg::TUID cid;
+                        const tresult result =
+                            object_instances[request.instance_id]
+                                .component->getControllerClassId(cid);
+
+                        return YaComponent::GetControllerClassIdResponse{
+                            .result = result, .editor_cid = std::to_array(cid)};
+                    },
+                    [&](const YaComponent::SetIoMode& request)
+                        -> YaComponent::SetIoMode::Response {
+                        return object_instances[request.instance_id]
+                            .component->setIoMode(request.mode);
+                    },
+                    [&](const YaComponent::GetBusCount& request)
+                        -> YaComponent::GetBusCount::Response {
+                        return object_instances[request.instance_id]
+                            .component->getBusCount(request.type, request.dir);
+                    },
+                    [&](YaComponent::GetBusInfo& request)
+                        -> YaComponent::GetBusInfo::Response {
+                        const tresult result =
+                            object_instances[request.instance_id]
+                                .component->getBusInfo(
+                                    request.type, request.dir, request.index,
+                                    request.bus);
+
+                        return YaComponent::GetBusInfoResponse{
+                            .result = result, .updated_bus = request.bus};
+                    },
+                    [&](YaComponent::GetRoutingInfo& request)
+                        -> YaComponent::GetRoutingInfo::Response {
+                        const tresult result =
+                            object_instances[request.instance_id]
+                                .component->getRoutingInfo(request.in_info,
+                                                           request.out_info);
+
+                        return YaComponent::GetRoutingInfoResponse{
+                            .result = result,
+                            .updated_in_info = request.in_info,
+                            .updated_out_info = request.out_info};
+                    },
+                    [&](const YaComponent::ActivateBus& request)
+                        -> YaComponent::ActivateBus::Response {
+                        return object_instances[request.instance_id]
+                            .component->activateBus(request.type, request.dir,
+                                                    request.index,
+                                                    request.state);
+                    },
+                    [&](const YaComponent::SetActive& request)
+                        -> YaComponent::SetActive::Response {
+                        return object_instances[request.instance_id]
+                            .component->setActive(request.state);
+                    },
+                });
+        });
+
+        // Wait for the new socket to be listening on before
+        // continuing. Otherwise the native plugin may try to
+        // connect to it before our thread is up and running.
+        socket_listening_latch.get_future().wait();
+    }
+
+    return instance_id;
+}
+
+void Vst3Bridge::unregister_object_instance(size_t instance_id) {
+    // Tear the dedicated audio processing socket down again if we
+    // created one while handling `Vst3PluginProxy::Construct`
+    if (object_instances[instance_id].audio_processor ||
+        object_instances[instance_id].component) {
+        sockets.remove_audio_processor(instance_id);
+    }
+
+    // Remove the instance from within the main IO context so
+    // removing it doesn't interfere with the Win32 message loop
+    // XXX: I don't think we have to wait for the object to be
+    //      deleted most of the time, but I can imagine a situation
+    //      where the plugin does a host callback triggered by a
+    //      Win32 timer in between where the above closure is being
+    //      executed and when the actual host application context on
+    //      the plugin side gets deallocated.
+    main_context
+        .run_in_context([&, instance_id]() {
+            std::lock_guard lock(object_instances_mutex);
+            object_instances.erase(instance_id);
+        })
+        .wait();
 }
