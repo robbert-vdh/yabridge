@@ -437,8 +437,6 @@ void Vst3Bridge::handle_x11_events() {
 }
 
 void Vst3Bridge::handle_win32_events() {
-    // TODO: Remove this function from the `Editor`
-
     MSG msg;
 
     for (int i = 0;

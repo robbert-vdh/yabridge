@@ -219,23 +219,6 @@ HWND Editor::get_win32_handle() const {
     }
 }
 
-void Editor::handle_win32_events() const {
-    MSG msg;
-
-    // The null value for the second argument is needed to handle interaction
-    // with child GUI components. So far limiting this to `max_win32_messages`
-    // messages has only been needed for Waves plugins as they otherwise cause
-    // an infinite message loop.
-    // TODO: If the timer is no longer needed, then we can drop this entire
-    //       function
-    for (int i = 0;
-         i < max_win32_messages && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-         i++) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-}
-
 void Editor::handle_x11_events() const {
     // TODO: Initiating drag-and-drop in Serum _sometimes_ causes the GUI to
     //       update while dragging while other times it does not. From all the

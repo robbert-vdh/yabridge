@@ -355,17 +355,13 @@ void Vst2Bridge::handle_x11_events() {
 }
 
 void Vst2Bridge::handle_win32_events() {
-    if (editor) {
-        editor->handle_win32_events();
-    } else {
-        MSG msg;
+    MSG msg;
 
-        for (int i = 0; i < max_win32_messages &&
-                        PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-             i++) {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
+    for (int i = 0;
+         i < max_win32_messages && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
+         i++) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
     }
 }
 

@@ -126,13 +126,6 @@ class Editor {
     bool supports_ewmh_active_window() const;
 
     /**
-     * Pump messages from the editor loop loop until all events are process.
-     * Must be run from the same thread the GUI was created in because of Win32
-     * limitations.
-     */
-    void handle_win32_events() const;
-
-    /**
      * Handle X11 events sent to the window our editor is embedded in.
      */
     void handle_x11_events() const;
