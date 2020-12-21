@@ -94,6 +94,7 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaPlugView::OnWheel&);
     bool log_request(bool is_host_vst, const YaPlugView::OnKeyDown&);
     bool log_request(bool is_host_vst, const YaPlugView::OnKeyUp&);
+    bool log_request(bool is_host_vst, const YaPlugView::OnSize&);
     bool log_request(bool is_host_vst, const YaPlugView::GetSize&);
     bool log_request(bool is_host_vst, const YaPluginBase::Initialize&);
     bool log_request(bool is_host_vst, const YaPluginBase::Terminate&);

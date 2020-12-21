@@ -298,6 +298,19 @@ bool Vst3Logger::log_request(bool is_host_vst,
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaPlugView::OnSize& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        // This static cast is technically not correct of course but it's
+        // UTF-16, so everything's allowed
+        message << request.owner_instance_id
+                << ": IPlugView::onSize(newSize = <ViewRect* with left = "
+                << request.new_size.left << ", top = " << request.new_size.top
+                << ", right = " << request.new_size.right
+                << ", bottom = " << request.new_size.bottom << ">)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
                              const YaPlugView::GetSize& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.owner_instance_id << ": IPlugView::getSize(size*)";

@@ -105,9 +105,14 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::getSize(Steinberg::ViewRect* size) {
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onSize(Steinberg::ViewRect* newSize) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IPlugView::onSize()");
-    return Steinberg::kNotImplemented;
+    if (newSize) {
+        return bridge.send_message(YaPlugView::OnSize{
+            .owner_instance_id = owner_instance_id(), .new_size = *newSize});
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to 'IPlugView::onSize()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onFocus(TBool state) {
