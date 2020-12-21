@@ -39,6 +39,13 @@ struct InstanceInterfaces {
     InstanceInterfaces(Steinberg::IPtr<Steinberg::FUnknown> object);
 
     /**
+     * A dedicated thread for handling incoming `IAudioProcessor` and
+     * `IComponent` calls. Will be instantiated if `object` supports either of
+     * those interfaces.
+     */
+    Win32Thread audio_processor_handler;
+
+    /**
      * If the host passes a host context object during
      * `IPluginBase::initialize()`, we'll store a proxy object here and then
      * pass it to `plugin_base->initialize()`. Will be initialized with a null

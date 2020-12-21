@@ -90,210 +90,6 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
-bool Vst3Logger::log_request(
-    bool is_host_vst,
-    const YaAudioProcessor::SetBusArrangements& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id
-                << ": IAudioProcessor::setBusArrangements(inputs = "
-                   "[SpeakerArrangement; "
-                << request.inputs.size() << "], numIns = " << request.num_ins
-                << ", outputs = [SpeakerArrangement; " << request.outputs.size()
-                << "], numOuts = " << request.num_outs << ")";
-    });
-}
-
-bool Vst3Logger::log_request(
-    bool is_host_vst,
-    const YaAudioProcessor::GetBusArrangement& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id
-                << ": IAudioProcessor::getBusArrangement(dir = " << request.dir
-                << ", index = " << request.index << ", &arr)";
-    });
-}
-
-bool Vst3Logger::log_request(
-    bool is_host_vst,
-    const YaAudioProcessor::CanProcessSampleSize& request) {
-    return log_request_base(
-        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
-            message
-                << request.instance_id
-                << ": IAudioProcessor::canProcessSampleSize(symbolicSampleSize "
-                   "= "
-                << request.symbolic_sample_size << ")";
-        });
-}
-
-bool Vst3Logger::log_request(
-    bool is_host_vst,
-    const YaAudioProcessor::GetLatencySamples& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id
-                << ": IAudioProcessor::getLatencySamples()";
-    });
-}
-
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaAudioProcessor::SetupProcessing& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id
-                << ": IAudioProcessor::setupProcessing(setup = "
-                   "<SetupProcessing with mode = "
-                << request.setup.processMode << ", symbolic_sample_size = "
-                << request.setup.symbolicSampleSize
-                << ", max_buffer_size = " << request.setup.maxSamplesPerBlock
-                << " and sample_rate = " << request.setup.sampleRate << ">)";
-    });
-}
-
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaAudioProcessor::SetProcessing& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id
-                << ": IAudioProcessor::setProcessing(state = "
-                << (request.state ? "true" : "false") << ")";
-    });
-}
-
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaAudioProcessor::Process& request) {
-    return log_request_base(
-        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
-            // This is incredibly verbose, but if you're really a plugin that
-            // handles processing in a weird way you're going to need all of
-            // this
-
-            std::ostringstream num_input_channels;
-            num_input_channels << "[";
-            for (bool is_first = true;
-                 const auto& buffers : request.data.inputs) {
-                num_input_channels << (is_first ? "" : ", ")
-                                   << buffers.num_channels();
-                is_first = false;
-            }
-            num_input_channels << "]";
-
-            std::ostringstream num_output_channels;
-            num_output_channels << "[";
-            for (bool is_first = true;
-                 const auto& num_channels : request.data.outputs_num_channels) {
-                num_output_channels << (is_first ? "" : ", ") << num_channels;
-                is_first = false;
-            }
-            num_output_channels << "]";
-
-            message << request.instance_id
-                    << ": IAudioProcessor::process(data = <ProcessData with "
-                       "input_channels = "
-                    << num_input_channels.str()
-                    << ", output_channels = " << num_output_channels.str()
-                    << ", num_samples = " << request.data.process_mode
-                    << ", input_parameter_changes = <IParameterChanges* for "
-                    << request.data.input_parameter_changes.num_parameters()
-                    << " parameters>, output_parameter_changes = "
-                    << (request.data.output_parameter_changes_supported
-                            ? "<IParameterChanges*>"
-                            : "nullptr")
-                    << ", input_events = ";
-            if (request.data.input_events) {
-                message << "<IEventList* with "
-                        << request.data.input_events->num_events()
-                        << " events>";
-            } else {
-                message << "nullptr";
-            }
-            message << ", output_events = "
-                    << (request.data.output_events_supported ? "<IEventList*>"
-                                                             : "nullptr")
-                    << ", process_context = "
-                    << (request.data.process_context ? "<ProcessContext*>"
-                                                     : "nullptr")
-                    << ", process_mode = " << request.data.process_mode
-                    << ", symbolic_sample_size = "
-                    << request.data.symbolic_sample_size << ">)";
-        });
-}
-
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaAudioProcessor::GetTailSamples& request) {
-    return log_request_base(
-        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
-            message << request.instance_id
-                    << ": IAudioProcessor::getTailSamples()";
-        });
-}
-
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::GetControllerClassId& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id
-                << ": IComponent::getControllerClassId(&classId)";
-    });
-}
-
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::SetIoMode& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id
-                << ": IComponent::setIoMode(mode = " << request.mode << ")";
-    });
-}
-
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::GetBusCount& request) {
-    // JUCE-based hosts will call this every processing cycle, for some reason
-    // (it shouldn't be allwoed to change during processing, right?)
-    return log_request_base(
-        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
-            message << request.instance_id
-                    << ": IComponent::getBusCount(type = " << request.type
-                    << ", dir = " << request.dir << ")";
-        });
-}
-
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::GetBusInfo& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id
-                << ": IComponent::getBusInfo(type = " << request.type
-                << ", dir = " << request.dir << ", index = " << request.index
-                << ", &bus)";
-    });
-}
-
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::GetRoutingInfo& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message
-            << request.instance_id
-            << ": IComponent::getRoutingInfo(inInfo = <RoutingInfo& for bus "
-            << request.in_info.busIndex << " and channel "
-            << request.in_info.channel << ">, outInfo = <RoutingInfo& for bus "
-            << request.out_info.busIndex << " and channel "
-            << request.out_info.channel << ">)";
-    });
-}
-
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::ActivateBus& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id
-                << ": IComponent::activateBus(type = " << request.type
-                << ", dir = " << request.dir << ", index = " << request.index
-                << ", state = " << (request.state ? "true" : "false") << ")";
-    });
-}
-
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaComponent::SetActive& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id << ": IComponent::setActive(state = "
-                << (request.state ? "true" : "false") << ")";
-    });
-}
-
 bool Vst3Logger::log_request(bool is_host_vst,
                              const YaConnectionPoint::Connect& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
@@ -508,6 +304,210 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaAudioProcessor::SetBusArrangements& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IAudioProcessor::setBusArrangements(inputs = "
+                   "[SpeakerArrangement; "
+                << request.inputs.size() << "], numIns = " << request.num_ins
+                << ", outputs = [SpeakerArrangement; " << request.outputs.size()
+                << "], numOuts = " << request.num_outs << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaAudioProcessor::GetBusArrangement& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IAudioProcessor::getBusArrangement(dir = " << request.dir
+                << ", index = " << request.index << ", &arr)";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaAudioProcessor::CanProcessSampleSize& request) {
+    return log_request_base(
+        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
+            message
+                << request.instance_id
+                << ": IAudioProcessor::canProcessSampleSize(symbolicSampleSize "
+                   "= "
+                << request.symbolic_sample_size << ")";
+        });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaAudioProcessor::GetLatencySamples& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IAudioProcessor::getLatencySamples()";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaAudioProcessor::SetupProcessing& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IAudioProcessor::setupProcessing(setup = "
+                   "<SetupProcessing with mode = "
+                << request.setup.processMode << ", symbolic_sample_size = "
+                << request.setup.symbolicSampleSize
+                << ", max_buffer_size = " << request.setup.maxSamplesPerBlock
+                << " and sample_rate = " << request.setup.sampleRate << ">)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaAudioProcessor::SetProcessing& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IAudioProcessor::setProcessing(state = "
+                << (request.state ? "true" : "false") << ")";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaAudioProcessor::Process& request) {
+    return log_request_base(
+        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
+            // This is incredibly verbose, but if you're really a plugin that
+            // handles processing in a weird way you're going to need all of
+            // this
+
+            std::ostringstream num_input_channels;
+            num_input_channels << "[";
+            for (bool is_first = true;
+                 const auto& buffers : request.data.inputs) {
+                num_input_channels << (is_first ? "" : ", ")
+                                   << buffers.num_channels();
+                is_first = false;
+            }
+            num_input_channels << "]";
+
+            std::ostringstream num_output_channels;
+            num_output_channels << "[";
+            for (bool is_first = true;
+                 const auto& num_channels : request.data.outputs_num_channels) {
+                num_output_channels << (is_first ? "" : ", ") << num_channels;
+                is_first = false;
+            }
+            num_output_channels << "]";
+
+            message << request.instance_id
+                    << ": IAudioProcessor::process(data = <ProcessData with "
+                       "input_channels = "
+                    << num_input_channels.str()
+                    << ", output_channels = " << num_output_channels.str()
+                    << ", num_samples = " << request.data.process_mode
+                    << ", input_parameter_changes = <IParameterChanges* for "
+                    << request.data.input_parameter_changes.num_parameters()
+                    << " parameters>, output_parameter_changes = "
+                    << (request.data.output_parameter_changes_supported
+                            ? "<IParameterChanges*>"
+                            : "nullptr")
+                    << ", input_events = ";
+            if (request.data.input_events) {
+                message << "<IEventList* with "
+                        << request.data.input_events->num_events()
+                        << " events>";
+            } else {
+                message << "nullptr";
+            }
+            message << ", output_events = "
+                    << (request.data.output_events_supported ? "<IEventList*>"
+                                                             : "nullptr")
+                    << ", process_context = "
+                    << (request.data.process_context ? "<ProcessContext*>"
+                                                     : "nullptr")
+                    << ", process_mode = " << request.data.process_mode
+                    << ", symbolic_sample_size = "
+                    << request.data.symbolic_sample_size << ">)";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaAudioProcessor::GetTailSamples& request) {
+    return log_request_base(
+        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
+            message << request.instance_id
+                    << ": IAudioProcessor::getTailSamples()";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetControllerClassId& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IComponent::getControllerClassId(&classId)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::SetIoMode& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IComponent::setIoMode(mode = " << request.mode << ")";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetBusCount& request) {
+    // JUCE-based hosts will call this every processing cycle, for some reason
+    // (it shouldn't be allwoed to change during processing, right?)
+    return log_request_base(
+        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
+            message << request.instance_id
+                    << ": IComponent::getBusCount(type = " << request.type
+                    << ", dir = " << request.dir << ")";
+        });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetBusInfo& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IComponent::getBusInfo(type = " << request.type
+                << ", dir = " << request.dir << ", index = " << request.index
+                << ", &bus)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::GetRoutingInfo& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message
+            << request.instance_id
+            << ": IComponent::getRoutingInfo(inInfo = <RoutingInfo& for bus "
+            << request.in_info.busIndex << " and channel "
+            << request.in_info.channel << ">, outInfo = <RoutingInfo& for bus "
+            << request.out_info.busIndex << " and channel "
+            << request.out_info.channel << ">)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::ActivateBus& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IComponent::activateBus(type = " << request.type
+                << ", dir = " << request.dir << ", index = " << request.index
+                << ", state = " << (request.state ? "true" : "false") << ")";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponent::SetActive& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id << ": IComponent::setActive(state = "
+                << (request.state ? "true" : "false") << ")";
+    });
+}
+
 bool Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << "Requesting <Configuration>";
@@ -590,6 +590,75 @@ void Vst3Logger::log_response(
             message << ", <IBStream* containing "
                     << response.updated_state.size() << " bytes>";
         }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaEditController::GetParameterInfoResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            std::string param_title =
+                VST3::StringConvert::convert(response.updated_info.title);
+            message << ", <ParameterInfo for '" << param_title << "'>";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaEditController::GetParamStringByValueResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            std::string value = VST3::StringConvert::convert(response.string);
+            message << ", \"" << value << "\"";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaEditController::GetParamValueByStringResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", " << response.value_normalized;
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaEditController::CreateViewResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        if (response.plug_view_args) {
+            message << "<IPlugView*>";
+        } else {
+            message << "<nullptr>";
+        }
+    });
+}
+
+void Vst3Logger::log_response(bool is_host_vst,
+                              const YaPlugView::GetSizeResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", <ViewRect* with left = " << response.updated_size.left
+                    << ", top = " << response.updated_size.top
+                    << ", right = " << response.updated_size.right
+                    << ", bottom = " << response.updated_size.bottom << ">";
+        }
+    });
+}
+
+void Vst3Logger::log_response(bool is_host_vst,
+                              const YaPluginFactory::ConstructArgs& args) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << "<IPluginFactory*> with " << args.num_classes
+                << " registered classes";
     });
 }
 
@@ -681,75 +750,6 @@ void Vst3Logger::log_response(
                     << response.updated_out_info.busIndex << " and channel "
                     << response.updated_out_info.channel << ">";
         }
-    });
-}
-
-void Vst3Logger::log_response(
-    bool is_host_vst,
-    const YaEditController::GetParameterInfoResponse& response) {
-    log_response_base(is_host_vst, [&](auto& message) {
-        message << response.result.string();
-        if (response.result == Steinberg::kResultOk) {
-            std::string param_title =
-                VST3::StringConvert::convert(response.updated_info.title);
-            message << ", <ParameterInfo for '" << param_title << "'>";
-        }
-    });
-}
-
-void Vst3Logger::log_response(
-    bool is_host_vst,
-    const YaEditController::GetParamStringByValueResponse& response) {
-    log_response_base(is_host_vst, [&](auto& message) {
-        message << response.result.string();
-        if (response.result == Steinberg::kResultOk) {
-            std::string value = VST3::StringConvert::convert(response.string);
-            message << ", \"" << value << "\"";
-        }
-    });
-}
-
-void Vst3Logger::log_response(
-    bool is_host_vst,
-    const YaEditController::GetParamValueByStringResponse& response) {
-    log_response_base(is_host_vst, [&](auto& message) {
-        message << response.result.string();
-        if (response.result == Steinberg::kResultOk) {
-            message << ", " << response.value_normalized;
-        }
-    });
-}
-
-void Vst3Logger::log_response(
-    bool is_host_vst,
-    const YaEditController::CreateViewResponse& response) {
-    log_response_base(is_host_vst, [&](auto& message) {
-        if (response.plug_view_args) {
-            message << "<IPlugView*>";
-        } else {
-            message << "<nullptr>";
-        }
-    });
-}
-
-void Vst3Logger::log_response(bool is_host_vst,
-                              const YaPlugView::GetSizeResponse& response) {
-    log_response_base(is_host_vst, [&](auto& message) {
-        message << response.result.string();
-        if (response.result == Steinberg::kResultOk) {
-            message << ", <ViewRect* with left = " << response.updated_size.left
-                    << ", top = " << response.updated_size.top
-                    << ", right = " << response.updated_size.right
-                    << ", bottom = " << response.updated_size.bottom << ">";
-        }
-    });
-}
-
-void Vst3Logger::log_response(bool is_host_vst,
-                              const YaPluginFactory::ConstructArgs& args) {
-    log_response_base(is_host_vst, [&](auto& message) {
-        message << "<IPluginFactory*> with " << args.num_classes
-                << " registered classes";
     });
 }
 

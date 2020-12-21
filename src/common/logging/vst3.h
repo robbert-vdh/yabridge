@@ -64,27 +64,6 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const Vst3PluginProxy::Destruct&);
     bool log_request(bool is_host_vst, const Vst3PluginProxy::SetState&);
     bool log_request(bool is_host_vst, const Vst3PluginProxy::GetState&);
-    bool log_request(bool is_host_vst,
-                     const YaAudioProcessor::SetBusArrangements&);
-    bool log_request(bool is_host_vst,
-                     const YaAudioProcessor::GetBusArrangement&);
-    bool log_request(bool is_host_vst,
-                     const YaAudioProcessor::CanProcessSampleSize&);
-    bool log_request(bool is_host_vst,
-                     const YaAudioProcessor::GetLatencySamples&);
-    bool log_request(bool is_host_vst,
-                     const YaAudioProcessor::SetupProcessing&);
-    bool log_request(bool is_host_vst, const YaAudioProcessor::SetProcessing&);
-    bool log_request(bool is_host_vst, const YaAudioProcessor::Process&);
-    bool log_request(bool is_host_vst, const YaAudioProcessor::GetTailSamples&);
-    bool log_request(bool is_host_vst,
-                     const YaComponent::GetControllerClassId&);
-    bool log_request(bool is_host_vst, const YaComponent::SetIoMode&);
-    bool log_request(bool is_host_vst, const YaComponent::GetBusCount&);
-    bool log_request(bool is_host_vst, const YaComponent::GetBusInfo&);
-    bool log_request(bool is_host_vst, const YaComponent::GetRoutingInfo&);
-    bool log_request(bool is_host_vst, const YaComponent::ActivateBus&);
-    bool log_request(bool is_host_vst, const YaComponent::SetActive&);
     bool log_request(bool is_host_vst, const YaConnectionPoint::Connect&);
     bool log_request(bool is_host_vst, const YaConnectionPoint::Disconnect&);
     bool log_request(bool is_host_vst,
@@ -117,6 +96,28 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaPluginFactory::Construct&);
     bool log_request(bool is_host_vst, const YaPluginFactory::SetHostContext&);
 
+    bool log_request(bool is_host_vst,
+                     const YaAudioProcessor::SetBusArrangements&);
+    bool log_request(bool is_host_vst,
+                     const YaAudioProcessor::GetBusArrangement&);
+    bool log_request(bool is_host_vst,
+                     const YaAudioProcessor::CanProcessSampleSize&);
+    bool log_request(bool is_host_vst,
+                     const YaAudioProcessor::GetLatencySamples&);
+    bool log_request(bool is_host_vst,
+                     const YaAudioProcessor::SetupProcessing&);
+    bool log_request(bool is_host_vst, const YaAudioProcessor::SetProcessing&);
+    bool log_request(bool is_host_vst, const YaAudioProcessor::Process&);
+    bool log_request(bool is_host_vst, const YaAudioProcessor::GetTailSamples&);
+    bool log_request(bool is_host_vst,
+                     const YaComponent::GetControllerClassId&);
+    bool log_request(bool is_host_vst, const YaComponent::SetIoMode&);
+    bool log_request(bool is_host_vst, const YaComponent::GetBusCount&);
+    bool log_request(bool is_host_vst, const YaComponent::GetBusInfo&);
+    bool log_request(bool is_host_vst, const YaComponent::GetRoutingInfo&);
+    bool log_request(bool is_host_vst, const YaComponent::ActivateBus&);
+    bool log_request(bool is_host_vst, const YaComponent::SetActive&);
+
     bool log_request(bool is_host_vst, const WantsConfiguration&);
     bool log_request(bool is_host_vst, const YaComponentHandler::BeginEdit&);
     bool log_request(bool is_host_vst, const YaComponentHandler::PerformEdit&);
@@ -132,15 +133,6 @@ class Vst3Logger {
     void log_response(bool is_host_vst,
                       const Vst3PluginProxy::GetStateResponse&);
     void log_response(bool is_host_vst,
-                      const YaAudioProcessor::GetBusArrangementResponse&);
-    void log_response(bool is_host_vst,
-                      const YaAudioProcessor::ProcessResponse&);
-    void log_response(bool is_host_vst,
-                      const YaComponent::GetControllerClassIdResponse&);
-    void log_response(bool is_host_vst, const YaComponent::GetBusInfoResponse&);
-    void log_response(bool is_host_vst,
-                      const YaComponent::GetRoutingInfoResponse&);
-    void log_response(bool is_host_vst,
                       const YaEditController::GetParameterInfoResponse&);
     void log_response(bool is_host_vst,
                       const YaEditController::GetParamStringByValueResponse&);
@@ -151,6 +143,16 @@ class Vst3Logger {
     void log_response(bool is_host_vst, const YaPlugView::GetSizeResponse&);
     void log_response(bool is_host_vst, const YaPluginFactory::ConstructArgs&);
     void log_response(bool is_host_vst, const Configuration&);
+
+    void log_response(bool is_host_vst,
+                      const YaAudioProcessor::GetBusArrangementResponse&);
+    void log_response(bool is_host_vst,
+                      const YaAudioProcessor::ProcessResponse&);
+    void log_response(bool is_host_vst,
+                      const YaComponent::GetControllerClassIdResponse&);
+    void log_response(bool is_host_vst, const YaComponent::GetBusInfoResponse&);
+    void log_response(bool is_host_vst,
+                      const YaComponent::GetRoutingInfoResponse&);
 
     void log_response(bool is_host_vst,
                       const YaHostApplication::GetNameResponse&);

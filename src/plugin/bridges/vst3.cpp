@@ -161,13 +161,28 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
     return plugin_factory;
 }
 
-void Vst3PluginBridge::register_plugin_proxy(Vst3PluginProxyImpl& component) {
+void Vst3PluginBridge::register_plugin_proxy(
+    Vst3PluginProxyImpl& proxy_object) {
     std::lock_guard lock(plugin_proxies_mutex);
-    plugin_proxies.emplace(component.instance_id(),
-                           std::ref<Vst3PluginProxyImpl>(component));
+
+    plugin_proxies.emplace(proxy_object.instance_id(),
+                           std::ref<Vst3PluginProxyImpl>(proxy_object));
+
+    // For optimization reaons we use dedicated sockets for functions that will
+    // be run in the audio processing loop
+    if (proxy_object.YaAudioProcessor::supported() ||
+        proxy_object.YaComponent::supported()) {
+        sockets.add_audio_processor_and_connect(proxy_object.instance_id());
+    }
 }
 
-void Vst3PluginBridge::unregister_plugin_proxy(size_t instance_id) {
+void Vst3PluginBridge::unregister_plugin_proxy(
+    Vst3PluginProxyImpl& proxy_object) {
     std::lock_guard lock(plugin_proxies_mutex);
-    plugin_proxies.erase(instance_id);
+
+    plugin_proxies.erase(proxy_object.instance_id());
+    if (proxy_object.YaAudioProcessor::supported() ||
+        proxy_object.YaComponent::supported()) {
+        sockets.remove_audio_processor(proxy_object.instance_id());
+    }
 }

@@ -491,12 +491,14 @@ class AdHocSocketHandler {
         if (acceptor) {
             acceptor->accept(socket);
 
-            // As mentioned in `acceptor's` docstring, this acceptor will be
-            // recreated in `receive_multi()` on another context, and
-            // potentially on the other side of the connection in the case
-            // where we're handling `vst_host_callback` VST2 events
-            acceptor.reset();
-            boost::filesystem::remove(endpoint.path());
+            if constexpr (ad_hoc_sockets) {
+                // As mentioned in `acceptor's` docstring, this acceptor will be
+                // recreated in `receive_multi()` on another context, and
+                // potentially on the other side of the connection in the case
+                // where we're handling `vst_host_callback` VST2 events
+                acceptor.reset();
+                boost::filesystem::remove(endpoint.path());
+            }
         } else {
             socket.connect(endpoint);
         }

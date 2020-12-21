@@ -27,7 +27,7 @@ Vst3PluginProxyImpl::Vst3PluginProxyImpl(Vst3PluginBridge& bridge,
 Vst3PluginProxyImpl::~Vst3PluginProxyImpl() {
     bridge.send_message(
         Vst3PluginProxy::Destruct{.instance_id = instance_id()});
-    bridge.unregister_plugin_proxy(instance_id());
+    bridge.unregister_plugin_proxy(*this);
 }
 
 tresult PLUGIN_API
@@ -49,29 +49,32 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setBusArrangements(
     int32 numOuts) {
     // NOTE: Ardour passes a null pointer when `numIns` or `numOuts` is 0, so we
     //       need to work around that
-    return bridge.send_message(YaAudioProcessor::SetBusArrangements{
-        .instance_id = instance_id(),
-        .inputs = (inputs ? std::vector<Steinberg::Vst::SpeakerArrangement>(
-                                inputs, &inputs[numIns])
-                          : std::vector<Steinberg::Vst::SpeakerArrangement>()),
-        .num_ins = numIns,
-        .outputs =
-            (outputs ? std::vector<Steinberg::Vst::SpeakerArrangement>(
-                           outputs, &outputs[numOuts])
-                     : std::vector<Steinberg::Vst::SpeakerArrangement>()),
-        .num_outs = numOuts,
-    });
+    return bridge.send_audio_processor_message(
+        YaAudioProcessor::SetBusArrangements{
+            .instance_id = instance_id(),
+            .inputs =
+                (inputs ? std::vector<Steinberg::Vst::SpeakerArrangement>(
+                              inputs, &inputs[numIns])
+                        : std::vector<Steinberg::Vst::SpeakerArrangement>()),
+            .num_ins = numIns,
+            .outputs =
+                (outputs ? std::vector<Steinberg::Vst::SpeakerArrangement>(
+                               outputs, &outputs[numOuts])
+                         : std::vector<Steinberg::Vst::SpeakerArrangement>()),
+            .num_outs = numOuts,
+        });
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getBusArrangement(
     Steinberg::Vst::BusDirection dir,
     int32 index,
     Steinberg::Vst::SpeakerArrangement& arr) {
-    const GetBusArrangementResponse response = bridge.send_message(
-        YaAudioProcessor::GetBusArrangement{.instance_id = instance_id(),
-                                            .dir = dir,
-                                            .index = index,
-                                            .arr = arr});
+    const GetBusArrangementResponse response =
+        bridge.send_audio_processor_message(
+            YaAudioProcessor::GetBusArrangement{.instance_id = instance_id(),
+                                                .dir = dir,
+                                                .index = index,
+                                                .arr = arr});
 
     arr = response.updated_arr;
 
@@ -80,24 +83,26 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getBusArrangement(
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::canProcessSampleSize(int32 symbolicSampleSize) {
-    return bridge.send_message(YaAudioProcessor::CanProcessSampleSize{
-        .instance_id = instance_id(),
-        .symbolic_sample_size = symbolicSampleSize});
+    return bridge.send_audio_processor_message(
+        YaAudioProcessor::CanProcessSampleSize{
+            .instance_id = instance_id(),
+            .symbolic_sample_size = symbolicSampleSize});
 }
 
 uint32 PLUGIN_API Vst3PluginProxyImpl::getLatencySamples() {
-    return bridge.send_message(
+    return bridge.send_audio_processor_message(
         YaAudioProcessor::GetLatencySamples{.instance_id = instance_id()});
 }
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
-    return bridge.send_message(YaAudioProcessor::SetupProcessing{
-        .instance_id = instance_id(), .setup = setup});
+    return bridge.send_audio_processor_message(
+        YaAudioProcessor::SetupProcessing{.instance_id = instance_id(),
+                                          .setup = setup});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {
-    return bridge.send_message(YaAudioProcessor::SetProcessing{
+    return bridge.send_audio_processor_message(YaAudioProcessor::SetProcessing{
         .instance_id = instance_id(), .state = state});
 }
 
@@ -105,7 +110,7 @@ tresult PLUGIN_API
 Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
     // TODO: Check whether reusing a `YaProcessData` object make a difference in
     //       terms of performance
-    ProcessResponse response = bridge.send_message(
+    ProcessResponse response = bridge.send_audio_processor_message(
         YaAudioProcessor::Process{.instance_id = instance_id(), .data = data});
 
     response.output_data.write_back_outputs(data);
@@ -114,14 +119,15 @@ Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
 }
 
 uint32 PLUGIN_API Vst3PluginProxyImpl::getTailSamples() {
-    return bridge.send_message(
+    return bridge.send_audio_processor_message(
         YaAudioProcessor::GetTailSamples{.instance_id = instance_id()});
 }
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::getControllerClassId(Steinberg::TUID classId) {
-    const GetControllerClassIdResponse response = bridge.send_message(
-        YaComponent::GetControllerClassId{.instance_id = instance_id()});
+    const GetControllerClassIdResponse response =
+        bridge.send_audio_processor_message(
+            YaComponent::GetControllerClassId{.instance_id = instance_id()});
 
     std::copy(response.editor_cid.begin(), response.editor_cid.end(), classId);
 
@@ -129,14 +135,14 @@ Vst3PluginProxyImpl::getControllerClassId(Steinberg::TUID classId) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setIoMode(Steinberg::Vst::IoMode mode) {
-    return bridge.send_message(
+    return bridge.send_audio_processor_message(
         YaComponent::SetIoMode{.instance_id = instance_id(), .mode = mode});
 }
 
 int32 PLUGIN_API
 Vst3PluginProxyImpl::getBusCount(Steinberg::Vst::MediaType type,
                                  Steinberg::Vst::BusDirection dir) {
-    return bridge.send_message(YaComponent::GetBusCount{
+    return bridge.send_audio_processor_message(YaComponent::GetBusCount{
         .instance_id = instance_id(), .type = type, .dir = dir});
 }
 
@@ -145,7 +151,7 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
                                 Steinberg::Vst::BusDirection dir,
                                 int32 index,
                                 Steinberg::Vst::BusInfo& bus /*out*/) {
-    const GetBusInfoResponse response = bridge.send_message(
+    const GetBusInfoResponse response = bridge.send_audio_processor_message(
         YaComponent::GetBusInfo{.instance_id = instance_id(),
                                 .type = type,
                                 .dir = dir,
@@ -159,7 +165,7 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
 tresult PLUGIN_API Vst3PluginProxyImpl::getRoutingInfo(
     Steinberg::Vst::RoutingInfo& inInfo,
     Steinberg::Vst::RoutingInfo& outInfo /*out*/) {
-    const GetRoutingInfoResponse response = bridge.send_message(
+    const GetRoutingInfoResponse response = bridge.send_audio_processor_message(
         YaComponent::GetRoutingInfo{.instance_id = instance_id(),
                                     .in_info = inInfo,
                                     .out_info = outInfo});
@@ -174,7 +180,7 @@ Vst3PluginProxyImpl::activateBus(Steinberg::Vst::MediaType type,
                                  Steinberg::Vst::BusDirection dir,
                                  int32 index,
                                  TBool state) {
-    return bridge.send_message(
+    return bridge.send_audio_processor_message(
         YaComponent::ActivateBus{.instance_id = instance_id(),
                                  .type = type,
                                  .dir = dir,
@@ -183,7 +189,7 @@ Vst3PluginProxyImpl::activateBus(Steinberg::Vst::MediaType type,
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setActive(TBool state) {
-    return bridge.send_message(
+    return bridge.send_audio_processor_message(
         YaComponent::SetActive{.instance_id = instance_id(), .state = state});
 }
 

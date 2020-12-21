@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <future>
 #include <variant>
 
 #include "../logging/vst3.h"
@@ -221,6 +222,16 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread, ad_hoc_sockets> {
  * sockets, and the call to `connect()` will then accept any incoming
  * connections.
  *
+ * We'll have a host -> plugin connection for sending control messages (which is
+ * just a made up term to more easily differentiate between the two directions),
+ * and a plugin -> host connection to allow the plugin to make callbacks. Both
+ * of these connections are capable of spawning additional sockets and threads
+ * as needed.
+ *
+ * For audio processing (or anything that implement `IAudioProcessor` or
+ * `IComonent`) we'll use dedicated sockets per instance, since we don't want to
+ * do anything that could increase latency there.
+ *
  * @tparam Thread The thread implementation to use. On the Linux side this
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  */
@@ -250,7 +261,8 @@ class Vst3Sockets : public Sockets {
                            listen),
           vst_host_callback(io_context,
                             (base_dir / "vst_host_callback.sock").string(),
-                            listen) {}
+                            listen),
+          io_context(io_context) {}
 
     ~Vst3Sockets() { close(); }
 
@@ -264,17 +276,113 @@ class Vst3Sockets : public Sockets {
         // that may still be active
         host_vst_control.close();
         vst_host_callback.close();
+
+        // This map should be empty at this point, but who knows
+        std::lock_guard lock(audio_processor_sockets_mutex);
+        for (auto& [instance_id, socket] : audio_processor_sockets) {
+            socket.close();
+        }
     }
 
-    // TODO: Since audio processing may be done completely in parallel we might
-    //       want to have a dedicated socket per processor/controller pair. For
-    //       this we would need to figure out how to associate a plugin instance
-    //       with a socket.
+    /**
+     * Connect to the dedicated `IAudioProcessor` and `IConnect` handling socket
+     * for a plugin object instance. This should be called on the plugin side
+     * after instantiating such an object.
+     *
+     * @param instance_id The object instance identifier of the socket.
+     */
+    void add_audio_processor_and_connect(size_t instance_id) {
+        std::lock_guard lock(audio_processor_sockets_mutex);
+        audio_processor_sockets.try_emplace(
+            instance_id, io_context,
+            (base_dir / ("host_vst_audio_processor_" +
+                         std::to_string(instance_id) + ".sock"))
+                .string(),
+            false);
+        audio_processor_sockets.at(instance_id).connect();
+    }
+
+    /**
+     * Create and listen on a dedicated `IAudioProcessor` and `IConnect`
+     * handling socket for a plugin object instance. The calling thread will
+     * block until the socket has been closed. This should be called from the
+     * Wine plugin host side after instantiating such an object.
+     *
+     * @param instance_id The object instance identifier of the socket.
+     * @param socket_listening_latch A promise we'll set a value for once the
+     *   socket is being listened on so we can wait for it. Otherwise it can be
+     *   that the native plugin already tries to connect to the socket before
+     *   Wine plugin host is even listening on it.
+     * @param cb An overloaded function that can take every type `T` in the
+     *   `AudioProcessorRequest` variant and then returns `T::Response`.
+     */
+    template <typename F>
+    void add_audio_processor_and_listen(
+        size_t instance_id,
+        std::promise<void>& socket_listening_latch,
+        F cb) {
+        {
+            std::lock_guard lock(audio_processor_sockets_mutex);
+            audio_processor_sockets.try_emplace(
+                instance_id, io_context,
+                (base_dir / ("host_vst_audio_processor_" +
+                             std::to_string(instance_id) + ".sock"))
+                    .string(),
+                true);
+        }
+
+        socket_listening_latch.set_value();
+        audio_processor_sockets.at(instance_id).connect();
+        audio_processor_sockets.at(instance_id)
+            .receive_messages(std::nullopt, cb);
+    }
+
+    /**
+     * If `instance_id` is in `audio_processor_sockets`, then close its socket
+     * and remove it from the map. This is called from the destructor of
+     * `Vst3PluginProxyImpl` on the plugin side and when handling
+     * `Vst3PluginProxy::Destruct` on the Wine plugin host side.
+     *
+     * @param instance_id The object instance identifier of the socket.
+     *
+     * @return Whether the socket was closed and removed. Returns false if it
+     *   wasn't in the map.
+     */
+    bool remove_audio_processor(size_t instance_id) {
+        std::lock_guard lock(audio_processor_sockets_mutex);
+        if (audio_processor_sockets.contains(instance_id)) {
+            audio_processor_sockets.at(instance_id).close();
+            audio_processor_sockets.erase(instance_id);
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Send a message from the native plugin to the Wine plugin host to handle
+     * an `IAudioProcessor` or `IComponent` call. Since those functions are
+     * called from a hot loop we want every instance to have a dedicated socket
+     * and thread for handling those.
+     *
+     * @tparam T Some object in the `AudioProcessorRequest` variant.
+     */
+    template <typename T>
+    typename T::Response send_audio_processor_message(
+        const T& object,
+        std::optional<std::pair<Vst3Logger&, bool>> logging) {
+        // TODO: These calls should reuse buffers
+        return audio_processor_sockets.at(object.instance_id)
+            .send_message(object, logging);
+    }
 
     /**
      * For sending messages from the host to the plugin. After we have a better
      * idea of what our communication model looks like we'll probably want to
-     * provide an abstraction similar to `EventHandler`.
+     * provide an abstraction similar to `EventHandler`. For optimization
+     * reasons calls to `IAudioProcessor` or `IComponent` are handled using the
+     * dedicated sockets in `audio_processor_sockets`.
      *
      * This will be listened on by the Wine plugin host when it calls
      * `receive_multi()`.
@@ -287,4 +395,22 @@ class Vst3Sockets : public Sockets {
      * want to provide an abstraction similar to `EventHandler`.
      */
     Vst3MessageHandler<Thread, CallbackRequest, true> vst_host_callback;
+
+   private:
+    boost::asio::io_context& io_context;
+
+    /**
+     * Every `IAudioProcessor` or `IComponent` instance (which likely implements
+     * both of those) will get a dedicated socket. These functions are always
+     * called in a hot loop, so there should not be any waiting or additional
+     * thread or socket creation happening there.
+     *
+     * THe last `false` template arguments means that we'll disable all ad-hoc
+     * socket and thread spawning behaviour. Otherwise every plugin instance
+     * would have one dedicated thread for handling function calls to these
+     * interfaces, and then another dedicated thread just idling around.
+     */
+    std::map<size_t, Vst3MessageHandler<Thread, AudioProcessorRequest, false>>
+        audio_processor_sockets;
+    std::mutex audio_processor_sockets_mutex;
 };

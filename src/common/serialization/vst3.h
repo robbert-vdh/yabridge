@@ -64,21 +64,6 @@ using ControlRequest = std::variant<Vst3PlugViewProxy::Destruct,
                                     Vst3PluginProxy::Destruct,
                                     Vst3PluginProxy::SetState,
                                     Vst3PluginProxy::GetState,
-                                    YaAudioProcessor::SetBusArrangements,
-                                    YaAudioProcessor::GetBusArrangement,
-                                    YaAudioProcessor::CanProcessSampleSize,
-                                    YaAudioProcessor::GetLatencySamples,
-                                    YaAudioProcessor::SetupProcessing,
-                                    YaAudioProcessor::SetProcessing,
-                                    YaAudioProcessor::Process,
-                                    YaAudioProcessor::GetTailSamples,
-                                    YaComponent::GetControllerClassId,
-                                    YaComponent::SetIoMode,
-                                    YaComponent::GetBusCount,
-                                    YaComponent::GetBusInfo,
-                                    YaComponent::GetRoutingInfo,
-                                    YaComponent::ActivateBus,
-                                    YaComponent::SetActive,
                                     YaConnectionPoint::Connect,
                                     YaConnectionPoint::Disconnect,
                                     YaEditController::SetComponentState,
@@ -103,6 +88,35 @@ using ControlRequest = std::variant<Vst3PlugViewProxy::Destruct,
 template <typename S>
 void serialize(S& s, ControlRequest& payload) {
     // All of the objects in `ControlRequest` should have their own
+    // serialization function.
+    s.ext(payload, bitsery::ext::StdVariant{});
+}
+
+/**
+ * A subset of all functions a host can call on a plugin. These functions are
+ * called from a hot loop every processing cycle, so we want a dedicated socket
+ * for these for every plugin instance.
+ */
+using AudioProcessorRequest =
+    std::variant<YaAudioProcessor::SetBusArrangements,
+                 YaAudioProcessor::GetBusArrangement,
+                 YaAudioProcessor::CanProcessSampleSize,
+                 YaAudioProcessor::GetLatencySamples,
+                 YaAudioProcessor::SetupProcessing,
+                 YaAudioProcessor::SetProcessing,
+                 YaAudioProcessor::Process,
+                 YaAudioProcessor::GetTailSamples,
+                 YaComponent::GetControllerClassId,
+                 YaComponent::SetIoMode,
+                 YaComponent::GetBusCount,
+                 YaComponent::GetBusInfo,
+                 YaComponent::GetRoutingInfo,
+                 YaComponent::ActivateBus,
+                 YaComponent::SetActive>;
+
+template <typename S>
+void serialize(S& s, AudioProcessorRequest& payload) {
+    // All of the objects in `AudioProcessorRequest` should have their own
     // serialization function.
     s.ext(payload, bitsery::ext::StdVariant{});
 }
