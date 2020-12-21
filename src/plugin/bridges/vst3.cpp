@@ -21,8 +21,6 @@
 #include "vst3-impls/plugin-proxy.h"
 
 // There are still some design decisions that need some more thought
-// TODO: Check whether `IPlugView::isPlatformTypeSupported` needs special
-//       handling.
 // TODO: The documentation mentions that private communication through VST3's
 //       message system should be handled on a separate timer thread.  Do we
 //       need special handling for this on the Wine side (e.g. during the event
