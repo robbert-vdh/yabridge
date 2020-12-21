@@ -375,6 +375,18 @@ void Vst3Bridge::run() {
                 return object_instances[request.owner_instance_id]
                     .plug_view->onWheel(request.distance);
             },
+            [&](const YaPlugView::OnKeyDown& request)
+                -> YaPlugView::OnKeyDown::Response {
+                return object_instances[request.owner_instance_id]
+                    .plug_view->onKeyDown(request.key, request.key_code,
+                                          request.modifiers);
+            },
+            [&](const YaPlugView::OnKeyUp& request)
+                -> YaPlugView::OnKeyUp::Response {
+                return object_instances[request.owner_instance_id]
+                    .plug_view->onKeyUp(request.key, request.key_code,
+                                        request.modifiers);
+            },
             [&](YaPlugView::GetSize& request) -> YaPlugView::GetSize::Response {
                 const tresult result =
                     object_instances[request.owner_instance_id]

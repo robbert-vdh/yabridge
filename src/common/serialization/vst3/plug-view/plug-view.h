@@ -149,9 +149,55 @@ class YaPlugView : public Steinberg::IPlugView {
     };
 
     virtual tresult PLUGIN_API onWheel(float distance) override = 0;
+
+    /**
+     * Message to pass through a call to `IPlugView::onKeyDown(key, keyCode,
+     * modifiers)` to the Wine plugin host.
+     */
+    struct OnKeyDown {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        char16 key;
+        int16 key_code;
+        int16 modifiers;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value2b(key);
+            s.value2b(key_code);
+            s.value2b(modifiers);
+        }
+    };
+
     virtual tresult PLUGIN_API onKeyDown(char16 key,
                                          int16 keyCode,
                                          int16 modifiers) override = 0;
+
+    /**
+     * Message to pass through a call to `IPlugView::onKeyUp(key, keyCode,
+     * modifiers)` to the Wine plugin host.
+     */
+    struct OnKeyUp {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        char16 key;
+        int16 key_code;
+        int16 modifiers;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value2b(key);
+            s.value2b(key_code);
+            s.value2b(modifiers);
+        }
+    };
+
     virtual tresult PLUGIN_API onKeyUp(char16 key,
                                        int16 keyCode,
                                        int16 modifiers) override = 0;

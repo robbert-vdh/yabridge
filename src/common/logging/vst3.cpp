@@ -274,6 +274,30 @@ bool Vst3Logger::log_request(bool is_host_vst,
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaPlugView::OnKeyDown& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        // This static cast is technically not correct of course but it's
+        // UTF-16, so everything's allowed
+        message << request.owner_instance_id << ": IPlugView::onKeyDown(key = "
+                << static_cast<char>(request.key)
+                << ", keyCode = " << request.key_code
+                << ", modifiers = " << request.modifiers << ")";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaPlugView::OnKeyUp& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        // This static cast is technically not correct of course but it's
+        // UTF-16, so everything's allowed
+        message << request.owner_instance_id << ": IPlugView::onKeyUp(key = "
+                << static_cast<char>(request.key)
+                << ", keyCode = " << request.key_code
+                << ", modifiers = " << request.modifiers << ")";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
                              const YaPlugView::GetSize& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.owner_instance_id << ": IPlugView::getSize(size*)";

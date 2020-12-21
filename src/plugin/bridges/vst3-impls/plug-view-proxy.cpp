@@ -71,17 +71,21 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::onWheel(float distance) {
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onKeyDown(char16 key,
                                                     int16 keyCode,
                                                     int16 modifiers) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IPlugView::onKeyDown()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaPlugView::OnKeyDown{.owner_instance_id = owner_instance_id(),
+                              .key = key,
+                              .key_code = keyCode,
+                              .modifiers = modifiers});
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onKeyUp(char16 key,
                                                   int16 keyCode,
                                                   int16 modifiers) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IPlugView::onKeyUp()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaPlugView::OnKeyUp{.owner_instance_id = owner_instance_id(),
+                            .key = key,
+                            .key_code = keyCode,
+                            .modifiers = modifiers});
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::getSize(Steinberg::ViewRect* size) {
