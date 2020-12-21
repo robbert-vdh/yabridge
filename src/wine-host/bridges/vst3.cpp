@@ -355,6 +355,21 @@ void Vst3Bridge::run() {
                     })
                     .get();
             },
+            [&](const YaPlugView::Removed& request)
+                -> YaPlugView::Removed::Response {
+                return main_context
+                    .run_in_context<tresult>([&]() {
+                        const tresult result =
+                            object_instances[request.owner_instance_id]
+                                .plug_view->removed();
+
+                        object_instances[request.owner_instance_id]
+                            .editor.reset();
+
+                        return result;
+                    })
+                    .get();
+            },
             [&](YaPlugView::GetSize& request) -> YaPlugView::GetSize::Response {
                 const tresult result =
                     object_instances[request.owner_instance_id]

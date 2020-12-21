@@ -59,9 +59,8 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::attached(void* parent,
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::removed() {
-    // TODO: Implement
-    bridge.logger.log("TODO: IPlugView::removed()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaPlugView::Removed{.owner_instance_id = owner_instance_id()});
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onWheel(float distance) {

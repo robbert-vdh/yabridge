@@ -112,6 +112,22 @@ class YaPlugView : public Steinberg::IPlugView {
 
     virtual tresult PLUGIN_API attached(void* parent,
                                         Steinberg::FIDString type) override = 0;
+
+    /**
+     * Message to pass through a call to `IPlugView::removed()` to the Wine
+     * plugin host.
+     */
+    struct Removed {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+        }
+    };
+
     virtual tresult PLUGIN_API removed() override = 0;
     virtual tresult PLUGIN_API onWheel(float distance) override = 0;
     virtual tresult PLUGIN_API onKeyDown(char16 key,
