@@ -256,6 +256,25 @@ class YaPlugView : public Steinberg::IPlugView {
 
     virtual tresult PLUGIN_API
     onSize(Steinberg::ViewRect* newSize) override = 0;
+
+    /**
+     * Message to pass through a call to `IPlugView::onFocus(state)` to the Wine
+     * plugin host.
+     */
+    struct OnFocus {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        TBool state;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value1b(state);
+        }
+    };
+
     virtual tresult PLUGIN_API onFocus(TBool state) override = 0;
     virtual tresult PLUGIN_API
     setFrame(Steinberg::IPlugFrame* frame) override = 0;

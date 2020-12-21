@@ -116,9 +116,8 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::onSize(Steinberg::ViewRect* newSize) {
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onFocus(TBool state) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IPlugView::onFocus()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaPlugView::OnFocus{
+        .owner_instance_id = owner_instance_id(), .state = state});
 }
 
 tresult PLUGIN_API

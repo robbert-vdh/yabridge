@@ -387,10 +387,6 @@ void Vst3Bridge::run() {
                     .plug_view->onKeyUp(request.key, request.key_code,
                                         request.modifiers);
             },
-            [&](YaPlugView::OnSize& request) -> YaPlugView::OnKeyUp::Response {
-                return object_instances[request.owner_instance_id]
-                    .plug_view->onSize(&request.new_size);
-            },
             [&](YaPlugView::GetSize& request) -> YaPlugView::GetSize::Response {
                 const tresult result =
                     object_instances[request.owner_instance_id]
@@ -398,6 +394,15 @@ void Vst3Bridge::run() {
 
                 return YaPlugView::GetSizeResponse{
                     .result = result, .updated_size = request.size};
+            },
+            [&](YaPlugView::OnSize& request) -> YaPlugView::OnSize::Response {
+                return object_instances[request.owner_instance_id]
+                    .plug_view->onSize(&request.new_size);
+            },
+            [&](const YaPlugView::OnFocus& request)
+                -> YaPlugView::OnFocus::Response {
+                return object_instances[request.owner_instance_id]
+                    .plug_view->onFocus(request.state);
             },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
