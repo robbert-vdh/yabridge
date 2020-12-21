@@ -129,6 +129,25 @@ class YaPlugView : public Steinberg::IPlugView {
     };
 
     virtual tresult PLUGIN_API removed() override = 0;
+
+    /**
+     * Message to pass through a call to `IPlugView::onWheel(distance)` to the
+     * Wine plugin host.
+     */
+    struct OnWheel {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        float distance;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value4b(distance);
+        }
+    };
+
     virtual tresult PLUGIN_API onWheel(float distance) override = 0;
     virtual tresult PLUGIN_API onKeyDown(char16 key,
                                          int16 keyCode,

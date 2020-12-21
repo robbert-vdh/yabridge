@@ -370,6 +370,11 @@ void Vst3Bridge::run() {
                     })
                     .get();
             },
+            [&](const YaPlugView::OnWheel& request)
+                -> YaPlugView::OnWheel::Response {
+                return object_instances[request.owner_instance_id]
+                    .plug_view->onWheel(request.distance);
+            },
             [&](YaPlugView::GetSize& request) -> YaPlugView::GetSize::Response {
                 const tresult result =
                     object_instances[request.owner_instance_id]

@@ -64,9 +64,8 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::removed() {
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onWheel(float distance) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IPlugView::onWheel()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaPlugView::OnWheel{
+        .owner_instance_id = owner_instance_id(), .distance = distance});
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onKeyDown(char16 key,
