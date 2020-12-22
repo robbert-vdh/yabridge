@@ -25,6 +25,9 @@
 #include "../editor.h"
 #include "common.h"
 
+// Forward declarations
+class Vst3PlugFrameProxyImpl;
+
 /**
  * A holder for plugin object instance created from the factory. This stores all
  * relevant interface smart pointers to that object so we can handle control
@@ -71,6 +74,13 @@ struct InstanceInterfaces {
      * proxy object.
      */
     Steinberg::IPtr<Vst3PlugFrameProxy> plug_frame_proxy;
+
+    /**
+     * An unmanaged raw pointer for the actual implementation behind
+     * `plug_frame_proxy`. This is needed for some special handling for
+     * `IPlugView::onSize()`.
+     */
+    Vst3PlugFrameProxyImpl* plug_frame_proxy_impl;
 
     /**
      * The base object we cast from.

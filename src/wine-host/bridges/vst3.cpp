@@ -409,12 +409,31 @@ void Vst3Bridge::run() {
                     .result = result, .updated_size = request.size};
             },
             [&](YaPlugView::OnSize& request) -> YaPlugView::OnSize::Response {
-                return main_context
-                    .run_in_context<tresult>([&]() {
-                        return object_instances[request.owner_instance_id]
+                auto call_on_size = [&]() {
+                    const auto result =
+                        object_instances[request.owner_instance_id]
                             .plug_view->onSize(&request.new_size);
-                    })
-                    .get();
+                    return result;
+                };
+
+                // HACK: As explained in the docstring of
+                //       `YaPlugFrameProxyImpl::resizeView()`, calls to
+                //       `IPlugView::onSize()` have to be handled from the UI
+                //       thread, even if that thread is currently making a call
+                //       to `IPlugFrame::resizeView()`. We use some special
+                //       handling to execute `call_on_size()` on that thread if
+                //       it's currently waiting for a call to
+                //       `IPlugFrame::resizeView()`, and we'll just run in
+                //       within the main context as usual otherwise.
+                if (auto result =
+                        object_instances[request.owner_instance_id]
+                            .plug_frame_proxy_impl
+                            ->maybe_run_on_size_from_ui_thread(call_on_size)) {
+                    return *result;
+                } else {
+                    return main_context.run_in_context<tresult>(call_on_size)
+                        .get();
+                }
             },
             [&](const YaPlugView::OnFocus& request)
                 -> YaPlugView::OnFocus::Response {
@@ -431,12 +450,18 @@ void Vst3Bridge::run() {
                 // pass that to the `setFrame()` function. The lifetime of this
                 // object is tied to that of the actual `IPlugFrame` object
                 // we're passing this proxy to.
+                // We'll also store an unmanaged pointer to the actual
+                // implementation so we can do some sneakiness for
+                // `IPlugView::onSize()`.
+                object_instances[request.owner_instance_id]
+                    .plug_frame_proxy_impl = new Vst3PlugFrameProxyImpl(
+                    *this, std::move(request.plug_frame_args));
+                object_instances[request.owner_instance_id].plug_frame_proxy =
+                    Steinberg::owned(object_instances[request.owner_instance_id]
+                                         .plug_frame_proxy_impl);
+
                 // TODO: Does this have to be run from the UI thread? Figure out
                 //       if it does
-                object_instances[request.owner_instance_id].plug_frame_proxy =
-                    Steinberg::owned(new Vst3PlugFrameProxyImpl(
-                        *this, std::move(request.plug_frame_args)));
-
                 return object_instances[request.owner_instance_id]
                     .plug_view->setFrame(
                         object_instances[request.owner_instance_id]
