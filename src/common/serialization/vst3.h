@@ -25,6 +25,8 @@
 #include "common.h"
 #include "vst3/component-handler-proxy.h"
 #include "vst3/host-context-proxy.h"
+#include "vst3/plug-frame-proxy.h"
+#include "vst3/plug-view-proxy.h"
 #include "vst3/plugin-factory.h"
 #include "vst3/plugin-proxy.h"
 
