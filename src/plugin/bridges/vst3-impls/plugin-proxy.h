@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../vst3.h"
+#include "plug-view-proxy.h"
 
 class Vst3PluginProxyImpl : public Vst3PluginProxy {
    public:
@@ -133,7 +134,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      *      currently only defines a single type of view so that shouldn't be an
      *      issue
      */
-    Steinberg::IPlugView* last_created_plug_view = nullptr;
+    Vst3PlugViewProxyImpl* last_created_plug_view = nullptr;
 
     /**
      * The component handler the host passed to us during

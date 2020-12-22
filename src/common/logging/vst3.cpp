@@ -348,7 +348,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaPluginFactory::SetHostContext& request) {
+                             const YaPluginFactory::SetHostContext&) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << "IPluginFactory3::setHostContext(<FUnknown*>)";
     });
@@ -609,6 +609,18 @@ bool Vst3Logger::log_request(bool is_host_vst,
         }
 
         message << "IHostApplication::getName(&name)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaPlugFrame::ResizeView& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IPlugFrame::resizeView(view = <IPlugView*>, newSize = "
+                   "<ViewRect* with left = "
+                << request.new_size.left << ", top = " << request.new_size.top
+                << ", right = " << request.new_size.right
+                << ", bottom = " << request.new_size.bottom << ">)";
     });
 }
 

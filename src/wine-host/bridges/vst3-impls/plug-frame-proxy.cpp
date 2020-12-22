@@ -40,9 +40,18 @@ Vst3PlugFrameProxyImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
 }
 
 tresult PLUGIN_API
-Vst3PlugFrameProxyImpl::resizeView(Steinberg::IPlugView* view,
+Vst3PlugFrameProxyImpl::resizeView(Steinberg::IPlugView* /*view*/,
                                    Steinberg::ViewRect* newSize) {
-    // TODO: Implement
-    std::cerr << "TODO: IPlugFrame::resizeView()" << std::endl;
-    return Steinberg::kNotImplemented;
+    if (newSize) {
+        // XXX: Since VST3 currently only support a single view type we'll
+        //      assume `view` is the `IPlugView*` returned by the last call to
+        //      `IEditController::createView()`
+        return bridge.send_message(YaPlugFrame::ResizeView{
+            .owner_instance_id = owner_instance_id(), .new_size = *newSize});
+    } else {
+        std::cerr
+            << "WARNING: Null pointer passed to 'IPlugFrame::resizeView()'"
+            << std::endl;
+        return Steinberg::kInvalidArgument;
+    }
 }

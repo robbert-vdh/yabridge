@@ -81,24 +81,6 @@ Vst3PluginBridge::Vst3PluginBridge()
                 [&](const WantsConfiguration&) -> WantsConfiguration::Response {
                     return config;
                 },
-                [&](const YaHostApplication::GetName& request)
-                    -> YaHostApplication::GetName::Response {
-                    tresult result;
-                    Steinberg::Vst::String128 name{0};
-                    if (request.owner_instance_id) {
-                        result = plugin_proxies.at(*request.owner_instance_id)
-                                     .get()
-                                     .host_application->getName(name);
-                    } else {
-                        result =
-                            plugin_factory->host_application->getName(name);
-                    }
-
-                    return YaHostApplication::GetNameResponse{
-                        .result = result,
-                        .name = tchar_pointer_to_u16string(name),
-                    };
-                },
                 [&](const YaComponentHandler::BeginEdit& request)
                     -> YaComponentHandler::BeginEdit::Response {
                     return plugin_proxies.at(request.owner_instance_id)
@@ -123,6 +105,39 @@ Vst3PluginBridge::Vst3PluginBridge()
                     return plugin_proxies.at(request.owner_instance_id)
                         .get()
                         .component_handler->restartComponent(request.flags);
+                },
+                [&](const YaHostApplication::GetName& request)
+                    -> YaHostApplication::GetName::Response {
+                    tresult result;
+                    Steinberg::Vst::String128 name{0};
+                    if (request.owner_instance_id) {
+                        result = plugin_proxies.at(*request.owner_instance_id)
+                                     .get()
+                                     .host_application->getName(name);
+                    } else {
+                        result =
+                            plugin_factory->host_application->getName(name);
+                    }
+
+                    return YaHostApplication::GetNameResponse{
+                        .result = result,
+                        .name = tchar_pointer_to_u16string(name),
+                    };
+                },
+                [&](YaPlugFrame::ResizeView& request)
+                    -> YaPlugFrame::ResizeView::Response {
+                    // XXX: As mentioned elsewhere, since VST3 only supports a
+                    //      single plug view type at the moment we'll just
+                    //      assume that this function is called from the last
+                    //      (and only) `IPlugView*` instance returned by the
+                    //      plugin.
+                    Vst3PlugViewProxyImpl* plug_view =
+                        plugin_proxies.at(request.owner_instance_id)
+                            .get()
+                            .last_created_plug_view;
+
+                    return plug_view->plug_frame->resizeView(plug_view,
+                                                             &request.new_size);
                 },
             });
     });
