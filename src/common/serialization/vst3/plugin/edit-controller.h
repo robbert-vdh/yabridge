@@ -345,18 +345,12 @@ class YaEditController : public Steinberg::Vst::IEditController {
 
         native_size_t instance_id;
 
-        /**
-         * Arguments for instantiating the proxy object. Even though it should
-         * never happen, if the host passed a null pointer to this function
-         * we'll mimic that as well.
-         */
-        std::optional<Vst3ComponentHandlerProxy::ConstructArgs>
-            component_handler_proxy_args;
+        Vst3ComponentHandlerProxy::ConstructArgs component_handler_proxy_args;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
-            s.ext(component_handler_proxy_args, bitsery::ext::StdOptional{});
+            s.object(component_handler_proxy_args);
         }
     };
 

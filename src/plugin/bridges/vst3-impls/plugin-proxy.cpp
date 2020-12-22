@@ -337,28 +337,26 @@ Vst3PluginProxyImpl::setParamNormalized(Steinberg::Vst::ParamID id,
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
     Steinberg::Vst::IComponentHandler* handler) {
-    // We'll store the pointer for when the plugin later makes a callback to
-    // this component handler
-    component_handler = handler;
-
-    // Automatically converted smart pointers for when the plugin performs a
-    // callback later
-    host_application = host_context;
-
-    std::optional<Vst3ComponentHandlerProxy::ConstructArgs>
-        component_handler_proxy_args = std::nullopt;
     if (handler) {
-        component_handler_proxy_args = Vst3ComponentHandlerProxy::ConstructArgs(
-            component_handler, instance_id());
+        // We'll store the pointer for when the plugin later makes a callback to
+        // this component handler
+        component_handler = handler;
+
+        // Automatically converted smart pointers for when the plugin performs a
+        // callback later
+        host_application = host_context;
+
+        return bridge.send_message(YaEditController::SetComponentHandler{
+            .instance_id = instance_id(),
+            .component_handler_proxy_args =
+                Vst3ComponentHandlerProxy::ConstructArgs(component_handler,
+                                                         instance_id())});
     } else {
         bridge.logger.log(
-            "Null pointer passed to 'IEditController::setComponentHandler()'");
+            "WARNING: Null pointer passed to "
+            "'IEditController::setComponentHandler()'");
+        return Steinberg::kInvalidArgument;
     }
-
-    return bridge.send_message(YaEditController::SetComponentHandler{
-        .instance_id = instance_id(),
-        .component_handler_proxy_args =
-            std::move(component_handler_proxy_args)});
 }
 
 Steinberg::IPlugView* PLUGIN_API
