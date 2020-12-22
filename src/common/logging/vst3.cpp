@@ -334,6 +334,18 @@ bool Vst3Logger::log_request(bool is_host_vst,
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaPlugView::CheckSizeConstraint& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IPlugView::checkSizeConstraint(rect = "
+                   "<ViewRect* with left = "
+                << request.rect.left << ", top = " << request.rect.top
+                << ", right = " << request.rect.right
+                << ", bottom = " << request.rect.bottom << ">)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id

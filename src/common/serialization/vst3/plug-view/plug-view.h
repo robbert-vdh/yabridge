@@ -319,6 +319,25 @@ class YaPlugView : public Steinberg::IPlugView {
     };
 
     virtual tresult PLUGIN_API canResize() override = 0;
+
+    /**
+     * Message to pass through a call to `IPlugView::checkSizeConstraint(rect)`
+     * to the Wine plugin host.
+     */
+    struct CheckSizeConstraint {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        Steinberg::ViewRect rect;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.object(rect);
+        }
+    };
+
     virtual tresult PLUGIN_API
     checkSizeConstraint(Steinberg::ViewRect* rect) override = 0;
 

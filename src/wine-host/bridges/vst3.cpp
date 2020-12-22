@@ -425,6 +425,11 @@ void Vst3Bridge::run() {
                 return object_instances[request.owner_instance_id]
                     .plug_view->canResize();
             },
+            [&](YaPlugView::CheckSizeConstraint& request)
+                -> YaPlugView::CheckSizeConstraint::Response {
+                return object_instances[request.owner_instance_id]
+                    .plug_view->checkSizeConstraint(&request.rect);
+            },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
                 // We'll create a proxy object for the host context passed by

@@ -145,7 +145,13 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::canResize() {
 
 tresult PLUGIN_API
 Vst3PlugViewProxyImpl::checkSizeConstraint(Steinberg::ViewRect* rect) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IPlugView::checkSizeConstraint()");
-    return Steinberg::kNotImplemented;
+    if (rect) {
+        return bridge.send_message(YaPlugView::CheckSizeConstraint{
+            .owner_instance_id = owner_instance_id(), .rect = *rect});
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IPlugView::checkSizeConstraint()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
