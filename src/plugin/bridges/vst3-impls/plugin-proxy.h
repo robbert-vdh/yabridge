@@ -124,6 +124,18 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API terminate() override;
 
     /**
+     * An unmanaged, raw pointer to the `IPlugView` instance returned in our
+     * implementation of `IEditController::createView()`. We need this to handle
+     * `IPlugFrame::resizeView()`, since that expects a pointer to the view that
+     * gets resized.
+     *
+     * XXX: This approach of course won't work with multiple views, but the SDK
+     *      currently only defines a single type of view so that shouldn't be an
+     *      issue
+     */
+    Steinberg::IPlugView* last_created_plug_view = nullptr;
+
+    /**
      * The component handler the host passed to us during
      * `IEditController::setComponentHandler()`. When the plugin makes a
      * callback on a component handler proxy object, we'll pass the call through

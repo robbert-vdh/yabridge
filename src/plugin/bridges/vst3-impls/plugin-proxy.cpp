@@ -363,8 +363,15 @@ Vst3PluginProxyImpl::createView(Steinberg::FIDString name) {
 
     if (response.plug_view_args) {
         // The host should manage this. Returning raw pointers feels scary.
-        return new Vst3PlugViewProxyImpl(bridge,
-                                         std::move(*response.plug_view_args));
+        auto plug_view_proxy = new Vst3PlugViewProxyImpl(
+            bridge, std::move(*response.plug_view_args));
+
+        // We also need to store an (unmanaged, since we don't want to affect
+        // the reference counting) pointer to this to be able to handle calls to
+        // `IPlugFrame::resizeView()` in the future
+        last_created_plug_view = plug_view_proxy;
+
+        return plug_view_proxy;
     } else {
         return nullptr;
     }
