@@ -28,6 +28,8 @@ VST3 host interfaces are implemented as follows:
 | `YaHostApplication`         | `Vst3HostContextProxy`      | `IHostApplication`  |
 | `Vst3ComponentHandlerProxy` |                             | All of the below:   |
 | `YaComponentHandler`        | `Vst3ComponentHandlerProxy` | `IComponentHandler` |
+| `Vst3PlugFrameProxy`        |                             | All of the below:   |
+| `YaPlugFrame`               | `Vst3PlugFrameProxy`        | `IPlugFrame`        |
 
 The following host interfaces are passed as function arguments and are thus also
 implemented for serialization purposes:
