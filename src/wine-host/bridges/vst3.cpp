@@ -405,22 +405,15 @@ void Vst3Bridge::run() {
             },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
-                // If we got passed a host context, we'll create a proxy object
-                // and pass that to the initialize function. The lifetime of
-                // this object is tied to that of the actual plugin object we're
-                // proxying for.
+                // We'll create a proxy object for the host context passed by
+                // the host and pass that to the initialize function. The
+                // lifetime of this object is tied to that of the actual plugin
+                // object we're proxying for.
                 // TODO: This needs changing if it turns out we need a
                 //       `Vst3HostProxy`
-                // TODO: Does this have to be run from the UI thread? Figure out
-                //       if it does
-                if (request.host_context_args) {
-                    object_instances[request.instance_id].host_context_proxy =
-                        Steinberg::owned(new Vst3HostContextProxyImpl(
-                            *this, std::move(*request.host_context_args)));
-                } else {
-                    object_instances[request.instance_id].host_context_proxy =
-                        nullptr;
-                }
+                object_instances[request.instance_id].host_context_proxy =
+                    Steinberg::owned(new Vst3HostContextProxyImpl(
+                        *this, std::move(request.host_context_args)));
 
                 // XXX: Should `IPlugView::{initialize,terminate}` be run from
                 //      the main UI thread? I can see how plugins would want to

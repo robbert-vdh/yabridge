@@ -394,23 +394,21 @@ tresult PLUGIN_API Vst3PluginProxyImpl::openAboutBox(TBool onlyCheck) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
-    // We will create a proxy object that that supports all the same interfaces
-    // as `context`, and then we'll store `context` in this object. We can then
-    // use it to handle callbacks made by the Windows VST3 plugin to this
-    // context.
-    host_context = context;
+    if (context) {
+        // We will create a proxy object that that supports all the same
+        // interfaces as `context`, and then we'll store `context` in this
+        // object. We can then use it to handle callbacks made by the Windows
+        // VST3 plugin to this context.
+        host_context = context;
 
-    std::optional<Vst3HostContextProxy::ConstructArgs> host_context_args{};
-    if (host_context) {
-        host_context_args =
-            Vst3HostContextProxy::ConstructArgs(host_context, instance_id());
+        return bridge.send_message(YaPluginBase::Initialize{
+            .instance_id = instance_id(),
+            .host_context_args = Vst3HostContextProxy::ConstructArgs(
+                host_context, instance_id())});
     } else {
         bridge.logger.log("Null pointer passed to 'IPluginBase::initialize()'");
+        return Steinberg::kInvalidArgument;
     }
-
-    return bridge.send_message(YaPluginBase::Initialize{
-        .instance_id = instance_id(),
-        .host_context_args = std::move(host_context_args)});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::terminate() {

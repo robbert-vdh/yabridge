@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/base/ipluginbase.h>
 
 #include "../../common.h"
@@ -77,12 +76,12 @@ class YaPluginBase : public Steinberg::IPluginBase {
 
         native_size_t instance_id;
 
-        std::optional<Vst3HostContextProxy::ConstructArgs> host_context_args;
+        Vst3HostContextProxy::ConstructArgs host_context_args;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
-            s.ext(host_context_args, bitsery::ext::StdOptional{});
+            s.object(host_context_args);
         }
     };
 

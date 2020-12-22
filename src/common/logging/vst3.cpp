@@ -322,13 +322,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
-                << ": IPluginBase::initialize(context = ";
-        if (request.host_context_args) {
-            message << "<FUnknown*>";
-        } else {
-            message << "<nullptr>";
-        }
-        message << ")";
+                << ": IPluginBase::initialize(context = <FUnknown*>)";
     });
 }
 
