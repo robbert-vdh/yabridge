@@ -22,6 +22,7 @@
 
 #include "vst3-impls/component-handler-proxy.h"
 #include "vst3-impls/host-context-proxy.h"
+#include "vst3-impls/plug-frame-proxy.h"
 
 InstanceInterfaces::InstanceInterfaces() {}
 
@@ -70,9 +71,13 @@ void Vst3Bridge::run() {
                 main_context
                     .run_in_context([&]() {
                         // When the pointer gets dropped by the host, we want to
-                        // drop it here as well
+                        // drop it here as well, along with the `IPlugFrame`
+                        // proxy object it may have received in
+                        // `IPlugView::setFrame()`.
                         object_instances[request.owner_instance_id]
                             .plug_view.reset();
+                        object_instances[request.owner_instance_id]
+                            .plug_frame_proxy.reset();
                     })
                     .wait();
 

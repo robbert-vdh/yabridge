@@ -54,6 +54,16 @@ struct InstanceInterfaces {
     Steinberg::IPtr<Vst3HostContextProxy> host_context_proxy;
 
     /**
+     * If the host passes an `IPlugFrame` object during `IPlugView::setFrame()`,
+     * then we'll store a proxy object here and then pass it to
+     * `plug_view->setFrame()`. Will be initialized with a null pointer until
+     * used. When we destroy `plug_view` while handling
+     * `Vst3PlugViewProxy::Destruct`, we'll also destroy (our pointer of) this
+     * proxy object.
+     */
+    Steinberg::IPtr<Vst3PlugFrameProxy> plug_frame_proxy;
+
+    /**
      * After a call to `IEditController::setComponentHandler()`, we'll create a
      * proxy of that component handler just like we did for the plugin object.
      * When the plugin calls a function on this object, we make a callback to
