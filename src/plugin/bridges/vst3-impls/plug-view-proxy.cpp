@@ -139,9 +139,8 @@ Vst3PlugViewProxyImpl::setFrame(Steinberg::IPlugFrame* frame) {
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::canResize() {
-    // TODO: Implement
-    bridge.logger.log("TODO: IPlugView::canResize()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaPlugView::CanResize{.owner_instance_id = owner_instance_id()});
 }
 
 tresult PLUGIN_API

@@ -327,6 +327,13 @@ bool Vst3Logger::log_request(bool is_host_vst,
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaPlugView::CanResize& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id << ": IPlugView::canResize()";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id

@@ -420,6 +420,11 @@ void Vst3Bridge::run() {
                         object_instances[request.owner_instance_id]
                             .plug_frame_proxy);
             },
+            [&](YaPlugView::CanResize& request)
+                -> YaPlugView::CanResize::Response {
+                return object_instances[request.owner_instance_id]
+                    .plug_view->canResize();
+            },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
                 // We'll create a proxy object for the host context passed by
