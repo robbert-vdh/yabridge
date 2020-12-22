@@ -100,25 +100,24 @@ YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
 
 tresult PLUGIN_API
 YaPluginFactoryImpl::setHostContext(Steinberg::FUnknown* context) {
-    // We will create a proxy object that that supports all the same interfaces
-    // as `context`, and then we'll store `context` in this object. We can then
-    // use it to handle callbacks made by the Windows VST3 plugin to this
-    // context.
-    host_context = context;
+    if (context) {
+        // We will create a proxy object that that supports all the same
+        // interfaces as `context`, and then we'll store `context` in this
+        // object. We can then use it to handle callbacks made by the Windows
+        // VST3 plugin to this context.
+        host_context = context;
 
-    // Automatically converted smart pointers for when the plugin performs a
-    // callback later
-    host_application = host_context;
+        // Automatically converted smart pointers for when the plugin performs a
+        // callback later
+        host_application = host_context;
 
-    std::optional<Vst3HostContextProxy::ConstructArgs> host_context_args{};
-    if (host_context) {
-        host_context_args =
-            Vst3HostContextProxy::ConstructArgs(host_context, std::nullopt);
+        return bridge.send_message(YaPluginFactory::SetHostContext{
+            .host_context_args = Vst3HostContextProxy::ConstructArgs(
+                host_context, std::nullopt)});
     } else {
         bridge.logger.log(
-            "Null pointer passed to 'IPluginFactory3::setHostContext()'");
+            "WARNING: Null pointer passed to "
+            "'IPluginFactory3::setHostContext()'");
+        return Steinberg::kInvalidArgument;
     }
-
-    return bridge.send_message(YaPluginFactory::SetHostContext{
-        .host_context_args = std::move(host_context_args)});
 }

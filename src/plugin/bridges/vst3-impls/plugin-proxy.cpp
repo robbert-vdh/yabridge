@@ -406,7 +406,8 @@ tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
             .host_context_args = Vst3HostContextProxy::ConstructArgs(
                 host_context, instance_id())});
     } else {
-        bridge.logger.log("Null pointer passed to 'IPluginBase::initialize()'");
+        bridge.logger.log(
+            "WARNING: Null pointer passed to 'IPluginBase::initialize()'");
         return Steinberg::kInvalidArgument;
     }
 }

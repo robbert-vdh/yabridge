@@ -162,15 +162,11 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     struct SetHostContext {
         using Response = UniversalTResult;
 
-        /**
-         * Arguments for creating a proxy host context object. If we got passed
-         * an null pointer we'll reflect that.
-         */
-        std::optional<Vst3HostContextProxy::ConstructArgs> host_context_args;
+        Vst3HostContextProxy::ConstructArgs host_context_args;
 
         template <typename S>
         void serialize(S& s) {
-            s.ext(host_context_args, bitsery::ext::StdOptional{});
+            s.object(host_context_args);
         }
     };
 

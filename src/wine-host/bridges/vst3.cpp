@@ -443,18 +443,14 @@ void Vst3Bridge::run() {
             },
             [&](YaPluginFactory::SetHostContext& request)
                 -> YaPluginFactory::SetHostContext::Response {
-                if (request.host_context_args) {
-                    plugin_factory_host_context =
-                        Steinberg::owned(new Vst3HostContextProxyImpl(
-                            *this, std::move(*request.host_context_args)));
-                } else {
-                    plugin_factory_host_context = nullptr;
-                }
+                plugin_factory_host_context =
+                    Steinberg::owned(new Vst3HostContextProxyImpl(
+                        *this, std::move(request.host_context_args)));
 
                 Steinberg::FUnknownPtr<Steinberg::IPluginFactory3> factory_3(
                     module->getFactory().get());
-
                 assert(factory_3);
+
                 return factory_3->setHostContext(plugin_factory_host_context);
             }});
 }
