@@ -20,6 +20,7 @@
 
 #include "../../common.h"
 #include "../base.h"
+#include "../plug-frame-proxy.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -276,6 +277,29 @@ class YaPlugView : public Steinberg::IPlugView {
     };
 
     virtual tresult PLUGIN_API onFocus(TBool state) override = 0;
+
+    /**
+     * Message to pass through a call to `IPlugView::setFrame()` to the Wine
+     * plugin host. We will read what interfaces the passed `IPlugFrame` object
+     * implements so we can then create a proxy object on the Wine side that the
+     * plugin can use to make callbacks with. The lifetime of this
+     * `Vst3PlugFrameProxy` object should be bound to the `IPlugView` we are
+     * creating it for.
+     */
+    struct SetFrame {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        Vst3PlugFrameProxy::ConstructArgs plug_frame_args;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.object(plug_frame_args);
+        }
+    };
+
     virtual tresult PLUGIN_API
     setFrame(Steinberg::IPlugFrame* frame) override = 0;
     virtual tresult PLUGIN_API canResize() override = 0;

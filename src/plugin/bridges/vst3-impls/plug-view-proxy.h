@@ -57,6 +57,13 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
     tresult PLUGIN_API canResize() override;
     tresult PLUGIN_API checkSizeConstraint(Steinberg::ViewRect* rect) override;
 
+    /**
+     * The `IPlugFrame` object passed by the host passed to us in
+     * `IPlugView::setFrame()`. When the plugin makes a callback on the
+     * `IPlugFrame` proxy object, we'll pass the call through to this object.
+     */
+    Steinberg::IPtr<Steinberg::IPlugFrame> plug_frame;
+
    private:
     Vst3PluginBridge& bridge;
 };

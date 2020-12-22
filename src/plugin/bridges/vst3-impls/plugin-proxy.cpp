@@ -342,10 +342,6 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
         // this component handler
         component_handler = handler;
 
-        // Automatically converted smart pointers for when the plugin performs a
-        // callback later
-        host_application = host_context;
-
         return bridge.send_message(YaEditController::SetComponentHandler{
             .instance_id = instance_id(),
             .component_handler_proxy_args =

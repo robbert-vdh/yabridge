@@ -122,9 +122,20 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::onFocus(TBool state) {
 
 tresult PLUGIN_API
 Vst3PlugViewProxyImpl::setFrame(Steinberg::IPlugFrame* frame) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IPlugView::setFrame()");
-    return Steinberg::kNotImplemented;
+    if (frame) {
+        // We'll store the pointer for when the plugin later makes a callback to
+        // this component handler
+        plug_frame = frame;
+
+        return bridge.send_message(YaPlugView::SetFrame{
+            .owner_instance_id = owner_instance_id(),
+            .plug_frame_args = Vst3PlugFrameProxy::ConstructArgs(
+                plug_frame, owner_instance_id())});
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to 'IPlugView::setFrame()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::canResize() {

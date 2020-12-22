@@ -403,6 +403,23 @@ void Vst3Bridge::run() {
                 return object_instances[request.owner_instance_id]
                     .plug_view->onFocus(request.state);
             },
+            [&](YaPlugView::SetFrame& request)
+                -> YaPlugView::SetFrame::Response {
+                // We'll create a proxy object for the `IPlugFrame` object and
+                // pass that to the `setFrame()` function. The lifetime of this
+                // object is tied to that of the actual `IPlugFrame` object
+                // we're passing this proxy to.
+                // TODO: Does this have to be run from the UI thread? Figure out
+                //       if it does
+                object_instances[request.owner_instance_id].plug_frame_proxy =
+                    Steinberg::owned(new Vst3PlugFrameProxyImpl(
+                        *this, std::move(request.plug_frame_args)));
+
+                return object_instances[request.owner_instance_id]
+                    .plug_view->setFrame(
+                        object_instances[request.owner_instance_id]
+                            .plug_frame_proxy);
+            },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
                 // We'll create a proxy object for the host context passed by
