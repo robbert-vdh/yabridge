@@ -485,14 +485,14 @@ bool Vst3Logger::log_request(bool is_host_vst,
                         << request.data.input_events->num_events()
                         << " events>";
             } else {
-                message << "nullptr";
+                message << "<nullptr>";
             }
             message << ", output_events = "
                     << (request.data.output_events_supported ? "<IEventList*>"
-                                                             : "nullptr")
+                                                             : "<nullptr>")
                     << ", process_context = "
                     << (request.data.process_context ? "<ProcessContext*>"
-                                                     : "nullptr")
+                                                     : "<nullptr>")
                     << ", process_mode = " << request.data.process_mode
                     << ", symbolic_sample_size = "
                     << request.data.symbolic_sample_size << ">)";
