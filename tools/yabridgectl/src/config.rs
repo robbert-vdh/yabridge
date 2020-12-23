@@ -55,8 +55,10 @@ pub struct Config {
     /// yabridgectl will look in `/usr/lib` and `$XDG_DATA_HOME/yabridge` since those are the
     /// expected locations for yabridge to be installed in.
     pub yabridge_home: Option<PathBuf>,
-    /// Directories to search for Windows VST plugins. We're using an ordered set here out of
-    /// convenience so we can't get duplicates and the config file is always sorted.
+    /// Directories to search for Windows VST plugins. These directories can contain both VST2
+    /// plugin `.dll` files and VST3 modules (which should be located in `<prefix>/drive_c/Program
+    /// Files/Common/VST3`). We're using an ordered set here out of convenience so we can't get
+    /// duplicates and the config file is always sorted.
     pub plugin_dirs: BTreeSet<PathBuf>,
     /// The last known combination of Wine and yabridge versions that would work together properly.
     /// This is mostly to diagnose issues with older Wine versions (such as those in Ubuntu's repos)
@@ -68,11 +70,11 @@ pub struct Config {
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum InstallationMethod {
-    /// Create a copy of `libyabridge-{vst2,vst3}.so` for every Windows VST2 plugin .dll file or
+    /// Create a copy of `libyabridge-{vst2,vst3}.so` for every Windows VST2 plugin `.dll` file or
     /// VST3 module found. After updating yabridge, the user will have to rerun `yabridgectl sync`
     /// to copy over the new version.
     Copy,
-    /// This will create a symlink to `libyabridge-{vst2,vst3}.so` for every VST2 plugin .dll file
+    /// This will create a symlink to `libyabridge-{vst2,vst3}.so` for every VST2 plugin `.dll` file
     /// or VST3 module in the plugin directories. Now that yabridge also searches in
     /// `~/.local/share/yabridge` since yabridge 2.1 this option is not really needed anymore.
     Symlink,
@@ -251,10 +253,8 @@ impl Config {
         })
     }
 
-    /// Search for VST2 plugins in all of the registered plugins directories. This will return an
-    /// error if `winedump` could not be called.
-    ///
-    /// TODO: Next step is including VST3 modules in the search
+    /// Search for VST2 and VST3 plugins in all of the registered plugins directories. This will
+    /// return an error if `winedump` could not be called.
     pub fn index_directories(&self) -> Result<BTreeMap<&Path, SearchResults>> {
         self.plugin_dirs
             .par_iter()

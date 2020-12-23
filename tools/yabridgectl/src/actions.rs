@@ -23,7 +23,7 @@ use std::path::{Path, PathBuf};
 
 use crate::config::{Config, InstallationMethod, YabridgeFiles};
 use crate::files;
-use crate::files::FoundFile;
+use crate::files::NativeSoFile;
 use crate::utils;
 use crate::utils::{verify_path_setup, verify_wine_setup};
 
@@ -121,8 +121,8 @@ pub fn show_status(config: &Config) -> Result<()> {
 
         for (plugin, status) in search_results.installation_status() {
             let status_str = match status {
-                Some(FoundFile::Regular(_)) => "copy".green(),
-                Some(FoundFile::Symlink(_)) => "symlink".green(),
+                Some(NativeSoFile::Regular(_)) => "copy".green(),
+                Some(NativeSoFile::Symlink(_)) => "symlink".green(),
                 None => "not installed".red(),
             };
 
@@ -178,7 +178,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     let mut num_installed = 0;
     let mut num_new = 0;
     let mut skipped_dll_files: Vec<PathBuf> = Vec::new();
-    let mut orphan_so_files: Vec<FoundFile> = Vec::new();
+    let mut orphan_so_files: Vec<NativeSoFile> = Vec::new();
     for (path, search_results) in results {
         num_installed += search_results.vst2_files.len();
         orphan_so_files.extend(search_results.orphans().into_iter().cloned());

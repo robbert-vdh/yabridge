@@ -25,25 +25,41 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use walkdir::WalkDir;
 
-/// Stores the results from searching for Windows VST plugin `.dll` files and native Linux `.so`
-/// files inside of a directory. These `.so` files are kept track of so we can report the current
-/// installation status and to be able to prune orphan files.
+/// Stores the results from searching through a directory. We'll search for Windows VST2 plugin
+/// `.dll` files, Windows VST3 plugin modules, and native Linux `.so` files inside of a directory.
+/// These `.so` files are kept track of so we can report the current installation status of VST2
+/// plugins and to be able to prune orphan files. Since VST3 plugins have to be instaleld in
+/// `~/.vst3`, these orphan files are only relevant for VST2 plugins.
 #[derive(Debug)]
 pub struct SearchResults {
     /// Absolute paths to the found VST2 `.dll` files.
     pub vst2_files: Vec<PathBuf>,
+    /// Absolute paths to found VST3 modules. Either legacy `.vst3` DLL files or VST 3.6.10 bundles.
+    pub vst3_modules: Vec<Vst3Module>,
     /// `.dll` files skipped over during the serach. Used for printing statistics and shown when
     /// running `yabridgectl sync --verbose`.
     pub skipped_files: Vec<PathBuf>,
     /// Absolute paths to any `.so` files inside of the directory, and whether they're a symlink or
     /// a regular file.
-    pub so_files: Vec<FoundFile>,
+    pub so_files: Vec<NativeSoFile>,
 }
 
+/// Native `.so` files we found during a search.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FoundFile {
+pub enum NativeSoFile {
     Symlink(PathBuf),
     Regular(PathBuf),
+}
+
+/// VST3 modules we found during a serach.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Vst3Module {
+    /// Old, pre-VST 3.6.10 style `.vst3` modules. These are simply `.dll` files with a different p
+    /// refix. Even though this is a legacy format, almost all VST3 plugins in the wild still use
+    /// this format.
+    Legacy(PathBuf),
+    /// A VST 3.6.10 bundle, with the same format as the VST3 bundles used on Linux and macOS.
+    Bundle(PathBuf),
 }
 
 impl SearchResults {
@@ -52,8 +68,8 @@ impl SearchResults {
     ///
     /// These two functions could be combined into a single function, but speed isn't really an
     /// issue here and it's a bit more organized this way.
-    pub fn installation_status(&self) -> BTreeMap<&Path, Option<&FoundFile>> {
-        let so_files: HashMap<&Path, &FoundFile> = self
+    pub fn installation_status(&self) -> BTreeMap<&Path, Option<&NativeSoFile>> {
+        let so_files: HashMap<&Path, &NativeSoFile> = self
             .so_files
             .iter()
             .map(|file| (file.path(), file))
@@ -71,9 +87,9 @@ impl SearchResults {
     }
 
     /// Find all `.so` files in the search results that do not belong to a VST2 plugin `.dll` file.
-    pub fn orphans(&self) -> Vec<&FoundFile> {
+    pub fn orphans(&self) -> Vec<&NativeSoFile> {
         // We need to store these in a map so we can easily entries with corresponding `.dll` files
-        let mut orphans: HashMap<&Path, &FoundFile> = self
+        let mut orphans: HashMap<&Path, &NativeSoFile> = self
             .so_files
             .iter()
             .map(|file| (file.path(), file))
@@ -86,12 +102,12 @@ impl SearchResults {
     }
 }
 
-impl FoundFile {
+impl NativeSoFile {
     /// Return the path of a found `.so` file.
     pub fn path(&self) -> &Path {
         match &self {
-            FoundFile::Symlink(path) => path,
-            FoundFile::Regular(path) => path,
+            NativeSoFile::Symlink(path) => path,
+            NativeSoFile::Regular(path) => path,
         }
     }
 }
@@ -142,12 +158,14 @@ pub fn index(directory: &Path) -> Result<SearchResults> {
         vst2_files,
         skipped_files,
         so_files,
+        // TODO: Search for VST3 modules
+        vst3_modules: Vec::new(),
     })
 }
 
 /// THe same as [index()](index), but only report found `.so` files. This avoids unnecesarily
 /// filtering the found `.dll` files.
-pub fn index_so_files(directory: &Path) -> Vec<FoundFile> {
+pub fn index_so_files(directory: &Path) -> Vec<NativeSoFile> {
     let (_, so_files) = find_files(directory);
 
     so_files
@@ -155,9 +173,9 @@ pub fn index_so_files(directory: &Path) -> Vec<FoundFile> {
 
 /// Find all `.dll` and `.so` files under a directory. The results are a pair of `(dll_files,
 /// so_files)`.
-fn find_files(directory: &Path) -> (Vec<PathBuf>, Vec<FoundFile>) {
+fn find_files(directory: &Path) -> (Vec<PathBuf>, Vec<NativeSoFile>) {
     let mut dll_files: Vec<PathBuf> = Vec::new();
-    let mut so_files: Vec<FoundFile> = Vec::new();
+    let mut so_files: Vec<NativeSoFile> = Vec::new();
     // XXX: We're silently skipping directories and files we don't have permission to read. This
     //      sounds like the expected behavior, but I"m not entirely sure.
     for (file_idx, entry) in WalkDir::new(directory)
@@ -182,9 +200,9 @@ fn find_files(directory: &Path) -> (Vec<PathBuf>, Vec<FoundFile>) {
             Some("dll") => dll_files.push(entry.into_path()),
             Some("so") => {
                 if entry.path_is_symlink() {
-                    so_files.push(FoundFile::Symlink(entry.into_path()));
+                    so_files.push(NativeSoFile::Symlink(entry.into_path()));
                 } else {
-                    so_files.push(FoundFile::Regular(entry.into_path()));
+                    so_files.push(NativeSoFile::Regular(entry.into_path()));
                 }
             }
             _ => (),

@@ -29,6 +29,14 @@ TODO: Add the relevant entries here for yabridge's VST3 support
   and 5.8 required a change, but that change now breaks builds using Wine 6.0
   and up, so this change has been reverted.
 
+### yabridgectl
+
+- Updated for the changes in yabridge 3.0. Yabridgectl now allows you to set up
+  yabridge for VST3 plugins. Since `libyabridge.so` got renamed to
+  `libyabridge-vst2.so` in this version, it's advised to carefully remove the
+  old `libyabridge.so` and `yabridgectl` files before upgrading to avoid
+  confusing situations.
+
 ## [2.2.1] - 2020-12-12
 
 ### Fixed
