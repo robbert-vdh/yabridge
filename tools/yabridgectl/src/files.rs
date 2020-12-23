@@ -135,6 +135,14 @@ impl Vst3Module {
                 .to_owned(),
         }
     }
+
+    /// Get the path to the module. This can be either a file or a directory depending on the type
+    /// of moudle.
+    pub fn path(&self) -> &Path {
+        match &self {
+            Vst3Module::Legacy(path, _) | Vst3Module::Bundle(path, _) => path,
+        }
+    }
 }
 
 /// The architecture of a `.dll` file. Needed so we can create a merged bundle for VST3 plugins.
@@ -156,29 +164,42 @@ impl LibArchitecture {
 }
 
 impl SearchResults {
-    /// For every found VST2 plugin, find the associated copy or symlink of `libyabridge-vst2.so`.
-    /// The returned hashmap will contain a `None` value for plugins that have not yet been set up.
-    ///
-    /// These two functions could be combined into a single function, but speed isn't really an
-    /// issue here and it's a bit more organized this way.
-    ///
-    /// TODO: Do this for VST3 plugins
-    pub fn installation_status(&self) -> BTreeMap<&Path, Option<&NativeSoFile>> {
+    /// For every found VST2 plugin and VST3 module, find the associated copy or symlink of
+    /// `libyabridge-{vst2,vst3}.so`. The returned hashmap will contain a `None` value for plugins
+    /// that have not yet been set up.
+    pub fn installation_status(&self) -> BTreeMap<&Path, Option<NativeSoFile>> {
         let so_files: HashMap<&Path, &NativeSoFile> = self
             .so_files
             .iter()
             .map(|file| (file.path(), file))
             .collect();
 
-        self.vst2_files
+        // Do this for the VST2 plugins
+        let mut installation_status: BTreeMap<&Path, Option<NativeSoFile>> = self
+            .vst2_files
             .iter()
             .map(
                 |path| match so_files.get(path.with_extension("so").as_path()) {
-                    Some(&file_type) => (path.as_path(), Some(file_type)),
+                    Some(&file_type) => (path.as_path(), Some(file_type.clone())),
                     None => (path.as_path(), None),
                 },
             )
-            .collect()
+            .collect();
+
+        // And for VST3 modules. We have not stored the paths to the corresponding `.so` files yet
+        // because they are not in any of the directories we're indexing.
+        installation_status.extend(self.vst3_modules.iter().map(|module| {
+            let install_path = module.libyabridge_location();
+            match install_path.metadata() {
+                Ok(metadata) if metadata.file_type().is_symlink() => {
+                    (module.path(), Some(NativeSoFile::Symlink(install_path)))
+                }
+                Ok(_) => (module.path(), Some(NativeSoFile::Regular(install_path))),
+                Err(_) => (module.path(), None),
+            }
+        }));
+
+        installation_status
     }
 
     /// Find all `.so` files in the search results that do not belong to a VST2 plugin `.dll` file.
