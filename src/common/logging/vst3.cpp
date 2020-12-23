@@ -472,7 +472,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
                        "input_channels = "
                     << num_input_channels.str()
                     << ", output_channels = " << num_output_channels.str()
-                    << ", num_samples = " << request.data.process_mode
+                    << ", num_samples = " << request.data.num_samples
                     << ", input_parameter_changes = <IParameterChanges* for "
                     << request.data.input_parameter_changes.num_parameters()
                     << " parameters>, output_parameter_changes = "
