@@ -43,7 +43,7 @@ pub fn remove_directory(config: &mut Config, path: &Path) -> Result<()> {
 
     // Ask the user to remove any leftover files to prevent possible future problems and out of date
     // copies
-    let orphan_files = files::index_so_files(path);
+    let orphan_files = files::index(path).so_files;
     if !orphan_files.is_empty() {
         println!(
             "Warning: Found {} leftover .so files still in this directory:",
@@ -84,7 +84,7 @@ pub fn list_directories(config: &Config) -> Result<()> {
 /// Print the current configuration and the installation status for all found plugins.
 pub fn show_status(config: &Config) -> Result<()> {
     let results = config
-        .index_directories()
+        .search_directories()
         .context("Failure while searching for plugins")?;
 
     println!(
@@ -171,7 +171,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     println!("Using '{}'\n", files.libyabridge_vst2.display());
 
     let results = config
-        .index_directories()
+        .search_directories()
         .context("Failure while searching for plugins")?;
 
     // Keep track of some global statistics

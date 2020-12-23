@@ -36,9 +36,24 @@ pub struct SearchResults {
     pub vst2_files: Vec<PathBuf>,
     /// Absolute paths to found VST3 modules. Either legacy `.vst3` DLL files or VST 3.6.10 bundles.
     pub vst3_modules: Vec<Vst3Module>,
-    /// `.dll` files skipped over during the serach. Used for printing statistics and shown when
+    /// `.dll` files skipped over during the search. Used for printing statistics and shown when
     /// running `yabridgectl sync --verbose`.
     pub skipped_files: Vec<PathBuf>,
+
+    /// Absolute paths to any `.so` files inside of the directory, and whether they're a symlink or
+    /// a regular file.
+    pub so_files: Vec<NativeSoFile>,
+}
+
+/// The results of the first step of the search process. We'll first index all possibly relevant
+/// files in a directory before filtering them down to a `SearchResults` object.
+#[derive(Debug)]
+pub struct SearchIndex {
+    /// Any `.dll` file.
+    pub dll_files: Vec<PathBuf>,
+    /// Any `.vst3` file or directory. This can be either a legacy `.vst3` DLL module or a VST
+    /// 3.6.10 module (or some kind of random other file, of course).
+    pub vst3_files: Vec<PathBuf>,
     /// Absolute paths to any `.so` files inside of the directory, and whether they're a symlink or
     /// a regular file.
     pub so_files: Vec<NativeSoFile>,
@@ -68,6 +83,8 @@ impl SearchResults {
     ///
     /// These two functions could be combined into a single function, but speed isn't really an
     /// issue here and it's a bit more organized this way.
+    ///
+    /// TODO: Do this for VST3 plugins
     pub fn installation_status(&self) -> BTreeMap<&Path, Option<&NativeSoFile>> {
         let so_files: HashMap<&Path, &NativeSoFile> = self
             .so_files
@@ -87,6 +104,8 @@ impl SearchResults {
     }
 
     /// Find all `.so` files in the search results that do not belong to a VST2 plugin `.dll` file.
+    ///
+    /// TODO: Also do something similar for VST3 plugins
     pub fn orphans(&self) -> Vec<&NativeSoFile> {
         // We need to store these in a map so we can easily entries with corresponding `.dll` files
         let mut orphans: HashMap<&Path, &NativeSoFile> = self
@@ -98,7 +117,7 @@ impl SearchResults {
             orphans.remove(vst2_path.with_extension("so").as_path());
         }
 
-        orphans.into_iter().map(|(_, file)| file).collect()
+        orphans.values().cloned().collect()
     }
 }
 
@@ -112,69 +131,11 @@ impl NativeSoFile {
     }
 }
 
-/// Search for Windows VST2 plugins and .so files under a directory. This will return an error if
-/// the directory does not exist, or if `winedump` could not be found.
-pub fn index(directory: &Path) -> Result<SearchResults> {
-    // First we'll find all .dll and .so files in the directory
-    let (dll_files, so_files) = find_files(directory);
-
-    lazy_static! {
-        static ref VST2_AUTOMATON: AhoCorasick =
-            AhoCorasick::new_auto_configured(&["VSTPluginMain", "main", "main_plugin"]);
-    }
-
-    // THne we'll figure out which `.dll` files are VST2 plugins and which should be skipped by
-    // checking whether the file contains one of the VST2 entry point functions. The boolean flag in
-    // this vector indicates whether it is a VST2 plugin.
-    let dll_files: Vec<(PathBuf, bool)> = dll_files
-        .into_par_iter()
-        .map(|path| {
-            let exported_functions = Command::new("winedump")
-                .arg("-j")
-                .arg("export")
-                .arg(&path)
-                .output()
-                .context(
-                    "Could not find 'winedump'. In some distributions this is part of a seperate \
-                     Wine tools package.",
-                )?
-                .stdout;
-
-            Ok((path, VST2_AUTOMATON.is_match(exported_functions)))
-        })
-        .collect::<Result<_>>()?;
-
-    let mut vst2_files = Vec::new();
-    let mut skipped_files = Vec::new();
-    for (path, is_vst2_plugin) in dll_files {
-        if is_vst2_plugin {
-            vst2_files.push(path);
-        } else {
-            skipped_files.push(path);
-        }
-    }
-
-    Ok(SearchResults {
-        vst2_files,
-        skipped_files,
-        so_files,
-        // TODO: Search for VST3 modules
-        vst3_modules: Vec::new(),
-    })
-}
-
-/// THe same as [index()](index), but only report found `.so` files. This avoids unnecesarily
-/// filtering the found `.dll` files.
-pub fn index_so_files(directory: &Path) -> Vec<NativeSoFile> {
-    let (_, so_files) = find_files(directory);
-
-    so_files
-}
-
-/// Find all `.dll` and `.so` files under a directory. The results are a pair of `(dll_files,
-/// so_files)`.
-fn find_files(directory: &Path) -> (Vec<PathBuf>, Vec<NativeSoFile>) {
+/// Find all `.dll`, `.vst3` and `.so` files under a directory. These results can be filtered down
+/// to actual VST2 plugins and VST3 modules using `search()`.
+pub fn index(directory: &Path) -> SearchIndex {
     let mut dll_files: Vec<PathBuf> = Vec::new();
+    let mut vst3_files: Vec<PathBuf> = Vec::new();
     let mut so_files: Vec<NativeSoFile> = Vec::new();
     // XXX: We're silently skipping directories and files we don't have permission to read. This
     //      sounds like the expected behavior, but I"m not entirely sure.
@@ -198,6 +159,7 @@ fn find_files(directory: &Path) -> (Vec<PathBuf>, Vec<NativeSoFile>) {
 
         match entry.path().extension().and_then(|os| os.to_str()) {
             Some("dll") => dll_files.push(entry.into_path()),
+            Some("vst3") => vst3_files.push(entry.into_path()),
             Some("so") => {
                 if entry.path_is_symlink() {
                     so_files.push(NativeSoFile::Symlink(entry.into_path()));
@@ -209,5 +171,61 @@ fn find_files(directory: &Path) -> (Vec<PathBuf>, Vec<NativeSoFile>) {
         }
     }
 
-    (dll_files, so_files)
+    SearchIndex {
+        dll_files,
+        vst3_files,
+        so_files,
+    }
+}
+
+impl SearchIndex {
+    /// Filter these indexing results down to actual VST2 plugins and VST3 modules. This will skip
+    /// all invalid files, such as regular `.dll` libraries. Will return an error if `winedump`
+    /// could not be found.
+    pub fn search(self) -> Result<SearchResults> {
+        lazy_static! {
+            static ref VST2_AUTOMATON: AhoCorasick =
+                AhoCorasick::new_auto_configured(&["VSTPluginMain", "main", "main_plugin"]);
+        }
+
+        // THne we'll figure out which `.dll` files are VST2 plugins and which should be skipped by
+        // checking whether the file contains one of the VST2 entry point functions. The boolean flag in
+        // this vector indicates whether it is a VST2 plugin.
+        let dll_files: Vec<(PathBuf, bool)> = self
+            .dll_files
+            .into_par_iter()
+            .map(|path| {
+                let exported_functions = Command::new("winedump")
+                .arg("-j")
+                .arg("export")
+                .arg(&path)
+                .output()
+                .context(
+                    "Could not find 'winedump'. In some distributions this is part of a seperate \
+                     Wine tools package.",
+                )?
+                .stdout;
+
+                Ok((path, VST2_AUTOMATON.is_match(exported_functions)))
+            })
+            .collect::<Result<_>>()?;
+
+        let mut vst2_files: Vec<PathBuf> = Vec::new();
+        let mut skipped_files: Vec<PathBuf> = Vec::new();
+        for (path, is_vst2_plugin) in dll_files {
+            if is_vst2_plugin {
+                vst2_files.push(path);
+            } else {
+                skipped_files.push(path);
+            }
+        }
+
+        Ok(SearchResults {
+            vst2_files,
+            // TODO: Search for VST3 modules
+            vst3_modules: Vec::new(),
+            skipped_files,
+            so_files: self.so_files,
+        })
+    }
 }
