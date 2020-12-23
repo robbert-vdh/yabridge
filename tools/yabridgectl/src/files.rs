@@ -72,9 +72,29 @@ pub enum Vst3Module {
     /// Old, pre-VST 3.6.10 style `.vst3` modules. These are simply `.dll` files with a different p
     /// refix. Even though this is a legacy format, almost all VST3 plugins in the wild still use
     /// this format.
-    Legacy(PathBuf),
-    /// A VST 3.6.10 bundle, with the same format as the VST3 bundles used on Linux and macOS.
-    Bundle(PathBuf),
+    Legacy(PathBuf, LibArchitecture),
+    /// A VST 3.6.10 bundle, with the same format as the VST3 bundles used on Linux and macOS. These
+    /// kinds of bundles can come with resource files and presets, which should also be symlinked to
+    /// `~/.vst3/`
+    Bundle(PathBuf, LibArchitecture),
+}
+
+/// The architecture of a `.dll` file. Needed so we can create a merged bundle for VST3 plugins.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LibArchitecture {
+    Dll32,
+    Dll64,
+}
+
+impl LibArchitecture {
+    /// Get the corresponding VST3 architecture directory name. See
+    /// https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html.
+    pub fn vst_arch(&self) -> &str {
+        match &self {
+            LibArchitecture::Dll32 => "x86-win",
+            LibArchitecture::Dll64 => "x86_64-win",
+        }
+    }
 }
 
 impl SearchResults {
@@ -186,44 +206,115 @@ impl SearchIndex {
         lazy_static! {
             static ref VST2_AUTOMATON: AhoCorasick =
                 AhoCorasick::new_auto_configured(&["VSTPluginMain", "main", "main_plugin"]);
+            static ref VST3_AUTOMATON: AhoCorasick =
+                AhoCorasick::new_auto_configured(&["GetPluginFactory"]);
+            static ref DLL32_AUTOMATON: AhoCorasick =
+                AhoCorasick::new_auto_configured(&["Machine:                      014C"]);
         }
 
-        // THne we'll figure out which `.dll` files are VST2 plugins and which should be skipped by
-        // checking whether the file contains one of the VST2 entry point functions. The boolean flag in
-        // this vector indicates whether it is a VST2 plugin.
-        let dll_files: Vec<(PathBuf, bool)> = self
-            .dll_files
-            .into_par_iter()
-            .map(|path| {
-                let exported_functions = Command::new("winedump")
-                .arg("-j")
-                .arg("export")
-                .arg(&path)
+        let winedump = |args: &[&str], path: &Path| {
+            Command::new("winedump")
+                .args(args)
+                .arg(path)
                 .output()
                 .context(
                     "Could not find 'winedump'. In some distributions this is part of a seperate \
                      Wine tools package.",
-                )?
-                .stdout;
+                )
+                .map(|output| output.stdout)
+        };
+        let pe32_info = |path: &Path| winedump(&[], path);
+        let exported_functions = |path: &Path| winedump(&["-j", "export"], path);
 
-                Ok((path, VST2_AUTOMATON.is_match(exported_functions)))
+        // We'll have to figure out which `.dll` files are VST2 plugins and which should be skipped
+        // by checking whether the file contains one of the VST2 entry point functions. This vector
+        // will contain an `Err(path)` if `path` was not a valid VST2 plugin.
+        let is_vst2_plugin: Vec<Result<PathBuf, PathBuf>> = self
+            .dll_files
+            .into_par_iter()
+            .map(|path| {
+                if VST2_AUTOMATON.is_match(exported_functions(&path)?) {
+                    Ok(Ok(path))
+                } else {
+                    Ok(Err(path))
+                }
             })
             .collect::<Result<_>>()?;
 
-        let mut vst2_files: Vec<PathBuf> = Vec::new();
+        // We need to do the same thing with VST3 plugins. The added difficulty here is that we have
+        // to figure out of the `.vst3` file is a legacy standalone VST3 module, or part of a VST
+        // 3.6.10 bundle. We also need to know the plugin's architecture because we're going to
+        // create a univeral VST3 bundle.
+        let is_vst3_module: Vec<Result<Vst3Module, PathBuf>> = self
+            .vst3_files
+            .into_par_iter()
+            .map(|module_path| {
+                let architecture = if DLL32_AUTOMATON.is_match(pe32_info(&module_path)?) {
+                    LibArchitecture::Dll32
+                } else {
+                    LibArchitecture::Dll64
+                };
+
+                if VST3_AUTOMATON.is_match(exported_functions(&module_path)?) {
+                    // Now we'll have to figure out if the plugin is part of a VST 3.6.10 style
+                    // bundle or a legacy `.vst3` DLL file. A WIndows VST3 bundle contains at least
+                    // `<plugin_name>.vst3/Contents/<architecture_string>/<plugin_name>.vst3`, so
+                    // we'll just go up a few directories and then reconstruct that bundle.
+                    let module_name = module_path.file_name();
+                    let bundle_root = module_path
+                        .parent()
+                        .and_then(|arch_dir| arch_dir.parent())
+                        .and_then(|contents_dir| contents_dir.parent());
+                    let module_is_in_bundle = bundle_root
+                        .and_then(|bundle_root| bundle_root.parent())
+                        .zip(module_name)
+                        .map(|(path, module_name)| {
+                            // Now reconstruct the path to the original file again as if it were in
+                            // a bundle
+                            let mut reconstructed_path = path.join(module_name);
+                            reconstructed_path.push("Contents");
+                            reconstructed_path.push(architecture.vst_arch());
+                            reconstructed_path.push(module_name);
+
+                            return reconstructed_path.exists();
+                        })
+                        .unwrap_or(false);
+
+                    if module_is_in_bundle {
+                        Ok(Ok(Vst3Module::Bundle(
+                            bundle_root.unwrap().to_owned(),
+                            architecture,
+                        )))
+                    } else {
+                        Ok(Ok(Vst3Module::Legacy(module_path, architecture)))
+                    }
+                } else {
+                    Ok(Err(module_path))
+                }
+            })
+            .collect::<Result<_>>()?;
+
         let mut skipped_files: Vec<PathBuf> = Vec::new();
-        for (path, is_vst2_plugin) in dll_files {
-            if is_vst2_plugin {
-                vst2_files.push(path);
-            } else {
-                skipped_files.push(path);
+
+        let mut vst2_files: Vec<PathBuf> = Vec::new();
+        for dandidate in is_vst2_plugin {
+            match dandidate {
+                Ok(path) => vst2_files.push(path),
+                Err(path) => skipped_files.push(path),
+            }
+        }
+
+        let mut vst3_modules: Vec<Vst3Module> = Vec::new();
+        for candidate in is_vst3_module {
+            match candidate {
+                Ok(module) => vst3_modules.push(module),
+                Err(path) => skipped_files.push(path),
             }
         }
 
         Ok(SearchResults {
             vst2_files,
-            // TODO: Search for VST3 modules
-            vst3_modules: Vec::new(),
+            vst3_modules,
             skipped_files,
             so_files: self.so_files,
         })
