@@ -73,7 +73,7 @@ pub struct Config {
 }
 
 /// Specifies how yabridge will be set up for the found plugins.
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum InstallationMethod {
     /// Create a copy of `libyabridge-{vst2,vst3}.so` for every Windows VST2 plugin `.dll` file or

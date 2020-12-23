@@ -26,6 +26,7 @@ use std::process::Command;
 use walkdir::WalkDir;
 
 use crate::config::yabridge_vst3_home;
+use crate::utils::get_file_type;
 
 /// Stores the results from searching through a directory. We'll search for Windows VST2 plugin
 /// `.dll` files, Windows VST3 plugin modules, and native Linux `.so` files inside of a directory.
@@ -44,7 +45,7 @@ pub struct SearchResults {
 
     /// Absolute paths to any `.so` files inside of the directory, and whether they're a symlink or
     /// a regular file.
-    pub so_files: Vec<NativeSoFile>,
+    pub so_files: Vec<NativeFile>,
 }
 
 /// The results of the first step of the search process. We'll first index all possibly relevant
@@ -58,22 +59,24 @@ pub struct SearchIndex {
     pub vst3_files: Vec<PathBuf>,
     /// Absolute paths to any `.so` files inside of the directory, and whether they're a symlink or
     /// a regular file.
-    pub so_files: Vec<NativeSoFile>,
+    pub so_files: Vec<NativeFile>,
 }
 
-/// Native `.so` files we found during a search.
+/// Native `.so` files and VST3 bundle directories we found during a search.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum NativeSoFile {
+pub enum NativeFile {
     Symlink(PathBuf),
     Regular(PathBuf),
+    Directory(PathBuf),
 }
 
-impl NativeSoFile {
+impl NativeFile {
     /// Return the path of a found `.so` file.
     pub fn path(&self) -> &Path {
         match &self {
-            NativeSoFile::Symlink(path) => path,
-            NativeSoFile::Regular(path) => path,
+            NativeFile::Symlink(path) | NativeFile::Regular(path) | NativeFile::Directory(path) => {
+                path
+            }
         }
     }
 }
@@ -101,19 +104,16 @@ impl Vst3Module {
         }
     }
 
-    /// Get the path to the `libyabridge.so` file in `~/.vst3` corresponding to the bridged version
-    /// of this module.
-    pub fn libyabridge_location(&self) -> PathBuf {
-        let mut path = yabridge_vst3_home();
-        path.push(self.module_name());
-        path.push("Contents");
-        path.push("x86_64-linux");
-        path.push(self.native_module_name());
-        path
+    /// Get the path to the Windows VST3 plugin. This can be either a file or a directory depending
+    /// on the type of moudle.
+    pub fn original_path(&self) -> &Path {
+        match &self {
+            Vst3Module::Legacy(path, _) | Vst3Module::Bundle(path, _) => path,
+        }
     }
 
     /// Get the name of the module as a string. Should be in the format `Plugin Name.vst3`.
-    pub fn module_name(&self) -> &str {
+    pub fn original_module_name(&self) -> &str {
         match &self {
             Vst3Module::Legacy(path, _) | Vst3Module::Bundle(path, _) => path
                 .file_name()
@@ -123,9 +123,32 @@ impl Vst3Module {
         }
     }
 
-    /// `module_name()` but with a `.so` file extension isntead of `.vst3`.
-    pub fn native_module_name(&self) -> String {
+    /// Get the path to the actual `.vst3` module file.
+    pub fn original_module_path(&self) -> PathBuf {
         match &self {
+            Vst3Module::Legacy(path, _) => path.to_owned(),
+            Vst3Module::Bundle(bundle_home, architecture) => {
+                let mut path = bundle_home.join("Contents");
+                path.push(architecture.vst_arch());
+                path.push(self.original_module_name());
+
+                path
+            }
+        }
+    }
+
+    /// Get the path to the bundle in `~/.vst3` corresponding to the bridged version of this module.
+    ///
+    /// FIXME: How do we solve naming clashes from the same VST3 plugin being installed to multiple
+    ///        Wine prefixes?
+    pub fn yabridge_bundle_home(&self) -> PathBuf {
+        yabridge_vst3_home().join(self.original_module_name())
+    }
+
+    /// Get the path to the `libyabridge.so` file in `~/.vst3` corresponding to the bridged version
+    /// of this module.
+    pub fn yabridge_native_module_path(&self) -> PathBuf {
+        let native_module_name = match &self {
             Vst3Module::Legacy(path, _) | Vst3Module::Bundle(path, _) => path
                 .with_extension("so")
                 .file_name()
@@ -133,15 +156,23 @@ impl Vst3Module {
                 .to_str()
                 .expect("VST3 module name contains invalid UTF-8")
                 .to_owned(),
-        }
+        };
+
+        let mut path = self.yabridge_bundle_home();
+        path.push("Contents");
+        path.push("x86_64-linux");
+        path.push(native_module_name);
+        path
     }
 
-    /// Get the path to the module. This can be either a file or a directory depending on the type
-    /// of moudle.
-    pub fn path(&self) -> &Path {
-        match &self {
-            Vst3Module::Legacy(path, _) | Vst3Module::Bundle(path, _) => path,
-        }
+    /// Get the path to where we'll symlink `original_module_path`. This is part of the merged VST3
+    /// bundle in `~/.vst3/yabridge`.
+    pub fn yabridge_windows_module_path(&self) -> PathBuf {
+        let mut path = self.yabridge_bundle_home();
+        path.push("Contents");
+        path.push(self.architecture().vst_arch());
+        path.push(self.original_module_name());
+        path
     }
 }
 
@@ -167,21 +198,21 @@ impl SearchResults {
     /// For every found VST2 plugin and VST3 module, find the associated copy or symlink of
     /// `libyabridge-{vst2,vst3}.so`. The returned hashmap will contain a `None` value for plugins
     /// that have not yet been set up.
-    pub fn installation_status(&self) -> BTreeMap<&Path, Option<NativeSoFile>> {
-        let so_files: HashMap<&Path, &NativeSoFile> = self
+    pub fn installation_status(&self) -> BTreeMap<PathBuf, Option<NativeFile>> {
+        let so_files: HashMap<&Path, &NativeFile> = self
             .so_files
             .iter()
             .map(|file| (file.path(), file))
             .collect();
 
         // Do this for the VST2 plugins
-        let mut installation_status: BTreeMap<&Path, Option<NativeSoFile>> = self
+        let mut installation_status: BTreeMap<PathBuf, Option<NativeFile>> = self
             .vst2_files
             .iter()
             .map(
                 |path| match so_files.get(path.with_extension("so").as_path()) {
-                    Some(&file_type) => (path.as_path(), Some(file_type.clone())),
-                    None => (path.as_path(), None),
+                    Some(&file_type) => (path.clone(), Some(file_type.clone())),
+                    None => (path.clone(), None),
                 },
             )
             .collect();
@@ -189,29 +220,25 @@ impl SearchResults {
         // And for VST3 modules. We have not stored the paths to the corresponding `.so` files yet
         // because they are not in any of the directories we're indexing.
         installation_status.extend(self.vst3_modules.iter().map(|module| {
-            let install_path = module.libyabridge_location();
-            match install_path.metadata() {
-                Ok(metadata) if metadata.file_type().is_symlink() => {
-                    (module.path(), Some(NativeSoFile::Symlink(install_path)))
-                }
-                Ok(_) => (module.path(), Some(NativeSoFile::Regular(install_path))),
-                Err(_) => (module.path(), None),
-            }
+            let module_path = module.yabridge_native_module_path();
+            let install_type = get_file_type(&module_path);
+            (module_path, install_type)
         }));
 
         installation_status
     }
 
     /// Find all `.so` files in the search results that do not belong to a VST2 plugin `.dll` file.
-    ///
-    /// TODO: Also do something similar for VST3 plugins
-    pub fn orphans(&self) -> Vec<&NativeSoFile> {
+    /// We cannot yet do the same thing for VST3 plguins because they will all be installed in
+    /// `~/.vst3`.
+    pub fn vst2_orphans(&self) -> Vec<&NativeFile> {
         // We need to store these in a map so we can easily entries with corresponding `.dll` files
-        let mut orphans: HashMap<&Path, &NativeSoFile> = self
+        let mut orphans: HashMap<&Path, &NativeFile> = self
             .so_files
             .iter()
-            .map(|file| (file.path(), file))
+            .map(|file_type| (file_type.path(), file_type))
             .collect();
+
         for vst2_path in &self.vst2_files {
             orphans.remove(vst2_path.with_extension("so").as_path());
         }
@@ -225,7 +252,7 @@ impl SearchResults {
 pub fn index(directory: &Path) -> SearchIndex {
     let mut dll_files: Vec<PathBuf> = Vec::new();
     let mut vst3_files: Vec<PathBuf> = Vec::new();
-    let mut so_files: Vec<NativeSoFile> = Vec::new();
+    let mut so_files: Vec<NativeFile> = Vec::new();
     // XXX: We're silently skipping directories and files we don't have permission to read. This
     //      sounds like the expected behavior, but I"m not entirely sure.
     for (file_idx, entry) in WalkDir::new(directory)
@@ -251,9 +278,9 @@ pub fn index(directory: &Path) -> SearchIndex {
             Some("vst3") => vst3_files.push(entry.into_path()),
             Some("so") => {
                 if entry.path_is_symlink() {
-                    so_files.push(NativeSoFile::Symlink(entry.into_path()));
+                    so_files.push(NativeFile::Symlink(entry.into_path()));
                 } else {
-                    so_files.push(NativeSoFile::Regular(entry.into_path()));
+                    so_files.push(NativeFile::Regular(entry.into_path()));
                 }
             }
             _ => (),

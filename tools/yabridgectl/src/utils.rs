@@ -30,6 +30,7 @@ use std::process::{Command, Stdio};
 use textwrap::Wrapper;
 
 use crate::config::{self, Config, KnownConfig, YABRIDGE_HOST_EXE_NAME};
+use crate::files::NativeFile;
 
 /// (Part of) the expected output when running `yabridge-host.exe`. Used to verify that everything's
 /// working correctly. We'll only match this prefix so we can modify the exact output at a later
@@ -43,6 +44,17 @@ pub fn copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<u64> {
             "Error copying '{}' to '{}'",
             from.as_ref().display(),
             to.as_ref().display()
+        )
+    })
+}
+
+/// Wrapper around [`std::fs::create_dir_all()`](std::fs::create_dir_all) with a human readable
+/// error message.
+pub fn create_dir_all<P: AsRef<Path>>(path: P) -> Result<()> {
+    fs::create_dir_all(&path).with_context(|| {
+        format!(
+            "Error creating directories for '{}'",
+            path.as_ref().display(),
         )
     })
 }
@@ -64,6 +76,20 @@ pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> Result<()> {
             dst.as_ref().display()
         )
     })
+}
+
+/// Get the type of a file, if it exists.
+pub fn get_file_type(path: &Path) -> Option<NativeFile> {
+    match path.metadata() {
+        Ok(metadata) if metadata.file_type().is_symlink() => {
+            Some(NativeFile::Symlink(path.to_owned()))
+        }
+        Ok(metadata) if metadata.file_type().is_dir() => {
+            Some(NativeFile::Directory(path.to_owned()))
+        }
+        Ok(_) => Some(NativeFile::Regular(path.to_owned())),
+        Err(_) => None,
+    }
 }
 
 /// Hash the conetnts of a file as an `i64` using Rust's built in hasher. Collisions are not a big
