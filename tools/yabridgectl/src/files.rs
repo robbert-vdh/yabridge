@@ -25,6 +25,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use walkdir::WalkDir;
 
+use crate::config::yabridge_vst3_home;
+
 /// Stores the results from searching through a directory. We'll search for Windows VST2 plugin
 /// `.dll` files, Windows VST3 plugin modules, and native Linux `.so` files inside of a directory.
 /// These `.so` files are kept track of so we can report the current installation status of VST2
@@ -66,6 +68,16 @@ pub enum NativeSoFile {
     Regular(PathBuf),
 }
 
+impl NativeSoFile {
+    /// Return the path of a found `.so` file.
+    pub fn path(&self) -> &Path {
+        match &self {
+            NativeSoFile::Symlink(path) => path,
+            NativeSoFile::Regular(path) => path,
+        }
+    }
+}
+
 /// VST3 modules we found during a serach.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Vst3Module {
@@ -79,8 +91,54 @@ pub enum Vst3Module {
     Bundle(PathBuf, LibArchitecture),
 }
 
+impl Vst3Module {
+    /// The architecture of this VST3 module.
+    pub fn architecture(&self) -> LibArchitecture {
+        match &self {
+            Vst3Module::Legacy(_, architecture) | Vst3Module::Bundle(_, architecture) => {
+                *architecture
+            }
+        }
+    }
+
+    /// Get the path to the `libyabridge.so` file in `~/.vst3` corresponding to the bridged version
+    /// of this module.
+    pub fn libyabridge_location(&self) -> PathBuf {
+        let mut path = yabridge_vst3_home();
+        path.push(self.module_name());
+        path.push("Contents");
+        path.push("x86_64-linux");
+        path.push(self.native_module_name());
+        path
+    }
+
+    /// Get the name of the module as a string. Should be in the format `Plugin Name.vst3`.
+    pub fn module_name(&self) -> &str {
+        match &self {
+            Vst3Module::Legacy(path, _) | Vst3Module::Bundle(path, _) => path
+                .file_name()
+                .unwrap()
+                .to_str()
+                .expect("VST3 module name contains invalid UTF-8"),
+        }
+    }
+
+    /// `module_name()` but with a `.so` file extension isntead of `.vst3`.
+    pub fn native_module_name(&self) -> String {
+        match &self {
+            Vst3Module::Legacy(path, _) | Vst3Module::Bundle(path, _) => path
+                .with_extension("so")
+                .file_name()
+                .unwrap()
+                .to_str()
+                .expect("VST3 module name contains invalid UTF-8")
+                .to_owned(),
+        }
+    }
+}
+
 /// The architecture of a `.dll` file. Needed so we can create a merged bundle for VST3 plugins.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum LibArchitecture {
     Dll32,
     Dll64,
@@ -116,7 +174,7 @@ impl SearchResults {
             .iter()
             .map(
                 |path| match so_files.get(path.with_extension("so").as_path()) {
-                    Some(&file) => (path.as_path(), Some(file)),
+                    Some(&file_type) => (path.as_path(), Some(file_type)),
                     None => (path.as_path(), None),
                 },
             )
@@ -138,16 +196,6 @@ impl SearchResults {
         }
 
         orphans.values().cloned().collect()
-    }
-}
-
-impl NativeSoFile {
-    /// Return the path of a found `.so` file.
-    pub fn path(&self) -> &Path {
-        match &self {
-            NativeSoFile::Symlink(path) => path,
-            NativeSoFile::Regular(path) => path,
-        }
     }
 }
 

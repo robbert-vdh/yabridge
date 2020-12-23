@@ -20,6 +20,7 @@ use anyhow::{anyhow, Context, Result};
 use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+use std::env;
 use std::fmt::Display;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -43,6 +44,11 @@ pub const YABRIDGE_HOST_EXE_NAME: &str = "yabridge-host.exe";
 /// The name of the XDG base directory prefix for yabridge's own files, relative to
 /// `$XDG_CONFIG_HOME` and `$XDG_DATA_HOME`.
 const YABRIDGE_PREFIX: &str = "yabridge";
+
+/// The path relative to `$HOME` that VST3 modules bridged by yabridgectl life in. By putting this
+/// in a subdirectory we can easily clean up any orphan files without interfering with other native
+/// plugins.
+const YABRIDGE_VST3_HOME: &str = ".vst3/yabridge";
 
 /// The configuration used for yabridgectl. This will be serialized to and deserialized from
 /// `$XDG_CONFIG_HOME/yabridge/config.toml`.
@@ -278,4 +284,11 @@ pub fn yabridge_directories() -> Result<BaseDirectories> {
 /// somehow fails into a printable string to reduce boiler plate.
 pub fn yabridgectl_directories() -> Result<BaseDirectories> {
     BaseDirectories::with_prefix(YABRIDGECTL_PREFIX).context("Error while parsing base directories")
+}
+
+/// Get the path where VST3 modules bridged by yabridgectl should be placed in. This is a
+/// subdirectory of `~/.vst3` so we can easily clean up leftover files without interfering with
+/// other native plugins.
+pub fn yabridge_vst3_home() -> PathBuf {
+    Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_VST3_HOME)
 }
