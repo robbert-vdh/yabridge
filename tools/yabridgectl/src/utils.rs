@@ -90,17 +90,21 @@ pub fn hash_file(file: &Path) -> Result<i64> {
 /// In the last case we'll just print a warning since we don't know how to invoke the shell as a
 /// login shell. This is needed when using copies to ensure that yabridge can find the host binaries
 /// when the VST host is launched from the desktop enviornment.
+///
+/// This is a bit messy, and with yabridge 2.1 automatically searching in `~/.local/share/yabridge`
+/// it's probably not really needed anymore, but it could still be useful in some edge case
+/// scenarios.
 pub fn verify_path_setup(config: &Config) -> Result<bool> {
     // First we'll check `~/.local/share/yabridge`, since that's a special location where yabridge
     // will always search
-    if config::yabridge_directories()
+    let xdg_data_yabridge_exists = config::yabridge_directories()
         .map(|dirs| {
             dirs.get_data_home()
                 .join(YABRIDGE_HOST_EXE_NAME)
                 .is_executable()
         })
-        .unwrap_or(false)
-    {
+        .unwrap_or(false);
+    if xdg_data_yabridge_exists {
         return Ok(true);
     }
 
@@ -179,7 +183,7 @@ pub fn verify_path_setup(config: &Config) -> Result<bool> {
                              reboot your system to complete the setup.\n\
                              \n\
                              https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues",
-                            config.libyabridge_vst2()?.parent().unwrap().display(),
+                            config.files()?.libyabridge_vst2.parent().unwrap().display(),
                             shell.bright_white(),
                             "PATH".bright_white()
                         ))
@@ -230,13 +234,13 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
     let mut wine_version = String::from_utf8(wine_version_output)?;
     wine_version.pop().unwrap();
 
-    let yabridge_host_exe_path = config
-        .yabridge_host_exe()
+    let files = config
+        .files()
         .context(format!("Could not find '{}'", YABRIDGE_HOST_EXE_NAME))?;
 
     // Hash the contents of `yabridge-host.exe.so` since `yabridge-host.exe` is only a Wine
     // generated shell script
-    let yabridge_host_hash = hash_file(&yabridge_host_exe_path.with_extension("exe.so"))?;
+    let yabridge_host_hash = hash_file(&files.yabridge_host_exe_so)?;
 
     // Since these checks can take over a second if wineserver isn't already running we'll only
     // perform them when something has changed
@@ -248,9 +252,9 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
         return Ok(());
     }
 
-    let output = Command::new(&yabridge_host_exe_path)
+    let output = Command::new(&files.yabridge_host_exe)
         .output()
-        .with_context(|| format!("Could not run '{}'", yabridge_host_exe_path.display()))?;
+        .with_context(|| format!("Could not run '{}'", files.yabridge_host_exe.display()))?;
     let stderr = String::from_utf8(output.stderr)?;
 
     // There are three scenarios here:

@@ -28,14 +28,16 @@ use xdg::BaseDirectories;
 
 use crate::files::{self, SearchResults};
 
-/// The name of the config file, relative to `$XDG_CONFIG_HOME/CONFIG_PREFIX`.
+/// The name of the config file, relative to `$XDG_CONFIG_HOME/YABRIDGECTL_PREFIX`.
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 /// The name of the XDG base directory prefix for yabridgectl, relative to `$XDG_CONFIG_HOME` and
 /// `$XDG_DATA_HOME`.
 const YABRIDGECTL_PREFIX: &str = "yabridgectl";
 
-/// The name of the library file we're searching for.
+/// The name of yabridge's VST2 library.
 pub const LIBYABRIDGE_VST2_NAME: &str = "libyabridge-vst2.so";
+/// The name of yabridge's VST3 library.
+pub const LIBYABRIDGE_VST3_NAME: &str = "libyabridge-vst3.so";
 /// The name of the script we're going to run to verify that everything's working correctly.
 pub const YABRIDGE_HOST_EXE_NAME: &str = "yabridge-host.exe";
 /// The name of the XDG base directory prefix for yabridge's own files, relative to
@@ -66,13 +68,13 @@ pub struct Config {
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum InstallationMethod {
-    /// Create a copy of `libyabridge-vst2.so` for every Windows VST2 plugin .dll file found. After
-    /// updating yabridge, the user will have to rerun `yabridgectl sync` to copy over the new
-    /// version.
+    /// Create a copy of `libyabridge-{vst2,vst3}.so` for every Windows VST2 plugin .dll file or
+    /// VST3 module found. After updating yabridge, the user will have to rerun `yabridgectl sync`
+    /// to copy over the new version.
     Copy,
-    /// This will create a symlink to `libyabridge-vst2.so` for every VST2 .dll file in the plugin
-    /// directories. As explained in the readme, this makes updating easier and remvoes the need to
-    /// modify the `PATH` environment variable.
+    /// This will create a symlink to `libyabridge-{vst2,vst3}.so` for every VST2 plugin .dll file
+    /// or VST3 module in the plugin directories. Now that yabridge also searches in
+    /// `~/.local/share/yabridge` since yabridge 2.1 this option is not really needed anymore.
     Symlink,
 }
 
@@ -117,6 +119,23 @@ pub struct KnownConfig {
     pub yabridge_host_hash: i64,
 }
 
+/// Paths to all of yabridge's files based on the `yabridge_home` setting. Created by
+/// `Config::files`.
+#[derive(Debug)]
+pub struct YabridgeFiles {
+    /// The path to `libyabridge-vst2.so` we should use.
+    pub libyabridge_vst2: PathBuf,
+    /// The path to `libyabridge-vst3.so` we should use, if yabridge has been compiled with VST3
+    /// support.
+    pub libyabridge_vst3: Option<PathBuf>,
+    /// The path to `yabridge-host.exe`. This is the path yabridge will actually use, and it does
+    /// not have to be relative to `yabridge_home`.
+    pub yabridge_host_exe: PathBuf,
+    /// The actual Winelib binary for `yabridge-host.exe`. Will be hashed to check whether the user
+    /// has updated yabridge.
+    pub yabridge_host_exe_so: PathBuf,
+}
+
 impl Config {
     /// Try to read the config file, creating a new default file if necessary. This will fail if the
     /// file could not be created or if it could not be parsed.
@@ -158,21 +177,23 @@ impl Config {
             .with_context(|| format!("Failed to write config file to '{}'", config_path.display()))
     }
 
-    /// Return the path to `libyabridge-vst2.so`, or a descriptive error if it can't be found. If
-    /// `yabridge_home` is `None`, then we'll search in both `/usr/lib` and
-    /// `$XDG_DATA_HOME/yabridge`.
-    pub fn libyabridge_vst2(&self) -> Result<PathBuf> {
-        match &self.yabridge_home {
+    /// Find all of yabridge's files based on `yabridge_home`. For the binaries we'll search for
+    /// them the exact same way as yabridge itself will.
+    pub fn files(&self) -> Result<YabridgeFiles> {
+        let xdg_dirs = yabridge_directories()?;
+
+        // First find `libyabridge-vst2.so`
+        let libyabridge_vst2: PathBuf = match &self.yabridge_home {
             Some(directory) => {
                 let candidate = directory.join(LIBYABRIDGE_VST2_NAME);
                 if candidate.exists() {
-                    Ok(candidate)
+                    candidate
                 } else {
-                    Err(anyhow!(
+                    return Err(anyhow!(
                         "Could not find '{}' in '{}'",
                         LIBYABRIDGE_VST2_NAME,
                         directory.display()
-                    ))
+                    ));
                 }
             }
             None => {
@@ -182,42 +203,58 @@ impl Config {
                 // when `libyabridge-vst2.so` can't be found.
                 let system_path = Path::new("/usr/lib");
                 let system_path_alt = Path::new("/usr/local/lib");
-                let user_path = yabridge_directories()?.get_data_home();
-                for directory in &[system_path, system_path_alt, &user_path] {
-                    let candidate = directory.join(LIBYABRIDGE_VST2_NAME);
-                    if candidate.exists() {
-                        return Ok(candidate);
+                let user_path = xdg_dirs.get_data_home();
+                let directories = [system_path, system_path_alt, &user_path];
+                let mut candidates = directories
+                    .iter()
+                    .map(|directory| directory.join(LIBYABRIDGE_VST2_NAME));
+                match candidates.find(|directory| directory.exists()) {
+                    Some(candidate) => candidate,
+                    _ => {
+                        return Err(anyhow!(
+                            "Could not find '{}' in either '{}' or '{}'. You can override the \
+                            default search path using 'yabridgectl set --path=<path>'.",
+                            LIBYABRIDGE_VST2_NAME,
+                            system_path.display(),
+                            user_path.display()
+                        ));
                     }
                 }
-
-                Err(anyhow!(
-                    "Could not find '{}' in either '{}' or '{}'. You can override the default \
-                     search path using 'yabridgectl set --path=<path>'.",
-                    LIBYABRIDGE_VST2_NAME,
-                    system_path.display(),
-                    user_path.display()
-                ))
             }
-        }
-    }
+        };
 
-    /// Return the path to `yabridge-host.exe`, or a descriptive error if it can't be found. This
-    /// will first search alongside `libyabridge-vst2.so` and then search through the search path.
-    pub fn yabridge_host_exe(&self) -> Result<PathBuf> {
-        let yabridge_path = self.libyabridge_vst2()?;
+        // Based on that we can check if `libyabridge-vst3.so` exists, since yabridge can be
+        // compiled without VST3 support
+        let libyabridge_vst3 = match libyabridge_vst2.with_file_name(LIBYABRIDGE_VST3_NAME) {
+            path if path.exists() => Some(path),
+            _ => None,
+        };
 
-        let yabridge_host_exe_candidate = yabridge_path.with_file_name(YABRIDGE_HOST_EXE_NAME);
-        if yabridge_host_exe_candidate.exists() {
-            return Ok(yabridge_host_exe_candidate);
-        }
+        // `yabridge-host.exe` should either be in the search path, or it should be in
+        // `~/.local/share/yabridge`
+        let yabridge_host_exe = match which(YABRIDGE_HOST_EXE_NAME)
+            .ok()
+            .or_else(|| xdg_dirs.find_data_file(YABRIDGE_HOST_EXE_NAME))
+        {
+            Some(path) => path,
+            _ => {
+                return Err(anyhow!("Could not locate '{}'.", YABRIDGE_HOST_EXE_NAME));
+            }
+        };
+        let yabridge_host_exe_so = yabridge_host_exe.with_extension("exe.so");
 
-        // Normally we wouldn't need the full absolute path to `yabridge-host.exe`, but it's useful
-        // for the error messages
-        Ok(which(YABRIDGE_HOST_EXE_NAME)?)
+        Ok(YabridgeFiles {
+            libyabridge_vst2,
+            libyabridge_vst3,
+            yabridge_host_exe,
+            yabridge_host_exe_so,
+        })
     }
 
     /// Search for VST2 plugins in all of the registered plugins directories. This will return an
     /// error if `winedump` could not be called.
+    ///
+    /// TODO: Next step is including VST3 modules in the search
     pub fn index_directories(&self) -> Result<BTreeMap<&Path, SearchResults>> {
         self.plugin_dirs
             .par_iter()

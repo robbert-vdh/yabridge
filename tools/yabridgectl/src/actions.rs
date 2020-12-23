@@ -21,7 +21,7 @@ use colored::Colorize;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::config::{Config, InstallationMethod};
+use crate::config::{Config, InstallationMethod, YabridgeFiles};
 use crate::files;
 use crate::files::FoundFile;
 use crate::utils;
@@ -95,15 +95,27 @@ pub fn show_status(config: &Config) -> Result<()> {
             .map(|path| format!("'{}'", path.display()))
             .unwrap_or_else(|| String::from("<auto>"))
     );
-    println!(
-        "libyabridge-vst2.so: {}",
-        config
-            .libyabridge_vst2()
-            .map(|path| format!("'{}'", path.display()))
-            .unwrap_or_else(|_| format!("{}", "<not found>".red()))
-    );
-    println!("installation method: {}", config.method);
 
+    match config.files() {
+        Ok(files) => {
+            println!(
+                "libyabridge-vst2.so: '{}'",
+                files.libyabridge_vst2.display()
+            );
+            println!(
+                "libyabridge-vst3.so: {}\n",
+                files
+                    .libyabridge_vst3
+                    .map(|path| format!("'{}'", path.display()))
+                    .unwrap_or_else(|| "<not found>".red().to_string())
+            );
+        }
+        Err(err) => {
+            println!("Could not find yabridge's files files: {}\n", err);
+        }
+    }
+
+    println!("installation method: {}", config.method);
     for (path, search_results) in results {
         println!("\n{}:", path.display());
 
@@ -154,9 +166,9 @@ pub struct SyncOptions {
 /// Set up yabridge for all Windows VST2 plugins in the plugin directories. Will also remove orphan
 /// `.so` files if the prune option is set.
 pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
-    let libyabridge_vst2_path = config.libyabridge_vst2()?;
-    let libyabridge_vst2_hash = utils::hash_file(&libyabridge_vst2_path)?;
-    println!("Using '{}'\n", libyabridge_vst2_path.display());
+    let files: YabridgeFiles = config.files()?;
+    let libyabridge_vst2_hash = utils::hash_file(&files.libyabridge_vst2)?;
+    println!("Using '{}'\n", files.libyabridge_vst2.display());
 
     let results = config
         .index_directories()
@@ -200,7 +212,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         // If the target file is already a symlink to `libyabridge-vst2.so`, then we
                         // can skip this file
                         if metadata.file_type().is_symlink()
-                            && target_path.read_link()? == libyabridge_vst2_path
+                            && target_path.read_link()? == files.libyabridge_vst2
                         {
                             continue;
                         }
@@ -217,10 +229,10 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
             num_new += 1;
             match config.method {
                 InstallationMethod::Copy => {
-                    utils::copy(&libyabridge_vst2_path, &target_path)?;
+                    utils::copy(&files.libyabridge_vst2, &target_path)?;
                 }
                 InstallationMethod::Symlink => {
-                    utils::symlink(&libyabridge_vst2_path, &target_path)?;
+                    utils::symlink(&files.libyabridge_vst2, &target_path)?;
                 }
             }
 
