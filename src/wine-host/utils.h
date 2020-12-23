@@ -71,33 +71,11 @@ class MainContext {
      */
     template <typename T, typename F>
     std::future<T> run_in_context(F fn) {
-        std::promise<T> result{};
-        std::future<T> future = result.get_future();
-        boost::asio::dispatch(context,
-                              [result = std::move(result), fn]() mutable {
-                                  result.set_value(fn());
-                              });
+        std::packaged_task<T()> call_fn(std::move(fn));
+        std::future<T> response = call_fn.get_future();
+        boost::asio::dispatch(context, std::move(call_fn));
 
-        return future;
-    }
-
-    /**
-     * The same as the above, but without returning a value. This allows us to
-     * wait for the task to have been run.
-     *
-     * @overload
-     */
-    template <typename F>
-    std::future<void> run_in_context(F fn) {
-        std::promise<void> result{};
-        std::future<void> future = result.get_future();
-        boost::asio::dispatch(context,
-                              [result = std::move(result), fn]() mutable {
-                                  fn();
-                                  result.set_value();
-                              });
-
-        return future;
+        return response;
     }
 
     /**
@@ -107,7 +85,7 @@ class MainContext {
      */
     template <typename F>
     void schedule_task(F fn) {
-        boost::asio::post(context, fn);
+        boost::asio::post(context, std::move(fn));
     }
 
     /**

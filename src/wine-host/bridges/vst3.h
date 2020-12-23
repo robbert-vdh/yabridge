@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <string>
 
 #include <public.sdk/source/vst/hosting/module.h>
@@ -74,13 +75,6 @@ struct InstanceInterfaces {
      * proxy object.
      */
     Steinberg::IPtr<Vst3PlugFrameProxy> plug_frame_proxy;
-
-    /**
-     * An unmanaged raw pointer for the actual implementation behind
-     * `plug_frame_proxy`. This is needed for some special handling for
-     * `IPlugView::onSize()`.
-     */
-    Vst3PlugFrameProxyImpl* plug_frame_proxy_impl;
 
     /**
      * The base object we cast from.
@@ -160,6 +154,106 @@ class Vst3Bridge : public HostBridge {
         return sockets.vst_host_callback.send_message(object, std::nullopt);
     }
 
+    /**
+     * Spawn a new thread and call `send_message()` from there, and then handle
+     * functions passed by calls to
+     * `do_mutual_recursion_or_handle_in_main_context()` on this thread until
+     * the original message we're trying to send has succeeded. This is a very
+     * specific solution to a very specific problem. When a plugin wants to
+     * resize itself, it will call `IPlugFrame::resizeView()` from within the
+     * WIn32 message loop. The host will then call `IPlugView::onSize()` on the
+     * plugin's `IPlugView` to actually resize the plugin. The issue is that
+     * that call to `IPlugView::onSize()` has to be handled from the UI thread,
+     * but in this sequence that thread is being blocked by a call to
+     * `IPlugFrame::resizeView()`.
+     *
+     * The hacky solution here is to send the message from another thread, and
+     * to then allow this thread to execute other functions submitted to an IO
+     * context.
+     */
+    template <typename T>
+    typename T::Response send_mutually_recursive_message(const T& object) {
+        using TResponse = typename T::Response;
+
+        // This IO context will accept incoming calls from
+        // `do_mutual_recursion_or_handle_in_main_context()` until we receive a
+        // response
+        {
+            std::unique_lock lock(mutual_recursion_context_mutex);
+
+            // In case some other thread is already calling
+            // `send_mutually_recursive_message()` (which should never be the
+            // case since this should only be called from the UI thread), we'll
+            // wait for that function to finish
+            if (mutual_recursion_context) {
+                mutual_recursion_context_cv.wait(lock, [&]() {
+                    return !mutual_recursion_context.has_value();
+                });
+            }
+
+            mutual_recursion_context.emplace();
+        }
+
+        // We will call the function from another thread so we can handle calls
+        // to  from this thread
+        std::promise<TResponse> response_promise{};
+        Win32Thread sending_thread([&]() {
+            const TResponse response = send_message(object);
+
+            // Stop accepting additional work to be run from the calling thread
+            // once we receive a response
+            {
+                std::lock_guard lock(mutual_recursion_context_mutex);
+                mutual_recursion_context->stop();
+                mutual_recursion_context.reset();
+            }
+            mutual_recursion_context_cv.notify_one();
+
+            response_promise.set_value(response);
+        });
+
+        // Accept work from the other thread until we receive a response, at
+        // which point the context will be stopped
+        auto work_guard =
+            boost::asio::make_work_guard(*mutual_recursion_context);
+        mutual_recursion_context->run();
+
+        return response_promise.get_future().get();
+    }
+
+    /**
+     * Crazy functions ask for crazy naming. This is the other part of
+     * `send_mutually_recursive_message()`. If another thread is currently
+     * calling that function (from the UI thread), then we'll execute `f` from
+     * the UI thread using the IO context started in the above function.
+     * Otherwise `f` will be run on the UI thread through `main_context` as
+     * usual.
+     *
+     * @see Vst3Bridge::send_mutually_recursive_message
+     */
+    template <typename T, typename F>
+    T do_mutual_recursion_or_handle_in_main_context(F f) {
+        std::packaged_task<T()> do_call(f);
+        std::future<T> do_call_response = do_call.get_future();
+
+        // If the above function is currently being called from some thread,
+        // then we'll submit the task to the IO context created there so it can
+        // be handled on that same thread. Otherwise we'll just submit it to the
+        // main IO context. Neither of these two functions block until `do_call`
+        // finish executing.
+        {
+            std::lock_guard lock(mutual_recursion_context_mutex);
+            if (mutual_recursion_context) {
+                boost::asio::dispatch(*mutual_recursion_context,
+                                      std::move(do_call));
+            } else {
+                main_context.schedule_task(std::move(do_call));
+            }
+        }
+
+        return do_call_response.get();
+    }
+
    private:
     /**
      * Generate a nique instance identifier using an atomic fetch-and-add. This
@@ -232,4 +326,21 @@ class Vst3Bridge : public HostBridge {
      */
     std::map<size_t, InstanceInterfaces> object_instances;
     std::mutex object_instances_mutex;
+
+    /**
+     * The IO context used in `send_mutually_recursive_message()` to be able to
+     * execute functions from that same calling thread while we're waiting for a
+     * response. See the docstring there for more information. When this doesn't
+     * contain an IO context, this function is not being called and
+     * `do_mutual_recursion_or_handle_in_main_context()` should post the task
+     * directly to the main IO context.
+     */
+    std::optional<boost::asio::io_context> mutual_recursion_context;
+    std::mutex mutual_recursion_context_mutex;
+    /**
+     * Used to make sure only a single call to
+     * `send_mutually_recursive_message()` at a time can be processed (this
+     * should never happen, but better safe tha nsorry).
+     */
+    std::condition_variable mutual_recursion_context_cv;
 };
