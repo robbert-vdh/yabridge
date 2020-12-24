@@ -239,7 +239,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 // show a warning if we come across any duplicates.
                 let already_installed_architectures = yabridge_vst3_bundles
                     .entry(module.target_bundle_home())
-                    .or_insert_with(|| BTreeSet::new());
+                    .or_insert_with(BTreeSet::new);
                 if !already_installed_architectures.insert(module.architecture()) {
                     eprintln!(
                         "{}",
