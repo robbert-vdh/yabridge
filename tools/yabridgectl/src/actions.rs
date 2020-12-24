@@ -18,13 +18,12 @@
 
 use anyhow::{Context, Result};
 use colored::Colorize;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::config::{yabridge_vst3_home, Config, InstallationMethod, YabridgeFiles};
-use crate::files;
-use crate::files::NativeFile;
+use crate::files::{self, LibArchitecture, NativeFile};
 use crate::utils;
 use crate::utils::{verify_path_setup, verify_wine_setup};
 
@@ -199,17 +198,11 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     let mut orphan_files: Vec<NativeFile> = Vec::new();
     // All the VST3 modules we have set up yabridge for. We need this to detect leftover VST3
     // modules in `~/.vst3/yabridge`.
-    let mut yabridge_vst3_bundles: BTreeSet<PathBuf> = BTreeSet::new();
+    let mut yabridge_vst3_bundles: BTreeMap<PathBuf, BTreeSet<LibArchitecture>> = BTreeMap::new();
     for (path, search_results) in results {
         num_installed += search_results.vst2_files.len();
         num_installed += search_results.vst3_modules.len();
         orphan_files.extend(search_results.vst2_orphans().into_iter().cloned());
-        yabridge_vst3_bundles.extend(
-            search_results
-                .vst3_modules
-                .iter()
-                .map(|module| module.yabridge_bundle_home()),
-        );
         skipped_dll_files.extend(search_results.skipped_files);
 
         if options.verbose {
@@ -241,6 +234,28 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         // https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles
         if let Some(libyabridge_vst3_hash) = libyabridge_vst3_hash {
             for module in search_results.vst3_modules {
+                // Check if we already set up the same architecture version of the plugin (since
+                // 32-bit and 64-bit versions of the plugin cna live inside of the same bundle), and
+                // show a warning if we come across any duplicates.
+                let already_installed_architectures = yabridge_vst3_bundles
+                    .entry(module.yabridge_bundle_home())
+                    .or_insert_with(|| BTreeSet::new());
+                if !already_installed_architectures.insert(module.architecture()) {
+                    eprintln!(
+                        "{}",
+                        utils::wrap(&format!(
+                            "{}: The {} version of '{}' has already been provided by another Wine \
+                             prefix, skipping '{}'\n",
+                            "WARNING".red(),
+                            module.architecture(),
+                            module.yabridge_bundle_home().display(),
+                            module.original_module_path().display(),
+                        ))
+                    );
+
+                    continue;
+                }
+
                 let native_module_path = module.yabridge_native_module_path();
 
                 // For VST3 plugins we'll first have to create the bundle structure
@@ -298,7 +313,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 .filter_map(|path| {
                     // Add all files and directories in `~/.vst3/yabridge` to `orphan_files` if they
                     // are not a VST3 module we just created
-                    if !yabridge_vst3_bundles.contains(&path) {
+                    if !yabridge_vst3_bundles.contains_key(&path) {
                         utils::get_file_type(path)
                     } else {
                         None

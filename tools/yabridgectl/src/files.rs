@@ -21,6 +21,7 @@ use anyhow::{Context, Result};
 use lazy_static::lazy_static;
 use rayon::prelude::*;
 use std::collections::{BTreeMap, HashMap};
+use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use walkdir::WalkDir;
@@ -177,10 +178,19 @@ impl Vst3Module {
 }
 
 /// The architecture of a `.dll` file. Needed so we can create a merged bundle for VST3 plugins.
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Copy)]
 pub enum LibArchitecture {
     Dll32,
     Dll64,
+}
+
+impl Display for LibArchitecture {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            LibArchitecture::Dll32 => write!(f, "32-bit"),
+            LibArchitecture::Dll64 => write!(f, "64-bit"),
+        }
+    }
 }
 
 impl LibArchitecture {
