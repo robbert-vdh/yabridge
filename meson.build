@@ -277,7 +277,7 @@ if with_vst3
     # This does mean that we now have a lot of defines in our code, but the
     # alternative would be patching every location in the SDK where they include
     # `windows.h`
-    compile_args : vst3_wine_compiler_options,
+    compile_args : vst3_compiler_options + vst3_wine_compiler_options,
   )
 
   # And another time for the 32-bit version
