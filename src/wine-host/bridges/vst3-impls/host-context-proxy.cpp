@@ -66,40 +66,26 @@ Vst3HostContextProxyImpl::createInstance(Steinberg::TUID /*cid*/,
         return Steinberg::kInvalidArgument;
     }
 
+    // These objects don't have to be created by the actual host since they'll
+    // only be used as an argument to other functions. We can just serialize
+    // them at that point.
     Steinberg::FUID iid = Steinberg::FUID::fromTUID(_iid);
-    // If an objects wants to create an `IMessage` object to send it to some
-    // object it is directly connected to, then we can keep everything local
-    // on the Wine side. This is mostly an optimization, because it saves a
-    // lot of unnecessary back and forth communication.
-    if (are_objects_directly_connected) {
-        if (iid == Steinberg::Vst::IMessage::iid) {
-            // TODO: Add logging for this on verbosity level 1
-            *obj = new Steinberg::Vst::HostMessage{};
-            return Steinberg::kResultTrue;
-        } else if (iid == Steinberg::Vst::IAttributeList::iid) {
-            // TODO: Add logging for this on verbosity level 1
-            *obj = new Steinberg::Vst::HostAttributeList{};
-            return Steinberg::kResultTrue;
-        } else {
-            // When the host requests an interface we do not (yet) implement,
-            // we'll print a recognizable log message
-            const Steinberg::FUID uid = Steinberg::FUID::fromTUID(_iid);
-            std::cerr
-                << "TODO: Implement unknown interface logging on Wine side "
-                   "for Vst3HostContextProxyImpl::createInstance"
-                << std::endl;
-
-            return Steinberg::kNotImplemented;
-        }
+    if (iid == Steinberg::Vst::IMessage::iid) {
+        // TODO: Add logging for this on verbosity level 1
+        *obj = new Steinberg::Vst::HostMessage{};
+        return Steinberg::kResultTrue;
+    } else if (iid == Steinberg::Vst::IAttributeList::iid) {
+        // TODO: Add logging for this on verbosity level 1
+        *obj = new Steinberg::Vst::HostAttributeList{};
+        return Steinberg::kResultTrue;
     } else {
-        // TODO: Implement for objects that are not directly connected
-        std::cerr
-            << "TODO: Creating <IMessage*> and <IAttributeList*> instances in "
-               "IHostApplication::createInstance() for indirectly "
-               "connected objects has not yet been implemented"
-            << std::endl;
+        // When the host requests an interface we do not (yet) implement,
+        // we'll print a recognizable log message
+        const Steinberg::FUID uid = Steinberg::FUID::fromTUID(_iid);
+        std::cerr << "TODO: Implement unknown interface logging on Wine side "
+                     "for Vst3HostContextProxyImpl::createInstance"
+                  << std::endl;
 
-        *obj = nullptr;
         return Steinberg::kNotImplemented;
     }
 }

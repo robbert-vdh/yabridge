@@ -97,15 +97,6 @@ class Vst3HostContextProxy : public YaHostApplication {
         return arguments.owner_instance_id;
     }
 
-    /**
-     * Used to shortcut calls to
-     * `IHostApplication::createInstance(IMessage::iid, IMessage::iid, &obj)`
-     * when two objects (a processor and a controller instance, for example) are
-     * directly connected. This way we don't have to proxy the message created
-     * by the host, which can save a lot of resoruces.
-     */
-    std::atomic_bool are_objects_directly_connected = false;
-
    private:
     ConstructArgs arguments;
 };
