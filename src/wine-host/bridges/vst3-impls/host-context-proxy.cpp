@@ -62,7 +62,7 @@ Vst3HostContextProxyImpl::createInstance(Steinberg::TUID /*cid*/,
     // Class IDs don't have a meaning here, they just mirrored the interface
     // from `IPlugFactory::createInstance()`
     constexpr size_t uid_size = sizeof(Steinberg::TUID);
-    if (!_iid || strnlen(_iid, uid_size) < uid_size) {
+    if (!_iid || !obj || strnlen(_iid, uid_size) < uid_size) {
         return Steinberg::kInvalidArgument;
     }
 
@@ -98,6 +98,8 @@ Vst3HostContextProxyImpl::createInstance(Steinberg::TUID /*cid*/,
                "IHostApplication::createInstance() for indirectly "
                "connected objects has not yet been implemented"
             << std::endl;
+
+        *obj = nullptr;
         return Steinberg::kNotImplemented;
     }
 }

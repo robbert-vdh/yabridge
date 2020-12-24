@@ -181,6 +181,9 @@ void Vst3Bridge::run() {
                     object_instances[request.instance_id]
                         .host_context_proxy->are_objects_directly_connected =
                         true;
+                    object_instances[request.other_instance_id]
+                        .host_context_proxy->are_objects_directly_connected =
+                        true;
                 }
 
                 return object_instances[request.instance_id]

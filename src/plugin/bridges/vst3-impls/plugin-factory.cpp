@@ -30,7 +30,7 @@ YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
                                     void** obj) {
     // Class IDs may be padded with null bytes
     constexpr size_t uid_size = sizeof(Steinberg::TUID);
-    if (!cid || !_iid || strnlen(_iid, uid_size) < uid_size) {
+    if (!cid || !_iid || !obj || strnlen(_iid, uid_size) < uid_size) {
         return Steinberg::kInvalidArgument;
     }
 
@@ -62,6 +62,7 @@ YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
         bridge.logger.log_unknown_interface(
             "In IPluginFactory::createInstance()", uid);
 
+        *obj = nullptr;
         return Steinberg::kNotImplemented;
     }
 
