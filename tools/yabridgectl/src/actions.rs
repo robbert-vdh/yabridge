@@ -282,7 +282,19 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     &windows_module_path,
                 )?;
 
-                // TODO: Symlink resources and presets
+                // If `module` is a bundle, then it may contain a `Resources` directory with
+                // screenshots and documentation
+                // TODO: Also symlink presets, but this is a bit more involved. See
+                //       https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#win7preset
+                if let Some(original_resources_dir) = module.original_resources_dir() {
+                    install_file(
+                        false,
+                        InstallationMethod::Symlink,
+                        &original_resources_dir,
+                        None,
+                        &module.target_resources_dir(),
+                    )?;
+                }
 
                 if options.verbose {
                     println!("  {}", module.original_path().display());

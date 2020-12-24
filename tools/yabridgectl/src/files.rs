@@ -138,6 +138,23 @@ impl Vst3Module {
         }
     }
 
+    /// If this was a VST 3.6.10 style bundle, then return the path to the `Resources` directory if
+    /// it has one.
+    pub fn original_resources_dir(&self) -> Option<PathBuf> {
+        match &self {
+            Vst3Module::Bundle(bundle_home, _) => {
+                let mut path = bundle_home.join("Contents");
+                path.push("Resources");
+                if path.exists() {
+                    Some(path)
+                } else {
+                    None
+                }
+            }
+            Vst3Module::Legacy(_, _) => None,
+        }
+    }
+
     /// Get the path to the bundle in `~/.vst3` corresponding to the bridged version of this module.
     ///
     /// FIXME: How do we solve naming clashes from the same VST3 plugin being installed to multiple
@@ -173,6 +190,16 @@ impl Vst3Module {
         path.push("Contents");
         path.push(self.architecture().vst_arch());
         path.push(self.original_module_name());
+        path
+    }
+
+    /// If the Windows VST3 plugin we're bridging was in a VST 3.6.10 style bundle and had a
+    /// resources directory, then we'll symlink that directory to here so the host can access all
+    /// its original resources.
+    pub fn target_resources_dir(&self) -> PathBuf {
+        let mut path = self.target_bundle_home();
+        path.push("Contents");
+        path.push("Resources");
         path
     }
 }
