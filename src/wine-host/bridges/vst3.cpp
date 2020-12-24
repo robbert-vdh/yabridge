@@ -170,9 +170,19 @@ void Vst3Bridge::run() {
             },
             [&](const YaConnectionPoint::Connect& request)
                 -> YaConnectionPoint::Connect::Response {
-                // We can directly connect the underlying objects
+                // We can directly connect the underlying objects. We'll mark
+                // that we're using a direct connection on our host context
+                // proxy so that when the plugin wants to create an `IMessage`
+                // object, we can keep everything local and we Don't have to go
+                // through the host.
                 // TODO: Add support for connecting objects through a proxy
                 //       object provided by the host
+                if (object_instances[request.instance_id].host_context_proxy) {
+                    object_instances[request.instance_id]
+                        .host_context_proxy->are_objects_directly_connected =
+                        true;
+                }
+
                 return object_instances[request.instance_id]
                     .connection_point->connect(
                         object_instances[request.other_instance_id]
