@@ -72,11 +72,13 @@ Vst3HostContextProxyImpl::createInstance(Steinberg::TUID /*cid*/,
     Steinberg::FUID iid = Steinberg::FUID::fromTUID(_iid);
     if (iid == Steinberg::Vst::IMessage::iid) {
         // TODO: Add logging for this on verbosity level 1
-        *obj = new Steinberg::Vst::HostMessage{};
+        *obj = static_cast<Steinberg::Vst::IMessage*>(
+            new Steinberg::Vst::HostMessage{});
         return Steinberg::kResultTrue;
     } else if (iid == Steinberg::Vst::IAttributeList::iid) {
         // TODO: Add logging for this on verbosity level 1
-        *obj = new Steinberg::Vst::HostAttributeList{};
+        *obj = static_cast<Steinberg::Vst::IAttributeList*>(
+            new Steinberg::Vst::HostAttributeList{});
         return Steinberg::kResultTrue;
     } else {
         // When the host requests an interface we do not (yet) implement,
