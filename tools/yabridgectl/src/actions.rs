@@ -238,7 +238,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 // 32-bit and 64-bit versions of the plugin cna live inside of the same bundle), and
                 // show a warning if we come across any duplicates.
                 let already_installed_architectures = yabridge_vst3_bundles
-                    .entry(module.yabridge_bundle_home())
+                    .entry(module.target_bundle_home())
                     .or_insert_with(|| BTreeSet::new());
                 if !already_installed_architectures.insert(module.architecture()) {
                     eprintln!(
@@ -248,7 +248,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                              prefix, skipping '{}'\n",
                             "WARNING".red(),
                             module.architecture(),
-                            module.yabridge_bundle_home().display(),
+                            module.target_bundle_home().display(),
                             module.original_module_path().display(),
                         ))
                     );
@@ -256,14 +256,23 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     continue;
                 }
 
-                let native_module_path = module.yabridge_native_module_path();
-
-                // For VST3 plugins we'll first have to create the bundle structure
+                // We're building a merged VST3 bundle containing both a copy or symlink to
+                // `libyabridge-vst3.so` and the Windows VST3 plugin
+                let native_module_path = module.target_native_module_path();
                 utils::create_dir_all(native_module_path.parent().unwrap())?;
+                if install_file(
+                    options.force,
+                    config.method,
+                    files.libyabridge_vst3.as_ref().unwrap(),
+                    Some(libyabridge_vst3_hash),
+                    &native_module_path,
+                )? {
+                    num_new += 1;
+                }
 
                 // We'll then symlink the Windows VST3 module to that bundle to create a merged
                 // bundle: https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles
-                let windows_module_path = module.yabridge_windows_module_path();
+                let windows_module_path = module.target_windows_module_path();
                 utils::create_dir_all(windows_module_path.parent().unwrap())?;
                 install_file(
                     true,
@@ -274,16 +283,6 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 )?;
 
                 // TODO: Symlink resources and presets
-
-                if install_file(
-                    options.force,
-                    config.method,
-                    files.libyabridge_vst3.as_ref().unwrap(),
-                    Some(libyabridge_vst3_hash),
-                    &native_module_path,
-                )? {
-                    num_new += 1;
-                }
 
                 if options.verbose {
                     println!("  {}", module.original_path().display());

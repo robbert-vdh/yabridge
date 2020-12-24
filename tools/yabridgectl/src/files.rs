@@ -142,13 +142,13 @@ impl Vst3Module {
     ///
     /// FIXME: How do we solve naming clashes from the same VST3 plugin being installed to multiple
     ///        Wine prefixes?
-    pub fn yabridge_bundle_home(&self) -> PathBuf {
+    pub fn target_bundle_home(&self) -> PathBuf {
         yabridge_vst3_home().join(self.original_module_name())
     }
 
     /// Get the path to the `libyabridge.so` file in `~/.vst3` corresponding to the bridged version
     /// of this module.
-    pub fn yabridge_native_module_path(&self) -> PathBuf {
+    pub fn target_native_module_path(&self) -> PathBuf {
         let native_module_name = match &self {
             Vst3Module::Legacy(path, _) | Vst3Module::Bundle(path, _) => path
                 .with_extension("so")
@@ -159,7 +159,7 @@ impl Vst3Module {
                 .to_owned(),
         };
 
-        let mut path = self.yabridge_bundle_home();
+        let mut path = self.target_bundle_home();
         path.push("Contents");
         path.push("x86_64-linux");
         path.push(native_module_name);
@@ -168,8 +168,8 @@ impl Vst3Module {
 
     /// Get the path to where we'll symlink `original_module_path`. This is part of the merged VST3
     /// bundle in `~/.vst3/yabridge`.
-    pub fn yabridge_windows_module_path(&self) -> PathBuf {
-        let mut path = self.yabridge_bundle_home();
+    pub fn target_windows_module_path(&self) -> PathBuf {
+        let mut path = self.target_bundle_home();
         path.push("Contents");
         path.push(self.architecture().vst_arch());
         path.push(self.original_module_name());
@@ -230,7 +230,7 @@ impl SearchResults {
         // And for VST3 modules. We have not stored the paths to the corresponding `.so` files yet
         // because they are not in any of the directories we're indexing.
         installation_status.extend(self.vst3_modules.iter().map(|module| {
-            let module_path = module.yabridge_native_module_path();
+            let module_path = module.target_native_module_path();
             let install_type = get_file_type(module_path.clone());
             (module_path, install_type)
         }));
