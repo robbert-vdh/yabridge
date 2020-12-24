@@ -18,10 +18,11 @@
 
 use anyhow::{Context, Result};
 use colored::Colorize;
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::config::{Config, InstallationMethod, YabridgeFiles};
+use crate::config::{yabridge_vst3_home, Config, InstallationMethod, YabridgeFiles};
 use crate::files;
 use crate::files::NativeFile;
 use crate::utils;
@@ -193,16 +194,16 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     let mut num_new = 0;
     // The files we skipped during the scan because they turned out to not be plugins
     let mut skipped_dll_files: Vec<PathBuf> = Vec::new();
-    // `.so` files we found during scanning that didn't have a corresponding copy or symlink of
-    // `libyabridge-vst2.so`
-    let mut orphan_vst2_so_files: Vec<NativeFile> = Vec::new();
+    // `.so` files and unused VST3 modules we found during scanning that didn't have a corresponding
+    // copy or symlink of `libyabridge-vst2.so`
+    let mut orphan_files: Vec<NativeFile> = Vec::new();
     // All the VST3 modules we have set up yabridge for. We need this to detect leftover VST3
     // modules in `~/.vst3/yabridge`.
-    let mut yabridge_vst3_bundles: Vec<PathBuf> = Vec::new();
+    let mut yabridge_vst3_bundles: BTreeSet<PathBuf> = BTreeSet::new();
     for (path, search_results) in results {
         num_installed += search_results.vst2_files.len();
         num_installed += search_results.vst3_modules.len();
-        orphan_vst2_so_files.extend(search_results.vst2_orphans().into_iter().cloned());
+        orphan_files.extend(search_results.vst2_orphans().into_iter().cloned());
         yabridge_vst3_bundles.extend(
             search_results
                 .vst3_modules
@@ -214,6 +215,8 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         if options.verbose {
             println!("{}:", path.display());
         }
+
+        // We'll set up the copies or symlinks for VST2 plugins
         for plugin in search_results.vst2_files {
             let target_path = plugin.with_extension("so");
 
@@ -233,6 +236,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 println!("  {}", plugin.display());
             }
         }
+
+        // And then create merged bundles for the VST3 plugins:
+        // https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles
         if let Some(libyabridge_vst3_hash) = libyabridge_vst3_hash {
             for module in search_results.vst3_modules {
                 let native_module_path = module.yabridge_native_module_path();
@@ -269,6 +275,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 }
             }
         }
+
         if options.verbose {
             println!();
         }
@@ -284,29 +291,50 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         println!();
     }
 
-    // TODO: Remove leftover files for VST3 plugins
+    if let Ok(dirs) = fs::read_dir(yabridge_vst3_home()) {
+        orphan_files.extend(
+            dirs.filter_map(|entry| entry.ok())
+                .map(|entry| entry.path())
+                .filter_map(|path| {
+                    // Add all files and directories in `~/.vst3/yabridge` to `orphan_files` if they
+                    // are not a VST3 module we just created
+                    if !yabridge_vst3_bundles.contains(&path) {
+                        utils::get_file_type(path)
+                    } else {
+                        None
+                    }
+                }),
+        );
+    }
 
     // Always warn about leftover files since those might cause warnings or errors when a VST host
     // tries to load them
-    if !orphan_vst2_so_files.is_empty() {
+    if !orphan_files.is_empty() {
+        let leftover_files_str = if orphan_files.len() == 1 {
+            format!("{} leftover file", orphan_files.len())
+        } else {
+            format!("{} leftover files", orphan_files.len())
+        };
         if options.prune {
-            println!(
-                "Removing {} leftover .so files:",
-                orphan_vst2_so_files.len()
-            );
+            println!("Removing {}:", leftover_files_str);
         } else {
             println!(
-                "Found {} leftover .so files, rerun with the '--prune' option to remove them:",
-                orphan_vst2_so_files.len()
+                "Found {}, rerun with the '--prune' option to remove them:",
+                leftover_files_str
             );
         }
 
-        for file in orphan_vst2_so_files {
-            let path = file.path();
-
-            println!("- {}", path.display());
+        for file in orphan_files {
+            println!("- {}", file.path().display());
             if options.prune {
-                utils::remove_file(path)?;
+                match file {
+                    NativeFile::Regular(path) | NativeFile::Symlink(path) => {
+                        utils::remove_file(path)?;
+                    }
+                    NativeFile::Directory(path) => {
+                        utils::remove_dir_all(path)?;
+                    }
+                }
             }
         }
 

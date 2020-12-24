@@ -25,7 +25,7 @@ use std::fs;
 use std::hash::Hasher;
 use std::os::unix::fs as unix_fs;
 use std::os::unix::process::CommandExt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use textwrap::Wrapper;
 
@@ -59,6 +59,13 @@ pub fn create_dir_all<P: AsRef<Path>>(path: P) -> Result<()> {
     })
 }
 
+/// Wrapper around [`std::fs::remove_dir_all()`](std::fs::remove_dir_all) with a human readable
+/// error message.
+pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> Result<()> {
+    fs::remove_dir_all(&path)
+        .with_context(|| format!("Could not remove directory '{}'", path.as_ref().display()))
+}
+
 /// Wrapper around [`std::fs::remove_file()`](std::fs::remove_file) with a human readable error
 /// message.
 pub fn remove_file<P: AsRef<Path>>(path: P) -> Result<()> {
@@ -79,15 +86,11 @@ pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> Result<()> {
 }
 
 /// Get the type of a file, if it exists.
-pub fn get_file_type(path: &Path) -> Option<NativeFile> {
+pub fn get_file_type(path: PathBuf) -> Option<NativeFile> {
     match path.metadata() {
-        Ok(metadata) if metadata.file_type().is_symlink() => {
-            Some(NativeFile::Symlink(path.to_owned()))
-        }
-        Ok(metadata) if metadata.file_type().is_dir() => {
-            Some(NativeFile::Directory(path.to_owned()))
-        }
-        Ok(_) => Some(NativeFile::Regular(path.to_owned())),
+        Ok(metadata) if metadata.file_type().is_symlink() => Some(NativeFile::Symlink(path)),
+        Ok(metadata) if metadata.file_type().is_dir() => Some(NativeFile::Directory(path)),
+        Ok(_) => Some(NativeFile::Regular(path)),
         Err(_) => None,
     }
 }

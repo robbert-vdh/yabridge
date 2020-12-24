@@ -221,7 +221,7 @@ impl SearchResults {
         // because they are not in any of the directories we're indexing.
         installation_status.extend(self.vst3_modules.iter().map(|module| {
             let module_path = module.yabridge_native_module_path();
-            let install_type = get_file_type(&module_path);
+            let install_type = get_file_type(module_path.clone());
             (module_path, install_type)
         }));
 
@@ -372,7 +372,7 @@ impl SearchIndex {
                             reconstructed_path.push(architecture.vst_arch());
                             reconstructed_path.push(module_name);
 
-                            return reconstructed_path.exists();
+                            reconstructed_path.exists()
                         })
                         .unwrap_or(false);
 
