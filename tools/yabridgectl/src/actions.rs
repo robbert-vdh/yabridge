@@ -223,7 +223,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 options.force,
                 config.method,
                 &files.libyabridge_vst2,
-                libyabridge_vst2_hash,
+                Some(libyabridge_vst2_hash),
                 &target_path,
             )? {
                 num_new += 1;
@@ -248,7 +248,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     true,
                     InstallationMethod::Symlink,
                     &module.original_module_path(),
-                    0,
+                    None,
                     &windows_module_path,
                 )?;
 
@@ -258,7 +258,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     options.force,
                     config.method,
                     files.libyabridge_vst3.as_ref().unwrap(),
-                    libyabridge_vst3_hash,
+                    Some(libyabridge_vst3_hash),
                     &native_module_path,
                 )? {
                     num_new += 1;
@@ -343,7 +343,7 @@ fn install_file(
     force: bool,
     method: InstallationMethod,
     from: &Path,
-    from_hash: i64,
+    from_hash: Option<i64>,
     to: &Path,
 ) -> Result<bool> {
     // We'll only recreate existing files when updating yabridge, when switching between the symlink
@@ -354,16 +354,17 @@ fn install_file(
     if let Ok(metadata) = fs::symlink_metadata(&to) {
         match (force, &method) {
             (false, InstallationMethod::Copy) => {
-                // If the target file is already a real file (not a symlink) and its hash is
-                // the same as the `libyabridge-vst2.so` file we're trying to copy there,
-                // then we don't have to do anything
-                if metadata.file_type().is_file() && utils::hash_file(to)? == from_hash {
-                    return Ok(false);
+                // If the target file is already a real file (not a symlink) and its hash is the
+                // same as that of the `from` file we're trying to copy there, then we don't have to
+                // do anything
+                if let Some(hash) = from_hash {
+                    if metadata.file_type().is_file() && utils::hash_file(to)? == hash {
+                        return Ok(false);
+                    }
                 }
             }
             (false, InstallationMethod::Symlink) => {
-                // If the target file is already a symlink to `libyabridge-vst2.so`, then we
-                // can skip this file
+                // If the target file is already a symlink to `from`, then we can skip this file
                 if metadata.file_type().is_symlink() && to.read_link()? == from {
                     return Ok(false);
                 }
