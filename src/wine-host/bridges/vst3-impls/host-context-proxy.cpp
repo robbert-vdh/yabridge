@@ -18,7 +18,8 @@
 
 #include <iostream>
 
-#include <public.sdk/source/vst/hosting/hostclasses.h>
+#include "../../../common/serialization/vst3/attribute-list.h"
+#include "../../../common/serialization/vst3/message.h"
 
 Vst3HostContextProxyImpl::Vst3HostContextProxyImpl(
     Vst3Bridge& bridge,
@@ -72,13 +73,12 @@ Vst3HostContextProxyImpl::createInstance(Steinberg::TUID /*cid*/,
     Steinberg::FUID iid = Steinberg::FUID::fromTUID(_iid);
     if (iid == Steinberg::Vst::IMessage::iid) {
         // TODO: Add logging for this on verbosity level 1
-        *obj = static_cast<Steinberg::Vst::IMessage*>(
-            new Steinberg::Vst::HostMessage{});
+        *obj = static_cast<Steinberg::Vst::IMessage*>(new YaMessage{});
         return Steinberg::kResultTrue;
     } else if (iid == Steinberg::Vst::IAttributeList::iid) {
         // TODO: Add logging for this on verbosity level 1
-        *obj = static_cast<Steinberg::Vst::IAttributeList*>(
-            new Steinberg::Vst::HostAttributeList{});
+        *obj =
+            static_cast<Steinberg::Vst::IAttributeList*>(new YaAttributeList{});
         return Steinberg::kResultTrue;
     } else {
         // When the host requests an interface we do not (yet) implement,
