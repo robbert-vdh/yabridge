@@ -257,9 +257,10 @@ impl SearchResults {
         // And for VST3 modules. We have not stored the paths to the corresponding `.so` files yet
         // because they are not in any of the directories we're indexing.
         installation_status.extend(self.vst3_modules.iter().map(|module| {
-            let module_path = module.target_native_module_path();
-            let install_type = get_file_type(module_path.clone());
-            (module_path, install_type)
+            (
+                module.original_path().to_owned(),
+                get_file_type(module.target_native_module_path()),
+            )
         }));
 
         installation_status

@@ -87,7 +87,7 @@ pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> Result<()> {
 
 /// Get the type of a file, if it exists.
 pub fn get_file_type(path: PathBuf) -> Option<NativeFile> {
-    match path.metadata() {
+    match path.symlink_metadata() {
         Ok(metadata) if metadata.file_type().is_symlink() => Some(NativeFile::Symlink(path)),
         Ok(metadata) if metadata.file_type().is_dir() => Some(NativeFile::Directory(path)),
         Ok(_) => Some(NativeFile::Regular(path)),
