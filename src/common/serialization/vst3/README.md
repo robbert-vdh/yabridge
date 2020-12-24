@@ -36,6 +36,7 @@ implemented for serialization purposes:
 
 | yabridge class       | Interfaces          | Notes                                                                  |
 | -------------------- | ------------------- | ---------------------------------------------------------------------- |
+| `YaAttributeList`    | `IAttributeList`    |                                                                        |
 | `YaEventList`        | `IEventList`        | Comes with a lot of serialization wrappers around the related structs. |
 | `YaParameterChanges` | `IParameterChanges` |                                                                        |
 | `YaParamValueQueue`  | `IParamValueQueue`  |                                                                        |
