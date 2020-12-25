@@ -106,6 +106,12 @@ Vst3PluginBridge::Vst3PluginBridge()
                         .get()
                         .component_handler->restartComponent(request.flags);
                 },
+                [&](YaConnectionPoint::Notify& request)
+                    -> YaConnectionPoint::Notify::Response {
+                    return plugin_proxies.at(request.instance_id)
+                        .get()
+                        .connection_point_proxy->notify(&request.message);
+                },
                 [&](const YaHostApplication::GetName& request)
                     -> YaHostApplication::GetName::Response {
                     tresult result;

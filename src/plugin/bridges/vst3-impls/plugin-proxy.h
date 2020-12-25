@@ -125,6 +125,22 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API terminate() override;
 
     /**
+     * The component handler the host passed to us during
+     * `IEditController::setComponentHandler()`. When the plugin makes a
+     * callback on a component handler proxy object, we'll pass the call through
+     * to this object.
+     */
+    Steinberg::IPtr<Steinberg::Vst::IComponentHandler> component_handler;
+
+    /**
+     * If the host doesn't connect two objects directly in
+     * `IConnectionPoint::connect` but instead connects them through a proxy,
+     * we'll store that proxy here. This way we can then route messages sent by
+     * the plugin through this proxy. So far this is only needed for Ardour.
+     */
+    Steinberg::IPtr<Steinberg::Vst::IConnectionPoint> connection_point_proxy;
+
+    /**
      * An unmanaged, raw pointer to the `IPlugView` instance returned in our
      * implementation of `IEditController::createView()`. We need this to handle
      * `IPlugFrame::resizeView()`, since that expects a pointer to the view that
@@ -135,14 +151,6 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      *      issue
      */
     Vst3PlugViewProxyImpl* last_created_plug_view = nullptr;
-
-    /**
-     * The component handler the host passed to us during
-     * `IEditController::setComponentHandler()`. When the plugin makes a
-     * callback on a component handler proxy object, we'll pass the call through
-     * to this object.
-     */
-    Steinberg::IPtr<Steinberg::Vst::IComponentHandler> component_handler;
 
     // The following pointers are cast from `host_context` if `setHostContext()`
     // has been called

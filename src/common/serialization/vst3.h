@@ -24,6 +24,7 @@
 #include "../utils.h"
 #include "common.h"
 #include "vst3/component-handler-proxy.h"
+#include "vst3/connection-point-proxy.h"
 #include "vst3/host-context-proxy.h"
 #include "vst3/plug-frame-proxy.h"
 #include "vst3/plug-view-proxy.h"
@@ -143,6 +144,11 @@ using CallbackRequest = std::variant<WantsConfiguration,
                                      YaComponentHandler::PerformEdit,
                                      YaComponentHandler::EndEdit,
                                      YaComponentHandler::RestartComponent,
+                                     // Used when the host uses proxy objects,
+                                     // and we have to route
+                                     // `IConnectionPoint::notify` calls through
+                                     // there
+                                     YaConnectionPoint::Notify,
                                      YaHostApplication::GetName,
                                      YaPlugFrame::ResizeView>;
 
