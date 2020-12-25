@@ -85,6 +85,9 @@ class WindowClass {
  * issues, please let me know and I'll switch to using XEmbed again.
  *
  * This workaround was inspired by LinVst.
+ *
+ * As of yabridge 3.0 XEMbed is back as an option, but it's disabled by default
+ * because of the issues mentioned above.
  */
 class Editor {
    public:
@@ -159,10 +162,34 @@ class Editor {
     bool is_wine_window_active() const;
 
     /**
+     * Send an XEmbed message to a window. This does not include a flush. See
+     * the spec for more information:
+     *
+     * https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html#lifecycle
+     */
+    void send_xembed_message(const xcb_window_t& window,
+                             const uint32_t message,
+                             const uint32_t detail,
+                             const uint32_t data1,
+                             const uint32_t data2) const;
+
+    /**
+     * Start the XEmbed procedure when `use_xembed` is enabled. This should be
+     * rerun whenever visibility changes.
+     */
+    void do_xembed() const;
+
+    /**
      * A pointer to the currently active window. Will be a null pointer if no
      * window is active.
      */
     std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
+
+    /**
+     * Whether to use XEmbed instead of yabridge's normal window embedded. Wine
+     * with XEmbed tends to cause rendering issues, so it's disabled by default.
+     */
+    const bool use_xembed;
 
     /**
      * The Wine window's client area, or the maximum size of that window. This
@@ -233,4 +260,9 @@ class Editor {
      * `supports_ewmh_active_window()`.
      */
     mutable std::optional<bool> supports_ewmh_active_window_cache;
+
+    /**
+     * The atom corresponding to `_XEMBED`.
+     */
+    xcb_atom_t xcb_xembed_message;
 };
