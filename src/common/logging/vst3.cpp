@@ -94,8 +94,17 @@ bool Vst3Logger::log_request(bool is_host_vst,
                              const YaConnectionPoint::Connect& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
-                << ": IConnectionPoint::connect(other = <IConnectionPoint* #"
-                << request.other_instance_id << ">)";
+                << ": IConnectionPoint::connect(other = ";
+        std::visit(
+            overload{[&](const native_size_t& other_instance_id) {
+                         message << "<IConnectionPoint* #" << other_instance_id
+                                 << ">";
+                     },
+                     [&](const Vst3ConnectionPointProxy::ConstructArgs&) {
+                         message << "<IConnectionPoint* proxy>";
+                     }},
+            request.other);
+        message << ")";
     });
 }
 
@@ -103,8 +112,14 @@ bool Vst3Logger::log_request(bool is_host_vst,
                              const YaConnectionPoint::Disconnect& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
-                << ": IConnectionPoint::disconnect(other = <IConnectionPoint* #"
-                << request.other_instance_id << ">)";
+                << ": IConnectionPoint::disconnect(other = ";
+        if (request.other_instance_id) {
+            message << "<IConnectionPoint* #" << *request.other_instance_id
+                    << ">";
+        } else {
+            message << "<IConnectionPoint* proxy>";
+        }
+        message << ")";
     });
 }
 

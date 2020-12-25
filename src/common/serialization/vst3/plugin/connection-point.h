@@ -16,7 +16,10 @@
 
 #pragma once
 
+#include <variant>
+
 #include <bitsery/ext/std_optional.h>
+#include <bitsery/ext/std_variant.h>
 #include <pluginterfaces/vst/ivstmessage.h>
 
 #include "../../common.h"
@@ -32,8 +35,6 @@
  * monolithic proxy class we can easily directly connect different objects by
  * checking if they're a `Vst3PluginProxy` and then fetching that object's
  * instance ID (if the host doesn't place a proxy object here).
- *
- * TODO: Make sure we somehow handle proxies created by the host here.
  */
 class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
    public:
@@ -60,6 +61,45 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
         }
     };
 
+   protected:
+    /**
+     * These are the arguments for constructing a
+     * `Vst3ConnectionPointProxyImpl`.
+     *
+     * It's defined here to work around circular includes.
+     */
+    struct Vst3ConnectionPointProxyConstructArgs {
+        Vst3ConnectionPointProxyConstructArgs();
+
+        /**
+         * Read from an existing object. We will try to mimic this object, so
+         * we'll support any interfaces this object also supports.
+         *
+         * This is not necessary in this case since the object has to support
+         * `IConnectionPoint`, but let's stay consistent with the overall style
+         * here.
+         */
+        Vst3ConnectionPointProxyConstructArgs(Steinberg::IPtr<FUnknown> object,
+                                              size_t owner_instance_id);
+
+        /**
+         * The unique instance identifier of the proxy object instance this
+         * connection proxy has been passed to and thus belongs to. This way we
+         * can refer to the correct 'actual' `IConnectionPoint` instance when
+         * the plugin calls `notify()` on this proxy object.
+         */
+        native_size_t owner_instance_id;
+
+        ConstructArgs connection_point_args;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.object(connection_point_args);
+        }
+    };
+
+   public:
     /**
      * Instantiate this instance with arguments read from another interface
      * implementation.
@@ -69,10 +109,10 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
     inline bool supported() const { return arguments.supported; }
 
     /**
-     * Message to pass through a call to
-     * `IConnectionPoint::connect(other_instance_id)` to the Wine plugin host.
-     * At the moment this is only implemented for directly connecting objects
-     * created by the plugin without any proxies in between them.
+     * Message to pass through a call to `IConnectionPoint::connect(other)` to
+     * the Wine plugin host. If the host directly connects two objects, then
+     * we'll connect them directly as well. Otherwise all messages have to be
+     * routed through the host.
      */
     struct Connect {
         using Response = UniversalTResult;
@@ -82,24 +122,32 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
         /**
          * The other object this object should be connected to. When connecting
          * two `Vst3PluginProxy` objects, we can directly connect the underlying
-         * objects on the Wine side.
+         * objects on the Wine side using their instance IDs. Otherwise we'll
+         * create a proxy object for the connection proxy provided by the host
+         * that the plugin can use to send messages to.
          */
-        native_size_t other_instance_id;
+        std::variant<native_size_t, Vst3ConnectionPointProxyConstructArgs>
+            other;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
-            s.value8b(other_instance_id);
+            s.ext(other,
+                  bitsery::ext::StdVariant{
+                      [](S& s, native_size_t& other_instance_id) {
+                          s.value8b(other_instance_id);
+                      },
+                      [](S& s, Vst3ConnectionPointProxyConstructArgs& args) {
+                          s.object(args);
+                      }});
         }
     };
 
     virtual tresult PLUGIN_API connect(IConnectionPoint* other) override = 0;
 
     /**
-     * Message to pass through a call to
-     * `IConnectionPoint::disconnect(other_instance_id)` to the Wine plugin
-     * host. At the moment this is only implemented for directly connecting
-     * objects created by the plugin without any proxies in between them.
+     * Message to pass through a call to `IConnectionPoint::disconnect(other)`
+     * to the Wine plugin host.
      */
     struct Disconnect {
         using Response = UniversalTResult;
@@ -107,15 +155,19 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
         native_size_t instance_id;
 
         /**
-         * The other object backed by a `Vst3PluginProxy` this object was
-         * connected to and should be disconnected from. When connecting.
+         * If we connected two objects directly, then this is the instance ID of
+         * that object. Otherwise we'll just destroy the smart pointer pointing
+         * to our `IConnectionPoint` proxy object.
          */
-        native_size_t other_instance_id;
+        std::optional<native_size_t> other_instance_id;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
-            s.value8b(other_instance_id);
+            s.ext(other_instance_id, bitsery::ext::StdOptional{},
+                  [](S& s, native_size_t& instance_id) {
+                      s.value8b(instance_id);
+                  });
         }
     };
 

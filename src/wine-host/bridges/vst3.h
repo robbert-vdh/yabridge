@@ -26,9 +26,6 @@
 #include "../editor.h"
 #include "common.h"
 
-// Forward declarations
-class Vst3PlugFrameProxyImpl;
-
 /**
  * A holder for plugin object instance created from the factory. This stores all
  * relevant interface smart pointers to that object so we can handle control
@@ -56,6 +53,18 @@ struct InstanceInterfaces {
      * pointer until used.
      */
     Steinberg::IPtr<Vst3HostContextProxy> host_context_proxy;
+
+    /**
+     * If the host connects two objects indirectly using a connection proxy (as
+     * allowed by the VST3 specification), then we also can't connect the
+     * objects directly on the Wine side. In that case we'll have to create this
+     * proxy object, pass it to the plugin, and if the plugin then calls
+     * `IConnectionPoint::notify()` on it we'll pass that call through to the
+     * `IConnectionPoint` instance passed to us by the host (which will then in
+     * turn call `IConnectionPoint::notify()` on our plugin proxy object).
+     * Proxies for days.
+     */
+    Steinberg::IPtr<Vst3ConnectionPointProxy> connection_point_proxy;
 
     /**
      * After a call to `IEditController::setComponentHandler()`, we'll create a

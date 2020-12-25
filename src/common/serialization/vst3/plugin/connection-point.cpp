@@ -23,5 +23,14 @@ YaConnectionPoint::ConstructArgs::ConstructArgs(
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint>(object)) {}
 
+YaConnectionPoint::Vst3ConnectionPointProxyConstructArgs::
+    Vst3ConnectionPointProxyConstructArgs() {}
+
+YaConnectionPoint::Vst3ConnectionPointProxyConstructArgs::
+    Vst3ConnectionPointProxyConstructArgs(
+        Steinberg::IPtr<Steinberg::FUnknown> object,
+        size_t owner_instance_id)
+    : owner_instance_id(owner_instance_id), connection_point_args(object) {}
+
 YaConnectionPoint::YaConnectionPoint(const ConstructArgs&& args)
     : arguments(std::move(args)) {}

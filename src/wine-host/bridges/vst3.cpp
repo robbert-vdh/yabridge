@@ -21,6 +21,7 @@
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
 #include "vst3-impls/component-handler-proxy.h"
+#include "vst3-impls/connection-point-proxy.h"
 #include "vst3-impls/host-context-proxy.h"
 #include "vst3-impls/plug-frame-proxy.h"
 
@@ -168,24 +169,55 @@ void Vst3Bridge::run() {
                 return Vst3PluginProxy::GetStateResponse{
                     .result = result, .updated_state = std::move(stream)};
             },
-            [&](const YaConnectionPoint::Connect& request)
+            [&](YaConnectionPoint::Connect& request)
                 -> YaConnectionPoint::Connect::Response {
-                // We can directly connect the underlying objects
-                // TODO: Add support for connecting objects through a proxy
-                //       object provided by the host
-                return object_instances[request.instance_id]
-                    .connection_point->connect(
-                        object_instances[request.other_instance_id]
-                            .connection_point);
+                // If the host directly connected the underlying objects then we
+                // can directly connect them as well. Otherwise we'll have to go
+                // through a connection proxy (to proxy the host's connection
+                // proxy).
+                return std::visit(
+                    overload{
+                        [&](const native_size_t& other_instance_id) -> tresult {
+                            return object_instances[request.instance_id]
+                                .connection_point->connect(
+                                    object_instances[other_instance_id]
+                                        .connection_point);
+                        },
+                        [&](Vst3ConnectionPointProxy::ConstructArgs& args)
+                            -> tresult {
+                            object_instances[request.instance_id]
+                                .connection_point_proxy = Steinberg::owned(
+                                new Vst3ConnectionPointProxyImpl(
+                                    *this, std::move(args)));
+
+                            return object_instances[request.instance_id]
+                                .connection_point->connect(
+                                    object_instances[request.instance_id]
+                                        .connection_point_proxy);
+                        }},
+                    request.other);
             },
             [&](const YaConnectionPoint::Disconnect& request)
                 -> YaConnectionPoint::Disconnect::Response {
-                // TODO: Add support for connecting objects through a proxy
-                //       object provided by the host
-                return object_instances[request.instance_id]
-                    .connection_point->disconnect(
-                        object_instances[request.other_instance_id]
-                            .connection_point);
+                // If the objects were connected directly we can also disconnect
+                // them directly. Otherwise we'll disconnect them from our proxy
+                // object and then destroy that proxy object.
+                if (request.other_instance_id) {
+                    return object_instances[request.instance_id]
+                        .connection_point->disconnect(
+                            object_instances[*request.other_instance_id]
+                                .connection_point);
+                } else {
+                    const tresult result =
+                        object_instances[request.instance_id]
+                            .connection_point->disconnect(
+                                object_instances[*request.other_instance_id]
+                                    .connection_point_proxy);
+                    object_instances[*request.other_instance_id]
+                        .connection_point_proxy.reset();
+
+                    return result;
+                }
             },
             [&](YaConnectionPoint::Notify& request)
                 -> YaConnectionPoint::Notify::Response {

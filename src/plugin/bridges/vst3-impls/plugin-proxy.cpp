@@ -214,17 +214,19 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
 tresult PLUGIN_API Vst3PluginProxyImpl::connect(IConnectionPoint* other) {
     // When the host is trying to connect two plugin proxy objects, we can just
     // identify the other object by its instance IDs and then connect the
-    // objects in the Wine plugin host directly
+    // objects in the Wine plugin host directly. Otherwise we'll have to set up
+    // a proxy for the host's connection proxy so the messages can be routed
+    // through that.
     if (auto other_proxy = dynamic_cast<Vst3PluginProxy*>(other)) {
         return bridge.send_message(YaConnectionPoint::Connect{
-            .instance_id = instance_id(),
-            .other_instance_id = other_proxy->instance_id()});
+            .instance_id = instance_id(), .other = other_proxy->instance_id()});
     } else {
-        // TODO: Add support for `ConnectionProxy` and similar objects
-        bridge.logger.log(
-            "WARNING: The host passed a proxy proxy object to "
-            "'IConnectionPoint::connect()'. This is currently not supported.");
-        return Steinberg::kNotImplemented;
+        connection_point_proxy = other;
+
+        return bridge.send_message(YaConnectionPoint::Connect{
+            .instance_id = instance_id(),
+            .other =
+                Vst3ConnectionPointProxy::ConstructArgs(other, instance_id())});
     }
 }
 
@@ -235,12 +237,12 @@ tresult PLUGIN_API Vst3PluginProxyImpl::disconnect(IConnectionPoint* other) {
             .instance_id = instance_id(),
             .other_instance_id = other_proxy->instance_id()});
     } else {
-        // TODO: Add support for `ConnectionProxy` and similar objects
-        bridge.logger.log(
-            "WARNING: The host passed a proxy proxy object to "
-            "'IConnectionPoint::disconnect()'. This is currently not "
-            "supported.");
-        return Steinberg::kNotImplemented;
+        const tresult result = bridge.send_message(
+            YaConnectionPoint::Disconnect{.instance_id = instance_id(),
+                                          .other_instance_id = std::nullopt});
+        connection_point_proxy.reset();
+
+        return result;
     }
 }
 

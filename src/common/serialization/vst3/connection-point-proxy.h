@@ -38,40 +38,10 @@
  */
 class Vst3ConnectionPointProxy : public YaConnectionPoint {
    public:
-    /**
-     * These are the arguments for constructing a
-     * `Vst3ConnectionPointProxyImpl`.
-     */
-    struct ConstructArgs {
-        ConstructArgs();
-
-        /**
-         * Read from an existing object. We will try to mimic this object, so
-         * we'll support any interfaces this object also supports.
-         *
-         * This is not necessary in this case since the object has to support
-         * `IConnectionPoint`, but let's stay consistent with the overall style
-         * here.
-         */
-        ConstructArgs(Steinberg::IPtr<FUnknown> object,
-                      size_t owner_instance_id);
-
-        /**
-         * The unique instance identifier of the proxy object instance this
-         * connection proxy has been passed to and thus belongs to. This way we
-         * can refer to the correct 'actual' `IConnectionPoint` instance when
-         * the plugin calls `notify()` on this proxy object.
-         */
-        native_size_t owner_instance_id;
-
-        YaConnectionPoint::ConstructArgs connection_point_args;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(owner_instance_id);
-            s.object(connection_point_args);
-        }
-    };
+    // We had to define this in `YaConnectionPoint` to work around circular
+    // includes
+    using ConstructArgs =
+        YaConnectionPoint::Vst3ConnectionPointProxyConstructArgs;
 
     /**
      * Instantiate this instance with arguments read from an actual

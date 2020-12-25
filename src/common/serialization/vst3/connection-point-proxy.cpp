@@ -16,13 +16,6 @@
 
 #include "connection-point-proxy.h"
 
-Vst3ConnectionPointProxy::ConstructArgs::ConstructArgs() {}
-
-Vst3ConnectionPointProxy::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object,
-    size_t owner_instance_id)
-    : owner_instance_id(owner_instance_id), connection_point_args(object) {}
-
 Vst3ConnectionPointProxy::Vst3ConnectionPointProxy(const ConstructArgs&& args)
     : YaConnectionPoint(std::move(args.connection_point_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
