@@ -102,6 +102,14 @@ class Configuration {
     bool editor_double_embed = false;
 
     /**
+     * Use XEmbed instead of yabridge's normal editor embedding method. Wine's
+     * XEmbed support is not very polished yet and tends to lead to rendering
+     * issues, so this is disabled by default. Also, editor resizing won't work
+     * reliably when XEmbed is enabled.
+     */
+    bool editor_xembed = false;
+
+    /**
      * The name of the plugin group that should be used for the plugin this
      * configuration object was created for. If not set, then the plugin should
      * be hosted individually instead.
@@ -135,6 +143,7 @@ class Configuration {
     void serialize(S& s) {
         s.value1b(cache_time_info);
         s.value1b(editor_double_embed);
+        s.value1b(editor_xembed);
         s.ext(group, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
         s.ext(matched_file, bitsery::ext::StdOptional(),

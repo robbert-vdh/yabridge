@@ -12,8 +12,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 TODO: Add the relevant entries here for yabridge's VST3 support
 
-- Added the `with-vst3` option to control whether yabridge should be built with
-  VST3 support. This is enabled by default.
+- Added the `with-vst3` compile time option to control whether yabridge should
+  be built with VST3 support. This is enabled by default.
+- Added an
+  [option](https://github.com/robbert-vdh/yabridge#compatibility-options) to use
+  XEmbed instead of yabridge's normal window embedding method. Some plugins have
+  redrawing issues when using XEmbed and editor resizing won't work, so it's not
+  recommended to use it as a default.
 
 ### Changed
 

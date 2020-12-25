@@ -282,6 +282,7 @@ other. See below for an [example](#example) of how these groups can be set up.
 | --------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `cache_time_info`     | `{true,false}` | Compatibility option for plugins that call `audioMasterGetTime()` multiple times during a single processing cycle. With this option subsequent calls during a single audio processing cycle will reuse the value returned by the first call to this function. This is a bug in the plugin, and this option serves as a temporary workaround until the plugin fixes the issue.                                                                              |
 | `editor_double_embed` | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`. |
+| `editor_xembed`       | `{true,false}` | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't work properly with it, but it could be useful in certain setups. Defaults to `false`.                                                                                                                                                                                           |
 
 These options are workarounds for issues mentioned in the [known
 issues](#runtime-dependencies-and-known-issues) section. Depending on the hosts
@@ -314,6 +315,9 @@ group = "toneboosters"
 
 ["PSPaudioware"]
 editor_double_embed = true
+
+["Analog Lab 3.so"]
+editor_xembed = true
 
 ["SWAM Cello 64bit.so"]
 cache_time_info = true

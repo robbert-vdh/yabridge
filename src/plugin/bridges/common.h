@@ -160,6 +160,9 @@ class PluginBridge {
         if (config.editor_double_embed) {
             other_options.push_back("editor: double embed");
         }
+        if (config.editor_xembed) {
+            other_options.push_back("editor: XEmbed");
+        }
         if (!other_options.empty()) {
             init_msg << join_quoted_strings(other_options) << std::endl;
         } else {
