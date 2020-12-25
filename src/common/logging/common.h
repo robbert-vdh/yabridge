@@ -86,6 +86,13 @@ class Logger {
     static Logger create_from_environment(std::string prefix = "");
 
     /**
+     * Create a special logger instance that outputs directly to STDERR without
+     * any prefixes. This is used to be able to log filterable messages from the
+     * Wine side of things.
+     */
+    static Logger create_wine_stderr();
+
+    /**
      * Write a message to the log, prefixing it with a timestamp and this
      * logger's prefix string.
      *

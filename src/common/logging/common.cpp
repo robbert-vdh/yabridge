@@ -80,6 +80,25 @@ Logger Logger::create_from_environment(std::string prefix) {
     }
 }
 
+Logger Logger::create_wine_stderr() {
+    auto env = boost::this_process::environment();
+    std::string verbosity =
+        env[logging_verbosity_environment_variable].to_string();
+
+    Verbosity verbosity_level;
+    try {
+        verbosity_level = static_cast<Verbosity>(std::stoi(verbosity));
+    } catch (const std::invalid_argument&) {
+        verbosity_level = Verbosity::basic;
+    }
+
+    // We're logging directly to `std::cerr` instead of to `/dev/stderr` because
+    // we want the STDERR redirection from the group host processes to still
+    // function here
+    return Logger(std::shared_ptr<std::ostream>(&std::cerr), verbosity_level,
+                  "");
+}
+
 void Logger::log(const std::string& message) {
     const auto current_time = std::chrono::system_clock::now();
     const std::time_t timestamp =
