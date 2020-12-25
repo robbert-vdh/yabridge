@@ -86,7 +86,7 @@ class WindowClass {
  *
  * This workaround was inspired by LinVst.
  *
- * As of yabridge 3.0 XEMbed is back as an option, but it's disabled by default
+ * As of yabridge 3.0 XEmbed is back as an option, but it's disabled by default
  * because of the issues mentioned above.
  */
 class Editor {

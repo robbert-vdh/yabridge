@@ -19,8 +19,8 @@
 #include <iostream>
 
 /**
- * The most significant bit in an event's response type is used to indicate
- * whether the event source.
+ * The most significant bit in an X11 event's response type is used to indicate
+ * the event source.
  */
 constexpr uint16_t event_type_mask = ((1 << 7) - 1);
 
@@ -186,9 +186,9 @@ Editor::Editor(const Configuration& config,
 
     if (use_xembed) {
         // This call alone doesn't do anything. We need to call this function a
-        // second time on visibility change, because Wine's XEmbed
-        // implementation does not work properly (which is why we remvoed XEmbed
-        // support in the first place).
+        // second time on visibility change because Wine's XEmbed implementation
+        // does not work properly (which is why we remvoed XEmbed support in the
+        // first place).
         do_xembed();
     } else {
         // Embed the Win32 window into the window provided by the host. Instead
@@ -256,7 +256,8 @@ Editor::~Editor() {
 }
 
 HWND Editor::get_win32_handle() const {
-    if (win32_child_handle) {
+    // FIXME: The double embed and XEmbed options don't work together right now
+    if (win32_child_handle && !use_xembed) {
         return win32_child_handle->get();
     } else {
         return win32_handle.get();
@@ -264,9 +265,6 @@ HWND Editor::get_win32_handle() const {
 }
 
 void Editor::handle_x11_events() const {
-    // TODO: Initiating drag-and-drop in Serum _sometimes_ causes the GUI to
-    //       update while dragging while other times it does not. From all the
-    //       plugins I've tested this only happens in Serum though.
     xcb_generic_event_t* generic_event;
     while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
            nullptr) {
@@ -350,7 +348,7 @@ void Editor::fix_local_coordinates() const {
         return;
     }
 
-    // We're purposely not using XEmbed. This has the consequence that wine
+    // We're purposely not using XEmbed here. This has the consequence that wine
     // still thinks that any X and Y coordinates are relative to the x11 window
     // root instead of the parent window provided by the DAW, causing all sorts
     // of GUI interactions to break. To alleviate this we'll just lie to Wine
