@@ -187,6 +187,11 @@ void Vst3Bridge::run() {
                         object_instances[request.other_instance_id]
                             .connection_point);
             },
+            [&](YaConnectionPoint::Notify& request)
+                -> YaConnectionPoint::Notify::Response {
+                return object_instances[request.instance_id]
+                    .connection_point->notify(&request.message);
+            },
             [&](YaEditController::SetComponentState& request)
                 -> YaEditController::SetComponentState::Response {
                 return object_instances[request.instance_id]

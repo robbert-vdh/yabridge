@@ -21,6 +21,7 @@
 
 #include "../../common.h"
 #include "../base.h"
+#include "../message.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -119,6 +120,30 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
     };
 
     virtual tresult PLUGIN_API disconnect(IConnectionPoint* other) override = 0;
+
+    /**
+     * Message to pass through a call to `IConnectionPoint::notify(message)` to
+     * the Wine plugin host. Since `IAttributeList` does not have any way to
+     * iterate over all values, we only support messages sent by plugins using
+     * our own implementation of the interface, since there's no way to
+     * serialize them otherwise. This `IConnectionPoint::notify()`
+     * implementation is also only used with hosts that do not connect objects
+     * directly and use connection proxies instead.
+     */
+    struct Notify {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        YaMessage message;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.object(message);
+        }
+    };
+
     virtual tresult PLUGIN_API
     notify(Steinberg::Vst::IMessage* message) override = 0;
 

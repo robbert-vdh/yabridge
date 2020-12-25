@@ -108,6 +108,21 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaConnectionPoint::Notify& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IConnectionPoint::notify(message = <IMessage* ";
+        if (const char* id =
+                const_cast<YaMessage&>(request.message).getMessageID()) {
+            message << "with ID = \"" << id << "\"";
+        } else {
+            message << "without an ID";
+        }
+        message << ">)";
+    });
+}
+
 bool Vst3Logger::log_request(
     bool is_host_vst,
     const YaEditController::SetComponentState& request) {

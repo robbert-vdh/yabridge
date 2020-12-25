@@ -66,6 +66,7 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const Vst3PluginProxy::GetState&);
     bool log_request(bool is_host_vst, const YaConnectionPoint::Connect&);
     bool log_request(bool is_host_vst, const YaConnectionPoint::Disconnect&);
+    bool log_request(bool is_host_vst, const YaConnectionPoint::Notify&);
     bool log_request(bool is_host_vst,
                      const YaEditController::SetComponentState&);
     bool log_request(bool is_host_vst,

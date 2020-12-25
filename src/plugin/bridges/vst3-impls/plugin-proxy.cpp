@@ -246,9 +246,22 @@ tresult PLUGIN_API Vst3PluginProxyImpl::disconnect(IConnectionPoint* other) {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::notify(Steinberg::Vst::IMessage* message) {
-    // TODO: Implement
-    bridge.logger.log("TODO IConnectionPoint::notify()");
-    return Steinberg::kNotImplemented;
+    // Since there is no way to enumerate over all values in an
+    // `IAttributeList`, we can only support relaying messages that were sent by
+    // our own objects. This is only needed to support hosts that place a
+    // connection proxy between two objects instead of connecting them directly.
+    // If the objects are connected directly we also connected them directly on
+    // the Wine side, so we don't have to do any additional when those objects
+    // pass through messages.
+    if (auto message_impl = dynamic_cast<YaMessage*>(message)) {
+        return bridge.send_message(YaConnectionPoint::Notify{
+            .instance_id = instance_id(), .message = *message_impl});
+    } else {
+        bridge.logger.log(
+            "WARNING: Unknown message type passed to "
+            "'IConnectionPoint::notify()', ignoring");
+        return Steinberg::kNotImplemented;
+    }
 }
 
 tresult PLUGIN_API
