@@ -404,9 +404,8 @@ tresult PLUGIN_API Vst3PluginProxyImpl::openHelp(TBool onlyCheck) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::openAboutBox(TBool onlyCheck) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IEditController2::openAboutBox()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaEditController2::OpenAboutBox{
+        .instance_id = instance_id(), .only_check = onlyCheck});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {

@@ -16,9 +16,8 @@ This branch is still very far removed from being in a usable state. Below is an
 incomplete list of things that still have to be done before this can be used:
 
 - Interfaces left to implement:
-  - `IEditController2`
-  - All other mandatory interfaces
-  - All other optional interfaces
+  - All other mandatory and optional VST 3.0 interfaces
+  - All interfaces introduced after that
 - Fully implemented: see [this
   document](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/src/common/serialization/vst3/README.md)
 - Update yabridgectl to handle buth VST2 and VST3 plugins.

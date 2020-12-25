@@ -346,6 +346,11 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .edit_controller_2->openHelp(request.only_check);
             },
+            [&](const YaEditController2::OpenAboutBox& request)
+                -> YaEditController2::OpenAboutBox::Response {
+                return object_instances[request.instance_id]
+                    .edit_controller_2->openAboutBox(request.only_check);
+            },
             [&](const YaPlugView::IsPlatformTypeSupported& request)
                 -> YaPlugView::IsPlatformTypeSupported::Response {
                 // The host will of course want to pass an X11 window ID for the
