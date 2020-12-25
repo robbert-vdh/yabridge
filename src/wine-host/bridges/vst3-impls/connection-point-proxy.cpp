@@ -29,9 +29,9 @@ Vst3ConnectionPointProxyImpl::queryInterface(const Steinberg::TUID _iid,
     // TODO: Successful queries should also be logged
     const tresult result = Vst3ConnectionPointProxy::queryInterface(_iid, obj);
     if (result != Steinberg::kResultOk) {
-        std::cerr << "TODO: Implement unknown interface logging on Wine side "
-                     "for Vst3ConnectionPointProxyImpl::queryInterface"
-                  << std::endl;
+        bridge.logger.log_unknown_interface(
+            "In IConnectionPoint::queryInterface()",
+            Steinberg::FUID::fromTUID(_iid));
     }
 
     return result;

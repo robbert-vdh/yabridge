@@ -264,6 +264,20 @@ class Vst3Bridge : public HostBridge {
     }
 
    private:
+    Logger generic_logger;
+
+   public:
+    /**
+     * A logger instance we'll use to log about failed
+     * `FUnknown::queryInterface` calls, so they can be hidden on verbosity
+     * level 0.
+     *
+     * This only has to be used instead of directly writing to `std::cerr` when
+     * the message should be hidden on lower verbosity levels.
+     */
+    Vst3Logger logger;
+
+   private:
     /**
      * Generate a nique instance identifier using an atomic fetch-and-add. This
      * is used to be able to refer to specific instances created for

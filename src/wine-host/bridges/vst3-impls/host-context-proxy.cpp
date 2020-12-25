@@ -37,9 +37,8 @@ Vst3HostContextProxyImpl::queryInterface(const Steinberg::TUID _iid,
     // TODO: Successful queries should also be logged
     const tresult result = Vst3HostContextProxy::queryInterface(_iid, obj);
     if (result != Steinberg::kResultOk) {
-        std::cerr << "TODO: Implement unknown interface logging on Wine side "
-                     "for Vst3HostContextProxyImpl::queryInterface"
-                  << std::endl;
+        bridge.logger.log_unknown_interface("In FUnknown::queryInterface()",
+                                            Steinberg::FUID::fromTUID(_iid));
     }
 
     return result;
@@ -84,9 +83,8 @@ Vst3HostContextProxyImpl::createInstance(Steinberg::TUID /*cid*/,
         // When the host requests an interface we do not (yet) implement,
         // we'll print a recognizable log message
         const Steinberg::FUID uid = Steinberg::FUID::fromTUID(_iid);
-        std::cerr << "TODO: Implement unknown interface logging on Wine side "
-                     "for Vst3HostContextProxyImpl::createInstance"
-                  << std::endl;
+        bridge.logger.log_unknown_interface(
+            "In IHostApplication::createInstance()", uid);
 
         return Steinberg::kNotImplemented;
     }

@@ -31,9 +31,8 @@ Vst3PlugFrameProxyImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
     // TODO: Successful queries should also be logged
     const tresult result = Vst3PlugFrameProxy::queryInterface(_iid, obj);
     if (result != Steinberg::kResultOk) {
-        std::cerr << "TODO: Implement unknown interface logging on Wine side "
-                     "for Vst3PlugFrameProxyImpl::queryInterface"
-                  << std::endl;
+        bridge.logger.log_unknown_interface("In IPlugFrame::queryInterface()",
+                                            Steinberg::FUID::fromTUID(_iid));
     }
 
     return result;
