@@ -394,9 +394,8 @@ Vst3PluginProxyImpl::createView(Steinberg::FIDString name) {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setKnobMode(Steinberg::Vst::KnobMode mode) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IEditController2::setKnobMode()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaEditController2::SetKnobMode{
+        .instance_id = instance_id(), .mode = mode});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::openHelp(TBool onlyCheck) {

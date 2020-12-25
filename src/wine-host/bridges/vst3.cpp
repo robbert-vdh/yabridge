@@ -34,6 +34,7 @@ InstanceInterfaces::InstanceInterfaces(
       component(object),
       connection_point(object),
       edit_controller(object),
+      edit_controller_2(object),
       plugin_base(object) {}
 
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
@@ -334,6 +335,11 @@ void Vst3Bridge::run() {
                                        .plug_view,
                                    request.instance_id)
                              : std::nullopt)};
+            },
+            [&](const YaEditController2::SetKnobMode& request)
+                -> YaEditController2::SetKnobMode::Response {
+                return object_instances[request.instance_id]
+                    .edit_controller_2->setKnobMode(request.mode);
             },
             [&](const YaPlugView::IsPlatformTypeSupported& request)
                 -> YaPlugView::IsPlatformTypeSupported::Response {

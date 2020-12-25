@@ -253,6 +253,15 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaEditController2::SetKnobMode& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IEditController2::setKnobMode(mode = " << request.mode
+                << ")";
+    });
+}
+
 bool Vst3Logger::log_request(
     bool is_host_vst,
     const YaPlugView::IsPlatformTypeSupported& request) {

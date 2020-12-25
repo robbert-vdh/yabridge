@@ -61,6 +61,24 @@ class YaEditController2 : public Steinberg::Vst::IEditController2 {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to `IEditController2::setKnobMode(mode)`
+     * to the Wine plugin host.
+     */
+    struct SetKnobMode {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::KnobMode mode;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(mode);
+        }
+    };
+
     virtual tresult PLUGIN_API
     setKnobMode(Steinberg::Vst::KnobMode mode) override = 0;
     virtual tresult PLUGIN_API openHelp(TBool onlyCheck) override = 0;

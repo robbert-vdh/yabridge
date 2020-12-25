@@ -113,6 +113,7 @@ struct InstanceInterfaces {
     Steinberg::FUnknownPtr<Steinberg::Vst::IComponent> component;
     Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> connection_point;
     Steinberg::FUnknownPtr<Steinberg::Vst::IEditController> edit_controller;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IEditController2> edit_controller_2;
     Steinberg::FUnknownPtr<Steinberg::IPluginBase> plugin_base;
 };
 
