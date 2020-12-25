@@ -84,8 +84,27 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread, ad_hoc_sockets> {
      *   then this indicates that this `Vst3MessageHandler` is handling plugin
      *   -> host callbacks isntead. Optional since it only has to be set on the
      *   plugin's side.
+     * @param buffer The serialization and receiving buffer to reuse. This is
+     *   optional, but it's useful for minimizing allocations in the audio
+     *   processing loop.
      *
      * @relates Vst3MessageHandler::receive_messages
+     */
+    template <typename T>
+    typename T::Response send_message(
+        const T& object,
+        std::optional<std::pair<Vst3Logger&, bool>> logging,
+        std::vector<uint8_t>& buffer) {
+        typename T::Response response_object;
+        receive_into(object, response_object, logging, buffer);
+
+        return response_object;
+    }
+
+    /**
+     * The same as the above, but with a small default buffer.
+     *
+     * @overload
      */
     template <typename T>
     typename T::Response send_message(
@@ -101,8 +120,6 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread, ad_hoc_sockets> {
      * `Vst3MessageHandler::send_message()`, but deserializing the response into
      * an existing object.
      *
-     * TODO: We might also need overloads that reuse buffers
-     *
      * @param response_object The object to deserialize into.
      *
      * @overload Vst3MessageHandler::send_message
@@ -111,7 +128,8 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread, ad_hoc_sockets> {
     typename T::Response& receive_into(
         const T& object,
         typename T::Response& response_object,
-        std::optional<std::pair<Vst3Logger&, bool>> logging) {
+        std::optional<std::pair<Vst3Logger&, bool>> logging,
+        std::vector<uint8_t>& buffer) {
         using TResponse = typename T::Response;
 
         // Since a lot of messages just return a `tresult`, we can't filter out
@@ -129,8 +147,8 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread, ad_hoc_sockets> {
         // in use it will spawn a new socket for us.
         this->template send<std::monostate>(
             [&](boost::asio::local::stream_protocol::socket& socket) {
-                write_object(socket, Request(object));
-                read_object<TResponse>(socket, response_object);
+                write_object(socket, Request(object), buffer);
+                read_object<TResponse>(socket, buffer, response_object);
                 // FIXME: We have to return something here, and ML was not yet
                 //        invented when they came up with C++ so void is not
                 //        valid here
@@ -143,6 +161,21 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread, ad_hoc_sockets> {
         }
 
         return response_object;
+    }
+
+    /**
+     * The same function as above, but with a small default buffer.
+     *
+     * @overload
+     */
+    template <typename T>
+    typename T::Response& receive_into(
+        const T& object,
+        typename T::Response& response_object,
+        std::optional<std::pair<Vst3Logger&, bool>> logging) {
+        std::vector<uint8_t> buffer(64);
+        return receive_into(object, response_object, std::move(logging),
+                            buffer);
     }
 
     /**
@@ -165,18 +198,32 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread, ad_hoc_sockets> {
      * @tparam F A function type in the form of `T::Response(T)` for every `T`
      * in `Request`. This way we can directly deserialize into a `T::Response`
      * on the side that called `receive_into(T, T::Response&)`.
+     * @tparam keep_buffers Whether processing buffers should be kept around and
+     *   reused. This is used to minimize allocations in the audio processing
+     *   loop. This can only be used when `ad_hoc_sockets` is set to false,
+     *   since we can of course only reuse buffers within a single thread. These
+     *   buffers will also never shrink, but that should not be an issue here.
      *
      * @relates Vst3MessageHandler::send_event
      */
-    template <typename F>
+    template <bool keep_buffers = false, typename F>
     void receive_messages(std::optional<std::pair<Vst3Logger&, bool>> logging,
                           F callback) {
+        std::vector<uint8_t> persistent_buffer{};
+        if constexpr (keep_buffers) {
+            static_assert(!ad_hoc_sockets,
+                          "Buffers can only be reused when ad-hoc socket "
+                          "spawning has been disabled.");
+        }
+
         // Reading, processing, and writing back the response for the requests
         // we receive works in the same way regardless of which socket we're
         // using
         const auto process_message =
             [&](boost::asio::local::stream_protocol::socket& socket) {
-                auto request = read_object<Request>(socket);
+                auto request = keep_buffers ? read_object<Request>(
+                                                  socket, persistent_buffer)
+                                            : read_object<Request>(socket);
 
                 // See the comment in `receive_into()` for more information
                 bool should_log_response = false;
@@ -201,7 +248,11 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread, ad_hoc_sockets> {
                             logger.log_response(!is_host_vst, response);
                         }
 
-                        write_object(socket, response);
+                        if constexpr (keep_buffers) {
+                            write_object(socket, response, persistent_buffer);
+                        } else {
+                            write_object(socket, response);
+                        }
                     },
                     request);
             };
@@ -299,6 +350,8 @@ class Vst3Sockets : public Sockets {
                          std::to_string(instance_id) + ".sock"))
                 .string(),
             false);
+        audio_processor_buffers.try_emplace(instance_id);
+
         audio_processor_sockets.at(instance_id).connect();
     }
 
@@ -329,12 +382,17 @@ class Vst3Sockets : public Sockets {
                              std::to_string(instance_id) + ".sock"))
                     .string(),
                 true);
+            audio_processor_buffers.try_emplace(instance_id);
         }
 
         socket_listening_latch.set_value();
         audio_processor_sockets.at(instance_id).connect();
+
+        // This `true` indicates that we want to reuse our serialization and
+        // receiving buffers for all calls. This slightly reduces the amount of
+        // allocations in the audio processing loop.
         audio_processor_sockets.at(instance_id)
-            .receive_messages(std::nullopt, cb);
+            .template receive_messages<true>(std::nullopt, cb);
     }
 
     /**
@@ -353,6 +411,7 @@ class Vst3Sockets : public Sockets {
         if (audio_processor_sockets.contains(instance_id)) {
             audio_processor_sockets.at(instance_id).close();
             audio_processor_sockets.erase(instance_id);
+            audio_processor_buffers.erase(instance_id);
 
             return true;
         } else {
@@ -364,7 +423,8 @@ class Vst3Sockets : public Sockets {
      * Send a message from the native plugin to the Wine plugin host to handle
      * an `IAudioProcessor` or `IComponent` call. Since those functions are
      * called from a hot loop we want every instance to have a dedicated socket
-     * and thread for handling those.
+     * and thread for handling those. These calls also always reuse buffers to
+     * minimize allocations.
      *
      * @tparam T Some object in the `AudioProcessorRequest` variant.
      */
@@ -372,9 +432,9 @@ class Vst3Sockets : public Sockets {
     typename T::Response send_audio_processor_message(
         const T& object,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
-        // TODO: These calls should reuse buffers
         return audio_processor_sockets.at(object.instance_id)
-            .send_message(object, logging);
+            .send_message(object, logging,
+                          audio_processor_buffers.at(object.instance_id));
     }
 
     /**
@@ -412,5 +472,11 @@ class Vst3Sockets : public Sockets {
      */
     std::map<size_t, Vst3MessageHandler<Thread, AudioProcessorRequest, false>>
         audio_processor_sockets;
+    /**
+     * Binary buffers used for serializing objects and receiving messages into
+     * during `send_audio_processor_message()`. This is used to minimize the
+     * amount of allocations in the audio processing loop.
+     */
+    std::map<size_t, std::vector<uint8_t>> audio_processor_buffers;
     std::mutex audio_processor_sockets_mutex;
 };

@@ -101,6 +101,9 @@ inline void write_object(Socket& socket, const T& object) {
  * @throw boost::system::system_error If the socket is closed or gets closed
  *   while reading.
  *
+ * TODO: Swap these arguments around so they match `write_object`'s argument
+ *       order
+ *
  * @relates write_object
  */
 template <typename T, typename Socket>
