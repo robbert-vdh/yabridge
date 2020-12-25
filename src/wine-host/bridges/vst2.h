@@ -25,8 +25,6 @@
 #include <vestige/aeffectx.h>
 #include <windows.h>
 
-#include <mutex>
-
 #include "../../common/communication/vst2.h"
 #include "../../common/configuration.h"
 #include "../editor.h"

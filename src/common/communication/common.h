@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <mutex>
+
 #include <bitsery/adapter/buffer.h>
 #include <bitsery/bitsery.h>
 #include <bitsery/traits/vector.h>
