@@ -262,6 +262,15 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaEditController2::OpenHelp& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IEditController2::openHelp(onlyCheck = "
+                << (request.only_check ? "true" : "false") << ")";
+    });
+}
+
 bool Vst3Logger::log_request(
     bool is_host_vst,
     const YaPlugView::IsPlatformTypeSupported& request) {

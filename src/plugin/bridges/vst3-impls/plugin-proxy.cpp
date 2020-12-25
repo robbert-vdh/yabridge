@@ -399,9 +399,8 @@ Vst3PluginProxyImpl::setKnobMode(Steinberg::Vst::KnobMode mode) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::openHelp(TBool onlyCheck) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IEditController2::openHelp()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaEditController2::OpenHelp{
+        .instance_id = instance_id(), .only_check = onlyCheck});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::openAboutBox(TBool onlyCheck) {

@@ -89,6 +89,7 @@ class Vst3Logger {
                      const YaEditController::SetComponentHandler&);
     bool log_request(bool is_host_vst, const YaEditController::CreateView&);
     bool log_request(bool is_host_vst, const YaEditController2::SetKnobMode&);
+    bool log_request(bool is_host_vst, const YaEditController2::OpenHelp&);
     bool log_request(bool is_host_vst,
                      const YaPlugView::IsPlatformTypeSupported&);
     bool log_request(bool is_host_vst, const YaPlugView::Attached&);
