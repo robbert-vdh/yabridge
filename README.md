@@ -19,11 +19,11 @@ on the master branch._
 This branch is still very far removed from being in a usable state. Below is an
 incomplete list of things that still have to be done before this can be used:
 
-- Interfaces left to implement:
-  - All other mandatory and optional VST 3.0 interfaces
-  - All interfaces introduced after that
-- Fully implemented: see [this
+- Support all VST 3.7.1 interfaces. We're currently support all mandatory VST
+  3.0.0 interfaces with one or two missing options interfaces.
+- See [this
   document](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/src/common/serialization/vst3/README.md)
+  for all fully implemetned interfaces.
 - Update all the AUR packages for the `libyabridge-vst{2,3}.so` changes.
 - Test the binaries built on GitHub on plain Ubuntu 18.04, are we missing any
   static linking?
