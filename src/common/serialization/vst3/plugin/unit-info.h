@@ -212,7 +212,7 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
                    Steinberg::Vst::String128 name /*out*/) override = 0;
 
     /**
-     * The response code and returned name for a call to
+     * The response code and returned value for a call to
      * `IUnitInfo::getPrograminfo(list_id, program_index, attribute_name,
      * &attribute_value)`.
      */
@@ -279,6 +279,46 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
     virtual tresult PLUGIN_API
     hasProgramPitchNames(Steinberg::Vst::ProgramListID listId,
                          int32 programIndex) override = 0;
+
+    /**
+     * The response code and returned name for a call to
+     * `IUnitInfo::getProgramPitchName(list_id, program_index, midi_pitch,
+     * &name)`.
+     */
+    struct GetProgramPitchNameResponse {
+        UniversalTResult result;
+        std::u16string name;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.text2b(name, std::extent_v<Steinberg::Vst::String128>);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IUnitInfo::getProgramPitchName(list_id, program_index, midi_pitch,
+     * &name)` to the Wine plugin host.
+     */
+    struct GetProgramPitchName {
+        using Response = GetProgramPitchNameResponse;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ProgramListID list_id;
+        int32 program_index;
+        int16 midi_pitch;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(list_id);
+            s.value4b(program_index);
+            s.value2b(midi_pitch);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getProgramPitchName(Steinberg::Vst::ProgramListID listId,
                         int32 programIndex,

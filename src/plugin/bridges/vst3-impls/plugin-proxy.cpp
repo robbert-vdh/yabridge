@@ -523,9 +523,16 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getProgramPitchName(
     int32 programIndex,
     int16 midiPitch,
     Steinberg::Vst::String128 name /*out*/) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IUnitInfo::getProgramPitchName()");
-    return Steinberg::kNotImplemented;
+    const GetProgramPitchNameResponse response = bridge.send_message(
+        YaUnitInfo::GetProgramPitchName{.instance_id = instance_id(),
+                                        .list_id = listId,
+                                        .program_index = programIndex,
+                                        .midi_pitch = midiPitch});
+
+    std::copy(response.name.begin(), response.name.end(), name);
+    name[response.name.size()] = 0;
+
+    return response.result;
 }
 
 Steinberg::Vst::UnitID PLUGIN_API Vst3PluginProxyImpl::getSelectedUnit() {

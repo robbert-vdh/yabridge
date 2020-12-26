@@ -627,6 +627,18 @@ void Vst3Bridge::run() {
                     .unit_info->hasProgramPitchNames(request.list_id,
                                                      request.program_index);
             },
+            [&](const YaUnitInfo::GetProgramPitchName& request)
+                -> YaUnitInfo::GetProgramPitchName::Response {
+                Steinberg::Vst::String128 name{0};
+                const tresult result =
+                    object_instances[request.instance_id]
+                        .unit_info->getProgramPitchName(
+                            request.list_id, request.program_index,
+                            request.midi_pitch, name);
+
+                return YaUnitInfo::GetProgramPitchNameResponse{
+                    .result = result, .name = tchar_pointer_to_u16string(name)};
+            },
         });
 }
 
