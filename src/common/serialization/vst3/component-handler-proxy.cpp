@@ -48,6 +48,10 @@ Vst3ComponentHandlerProxy::queryInterface(Steinberg::FIDString _iid,
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IComponentHandler::iid,
                         Steinberg::Vst::IComponentHandler)
     }
+    if (YaUnitHandler::supported()) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IUnitHandler::iid,
+                        Steinberg::Vst::IUnitHandler)
+    }
 
     *obj = nullptr;
     return Steinberg::kNoInterface;
