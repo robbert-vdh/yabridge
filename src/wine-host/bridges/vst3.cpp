@@ -581,6 +581,11 @@ void Vst3Bridge::run() {
                 return YaUnitInfo::GetUnitInfoResponse{.result = result,
                                                        .info = info};
             },
+            [&](const YaUnitInfo::GetProgramListCount& request)
+                -> YaUnitInfo::GetProgramListCount::Response {
+                return object_instances[request.instance_id]
+                    .unit_info->getProgramListCount();
+            },
         });
 }
 

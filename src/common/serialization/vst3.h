@@ -101,7 +101,8 @@ using ControlRequest = std::variant<Vst3PlugViewProxy::Destruct,
                                     YaPluginFactory::Construct,
                                     YaPluginFactory::SetHostContext,
                                     YaUnitInfo::GetUnitCount,
-                                    YaUnitInfo::GetUnitInfo>;
+                                    YaUnitInfo::GetUnitInfo,
+                                    YaUnitInfo::GetProgramListCount>;
 
 template <typename S>
 void serialize(S& s, ControlRequest& payload) {

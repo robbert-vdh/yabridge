@@ -110,6 +110,7 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaPluginFactory::SetHostContext&);
     bool log_request(bool is_host_vst, const YaUnitInfo::GetUnitCount&);
     bool log_request(bool is_host_vst, const YaUnitInfo::GetUnitInfo&);
+    bool log_request(bool is_host_vst, const YaUnitInfo::GetProgramListCount&);
 
     bool log_request(bool is_host_vst,
                      const YaAudioProcessor::SetBusArrangements&);

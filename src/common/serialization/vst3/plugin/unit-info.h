@@ -115,6 +115,22 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
     virtual tresult PLUGIN_API
     getUnitInfo(int32 unitIndex,
                 Steinberg::Vst::UnitInfo& info /*out*/) override = 0;
+
+    /**
+     * Message to pass through a call to `IUnitInfo::getProgramListCount()` to
+     * the Wine plugin host.
+     */
+    struct GetProgramListCount {
+        using Response = PrimitiveWrapper<int32>;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
     virtual int32 PLUGIN_API getProgramListCount() override = 0;
     virtual tresult PLUGIN_API getProgramListInfo(
         int32 listIndex,
