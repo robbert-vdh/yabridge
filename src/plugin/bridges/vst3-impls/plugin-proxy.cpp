@@ -494,9 +494,19 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getProgramInfo(
     int32 programIndex,
     Steinberg::Vst::CString attributeId /*in*/,
     Steinberg::Vst::String128 attributeValue /*out*/) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IUnitInfo::getProgramInfo()");
-    return Steinberg::kNotImplemented;
+    assert(attributeId);
+
+    const GetProgramInfoResponse response = bridge.send_message(
+        YaUnitInfo::GetProgramInfo{.instance_id = instance_id(),
+                                   .list_id = listId,
+                                   .program_index = programIndex,
+                                   .attribute_id = attributeId});
+
+    std::copy(response.attribute_value.begin(), response.attribute_value.end(),
+              attributeValue);
+    attributeValue[response.attribute_value.size()] = 0;
+
+    return response.result;
 }
 
 tresult PLUGIN_API

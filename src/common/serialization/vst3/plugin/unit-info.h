@@ -210,6 +210,45 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
     getProgramName(Steinberg::Vst::ProgramListID listId,
                    int32 programIndex,
                    Steinberg::Vst::String128 name /*out*/) override = 0;
+
+    /**
+     * The response code and returned name for a call to
+     * `IUnitInfo::getPrograminfo(list_id, program_index, attribute_name,
+     * &attribute_value)`.
+     */
+    struct GetProgramInfoResponse {
+        UniversalTResult result;
+        std::u16string attribute_value;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.text2b(attribute_value, std::extent_v<Steinberg::Vst::String128>);
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IUnitInfo::getProgramInfo(list_id,
+     * program_index, attribute_id, &attribute_value)` to the Wine plugin host.
+     */
+    struct GetProgramInfo {
+        using Response = GetProgramInfoResponse;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ProgramListID list_id;
+        int32 program_index;
+        std::string attribute_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(list_id);
+            s.value4b(program_index);
+            s.text1b(attribute_id, 256);
+        }
+    };
+
     virtual tresult PLUGIN_API getProgramInfo(
         Steinberg::Vst::ProgramListID listId,
         int32 programIndex,
