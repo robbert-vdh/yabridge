@@ -596,6 +596,17 @@ void Vst3Bridge::run() {
                 return YaUnitInfo::GetProgramListInfoResponse{.result = result,
                                                               .info = info};
             },
+            [&](const YaUnitInfo::GetProgramName& request)
+                -> YaUnitInfo::GetProgramName::Response {
+                Steinberg::Vst::String128 name{0};
+                const tresult result =
+                    object_instances[request.instance_id]
+                        .unit_info->getProgramName(request.list_id,
+                                                   request.program_index, name);
+
+                return YaUnitInfo::GetProgramNameResponse{
+                    .result = result, .name = tchar_pointer_to_u16string(name)};
+            },
         });
 }
 

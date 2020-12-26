@@ -81,7 +81,7 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
 
     /**
      * The response code and returned unit information for a call to
-     * `IUnitInfo::getUnitInfo(unit_index)`.
+     * `IUnitInfo::getUnitInfo(unit_index, &info)`.
      */
     struct GetUnitInfoResponse {
         UniversalTResult result;
@@ -95,8 +95,8 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
     };
 
     /**
-     * Message to pass through a call to `IUnitInfo::getUnitInfo(unit_index)` to
-     * the Wine plugin host.
+     * Message to pass through a call to `IUnitInfo::getUnitInfo(unit_index,
+     * &info)` to the Wine plugin host.
      */
     struct GetUnitInfo {
         using Response = GetUnitInfoResponse;
@@ -135,7 +135,7 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
 
     /**
      * The response code and returned unit information for a call to
-     * `IUnitInfo::getProgramListInfo(list_index)`.
+     * `IUnitInfo::getProgramListInfo(list_index, &info)`.
      */
     struct GetProgramListInfoResponse {
         UniversalTResult result;
@@ -150,7 +150,8 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
 
     /**
      * Message to pass through a call to
-     * `IUnitInfo::getProgramListInfo(list_index)` to the Wine plugin host.
+     * `IUnitInfo::getProgramListInfo(list_index, &info)` to the Wine plugin
+     * host.
      */
     struct GetProgramListInfo {
         using Response = GetProgramListInfoResponse;
@@ -169,6 +170,42 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
     virtual tresult PLUGIN_API getProgramListInfo(
         int32 listIndex,
         Steinberg::Vst::ProgramListInfo& info /*out*/) override = 0;
+
+    /**
+     * The response code and returned name for a call to
+     * `IUnitInfo::getProgramName(list_id, program_index, &name)`.
+     */
+    struct GetProgramNameResponse {
+        UniversalTResult result;
+        std::u16string name;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.text2b(name, std::extent_v<Steinberg::Vst::String128>);
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IUnitInfo::getProgramName(list_id,
+     * program_index, &name)` to the Wine plugin host.
+     */
+    struct GetProgramName {
+        using Response = GetProgramNameResponse;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ProgramListID list_id;
+        int32 program_index;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(list_id);
+            s.value4b(program_index);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getProgramName(Steinberg::Vst::ProgramListID listId,
                    int32 programIndex,

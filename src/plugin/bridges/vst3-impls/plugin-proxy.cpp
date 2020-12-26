@@ -478,9 +478,15 @@ tresult PLUGIN_API
 Vst3PluginProxyImpl::getProgramName(Steinberg::Vst::ProgramListID listId,
                                     int32 programIndex,
                                     Steinberg::Vst::String128 name /*out*/) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IUnitInfo::getProgramName()");
-    return Steinberg::kNotImplemented;
+    const GetProgramNameResponse response = bridge.send_message(
+        YaUnitInfo::GetProgramName{.instance_id = instance_id(),
+                                   .list_id = listId,
+                                   .program_index = programIndex});
+
+    std::copy(response.name.begin(), response.name.end(), name);
+    name[response.name.size()] = 0;
+
+    return response.result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getProgramInfo(
