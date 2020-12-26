@@ -139,6 +139,8 @@ class Vst3Logger {
                      const YaComponentHandler::RestartComponent&);
     bool log_request(bool is_host_vst, const YaHostApplication::GetName&);
     bool log_request(bool is_host_vst, const YaPlugFrame::ResizeView&);
+    bool log_request(bool is_host_vst,
+                     const YaUnitHandler::NotifyUnitSelection&);
 
     void log_response(bool is_host_vst, const Ack&);
     void log_response(

@@ -153,7 +153,8 @@ using CallbackRequest = std::variant<WantsConfiguration,
                                      // there
                                      YaConnectionPoint::Notify,
                                      YaHostApplication::GetName,
-                                     YaPlugFrame::ResizeView>;
+                                     YaPlugFrame::ResizeView,
+                                     YaUnitHandler::NotifyUnitSelection>;
 
 template <typename S>
 void serialize(S& s, CallbackRequest& payload) {

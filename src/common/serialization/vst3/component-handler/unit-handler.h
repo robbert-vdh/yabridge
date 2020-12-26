@@ -61,6 +61,25 @@ class YaUnitHandler : public Steinberg::Vst::IUnitHandler {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IUnitHandler::notifyUnitSelection(unit_id)` to the unit handler provided
+     * by the host.
+     */
+    struct NotifyUnitSelection {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        Steinberg::Vst::UnitID unit_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value4b(unit_id);
+        }
+    };
+
     virtual tresult PLUGIN_API
     notifyUnitSelection(Steinberg::Vst::UnitID unitId) override = 0;
     virtual tresult PLUGIN_API

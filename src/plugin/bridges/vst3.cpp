@@ -145,6 +145,12 @@ Vst3PluginBridge::Vst3PluginBridge()
                     return plug_view->plug_frame->resizeView(plug_view,
                                                              &request.new_size);
                 },
+                [&](const YaUnitHandler::NotifyUnitSelection& request)
+                    -> YaUnitHandler::NotifyUnitSelection::Response {
+                    return plugin_proxies.at(request.owner_instance_id)
+                        .get()
+                        .unit_handler->notifyUnitSelection(request.unit_id);
+                },
             });
     });
 }

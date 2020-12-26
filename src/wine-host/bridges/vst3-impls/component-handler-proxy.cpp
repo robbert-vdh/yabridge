@@ -69,9 +69,8 @@ Vst3ComponentHandlerProxyImpl::restartComponent(int32 flags) {
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitSelection(
     Steinberg::Vst::UnitID unitId) {
-    // TODO: Implement
-    std::cerr << "TODO: IUnitHandler::notifyUnitSelection" << std::endl;
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaUnitHandler::NotifyUnitSelection{
+        .owner_instance_id = owner_instance_id(), .unit_id = unitId});
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyProgramListChange(

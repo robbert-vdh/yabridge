@@ -700,6 +700,16 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaUnitHandler::NotifyUnitSelection& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IUnitHandler::notifyUnitSelection(unitId = "
+                << request.unit_id << ")";
+    });
+}
+
 void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
     log_response_base(is_host_vst, [&](auto& message) { message << "ACK"; });
 }

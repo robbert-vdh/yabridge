@@ -152,10 +152,15 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      */
     Vst3PlugViewProxyImpl* last_created_plug_view = nullptr;
 
-    // The following pointers are cast from `host_context` if `setHostContext()`
-    // has been called
+    // The following pointers are cast from `host_context` if
+    // `IPluginBase::initialize()` has been called
 
     Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication> host_application;
+
+    // The following pointers are cast from `component_handler` if
+    // `IEditController::setComponentHandler()` has been called
+
+    Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler> unit_handler;
 
    private:
     Vst3PluginBridge& bridge;
