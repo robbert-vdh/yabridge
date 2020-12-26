@@ -13,8 +13,16 @@ version from the readme
 
 ### Added
 
-TODO: Add the relevant entries here for yabridge's VST3 support
-
+- Yabridge 3.0 introduces the first ever Wine VST3 bridge, allowing you to use
+  Windows VST3 plugins in Linux VST3 hosts with full VST 3.7.1 compatibility.
+  Simply tell yabridgectl to look for plugins in
+  `$HOME/.wine/drive_c/Program Files/Common Files/VST3`, run `yabridgectl sync`,
+  and your VST3 compatible DAW will pick up the new plugins in
+  `~/.vst3/yabridge` automatically. Even though this feature has been tested
+  extensively with a variety of VST3 plugins and hosts, there's still a large
+  part of the VST 3.7.1 specification that none of the hosts or plugins we can
+  across actually used, so please let me know if you run into any weird
+  behaviour!
 - Added the `with-vst3` compile time option to control whether yabridge should
   be built with VST3 support. This is enabled by default.
 - Added an
@@ -26,8 +34,8 @@ TODO: Add the relevant entries here for yabridge's VST3 support
 ### Changed
 
 - `libyabridge.so` is now called `libyabridge-vst2.so`. If you're using
-  yabridgectl then nothing changes here. To avoid any confusion in the future
-  it's adviced to remove the old `libyabridge.so` file when upgrading.
+  yabridgectl then nothing changes here. **To avoid any confusion in the future,
+  please remove the old `libyabridge.so` file before upgrading.**
 - VST2 editor idle events are now handled slightly differently. This should
   result in even more responsive GUIs and I have not come across any plugins
   where this caused issues, but please let me know if it does break anything for
