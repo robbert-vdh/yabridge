@@ -8,6 +8,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+TODO: Remove the mentions of VST3 support not yet being part of the released
+version from the readme
+
 ### Added
 
 TODO: Add the relevant entries here for yabridge's VST3 support

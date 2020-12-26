@@ -4,11 +4,14 @@
 [![Discord](https://img.shields.io/discord/786993304197267527.svg?label=Discord&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/pyNeweqadf)
 
 Yet Another way to use Windows VST plugins on Linux. Yabridge seamlessly
-supports running both 64-bit Windows VST2 plugins as well as 32-bit Windows VST2
-plugins in a 64-bit Linux VST host, with optional support for inter-plugin
-communication through [plugin groups](#plugin-groups). Its modern concurrent
-architecture and focus on transparency allows yabridge to be both fast and
-highly compatible, while also staying easy to debug and maintain.
+supports running both 32-bit and 64-bit Windows VST2 and Windows VST3 plugins in
+a 64-bit Linux VST host, with optional support for inter-plugin communication
+through [plugin groups](#plugin-groups). Its modern concurrent architecture and
+focus on transparency allows yabridge to be both fast and highly compatible,
+while also staying easy to debug and maintain.
+
+_VST3 support is scheduled for yabridge 3.0. At the moment it's only available
+on the master branch._
 
 ## TODOs
 
@@ -20,9 +23,6 @@ incomplete list of things that still have to be done before this can be used:
   - All interfaces introduced after that
 - Fully implemented: see [this
   document](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/src/common/serialization/vst3/README.md)
-- Update yabridgectl to handle buth VST2 and VST3 plugins.
-- Update all documentation to refer to VST2 and VST3 support separately, and
-  figure out how to do this in the least confusing way possible.
 - Mention that this update will break all existing symlinks and that the old
   `libyabridge.so` file should be removed when upgrading.
 - Pay close attention when updating the plugin groups section of the readme,
@@ -31,9 +31,6 @@ incomplete list of things that still have to be done before this can be used:
 - Update all the AUR packages for the `libyabridge-vst{2,3}.so` changes.
 - Test the binaries built on GitHub on plain Ubuntu 18.04, are we missing any
   static linking?
-- When this is in a usable enough state to be merged into master, make sure to
-  put a notice up at the top of the readme saying that `libyabridge.so` is now
-  called `libyabridge-vst2.so` for the master branch version.
 
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
@@ -63,7 +60,7 @@ incomplete list of things that still have to be done before this can be used:
 
 ## Tested with
 
-Yabridge has been tested under the following VST hosts using Wine Staging 5.9:
+Yabridge has been tested under the following hosts using Wine Staging 6.0:
 
 - Bitwig Studio 3.3
 - Carla 2.2
@@ -95,10 +92,8 @@ Linux Mint and Pop!\_OS should install Wine Staging from the [WineHQ
 repositories](https://wiki.winehq.org/Download) as the versions of Wine provided
 by those distro's repositories will be too old to be used with yabridge.
 
-Most VST plugins first need to be installed in your Wine environment before
-they can be converted by yabridge for use in linux. For a general overview
-on how to use Wine to install Windows applications, check out Wine's
-[user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
+For a general overview on how to use Wine to install Windows applications, check
+out Wine's [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
 
 ### Automatic setup (recommended)
 
@@ -124,27 +119,34 @@ yabridge from source or if you installed the files to some other location, then
 you can use `yabridgectl set --path=<path>` to tell yabridgectl where it can
 find the files.
 
-Next, you'll want to tell yabridgectl where it can find your plugins. For this
-you can use yabridgectl's `add`, `rm` and `list` commands. For instance, to add
-the most common VST2 plugin directory, use `yabridgectl add "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"`. You can use
+Next, you'll want to tell yabridgectl where it can find your VST2 and VST3
+plugins. **Note that VST3 support is not yet available on yabridge 2.x.** For
+this you can use yabridgectl's `add`, `rm` and `list` commands. You can also use
 `yabridgectl status` to get an overview of the current settings and the
-installation status of all of your plugins.
+installation status of all of your plugins. To add the most common VST2 plugin
+directory, use
+`yabridgectl add "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"`. VST3
+plugins under Windows are always installed to the same directory, and you can
+use `yabridgectl add "$HOME/.wine/drive_c/Program Files/Common Files/VST3"` to
+add that one.
 
 Finally, you can run `yabridgectl sync` to finish setting up yabridge for all of
-your plugins. Simply tell your VST host to search for plugins in the directories
-you've just added using `yabridgectl add` and you'll be good to go. _Don't
-forget to rerun `yabridgectl sync` whenever you update yabridge if you are using
-the default copy-based installation method._
+your plugins. For VST2 plugins this will create `.so` files alongside the
+Windows VST2 plugins, so if you tell your Linux VST host to search for VST2
+plugins there you'll be good to go. VST3 plugins are always set up in
+`~/.vst3/yabridge` as per the VST3 specification, and your VST3 host will pick
+those up automatically. _Don't forget to rerun `yabridgectl sync` whenever you
+update yabridge if you are using the default copy-based installation method._
 
 ### Manual setup
 
 Setting up yabridge through yabridgectl is the recommended installation method
 as it makes updating easier and yabridgectl will check for some common mistakes
-during the installation process. To set up yabridge without using yabridgectl,
-first download and extract yabridge's files like in the section above. The rest
-of this section assumes that you have extracted the files to `~/.local/share`
-(such that `~/.local/share/yabridge/libyabridge-vst2.so` exists), and that you
-want to set up yabridge for the VST2 plugin called
+during the installation process. To manually set up yabridge for VST2 plugins, first
+download and extract yabridge's files like in the section above. The rest of
+this section assumes that you have extracted the files to `~/.local/share` (such
+that `~/.local/share/yabridge/libyabridge-vst2.so` exists), and that you want to
+set up yabridge for the VST2 plugin called
 `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`.
 
 Depending on whether you want to use copy or symlink-based installation method,
@@ -159,17 +161,19 @@ cp ~/.local/share/yabridge/libyabridge-vst2.so "$HOME/.wine/drive_c/Program File
 ln -sf ~/.local/share/yabridge/libyabridge-vst2.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
 ```
 
-The symlink-based installation method will not work with any host that does not
-individually sandbox its plugins. If you are using the copy-based installation
-method, then don't forget to overwrite all copies of `libyabridge-vst2.so` you
-created this way whenever you update yabridge.
+Doing the same thing for VST3 plugins involves creating a [merged VST3
+bundle](https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles)
+by hand with the Windows VST3 plugin symlinked in. Doing this without
+yabridgectl is not supported since it's a very error prone process.
 
 ### DAW setup
 
-Finally, open your DAW's VST location configuration and tell it to look for
-plugins under `~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, or whichever
-directories you've added in yabridgectl. That way it will automatically pick up
-all of your Windows VST2 plugins.
+After first setting up yabridge for VST2 plugins, open your DAW's plugin location
+configuration and tell it to search for VST2 plugins under
+`~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, or whichever directories
+you've added in yabridgectl. That way it will automatically pick up all of your
+Windows VST2 plugins. For VST3 plugins no additional DAW configuration is
+needed, as those plugins will be set up under `~/.vst3/yabridge`.
 
 ### Bitbridge
 
@@ -179,6 +183,10 @@ yabridge is also able to load 32-bit VST plugins. The installation procedure for
 32-bit plugins is exactly the same as for 64-bit plugins. Yabridge will
 automatically detect whether a plugin is 32-bit or 64-bit on startup and it will
 handle it accordingly.
+
+_Because of the way VST3 bundles work, it's at the moment not possible to choose
+between the 32-bit and 64-bit versions of a VST3 plugin if you have both
+installed. We'll add a `yabridge.toml` option for this later._
 
 ### Wine prefixes
 
@@ -191,8 +199,8 @@ the Wine prefix for all instances of yabridge.
 
 This section is only relevant if you're using the _copy-based_ installation
 method and your yabridge files are located somewhere other than in
-`~/.local/share/yabridge`. If you're using one of the AUR packages then you can
-also skip this section.
+`~/.local/share/yabridge`. You can likely skip this section. If you're using one
+of the AUR packages then you also don't have to worry about any of this.
 
 Yabridge needs to know where it can find `yabridge-host.exe`. By default
 yabridge will search your through search path as well as in
@@ -275,6 +283,12 @@ process. Of course, plugin groups with the same name but in different Wine
 prefixes and with different architectures will be run independently of each
 other. See below for an [example](#example) of how these groups can be set up.
 
+_Note that because of the way VST3 works, multiple instances of a single VST3
+plugin will always be hosted in a single process regardless of whether you have
+enabled plugin groups or not. The only reason to use plugin groups with VST3
+plugins is to get slightly lower loading times the first time you load a new
+plugin._
+
 #### Compatibility options
 
 | Option                | Values         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -289,17 +303,11 @@ and plugins you use you might want to enable some of them.
 
 #### Example
 
-All of the paths used here are relative to the `yabridge.toml` file.
+All of the paths used here are relative to the `yabridge.toml` file. A
+configuration file for VST2 plugins might look a little something like this:
 
 ```toml
 # ~/.wine/drive_c/Program Files/Steinberg/VstPlugins/yabridge.toml
-
-# This would cause all plugins to be hosted within a single process. Doing so
-# greatly reduces the loading time of individual plugins, with the caveat being
-# that plugins are no longer sandboxed from eachother.
-#
-# ["*"]
-# group = "all"
 
 ["FabFilter Pro-Q 3.so"]
 group = "fabfilter"
@@ -333,6 +341,28 @@ group = "This will be ignored!"
 # Of course, you can also add multiple plugins to the same group by hand
 ["iZotope7/Insight 2.so"]
 group = "izotope"
+
+# This would cause all plugins to be hosted within a single process. Doing so
+# greatly reduces the loading time of individual plugins, with the caveat being
+# that plugins are no longer sandboxed from eachother.
+#
+# ["*"]
+# group = "all"
+```
+
+For VST3 plugins you should just match the directory instead of the `.so` file
+deep within in, like this:
+
+```toml
+# ~/.vst3/yabridge/yabridge.toml
+
+["FabFilter*.vst3"]
+group = "fabfilter"
+
+["Misstortion2.vst3"]
+# This option is not needed and also not recommended, but an example config file
+# without any options looks weird
+editor_xembed = true
 ```
 
 ## Troubleshooting common issues
@@ -415,7 +445,7 @@ these negative side effects:
 
 - First of all, you'll want to make sure that you can run programs with realtime
   priorities. Note that on Arch and Manjaro this does not necessarily require a
-  realtime kernel as they include the `PREMPT` patch set in their regular
+  realtime kernel as they include the `PREEMPT` patch set in their regular
   kernels. You can verify that this is workign correctly by running
   `chrt -f 10 whoami`, which should print your username.
 
@@ -447,15 +477,16 @@ these negative side effects:
   other distros, then please let me know!
 
 - [Plugin groups](#plugin-groups) can also greatly improve performance when
-  using many instances of the same plugin. Some plugins, like the BBC Spitfire
+  using many instances of the same VST2 plugin. _VST3 plugins have similar
+  functionality built in by design_. Some plugins, like the BBC Spitfire
   plugins, can share a lot of resources between different instances of the
   plugin. Hosting all instances of the same plugin in a single process can in
   those cases greatly reduce overall CPU usage and get rid of latency spikes.
 
 ## Runtime dependencies and known issues
 
-Any VST2 plugin should function out of the box, although some plugins will need
-some additional dependencies for their GUIs to work correctly. Notable examples
+Any plugin should function out of the box, although some plugins will need some
+additional dependencies for their GUIs to work correctly. Notable examples
 include:
 
 - **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
@@ -546,6 +577,7 @@ The following dependencies are included in the repository as a Meson wrap:
 - [tomlplusplus](https://github.com/marzer/tomlplusplus)
 - Version 3.7.1 of the [VST3 SDK](https://github.com/robbert-vdh/vst3sdk) with
   some [patches](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/tools/patch-vst3-sdk.sh)
+  to allow Winelib compilation
 
 The project can then be compiled as follows:
 
@@ -572,7 +604,7 @@ After you've finished building you can follow the instructions under the
 
 It is also possible to compile a host application for yabridge that's compatible
 with 32-bit plugins such as old SynthEdit plugins. This will allow yabridge to
-act as a bitbirdge, allowing you to run old 32-bit only Windows VST2 plugins in
+act as a bitbridge, allowing you to run old 32-bit only Windows VST2 plugins in
 a modern 64-bit Linux VST host. For this you'll need to have installed the 32
 bit versions of the Boost and XCB libraries. This can then be set up as follows:
 
