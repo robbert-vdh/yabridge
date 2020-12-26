@@ -254,6 +254,28 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
         int32 programIndex,
         Steinberg::Vst::CString attributeId /*in*/,
         Steinberg::Vst::String128 attributeValue /*out*/) override = 0;
+
+    /**
+     * Message to pass through a call to
+     * `IUnitInfo::hasProgramPitchNames(list_id, program_index)` to the Wine
+     * plugin host.
+     */
+    struct HasProgramPitchNames {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ProgramListID list_id;
+        int32 program_index;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(list_id);
+            s.value4b(program_index);
+        }
+    };
+
     virtual tresult PLUGIN_API
     hasProgramPitchNames(Steinberg::Vst::ProgramListID listId,
                          int32 programIndex) override = 0;

@@ -114,6 +114,7 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaUnitInfo::GetProgramListInfo&);
     bool log_request(bool is_host_vst, const YaUnitInfo::GetProgramName&);
     bool log_request(bool is_host_vst, const YaUnitInfo::GetProgramInfo&);
+    bool log_request(bool is_host_vst, const YaUnitInfo::HasProgramPitchNames&);
 
     bool log_request(bool is_host_vst,
                      const YaAudioProcessor::SetBusArrangements&);

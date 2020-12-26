@@ -482,6 +482,16 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaUnitInfo::HasProgramPitchNames& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IUnitInfo::hasProgramPitchNames(listId = "
+                << request.list_id
+                << ", programIndex = " << request.program_index << ")";
+    });
+}
+
 bool Vst3Logger::log_request(
     bool is_host_vst,
     const YaAudioProcessor::SetBusArrangements& request) {

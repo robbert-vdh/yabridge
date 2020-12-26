@@ -621,6 +621,12 @@ void Vst3Bridge::run() {
                     .attribute_value =
                         tchar_pointer_to_u16string(attribute_value)};
             },
+            [&](const YaUnitInfo::HasProgramPitchNames& request)
+                -> YaUnitInfo::HasProgramPitchNames::Response {
+                return object_instances[request.instance_id]
+                    .unit_info->hasProgramPitchNames(request.list_id,
+                                                     request.program_index);
+            },
         });
 }
 

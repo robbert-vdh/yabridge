@@ -512,9 +512,10 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getProgramInfo(
 tresult PLUGIN_API
 Vst3PluginProxyImpl::hasProgramPitchNames(Steinberg::Vst::ProgramListID listId,
                                           int32 programIndex) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IUnitInfo::hasProgramPitchNames()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaUnitInfo::HasProgramPitchNames{.instance_id = instance_id(),
+                                         .list_id = listId,
+                                         .program_index = programIndex});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getProgramPitchName(
