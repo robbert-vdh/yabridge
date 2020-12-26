@@ -586,6 +586,16 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .unit_info->getProgramListCount();
             },
+            [&](const YaUnitInfo::GetProgramListInfo& request)
+                -> YaUnitInfo::GetProgramListInfo::Response {
+                Steinberg::Vst::ProgramListInfo info;
+                const tresult result = object_instances[request.instance_id]
+                                           .unit_info->getProgramListInfo(
+                                               request.list_index, info);
+
+                return YaUnitInfo::GetProgramListInfoResponse{.result = result,
+                                                              .info = info};
+            },
         });
 }
 

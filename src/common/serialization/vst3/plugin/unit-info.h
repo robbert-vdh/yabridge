@@ -132,6 +132,40 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
     };
 
     virtual int32 PLUGIN_API getProgramListCount() override = 0;
+
+    /**
+     * The response code and returned unit information for a call to
+     * `IUnitInfo::getProgramListInfo(list_index)`.
+     */
+    struct GetProgramListInfoResponse {
+        UniversalTResult result;
+        Steinberg::Vst::ProgramListInfo info;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(info);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IUnitInfo::getProgramListInfo(list_index)` to the Wine plugin host.
+     */
+    struct GetProgramListInfo {
+        using Response = GetProgramListInfoResponse;
+
+        native_size_t instance_id;
+
+        int32 list_index;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(list_index);
+        }
+    };
+
     virtual tresult PLUGIN_API getProgramListInfo(
         int32 listIndex,
         Steinberg::Vst::ProgramListInfo& info /*out*/) override = 0;
@@ -180,6 +214,13 @@ void serialize(S& s, UnitInfo& info) {
     s.value4b(info.parentUnitId);
     s.text2b(info.name);
     s.value4b(info.programListId);
+}
+
+template <typename S>
+void serialize(S& s, ProgramListInfo& info) {
+    s.value4b(info.id);
+    s.text2b(info.name);
+    s.value4b(info.programCount);
 }
 }  // namespace Vst
 }  // namespace Steinberg

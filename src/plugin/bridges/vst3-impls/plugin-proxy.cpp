@@ -465,9 +465,13 @@ int32 PLUGIN_API Vst3PluginProxyImpl::getProgramListCount() {
 tresult PLUGIN_API Vst3PluginProxyImpl::getProgramListInfo(
     int32 listIndex,
     Steinberg::Vst::ProgramListInfo& info /*out*/) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IUnitInfo::getProgramListInfo()");
-    return Steinberg::kNotImplemented;
+    const GetProgramListInfoResponse response =
+        bridge.send_message(YaUnitInfo::GetProgramListInfo{
+            .instance_id = instance_id(), .list_index = listIndex});
+
+    info = response.info;
+
+    return response.result;
 }
 
 tresult PLUGIN_API
