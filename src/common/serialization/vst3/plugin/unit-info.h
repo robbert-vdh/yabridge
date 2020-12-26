@@ -67,7 +67,7 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
      * plugin host.
      */
     struct GetUnitCount {
-        using Response = UniversalTResult;
+        using Response = PrimitiveWrapper<int32>;
 
         native_size_t instance_id;
 
