@@ -22,7 +22,7 @@
  * The most significant bit in an X11 event's response type is used to indicate
  * the event source.
  */
-constexpr uint16_t event_type_mask = ((1 << 7) - 1);
+constexpr uint16_t event_type_mask = 0b0111'1111;
 
 /**
  * The name of the X11 property on the root window used to denote the active
