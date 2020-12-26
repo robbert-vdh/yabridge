@@ -62,6 +62,21 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to `IUnitInfo::getUnitCount()` to the Wine
+     * plugin host.
+     */
+    struct GetUnitCount {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
     virtual int32 PLUGIN_API getUnitCount() override = 0;
     virtual tresult PLUGIN_API
     getUnitInfo(int32 unitIndex,

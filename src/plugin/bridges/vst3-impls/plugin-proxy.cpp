@@ -441,9 +441,8 @@ tresult PLUGIN_API Vst3PluginProxyImpl::terminate() {
 }
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getUnitCount() {
-    // TODO: Implement
-    bridge.logger.log("TODO: IUnitInfo::getUnitCount()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaUnitInfo::GetUnitCount{.instance_id = instance_id()});
 }
 
 tresult PLUGIN_API

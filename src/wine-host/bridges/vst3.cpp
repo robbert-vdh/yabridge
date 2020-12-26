@@ -35,7 +35,8 @@ InstanceInterfaces::InstanceInterfaces(
       connection_point(object),
       edit_controller(object),
       edit_controller_2(object),
-      plugin_base(object) {}
+      plugin_base(object),
+      unit_info(object) {}
 
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
@@ -564,7 +565,13 @@ void Vst3Bridge::run() {
                 assert(factory_3);
 
                 return factory_3->setHostContext(plugin_factory_host_context);
-            }});
+            },
+            [&](const YaUnitInfo::GetUnitCount& request)
+                -> YaUnitInfo::GetUnitCount::Response {
+                return object_instances[request.instance_id]
+                    .unit_info->getUnitCount();
+            },
+        });
 }
 
 void Vst3Bridge::handle_x11_events() {
