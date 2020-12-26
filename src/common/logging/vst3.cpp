@@ -437,6 +437,15 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaUnitInfo::GetUnitInfo& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IUnitInfo::getUnitInfo(unitIndex = " << request.unit_index
+                << ", &info)";
+    });
+}
+
 bool Vst3Logger::log_request(
     bool is_host_vst,
     const YaAudioProcessor::SetBusArrangements& request) {
@@ -828,6 +837,23 @@ void Vst3Logger::log_response(bool is_host_vst,
     });
 }
 
+void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
+    log_response_base(is_host_vst,
+                      [&](auto& message) { message << "<Configuration>"; });
+}
+
+void Vst3Logger::log_response(bool is_host_vst,
+                              const YaUnitInfo::GetUnitInfoResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", <UnitInfo for \""
+                    << VST3::StringConvert::convert(response.info.name)
+                    << "\">";
+        }
+    });
+}
+
 void Vst3Logger::log_response(
     bool is_host_vst,
     const YaAudioProcessor::GetBusArrangementResponse& response) {
@@ -917,11 +943,6 @@ void Vst3Logger::log_response(
                     << response.updated_out_info.channel << ">";
         }
     });
-}
-
-void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
-    log_response_base(is_host_vst,
-                      [&](auto& message) { message << "<Configuration>"; });
 }
 
 void Vst3Logger::log_response(

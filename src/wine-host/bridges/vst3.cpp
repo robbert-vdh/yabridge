@@ -571,6 +571,16 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .unit_info->getUnitCount();
             },
+            [&](const YaUnitInfo::GetUnitInfo& request)
+                -> YaUnitInfo::GetUnitInfo::Response {
+                Steinberg::Vst::UnitInfo info;
+                const tresult result =
+                    object_instances[request.instance_id]
+                        .unit_info->getUnitInfo(request.unit_index, info);
+
+                return YaUnitInfo::GetUnitInfoResponse{.result = result,
+                                                       .info = info};
+            },
         });
 }
 

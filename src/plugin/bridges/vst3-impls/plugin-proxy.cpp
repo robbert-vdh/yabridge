@@ -448,9 +448,13 @@ int32 PLUGIN_API Vst3PluginProxyImpl::getUnitCount() {
 tresult PLUGIN_API
 Vst3PluginProxyImpl::getUnitInfo(int32 unitIndex,
                                  Steinberg::Vst::UnitInfo& info /*out*/) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IUnitInfo::getUnitInfo()");
-    return Steinberg::kNotImplemented;
+    const GetUnitInfoResponse response =
+        bridge.send_message(YaUnitInfo::GetUnitInfo{
+            .instance_id = instance_id(), .unit_index = unitIndex});
+
+    info = response.info;
+
+    return response.result;
 }
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getProgramListCount() {

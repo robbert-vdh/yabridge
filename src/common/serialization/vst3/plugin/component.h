@@ -32,6 +32,9 @@
  * part of `Vst3PluginProxy`. Event though `IComponent` inherits from
  * `IPlguinBase`, we'll implement that separately in `YaPluginBase` because
  * `IEditController` also inherits from `IPluginBase`.
+ *
+ * TODO: Remove the original fields for out parameters in the structs. They're
+ *       really supposed to be empty.
  */
 class YaComponent : public Steinberg::Vst::IComponent {
    public:

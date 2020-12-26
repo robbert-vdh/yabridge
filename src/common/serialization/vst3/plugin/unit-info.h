@@ -78,6 +78,40 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
     };
 
     virtual int32 PLUGIN_API getUnitCount() override = 0;
+
+    /**
+     * The response code and returned unit information for a call to
+     * `IUnitInfo::getUnitInfo(unit_index)`.
+     */
+    struct GetUnitInfoResponse {
+        UniversalTResult result;
+        Steinberg::Vst::UnitInfo info;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(info);
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IUnitInfo::getUnitInfo(unit_index)` to
+     * the Wine plugin host.
+     */
+    struct GetUnitInfo {
+        using Response = GetUnitInfoResponse;
+
+        native_size_t instance_id;
+
+        int32 unit_index;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(unit_index);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getUnitInfo(int32 unitIndex,
                 Steinberg::Vst::UnitInfo& info /*out*/) override = 0;
@@ -121,3 +155,15 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
 };
 
 #pragma GCC diagnostic pop
+
+namespace Steinberg {
+namespace Vst {
+template <typename S>
+void serialize(S& s, UnitInfo& info) {
+    s.value4b(info.id);
+    s.value4b(info.parentUnitId);
+    s.text2b(info.name);
+    s.value4b(info.programListId);
+}
+}  // namespace Vst
+}  // namespace Steinberg
