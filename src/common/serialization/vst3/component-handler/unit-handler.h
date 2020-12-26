@@ -82,6 +82,28 @@ class YaUnitHandler : public Steinberg::Vst::IUnitHandler {
 
     virtual tresult PLUGIN_API
     notifyUnitSelection(Steinberg::Vst::UnitID unitId) override = 0;
+
+    /**
+     * Message to pass through a call to
+     * `IUnitHandler::notifyProgramListChange(list_id, program_index)` to the
+     * unit handler provided by the host.
+     */
+    struct NotifyProgramListChange {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        Steinberg::Vst::ProgramListID list_id;
+        int32 program_index;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value4b(list_id);
+            s.value4b(program_index);
+        }
+    };
+
     virtual tresult PLUGIN_API
     notifyProgramListChange(Steinberg::Vst::ProgramListID listId,
                             int32 programIndex) override = 0;

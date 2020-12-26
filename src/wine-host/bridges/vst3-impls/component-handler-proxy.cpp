@@ -76,7 +76,8 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitSelection(
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyProgramListChange(
     Steinberg::Vst::ProgramListID listId,
     int32 programIndex) {
-    // TODO: Implement
-    std::cerr << "TODO: IUnitHandler::notifyProgramListChange" << std::endl;
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaUnitHandler::NotifyProgramListChange{
+        .owner_instance_id = owner_instance_id(),
+        .list_id = listId,
+        .program_index = programIndex});
 }
