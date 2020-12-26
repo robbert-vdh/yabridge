@@ -376,15 +376,43 @@ void Editor::fix_local_coordinates() const {
     translated_event.response_type = XCB_CONFIGURE_NOTIFY;
     translated_event.event = wine_window;
     translated_event.window = wine_window;
-    // This should be set to the same sizes the window was created on. Since
-    // we're not using `SetWindowPos` to resize the Window, Wine can get a bit
-    // confused when we suddenly report a different client area size. Without
-    // this certain plugins (such as those by Valhalla DSP) would break.
+    // This should be set to the same sizes the window was created on. Wine can
+    // get a bit confused when we suddenly report a different client area size.
+    // Without this certain plugins (such as those by Valhalla DSP) would break.
     translated_event.width = client_area.width;
     translated_event.height = client_area.height;
     translated_event.x = translated_coordinates->dst_x;
     translated_event.y = translated_coordinates->dst_y;
     free(translated_coordinates);
+
+    // When the window gets dragged off to the left or top corner of the screen
+    // a lot of plugin's GUIs start to drift off in the wrong direction when we
+    // send these negative coordinates in a ConfigureNotify event. To somewhat
+    // work around this, we'll move the Wine window to offset these changes.
+    // Since this could in theory cause other weird behaviour, we'll only undo
+    // these changes (by moving the window back to `(0, 0)`) once.
+    int correction_x = 0;
+    int correction_y = 0;
+    if (translated_event.x < 0) {
+        correction_x = -translated_event.x;
+    }
+    if (translated_event.y < 0) {
+        correction_y = -translated_event.y;
+    }
+
+    if (correction_x != 0 || correction_y != 0) {
+        SetWindowPos(
+            get_win32_handle(), nullptr, correction_x, correction_y, 0, 0,
+            SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER);
+        has_negative_coordinate_correction = true;
+    } else if (has_negative_coordinate_correction.compare_exchange_strong(
+                   const_cast<bool&>(static_cast<const bool&>(true)), false)) {
+        // Undo this only once, since who knows what side effects this might
+        // cause
+        SetWindowPos(
+            get_win32_handle(), nullptr, 0, 0, 0, 0,
+            SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER);
+    }
 
     xcb_send_event(
         x11_connection.get(), false, wine_window,

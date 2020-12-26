@@ -251,6 +251,17 @@ class Editor {
     const xcb_window_t topmost_window;
 
     /**
+     * In `fix_local_coordinates()` we send a ConfigureNotify event to the Wine
+     * window with its screen coordinates. Because you're not supposed to do
+     * that directly, we're getting some strange behaviour on some plugins when
+     * the window gets dragged off screen to the left or the top. We perform a
+     * small workaround to mostly correct this issue. This flag indicates
+     * whether we have done this in the last call to `fix_local_coordinates()`,
+     * since we only only need to undo the changes made there once.
+     */
+    mutable std::atomic_bool has_negative_coordinate_correction = false;
+
+    /**
      * The atom corresponding to `_NET_ACTIVE_WINDOW`.
      */
     xcb_atom_t active_window_property;

@@ -45,6 +45,11 @@ TODO: Add an updates screenshot with some fancy VST3-only plugins to the readme
   and 5.8 required a change, but that change now breaks builds using Wine 6.0
   and up, so this change has been reverted.
 
+### Fixed
+
+- Mostly fixed editor GUIs drifting off to the top or the left when dragging the
+  window off screen in those directions.
+
 ### yabridgectl
 
 - Updated for the changes in yabridge 3.0. Yabridgectl now allows you to set up
