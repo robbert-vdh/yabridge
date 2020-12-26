@@ -21,10 +21,13 @@ Vst3ComponentHandlerProxy::ConstructArgs::ConstructArgs() {}
 Vst3ComponentHandlerProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
     size_t owner_instance_id)
-    : owner_instance_id(owner_instance_id), component_handler_args(object) {}
+    : owner_instance_id(owner_instance_id),
+      component_handler_args(object),
+      unit_handler_args(object) {}
 
 Vst3ComponentHandlerProxy::Vst3ComponentHandlerProxy(const ConstructArgs&& args)
     : YaComponentHandler(std::move(args.component_handler_args)),
+      YaUnitHandler(std::move(args.unit_handler_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3ComponentHandlerProxy::~Vst3ComponentHandlerProxy() {
