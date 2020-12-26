@@ -439,3 +439,101 @@ tresult PLUGIN_API Vst3PluginProxyImpl::terminate() {
     return bridge.send_message(
         YaPluginBase::Terminate{.instance_id = instance_id()});
 }
+
+int32 PLUGIN_API Vst3PluginProxyImpl::getUnitCount() {
+    // TODO: Implement
+    bridge.logger.log("TODO: IUnitInfo::getUnitCount()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::getUnitInfo(int32 unitIndex,
+                                 Steinberg::Vst::UnitInfo& info /*out*/) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IUnitInfo::getUnitInfo()");
+    return Steinberg::kNotImplemented;
+}
+
+int32 PLUGIN_API Vst3PluginProxyImpl::getProgramListCount() {
+    // TODO: Implement
+    bridge.logger.log("TODO: IUnitInfo::getProgramListCount()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::getProgramListInfo(
+    int32 listIndex,
+    Steinberg::Vst::ProgramListInfo& info /*out*/) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IUnitInfo::getProgramListInfo()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::getProgramName(Steinberg::Vst::ProgramListID listId,
+                                    int32 programIndex,
+                                    Steinberg::Vst::String128 name /*out*/) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IUnitInfo::getProgramName()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::getProgramInfo(
+    Steinberg::Vst::ProgramListID listId,
+    int32 programIndex,
+    Steinberg::Vst::CString attributeId /*in*/,
+    Steinberg::Vst::String128 attributeValue /*out*/) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IUnitInfo::getProgramInfo()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::hasProgramPitchNames(Steinberg::Vst::ProgramListID listId,
+                                          int32 programIndex) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IUnitInfo::hasProgramPitchNames()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::getProgramPitchName(
+    Steinberg::Vst::ProgramListID listId,
+    int32 programIndex,
+    int16 midiPitch,
+    Steinberg::Vst::String128 name /*out*/) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IUnitInfo::getProgramPitchName()");
+    return Steinberg::kNotImplemented;
+}
+
+Steinberg::Vst::UnitID PLUGIN_API Vst3PluginProxyImpl::getSelectedUnit() {
+    // TODO: Implement
+    bridge.logger.log("TODO: IUnitInfo::getSelectedUnit()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::selectUnit(Steinberg::Vst::UnitID unitId) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IUnitInfo::selectUnit()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::getUnitByBus(Steinberg::Vst::MediaType type,
+                                  Steinberg::Vst::BusDirection dir,
+                                  int32 busIndex,
+                                  int32 channel,
+                                  Steinberg::Vst::UnitID& unitId /*out*/) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IUnitInfo::getUnitByBus()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::setUnitProgramData(int32 listOrUnitId,
+                                        int32 programIndex,
+                                        Steinberg::IBStream* data) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IUnitInfo::setUnitProgramData()");
+    return Steinberg::kNotImplemented;
+}

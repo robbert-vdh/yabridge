@@ -124,6 +124,44 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API initialize(FUnknown* context) override;
     tresult PLUGIN_API terminate() override;
 
+    // From `IUnitInfo`
+    int32 PLUGIN_API getUnitCount() override;
+    tresult PLUGIN_API
+    getUnitInfo(int32 unitIndex,
+                Steinberg::Vst::UnitInfo& info /*out*/) override;
+    int32 PLUGIN_API getProgramListCount() override;
+    tresult PLUGIN_API
+    getProgramListInfo(int32 listIndex,
+                       Steinberg::Vst::ProgramListInfo& info /*out*/) override;
+    tresult PLUGIN_API
+    getProgramName(Steinberg::Vst::ProgramListID listId,
+                   int32 programIndex,
+                   Steinberg::Vst::String128 name /*out*/) override;
+    tresult PLUGIN_API
+    getProgramInfo(Steinberg::Vst::ProgramListID listId,
+                   int32 programIndex,
+                   Steinberg::Vst::CString attributeId /*in*/,
+                   Steinberg::Vst::String128 attributeValue /*out*/) override;
+    tresult PLUGIN_API
+    hasProgramPitchNames(Steinberg::Vst::ProgramListID listId,
+                         int32 programIndex) override;
+    tresult PLUGIN_API
+    getProgramPitchName(Steinberg::Vst::ProgramListID listId,
+                        int32 programIndex,
+                        int16 midiPitch,
+                        Steinberg::Vst::String128 name /*out*/) override;
+    Steinberg::Vst::UnitID PLUGIN_API getSelectedUnit() override;
+    tresult PLUGIN_API selectUnit(Steinberg::Vst::UnitID unitId) override;
+    tresult PLUGIN_API
+    getUnitByBus(Steinberg::Vst::MediaType type,
+                 Steinberg::Vst::BusDirection dir,
+                 int32 busIndex,
+                 int32 channel,
+                 Steinberg::Vst::UnitID& unitId /*out*/) override;
+    tresult PLUGIN_API setUnitProgramData(int32 listOrUnitId,
+                                          int32 programIndex,
+                                          Steinberg::IBStream* data) override;
+
     /**
      * The component handler the host passed to us during
      * `IEditController::setComponentHandler()`. When the plugin makes a

@@ -1,0 +1,108 @@
+// yabridge: a Wine VST bridge
+// Copyright (C) 2020  Robbert van der Helm
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#pragma once
+
+#include <pluginterfaces/vst/ivstunits.h>
+
+#include "../../common.h"
+#include "../base.h"
+#include "../host-context-proxy.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+
+/**
+ * Wraps around `IUnitInfo` for serialization purposes. This is instantiated as
+ * part of `Vst3PluginProxy`.
+ */
+class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
+   public:
+    /**
+     * These are the arguments for creating a `YaUnitInfo`.
+     */
+    struct ConstructArgs {
+        ConstructArgs();
+
+        /**
+         * Check whether an existing implementation implements `IUnitInfo` and
+         * read arguments from it.
+         */
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+
+        /**
+         * Whether the object supported this interface.
+         */
+        bool supported;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value1b(supported);
+        }
+    };
+
+    /**
+     * Instantiate this instance with arguments read from another interface
+     * implementation.
+     */
+    YaUnitInfo(const ConstructArgs&& args);
+
+    inline bool supported() const { return arguments.supported; }
+
+    virtual int32 PLUGIN_API getUnitCount() override = 0;
+    virtual tresult PLUGIN_API
+    getUnitInfo(int32 unitIndex,
+                Steinberg::Vst::UnitInfo& info /*out*/) override = 0;
+    virtual int32 PLUGIN_API getProgramListCount() override = 0;
+    virtual tresult PLUGIN_API getProgramListInfo(
+        int32 listIndex,
+        Steinberg::Vst::ProgramListInfo& info /*out*/) override = 0;
+    virtual tresult PLUGIN_API
+    getProgramName(Steinberg::Vst::ProgramListID listId,
+                   int32 programIndex,
+                   Steinberg::Vst::String128 name /*out*/) override = 0;
+    virtual tresult PLUGIN_API getProgramInfo(
+        Steinberg::Vst::ProgramListID listId,
+        int32 programIndex,
+        Steinberg::Vst::CString attributeId /*in*/,
+        Steinberg::Vst::String128 attributeValue /*out*/) override = 0;
+    virtual tresult PLUGIN_API
+    hasProgramPitchNames(Steinberg::Vst::ProgramListID listId,
+                         int32 programIndex) override = 0;
+    virtual tresult PLUGIN_API
+    getProgramPitchName(Steinberg::Vst::ProgramListID listId,
+                        int32 programIndex,
+                        int16 midiPitch,
+                        Steinberg::Vst::String128 name /*out*/) override = 0;
+    virtual Steinberg::Vst::UnitID PLUGIN_API getSelectedUnit() override = 0;
+    virtual tresult PLUGIN_API
+    selectUnit(Steinberg::Vst::UnitID unitId) override = 0;
+    virtual tresult PLUGIN_API
+    getUnitByBus(Steinberg::Vst::MediaType type,
+                 Steinberg::Vst::BusDirection dir,
+                 int32 busIndex,
+                 int32 channel,
+                 Steinberg::Vst::UnitID& unitId /*out*/) override = 0;
+    virtual tresult PLUGIN_API
+    setUnitProgramData(int32 listOrUnitId,
+                       int32 programIndex,
+                       Steinberg::IBStream* data) override = 0;
+
+   protected:
+    ConstructArgs arguments;
+};
+
+#pragma GCC diagnostic pop

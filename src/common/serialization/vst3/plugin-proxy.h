@@ -25,6 +25,7 @@
 #include "plugin/edit-controller-2.h"
 #include "plugin/edit-controller.h"
 #include "plugin/plugin-base.h"
+#include "plugin/unit-info.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -57,7 +58,8 @@ class Vst3PluginProxy : public YaAudioProcessor,
                         public YaConnectionPoint,
                         public YaEditController,
                         public YaEditController2,
-                        public YaPluginBase {
+                        public YaPluginBase,
+                        public YaUnitInfo {
    public:
     /**
      * These are the arguments for constructing a `Vst3PluginProxyImpl`.
@@ -82,6 +84,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
         YaEditController::ConstructArgs edit_controller_args;
         YaEditController2::ConstructArgs edit_controller_2_args;
         YaPluginBase::ConstructArgs plugin_base_args;
+        YaUnitInfo::ConstructArgs unit_info_args;
 
         template <typename S>
         void serialize(S& s) {
@@ -92,6 +95,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
             s.object(edit_controller_args);
             s.object(edit_controller_2_args);
             s.object(plugin_base_args);
+            s.object(unit_info_args);
         }
     };
 
