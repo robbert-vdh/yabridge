@@ -536,9 +536,8 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getProgramPitchName(
 }
 
 Steinberg::Vst::UnitID PLUGIN_API Vst3PluginProxyImpl::getSelectedUnit() {
-    // TODO: Implement
-    bridge.logger.log("TODO: IUnitInfo::getSelectedUnit()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaUnitInfo::GetSelectedUnit{.instance_id = instance_id()});
 }
 
 tresult PLUGIN_API

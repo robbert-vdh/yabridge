@@ -503,6 +503,13 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaUnitInfo::GetSelectedUnit& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id << ": IUnitInfo::getSelectedUnit()";
+    });
+}
+
 bool Vst3Logger::log_request(
     bool is_host_vst,
     const YaAudioProcessor::SetBusArrangements& request) {

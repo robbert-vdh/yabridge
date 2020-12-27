@@ -639,6 +639,11 @@ void Vst3Bridge::run() {
                 return YaUnitInfo::GetProgramPitchNameResponse{
                     .result = result, .name = tchar_pointer_to_u16string(name)};
             },
+            [&](const YaUnitInfo::GetSelectedUnit& request)
+                -> YaUnitInfo::GetSelectedUnit::Response {
+                return object_instances[request.instance_id]
+                    .unit_info->getSelectedUnit();
+            },
         });
 }
 

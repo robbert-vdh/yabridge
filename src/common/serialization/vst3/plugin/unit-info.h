@@ -324,6 +324,22 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
                         int32 programIndex,
                         int16 midiPitch,
                         Steinberg::Vst::String128 name /*out*/) override = 0;
+
+    /**
+     * Message to pass through a call to `IUnitInfo::getSelectedUnit()` to the
+     * Wine plugin host.
+     */
+    struct GetSelectedUnit {
+        using Response = PrimitiveWrapper<Steinberg::Vst::UnitID>;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
     virtual Steinberg::Vst::UnitID PLUGIN_API getSelectedUnit() override = 0;
     virtual tresult PLUGIN_API
     selectUnit(Steinberg::Vst::UnitID unitId) override = 0;
