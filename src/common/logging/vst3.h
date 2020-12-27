@@ -117,6 +117,9 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaUnitInfo::HasProgramPitchNames&);
     bool log_request(bool is_host_vst, const YaUnitInfo::GetProgramPitchName&);
     bool log_request(bool is_host_vst, const YaUnitInfo::GetSelectedUnit&);
+    bool log_request(bool is_host_vst, const YaUnitInfo::SelectUnit&);
+    bool log_request(bool is_host_vst, const YaUnitInfo::GetUnitByBus&);
+    bool log_request(bool is_host_vst, const YaUnitInfo::SetUnitProgramData&);
 
     bool log_request(bool is_host_vst,
                      const YaAudioProcessor::SetBusArrangements&);
@@ -179,6 +182,8 @@ class Vst3Logger {
                       const YaUnitInfo::GetProgramInfoResponse&);
     void log_response(bool is_host_vst,
                       const YaUnitInfo::GetProgramPitchNameResponse&);
+    void log_response(bool is_host_vst,
+                      const YaUnitInfo::GetUnitByBusResponse&);
 
     void log_response(bool is_host_vst,
                       const YaAudioProcessor::GetBusArrangementResponse&);
