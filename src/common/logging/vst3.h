@@ -224,7 +224,7 @@ class Vst3Logger {
             if (is_host_vst) {
                 message << "[host -> vst] >> ";
             } else {
-                message << "[host <- vst] >> ";
+                message << "[vst -> host] >> ";
             }
 
             callback(message);
@@ -253,7 +253,7 @@ class Vst3Logger {
     void log_response_base(bool is_host_vst, F callback) {
         std::ostringstream message;
         if (is_host_vst) {
-            message << "[host -> vst]    ";
+            message << "[vst <- host]    ";
         } else {
             message << "[host <- vst]    ";
         }
