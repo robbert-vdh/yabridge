@@ -644,6 +644,30 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .unit_info->getSelectedUnit();
             },
+            [&](const YaUnitInfo::SelectUnit& request)
+                -> YaUnitInfo::SelectUnit::Response {
+                return object_instances[request.instance_id]
+                    .unit_info->selectUnit(request.unit_id);
+            },
+            [&](const YaUnitInfo::GetUnitByBus& request)
+                -> YaUnitInfo::GetUnitByBus::Response {
+                Steinberg::Vst::UnitID unit_id;
+                const tresult result =
+                    object_instances[request.instance_id]
+                        .unit_info->getUnitByBus(request.type, request.dir,
+                                                 request.bus_index,
+                                                 request.channel, unit_id);
+
+                return YaUnitInfo::GetUnitByBusResponse{.result = result,
+                                                        .unit_id = unit_id};
+            },
+            [&](YaUnitInfo::SetUnitProgramData& request)
+                -> YaUnitInfo::SetUnitProgramData::Response {
+                return object_instances[request.instance_id]
+                    .unit_info->setUnitProgramData(request.list_or_unit_id,
+                                                   request.program_index,
+                                                   &request.data);
+            },
         });
 }
 

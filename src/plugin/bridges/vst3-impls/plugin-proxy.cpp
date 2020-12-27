@@ -542,9 +542,8 @@ Steinberg::Vst::UnitID PLUGIN_API Vst3PluginProxyImpl::getSelectedUnit() {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::selectUnit(Steinberg::Vst::UnitID unitId) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IUnitInfo::selectUnit()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaUnitInfo::SelectUnit{
+        .instance_id = instance_id(), .unit_id = unitId});
 }
 
 tresult PLUGIN_API
@@ -553,16 +552,25 @@ Vst3PluginProxyImpl::getUnitByBus(Steinberg::Vst::MediaType type,
                                   int32 busIndex,
                                   int32 channel,
                                   Steinberg::Vst::UnitID& unitId /*out*/) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IUnitInfo::getUnitByBus()");
-    return Steinberg::kNotImplemented;
+    const GetUnitByBusResponse response = bridge.send_message(
+        YaUnitInfo::GetUnitByBus{.instance_id = instance_id(),
+                                 .type = type,
+                                 .dir = dir,
+                                 .bus_index = busIndex,
+                                 .channel = channel});
+
+    unitId = response.unit_id;
+
+    return response.result;
 }
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setUnitProgramData(int32 listOrUnitId,
                                         int32 programIndex,
                                         Steinberg::IBStream* data) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IUnitInfo::setUnitProgramData()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaUnitInfo::SetUnitProgramData{.instance_id = instance_id(),
+                                       .list_or_unit_id = listOrUnitId,
+                                       .program_index = programIndex,
+                                       .data = data});
 }
