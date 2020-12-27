@@ -120,7 +120,7 @@ int32 PLUGIN_API YaPluginFactory::countClasses() {
 
 tresult PLUGIN_API YaPluginFactory::getClassInfo(Steinberg::int32 index,
                                                  Steinberg::PClassInfo* info) {
-    if (index >= static_cast<int32>(arguments.class_infos_unicode.size())) {
+    if (index >= static_cast<int32>(arguments.class_infos_1.size())) {
         return Steinberg::kInvalidArgument;
     }
 
@@ -134,7 +134,7 @@ tresult PLUGIN_API YaPluginFactory::getClassInfo(Steinberg::int32 index,
 
 tresult PLUGIN_API
 YaPluginFactory::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
-    if (index >= static_cast<int32>(arguments.class_infos_1.size())) {
+    if (index >= static_cast<int32>(arguments.class_infos_2.size())) {
         return Steinberg::kInvalidArgument;
     }
 
