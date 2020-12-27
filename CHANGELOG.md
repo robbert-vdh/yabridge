@@ -36,6 +36,9 @@ TODO: Add an updates screenshot with some fancy VST3-only plugins to the readme
 - `libyabridge.so` is now called `libyabridge-vst2.so`. If you're using
   yabridgectl then nothing changes here. **To avoid any confusion in the future,
   please remove the old `libyabridge.so` file before upgrading.**
+- Slightly increased resposniveness when resizing plugin GUIs by preventing
+  unnecessary blitting. This also reduces flickering with plugins that don't do
+  double buffering.
 - VST2 editor idle events are now handled slightly differently. This should
   result in even more responsive GUIs and I have not come across any plugins
   where this caused issues, but please let me know if it does break anything for

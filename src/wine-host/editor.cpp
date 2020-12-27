@@ -97,8 +97,8 @@ WindowClass::~WindowClass() {
 Editor::Editor(const Configuration& config,
                const std::string& window_class_name,
                const size_t parent_window_handle)
-    : x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
-      use_xembed(config.editor_xembed),
+    : use_xembed(config.editor_xembed),
+      x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
       client_area(get_maximum_screen_dimensions(*x11_connection)),
       window_class(window_class_name),
       // Create a window without any decoratiosn for easy embedding. The
@@ -539,6 +539,19 @@ LRESULT CALLBACK window_proc(HWND handle,
             // window handle so we can access our VST plugin instance later.
             SetWindowLongPtr(handle, GWLP_USERDATA,
                              reinterpret_cast<size_t>(editor));
+        } break;
+        // Setting `SWP_NOCOPYBITS` somewhat reduces flickering on
+        // `fix_local_coordinates()` calls with plugins that don't do double
+        // buffering since it speeds up the redrawing process.
+        case WM_WINDOWPOSCHANGING: {
+            auto editor = reinterpret_cast<Editor*>(
+                GetWindowLongPtr(handle, GWLP_USERDATA));
+            if (!editor || editor->use_xembed) {
+                break;
+            }
+
+            WINDOWPOS* info = reinterpret_cast<WINDOWPOS*>(lParam);
+            info->flags |= SWP_NOCOPYBITS | SWP_DEFERERASE;
         } break;
         // In case the WM does not support the EWMH active window property,
         // we'll fall back to grabbing focus when the user clicks on the window

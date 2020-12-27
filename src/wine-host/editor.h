@@ -151,6 +151,12 @@ class Editor {
      */
     void set_input_focus(bool grab) const;
 
+    /**
+     * Whether to use XEmbed instead of yabridge's normal window embedded. Wine
+     * with XEmbed tends to cause rendering issues, so it's disabled by default.
+     */
+    const bool use_xembed;
+
    private:
     /**
      * Returns `true` if the currently active window (as per
@@ -184,12 +190,6 @@ class Editor {
      * window is active.
      */
     std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
-
-    /**
-     * Whether to use XEmbed instead of yabridge's normal window embedded. Wine
-     * with XEmbed tends to cause rendering issues, so it's disabled by default.
-     */
-    const bool use_xembed;
 
     /**
      * The Wine window's client area, or the maximum size of that window. This
