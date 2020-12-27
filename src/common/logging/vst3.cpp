@@ -47,7 +47,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
 bool Vst3Logger::log_request(bool is_host_vst,
                              const Vst3PluginProxy::Construct& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
-        message << "IPluginFactory::createComponent(cid = "
+        message << "IPluginFactory::createInstance(cid = "
                 << format_uid(Steinberg::FUID::fromTUID(request.cid.data()))
                 << ", _iid = ";
         switch (request.requested_interface) {
