@@ -341,14 +341,97 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
     };
 
     virtual Steinberg::Vst::UnitID PLUGIN_API getSelectedUnit() override = 0;
+
+    /**
+     * Message to pass through a call to `IUnitInfo::selectUnit(unit_id)` to the
+     * Wine plugin host.
+     */
+    struct SelectUnit {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::UnitID unit_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(unit_id);
+        }
+    };
+
     virtual tresult PLUGIN_API
     selectUnit(Steinberg::Vst::UnitID unitId) override = 0;
+
+    /**
+     * The response code and returned unit ID for a call to
+     * `IUnitInfo::getUnitByBus(type, dir, bus_index, channel, &unit_id)`.
+     */
+    struct GetUnitByBusResponse {
+        UniversalTResult result;
+        Steinberg::Vst::UnitID unit_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.value4b(unit_id);
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IUnitInfo::getUnitByBus(type, dir,
+     * bus_index, channel, &unit_id)` to the Wine plugin host.
+     */
+    struct GetUnitByBus {
+        using Response = GetUnitByBusResponse;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::MediaType type;
+        Steinberg::Vst::BusDirection dir;
+        int32 bus_index;
+        int32 channel;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(type);
+            s.value4b(dir);
+            s.value4b(bus_index);
+            s.value4b(channel);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getUnitByBus(Steinberg::Vst::MediaType type,
                  Steinberg::Vst::BusDirection dir,
                  int32 busIndex,
                  int32 channel,
                  Steinberg::Vst::UnitID& unitId /*out*/) override = 0;
+
+    /*
+     * Message to pass through a call to
+     * `IUnitInfo::setUnitProgramData(list_or_unit_id, program_index, data)` to
+     * the Wine plugin host.
+     */
+    struct SetUnitProgramData {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        int32 list_or_unit_id;
+        int32 program_index;
+        VectorStream data;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(list_or_unit_id);
+            s.value4b(program_index);
+            s.object(data);
+        }
+    };
+
     virtual tresult PLUGIN_API
     setUnitProgramData(int32 listOrUnitId,
                        int32 programIndex,
