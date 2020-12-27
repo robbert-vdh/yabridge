@@ -225,6 +225,17 @@ void Vst3Bridge::run() {
             },
             [&](YaConnectionPoint::Notify& request)
                 -> YaConnectionPoint::Notify::Response {
+                // FIXME: This needs to be redesigned. We should only send a
+                //        pointer to the `IMessage` instead of copying the
+                //        actual message. What ends up happening is that iZotope
+                //        VocalSynth 2 exchanges pointers to the processor and
+                //        the controller. Then at some point during an
+                //        `IAudioProcessor::process()` call after a parameter
+                //        changes, it will try to access the pointers stored in
+                //        that message. So to be able to support that, the
+                //        message object we pass to notify here still has to be
+                //        alive at that point. This goes 100% against the design
+                //        of VST3, but there's nothing we can do about it.
                 return object_instances[request.instance_id]
                     .connection_point->notify(&request.message);
             },
