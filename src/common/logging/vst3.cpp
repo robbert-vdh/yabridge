@@ -426,7 +426,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
 bool Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginFactory::SetHostContext&) {
     return log_request_base(is_host_vst, [&](auto& message) {
-        message << "IPluginFactory3::setHostContext(<FUnknown*>)";
+        message << "IPluginFactory3::setHostContext(context = <FUnknown*>)";
     });
 }
 
@@ -889,8 +889,8 @@ void Vst3Logger::log_response(bool is_host_vst,
 void Vst3Logger::log_response(bool is_host_vst,
                               const YaPluginFactory::ConstructArgs& args) {
     log_response_base(is_host_vst, [&](auto& message) {
-        message << "<IPluginFactory*> with " << args.num_classes
-                << " registered classes";
+        message << "<IPluginFactory* with " << args.num_classes
+                << " registered classes>";
     });
 }
 
