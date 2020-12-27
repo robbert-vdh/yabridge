@@ -95,8 +95,8 @@ Logger Logger::create_wine_stderr() {
     // We're logging directly to `std::cerr` instead of to `/dev/stderr` because
     // we want the STDERR redirection from the group host processes to still
     // function here
-    return Logger(std::shared_ptr<std::ostream>(&std::cerr), verbosity_level,
-                  "");
+    return Logger(std::shared_ptr<std::ostream>(&std::cerr, [](auto*) {}),
+                  verbosity_level, "");
 }
 
 void Logger::log(const std::string& message) {
