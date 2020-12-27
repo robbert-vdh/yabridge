@@ -322,12 +322,15 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
             dirs.filter_map(|entry| entry.ok())
                 .map(|entry| entry.path())
                 .filter_map(|path| {
-                    // Add all files and directories in `~/.vst3/yabridge` to `orphan_files` if they
-                    // are not a VST3 module we just created
-                    if !yabridge_vst3_bundles.contains_key(&path) {
-                        utils::get_file_type(path)
-                    } else {
-                        None
+                    // Add all directories in `~/.vst3/yabridge` to `orphan_files` if they are not a
+                    // VST3 module we just created. We'll ignore symlinks and regular files since
+                    // those are always user created.
+                    match (
+                        yabridge_vst3_bundles.contains_key(&path),
+                        utils::get_file_type(path),
+                    ) {
+                        (false, result @ Some(NativeFile::Directory(_))) => result,
+                        _ => None,
                     }
                 }),
         );
