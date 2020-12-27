@@ -49,12 +49,12 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
         /**
          * Whether `factory` supported `IPluginFactory2`.
          */
-        bool supports_plugin_factory_2;
+        bool supports_plugin_factory_2 = false;
 
         /**
          * Whether `factory` supported `IPluginFactory3`.
          */
-        bool supports_plugin_factory_3;
+        bool supports_plugin_factory_3 = false;
 
         /**
          * For `IPluginFactory::getFactoryInfo`.
