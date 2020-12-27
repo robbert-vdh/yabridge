@@ -188,6 +188,7 @@ bitsery_dep = subproject('bitsery', version : '5.2.0').get_variable('bitsery_dep
 function2_dep = subproject('function2', version : '4.1.0').get_variable('function2_dep')
 threads_dep = dependency('threads')
 tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('tomlplusplus_dep')
+wine_gdi32_dep = declare_dependency(link_args : '-lgdi32')
 # The built in threads dependency does not know how to handle winegcc
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
@@ -377,6 +378,7 @@ host_64bit_deps = [
   bitsery_dep,
   function2_dep,
   tomlplusplus_dep,
+  wine_gdi32_dep,
   wine_threads_dep,
   xcb_dep,
 ]
@@ -423,6 +425,7 @@ if with_bitbridge
     bitsery_dep,
     function2_dep,
     tomlplusplus_dep,
+    wine_gdi32_dep,
     wine_threads_dep,
     xcb_32bit_dep,
   ]
