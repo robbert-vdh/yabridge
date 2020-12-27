@@ -275,21 +275,25 @@ void Vst3Bridge::run() {
                 return YaEditController::GetParamValueByStringResponse{
                     .result = result, .value_normalized = value_normalized};
             },
-            [&](const YaEditController::NormalizedParamToPlain& request) {
+            [&](const YaEditController::NormalizedParamToPlain& request)
+                -> YaEditController::NormalizedParamToPlain::Response {
                 return object_instances[request.instance_id]
                     .edit_controller->normalizedParamToPlain(
                         request.id, request.value_normalized);
             },
-            [&](const YaEditController::PlainParamToNormalized& request) {
+            [&](const YaEditController::PlainParamToNormalized& request)
+                -> YaEditController::PlainParamToNormalized::Response {
                 return object_instances[request.instance_id]
                     .edit_controller->plainParamToNormalized(
                         request.id, request.plain_value);
             },
-            [&](const YaEditController::GetParamNormalized& request) {
+            [&](const YaEditController::GetParamNormalized& request)
+                -> YaEditController::GetParamNormalized::Response {
                 return object_instances[request.instance_id]
                     .edit_controller->getParamNormalized(request.id);
             },
-            [&](const YaEditController::SetParamNormalized& request) {
+            [&](const YaEditController::SetParamNormalized& request)
+                -> YaEditController::SetParamNormalized::Response {
                 return object_instances[request.instance_id]
                     .edit_controller->setParamNormalized(request.id,
                                                          request.value);
