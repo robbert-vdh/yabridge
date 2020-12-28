@@ -126,13 +126,15 @@ bool Vst3Logger::log_request(bool is_host_vst,
 bool Vst3Logger::log_request(bool is_host_vst,
                              const YaConnectionPoint::Notify& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
+        // We can safely print the pointer as long we don't dereference it
         message << request.instance_id
-                << ": IConnectionPoint::notify(message = <IMessage* ";
+                << ": IConnectionPoint::notify(message = <IMessage* "
+                << request.message_ptr.get_original();
         if (const char* id =
-                const_cast<YaMessage&>(request.message).getMessageID()) {
-            message << "with ID = \"" << id << "\"";
+                const_cast<YaMessagePtr&>(request.message_ptr).getMessageID()) {
+            message << " with ID = \"" << id << "\"";
         } else {
-            message << "without an ID";
+            message << " without an ID";
         }
         message << ">)";
     });

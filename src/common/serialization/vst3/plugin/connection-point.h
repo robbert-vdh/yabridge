@@ -178,21 +178,24 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
      * the Wine plugin host. Since `IAttributeList` does not have any way to
      * iterate over all values, we only support messages sent by plugins using
      * our own implementation of the interface, since there's no way to
-     * serialize them otherwise. This `IConnectionPoint::notify()`
-     * implementation is also only used with hosts that do not connect objects
-     * directly and use connection proxies instead.
+     * serialize them otherwise. Additionally, plugins may store the `IMessage`
+     * pointer for later usage, so we have to pass through a pointer to the
+     * original message so it has the same lifetime as the original message.
+     * This `IConnectionPoint::notify()` implementation is also only used with
+     * hosts that do not connect objects directly and use connection proxies
+     * instead.
      */
     struct Notify {
         using Response = UniversalTResult;
 
         native_size_t instance_id;
 
-        YaMessage message;
+        YaMessagePtr message_ptr;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
-            s.object(message);
+            s.object(message_ptr);
         }
     };
 

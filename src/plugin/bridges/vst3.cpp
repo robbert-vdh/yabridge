@@ -110,7 +110,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                     -> YaConnectionPoint::Notify::Response {
                     return plugin_proxies.at(request.instance_id)
                         .get()
-                        .connection_point_proxy->notify(&request.message);
+                        .connection_point_proxy->notify(&request.message_ptr);
                 },
                 [&](const YaHostApplication::GetName& request)
                     -> YaHostApplication::GetName::Response {

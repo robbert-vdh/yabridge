@@ -250,14 +250,18 @@ tresult PLUGIN_API
 Vst3PluginProxyImpl::notify(Steinberg::Vst::IMessage* message) {
     // Since there is no way to enumerate over all values in an
     // `IAttributeList`, we can only support relaying messages that were sent by
-    // our own objects. This is only needed to support hosts that place a
-    // connection proxy between two objects instead of connecting them directly.
-    // If the objects are connected directly we also connected them directly on
-    // the Wine side, so we don't have to do any additional when those objects
-    // pass through messages.
-    if (auto message_impl = dynamic_cast<YaMessage*>(message)) {
+    // our own objects. Additionally, the `IMessage*` we end up passing to the
+    // plugin needs to have the same lifetime as the original object, because
+    // some plugins are being a bit naughty. That's why we pass around a pointer
+    // to the original message object.
+    // All of this is only needed to support hosts that place a connection proxy
+    // between two objects instead of connecting them directly.  If the objects
+    // are connected directly we also connected them directly on the Wine side,
+    // so we don't have to do any additional when those objects pass through
+    // messages.
+    if (auto message_ptr = dynamic_cast<YaMessagePtr*>(message)) {
         return bridge.send_message(YaConnectionPoint::Notify{
-            .instance_id = instance_id(), .message = *message_impl});
+            .instance_id = instance_id(), .message_ptr = *message_ptr});
     } else {
         bridge.logger.log(
             "WARNING: Unknown message type passed to "

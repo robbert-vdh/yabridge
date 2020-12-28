@@ -55,15 +55,14 @@ Vst3ConnectionPointProxyImpl::disconnect(IConnectionPoint* /*other*/) {
 
 tresult PLUGIN_API
 Vst3ConnectionPointProxyImpl::notify(Steinberg::Vst::IMessage* message) {
-    // As explained in `YaMessage` and `Vst3PluginProxyImpl::notify`, we can
-    // only support our own `IMessage implementation here`
-    if (auto message_impl = dynamic_cast<YaMessage*>(message)) {
-        return bridge.send_message(YaConnectionPoint::Notify{
-            .instance_id = owner_instance_id(), .message = *message_impl});
+    if (message) {
+        return bridge.send_message(
+            YaConnectionPoint::Notify{.instance_id = owner_instance_id(),
+                                      .message_ptr = YaMessagePtr(*message)});
     } else {
-        std::cerr << "WARNING: Unknown message type passed to "
+        std::cerr << "WARNING: Null pointer passed to "
                      "'IConnectionPoint::notify()', ignoring"
                   << std::endl;
-        return Steinberg::kNotImplemented;
+        return Steinberg::kInvalidArgument;
     }
 }

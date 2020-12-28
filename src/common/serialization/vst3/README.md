@@ -42,6 +42,7 @@ implemented for serialization purposes:
 | `YaAttributeList`    | `IAttributeList`    |                                                                        |
 | `YaEventList`        | `IEventList`        | Comes with a lot of serialization wrappers around the related structs. |
 | `YaMessage`          | `IMessage`          |                                                                        |
+| `YaMessagePtr`       | `IMessage`          | Should be used in inter process communication to exchange messages     |
 | `YaParameterChanges` | `IParameterChanges` |                                                                        |
 | `YaParamValueQueue`  | `IParamValueQueue`  |                                                                        |
 | `VectorStream`       | `IBStream`          | Used for serializing data streams.                                     |

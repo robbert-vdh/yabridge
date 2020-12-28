@@ -223,21 +223,21 @@ void Vst3Bridge::run() {
                     return result;
                 }
             },
-            [&](YaConnectionPoint::Notify& request)
+            [&](const YaConnectionPoint::Notify& request)
                 -> YaConnectionPoint::Notify::Response {
-                // FIXME: This needs to be redesigned. We should only send a
-                //        pointer to the `IMessage` instead of copying the
-                //        actual message. What ends up happening is that iZotope
-                //        VocalSynth 2 exchanges pointers to the processor and
-                //        the controller. Then at some point during an
-                //        `IAudioProcessor::process()` call after a parameter
-                //        changes, it will try to access the pointers stored in
-                //        that message. So to be able to support that, the
-                //        message object we pass to notify here still has to be
-                //        alive at that point. This goes 100% against the design
-                //        of VST3, but there's nothing we can do about it.
+                // NOTE: We're using a few tricks here to pass through a pointer
+                //       to the _original_ `IMessage` object passed to a
+                //       connection proxy. This is needed because some plugins
+                //       like iZotope VocalSynth 2 use these messages to
+                //       exchange pointers between their objects so they can
+                //       break out of VST3's separation, but they might also
+                //       store the message object and not the actual pointers.
+                //       We should thus be passing a (raw) pointer to the
+                //       original object so we can pretend none of this wrapping
+                //       and serializing has ever happened.
                 return object_instances[request.instance_id]
-                    .connection_point->notify(&request.message);
+                    .connection_point->notify(
+                        request.message_ptr.get_original());
             },
             [&](YaEditController::SetComponentState& request)
                 -> YaEditController::SetComponentState::Response {
