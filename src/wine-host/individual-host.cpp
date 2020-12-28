@@ -32,7 +32,11 @@
  * plugin plugin, and then connect back to the `libyabridge-{vst2,vst3}.so`
  * instance that spawned this over the socket.
  */
-int __attribute__((visibility("default"))) main(int argc, char* argv[]) {
+int __attribute__((visibility("default")))
+#ifdef WINE_USE_CDECL
+__cdecl
+#endif
+    main(int argc, char* argv[]) {
     set_realtime_priority();
 
     // We pass plugin format, the name of the VST2 plugin .dll file or VST3

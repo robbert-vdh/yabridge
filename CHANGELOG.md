@@ -46,7 +46,9 @@ TODO: Add an updates screenshot with some fancy VST3-only plugins to the readme
 - Changed part of the build process considering [this Wine
   bug](https://bugs.winehq.org/show_bug.cgi?id=49138). Building with Wine 5.7
   and 5.8 required a change, but that change now breaks builds using Wine 6.0
-  and up, so this change has been reverted.
+  and up. We now detect which version of Wine is used to build with, and we then
+  apply the change conditionally to be able to support building with both older
+  and newer versions of Wine.
 
 ### Fixed
 
