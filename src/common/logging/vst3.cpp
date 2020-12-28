@@ -250,8 +250,8 @@ bool Vst3Logger::log_request(bool is_host_vst,
                              const YaEditController::CreateView& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
-                << ": IEditController::createView(name = " << request.name
-                << ")";
+                << ": IEditController::createView(name = \"" << request.name
+                << "\")";
     });
 }
 
