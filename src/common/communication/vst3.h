@@ -189,34 +189,30 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
      *   request.  See the definition of `F` for more information.
      *
      * @tparam F A function type in the form of `T::Response(T)` for every `T`
-     * in `Request`. This way we can directly deserialize into a `T::Response`
-     * on the side that called `receive_into(T, T::Response&)`.
-     * @tparam keep_buffers Whether processing buffers should be kept around and
-     *   reused. This is used to minimize allocations in the audio processing
-     *   loop. This can only be used when `ad_hoc_sockets` is set to false,
-     *   since we can of course only reuse buffers within a single thread. These
-     *   buffers will also never shrink, but that should not be an issue here.
+     *   in `Request`. This way we can directly deserialize into a `T::Response`
+     *   on the side that called `receive_into(T, T::Response&)`.
+     * @tparam persistent_buffers Whether processing buffers should be kept
+     *   around and reused. This is used to minimize allocations in the audio
+     *   processing loop. These buffers will also never shrink, but that should
+     *   not be an issue with the `IAudioProcessor` and `IComponent` functions.
+     *   Saving and loading state is handled on the main sockets.
      *
      * @relates Vst3MessageHandler::send_event
      */
-    template <bool keep_buffers = false, typename F>
+    template <bool persistent_buffers = false, typename F>
     void receive_messages(std::optional<std::pair<Vst3Logger&, bool>> logging,
                           F callback) {
-        std::vector<uint8_t> persistent_buffer{};
-        if constexpr (keep_buffers) {
-            static_assert(!ad_hoc_sockets,
-                          "Buffers can only be reused when ad-hoc socket "
-                          "spawning has been disabled.");
-        }
+        thread_local std::vector<uint8_t> persistent_buffer{};
 
         // Reading, processing, and writing back the response for the requests
         // we receive works in the same way regardless of which socket we're
         // using
         const auto process_message =
             [&](boost::asio::local::stream_protocol::socket& socket) {
-                auto request = keep_buffers ? read_object<Request>(
-                                                  socket, persistent_buffer)
-                                            : read_object<Request>(socket);
+                auto request =
+                    persistent_buffers
+                        ? read_object<Request>(socket, persistent_buffer)
+                        : read_object<Request>(socket);
 
                 // See the comment in `receive_into()` for more information
                 bool should_log_response = false;
@@ -241,7 +237,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                             logger.log_response(!is_host_vst, response);
                         }
 
-                        if constexpr (keep_buffers) {
+                        if constexpr (persistent_buffers) {
                             write_object(socket, response, persistent_buffer);
                         } else {
                             write_object(socket, response);
