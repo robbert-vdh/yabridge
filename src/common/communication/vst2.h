@@ -106,7 +106,7 @@ class DefaultDataConverter {
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  */
 template <typename Thread>
-class EventHandler : public AdHocSocketHandler<Thread, true> {
+class EventHandler : public AdHocSocketHandler<Thread> {
    public:
     /**
      * Sets up a single main socket for this type of events. The sockets won't
@@ -125,7 +125,7 @@ class EventHandler : public AdHocSocketHandler<Thread, true> {
     EventHandler(boost::asio::io_context& io_context,
                  boost::asio::local::stream_protocol::endpoint endpoint,
                  bool listen)
-        : AdHocSocketHandler<Thread, true>(io_context, endpoint, listen) {}
+        : AdHocSocketHandler<Thread>(io_context, endpoint, listen) {}
 
     /**
      * Serialize and send an event over a socket. This is used for both the host

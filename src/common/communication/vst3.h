@@ -39,14 +39,9 @@
  * @tparam Thread The thread implementation to use. On the Linux side this
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  * @tparam Request Either `ControlRequest` or `CallbackRequest`.
- * @tparam ad_hoc_sockets Whether new sockets should be created on demand to be
- *   able to handle multiple function calls at the same time. If this is set to
- *   false, then simultaneous `send_message()` calls will have to wait for the
- *   earlier call to finish. This also means that the listening side does not
- *   have to spawn a thread to constantly listen for new connections.
  */
-template <typename Thread, typename Request, bool ad_hoc_sockets>
-class Vst3MessageHandler : public AdHocSocketHandler<Thread, ad_hoc_sockets> {
+template <typename Thread, typename Request>
+class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
    public:
     /**
      * Sets up a single main socket for this type of events. The sockets won't
@@ -65,9 +60,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread, ad_hoc_sockets> {
     Vst3MessageHandler(boost::asio::io_context& io_context,
                        boost::asio::local::stream_protocol::endpoint endpoint,
                        bool listen)
-        : AdHocSocketHandler<Thread, ad_hoc_sockets>(io_context,
-                                                     endpoint,
-                                                     listen) {}
+        : AdHocSocketHandler<Thread>(io_context, endpoint, listen) {}
 
     /**
      * Serialize and send an event over a socket and return the appropriate
@@ -447,14 +440,14 @@ class Vst3Sockets : public Sockets {
      * This will be listened on by the Wine plugin host when it calls
      * `receive_multi()`.
      */
-    Vst3MessageHandler<Thread, ControlRequest, true> host_vst_control;
+    Vst3MessageHandler<Thread, ControlRequest> host_vst_control;
 
     /**
      * For sending callbacks from the plugin back to the host. After we have a
      * better idea of what our communication model looks like we'll probably
      * want to provide an abstraction similar to `EventHandler`.
      */
-    Vst3MessageHandler<Thread, CallbackRequest, true> vst_host_callback;
+    Vst3MessageHandler<Thread, CallbackRequest> vst_host_callback;
 
    private:
     boost::asio::io_context& io_context;
@@ -470,7 +463,7 @@ class Vst3Sockets : public Sockets {
      * would have one dedicated thread for handling function calls to these
      * interfaces, and then another dedicated thread just idling around.
      */
-    std::map<size_t, Vst3MessageHandler<Thread, AudioProcessorRequest, false>>
+    std::map<size_t, Vst3MessageHandler<Thread, AudioProcessorRequest>>
         audio_processor_sockets;
     /**
      * Binary buffers used for serializing objects and receiving messages into
