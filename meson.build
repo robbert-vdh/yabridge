@@ -48,6 +48,20 @@ if with_winedbg
   compiler_options += '-DWITH_WINEDBG'
 endif
 
+# Wine versions after Wine 5.6 and before 6.0 require a `__cdecl` calling
+# convention to be specified on the `main()` functions or else `argc` and `argv`
+# will point to the wrong memory. Similarly, with other versions of Wine this
+# should _not_ be specified for the same reason. We'll try to figure out the
+# current Wine version and add this calling convention based on that.
+#
+# https://bugs.winehq.org/show_bug.cgi?id=49138
+wine_version = run_command('sh', '-c', '''wine --version | grep --only-matching -E '[0-9]+\.[0-9.]+' | head -n1''')
+if wine_version.returncode() == 0 and \
+   wine_version.stdout().version_compare('>=5.7') and \
+   wine_version.stdout().version_compare('<6.0')
+  compiler_options += '-DWINE_USE_CDECL'
+endif
+
 # Generate header files for configuration variables such as the current git tag
 # and the name of the host binary
 subdir('src/common/config')

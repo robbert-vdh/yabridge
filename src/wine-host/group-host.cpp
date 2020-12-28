@@ -36,7 +36,11 @@
  * this group plugin host will function identically on both the plugin and the
  * Wine VST host side.
  */
-int __attribute__((visibility("default"))) main(int argc, char* argv[]) {
+int __attribute__((visibility("default")))
+#ifdef WINE_USE_CDECL
+__cdecl
+#endif
+    main(int argc, char* argv[]) {
     set_realtime_priority();
 
     // Instead of directly hosting a plugin, this process will receive a UNIX

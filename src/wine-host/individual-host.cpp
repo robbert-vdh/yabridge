@@ -29,7 +29,11 @@
  * plugin, and then connect back to the `libyabridge.so` instance that spawned
  * this over the socket.
  */
-int __attribute__((visibility("default"))) main(int argc, char* argv[]) {
+int __attribute__((visibility("default")))
+#ifdef WINE_USE_CDECL
+__cdecl
+#endif
+    main(int argc, char* argv[]) {
     set_realtime_priority();
 
     // We pass the name of the VST plugin .dll file to load and the base
