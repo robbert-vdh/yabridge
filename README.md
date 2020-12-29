@@ -58,13 +58,15 @@ things that still have to be done before this is in a usable state:
 
 Yabridge has been tested under the following hosts using Wine Staging 6.0:
 
-- Bitwig Studio 3.3
-- Carla 2.2
-- Ardour 6.5
-- Mixbus 6.0.702
-- Qtractor 0.9.18
-- REAPER 6.18
-- Renoise 3.2.4
+| Host              | VST2               | VST3                                                                             |
+| ----------------- | ------------------ | -------------------------------------------------------------------------------- |
+| Bitwig Studio 3.3 | :heavy_check_mark: | :heavy_check_mark:                                                               |
+| Carla 2.2         | :heavy_check_mark: | :heavy_check_mark:                                                               |
+| REAPER 6.19       | :heavy_check_mark: | :heavy_check_mark:                                                               |
+| Ardour 6.5        | :heavy_check_mark: | :warning: Several plugins segfault because Ardour skips part of the setup proces |
+| Mixbus 6.0.702    | :heavy_check_mark: | :warning: Same situation as with Ardour                                          |
+| Qtractor 0.9.19   | :heavy_check_mark: | :x: See [rncbc/qtractor#291](https://github.com/rncbc/qtractor/issues/291)       |
+| Renoise 3.2.4     | :heavy_check_mark: | Does not support VST3                                                            |
 
 Please let me know if there are any issues with other VST hosts.
 
