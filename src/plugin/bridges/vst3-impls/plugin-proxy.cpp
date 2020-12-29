@@ -446,27 +446,33 @@ tresult PLUGIN_API Vst3PluginProxyImpl::terminate() {
 
 tresult PLUGIN_API Vst3PluginProxyImpl::programDataSupported(
     Steinberg::Vst::ProgramListID listId) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IProgramListData::programDataSupported");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaProgramListData::ProgramDataSupported{
+        .instance_id = instance_id(), .list_id = listId});
 }
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::getProgramData(Steinberg::Vst::ProgramListID listId,
                                     int32 programIndex,
                                     Steinberg::IBStream* data) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IProgramListData::getProgramData");
-    return Steinberg::kNotImplemented;
+    const GetProgramDataResponse response = bridge.send_message(
+        YaProgramListData::GetProgramData{.instance_id = instance_id(),
+                                          .list_id = listId,
+                                          .program_index = programIndex});
+
+    assert(response.data.write_back(data) == Steinberg::kResultOk);
+
+    return response.result;
 }
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setProgramData(Steinberg::Vst::ProgramListID listId,
                                     int32 programIndex,
                                     Steinberg::IBStream* data) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IProgramListData::setProgramData");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaProgramListData::SetProgramData{.instance_id = instance_id(),
+                                          .list_id = listId,
+                                          .program_index = programIndex,
+                                          .data = data});
 }
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getUnitCount() {
