@@ -444,6 +444,31 @@ tresult PLUGIN_API Vst3PluginProxyImpl::terminate() {
         YaPluginBase::Terminate{.instance_id = instance_id()});
 }
 
+tresult PLUGIN_API Vst3PluginProxyImpl::programDataSupported(
+    Steinberg::Vst::ProgramListID listId) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IProgramListData::programDataSupported");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::getProgramData(Steinberg::Vst::ProgramListID listId,
+                                    int32 programIndex,
+                                    Steinberg::IBStream* data) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IProgramListData::getProgramData");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::setProgramData(Steinberg::Vst::ProgramListID listId,
+                                    int32 programIndex,
+                                    Steinberg::IBStream* data) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IProgramListData::setProgramData");
+    return Steinberg::kNotImplemented;
+}
+
 int32 PLUGIN_API Vst3PluginProxyImpl::getUnitCount() {
     return bridge.send_message(
         YaUnitInfo::GetUnitCount{.instance_id = instance_id()});

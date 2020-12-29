@@ -28,6 +28,7 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
       edit_controller_args(object),
       edit_controller_2_args(object),
       plugin_base_args(object),
+      program_list_data_args(object),
       unit_info_args(object) {}
 
 Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
@@ -37,6 +38,7 @@ Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
       YaEditController(std::move(args.edit_controller_args)),
       YaEditController2(std::move(args.edit_controller_2_args)),
       YaPluginBase(std::move(args.plugin_base_args)),
+      YaProgramListData(std::move(args.program_list_data_args)),
       YaUnitInfo(std::move(args.unit_info_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
@@ -88,6 +90,10 @@ tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
     if (YaEditController2::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IEditController2::iid,
                         Steinberg::Vst::IEditController2)
+    }
+    if (YaProgramListData::supported()) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IProgramListData::iid,
+                        Steinberg::Vst::IProgramListData)
     }
     if (YaUnitInfo::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IUnitInfo::iid,

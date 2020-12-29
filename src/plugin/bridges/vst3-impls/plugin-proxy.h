@@ -124,6 +124,16 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API initialize(FUnknown* context) override;
     tresult PLUGIN_API terminate() override;
 
+    // From `IProgramListData`
+    tresult PLUGIN_API
+    programDataSupported(Steinberg::Vst::ProgramListID listId) override;
+    tresult PLUGIN_API getProgramData(Steinberg::Vst::ProgramListID listId,
+                                      int32 programIndex,
+                                      Steinberg::IBStream* data) override;
+    tresult PLUGIN_API setProgramData(Steinberg::Vst::ProgramListID listId,
+                                      int32 programIndex,
+                                      Steinberg::IBStream* data) override;
+
     // From `IUnitInfo`
     int32 PLUGIN_API getUnitCount() override;
     tresult PLUGIN_API
