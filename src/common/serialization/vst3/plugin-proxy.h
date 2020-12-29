@@ -26,6 +26,7 @@
 #include "plugin/edit-controller.h"
 #include "plugin/plugin-base.h"
 #include "plugin/program-list-data.h"
+#include "plugin/unit-data.h"
 #include "plugin/unit-info.h"
 
 #pragma GCC diagnostic push

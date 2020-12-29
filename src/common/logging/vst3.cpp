@@ -462,6 +462,30 @@ bool Vst3Logger::log_request(bool is_host_vst,
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaUnitData::UnitDataSupported&) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << "IUnitData::unitDataSupported()";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaUnitData::GetUnitData& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << "IUnitData::getUnitData(listId = " << request.unit_id
+                << ", &data)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaUnitData::SetUnitData& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << "IUnitData::setUnitData(listId = " << request.unit_id
+                << ", data = <IBStream* containing " << request.data.size()
+                << "bytes>)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
                              const YaUnitInfo::GetUnitCount& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id << ": IUnitInfo::getUnitCount()";
@@ -993,6 +1017,17 @@ void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
 void Vst3Logger::log_response(
     bool is_host_vst,
     const YaProgramListData::GetProgramDataResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", <IBStream* containing " << response.data.size()
+                    << " bytes>";
+        }
+    });
+}
+
+void Vst3Logger::log_response(bool is_host_vst,
+                              const YaUnitData::GetUnitDataResponse& response) {
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
