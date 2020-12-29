@@ -435,6 +435,33 @@ bool Vst3Logger::log_request(bool is_host_vst,
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaProgramListData::ProgramDataSupported&) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << "IProgramListData::programDataSupported()";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaProgramListData::GetProgramData& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << "IProgramListData::getProgramData(listId = "
+                << request.list_id
+                << ", programIndex = " << request.program_index << ", &data)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaProgramListData::SetProgramData& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << "IProgramListData::setProgramData(listId = "
+                << request.list_id
+                << ", programIndex = " << request.program_index
+                << ", data = <IBStream* containing " << request.data.size()
+                << "bytes>)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
                              const YaUnitInfo::GetUnitCount& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id << ": IUnitInfo::getUnitCount()";
@@ -961,6 +988,18 @@ void Vst3Logger::log_response(bool is_host_vst,
 void Vst3Logger::log_response(bool is_host_vst, const Configuration&) {
     log_response_base(is_host_vst,
                       [&](auto& message) { message << "<Configuration>"; });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaProgramListData::GetProgramDataResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", <IBStream* containing " << response.data.size()
+                    << " bytes>";
+        }
+    });
 }
 
 void Vst3Logger::log_response(bool is_host_vst,

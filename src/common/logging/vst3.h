@@ -108,6 +108,12 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaPluginBase::Terminate&);
     bool log_request(bool is_host_vst, const YaPluginFactory::Construct&);
     bool log_request(bool is_host_vst, const YaPluginFactory::SetHostContext&);
+    bool log_request(bool is_host_vst,
+                     const YaProgramListData::ProgramDataSupported&);
+    bool log_request(bool is_host_vst,
+                     const YaProgramListData::GetProgramData&);
+    bool log_request(bool is_host_vst,
+                     const YaProgramListData::SetProgramData&);
     bool log_request(bool is_host_vst, const YaUnitInfo::GetUnitCount&);
     bool log_request(bool is_host_vst, const YaUnitInfo::GetUnitInfo&);
     bool log_request(bool is_host_vst, const YaUnitInfo::GetProgramListCount&);
@@ -173,6 +179,8 @@ class Vst3Logger {
     void log_response(bool is_host_vst, const YaPlugView::GetSizeResponse&);
     void log_response(bool is_host_vst, const YaPluginFactory::ConstructArgs&);
     void log_response(bool is_host_vst, const Configuration&);
+    void log_response(bool is_host_vst,
+                      const YaProgramListData::GetProgramDataResponse&);
     void log_response(bool is_host_vst, const YaUnitInfo::GetUnitInfoResponse&);
     void log_response(bool is_host_vst,
                       const YaUnitInfo::GetProgramListInfoResponse&);
