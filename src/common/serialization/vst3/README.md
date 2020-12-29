@@ -1,7 +1,7 @@
 # VST3 interfaces
 
-We currently support all VST 3.0.0 interfaces with the exceptions of
-`IProgramListData` and `IUnitData`. See
+We currently support all VST 3.0.0 interfaces with the exception of `IUnitData`.
+See
 [docs/vst3.md](https://github.com/robbert-vdh/yabridge/blob/master/docs/vst3.md)
 for more information on how the serialization works.
 
@@ -20,6 +20,7 @@ VST3 plugin interfaces are implemented as follows:
 | `YaEditController`         | `Vst3PluginProxy`   | `IEditController`                                      |
 | `YaEditController2`        | `Vst3PluginProxy`   | `IEditController2`                                     |
 | `YaPluginBase`             | `Vst3PluginProxy`   | `IPluginBase`                                          |
+| `YaProgramListData`        | `Vst3PluginProxy`   | `IProgramListData`                                     |
 | `YaUnitInfo`               | `Vst3PluginProxy`   | `IUnitInfo`                                            |
 
 VST3 host interfaces are implemented as follows:

@@ -20,7 +20,6 @@
 
 #include "../../common.h"
 #include "../base.h"
-#include "../host-context-proxy.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
