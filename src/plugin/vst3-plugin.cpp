@@ -54,6 +54,8 @@ bool DeinitModule() {
     assert(bridge != nullptr);
 
     delete bridge;
+    bridge = nullptr;
+
     return true;
 }
 
