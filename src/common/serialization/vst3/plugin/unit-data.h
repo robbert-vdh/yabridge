@@ -61,11 +61,84 @@ class YaUnitData : public Steinberg::Vst::IUnitData {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to `IUnitData::unitDataSupported(unit_id)`
+     * to the Wine plugin host.
+     */
+    struct UnitDataSupported {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::UnitID unit_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(unit_id);
+        }
+    };
+
     virtual tresult PLUGIN_API
     unitDataSupported(Steinberg::Vst::UnitID unitId) override = 0;
+
+    /**
+     * The response code and written state for a call to
+     * `IUnitData::getUnitData(unit_id, &data)`.
+     */
+    struct GetUnitDataResponse {
+        UniversalTResult result;
+        VectorStream data;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(data);
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IUnitData::getUnitData(unit_id,
+     * &data)` to the Wine plugin host.
+     */
+    struct GetUnitData {
+        using Response = GetUnitDataResponse;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::UnitID unit_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(unit_id);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getUnitData(Steinberg::Vst::UnitID unitId,
                 Steinberg::IBStream* data) override = 0;
+
+    /**
+     * Message to pass through a call to `IUnitData::SetUnitData(unit_id, data)`
+     * to the Wine plugin host.
+     */
+    struct SetUnitData {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::UnitID unit_id;
+        VectorStream data;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(unit_id);
+            s.object(data);
+        }
+    };
+
     virtual tresult PLUGIN_API
     setUnitData(Steinberg::Vst::UnitID unitId,
                 Steinberg::IBStream* data) override = 0;
