@@ -475,6 +475,31 @@ Vst3PluginProxyImpl::setProgramData(Steinberg::Vst::ProgramListID listId,
                                           .data = data});
 }
 
+tresult PLUGIN_API
+Vst3PluginProxyImpl::unitDataSupported(Steinberg::Vst::UnitID unitId) {
+    return bridge.send_message(YaUnitData::UnitDataSupported{
+        .instance_id = instance_id(), .unit_id = unitId});
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::getUnitData(Steinberg::Vst::UnitID unitId,
+                                 Steinberg::IBStream* data) {
+    const GetUnitDataResponse response =
+        bridge.send_message(YaUnitData::GetUnitData{
+            .instance_id = instance_id(), .unit_id = unitId});
+
+    assert(response.data.write_back(data) == Steinberg::kResultOk);
+
+    return response.result;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::setUnitData(Steinberg::Vst::UnitID unitId,
+                                 Steinberg::IBStream* data) {
+    return bridge.send_message(YaUnitData::SetUnitData{
+        .instance_id = instance_id(), .unit_id = unitId, .data = data});
+}
+
 int32 PLUGIN_API Vst3PluginProxyImpl::getUnitCount() {
     return bridge.send_message(
         YaUnitInfo::GetUnitCount{.instance_id = instance_id()});

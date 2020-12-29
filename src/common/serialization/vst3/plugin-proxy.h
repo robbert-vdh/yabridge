@@ -62,6 +62,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
                         public YaEditController2,
                         public YaPluginBase,
                         public YaProgramListData,
+                        public YaUnitData,
                         public YaUnitInfo {
    public:
     /**
@@ -88,6 +89,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
         YaEditController2::ConstructArgs edit_controller_2_args;
         YaPluginBase::ConstructArgs plugin_base_args;
         YaProgramListData::ConstructArgs program_list_data_args;
+        YaUnitData::ConstructArgs unit_data_args;
         YaUnitInfo::ConstructArgs unit_info_args;
 
         template <typename S>
@@ -100,6 +102,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
             s.object(edit_controller_2_args);
             s.object(plugin_base_args);
             s.object(program_list_data_args);
+            s.object(unit_data_args);
             s.object(unit_info_args);
         }
     };

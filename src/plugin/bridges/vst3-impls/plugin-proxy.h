@@ -134,6 +134,14 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
                                       int32 programIndex,
                                       Steinberg::IBStream* data) override;
 
+    // From `IUnitData`
+    tresult PLUGIN_API
+    unitDataSupported(Steinberg::Vst::UnitID unitId) override;
+    tresult PLUGIN_API getUnitData(Steinberg::Vst::UnitID unitId,
+                                   Steinberg::IBStream* data) override;
+    tresult PLUGIN_API setUnitData(Steinberg::Vst::UnitID unitId,
+                                   Steinberg::IBStream* data) override;
+
     // From `IUnitInfo`
     int32 PLUGIN_API getUnitCount() override;
     tresult PLUGIN_API
