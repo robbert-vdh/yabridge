@@ -1,9 +1,9 @@
 # VST3 interfaces
 
-TODO: After merging into master, update this link to just point to GitHub
-
-See [docs/vst3.md](../../../../docs/vst3.md) for more information on how the
-serialization works.
+We currently support all VST 3.0.0 interfaces with the exceptions of
+`IProgramListData` and `IUnitData`. See
+[docs/vst3.md](https://github.com/robbert-vdh/yabridge/blob/master/docs/vst3.md)
+for more information on how the serialization works.
 
 VST3 plugin interfaces are implemented as follows:
 

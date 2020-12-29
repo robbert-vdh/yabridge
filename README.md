@@ -11,22 +11,8 @@ for VST2 plugins and quick startup times. Its modern concurrent architecture and
 focus on transparency allows yabridge to be both fast and highly compatible,
 while also staying easy to debug and maintain.
 
-_VST3 support is scheduled for yabridge 3.0. At the moment it's only available
-on the master branch._
-
-## TODOs
-
-There's still lots of work to be done here. Below is an incomplete list of
-things that still have to be done before this is in a usable state:
-
-- Support the complete 3.7.1 specification. We currently support all mandatory
-  VST 3.0.0 interfaces with one or two missing options interfaces.
-- See [this
-  document](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/src/common/serialization/vst3/README.md)
-  for all fully implemetned interfaces.
-- Update all the AUR packages for the `libyabridge-vst{2,3}.so` changes.
-- Test the binaries built on GitHub on plain Ubuntu 18.04, are we missing any
-  static linking?
+_VST3 support is scheduled for yabridge 3.0. At the moment it's only available on the master branch._
+_See [this document](https://github.com/robbert-vdh/yabridge/blob/master/src/common/serialization/vst3/README.md) for all currently implemented interfaces._
 
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
@@ -574,7 +560,7 @@ The following dependencies are included in the repository as a Meson wrap:
 - [function2](https://github.com/Naios/function2)
 - [tomlplusplus](https://github.com/marzer/tomlplusplus)
 - Version 3.7.1 of the [VST3 SDK](https://github.com/robbert-vdh/vst3sdk) with
-  some [patches](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/tools/patch-vst3-sdk.sh)
+  some [patches](https://github.com/robbert-vdh/yabridge/blob/master/tools/patch-vst3-sdk.sh)
   to allow Winelib compilation
 
 The project can then be compiled as follows:
