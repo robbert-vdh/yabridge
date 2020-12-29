@@ -36,6 +36,7 @@ InstanceInterfaces::InstanceInterfaces(
       edit_controller(object),
       edit_controller_2(object),
       plugin_base(object),
+      program_list_data(object),
       unit_info(object) {}
 
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
@@ -563,6 +564,28 @@ void Vst3Bridge::run() {
                             .plugin_base->terminate();
                     })
                     .get();
+            },
+            [&](const YaProgramListData::ProgramDataSupported& request)
+                -> YaProgramListData::ProgramDataSupported::Response {
+                return object_instances[request.instance_id]
+                    .program_list_data->programDataSupported(request.list_id);
+            },
+            [&](const YaProgramListData::GetProgramData& request)
+                -> YaProgramListData::GetProgramData::Response {
+                VectorStream data{};
+                const tresult result =
+                    object_instances[request.instance_id]
+                        .program_list_data->getProgramData(
+                            request.list_id, request.program_index, &data);
+
+                return YaProgramListData::GetProgramDataResponse{
+                    .result = result, .data = std::move(data)};
+            },
+            [&](YaProgramListData::SetProgramData& request)
+                -> YaProgramListData::SetProgramData::Response {
+                return object_instances[request.instance_id]
+                    .program_list_data->setProgramData(
+                        request.list_id, request.program_index, &request.data);
             },
             [&](const YaPluginFactory::Construct&)
                 -> YaPluginFactory::Construct::Response {
