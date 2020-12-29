@@ -143,7 +143,12 @@ YaProcessData::YaProcessData(const Steinberg::Vst::ProcessData& process_data)
       symbolic_sample_size(process_data.symbolicSampleSize),
       num_samples(process_data.numSamples),
       outputs_num_channels(process_data.numOutputs),
-      input_parameter_changes(*process_data.inputParameterChanges),
+      // Even though `ProcessData::inputParamterChanges` is mandatory, the VST3
+      // validator will pass a null pointer here
+      input_parameter_changes(
+          process_data.inputParameterChanges
+              ? YaParameterChanges(*process_data.inputParameterChanges)
+              : YaParameterChanges()),
       output_parameter_changes_supported(process_data.outputParameterChanges),
       input_events(process_data.inputEvents ? std::make_optional<YaEventList>(
                                                   *process_data.inputEvents)
