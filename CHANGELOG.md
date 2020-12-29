@@ -13,23 +13,23 @@ TODO: Add an updates screenshot with some fancy VST3-only plugins to the readme
 
 ### Added
 
-- Yabridge 3.0 introduces the first ever Wine VST3 bridge, allowing you to use
-  Windows VST3 plugins in Linux VST3 hosts with full VST 3.7.1 compatibility.
-  Simply tell yabridgectl to look for plugins in
+- Yabridge 3.0 introduces the first ever true Wine VST3 bridge, allowing you to
+  use Windows VST3 plugins in Linux VST3 hosts with full VST 3.7.1
+  compatibility. Simply tell yabridgectl to look for plugins in
   `$HOME/.wine/drive_c/Program Files/Common Files/VST3`, run `yabridgectl sync`,
   and your VST3 compatible DAW will pick up the new plugins in
   `~/.vst3/yabridge` automatically. Even though this feature has been tested
   extensively with a variety of VST3 plugins and hosts, there's still a large
-  part of the VST 3.7.1 specification that none of the hosts or plugins we can
+  part of the VST 3.7.1 specification that none of the hosts or plugins we came
   across actually used, so please let me know if you run into any weird
   behaviour!
 - Added the `with-vst3` compile time option to control whether yabridge should
   be built with VST3 support. This is enabled by default.
 - Added an
   [option](https://github.com/robbert-vdh/yabridge#compatibility-options) to use
-  XEmbed instead of yabridge's normal window embedding method. Some plugins have
-  redrawing issues when using XEmbed and editor resizing won't work, so it's not
-  recommended to use it as a default.
+  Wine's XEmbed implementation instead of yabridge's normal window embedding
+  method. Some plugins have will have redrawing issues when using XEmbed or the
+  editor might not show up at all, so your mileage may very much vary.
 
 ### Changed
 
@@ -41,19 +41,19 @@ TODO: Add an updates screenshot with some fancy VST3-only plugins to the readme
   double buffering.
 - VST2 editor idle events are now handled slightly differently. This should
   result in even more responsive GUIs and I have not come across any plugins
-  where this caused issues, but please let me know if it does break anything for
-  you.
+  where this change introduced issues, but please let me know if it does break
+  anything for you.
 - Changed part of the build process considering [this Wine
   bug](https://bugs.winehq.org/show_bug.cgi?id=49138). Building with Wine 5.7
   and 5.8 required a change, but that change now breaks builds using Wine 6.0
-  and up. We now detect which version of Wine is used to build with, and we then
-  apply the change conditionally to be able to support building with both older
-  and newer versions of Wine.
+  and up. The build process now detect which version of Wine is used to build
+  with, and it then applies the change conditionally to be able to support
+  building with both older and newer versions of Wine.
 
 ### Fixed
 
-- Added a background to the editor window to get rid of artifacts that could
-  occur when the plugin or the host don't resize the window correctly.
+- Added a background to the editor window to get rid of artifacts that would
+  occur if the plugin or the host didn't resize the window correctly.
 
 ### yabridgectl
 
