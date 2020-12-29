@@ -104,7 +104,7 @@ you can use `yabridgectl set --path=<path>` to tell yabridgectl where it can
 find the files.
 
 Next, you'll want to tell yabridgectl where it can find your VST2 and VST3
-plugins. **Note that VST3 support is not yet available on yabridge 2.x.** For
+plugins. **Note that VST3 support is not yet available in yabridge 2.x.** For
 this you can use yabridgectl's `add`, `rm` and `list` commands. You can also use
 `yabridgectl status` to get an overview of the current settings and the
 installation status of all of your plugins. To add the most common VST2 plugin
