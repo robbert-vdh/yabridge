@@ -258,7 +258,7 @@ void Vst3Bridge::run() {
                                                            request.info);
 
                 return YaEditController::GetParameterInfoResponse{
-                    .result = result, .updated_info = request.info};
+                    .result = result, .updated_info = std::move(request.info)};
             },
             [&](const YaEditController::GetParamStringByValue& request)
                 -> YaEditController::GetParamStringByValue::Response {
@@ -478,7 +478,7 @@ void Vst3Bridge::run() {
                         .plug_view->getSize(&request.size);
 
                 return YaPlugView::GetSizeResponse{
-                    .result = result, .updated_size = request.size};
+                    .result = result, .updated_size = std::move(request.size)};
             },
             [&](YaPlugView::OnSize& request) -> YaPlugView::OnSize::Response {
                 // HACK: This function has to be run from the UI thread since
@@ -617,7 +617,7 @@ void Vst3Bridge::run() {
                         .unit_info->getUnitInfo(request.unit_index, info);
 
                 return YaUnitInfo::GetUnitInfoResponse{.result = result,
-                                                       .info = info};
+                                                       .info = std::move(info)};
             },
             [&](const YaUnitInfo::GetProgramListCount& request)
                 -> YaUnitInfo::GetProgramListCount::Response {
@@ -631,8 +631,8 @@ void Vst3Bridge::run() {
                                            .unit_info->getProgramListInfo(
                                                request.list_index, info);
 
-                return YaUnitInfo::GetProgramListInfoResponse{.result = result,
-                                                              .info = info};
+                return YaUnitInfo::GetProgramListInfoResponse{
+                    .result = result, .info = std::move(info)};
             },
             [&](const YaUnitInfo::GetProgramName& request)
                 -> YaUnitInfo::GetProgramName::Response {
