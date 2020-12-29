@@ -16,6 +16,8 @@
 
 #include "vst3.h"
 
+#include <bitset>
+
 #include <public.sdk/source/vst/utility/stringconvert.h>
 
 #include "src/common/serialization/vst3.h"
@@ -550,10 +552,31 @@ bool Vst3Logger::log_request(
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
                 << ": IAudioProcessor::setBusArrangements(inputs = "
-                   "[SpeakerArrangement; "
-                << request.inputs.size() << "], numIns = " << request.num_ins
-                << ", outputs = [SpeakerArrangement; " << request.outputs.size()
-                << "], numOuts = " << request.num_outs << ")";
+                   "[";
+
+        for (bool first = true; const auto& arrangement : request.inputs) {
+            if (!first) {
+                message << ", ";
+            }
+            message << "SpeakerArrangement: 0b"
+                    << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement)>(
+                           arrangement);
+            first = false;
+        }
+
+        message << "], numIns = " << request.num_ins << ", outputs = [";
+
+        for (bool first = true; const auto& arrangement : request.outputs) {
+            if (!first) {
+                message << ", ";
+            }
+            message << "SpeakerArrangement: 0b"
+                    << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement)>(
+                           arrangement);
+            first = false;
+        }
+
+        message << "], numOuts = " << request.num_outs << ")";
     });
 }
 
@@ -1019,7 +1042,10 @@ void Vst3Logger::log_response(
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            message << ", <SpeakerArrangement>";
+            message << ", <SpeakerArrangement: 0b"
+                    << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement)>(
+                           response.updated_arr)
+                    << ">";
         }
     });
 }
