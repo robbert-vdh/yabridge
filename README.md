@@ -16,11 +16,11 @@ on the master branch._
 
 ## TODOs
 
-This branch is still very far removed from being in a usable state. Below is an
-incomplete list of things that still have to be done before this can be used:
+There's still lots of work to be done here. Below is an incomplete list of
+things that still have to be done before this is in a usable state:
 
-- Support all VST 3.7.1 interfaces. We're currently support all mandatory VST
-  3.0.0 interfaces with one or two missing options interfaces.
+- Support the complete 3.7.1 specification. We currently support all mandatory
+  VST 3.0.0 interfaces with one or two missing options interfaces.
 - See [this
   document](https://github.com/robbert-vdh/yabridge/tree/feature/vst3/src/common/serialization/vst3/README.md)
   for all fully implemetned interfaces.
