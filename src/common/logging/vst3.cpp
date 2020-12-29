@@ -1083,7 +1083,10 @@ void Vst3Logger::log_response(bool is_host_vst,
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            message << ", <BusInfo>";
+            message << ", <BusInfo for \""
+                    << VST3::StringConvert::convert(response.updated_bus.name)
+                    << "\" with " << response.updated_bus.channelCount
+                    << " channels>";
         }
     });
 }
