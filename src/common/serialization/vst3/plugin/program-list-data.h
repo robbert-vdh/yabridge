@@ -61,12 +61,92 @@ class YaProgramListData : public Steinberg::Vst::IProgramListData {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IProgramListData::programDataSupported(list_id)` to the Wine plugin
+     * host.
+     */
+    struct ProgramDataSupported {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ProgramListID list_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(list_id);
+        }
+    };
+
     virtual tresult PLUGIN_API
     programDataSupported(Steinberg::Vst::ProgramListID listId) override = 0;
+
+    /**
+     * The response code and written state for a call to
+     * `IProgramListData::getProgramData(list_id, program_index, &data)`.
+     */
+    struct GetProgramDataResponse {
+        UniversalTResult result;
+        VectorStream data;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(data);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IProgramListData::getProgramData(list_id, program_index, &data)` to the
+     * Wine plugin host.
+     */
+    struct GetProgramData {
+        using Response = GetProgramDataResponse;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ProgramListID list_id;
+        int32 program_index;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(list_id);
+            s.value4b(program_index);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getProgramData(Steinberg::Vst::ProgramListID listId,
                    int32 programIndex,
                    Steinberg::IBStream* data) override = 0;
+
+    /**
+     * Message to pass through a call to
+     * `IProgramListData::SetProgramData(list_id, program_index, data)` to the
+     * Wine plugin host.
+     */
+    struct SetProgramData {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ProgramListID list_id;
+        int32 program_index;
+        VectorStream data;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(list_id);
+            s.value4b(program_index);
+            s.object(data);
+        }
+    };
+
     virtual tresult PLUGIN_API
     setProgramData(Steinberg::Vst::ProgramListID listId,
                    int32 programIndex,
