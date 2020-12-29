@@ -125,30 +125,22 @@ update yabridge if you are using the default copy-based installation method._
 ### Manual setup
 
 Setting up yabridge through yabridgectl is the recommended installation method
-as it makes updating easier and yabridgectl will check for some common mistakes
-during the installation process. To manually set up yabridge for VST2 plugins, first
-download and extract yabridge's files like in the section above. The rest of
-this section assumes that you have extracted the files to `~/.local/share` (such
-that `~/.local/share/yabridge/libyabridge-vst2.so` exists), and that you want to
-set up yabridge for the VST2 plugin called
-`~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`.
-
-Depending on whether you want to use copy or symlink-based installation method,
-you can then set up yabridge for that plugin by creating a copy or symlink of
-`libyabridge-vst2.so` next to `plugin.dll` called `plugin.so`. For the example,
-you can use either:
-
-```shell
-# For the copy-based installation method
-cp ~/.local/share/yabridge/libyabridge-vst2.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
-# For the symlink-based installation method
-ln -sf ~/.local/share/yabridge/libyabridge-vst2.so "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so"
-```
+as it makes setting up plugins and updating yabridge easier. Yabridgectl will
+also check for some common issues during the installation process so you can
+get up and running faster. To manually set up yabridge for VST2 plugins, first
+download and extract yabridge's files just like in the section above. Yabridge's
+files have to be extracted to `~/.local/share`, such that
+`~/.local/share/yabridge/libyabridge-vst2.so` exists. If you want to set up
+yabridge for a VST2 plugin located at
+`~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`,
+then you'll have to copy `~/.local/share/yabridge/libyabridge-vst2.so` to
+`~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so`. This process has
+to be repeated whenever you download a new version of yabridge.
 
 Doing the same thing for VST3 plugins involves creating a [merged VST3
 bundle](https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles)
 by hand with the Windows VST3 plugin symlinked in. Doing this without
-yabridgectl is not supported since it's a very error prone process.
+yabridgectl is not supported since the process is very error prone.
 
 ### DAW setup
 
