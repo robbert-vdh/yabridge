@@ -25,11 +25,12 @@ use std::fs;
 use std::hash::Hasher;
 use std::os::unix::fs as unix_fs;
 use std::os::unix::process::CommandExt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use textwrap::Wrapper;
 
 use crate::config::{self, Config, KnownConfig, YABRIDGE_HOST_EXE_NAME};
+use crate::files::NativeFile;
 
 /// (Part of) the expected output when running `yabridge-host.exe`. Used to verify that everything's
 /// working correctly. We'll only match this prefix so we can modify the exact output at a later
@@ -45,6 +46,24 @@ pub fn copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<u64> {
             to.as_ref().display()
         )
     })
+}
+
+/// Wrapper around [`std::fs::create_dir_all()`](std::fs::create_dir_all) with a human readable
+/// error message.
+pub fn create_dir_all<P: AsRef<Path>>(path: P) -> Result<()> {
+    fs::create_dir_all(&path).with_context(|| {
+        format!(
+            "Error creating directories for '{}'",
+            path.as_ref().display(),
+        )
+    })
+}
+
+/// Wrapper around [`std::fs::remove_dir_all()`](std::fs::remove_dir_all) with a human readable
+/// error message.
+pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> Result<()> {
+    fs::remove_dir_all(&path)
+        .with_context(|| format!("Could not remove directory '{}'", path.as_ref().display()))
 }
 
 /// Wrapper around [`std::fs::remove_file()`](std::fs::remove_file) with a human readable error
@@ -64,6 +83,16 @@ pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> Result<()> {
             dst.as_ref().display()
         )
     })
+}
+
+/// Get the type of a file, if it exists.
+pub fn get_file_type(path: PathBuf) -> Option<NativeFile> {
+    match path.symlink_metadata() {
+        Ok(metadata) if metadata.file_type().is_symlink() => Some(NativeFile::Symlink(path)),
+        Ok(metadata) if metadata.file_type().is_dir() => Some(NativeFile::Directory(path)),
+        Ok(_) => Some(NativeFile::Regular(path)),
+        Err(_) => None,
+    }
 }
 
 /// Hash the conetnts of a file as an `i64` using Rust's built in hasher. Collisions are not a big
@@ -90,17 +119,21 @@ pub fn hash_file(file: &Path) -> Result<i64> {
 /// In the last case we'll just print a warning since we don't know how to invoke the shell as a
 /// login shell. This is needed when using copies to ensure that yabridge can find the host binaries
 /// when the VST host is launched from the desktop enviornment.
+///
+/// This is a bit messy, and with yabridge 2.1 automatically searching in `~/.local/share/yabridge`
+/// it's probably not really needed anymore, but it could still be useful in some edge case
+/// scenarios.
 pub fn verify_path_setup(config: &Config) -> Result<bool> {
     // First we'll check `~/.local/share/yabridge`, since that's a special location where yabridge
     // will always search
-    if config::yabridge_directories()
+    let xdg_data_yabridge_exists = config::yabridge_directories()
         .map(|dirs| {
             dirs.get_data_home()
                 .join(YABRIDGE_HOST_EXE_NAME)
                 .is_executable()
         })
-        .unwrap_or(false)
-    {
+        .unwrap_or(false);
+    if xdg_data_yabridge_exists {
         return Ok(true);
     }
 
@@ -179,7 +212,7 @@ pub fn verify_path_setup(config: &Config) -> Result<bool> {
                              reboot your system to complete the setup.\n\
                              \n\
                              https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues",
-                            config.libyabridge()?.parent().unwrap().display(),
+                            config.files()?.libyabridge_vst2.parent().unwrap().display(),
                             shell.bright_white(),
                             "PATH".bright_white()
                         ))
@@ -230,13 +263,13 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
     let mut wine_version = String::from_utf8(wine_version_output)?;
     wine_version.pop().unwrap();
 
-    let yabridge_host_exe_path = config
-        .yabridge_host_exe()
+    let files = config
+        .files()
         .context(format!("Could not find '{}'", YABRIDGE_HOST_EXE_NAME))?;
 
     // Hash the contents of `yabridge-host.exe.so` since `yabridge-host.exe` is only a Wine
     // generated shell script
-    let yabridge_host_hash = hash_file(&yabridge_host_exe_path.with_extension("exe.so"))?;
+    let yabridge_host_hash = hash_file(&files.yabridge_host_exe_so)?;
 
     // Since these checks can take over a second if wineserver isn't already running we'll only
     // perform them when something has changed
@@ -248,9 +281,9 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
         return Ok(());
     }
 
-    let output = Command::new(&yabridge_host_exe_path)
+    let output = Command::new(&files.yabridge_host_exe)
         .output()
-        .with_context(|| format!("Could not run '{}'", yabridge_host_exe_path.display()))?;
+        .with_context(|| format!("Could not run '{}'", files.yabridge_host_exe.display()))?;
     let stderr = String::from_utf8(output.stderr)?;
 
     // There are three scenarios here:

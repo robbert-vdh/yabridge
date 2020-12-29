@@ -99,10 +99,10 @@ fn main() -> Result<()> {
                 .arg(
                     Arg::with_name("path")
                         .long("path")
-                        .about("Path to the directory containing 'libyabridge.so'")
+                        .about("Path to the directory containing 'libyabridge-{vst2,vst3}.so'")
                         .long_about(
-                            "Path to the directory containing 'libyabridge.so'. If this is \
-                             not set, then yabridgectl will look in both '/usr/lib' and \
+                            "Path to the directory containing 'libyabridge-{vst2,vst3}.so'. If this \
+                             is not set, then yabridgectl will look in both '/usr/lib' and \
                              '~/.local/share/yabridge' by default.",
                         )
                         .validator(validate_path)

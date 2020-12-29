@@ -21,7 +21,6 @@
 #include <boost/process/pipe.hpp>
 #include <boost/process/search_path.hpp>
 #include <boost/process/system.hpp>
-#include <fstream>
 #include <sstream>
 
 // Generated inside of the build directory
@@ -32,6 +31,230 @@
 
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
+
+// These functions are used to populate the fields in `PluginInfo`. See the
+// docstrings for the corresponding fields for more information on what we're
+// actually doing here.
+fs::path find_plugin_library(const fs::path& this_plugin_path,
+                             PluginType plugin_type);
+fs::path normalize_plugin_path(const fs::path& windows_library_path,
+                               PluginType plugin_type);
+std::variant<OverridenWinePrefix, fs::path, DefaultWinePrefix> find_wine_prefix(
+    fs::path windows_plugin_path);
+
+PluginInfo::PluginInfo(PluginType plugin_type)
+    : plugin_type(plugin_type),
+      native_library_path(get_this_file_location()),
+      // As explained in the docstring, this is the actual Windows library. For
+      // VST3 plugins that come in a module we should be loading that module
+      // instead of the `.vst3` file within in, which is where
+      // `windows_plugin_path` comes in.
+      windows_library_path(
+          find_plugin_library(native_library_path, plugin_type)),
+      plugin_arch(find_dll_architecture(windows_library_path)),
+      windows_plugin_path(
+          normalize_plugin_path(windows_library_path, plugin_type)),
+      wine_prefix(find_wine_prefix(windows_plugin_path)) {}
+
+bp::environment PluginInfo::create_host_env() const {
+    bp::environment env = boost::this_process::environment();
+
+    // Only set the prefix when could auto detect it and it's not being
+    // overridden (this entire `std::visit` instead of `std::has_alternative` is
+    // just for clarity's sake)
+    std::visit(overload{
+                   [](const OverridenWinePrefix&) {},
+                   [&](const boost::filesystem::path& prefix) {
+                       env["WINEPREFIX"] = prefix.string();
+                   },
+                   [](const DefaultWinePrefix&) {},
+               },
+               wine_prefix);
+
+    return env;
+}
+
+boost::filesystem::path PluginInfo::normalize_wine_prefix() const {
+    return std::visit(
+        overload{
+            [](const OverridenWinePrefix& prefix) { return prefix.value; },
+            [](const boost::filesystem::path& prefix) { return prefix; },
+            [](const DefaultWinePrefix&) {
+                const bp::environment env = boost::this_process::environment();
+                return fs::path(env.at("HOME").to_string()) / ".wine";
+            },
+        },
+        wine_prefix);
+}
+
+fs::path find_plugin_library(const fs::path& this_plugin_path,
+                             PluginType plugin_type) {
+    switch (plugin_type) {
+        case PluginType::vst2: {
+            fs::path plugin_path(this_plugin_path);
+            plugin_path.replace_extension(".dll");
+            if (fs::exists(plugin_path)) {
+                // Also resolve symlinks here, to support symlinked .dll files
+                return fs::canonical(plugin_path);
+            }
+
+            // In case this files does not exist and our `.so` file is a
+            // symlink, we'll also repeat this check after resolving that
+            // symlink to support links to copies of `libyabridge-vst2.so` as
+            // described in issue #3
+            fs::path alternative_plugin_path = fs::canonical(this_plugin_path);
+            alternative_plugin_path.replace_extension(".dll");
+            if (fs::exists(alternative_plugin_path)) {
+                return fs::canonical(alternative_plugin_path);
+            }
+
+            // This function is used in the constructor's initializer list so we
+            // have to throw when the path could not be found
+            throw std::runtime_error("'" + plugin_path.string() +
+                                     "' does not exist, make sure to rename "
+                                     "'libyabridge-vst2.so' to match a "
+                                     "VST plugin .dll file.");
+        } break;
+        case PluginType::vst3: {
+            // A VST3 plugin in Linux always has to be inside of a bundle (=
+            // directory) named `X.vst3` that contains a static object
+            // `X.vst3/Contents/x86_64-linux/X.so`. On Linux `X.so` is not
+            // allowed to be standalone, so for yabridge this should also always
+            // be installed this way.
+            // https://developer.steinberg.help/pages/viewpage.action?pageId=9798275
+            const fs::path bundle_home =
+                this_plugin_path.parent_path().parent_path().parent_path();
+            const fs::path win_module_name =
+                this_plugin_path.filename().replace_extension(".vst3");
+
+            // Quick check in case the plugin was set up without yabridgectl,
+            // since the format is very specific and any deviations from that
+            // will be incorrect.
+            if (bundle_home.extension() != ".vst3") {
+                throw std::runtime_error(
+                    "'" + this_plugin_path.string() +
+                    "' is not inside of a VST3 bundle. Use yabridgectl to "
+                    "set up yabridge for VST3 plugins or check the readme "
+                    "for the correct format.");
+            }
+
+            // Finding the Windows plugin consists of two steps because
+            // Steinberg changed the format around:
+            // - First we'll find the plugin in the VST3 bundle created by
+            //   yabridgectl in `~/.vst3`. The plugin can be either 32-bit or
+            //   64-bit.
+            //   TODO: Right now we can't select between the 64-bit and the
+            //         32-bit version and we'll just pick whichever one is
+            //         available
+            // - After that we'll resolve the symlink to the module in the Wine
+            //   prefix, and then we'll have to figure out if this module is an
+            //   old style standalone module (< 3.6.10) or if it's inside of
+            //   a bundle (>= 3.6.10)
+            fs::path candidate_path =
+                bundle_home / "Contents" / "x86_64-win" / win_module_name;
+            if (!fs::exists(candidate_path)) {
+                // Try the 32-bit version no 64-bit version exists (although, is
+                // there a single VST3 plugin where this is the case?)
+                fs::path candidate_path =
+                    bundle_home / "Contents" / "x86-win" / win_module_name;
+            }
+
+            // After this we'll have to use `normalize_plugin_path()` to get the
+            // actual module entry point in case the plugin is using a VST
+            // 3.6.10 style bundle
+            if (fs::exists(candidate_path)) {
+                return fs::canonical(candidate_path);
+            }
+
+            throw std::runtime_error(
+                "'" + bundle_home.string() +
+                "' does not contain a Windows VST3 module. Use yabridgectl to "
+                "set up yabridge for VST3 plugins or check the readme "
+                "for the correct format.");
+        } break;
+        default:
+            throw std::runtime_error("How did you manage to get this?");
+            break;
+    }
+}
+
+fs::path normalize_plugin_path(const fs::path& windows_library_path,
+                               PluginType plugin_type) {
+    switch (plugin_type) {
+        case PluginType::vst2:
+            return windows_library_path;
+            break;
+        case PluginType::vst3: {
+            // Now we'll have to figure out if this is a new-style bundle or
+            // an old standalone module
+            const fs::path win_module_name =
+                windows_library_path.filename().replace_extension(".vst3");
+            const fs::path windows_bundle_home =
+                windows_library_path.parent_path().parent_path().parent_path();
+            if (equals_case_insensitive(windows_bundle_home.filename().string(),
+                                        win_module_name.string())) {
+                return windows_bundle_home;
+            } else {
+                return windows_library_path;
+            }
+        } break;
+        default:
+            throw std::runtime_error("How did you manage to get this?");
+            break;
+    }
+}
+
+std::variant<OverridenWinePrefix, fs::path, DefaultWinePrefix> find_wine_prefix(
+    fs::path windows_plugin_path) {
+    bp::environment env = boost::this_process::environment();
+    if (!env["WINEPREFIX"].empty()) {
+        return OverridenWinePrefix{env["WINEPREFIX"].to_string()};
+    }
+
+    std::optional<fs::path> dosdevices_dir = find_dominating_file(
+        "dosdevices", windows_plugin_path, fs::is_directory);
+    if (!dosdevices_dir) {
+        return DefaultWinePrefix{};
+    }
+
+    return dosdevices_dir->parent_path();
+}
+
+fs::path get_this_file_location() {
+    // HACK: Not sure why, but `boost::dll::this_line_location()` returns a path
+    //       starting with a double slash on some systems. I've seen this happen
+    //       on both Ubuntu 18.04 and 20.04, but not on Arch based distros.
+    //       Under Linux a path starting with two slashes is treated the same as
+    //       a path starting with only a single slash, but Wine will refuse to
+    //       load any files when the path starts with two slashes. The easiest
+    //       way to work around this if this happens is to just add another
+    //       leading slash and then normalize the path, since three or more
+    //       slashes will be coerced into a single slash.
+    fs::path this_file = boost::dll::this_line_location();
+    if (this_file.string().starts_with("//")) {
+        this_file = ("/" / this_file).lexically_normal();
+    }
+
+    return this_file;
+}
+
+bool equals_case_insensitive(const std::string& a, const std::string& b) {
+    return std::equal(a.begin(), a.end(), b.begin(),
+                      [](const char& a_char, const char& b_char) {
+                          return std::tolower(a_char) == std::tolower(b_char);
+                      });
+}
+
+std::string join_quoted_strings(std::vector<std::string>& strings) {
+    bool is_first = true;
+    std::ostringstream joined_strings{};
+    for (const auto& option : strings) {
+        joined_strings << (is_first ? "'" : ", '") << option << "'";
+        is_first = false;
+    }
+
+    return joined_strings.str();
+}
 
 std::string create_logger_prefix(const fs::path& endpoint_base_dir) {
     // Use the name of the base directory used for our sockets as the logger
@@ -45,73 +268,20 @@ std::string create_logger_prefix(const fs::path& endpoint_base_dir) {
     return "[" + endpoint_name + "] ";
 }
 
-std::optional<fs::path> find_wineprefix() {
-    std::optional<fs::path> dosdevices_dir =
-        find_dominating_file("dosdevices", find_vst_plugin(), fs::is_directory);
-    if (!dosdevices_dir) {
-        return std::nullopt;
-    }
-
-    return dosdevices_dir->parent_path();
-}
-
-PluginArchitecture find_vst_architecture(fs::path plugin_path) {
-    std::ifstream file(plugin_path, std::ifstream::binary | std::ifstream::in);
-
-    // The linker will place the offset where the PE signature is placed at the
-    // end of the MS-DOS stub, at offset 0x3c
-    uint32_t pe_signature_offset;
-    file.seekg(0x3c);
-    file.read(reinterpret_cast<char*>(&pe_signature_offset),
-              sizeof(pe_signature_offset));
-
-    // The PE32 signature will be followed by a magic number that indicates the
-    // target architecture of the binary
-    uint32_t pe_signature;
-    uint16_t machine_type;
-    file.seekg(pe_signature_offset);
-    file.read(reinterpret_cast<char*>(&pe_signature), sizeof(pe_signature));
-    file.read(reinterpret_cast<char*>(&machine_type), sizeof(machine_type));
-
-    constexpr char expected_pe_signature[4] = {'P', 'E', '\0', '\0'};
-    if (pe_signature !=
-        *reinterpret_cast<const uint32_t*>(expected_pe_signature)) {
-        throw std::runtime_error("'" + plugin_path.string() +
-                                 "' is not a valid .dll file");
-    }
-
-    // These constants are specified in
-    // https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#machine-types
-    switch (machine_type) {
-        case 0x014c:  // IMAGE_FILE_MACHINE_I386
-            return PluginArchitecture::vst_32;
-            break;
-        case 0x8664:  // IMAGE_FILE_MACHINE_AMD64
-        case 0x0000:  // IMAGE_FILE_MACHINE_UNKNOWN
-            return PluginArchitecture::vst_64;
-            break;
-    }
-
-    // When compiled without optimizations, GCC 9.3 will warn that the function
-    // does not return if we put this in a `default:` case instead.
-    std::ostringstream error_msg;
-    error_msg << "'" << plugin_path
-              << "' is neither a x86 nor a x86_64 PE32 file. Actual "
-                 "architecture: 0x"
-              << std::hex << machine_type;
-    throw std::runtime_error(error_msg.str());
-}
-
-fs::path find_vst_host(PluginArchitecture plugin_arch, bool use_plugin_groups) {
+fs::path find_vst_host(const boost::filesystem::path& this_plugin_path,
+                       LibArchitecture plugin_arch,
+                       bool use_plugin_groups) {
     auto host_name = use_plugin_groups ? yabridge_group_host_name
                                        : yabridge_individual_host_name;
-    if (plugin_arch == PluginArchitecture::vst_32) {
+    if (plugin_arch == LibArchitecture::dll_32) {
         host_name = use_plugin_groups ? yabridge_group_host_name_32bit
                                       : yabridge_individual_host_name_32bit;
     }
 
+    // If our `.so` file is a symlink, then search for the host in the directory
+    // of the file that symlink points to
     fs::path host_path =
-        fs::canonical(get_this_file_location()).remove_filename() / host_name;
+        fs::canonical(this_plugin_path).remove_filename() / host_name;
     if (fs::exists(host_path)) {
         return host_path;
     }
@@ -128,47 +298,20 @@ fs::path find_vst_host(PluginArchitecture plugin_arch, bool use_plugin_groups) {
     return vst_host_path;
 }
 
-fs::path find_vst_plugin() {
-    const fs::path this_plugin_path = get_this_file_location();
-
-    fs::path plugin_path(this_plugin_path);
-    plugin_path.replace_extension(".dll");
-    if (fs::exists(plugin_path)) {
-        // Also resolve symlinks here, to support symlinked .dll files
-        return fs::canonical(plugin_path);
-    }
-
-    // In case this files does not exist and our `.so` file is a symlink, we'll
-    // also repeat this check after resolving that symlink to support links to
-    // copies of `libyabridge.so` as described in issue #3
-    fs::path alternative_plugin_path = fs::canonical(this_plugin_path);
-    alternative_plugin_path.replace_extension(".dll");
-    if (fs::exists(alternative_plugin_path)) {
-        return fs::canonical(alternative_plugin_path);
-    }
-
-    // This function is used in the constructor's initializer list so we have to
-    // throw when the path could not be found
-    throw std::runtime_error("'" + plugin_path.string() +
-                             "' does not exist, make sure to rename "
-                             "'libyabridge.so' to match a "
-                             "VST plugin .dll file.");
-}
-
 boost::filesystem::path generate_group_endpoint(
     const std::string& group_name,
     const boost::filesystem::path& wine_prefix,
-    const PluginArchitecture architecture) {
+    const LibArchitecture architecture) {
     std::ostringstream socket_name;
     socket_name << "yabridge-group-" << group_name << "-"
                 << std::to_string(
                        std::hash<std::string>{}(wine_prefix.string()))
                 << "-";
     switch (architecture) {
-        case PluginArchitecture::vst_32:
+        case LibArchitecture::dll_32:
             socket_name << "x32";
             break;
-        case PluginArchitecture::vst_64:
+        case LibArchitecture::dll_64:
             socket_name << "x64";
             break;
     }
@@ -189,24 +332,6 @@ std::vector<boost::filesystem::path> get_augmented_search_path() {
     }
 
     return search_path;
-}
-
-fs::path get_this_file_location() {
-    // HACK: Not sure why, but `boost::dll::this_line_location()` returns a path
-    //       starting with a double slash on some systems. I've seen this happen
-    //       on both Ubuntu 18.04 and 20.04, but not on Arch based distros.
-    //       Under Linux a path starting with two slashes is treated the same as
-    //       a path starting with only a single slash, but Wine will refuse to
-    //       load any files when the path starts with two slashes. The easiest
-    //       way to work around this if this happens is to just add another
-    //       leading slash and then normalize the path, since three or more
-    //       slashes will be coerced into a single slash.
-    fs::path this_file = boost::dll::this_line_location();
-    if (this_file.string().starts_with("//")) {
-        this_file = ("/" / this_file).lexically_normal();
-    }
-
-    return this_file;
 }
 
 std::string get_wine_version() {
@@ -242,17 +367,6 @@ std::string get_wine_version() {
     return version_string;
 }
 
-std::string join_quoted_strings(std::vector<std::string>& strings) {
-    bool is_first = true;
-    std::ostringstream joined_strings{};
-    for (const auto& option : strings) {
-        joined_strings << (is_first ? "'" : ", '") << option << "'";
-        is_first = false;
-    }
-
-    return joined_strings.str();
-}
-
 Configuration load_config_for(const fs::path& yabridge_path) {
     // First find the closest `yabridge.tmol` file for the plugin, falling back
     // to default configuration settings if it doesn't exist
@@ -263,20 +377,4 @@ Configuration load_config_for(const fs::path& yabridge_path) {
     }
 
     return Configuration(*config_file, yabridge_path);
-}
-
-bp::environment set_wineprefix() {
-    bp::environment env = boost::this_process::environment();
-
-    // Allow the wine prefix to be overridden manually
-    if (!env["WINEPREFIX"].empty()) {
-        return env;
-    }
-
-    const auto wineprefix_path = find_wineprefix();
-    if (wineprefix_path) {
-        env["WINEPREFIX"] = wineprefix_path->string();
-    }
-
-    return env;
 }

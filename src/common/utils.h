@@ -21,6 +21,15 @@
 #endif
 #include <boost/filesystem.hpp>
 
+// The cannonical overloading template for `std::visitor`, not sure why this
+// isn't part of the standard library
+template <class... Ts>
+struct overload : Ts... {
+    using Ts::operator()...;
+};
+template <class... Ts>
+overload(Ts...) -> overload<Ts...>;
+
 /**
  * Return the path to the directory for story temporary files. This will be
  * `$XDG_RUNTIME_DIR` if set, and `/tmp` otherwise.

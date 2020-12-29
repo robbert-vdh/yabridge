@@ -1,0 +1,7 @@
+[wrap-git]
+url = https://github.com/robbert-vdh/vst3sdk.git
+# This is VST3 SDK v3.7.1_build_50 with the documentation and VSTGUI submodules
+# removed
+revision = e2fbb41f28a4b311f2fc7d28e9b4330eec1802b6
+clone-recursive = true
+depth = 1

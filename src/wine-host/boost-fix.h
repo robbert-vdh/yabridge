@@ -38,6 +38,7 @@
 // included here, but including headers from the detail directory directly
 // didn't sound like a great idea.
 
+#include <boost/predef.h>
 #include <boost/asio/basic_socket_streambuf.hpp>
 // #include <boost/asio/detail/timer_queue_ptime.hpp>
 

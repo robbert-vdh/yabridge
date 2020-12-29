@@ -18,16 +18,17 @@
 
 #include "boost-fix.h"
 
+#include <future>
 #include <memory>
 #include <optional>
 
+#ifndef NOMINMAX
 #define NOMINMAX
-#define NOSERVICE
-#define NOMCX
-#define NOIMM
-#define WIN32_LEAN_AND_MEAN
+#define WINE_NOWINSOCK
+#endif
 #include <windows.h>
 
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/io_context.hpp>
 #include <function2/function2.hpp>
 
@@ -64,6 +65,30 @@ class MainContext {
     void stop();
 
     /**
+     * Asynchronously execute a function inside of this main IO context and
+     * return the results as a future. This is used to make sure that operations
+     * that may involve the Win32 message loop are all run from the same thread.
+     */
+    template <typename T, typename F>
+    std::future<T> run_in_context(F fn) {
+        std::packaged_task<T()> call_fn(std::move(fn));
+        std::future<T> response = call_fn.get_future();
+        boost::asio::dispatch(context, std::move(call_fn));
+
+        return response;
+    }
+
+    /**
+     * Run a task within the IO context. The difference with `run_in_context()`
+     * is that this version does not guarantee that it's going to be executed as
+     * soon as possible, and thus we also won't return a future.
+     */
+    template <typename F>
+    void schedule_task(F fn) {
+        boost::asio::post(context, std::move(fn));
+    }
+
+    /**
      * Start a timer to handle events every `event_loop_interval` milliseconds.
      *
      * @param handler The function that should be executed in the IO context
@@ -89,8 +114,8 @@ class MainContext {
     }
 
     /**
-     * The raw IO context. Can and should be used directly for everything that's
-     * not the event handling loop.
+     * The raw IO context. Used to bind our sockets onto. Running things within
+     * this IO context should be done with the functions above.
      */
     boost::asio::io_context context;
 

@@ -16,11 +16,13 @@
 
 #pragma once
 
-#include <boost/filesystem.hpp>
+#include <variant>
+
 #include <boost/process/async_pipe.hpp>
 #include <boost/process/environment.hpp>
 
 #include "../common/configuration.h"
+#include "../common/plugins.h"
 
 /**
  * Boost 1.72 was released with a known breaking bug caused by a missing
@@ -40,10 +42,132 @@ class patched_async_pipe : public boost::process::async_pipe {
 };
 
 /**
- * A tag to differentiate between 32 and 64-bit plugins, used to determine which
- * host application to use.
+ * Marker struct for when we use the default Wine prefix.
  */
-enum class PluginArchitecture { vst_32, vst_64 };
+struct DefaultWinePrefix {};
+
+/**
+ * Marker struct for when the Wine prefix is overriden using the `WINEPREFIX`
+ * environment variable.
+ */
+struct OverridenWinePrefix {
+    boost::filesystem::path value;
+};
+
+/**
+ * This will locate the plugin we're going to host based on the location of the
+ * `.so` that we're currently operating from and provides information and
+ * utility functions based on that.
+ */
+struct PluginInfo {
+   public:
+    /**
+     * Locate the Windows plugin based on the location of this copy of
+     * `libyabridge-{vst2,vst3}.so` file and the type of the plugin we're going
+     * to load. For VST2 plugins this is a file with the same name but with a
+     * `.dll` file extension instead of `.so`. In case this file does not exist
+     * and the `.so` file is a symlink, we'll also repeat this check for the
+     * file it links to. This is to support the workflow described in issue #3
+     * where you use symlinks to copies of `libyabridge-vst2.so`.
+     *
+     * For VST3 plugins there is a strict format as defined by Steinberg, and
+     * we'll have yabridgectl create a 'merged bundle' that also contains the
+     * Windows VST3 plugin.
+     *
+     * TODO: At the moment we can't choose to use the 32-bit VST3 if a 64-bit
+     *       plugin exists. Potential solutions are to add a config option to
+     *       use the 32-bit version, or we can add a filename suffix to all
+     *       32-bit versions so they can live alongside each other.
+     *
+     * @param plugin_type The type of the plugin we're going to load. The
+     *   detection works slightly differently depending on the plugin type.
+     *
+     * @throw std::runtime_error If we cannot find a corresponding Windows
+     *   plugin. The error message contains a human readable description of what
+     *   went wrong.
+     */
+    PluginInfo(PluginType plugin_type);
+
+    /**
+     * Create the environment for the plugin host based on `wine_prefix`. If
+     * `WINEPREFIX` was already set then nothing will be changed. Otherwise
+     * we'll set `WINEPREFIX` to the detected Wine prefix, or it will be left
+     * unset if we could not detect a prefix.
+     */
+    boost::process::environment create_host_env() const;
+
+    /**
+     * Return the path to the actual Wine prefix in use, taking into account
+     * `WINEPREFIX` overrides and the default `~/.wine` fallback.
+     */
+    boost::filesystem::path normalize_wine_prefix() const;
+
+    const PluginType plugin_type;
+
+    /**
+     * The path to our `.so` file. For VST3 plugins this is *not* the VST3
+     * module (since that has to be bundle on Linux) but rather the .so file
+     * contained in that bundle.
+     */
+    const boost::filesystem::path native_library_path;
+
+   private:
+    /**
+     * The path to the Windows library (`.dll` or `.vst3`, not to be confused
+     * with a `.vst3` bundle) that we're targeting. This should **not** be
+     * passed to the plugin host and `windows_plugin_path` should be used
+     * instead. We store this intermediate value so we can determine the
+     * plugin's architecture.
+     */
+    const boost::filesystem::path windows_library_path;
+
+   public:
+    const LibArchitecture plugin_arch;
+
+    /**
+     * The path to the plugin (`.dll` or module) we're going to in the Wine
+     * plugin host.
+     *
+     * For VST2 plugins this will be a `.dll` file. For VST3 plugins this is
+     * normally a directory called `MyPlugin.vst3` that contains
+     * `MyPlugin.vst3/Contents/x86-win/MyPlugin.vst3`, but there's also an older
+     * deprecated (but still ubiquitous) format where the top level
+     * `MyPlugin.vst3` is not a directory but a .dll file. This points to either
+     * of those things, and then `VST3::Hosting::Win32Module::create()` will be
+     * able to load it.
+     *
+     * https://developer.steinberg.help/pages/viewpage.action?pageId=9798275
+     */
+    const boost::filesystem::path windows_plugin_path;
+
+    /**
+     * The Wine prefix to use for hosting `windows_plugin_path`. If the
+     * `WINEPREFIX` environment variable is set, then that will be used as an
+     * override. Otherwise, we'll try to find the Wine prefix
+     * `windows_plugin_path` is located in. The detection works by looking for a
+     * directory containing a directory called `dosdevices`. If the plugin is
+     * not inside of a Wine prefix, this will be left empty, and the default
+     * prefix will be used instead.
+     */
+    const std::
+        variant<OverridenWinePrefix, boost::filesystem::path, DefaultWinePrefix>
+            wine_prefix;
+};
+
+/**
+ * Returns equality for two strings when ignoring casing. Used for comparing
+ * filenames inside of Wine prefixes since Windows/Wine does case folding for
+ * filenames.
+ */
+bool equals_case_insensitive(const std::string& a, const std::string& b);
+
+/**
+ * Join a vector of strings with commas while wrapping the strings in quotes.
+ * For example, `join_quoted_strings(std::vector<string>{"string", "another
+ * string", "also a string"})` outputs `"'string', 'another string', 'also a
+ * string'"`. This is used to format the initialisation message.
+ */
+std::string join_quoted_strings(std::vector<std::string>& strings);
 
 /**
  * Create a logger prefix based on the endpoint base directory used for the
@@ -59,30 +183,18 @@ std::string create_logger_prefix(
     const boost::filesystem::path& endpoint_base_dir);
 
 /**
- * Determine the architecture of a VST plugin (or rather, a .dll file) based on
- * it's header values.
- *
- * See https://docs.microsoft.com/en-us/windows/win32/debug/pe-format for more
- * information on the PE32 format.
- *
- * @param plugin_path The path to the .dll file we're going to check.
- *
- * @return The detected architecture.
- * @throw std::runtime_error If the file is not a .dll file.
- */
-PluginArchitecture find_vst_architecture(boost::filesystem::path);
-
-/**
  * Finds the Wine VST host (either `yabridge-host.exe` or `yabridge-host.exe`
  * depending on the plugin). For this we will search in two places:
  *
- *   1. Alongside libyabridge.so if the file got symlinked. This is useful
- *      when developing, as you can simply symlink the the libyabridge.so
- *      file in the build directory without having to install anything to
- *      /usr.
+ *   1. Alongside libyabridge-{vst2,vst3}.so if the file got symlinked. This is
+ *      useful when developing, as you can simply symlink the
+ *      `libyabridge-{vst2,vst3}.so` file in the build directory without having
+ *      to install anything to /usr.
  *   2. In the regular search path, augmented with `~/.local/share/yabridge` to
  *      ease the setup process.
  *
+ * @param this_plugin_path The path to the `.so` file this code is being run
+ *   from.
  * @param plugin_arch The architecture of the plugin, either 64-bit or 32-bit.
  *   Used to determine which host application to use, if available.
  * @param use_plugin_groups Whether the plugin is using plugin groups and we
@@ -90,32 +202,13 @@ PluginArchitecture find_vst_architecture(boost::filesystem::path);
  *
  * @return The a path to the VST host, if found.
  * @throw std::runtime_error If the Wine VST host could not be found.
- */
-boost::filesystem::path find_vst_host(PluginArchitecture plugin_arch,
-                                      bool use_plugin_groups);
-
-/**
- * Find the VST plugin .dll file that corresponds to this copy of
- * `libyabridge.so`. This should be the same as the name of this file but with a
- * `.dll` file extension instead of `.so`. In case this file does not exist and
- * the `.so` file is a symlink, we'll also repeat this check for the file it
- * links to. This is to support the workflow described in issue #3 where you use
- * symlinks to copies of `libyabridge.so`.
  *
- * @return The a path to the accompanying VST plugin .dll file.
- * @throw std::runtime_error If no matching .dll file could be found.
+ * TODO: Perhaps also move this somewhere else
  */
-boost::filesystem::path find_vst_plugin();
-
-/**
- * Locate the Wine prefix this file is located in, if it is inside of a wine
- * prefix. This is done by locating the first parent directory that contains a
- * directory named `dosdevices`.
- *
- * @return Either the path to the Wine prefix (containing the `drive_c?`
- *   directory), or `std::nullopt` if it is not inside of a wine prefix.
- */
-std::optional<boost::filesystem::path> find_wineprefix();
+boost::filesystem::path find_vst_host(
+    const boost::filesystem::path& this_plugin_path,
+    LibArchitecture plugin_arch,
+    bool use_plugin_groups);
 
 /**
  * Generate the group socket endpoint name used based on the name of the group,
@@ -128,21 +221,17 @@ std::optional<boost::filesystem::path> find_wineprefix();
  *
  * @param group_name The name of the plugin group.
  * @param wine_prefix The name of the Wine prefix in use. This should be
- *   obtained by first calling `set_wineprefix()` to allow the user to override
- *   this, and then falling back to `$HOME/.wine` if the environment variable is
- *   unset. Otherwise plugins run from outwide of a Wine prefix will not be
- *   groupable with those run from within `~/.wine` even though they both run
- *   under the same prefix.
+ *   obtained from `PluginInfo::normalize_wine_prefix()`.
  * @param architecture The architecture the plugin is using, since 64-bit
  *   processes can't host 32-bit plugins and the other way around.
  *
  * @return A socket endpoint path that corresponds to the format described
- * above.
+ *   above.
  */
 boost::filesystem::path generate_group_endpoint(
     const std::string& group_name,
     const boost::filesystem::path& wine_prefix,
-    const PluginArchitecture architecture);
+    const LibArchitecture architecture);
 
 /**
  * Return the search path as defined in `$PATH`, with `~/.local/share/yabridge`
@@ -156,7 +245,7 @@ std::vector<boost::filesystem::path> get_augmented_search_path();
 
 /**
  * Return a path to this `.so` file. This can be used to find out from where
- * this link to or copy of `libyabridge.so` was loaded.
+ * this link to or copy of `libyabridge-{vst2,vst3}.so` was loaded.
  */
 boost::filesystem::path get_this_file_location();
 
@@ -171,19 +260,11 @@ boost::filesystem::path get_this_file_location();
 std::string get_wine_version();
 
 /**
- * Join a vector of strings with commas while wrapping the strings in quotes.
- * For example, `join_quoted_strings(std::vector<string>{"string", "another
- * string", "also a string"})` outputs `"'string', 'another string', 'also a
- * string'"`. This is used to format the initialisation message.
- */
-std::string join_quoted_strings(std::vector<std::string>& strings);
-
-/**
  * Load the configuration that belongs to a copy of or symlink to
- * `libyabridge.so`. If no configuration file could be found then this will
- * return an empty configuration object with default settings. See the docstrong
- * on the `Configuration` class for more details on how to choose the config
- * file to load.
+ * `libyabridge-{vst2,vst3}.so`. If no configuration file could be found then
+ * this will return an empty configuration object with default settings. See the
+ * docstrong on the `Configuration` class for more details on how to choose the
+ * config file to load.
  *
  * This function will take any optional compile-time features that have not been
  * enabled into account.
@@ -200,13 +281,6 @@ std::string join_quoted_strings(std::vector<std::string>& strings);
  * @see Configuration
  */
 Configuration load_config_for(const boost::filesystem::path& yabridge_path);
-
-/**
- * Locate the Wine prefix and set the `WINEPREFIX` environment variable if
- * found. This way it's also possible to run .dll files outside of a Wine prefix
- * using the user's default prefix.
- */
-boost::process::environment set_wineprefix();
 
 /**
  * Starting from the starting file or directory, go up in the directory

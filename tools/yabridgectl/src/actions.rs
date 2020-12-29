@@ -18,12 +18,12 @@
 
 use anyhow::{Context, Result};
 use colored::Colorize;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::config::{Config, InstallationMethod};
-use crate::files;
-use crate::files::FoundFile;
+use crate::config::{yabridge_vst3_home, Config, InstallationMethod, YabridgeFiles};
+use crate::files::{self, LibArchitecture, NativeFile};
 use crate::utils;
 use crate::utils::{verify_path_setup, verify_wine_setup};
 
@@ -34,16 +34,15 @@ pub fn add_directory(config: &mut Config, path: PathBuf) -> Result<()> {
 }
 
 /// Remove a direcotry to the plugin locations. The path is assumed to be part of
-/// `config.plugin_dirs`, otherwise this si silently ignored.
+/// `config.plugin_dirs`, otherwise this is silently ignored.
 pub fn remove_directory(config: &mut Config, path: &Path) -> Result<()> {
     // We've already verified that this path is in `config.plugin_dirs`
-    // XXS: Would it be a good idea to warn about leftover .so files?
     config.plugin_dirs.remove(path);
     config.write()?;
 
     // Ask the user to remove any leftover files to prevent possible future problems and out of date
     // copies
-    let orphan_files = files::index_so_files(path);
+    let orphan_files = files::index(path).so_files;
     if !orphan_files.is_empty() {
         println!(
             "Warning: Found {} leftover .so files still in this directory:",
@@ -84,7 +83,7 @@ pub fn list_directories(config: &Config) -> Result<()> {
 /// Print the current configuration and the installation status for all found plugins.
 pub fn show_status(config: &Config) -> Result<()> {
     let results = config
-        .index_directories()
+        .search_directories()
         .context("Failure while searching for plugins")?;
 
     println!(
@@ -95,22 +94,35 @@ pub fn show_status(config: &Config) -> Result<()> {
             .map(|path| format!("'{}'", path.display()))
             .unwrap_or_else(|| String::from("<auto>"))
     );
-    println!(
-        "libyabridge.so: {}",
-        config
-            .libyabridge()
-            .map(|path| format!("'{}'", path.display()))
-            .unwrap_or_else(|_| format!("{}", "<not found>".red()))
-    );
-    println!("installation method: {}", config.method);
 
+    match config.files() {
+        Ok(files) => {
+            println!(
+                "libyabridge-vst2.so: '{}'",
+                files.libyabridge_vst2.display()
+            );
+            println!(
+                "libyabridge-vst3.so: {}\n",
+                files
+                    .libyabridge_vst3
+                    .map(|path| format!("'{}'", path.display()))
+                    .unwrap_or_else(|| "<not found>".red().to_string())
+            );
+        }
+        Err(err) => {
+            println!("Could not find yabridge's files files: {}\n", err);
+        }
+    }
+
+    println!("installation method: {}", config.method);
     for (path, search_results) in results {
         println!("\n{}:", path.display());
 
         for (plugin, status) in search_results.installation_status() {
             let status_str = match status {
-                Some(FoundFile::Regular(_)) => "copy".green(),
-                Some(FoundFile::Symlink(_)) => "symlink".green(),
+                Some(NativeFile::Regular(_)) => "copy".green(),
+                Some(NativeFile::Symlink(_)) => "symlink".green(),
+                Some(NativeFile::Directory(_)) => "invalid".red(),
                 None => "not installed".red(),
             };
 
@@ -154,80 +166,142 @@ pub struct SyncOptions {
 /// Set up yabridge for all Windows VST2 plugins in the plugin directories. Will also remove orphan
 /// `.so` files if the prune option is set.
 pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
-    let libyabridge_path = config.libyabridge()?;
-    let libyabridge_hash = utils::hash_file(&libyabridge_path)?;
-    println!("Using '{}'\n", libyabridge_path.display());
+    let files: YabridgeFiles = config.files()?;
+    let libyabridge_vst2_hash = utils::hash_file(&files.libyabridge_vst2)?;
+    let libyabridge_vst3_hash = match &files.libyabridge_vst3 {
+        Some(path) => Some(utils::hash_file(path)?),
+        None => None,
+    };
+
+    if let Some(libyabridge_vst3_path) = &files.libyabridge_vst3 {
+        println!("Setting up VST2 and VST3 plugins using:");
+        println!("- {}", files.libyabridge_vst2.display());
+        println!("- {}\n", libyabridge_vst3_path.display());
+    } else {
+        println!("Setting up VST2 plugins using:");
+        println!("- {}\n", files.libyabridge_vst2.display());
+    }
 
     let results = config
-        .index_directories()
+        .search_directories()
         .context("Failure while searching for plugins")?;
 
     // Keep track of some global statistics
+    // The number of plugins we set up yabridge for
     let mut num_installed = 0;
+    // The number of plugins we create a (new) copy of `libyabridge-{vst2,vst3}.so` for
     let mut num_new = 0;
+    // The files we skipped during the scan because they turned out to not be plugins
     let mut skipped_dll_files: Vec<PathBuf> = Vec::new();
-    let mut orphan_so_files: Vec<FoundFile> = Vec::new();
+    // `.so` files and unused VST3 modules we found during scanning that didn't have a corresponding
+    // copy or symlink of `libyabridge-vst2.so`
+    let mut orphan_files: Vec<NativeFile> = Vec::new();
+    // All the VST3 modules we have set up yabridge for. We need this to detect leftover VST3
+    // modules in `~/.vst3/yabridge`.
+    let mut yabridge_vst3_bundles: BTreeMap<PathBuf, BTreeSet<LibArchitecture>> = BTreeMap::new();
     for (path, search_results) in results {
         num_installed += search_results.vst2_files.len();
-        orphan_so_files.extend(search_results.orphans().into_iter().cloned());
+        num_installed += search_results.vst3_modules.len();
+        orphan_files.extend(search_results.vst2_orphans().into_iter().cloned());
         skipped_dll_files.extend(search_results.skipped_files);
 
         if options.verbose {
             println!("{}:", path.display());
         }
+
+        // We'll set up the copies or symlinks for VST2 plugins
         for plugin in search_results.vst2_files {
             let target_path = plugin.with_extension("so");
 
-            // We'll only recreate existing files when updating yabridge, when switching between the
-            // symlink and copy installation methods, or when the `force` option is set. If the
-            // target file already exists and does not require updating, we'll just skip the file
-            // since some DAWs will otherwise unnecessarily reindex the file.
-            // We check `std::fs::symlink_metadata` instead of `Path::exists()` because the latter
-            // reports false for broken symlinks.
-            if let Ok(metadata) = fs::symlink_metadata(&target_path) {
-                match (options.force, &config.method) {
-                    (false, InstallationMethod::Copy) => {
-                        // If the target file is already a real file (not a symlink) and its hash is
-                        // the same as the `libyabridge.so` file we're trying to copy there, then we
-                        // don't have to do anything
-                        if metadata.file_type().is_file()
-                            && utils::hash_file(&target_path)? == libyabridge_hash
-                        {
-                            continue;
-                        }
-                    }
-                    (false, InstallationMethod::Symlink) => {
-                        // If the target file is already a symlink to `libyabridge.so`, then we can
-                        // skip this file
-                        if metadata.file_type().is_symlink()
-                            && target_path.read_link()? == libyabridge_path
-                        {
-                            continue;
-                        }
-                    }
-                    // With the force option we always want to recreate existing .so files
-                    (true, _) => (),
-                }
-
-                utils::remove_file(&target_path)?;
-            };
-
             // Since we skip some files, we'll also keep track of how many new file we've actually
             // set up
-            num_new += 1;
-            match config.method {
-                InstallationMethod::Copy => {
-                    utils::copy(&libyabridge_path, &target_path)?;
-                }
-                InstallationMethod::Symlink => {
-                    utils::symlink(&libyabridge_path, &target_path)?;
-                }
+            if install_file(
+                options.force,
+                config.method,
+                &files.libyabridge_vst2,
+                Some(libyabridge_vst2_hash),
+                &target_path,
+            )? {
+                num_new += 1;
             }
 
             if options.verbose {
                 println!("  {}", plugin.display());
             }
         }
+
+        // And then create merged bundles for the VST3 plugins:
+        // https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles
+        if let Some(libyabridge_vst3_hash) = libyabridge_vst3_hash {
+            for module in search_results.vst3_modules {
+                // Check if we already set up the same architecture version of the plugin (since
+                // 32-bit and 64-bit versions of the plugin cna live inside of the same bundle), and
+                // show a warning if we come across any duplicates.
+                let already_installed_architectures = yabridge_vst3_bundles
+                    .entry(module.target_bundle_home())
+                    .or_insert_with(BTreeSet::new);
+                if !already_installed_architectures.insert(module.architecture()) {
+                    eprintln!(
+                        "{}",
+                        utils::wrap(&format!(
+                            "{}: The {} version of '{}' has already been provided by another Wine \
+                             prefix, skipping '{}'\n",
+                            "WARNING".red(),
+                            module.architecture(),
+                            module.target_bundle_home().display(),
+                            module.original_module_path().display(),
+                        ))
+                    );
+
+                    continue;
+                }
+
+                // We're building a merged VST3 bundle containing both a copy or symlink to
+                // `libyabridge-vst3.so` and the Windows VST3 plugin
+                let native_module_path = module.target_native_module_path();
+                utils::create_dir_all(native_module_path.parent().unwrap())?;
+                if install_file(
+                    options.force,
+                    config.method,
+                    files.libyabridge_vst3.as_ref().unwrap(),
+                    Some(libyabridge_vst3_hash),
+                    &native_module_path,
+                )? {
+                    num_new += 1;
+                }
+
+                // We'll then symlink the Windows VST3 module to that bundle to create a merged
+                // bundle: https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles
+                let windows_module_path = module.target_windows_module_path();
+                utils::create_dir_all(windows_module_path.parent().unwrap())?;
+                install_file(
+                    true,
+                    InstallationMethod::Symlink,
+                    &module.original_module_path(),
+                    None,
+                    &windows_module_path,
+                )?;
+
+                // If `module` is a bundle, then it may contain a `Resources` directory with
+                // screenshots and documentation
+                // TODO: Also symlink presets, but this is a bit more involved. See
+                //       https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#win7preset
+                if let Some(original_resources_dir) = module.original_resources_dir() {
+                    install_file(
+                        false,
+                        InstallationMethod::Symlink,
+                        &original_resources_dir,
+                        None,
+                        &module.target_resources_dir(),
+                    )?;
+                }
+
+                if options.verbose {
+                    println!("  {}", module.original_path().display());
+                }
+            }
+        }
+
         if options.verbose {
             println!();
         }
@@ -243,24 +317,53 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         println!();
     }
 
-    // Always warn about leftover files sicne those might cause warnings or errors when a VST host
+    if let Ok(dirs) = fs::read_dir(yabridge_vst3_home()) {
+        orphan_files.extend(
+            dirs.filter_map(|entry| entry.ok())
+                .map(|entry| entry.path())
+                .filter_map(|path| {
+                    // Add all directories in `~/.vst3/yabridge` to `orphan_files` if they are not a
+                    // VST3 module we just created. We'll ignore symlinks and regular files since
+                    // those are always user created.
+                    match (
+                        yabridge_vst3_bundles.contains_key(&path),
+                        utils::get_file_type(path),
+                    ) {
+                        (false, result @ Some(NativeFile::Directory(_))) => result,
+                        _ => None,
+                    }
+                }),
+        );
+    }
+
+    // Always warn about leftover files since those might cause warnings or errors when a VST host
     // tries to load them
-    if !orphan_so_files.is_empty() {
+    if !orphan_files.is_empty() {
+        let leftover_files_str = if orphan_files.len() == 1 {
+            format!("{} leftover file", orphan_files.len())
+        } else {
+            format!("{} leftover files", orphan_files.len())
+        };
         if options.prune {
-            println!("Removing {} leftover .so files:", orphan_so_files.len());
+            println!("Removing {}:", leftover_files_str);
         } else {
             println!(
-                "Found {} leftover .so files, rerun with the '--prune' option to remove them:",
-                orphan_so_files.len()
+                "Found {}, rerun with the '--prune' option to remove them:",
+                leftover_files_str
             );
         }
 
-        for file in orphan_so_files {
-            let path = file.path();
-
-            println!("- {}", path.display());
+        for file in orphan_files {
+            println!("- {}", file.path().display());
             if options.prune {
-                utils::remove_file(path)?;
+                match file {
+                    NativeFile::Regular(path) | NativeFile::Symlink(path) => {
+                        utils::remove_file(path)?;
+                    }
+                    NativeFile::Directory(path) => {
+                        utils::remove_dir_all(path)?;
+                    }
+                }
             }
         }
 
@@ -279,6 +382,8 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         return Ok(());
     }
 
+    // The path setup is to make sure that the `libyabridge-{vst2,vst3}.so` copies can find
+    // `yabridge-host.exe`
     if config.method == InstallationMethod::Copy {
         verify_path_setup(config)?;
     }
@@ -287,4 +392,55 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     verify_wine_setup(config)?;
 
     Ok(())
+}
+
+/// Create a copy or symlink of `from` to `to`. Depending on `force`, we might not actually create a
+/// new copy or symlink if `to` matches `from_hash`.
+fn install_file(
+    force: bool,
+    method: InstallationMethod,
+    from: &Path,
+    from_hash: Option<i64>,
+    to: &Path,
+) -> Result<bool> {
+    // We'll only recreate existing files when updating yabridge, when switching between the symlink
+    // and copy installation methods, or when the `force` option is set. If the target file already
+    // exists and does not require updating, we'll just skip the file since some DAWs will otherwise
+    // unnecessarily reindex the file. We check `std::fs::symlink_metadata` instead of
+    // `Path::exists()` because the latter reports false for broken symlinks.
+    if let Ok(metadata) = fs::symlink_metadata(&to) {
+        match (force, &method) {
+            (false, InstallationMethod::Copy) => {
+                // If the target file is already a real file (not a symlink) and its hash is the
+                // same as that of the `from` file we're trying to copy there, then we don't have to
+                // do anything
+                if let Some(hash) = from_hash {
+                    if metadata.file_type().is_file() && utils::hash_file(to)? == hash {
+                        return Ok(false);
+                    }
+                }
+            }
+            (false, InstallationMethod::Symlink) => {
+                // If the target file is already a symlink to `from`, then we can skip this file
+                if metadata.file_type().is_symlink() && to.read_link()? == from {
+                    return Ok(false);
+                }
+            }
+            // With the force option we always want to recreate existing .so files
+            (true, _) => (),
+        }
+
+        utils::remove_file(&to)?;
+    };
+
+    match method {
+        InstallationMethod::Copy => {
+            utils::copy(from, to)?;
+        }
+        InstallationMethod::Symlink => {
+            utils::symlink(from, to)?;
+        }
+    }
+
+    Ok(true)
 }

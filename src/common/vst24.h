@@ -28,8 +28,8 @@
  * parameter. Finally the plugin returns a string containing the input or output
  * name.
  */
-constexpr int effGetInputProperties = 33;
-constexpr int effGetOutputProperties = 34;
+[[maybe_unused]] constexpr int effGetInputProperties = 33;
+[[maybe_unused]] constexpr int effGetOutputProperties = 34;
 
 /**
  * Found on
@@ -37,15 +37,15 @@ constexpr int effGetOutputProperties = 34;
  * Used to assign names to MIDI keys, for some reason uses the `VstMidiKeyName`
  * struct defined below rather than a simple string.
  */
-constexpr int effGetMidiKeyName = 66;
+[[maybe_unused]] constexpr int effGetMidiKeyName = 66;
 
 /**
  * Events used to tell a plugin to use a specific speaker arrangement (is this
  * used outside of things like Dolby Atmos?), or to query its preferred speaker
  * arrangement. Found on the same list as above.
  */
-constexpr int effSetSpeakerArrangement = 42;
-constexpr int effGetSpeakerArrangement = 69;
+[[maybe_unused]] constexpr int effSetSpeakerArrangement = 42;
+[[maybe_unused]] constexpr int effGetSpeakerArrangement = 69;
 
 /**
  * The struct that's being passed through the data parameter during the

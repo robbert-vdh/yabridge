@@ -90,6 +90,12 @@ Configuration::Configuration(const fs::path& config_path,
                 } else {
                     invalid_options.push_back(key);
                 }
+            } else if (key == "editor_xembed") {
+                if (const auto parsed_value = value.as_boolean()) {
+                    editor_xembed = parsed_value->get();
+                } else {
+                    invalid_options.push_back(key);
+                }
             } else if (key == "group") {
                 if (const auto parsed_value = value.as_string()) {
                     group = parsed_value->get();

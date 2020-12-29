@@ -18,20 +18,32 @@
 
 #include <iostream>
 
-// The Win32 API requires you to hardcode identifiers for tiemrs
-constexpr size_t idle_timer_id = 1337;
-
 /**
- * The most significant bit in an event's response type is used to indicate
- * whether the event source.
+ * The most significant bit in an X11 event's response type is used to indicate
+ * the event source.
  */
-constexpr uint16_t event_type_mask = ((1 << 7) - 1);
+constexpr uint16_t event_type_mask = 0b0111'1111;
 
 /**
  * The name of the X11 property on the root window used to denote the active
  * window in EWMH compliant window managers.
  */
 constexpr char active_window_property_name[] = "_NET_ACTIVE_WINDOW";
+
+/**
+ * Client message name for XEmbed messages. See
+ * https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html.
+ */
+constexpr char xembed_message_name[] = "_XEMBED";
+
+// Constants from the XEmbed spec
+constexpr uint32_t xembed_protocol_version = 0;
+
+constexpr uint32_t xembed_embedded_notify_msg = 0;
+constexpr uint32_t xembed_window_activate_msg = 1;
+constexpr uint32_t xembed_focus_in_msg = 4;
+
+constexpr uint32_t xembed_focus_first = 1;
 
 /**
  * Find the topmost window (i.e. the window before the root window in the window
@@ -84,9 +96,9 @@ WindowClass::~WindowClass() {
 
 Editor::Editor(const Configuration& config,
                const std::string& window_class_name,
-               const size_t parent_window_handle,
-               AEffect* effect)
-    : x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
+               const size_t parent_window_handle)
+    : use_xembed(config.editor_xembed),
+      x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
       client_area(get_maximum_screen_dimensions(*x11_connection)),
       window_class(window_class_name),
       // Create a window without any decoratiosn for easy embedding. The
@@ -110,17 +122,15 @@ Editor::Editor(const Configuration& config,
       // If `config.editor_double_embed` is set, then we'll also create a child
       // window in `win32_child_handle`. If we do this before calling
       // `ShowWindow()` on `win32_handle` we'll run into X11 errors.
-      idle_timer(win32_handle.get(), idle_timer_id, 100),
+      win32_child_handle(std::nullopt),
       parent_window(parent_window_handle),
       wine_window(get_x11_handle(win32_handle.get())),
-      topmost_window(find_topmost_window(*x11_connection, parent_window)),
-      // Needed to send update messages on a timer
-      plugin(effect) {
+      topmost_window(find_topmost_window(*x11_connection, parent_window)) {
     xcb_generic_error_t* error;
 
     // Used for input focus grabbing to only grab focus when the window is
     // active.
-    const xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(
+    xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(
         x11_connection.get(), true, strlen(active_window_property_name),
         active_window_property_name);
     xcb_intern_atom_reply_t* atom_reply =
@@ -141,59 +151,87 @@ Editor::Editor(const Configuration& config,
                   << std::endl;
     }
 
-    // Because we're not using XEmbed, Wine will interpret any local coordinates
-    // as global coordinates. To work around this we'll tell the Wine window
-    // it's located at its actual coordinates on screen rather than somewhere
-    // within. For robustness's sake this should be done both when the actual
-    // window the Wine window is embedded in (which may not be the parent
-    // window) is moved or resized, and when the user moves his mouse over the
-    // window because this is sometimes needed for plugin groups. We also listen
-    // for EnterNotify and LeaveNotify events on the Wine window so we can grab
-    // and release input focus as necessary.
-    const uint32_t topmost_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+    // When using XEmbed we'll need the atoms for the corresponding properties
+    atom_cookie =
+        xcb_intern_atom(x11_connection.get(), true, strlen(xembed_message_name),
+                        xembed_message_name);
+    atom_reply =
+        xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
+    assert(!error);
+    xcb_xembed_message = atom_reply->atom;
+    free(atom_reply);
+
+    // When not using XEmbed, Wine will interpret any local coordinates as
+    // global coordinates. To work around this we'll tell the Wine window it's
+    // located at its actual coordinates on screen rather than somewhere within.
+    // For robustness's sake this should be done both when the actual window the
+    // Wine window is embedded in (which may not be the parent window) is moved
+    // or resized, and when the user moves his mouse over the window because
+    // this is sometimes needed for plugin groups. We also listen for
+    // EnterNotify and LeaveNotify events on the Wine window so we can grab and
+    // release input focus as necessary.
+    // If we do enable XEmbed support, we'll also listen for visibility changes
+    // and trigger the embedding when the window becomes visible
+    const uint32_t topmost_event_mask =
+        XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_VISIBILITY_CHANGE;
     xcb_change_window_attributes(x11_connection.get(), topmost_window,
                                  XCB_CW_EVENT_MASK, &topmost_event_mask);
     xcb_flush(x11_connection.get());
-    const uint32_t parent_event_mask = XCB_EVENT_MASK_FOCUS_CHANGE |
-                                       XCB_EVENT_MASK_ENTER_WINDOW |
-                                       XCB_EVENT_MASK_LEAVE_WINDOW;
+    const uint32_t parent_event_mask =
+        XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW |
+        XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_VISIBILITY_CHANGE;
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
     xcb_flush(x11_connection.get());
 
-    // Embed the Win32 window into the window provided by the host. Instead of
-    // using the XEmbed protocol, we'll register a few events and manage the
-    // child window ourselves. This is a hack to work around the issue's
-    // described in `Editor`'s docstring'.
-    xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0, 0);
-    xcb_flush(x11_connection.get());
+    if (use_xembed) {
+        // This call alone doesn't do anything. We need to call this function a
+        // second time on visibility change because Wine's XEmbed implementation
+        // does not work properly (which is why we remvoed XEmbed support in the
+        // first place).
+        do_xembed();
+    } else {
+        // Embed the Win32 window into the window provided by the host. Instead
+        // of using the XEmbed protocol, we'll register a few events and manage
+        // the child window ourselves. This is a hack to work around the issue's
+        // described in `Editor`'s docstring'.
+        xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0,
+                            0);
+        xcb_flush(x11_connection.get());
 
-    ShowWindow(win32_handle.get(), SW_SHOWNORMAL);
-    if (config.editor_double_embed) {
-        // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
+        // If we're using the double embedding option, then the child window
+        // should only be created after the parent window is visible
+        ShowWindow(win32_handle.get(), SW_SHOWNORMAL);
+        if (config.editor_double_embed) {
+            // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-attributes"
-        // As explained above, we can't do this directly in the initializer list
-        win32_child_handle = std::unique_ptr<std::remove_pointer_t<HWND>,
-                                             decltype(&DestroyWindow)>(
-            CreateWindowEx(
-                WS_EX_TOOLWINDOW, reinterpret_cast<LPCSTR>(window_class.atom),
-                "yabridge plugin child", WS_CHILD, CW_USEDEFAULT, CW_USEDEFAULT,
-                client_area.width, client_area.height, win32_handle.get(),
-                nullptr, GetModuleHandle(nullptr), this),
-            DestroyWindow);
+            // As explained above, we can't do this directly in the initializer
+            // list
+            win32_child_handle = std::unique_ptr<std::remove_pointer_t<HWND>,
+                                                 decltype(&DestroyWindow)>(
+                CreateWindowEx(WS_EX_TOOLWINDOW,
+                               reinterpret_cast<LPCSTR>(window_class.atom),
+                               "yabridge plugin child", WS_CHILD, CW_USEDEFAULT,
+                               CW_USEDEFAULT, client_area.width,
+                               client_area.height, win32_handle.get(), nullptr,
+                               GetModuleHandle(nullptr), this),
+                DestroyWindow);
 #pragma GCC diagnostic pop
 
-        ShowWindow(win32_child_handle->get(), SW_SHOWNORMAL);
-    }
+            ShowWindow(win32_child_handle->get(), SW_SHOWNORMAL);
+        }
 
-    // HACK: I can't seem to figure why the initial reparent would fail on this
-    //       particular i3 config in a way that I'm unable to reproduce, but if
-    //       it doesn't work the first time, just keep trying!
-    //
-    //       https://github.com/robot-vdh/yabridge/issues/40
-    xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0, 0);
-    xcb_flush(x11_connection.get());
+        // HACK: I can't seem to figure why the initial reparent would fail on
+        //       this particular i3 config in a way that I'm unable to
+        //       reproduce, but if it doesn't work the first time, just keep
+        //       trying!
+        //
+        //       https://github.com/robot-vdh/yabridge/issues/40
+        xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0,
+                            0);
+        xcb_flush(x11_connection.get());
+    }
 }
 
 Editor::~Editor() {
@@ -218,48 +256,15 @@ Editor::~Editor() {
 }
 
 HWND Editor::get_win32_handle() const {
-    if (win32_child_handle) {
+    // FIXME: The double embed and XEmbed options don't work together right now
+    if (win32_child_handle && !use_xembed) {
         return win32_child_handle->get();
     } else {
         return win32_handle.get();
     }
 }
 
-void Editor::send_idle_event() {
-    plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0);
-}
-
-void Editor::handle_win32_events() const {
-    MSG msg;
-
-    // The null value for the second argument is needed to handle interaction
-    // with child GUI components. So far limiting this to `max_win32_messages`
-    // messages has only been needed for Waves plugins as they otherwise cause
-    // an infinite message loop.
-    for (int i = 0;
-         i < max_win32_messages && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-         i++) {
-        // This timer would periodically send `effEditIdle` events so the editor
-        // remains responsive even during blocking GUI operations such as open
-        // dropdowns or message boxes. This is only needed when the GUI is
-        // actually blocked and it will be dispatched by the messaging loop of
-        // the blocking GUI component. Since we're not touching the
-        // `effEditIdle` event sent by the host we can always filter this timer
-        // event out in this event loop.
-        if (msg.message == WM_TIMER && msg.wParam == idle_timer_id &&
-            msg.hwnd == win32_handle.get()) {
-            continue;
-        }
-
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-}
-
 void Editor::handle_x11_events() const {
-    // TODO: Initiating drag-and-drop in Serum _sometimes_ causes the GUI to
-    //       update while dragging while other times it does not. From all the
-    //       plugins I've tested this only happens in Serum though.
     xcb_generic_event_t* generic_event;
     while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
            nullptr) {
@@ -273,7 +278,17 @@ void Editor::handle_x11_events() const {
             // check is sometimes necessary for using multiple editor windows
             // within a single plugin group.
             case XCB_CONFIGURE_NOTIFY:
-                fix_local_coordinates();
+                if (!use_xembed) {
+                    fix_local_coordinates();
+                }
+                break;
+            // Start the XEmbed procedure when the window becomes visible, since
+            // most hosts will only show the window after the plugin has
+            // embedded itself into it.
+            case XCB_VISIBILITY_NOTIFY:
+                if (use_xembed) {
+                    do_xembed();
+                }
                 break;
             // We want to grab keyboard input focus when the user hovers over
             // our embedded Wine window AND that window is a child of the
@@ -286,7 +301,9 @@ void Editor::handle_x11_events() const {
             // `EnterNotify'.
             case XCB_ENTER_NOTIFY:
             case XCB_FOCUS_IN:
-                fix_local_coordinates();
+                if (!use_xembed) {
+                    fix_local_coordinates();
+                }
 
                 // In case the WM somehow does not support `_NET_ACTIVE_WINDOW`,
                 // a more naive focus grabbing method implemented in the
@@ -327,7 +344,11 @@ void Editor::handle_x11_events() const {
 }
 
 void Editor::fix_local_coordinates() const {
-    // We're purposely not using XEmbed. This has the consequence that wine
+    if (use_xembed) {
+        return;
+    }
+
+    // We're purposely not using XEmbed here. This has the consequence that wine
     // still thinks that any X and Y coordinates are relative to the x11 window
     // root instead of the parent window provided by the DAW, causing all sorts
     // of GUI interactions to break. To alleviate this we'll just lie to Wine
@@ -383,6 +404,10 @@ void Editor::set_input_focus(bool grab) const {
     // back to that window when the user moves their mouse outside of the Wine
     // window while the host's window is still active (that's an important
     // detail, since plugins may have dialogs).
+    // XXX: In theory we wouldn't have to do this for VST3 because
+    //      `IPlugView::onKey{Down,Up}` should handle all keyboard events. But
+    //      in practice a lot of hosts don't use that, so we still need to grab
+    //      focus ourselves.
     xcb_set_input_focus(x11_connection.get(), XCB_INPUT_FOCUS_PARENT,
                         grab ? parent_window : topmost_window,
                         XCB_CURRENT_TIME);
@@ -449,6 +474,51 @@ bool Editor::supports_ewmh_active_window() const {
     return active_window_property_exists;
 }
 
+void Editor::send_xembed_message(const xcb_window_t& window,
+                                 const uint32_t message,
+                                 const uint32_t detail,
+                                 const uint32_t data1,
+                                 const uint32_t data2) const {
+    xcb_client_message_event_t event;
+    event.response_type = XCB_CLIENT_MESSAGE;
+    event.type = xcb_xembed_message;
+    event.window = window;
+    event.format = 32;
+    event.data.data32[0] = XCB_CURRENT_TIME;
+    event.data.data32[1] = message;
+    event.data.data32[2] = detail;
+    event.data.data32[3] = data1;
+    event.data.data32[4] = data2;
+
+    xcb_send_event(x11_connection.get(), false, window, XCB_EVENT_MASK_NO_EVENT,
+                   reinterpret_cast<char*>(&event));
+}
+
+void Editor::do_xembed() const {
+    if (!use_xembed) {
+        return;
+    }
+
+    // If we're embedding using XEmbed, then we'll have to go through the whole
+    // XEmbed dance here. See the spec for more information on how this works:
+    // https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html#lifecycle
+    xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0, 0);
+    xcb_flush(x11_connection.get());
+
+    // Let the Wine window know it's being embedded into the parent window
+    send_xembed_message(wine_window, xembed_embedded_notify_msg, 0,
+                        parent_window, xembed_protocol_version);
+    send_xembed_message(wine_window, xembed_focus_in_msg, xembed_focus_first, 0,
+                        0);
+    send_xembed_message(wine_window, xembed_window_activate_msg, 0, 0, 0);
+    xcb_flush(x11_connection.get());
+
+    xcb_map_window(x11_connection.get(), wine_window);
+    xcb_flush(x11_connection.get());
+
+    ShowWindow(win32_handle.get(), SW_SHOWNORMAL);
+}
+
 LRESULT CALLBACK window_proc(HWND handle,
                              UINT message,
                              WPARAM wParam,
@@ -470,19 +540,18 @@ LRESULT CALLBACK window_proc(HWND handle,
             SetWindowLongPtr(handle, GWLP_USERDATA,
                              reinterpret_cast<size_t>(editor));
         } break;
-        case WM_TIMER: {
+        // Setting `SWP_NOCOPYBITS` somewhat reduces flickering on
+        // `fix_local_coordinates()` calls with plugins that don't do double
+        // buffering since it speeds up the redrawing process.
+        case WM_WINDOWPOSCHANGING: {
             auto editor = reinterpret_cast<Editor*>(
                 GetWindowLongPtr(handle, GWLP_USERDATA));
-            if (!editor || wParam != idle_timer_id) {
+            if (!editor || editor->use_xembed) {
                 break;
             }
 
-            // We'll send idle messages on a timer. This way the plugin will get
-            // keep periodically updating its editor either when the host sends
-            // `effEditIdle` themself, or periodically when the GUI is being
-            // blocked by a dropdown or a message box.
-            editor->send_idle_event();
-            return 0;
+            WINDOWPOS* info = reinterpret_cast<WINDOWPOS*>(lParam);
+            info->flags |= SWP_NOCOPYBITS | SWP_DEFERERASE;
         } break;
         // In case the WM does not support the EWMH active window property,
         // we'll fall back to grabbing focus when the user clicks on the window
@@ -610,6 +679,7 @@ ATOM register_window_class(std::string window_class_name) {
     window_class.lpfnWndProc = window_proc;
     window_class.hInstance = GetModuleHandle(nullptr);
     window_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    window_class.hbrBackground = CreateSolidBrush(RGB(32, 32, 32));
     window_class.lpszClassName = window_class_name.c_str();
 
     return RegisterClassEx(&window_class);

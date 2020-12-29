@@ -16,12 +16,10 @@
 
 #include "vst2.h"
 
-#include <boost/asio/dispatch.hpp>
-#include <future>
 #include <iostream>
 #include <set>
 
-#include "../../common/communication.h"
+#include "../../common/communication/vst2.h"
 
 /**
  * A function pointer to what should be the entry point of a VST plugin.
@@ -42,10 +40,12 @@ std::mutex current_bridge_instance_mutex;
 /**
  * Opcodes that should always be handled on the main thread because they may
  * involve GUI operations.
+ *
+ * XXX: We removed effEditIdle from here and everything still seems to work
+ *      fine. Verify that this didn't break any plugins.
  */
 const std::set<int> unsafe_opcodes{effOpen,     effClose,     effEditGetRect,
-                                   effEditOpen, effEditClose, effEditIdle,
-                                   effEditTop};
+                                   effEditOpen, effEditClose, effEditTop};
 
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);
@@ -69,7 +69,7 @@ Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
 Vst2Bridge::Vst2Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
                        std::string endpoint_base_dir)
-    : vst_plugin_path(plugin_dll_path),
+    : HostBridge(plugin_dll_path),
       main_context(main_context),
       plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
       sockets(main_context.context, endpoint_base_dir, false) {
@@ -100,7 +100,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     sockets.connect();
 
     // Initialize after communication has been set up
-    // We'll try to do the same `get_bridge_isntance` trick as in
+    // We'll try to do the same `get_bridge_instance` trick as in
     // `plugin/plugin.cpp`, but since the plugin will probably call the host
     // callback while it's initializing we sadly have to use a global here.
     {
@@ -271,7 +271,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     });
 }
 
-void Vst2Bridge::handle_dispatch() {
+void Vst2Bridge::run() {
     sockets.host_vst_dispatch.receive_events(
         std::nullopt, [&](Event& event, bool /*on_main_thread*/) {
             if (event.opcode == effProcessEvents) {
@@ -331,15 +331,13 @@ void Vst2Bridge::handle_dispatch() {
                         // instantiated and where the Win32 message loop is
                         // handled.
                         if (unsafe_opcodes.contains(opcode)) {
-                            std::promise<intptr_t> dispatch_result;
-                            boost::asio::dispatch(main_context.context, [&]() {
-                                const intptr_t result = dispatch_wrapper(
-                                    plugin, opcode, index, value, data, option);
-
-                                dispatch_result.set_value(result);
-                            });
-
-                            return dispatch_result.get_future().get();
+                            return main_context
+                                .run_in_context<intptr_t>([&]() {
+                                    return dispatch_wrapper(plugin, opcode,
+                                                            index, value, data,
+                                                            option);
+                                })
+                                .get();
                         } else {
                             return dispatch_wrapper(plugin, opcode, index,
                                                     value, data, option);
@@ -348,6 +346,23 @@ void Vst2Bridge::handle_dispatch() {
                     event);
             }
         });
+}
+
+void Vst2Bridge::handle_x11_events() {
+    if (editor) {
+        editor->handle_x11_events();
+    }
+}
+
+void Vst2Bridge::handle_win32_events() {
+    MSG msg;
+
+    for (int i = 0;
+         i < max_win32_messages && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
+         i++) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
 }
 
 intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
@@ -370,7 +385,7 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             const std::string window_class =
                 "yabridge plugin " + sockets.base_dir.string();
             Editor& editor_instance =
-                editor.emplace(config, window_class, x11_handle, plugin);
+                editor.emplace(config, window_class, x11_handle);
 
             return plugin->dispatcher(plugin, opcode, index, value,
                                       editor_instance.get_win32_handle(),
@@ -389,27 +404,6 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             return plugin->dispatcher(plugin, opcode, index, value, data,
                                       option);
             break;
-    }
-}
-
-void Vst2Bridge::handle_win32_events() {
-    if (editor) {
-        editor->handle_win32_events();
-    } else {
-        MSG msg;
-
-        for (int i = 0; i < max_win32_messages &&
-                        PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-             i++) {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-    }
-}
-
-void Vst2Bridge::handle_x11_events() {
-    if (editor) {
-        editor->handle_x11_events();
     }
 }
 
@@ -462,7 +456,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
         switch (opcode) {
             case audioMasterGetTime:
                 // Write the returned `VstTimeInfo` struct into a field and
-                // make the function return a poitner to it in the function
+                // make the function return a pointer to it in the function
                 // below. Depending on whether the host supported the
                 // requested time information this operations returns either
                 // a null pointer or a pointer to a `VstTimeInfo` object.

@@ -14,23 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#pragma once
+
+#include <memory>
+#include <optional>
+#include <string>
+
+#ifndef NOMINMAX
+#define NOMINMAX
+#define WINE_NOWINSOCK
+#endif
+#include <windows.h>
+
 // Use the native version of xcb
 #pragma push_macro("_WIN32")
 #undef _WIN32
 #include <xcb/xcb.h>
 #pragma pop_macro("_WIN32")
-
-#define NOMINMAX
-#define NOSERVICE
-#define NOMCX
-#define NOIMM
-#define WIN32_LEAN_AND_MEAN
-#include <vestige/aeffectx.h>
-#include <windows.h>
-
-#include <memory>
-#include <optional>
-#include <string>
 
 #include "../common/configuration.h"
 #include "utils.h"
@@ -84,7 +84,10 @@ class WindowClass {
  * window without using XEmbed. If anyone knows how to work around these two
  * issues, please let me know and I'll switch to using XEmbed again.
  *
- * This workaround was inspired by LinVST.
+ * This workaround was inspired by LinVst.
+ *
+ * As of yabridge 3.0 XEmbed is back as an option, but it's disabled by default
+ * because of the issues mentioned above.
  */
 class Editor {
    public:
@@ -98,15 +101,12 @@ class Editor {
      *   windows.
      * @param parent_window_handle The X11 window handle passed by the VST host
      *   for the editor to embed itself into.
-     * @param effect The plugin this window is being created for. Used to send
-     *   `effEditIdle` messages on a timer.
      *
      * @see win32_handle
      */
     Editor(const Configuration& config,
            const std::string& window_class_name,
-           const size_t parent_window_handle,
-           AEffect* effect);
+           const size_t parent_window_handle);
 
     ~Editor();
 
@@ -127,20 +127,6 @@ class Editor {
      * cached in `supports_ewmh_active_window_cache`.
      */
     bool supports_ewmh_active_window() const;
-
-    /**
-     * Send a single `effEditIdle` event to the plugin to allow it to update its
-     * GUI state. This is called periodically from a timer while the GUI is
-     * being blocked, and also called explicitly by the host on a timer.
-     */
-    void send_idle_event();
-
-    /**
-     * Pump messages from the editor loop loop until all events are process.
-     * Must be run from the same thread the GUI was created in because of Win32
-     * limitations.
-     */
-    void handle_win32_events() const;
 
     /**
      * Handle X11 events sent to the window our editor is embedded in.
@@ -165,6 +151,12 @@ class Editor {
      */
     void set_input_focus(bool grab) const;
 
+    /**
+     * Whether to use XEmbed instead of yabridge's normal window embedded. Wine
+     * with XEmbed tends to cause rendering issues, so it's disabled by default.
+     */
+    const bool use_xembed;
+
    private:
     /**
      * Returns `true` if the currently active window (as per
@@ -174,6 +166,24 @@ class Editor {
      * @see Editor::supports_ewmh_active_window
      */
     bool is_wine_window_active() const;
+
+    /**
+     * Send an XEmbed message to a window. This does not include a flush. See
+     * the spec for more information:
+     *
+     * https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html#lifecycle
+     */
+    void send_xembed_message(const xcb_window_t& window,
+                             const uint32_t message,
+                             const uint32_t detail,
+                             const uint32_t data1,
+                             const uint32_t data2) const;
+
+    /**
+     * Start the XEmbed procedure when `use_xembed` is enabled. This should be
+     * rerun whenever visibility changes.
+     */
+    void do_xembed() const;
 
     /**
      * A pointer to the currently active window. Will be a null pointer if no
@@ -223,15 +233,6 @@ class Editor {
 #pragma GCC diagnostic pop
 
     /**
-     * The Win32 API will block the `DispatchMessage` call when opening e.g. a
-     * dropdown, but it will still allow timers to be run so the GUI can still
-     * update in the background. Because of this we send `effEditIdle` to the
-     * plugin on a timer. The refresh rate is purposely fairly low since the
-     * host will call `effEditIdle()` explicitely when the plugin is not busy.
-     */
-    Win32Timer idle_timer;
-
-    /**
      * The window handle of the editor window created by the DAW.
      */
     const xcb_window_t parent_window;
@@ -250,11 +251,6 @@ class Editor {
     const xcb_window_t topmost_window;
 
     /**
-     *Needed to handle idle updates through a timer
-     */
-    AEffect* plugin;
-
-    /**
      * The atom corresponding to `_NET_ACTIVE_WINDOW`.
      */
     xcb_atom_t active_window_property;
@@ -264,4 +260,9 @@ class Editor {
      * `supports_ewmh_active_window()`.
      */
     mutable std::optional<bool> supports_ewmh_active_window_cache;
+
+    /**
+     * The atom corresponding to `_XEMBED`.
+     */
+    xcb_atom_t xcb_xembed_message;
 };

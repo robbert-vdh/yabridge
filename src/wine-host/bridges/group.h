@@ -18,6 +18,7 @@
 
 #include "../boost-fix.h"
 
+#include <boost/asio/local/stream_protocol.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/filesystem.hpp>
@@ -25,7 +26,9 @@
 #include <atomic>
 #include <thread>
 
-#include "vst2.h"
+#include "../common/logging/common.h"
+#include "../utils.h"
+#include "common.h"
 
 /**
  * Encapsulate capturing the STDOUT or STDERR stream by opening a pipe and
@@ -146,7 +149,7 @@ class GroupBridge {
      *   then the process will never exit on its own. This should not happen
      *   though.
      */
-    void handle_plugin_dispatch(size_t plugin_id, Vst2Bridge* bridge);
+    void handle_plugin_run(size_t plugin_id, HostBridge* bridge);
 
     /**
      * Listen for new requests to spawn plugins within this process and handle
@@ -162,14 +165,14 @@ class GroupBridge {
      * the yabridge instance can tell if the plugin crashed during
      * initialization, and it will then try to initialize the plugin. After
      * intialization the plugin handling will be handed over to a new thread
-     * running `handle_plugin_dispatch()`. Because of the way the Win32 API
-     * works, all plugins have to be initialized from the same thread, and all
-     * event handling and message loop interaction also has to be done from that
+     * running `handle_plugin_run()`. Because of the way the Win32 API works,
+     * all plugins have to be initialized from the same thread, and all event
+     * handling and message loop interaction also has to be done from that
      * thread, which is why we initialize the plugin here and use the
      * `handle_dispatch()` function to run events within the same
      * `main_context`.
      *
-     * @see handle_plugin_dispatch
+     * @see handle_plugin_run
      */
     void accept_requests();
 
@@ -251,7 +254,7 @@ class GroupBridge {
      * on `next_plugin_id`.
      */
     std::unordered_map<size_t,
-                       std::pair<Win32Thread, std::unique_ptr<Vst2Bridge>>>
+                       std::pair<Win32Thread, std::unique_ptr<HostBridge>>>
         active_plugins;
     /**
      * A counter for the next unique plugin ID. When hosting a new plugin we'll
@@ -261,7 +264,7 @@ class GroupBridge {
     std::atomic_size_t next_plugin_id;
     /**
      * A mutex to prevent two threads from simultaneously accessing the plugins
-     * map, and also to prevent `handle_plugin_dispatch()` from terminating the
+     * map, and also to prevent `handle_plugin_run()` from terminating the
      * process because it thinks there are no active plugins left just as a new
      * plugin is being spawned.
      */
@@ -272,7 +275,7 @@ class GroupBridge {
      * scanning without having to start a new group host process for each
      * plugin.
      *
-     * @see handle_plugin_dispatch
+     * @see handle_plugin_run
      */
     boost::asio::steady_timer shutdown_timer;
     /**

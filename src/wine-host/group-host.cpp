@@ -30,11 +30,11 @@
  * This works very similar to the host application defined in
  * `individual-host.cpp`, but instead of just loading a single plugin this will
  * act as a daemon that can host multiple 'grouped' plugins. This works by
- * allowing the `libyabridge.so` instance to connect this this process over a
- * socket to ask this process to host a VST `.dll` file using a provided socket.
- * After that initialization step both the regular individual plugin host and
- * this group plugin host will function identically on both the plugin and the
- * Wine VST host side.
+ * allowing the `libyabridge-{vst2,vst3}.so` instance to connect this this
+ * process over a socket to ask this process to host a VST `.dll` file using a
+ * provided socket.  After that initialization step both the regular individual
+ * plugin host and this group plugin host will function identically on both the
+ * plugin and the Wine VST host side.
  */
 int __attribute__((visibility("default")))
 #ifdef WINE_USE_CDECL

@@ -23,11 +23,14 @@
 
 #include "../common/utils.h"
 #include "bridges/vst2.h"
+#ifdef WITH_VST3
+#include "bridges/vst3.h"
+#endif
 
 /**
- * This is the default VST host application. It will load the specified VST2
- * plugin, and then connect back to the `libyabridge.so` instance that spawned
- * this over the socket.
+ * This is the default plugin host application. It will load the specified
+ * plugin plugin, and then connect back to the `libyabridge-{vst2,vst3}.so`
+ * instance that spawned this over the socket.
  */
 int __attribute__((visibility("default")))
 #ifdef WINE_USE_CDECL
@@ -36,29 +39,36 @@ __cdecl
     main(int argc, char* argv[]) {
     set_realtime_priority();
 
-    // We pass the name of the VST plugin .dll file to load and the base
-    // directory for the Unix domain socket endpoints to connect to as the first
-    // two arguments of this process in plugin/bridge.cpp.
-    if (argc < 3) {
-        std::cerr << "Usage: "
+    // We pass plugin format, the name of the VST2 plugin .dll file or VST3
+    // bundle to load, and the base directory for the Unix domain socket
+    // endpoints to connect to as the first two arguments of this process in
+    // `src/plugin/host-process.cpp`
+    if (argc < 4) {
+        std::cerr
+            << "Usage: "
 #ifdef __i386__
-                  << yabridge_individual_host_name_32bit
+            << yabridge_individual_host_name_32bit
 #else
-                  << yabridge_individual_host_name
+            << yabridge_individual_host_name
 #endif
-                  << " <vst_plugin_dll> <endpoint_base_directory>" << std::endl;
+            << " <plugin_type> <plugin_location> <endpoint_base_directory>"
+            << std::endl;
 
         return 1;
     }
 
-    const std::string plugin_dll_path(argv[1]);
-    const std::string socket_endpoint_path(argv[2]);
+    const std::string plugin_type_str(argv[1]);
+    const PluginType plugin_type = plugin_type_from_string(plugin_type_str);
+    const std::string plugin_location(argv[2]);
+    const std::string socket_endpoint_path(argv[3]);
 
     std::cout << "Initializing yabridge host version " << yabridge_git_version
 #ifdef __i386__
               << " (32-bit compatibility mode)"
 #endif
               << std::endl;
+    std::cout << "Preparing to load " << plugin_type_to_string(plugin_type)
+              << " plugin at '" << plugin_location << "'" << std::endl;
 
     // As explained in `Vst2Bridge`, the plugin has to be initialized in the
     // same thread as the one that calls `io_context.run()`. This setup is
@@ -66,24 +76,43 @@ __cdecl
     // don't need to differentiate between individually hosted plugins and
     // plugin groups when it comes to event handling.
     MainContext main_context{};
-    std::unique_ptr<Vst2Bridge> bridge;
+    std::unique_ptr<HostBridge> bridge;
     try {
-        bridge = std::make_unique<Vst2Bridge>(main_context, plugin_dll_path,
-                                              socket_endpoint_path);
+        switch (plugin_type) {
+            case PluginType::vst2:
+                bridge = std::make_unique<Vst2Bridge>(
+                    main_context, plugin_location, socket_endpoint_path);
+                break;
+            case PluginType::vst3:
+#ifdef WITH_VST3
+                bridge = std::make_unique<Vst3Bridge>(
+                    main_context, plugin_location, socket_endpoint_path);
+#else
+                std::cerr << "This version of yabridge has not been compiled "
+                             "with VST3 support"
+                          << std::endl;
+                return 1;
+#endif
+                break;
+            case PluginType::unknown:
+                std::cerr << "Unknown plugin type '" << plugin_type_str << "'"
+                          << std::endl;
+                return 1;
+                break;
+        };
     } catch (const std::runtime_error& error) {
-        std::cerr << "Error while initializing Wine VST host:" << std::endl;
+        std::cerr << "Error while initializing the Wine plugin host:"
+                  << std::endl;
         std::cerr << error.what() << std::endl;
 
         return 1;
     }
 
-    std::cout << "Finished initializing '" << plugin_dll_path << "'"
-              << std::endl;
-
-    // We'll listen for `dispatcher()` calls on a different thread, but the
-    // actual events will still be executed within the IO context
-    Win32Thread dispatch_handler([&]() {
-        bridge->handle_dispatch();
+    // Let the plugin receive and handle its events on its own thread. Some
+    // potentially unsafe events that should always be run from the UI thread
+    // will be posted to `main_context`.
+    Win32Thread worker_thread([&]() {
+        bridge->run();
 
         // // When the sockets get closed, this application should
         // // terminate gracefully
@@ -97,6 +126,9 @@ __cdecl
         //        https://github.com/robbert-vdh/yabridge/issues/69
         TerminateProcess(GetCurrentProcess(), 0);
     });
+
+    std::cout << "Finished initializing '" << plugin_location << "'"
+              << std::endl;
 
     // Handle Win32 messages and X11 events on a timer, just like in
     // `GroupBridge::async_handle_events()``

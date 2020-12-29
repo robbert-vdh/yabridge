@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <thread>
+
 // Boost.Process's auto detection for vfork() support doesn't seem to work
 #define BOOST_POSIX_HAS_VFORK 1
 
@@ -23,10 +25,11 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/process/child.hpp>
-#include <thread>
 
-#include "../common/communication.h"
-#include "../common/logging.h"
+#include "../common/communication/common.h"
+#include "../common/logging/common.h"
+#include "../common/plugins.h"
+#include "../common/serialization/common.h"
 #include "utils.h"
 
 /**
@@ -38,12 +41,6 @@
 class HostProcess {
    public:
     virtual ~HostProcess(){};
-
-    /**
-     * Return the architecture of the plugin we are loading, i.e. whether it is
-     * 32-bit or 64-bit.
-     */
-    virtual PluginArchitecture architecture() = 0;
 
     /**
      * Return the full path to the host application in use. The host application
@@ -118,24 +115,26 @@ class IndividualHost : public HostProcess {
      *   handled on.
      * @param logger The `Logger` instance the redirected STDIO streams will be
      *   written to.
-     * @param sockets The socket endpoints that will be used for communication
-     *   with the plugin.
+     * @param plugin_info Information about the plugin we're going to use. Used
+     *   to retrieve the Wine prefix and the plugin's architecture.
+     * @param host_request The information about the plugin we should launch a
+     *   host process for. The values in the struct will be used as command line
+     *   arguments.
      *
      * @throw std::runtime_error When `plugin_path` does not point to a valid
      *   32-bit or 64-bit .dll file.
      */
     IndividualHost(boost::asio::io_context& io_context,
                    Logger& logger,
-                   boost::filesystem::path plugin_path,
-                   const Sockets<std::jthread>& sockets);
+                   const PluginInfo& plugin_info,
+                   const HostRequest& host_request);
 
-    PluginArchitecture architecture() override;
     boost::filesystem::path path() override;
     bool running() override;
     void terminate() override;
 
    private:
-    PluginArchitecture plugin_arch;
+    const PluginInfo& plugin_info;
     boost::filesystem::path host_path;
     boost::process::child host;
 };
@@ -161,6 +160,10 @@ class GroupHost : public HostProcess {
      *   handled on.
      * @param logger The `Logger` instance the redirected STDIO streams will be
      *   written to.
+     * @param plugin_info Information about the plugin we're going to use. Used
+     *   to retrieve the Wine prefix and the plugin's architecture.
+     * @param host_request The information about the plugin we should launch a
+     *   host process for. This object will be sent to the group host process.
      * @param sockets The socket endpoints that will be used for communication
      *   with the plugin. When the plugin shuts down, we'll terminate the
      *   dispatch socket contained in this object.
@@ -168,17 +171,17 @@ class GroupHost : public HostProcess {
      */
     GroupHost(boost::asio::io_context& io_context,
               Logger& logger,
-              boost::filesystem::path plugin_path,
-              Sockets<std::jthread>& socket_endpoint,
+              const PluginInfo& plugin_info,
+              const HostRequest& host_request,
+              Sockets& socket_endpoint,
               std::string group_name);
 
-    PluginArchitecture architecture() override;
     boost::filesystem::path path() override;
     bool running() override;
     void terminate() override;
 
    private:
-    PluginArchitecture plugin_arch;
+    const PluginInfo& plugin_info;
     boost::filesystem::path host_path;
 
     /**
@@ -203,7 +206,7 @@ class GroupHost : public HostProcess {
      * The associated sockets for the plugin we're hosting. This is used to
      * terminate the plugin.
      */
-    Sockets<std::jthread>& sockets;
+    Sockets& sockets;
 
     /**
      * A thread that waits for the group host to have started and then ask it to

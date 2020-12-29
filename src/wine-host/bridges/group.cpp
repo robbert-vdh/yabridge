@@ -16,12 +16,18 @@
 
 #include "group.h"
 
+#include "../boost-fix.h"
+
 #include <unistd.h>
 #include <boost/asio/read_until.hpp>
 #include <boost/process/environment.hpp>
 #include <regex>
 
-#include "../../common/communication.h"
+#include "../../common/communication/common.h"
+#include "vst2.h"
+#ifdef WITH_VST3
+#include "vst3.h"
+#endif
 
 // FIXME: `std::filesystem` is broken in wineg++, at least under Wine 5.8. Any
 //        path operation will thrown an encoding related error
@@ -105,10 +111,10 @@ GroupBridge::~GroupBridge() {
     stdio_context.stop();
 }
 
-void GroupBridge::handle_plugin_dispatch(size_t plugin_id, Vst2Bridge* bridge) {
+void GroupBridge::handle_plugin_run(size_t plugin_id, HostBridge* bridge) {
     // Blocks this thread until the plugin shuts down
-    bridge->handle_dispatch();
-    logger.log("'" + bridge->vst_plugin_path.string() + "' has exited");
+    bridge->run();
+    logger.log("'" + bridge->plugin_path.string() + "' has exited");
 
     // After the plugin has exited we'll remove this thread's plugin from the
     // active plugins. This is done within the IO context because the call to
@@ -116,7 +122,7 @@ void GroupBridge::handle_plugin_dispatch(size_t plugin_id, Vst2Bridge* bridge) {
     // potentially corrupt our heap. This way we can also properly join the
     // thread again. If no active plugins remain, then we'll terminate the
     // process.
-    boost::asio::post(main_context.context, [this, plugin_id]() {
+    main_context.schedule_task([this, plugin_id]() {
         std::lock_guard lock(active_plugins_mutex);
 
         // The join is implicit because we're using Win32Thread (which mimics
@@ -176,19 +182,43 @@ void GroupBridge::accept_requests() {
             // yabridge plugin will be able to tell if the plugin has caused
             // this process to crash during its initialization to prevent
             // waiting indefinitely on the sockets to be connected to.
-            const auto request = read_object<GroupRequest>(socket);
-            write_object(socket, GroupResponse{boost::this_process::get_id()});
+            const auto request = read_object<HostRequest>(socket);
+            write_object(socket, HostResponse{boost::this_process::get_id()});
 
             // The plugin has to be initiated on the IO context's thread because
             // this has to be done on the same thread that's handling messages,
             // and all window messages have to be handled from the same thread.
-            logger.log("Received request to host '" + request.plugin_path +
+            logger.log("Received request to host " +
+                       plugin_type_to_string(request.plugin_type) +
+                       " plugin at '" + request.plugin_path +
                        "' using socket endpoint base directory '" +
                        request.endpoint_base_dir + "'");
             try {
-                auto bridge = std::make_unique<Vst2Bridge>(
-                    main_context, request.plugin_path,
-                    request.endpoint_base_dir);
+                std::unique_ptr<HostBridge> bridge = nullptr;
+                switch (request.plugin_type) {
+                    case PluginType::vst2:
+                        bridge = std::make_unique<Vst2Bridge>(
+                            main_context, request.plugin_path,
+                            request.endpoint_base_dir);
+                        break;
+                    case PluginType::vst3:
+#ifdef WITH_VST3
+                        bridge = std::make_unique<Vst3Bridge>(
+                            main_context, request.plugin_path,
+                            request.endpoint_base_dir);
+#else
+                        throw std::runtime_error(
+                            "This version of yabridge has not been compiled "
+                            "with VST3 support");
+#endif
+                        break;
+                    case PluginType::unknown:
+                        throw std::runtime_error(
+                            "Invalid plugin host request received, how did you "
+                            "even manage to do this?");
+                        break;
+                }
+
                 logger.log("Finished initializing '" + request.plugin_path +
                            "'");
 
@@ -206,7 +236,7 @@ void GroupBridge::accept_requests() {
                 const size_t plugin_id = next_plugin_id.fetch_add(1);
                 active_plugins[plugin_id] = std::pair(
                     Win32Thread([this, plugin_id, plugin_ptr = bridge.get()]() {
-                        handle_plugin_dispatch(plugin_id, plugin_ptr);
+                        handle_plugin_run(plugin_id, plugin_ptr);
                     }),
                     std::move(bridge));
             } catch (const std::runtime_error& error) {

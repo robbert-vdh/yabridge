@@ -33,8 +33,8 @@
  * they can share resources. Configuration file loading works as follows:
  *
  * 1. `load_config_for(path)` from `src/plugin/utils.h` gets called with a path
- *    to the copy of or symlink to `libyabridge.so` that the plugin host has
- *    tried to load.
+ *    to the copy of or symlink to `libyabridge-{vst2,vst3}.so` that the plugin
+ *    host has tried to load.
  * 2. We start looking for a file named `yabridge.toml` in the same directory as
  *    that `.so` file, iteratively continuing to search one directory higher
  *    until we either find the file or we reach the filesystem root.
@@ -102,6 +102,14 @@ class Configuration {
     bool editor_double_embed = false;
 
     /**
+     * Use XEmbed instead of yabridge's normal editor embedding method. Wine's
+     * XEmbed support is not very polished yet and tends to lead to rendering
+     * issues, so this is disabled by default. Also, editor resizing won't work
+     * reliably when XEmbed is enabled.
+     */
+    bool editor_xembed = false;
+
+    /**
      * The name of the plugin group that should be used for the plugin this
      * configuration object was created for. If not set, then the plugin should
      * be hosted individually instead.
@@ -135,10 +143,11 @@ class Configuration {
     void serialize(S& s) {
         s.value1b(cache_time_info);
         s.value1b(editor_double_embed);
+        s.value1b(editor_xembed);
         s.ext(group, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
         s.ext(matched_file, bitsery::ext::StdOptional(),
-              [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath()); });
+              [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath{}); });
         s.ext(matched_pattern, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
 

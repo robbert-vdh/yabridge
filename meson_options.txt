@@ -12,6 +12,20 @@ option(
   description : 'Enable static linking for Boost. Needed when distributing the binaries to other systems.'
 )
 
+# NOTE: Right now this does not actually require CMake. Because of a limitation
+#       in Meson we can't use the original build definitions just yet. For the
+#       time being we have just written our own meson.build to replace the SDK's
+#       CMake project. Once Meson allows mixing native and cross compiled CMake
+#       subprojects the commit that added this notice can be reverted.
+#
+#       https://github.com/mesonbuild/meson/issues/8043
+option(
+  'with-vst3',
+  type : 'boolean',
+  value : true,
+  description : 'Whether to build the VST3 version of yabridge. This requires CMake to be installed.'
+)
+
 option(
   'with-winedbg',
   type : 'boolean',
