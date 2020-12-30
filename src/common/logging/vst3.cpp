@@ -1200,7 +1200,8 @@ void Vst3Logger::log_response(bool is_host_vst,
             message << ", <BusInfo for \""
                     << VST3::StringConvert::convert(response.updated_bus.name)
                     << "\" with " << response.updated_bus.channelCount
-                    << " channels>";
+                    << " channels, type = " << response.updated_bus.busType
+                    << ", flags = " << response.updated_bus.flags << ">";
         }
     });
 }
