@@ -323,6 +323,8 @@ class YaPlugView : public Steinberg::IPlugView {
     /**
      * Message to pass through a call to `IPlugView::checkSizeConstraint(rect)`
      * to the Wine plugin host.
+     *
+     * TODO: This should also return the updated ViewRect
      */
     struct CheckSizeConstraint {
         using Response = UniversalTResult;
