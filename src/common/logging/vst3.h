@@ -180,6 +180,8 @@ class Vst3Logger {
     void log_response(bool is_host_vst,
                       const YaEditController::CreateViewResponse&);
     void log_response(bool is_host_vst, const YaPlugView::GetSizeResponse&);
+    void log_response(bool is_host_vst,
+                      const YaPlugView::CheckSizeConstraintResponse&);
     void log_response(bool is_host_vst, const YaPluginFactory::ConstructArgs&);
     void log_response(bool is_host_vst, const Configuration&);
     void log_response(bool is_host_vst,

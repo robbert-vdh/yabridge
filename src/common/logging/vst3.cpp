@@ -1001,6 +1001,20 @@ void Vst3Logger::log_response(bool is_host_vst,
     });
 }
 
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaPlugView::CheckSizeConstraintResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", <ViewRect* with left = " << response.updated_rect.left
+                    << ", top = " << response.updated_rect.top
+                    << ", right = " << response.updated_rect.right
+                    << ", bottom = " << response.updated_rect.bottom << ">";
+        }
+    });
+}
+
 void Vst3Logger::log_response(bool is_host_vst,
                               const YaPluginFactory::ConstructArgs& args) {
     log_response_base(is_host_vst, [&](auto& message) {

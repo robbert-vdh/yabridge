@@ -530,8 +530,12 @@ void Vst3Bridge::run() {
             },
             [&](YaPlugView::CheckSizeConstraint& request)
                 -> YaPlugView::CheckSizeConstraint::Response {
-                return object_instances[request.owner_instance_id]
-                    .plug_view->checkSizeConstraint(&request.rect);
+                const tresult result =
+                    object_instances[request.owner_instance_id]
+                        .plug_view->checkSizeConstraint(&request.rect);
+
+                return YaPlugView::CheckSizeConstraintResponse{
+                    .result = result, .updated_rect = std::move(request.rect)};
             },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
