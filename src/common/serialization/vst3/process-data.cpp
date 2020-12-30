@@ -21,8 +21,8 @@
 YaAudioBusBuffers::YaAudioBusBuffers() {}
 
 YaAudioBusBuffers::YaAudioBusBuffers(int32 sample_size,
-                                     size_t num_channels,
-                                     size_t num_samples)
+                                     size_t num_samples,
+                                     size_t num_channels)
     : buffers(sample_size == Steinberg::Vst::SymbolicSampleSizes::kSample64
                   ? decltype(buffers)(std::vector<std::vector<double>>(
                         num_channels,
@@ -187,7 +187,7 @@ Steinberg::Vst::ProcessData& YaProcessData::get() {
     outputs_audio_bus_buffers.clear();
     for (auto& num_channels : outputs_num_channels) {
         YaAudioBusBuffers& buffers = outputs.emplace_back(
-            symbolic_sample_size, num_channels, num_samples);
+            symbolic_sample_size, num_samples, num_channels);
         outputs_audio_bus_buffers.push_back(buffers.get());
     }
 

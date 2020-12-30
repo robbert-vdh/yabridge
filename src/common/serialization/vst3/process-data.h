@@ -49,8 +49,8 @@ class YaAudioBusBuffers {
      * reconstruct the output buffers during `YaProcessData::get()`.
      */
     YaAudioBusBuffers(int32 sample_size,
-                      size_t num_channels,
-                      size_t num_samples);
+                      size_t num_samples,
+                      size_t num_channels);
 
     /**
      * Copy data from a host provided `AudioBusBuffers` object during a process
