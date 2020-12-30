@@ -44,15 +44,15 @@ _See [this document](https://github.com/robbert-vdh/yabridge/blob/master/src/com
 
 Yabridge has been tested under the following hosts using Wine Staging 6.0:
 
-| Host              | VST2               | VST3                                                                       |
-| ----------------- | ------------------ | -------------------------------------------------------------------------- |
-| Bitwig Studio 3.3 | :heavy_check_mark: | :heavy_check_mark:                                                         |
-| Carla 2.2         | :heavy_check_mark: | :heavy_check_mark:                                                         |
-| REAPER 6.19       | :heavy_check_mark: | :heavy_check_mark:                                                         |
-| Ardour 6.5        | :heavy_check_mark: | :warning: Plugins with multiple main input busses will segfault            |
-| Mixbus 6.0.702    | :heavy_check_mark: | :warning: Same situation as with Ardour                                    |
-| Qtractor 0.9.19   | :heavy_check_mark: | :x: See [rncbc/qtractor#291](https://github.com/rncbc/qtractor/issues/291) |
-| Renoise 3.2.4     | :heavy_check_mark: | Does not support VST3                                                      |
+| Host              | VST2               | VST3                                                                                                                        |
+| ----------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Bitwig Studio 3.3 | :heavy_check_mark: | :heavy_check_mark:                                                                                                          |
+| Carla 2.2         | :heavy_check_mark: | :heavy_check_mark:                                                                                                          |
+| REAPER 6.19       | :heavy_check_mark: | :heavy_check_mark:                                                                                                          |
+| Ardour 6.5        | :heavy_check_mark: | :warning: Plugins with multiple main input busses will segfault, this will be fixed in the next Ardour release              |
+| Mixbus 6.0.702    | :heavy_check_mark: | :warning: Same situation as with Ardour                                                                                     |
+| Qtractor 0.9.19   | :heavy_check_mark: | :x: See [rncbc/qtractor#291](https://github.com/rncbc/qtractor/issues/291), this will be fixed in the next Qtractor release |
+| Renoise 3.2.4     | :heavy_check_mark: | Does not support VST3                                                                                                       |
 
 Please let me know if there are any issues with other VST hosts.
 
