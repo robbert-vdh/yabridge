@@ -141,7 +141,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         this->template send<std::monostate>(
             [&](boost::asio::local::stream_protocol::socket& socket) {
                 write_object(socket, Request(object), buffer);
-                read_object<TResponse>(socket, buffer, response_object);
+                read_object<TResponse>(socket, response_object, buffer);
                 // FIXME: We have to return something here, and ML was not yet
                 //        invented when they came up with C++ so void is not
                 //        valid here

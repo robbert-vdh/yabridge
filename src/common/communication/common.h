@@ -92,10 +92,10 @@ inline void write_object(Socket& socket, const T& object) {
  * together with `write_object`. This will block until the object is available.
  *
  * @param socket The Boost.Asio socket to read from.
- * @param buffer The buffer to read into. This is useful for sending audio and
- *   chunk data since that can vary in size by a lot.
  * @param object The object to serialize into. There are also overrides that
  *   create a new default initialized `T`
+ * @param buffer The buffer to read into. This is useful for sending audio and
+ *   chunk data since that can vary in size by a lot.
  *
  * @return The deserialized object.
  *
@@ -103,13 +103,10 @@ inline void write_object(Socket& socket, const T& object) {
  * @throw boost::system::system_error If the socket is closed or gets closed
  *   while reading.
  *
- * TODO: Swap these arguments around so they match `write_object`'s argument
- *       order
- *
  * @relates write_object
  */
 template <typename T, typename Socket>
-inline T& read_object(Socket& socket, std::vector<uint8_t>& buffer, T& object) {
+inline T& read_object(Socket& socket, T& object, std::vector<uint8_t>& buffer) {
     // See the note above on the use of `uint64_t` instead of `size_t`
     std::array<uint64_t, 1> message_length;
     boost::asio::read(socket, boost::asio::buffer(message_length),
@@ -146,7 +143,7 @@ inline T& read_object(Socket& socket, std::vector<uint8_t>& buffer, T& object) {
 template <typename T, typename Socket>
 inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
     T object;
-    read_object<T>(socket, buffer, object);
+    read_object<T>(socket, object, buffer);
 
     return object;
 }
@@ -160,7 +157,7 @@ inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
 template <typename T, typename Socket>
 inline T& read_object(Socket& socket, T& object) {
     std::vector<uint8_t> buffer(64);
-    return read_object<T>(socket, buffer, object);
+    return read_object<T>(socket, object, buffer);
 }
 
 /**
@@ -173,7 +170,7 @@ template <typename T, typename Socket>
 inline T read_object(Socket& socket) {
     T object;
     std::vector<uint8_t> buffer(64);
-    read_object<T>(socket, buffer, object);
+    read_object<T>(socket, object, buffer);
 
     return object;
 }
