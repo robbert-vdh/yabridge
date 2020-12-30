@@ -20,6 +20,8 @@
 #include "vst3-impls/plugin-factory.h"
 #include "vst3-impls/plugin-proxy.h"
 
+using namespace std::literals::string_literals;
+
 // There are still some design decisions that need some more thought
 // TODO: The documentation mentions that private communication through VST3's
 //       message system should be handled on a separate timer thread.  Do we
@@ -123,6 +125,16 @@ Vst3PluginBridge::Vst3PluginBridge()
                     } else {
                         result =
                             plugin_factory->host_application->getName(name);
+                    }
+
+                    // TODO: Remove this warning ocne Ardour supports multiple
+                    //       inputs and outputs
+                    if (result == Steinberg::kResultOk && name == u"Ardour"s) {
+                        logger.log(
+                            "WARNING: Ardour currently does not support "
+                            "plugins with multiple inputs or outputs. If you "
+                            "get a Wine crash dialog or a plugin causes Ardour "
+                            "to freeze, then this is likely the cause.");
                     }
 
                     return YaHostApplication::GetNameResponse{
