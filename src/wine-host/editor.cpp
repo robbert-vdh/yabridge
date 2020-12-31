@@ -675,7 +675,7 @@ ATOM register_window_class(std::string window_class_name) {
     WNDCLASSEX window_class{};
 
     window_class.cbSize = sizeof(WNDCLASSEX);
-    window_class.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
+    window_class.style = CS_DBLCLKS;
     window_class.lpfnWndProc = window_proc;
     window_class.hInstance = GetModuleHandle(nullptr);
     window_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
