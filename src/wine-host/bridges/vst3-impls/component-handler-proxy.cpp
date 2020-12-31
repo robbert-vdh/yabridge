@@ -29,13 +29,9 @@ Vst3ComponentHandlerProxyImpl::Vst3ComponentHandlerProxyImpl(
 tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::queryInterface(const Steinberg::TUID _iid,
                                               void** obj) {
-    // TODO: Successful queries should also be logged
     const tresult result = Vst3ComponentHandlerProxy::queryInterface(_iid, obj);
-    if (result != Steinberg::kResultOk) {
-        bridge.logger.log_unknown_interface(
-            "In IComponentHandler::queryInterface()",
-            Steinberg::FUID::fromTUID(_iid));
-    }
+    bridge.logger.log_query_interface("In IComponentHandler::queryInterface()",
+                                      result, Steinberg::FUID::fromTUID(_iid));
 
     return result;
 }

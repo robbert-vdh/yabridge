@@ -34,12 +34,9 @@ Vst3HostContextProxyImpl::queryInterface(const Steinberg::TUID _iid,
                                          void** obj) {
     // I don't think it's expected of a host to implement multiple interfaces on
     // this object, so if we do get a call here it's important that it's logged
-    // TODO: Successful queries should also be logged
     const tresult result = Vst3HostContextProxy::queryInterface(_iid, obj);
-    if (result != Steinberg::kResultOk) {
-        bridge.logger.log_unknown_interface("In FUnknown::queryInterface()",
-                                            Steinberg::FUID::fromTUID(_iid));
-    }
+    bridge.logger.log_query_interface("In FUnknown::queryInterface()", result,
+                                      Steinberg::FUID::fromTUID(_iid));
 
     return result;
 }
@@ -83,8 +80,9 @@ Vst3HostContextProxyImpl::createInstance(Steinberg::TUID /*cid*/,
         // When the host requests an interface we do not (yet) implement,
         // we'll print a recognizable log message
         const Steinberg::FUID uid = Steinberg::FUID::fromTUID(_iid);
-        bridge.logger.log_unknown_interface(
-            "In IHostApplication::createInstance()", uid);
+        bridge.logger.log_query_interface(
+            "In IHostApplication::createInstance()", Steinberg::kNotImplemented,
+            uid);
 
         return Steinberg::kNotImplemented;
     }

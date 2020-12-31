@@ -28,12 +28,9 @@ Vst3PlugFrameProxyImpl::Vst3PlugFrameProxyImpl(
 
 tresult PLUGIN_API
 Vst3PlugFrameProxyImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
-    // TODO: Successful queries should also be logged
     const tresult result = Vst3PlugFrameProxy::queryInterface(_iid, obj);
-    if (result != Steinberg::kResultOk) {
-        bridge.logger.log_unknown_interface("In IPlugFrame::queryInterface()",
-                                            Steinberg::FUID::fromTUID(_iid));
-    }
+    bridge.logger.log_query_interface("In IPlugFrame::queryInterface()", result,
+                                      Steinberg::FUID::fromTUID(_iid));
 
     return result;
 }

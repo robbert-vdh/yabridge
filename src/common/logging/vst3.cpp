@@ -24,16 +24,25 @@
 
 Vst3Logger::Vst3Logger(Logger& generic_logger) : logger(generic_logger) {}
 
-void Vst3Logger::log_unknown_interface(
+void Vst3Logger::log_query_interface(
     const std::string& where,
+    tresult result,
     const std::optional<Steinberg::FUID>& uid) {
     if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
+        std::ostringstream message;
         std::string uid_string = uid ? format_uid(*uid) : "<unknown_pointer>";
 
-        std::ostringstream message;
-        message << "[unknown interface] " << where << ": " << uid_string;
-
-        log(message.str());
+        if (result == Steinberg::kResultOk) {
+            if (logger.verbosity >= Logger::Verbosity::most_events) {
+                message << "[query interface] " << where << ": " << uid_string;
+                log(message.str());
+            }
+        } else {
+            // TODO: DIfferentiate between interfaces we don't implement and
+            //       interfaces the object doesn't implement
+            message << "[unknown interface] " << where << ": " << uid_string;
+            log(message.str());
+        }
     }
 }
 

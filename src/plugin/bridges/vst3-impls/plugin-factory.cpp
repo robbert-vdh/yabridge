@@ -59,8 +59,8 @@ YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
         // to do.
         const Steinberg::FUID uid = Steinberg::FUID::fromTUID(
             *reinterpret_cast<const Steinberg::TUID*>(&*_iid));
-        bridge.logger.log_unknown_interface(
-            "In IPluginFactory::createInstance()", uid);
+        bridge.logger.log_query_interface("In IPluginFactory::createInstance()",
+                                          Steinberg::kNotImplemented, uid);
 
         *obj = nullptr;
         return Steinberg::kNotImplemented;

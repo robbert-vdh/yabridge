@@ -26,13 +26,9 @@ Vst3ConnectionPointProxyImpl::Vst3ConnectionPointProxyImpl(
 tresult PLUGIN_API
 Vst3ConnectionPointProxyImpl::queryInterface(const Steinberg::TUID _iid,
                                              void** obj) {
-    // TODO: Successful queries should also be logged
     const tresult result = Vst3ConnectionPointProxy::queryInterface(_iid, obj);
-    if (result != Steinberg::kResultOk) {
-        bridge.logger.log_unknown_interface(
-            "In IConnectionPoint::queryInterface()",
-            Steinberg::FUID::fromTUID(_iid));
-    }
+    bridge.logger.log_query_interface("In IConnectionPoint::queryInterface()",
+                                      result, Steinberg::FUID::fromTUID(_iid));
 
     return result;
 }

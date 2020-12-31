@@ -43,13 +43,15 @@ class Vst3Logger {
     }
 
     /**
-     * Log about encountering an unknown interface. The location and the UID
-     * will be printed when the verbosity level is set to `most_events` or
-     * higher. In case we could not get a FUID (because of null pointers, for
+     * Log calls to `FUnknown::queryInterface`. This will separately log about
+     * successful queries, queries for interfaces the object did not implement,
+     * and queries for interfaces we do not implement depending on the verbosity
+     * level. In case we could not get a FUID (because of null pointers, for
      * instance), `std::nullopt` should be passed.
      */
-    void log_unknown_interface(const std::string& where,
-                               const std::optional<Steinberg::FUID>& uid);
+    void log_query_interface(const std::string& where,
+                             tresult result,
+                             const std::optional<Steinberg::FUID>& uid);
 
     // For every object we send using `Vst3MessageHandler` we have overloads
     // that print information about the request and the response. The boolean
