@@ -123,7 +123,7 @@ Editor::Editor(const Configuration& config, const size_t parent_window_handle)
                                   nullptr,
                                   GetModuleHandle(nullptr),
                                   this),
-                   DestroyWindow),
+                   destroy_window_async),
       // If `config.editor_double_embed` is set, then we'll also create a child
       // window in `win32_child_handle`. If we do this before calling
       // `ShowWindow()` on `win32_handle` we'll run into X11 errors.
@@ -213,15 +213,17 @@ Editor::Editor(const Configuration& config, const size_t parent_window_handle)
 #pragma GCC diagnostic ignored "-Wignored-attributes"
             // As explained above, we can't do this directly in the initializer
             // list
-            win32_child_handle = std::unique_ptr<std::remove_pointer_t<HWND>,
-                                                 decltype(&DestroyWindow)>(
-                CreateWindowEx(WS_EX_TOOLWINDOW,
-                               reinterpret_cast<LPCSTR>(window_class.atom),
-                               "yabridge plugin child", WS_CHILD, CW_USEDEFAULT,
-                               CW_USEDEFAULT, client_area.width,
-                               client_area.height, win32_handle.get(), nullptr,
-                               GetModuleHandle(nullptr), this),
-                DestroyWindow);
+            win32_child_handle =
+                std::unique_ptr<std::remove_pointer_t<HWND>,
+                                decltype(&destroy_window_async)>(
+                    CreateWindowEx(WS_EX_TOOLWINDOW,
+                                   reinterpret_cast<LPCSTR>(window_class.atom),
+                                   "yabridge plugin child", WS_CHILD,
+                                   CW_USEDEFAULT, CW_USEDEFAULT,
+                                   client_area.width, client_area.height,
+                                   win32_handle.get(), nullptr,
+                                   GetModuleHandle(nullptr), this),
+                    destroy_window_async);
 #pragma GCC diagnostic pop
 
             ShowWindow(win32_child_handle->get(), SW_SHOWNORMAL);
@@ -250,14 +252,6 @@ Editor::~Editor() {
 
     xcb_reparent_window(x11_connection.get(), wine_window, root, 0, 0);
     xcb_flush(x11_connection.get());
-
-    // FIXME: I have no idea why, but for some reason the window still hangs
-    //        some of the times without manually resetting the
-    //        `std::unique_ptr`` to the window handle` (which calls
-    //        `DestroyWindow()`), even though the behavior should be identical
-    //        without this line.
-    win32_child_handle.reset();
-    win32_handle.reset();
 }
 
 HWND Editor::get_win32_handle() const {
@@ -417,6 +411,10 @@ void Editor::set_input_focus(bool grab) const {
                         grab ? parent_window : topmost_window,
                         XCB_CURRENT_TIME);
     xcb_flush(x11_connection.get());
+}
+
+void Editor::destroy_window_async(HWND window_handle) {
+    PostMessage(window_handle, WM_CLOSE, 0, 0);
 }
 
 bool Editor::is_wine_window_active() const {

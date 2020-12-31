@@ -39,6 +39,10 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
 - Slightly increased resposniveness when resizing plugin GUIs by preventing
   unnecessary blitting. This also reduces flickering with plugins that don't do
   double buffering.
+- Window closing is now deferred. This means that when closing the editor
+  window, the host no longer has to wait for Wine to fully close the window.
+  Most hosts already do something similar themselves, so this may not make any
+  difference in responsiveness.
 - VST2 editor idle events are now handled slightly differently. This should
   result in even more responsive GUIs and I have not come across any plugins
   where this change introduced issues, but please let me know if it does break

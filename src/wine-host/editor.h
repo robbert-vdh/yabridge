@@ -155,6 +155,13 @@ class Editor {
 
    private:
     /**
+     * Post a message to this window's message queue to clean up the window.
+     * This way we don't have to wait for the window to actually fully close
+     * before returning.
+     */
+    static void destroy_window_async(HWND window_handle);
+
+    /**
      * Returns `true` if the currently active window (as per
      * `_NET_ACTIVE_WINDOW`) contains `wine_window`. If the window manager does
      * not support this hint, this will always return false.
@@ -211,7 +218,8 @@ class Editor {
      * The handle for the window created through Wine that the plugin uses to
      * embed itself in.
      */
-    std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>
+    std::unique_ptr<std::remove_pointer_t<HWND>,
+                    decltype(&destroy_window_async)>
         win32_handle;
 
     /**
@@ -222,8 +230,8 @@ class Editor {
      * of the readme for more details). The plugin should then embed itself
      * within this child window.
      */
-    std::optional<
-        std::unique_ptr<std::remove_pointer_t<HWND>, decltype(&DestroyWindow)>>
+    std::optional<std::unique_ptr<std::remove_pointer_t<HWND>,
+                                  decltype(&destroy_window_async)>>
         win32_child_handle;
 
 #pragma GCC diagnostic pop
