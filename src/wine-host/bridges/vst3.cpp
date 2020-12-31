@@ -397,9 +397,6 @@ void Vst3Bridge::run() {
                 //       and if it's actually needed (for instance when the host
                 //       resizes the window without informing the plugin)
                 const auto x11_handle = static_cast<size_t>(request.parent);
-                const std::string window_class =
-                    "yabridge plugin " + sockets.base_dir.string() + " " +
-                    std::to_string(request.owner_instance_id);
 
                 // Creating the window and having the plugin embed in it should
                 // be done in the main UI thread
@@ -407,8 +404,7 @@ void Vst3Bridge::run() {
                     .run_in_context<tresult>([&]() {
                         Editor& editor_instance =
                             object_instances[request.owner_instance_id]
-                                .editor.emplace(config, window_class,
-                                                x11_handle);
+                                .editor.emplace(config, x11_handle);
 
                         const tresult result =
                             object_instances[request.owner_instance_id]

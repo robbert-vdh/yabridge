@@ -97,16 +97,12 @@ class Editor {
      *
      * @param config This instance's configuration, used to enable alternative
      *   editor behaviours.
-     * @param window_class_name The name for the window class for editor
-     *   windows.
      * @param parent_window_handle The X11 window handle passed by the VST host
      *   for the editor to embed itself into.
      *
      * @see win32_handle
      */
-    Editor(const Configuration& config,
-           const std::string& window_class_name,
-           const size_t parent_window_handle);
+    Editor(const Configuration& config, const size_t parent_window_handle);
 
     ~Editor();
 

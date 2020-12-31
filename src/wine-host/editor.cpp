@@ -46,6 +46,12 @@ constexpr uint32_t xembed_focus_in_msg = 4;
 constexpr uint32_t xembed_focus_first = 1;
 
 /**
+ * Used to generate a globally unique identifier for a window class. This is
+ * needed because every window's window class name should be unique.
+ */
+std::atomic_size_t window_class_id{};
+
+/**
  * Find the topmost window (i.e. the window before the root window in the window
  * tree) starting from a certain window.
  *
@@ -94,13 +100,12 @@ WindowClass::~WindowClass() {
     UnregisterClass(reinterpret_cast<LPCSTR>(atom), GetModuleHandle(nullptr));
 }
 
-Editor::Editor(const Configuration& config,
-               const std::string& window_class_name,
-               const size_t parent_window_handle)
+Editor::Editor(const Configuration& config, const size_t parent_window_handle)
     : use_xembed(config.editor_xembed),
       x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
       client_area(get_maximum_screen_dimensions(*x11_connection)),
-      window_class(window_class_name),
+      window_class("yabridge plugin " +
+                   std::to_string(window_class_id.fetch_add(1))),
       // Create a window without any decoratiosn for easy embedding. The
       // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to
       // be drawn without any decorations (making resizes behave as you'd
