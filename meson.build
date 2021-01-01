@@ -2,7 +2,16 @@ project(
   'yabridge',
   'cpp',
   version : '2.2.1',
-  default_options : ['warning_level=3', 'cpp_std=c++2a', 'build.cpp_std=c++2a'],
+  default_options : [
+    'warning_level=3',
+    'cpp_std=c++2a',
+    # Even though Meson will complain that this option does not exist, without
+    # this Meson will not apply the above option to native targets
+    'build.cpp_std=c++2a',
+    # Enable Unity builds with the default 4-file units to somewhat speed up the
+    # compilation process
+    'unity=on',
+  ],
 )
 
 # Meson does not let us set a default cross compiler, which makes sense, but it
