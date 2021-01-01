@@ -62,19 +62,164 @@ class YaNoteExpressionController
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `INoteExpressionController::getNoteExpressionCount(bus_index, channel)`
+     * to the Wine plugin host.
+     */
+    struct GetNoteExpressionCount {
+        using Response = PrimitiveWrapper<int32>;
+
+        native_size_t instance_id;
+
+        int32 bus_index;
+        int16 channel;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(bus_index);
+            s.value2b(channel);
+        }
+    };
+
     virtual int32 PLUGIN_API getNoteExpressionCount(int32 busIndex,
                                                     int16 channel) override = 0;
+
+    /**
+     * The response code and returned info for a call to
+     * `INoteExpressionController::getNoteExpressionInfo(bus_index, channel,
+     * note_expression_index, &info)`.
+     */
+    struct GetNoteExpressionInfoResponse {
+        UniversalTResult result;
+        Steinberg::Vst::NoteExpressionTypeInfo info;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(info);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `INoteExpressionController::getNoteExpressionInfo(bus_index, channel,
+     * note_expression_index, &info)` to the Wine plugin host.
+     */
+    struct GetNoteExpressionInfo {
+        using Response = GetNoteExpressionInfoResponse;
+
+        native_size_t instance_id;
+
+        int32 bus_index;
+        int16 channel;
+        int16 note_expression_index;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(bus_index);
+            s.value2b(channel);
+            s.value4b(note_expression_index);
+        }
+    };
+
     virtual tresult PLUGIN_API getNoteExpressionInfo(
         int32 busIndex,
         int16 channel,
         int32 noteExpressionIndex,
         Steinberg::Vst::NoteExpressionTypeInfo& info /*out*/) override = 0;
+
+    /**
+     * The response code and returned string for a call to
+     * `INoteExpressionController::getNoteExpressionStringByValue(bus_index,
+     * channel, id, value_normalized, &string)`.
+     */
+    struct GetNoteExpressionStringByValueResponse {
+        UniversalTResult result;
+        std::u16string string;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.text2b(string, std::extent_v<Steinberg::Vst::String128>);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `INoteExpressionController::getNoteExpressionStringByValue(bus_index,
+     * channel, id, value_normalized, &string)` to the Wine plugin host.
+     */
+    struct GetNoteExpressionStringByValue {
+        using Response = GetNoteExpressionStringByValueResponse;
+
+        native_size_t instance_id;
+
+        int32 bus_index;
+        int16 channel;
+        Steinberg::Vst::NoteExpressionTypeID id;
+        Steinberg::Vst::NoteExpressionValue value_normalized;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(bus_index);
+            s.value2b(channel);
+            s.value4b(id);
+            s.value8b(value_normalized);
+        }
+    };
+
     virtual tresult PLUGIN_API getNoteExpressionStringByValue(
         int32 busIndex,
         int16 channel,
         Steinberg::Vst::NoteExpressionTypeID id,
         Steinberg::Vst::NoteExpressionValue valueNormalized /*in*/,
         Steinberg::Vst::String128 string /*out*/) override = 0;
+
+    /**
+     * The response code and returned value for a call to
+     * `INoteExpressionController::getNoteExpressionValueByString(bus_index,
+     * channel, id, string, &value_normalized)`.
+     */
+    struct GetNoteExpressionValueByStringResponse {
+        UniversalTResult result;
+        Steinberg::Vst::NoteExpressionValue value_normalized;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.value8b(value_normalized);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `INoteExpressionController::getNoteExpressionValueByString(bus_index,
+     * channel, id, string, &value_normalized)` to the Wine plugin host.
+     */
+    struct GetNoteExpressionValueByString {
+        using Response = GetNoteExpressionValueByStringResponse;
+
+        native_size_t instance_id;
+
+        int32 bus_index;
+        int16 channel;
+        Steinberg::Vst::NoteExpressionTypeID id;
+        std::u16string string;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(bus_index);
+            s.value2b(channel);
+            s.value4b(id);
+            s.text2b(string, std::extent_v<Steinberg::Vst::String128>);
+        }
+    };
+
     virtual tresult PLUGIN_API getNoteExpressionValueByString(
         int32 busIndex,
         int16 channel,
@@ -88,3 +233,27 @@ class YaNoteExpressionController
 };
 
 #pragma GCC diagnostic pop
+
+namespace Steinberg {
+namespace Vst {
+template <typename S>
+void serialize(S& s, NoteExpressionTypeInfo& info) {
+    s.value4b(info.typeId);
+    s.text2b(info.title);
+    s.text2b(info.shortTitle);
+    s.text2b(info.units);
+    s.value4b(info.unitId);
+    s.object(info.valueDesc);
+    s.value4b(info.associatedParameterId);
+    s.value4b(info.flags);
+}
+
+template <typename S>
+void serialize(S& s, NoteExpressionValueDescription& description) {
+    s.value8b(description.defaultValue);
+    s.value8b(description.minimum);
+    s.value8b(description.maximum);
+    s.value4b(description.stepCount);
+}
+}  // namespace Vst
+}  // namespace Steinberg
