@@ -78,6 +78,10 @@ sed -i 's/^using namespace std\(::experimental\)\?;$/namespace filesystem = boos
 sed -i 's/\bfile_type::directory\b/file_type::directory_file/g' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
 sed -i 's/\bp\.native ()/p.wstring ()/g' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
 
+# Wine uses the narrow versions of everything by default, and in Unity builds
+# we need to explicitly use the UTF-16 version here.
+sed -i 's/\bIShellLink\*/IShellLinkW*/g' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
+
 # Meson requires this program to output something, or else it will error out
 # when trying to encode the empty output
 echo "Successfully patched '$sdk_directory' for winegcc compatibility"
