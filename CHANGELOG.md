@@ -53,11 +53,6 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   and up. The build process now detect which version of Wine is used to build
   with, and it then applies the change conditionally to be able to support
   building with both older and newer versions of Wine.
-- [Unity builds](https://mesonbuild.com/Unity-builds.html) with 4-file units are
-  now enabled by default since all the source code additions for VST3 support
-  increased build times significantly. The unit size can be changed at build
-  time using the `unity_size` option, and this behaviour can be disabled
-  completely by passing `unity=off`.
 
 ### Fixed
 

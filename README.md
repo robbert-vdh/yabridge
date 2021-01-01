@@ -555,10 +555,13 @@ The following dependencies are included in the repository as a Meson wrap:
   some [patches](https://github.com/robbert-vdh/yabridge/blob/master/tools/patch-vst3-sdk.sh)
   to allow Winelib compilation
 
-The project can then be compiled as follows:
+The project can then be compiled with the command below. You can remove or
+change the unity size argument if building takes up too much RAM, or you can
+disable unity builds completely by getting rid of `--unity=on` at the cost of
+slightly longer build times.
 
 ```shell
-meson setup --buildtype=release --cross-file cross-wine.conf build
+meson setup --buildtype=release --cross-file cross-wine.conf --unity=on --unity-size=1000 build
 ninja -C build
 ```
 

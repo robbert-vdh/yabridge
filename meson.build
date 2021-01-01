@@ -8,9 +8,6 @@ project(
     # Even though Meson will complain that this option does not exist, without
     # this Meson will not apply the above option to native targets
     'build.cpp_std=c++2a',
-    # Enable Unity builds with the default 4-file units to somewhat speed up the
-    # compilation process
-    'unity=on',
   ],
 )
 
