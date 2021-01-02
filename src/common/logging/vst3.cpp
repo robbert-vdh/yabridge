@@ -357,6 +357,8 @@ bool Vst3Logger::log_request(
         if (request.type == Steinberg::kPlatformTypeX11EmbedWindowID) {
             message << "\" (will be translated to \""
                     << Steinberg::kPlatformTypeHWND << "\")";
+        } else {
+            message << "\"";
         }
         message << ")";
     });
@@ -371,6 +373,8 @@ bool Vst3Logger::log_request(bool is_host_vst,
         if (request.type == Steinberg::kPlatformTypeX11EmbedWindowID) {
             message << "\" (will be translated to \""
                     << Steinberg::kPlatformTypeHWND << "\")";
+        } else {
+            message << "\"";
         }
         message << ")";
     });
