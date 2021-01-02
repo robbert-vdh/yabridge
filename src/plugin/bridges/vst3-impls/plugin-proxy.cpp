@@ -415,10 +415,11 @@ tresult PLUGIN_API Vst3PluginProxyImpl::openAboutBox(TBool onlyCheck) {
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionCount(int32 busIndex,
                                                              int16 channel) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: Implement INoteExpressionCOntroller::getNoteExpressionCount()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaNoteExpressionController::GetNoteExpressionCount{
+            .instance_id = instance_id(),
+            .bus_index = busIndex,
+            .channel = channel});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionInfo(
@@ -426,10 +427,16 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionInfo(
     int16 channel,
     int32 noteExpressionIndex,
     Steinberg::Vst::NoteExpressionTypeInfo& info /*out*/) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: Implement INoteExpressionCOntroller::getNoteExpressionInfo()");
-    return Steinberg::kNotImplemented;
+    const GetNoteExpressionInfoResponse response =
+        bridge.send_message(YaNoteExpressionController::GetNoteExpressionInfo{
+            .instance_id = instance_id(),
+            .bus_index = busIndex,
+            .channel = channel,
+            .note_expression_index = noteExpressionIndex});
+
+    info = response.info;
+
+    return response.result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionStringByValue(
@@ -438,11 +445,18 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionStringByValue(
     Steinberg::Vst::NoteExpressionTypeID id,
     Steinberg::Vst::NoteExpressionValue valueNormalized /*in*/,
     Steinberg::Vst::String128 string /*out*/) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: Implement "
-        "INoteExpressionCOntroller::getNoteExpressionStringByValue()");
-    return Steinberg::kNotImplemented;
+    const GetNoteExpressionStringByValueResponse response = bridge.send_message(
+        YaNoteExpressionController::GetNoteExpressionStringByValue{
+            .instance_id = instance_id(),
+            .bus_index = busIndex,
+            .channel = channel,
+            .id = id,
+            .value_normalized = valueNormalized});
+
+    std::copy(response.string.begin(), response.string.end(), string);
+    string[response.string.size()] = 0;
+
+    return response.result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionValueByString(
@@ -451,11 +465,17 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionValueByString(
     Steinberg::Vst::NoteExpressionTypeID id,
     const Steinberg::Vst::TChar* string /*in*/,
     Steinberg::Vst::NoteExpressionValue& valueNormalized /*out*/) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: Implement "
-        "INoteExpressionCOntroller::getNoteExpressionValueByString()");
-    return Steinberg::kNotImplemented;
+    const GetNoteExpressionValueByStringResponse response = bridge.send_message(
+        YaNoteExpressionController::GetNoteExpressionValueByString{
+            .instance_id = instance_id(),
+            .bus_index = busIndex,
+            .channel = channel,
+            .id = id,
+            .string = string});
+
+    valueNormalized = response.value_normalized;
+
+    return response.result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {

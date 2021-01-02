@@ -117,7 +117,7 @@ class YaNoteExpressionController
 
         int32 bus_index;
         int16 channel;
-        int16 note_expression_index;
+        int32 note_expression_index;
 
         template <typename S>
         void serialize(S& s) {

@@ -370,6 +370,65 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .edit_controller_2->openAboutBox(request.only_check);
             },
+            [&](const YaNoteExpressionController::GetNoteExpressionCount&
+                    request)
+                -> YaNoteExpressionController::GetNoteExpressionCount::
+                    Response {
+                        return object_instances[request.instance_id]
+                            .note_expression_controller->getNoteExpressionCount(
+                                request.bus_index, request.channel);
+                    },
+            [&](const YaNoteExpressionController::GetNoteExpressionInfo&
+                    request)
+                -> YaNoteExpressionController::GetNoteExpressionInfo::Response {
+                Steinberg::Vst::NoteExpressionTypeInfo info{};
+                const tresult result =
+                    object_instances[request.instance_id]
+                        .note_expression_controller->getNoteExpressionInfo(
+                            request.bus_index, request.channel,
+                            request.note_expression_index, info);
+
+                return YaNoteExpressionController::
+                    GetNoteExpressionInfoResponse{.result = result,
+                                                  .info = std::move(info)};
+            },
+            [&](const YaNoteExpressionController::
+                    GetNoteExpressionStringByValue& request)
+                -> YaNoteExpressionController::GetNoteExpressionStringByValue::
+                    Response {
+                        Steinberg::Vst::String128 string{0};
+                        const tresult result =
+                            object_instances[request.instance_id]
+                                .note_expression_controller
+                                ->getNoteExpressionStringByValue(
+                                    request.bus_index, request.channel,
+                                    request.id, request.value_normalized,
+                                    string);
+
+                        return YaNoteExpressionController::
+                            GetNoteExpressionStringByValueResponse{
+                                .result = result,
+                                .string = tchar_pointer_to_u16string(string)};
+                    },
+            [&](const YaNoteExpressionController::
+                    GetNoteExpressionValueByString& request)
+                -> YaNoteExpressionController::GetNoteExpressionValueByString::
+                    Response {
+                        Steinberg::Vst::NoteExpressionValue value_normalized;
+                        const tresult result =
+                            object_instances[request.instance_id]
+                                .note_expression_controller
+                                ->getNoteExpressionValueByString(
+                                    request.bus_index, request.channel,
+                                    request.id,
+                                    u16string_to_tchar_pointer(request.string),
+                                    value_normalized);
+
+                        return YaNoteExpressionController::
+                            GetNoteExpressionValueByStringResponse{
+                                .result = result,
+                                .value_normalized = value_normalized};
+                    },
             [&](const YaPlugView::IsPlatformTypeSupported& request)
                 -> YaPlugView::IsPlatformTypeSupported::Response {
                 // The host will of course want to pass an X11 window ID for the
@@ -831,7 +890,7 @@ size_t Vst3Bridge::register_object_instance(
                     },
                     [&](const YaComponent::GetControllerClassId& request)
                         -> YaComponent::GetControllerClassId::Response {
-                        Steinberg::TUID cid;
+                        Steinberg::TUID cid{0};
                         const tresult result =
                             object_instances[request.instance_id]
                                 .component->getControllerClassId(cid);
