@@ -116,7 +116,17 @@ fn main() -> Result<()> {
                             "Automatically locate yabridge's files. This can be used after manually \
                              setting a path with the '--path' option to revert back to the default \
                              auto detection behaviour.",
+                        ),
+                ).arg(
+                    Arg::with_name("no_verify")
+                        .long("no-verify")
+                        .about("Always skip post-installation setup checks")
+                        .long_about(
+                            "Always skip post-installation setup checks. This can be set temporarily \
+                             by passing the '--no-verify' option to 'yabridgectl sync'.",
                         )
+                        .possible_values(&["true", "false"])
+                        .takes_value(true),
                 ),
         )
         .subcommand(
@@ -177,6 +187,7 @@ fn main() -> Result<()> {
                     .ok()
                     .and_then(|path| path.canonicalize().ok()),
                 path_auto: options.is_present("path_auto"),
+                no_verify: options.value_of("no_verify").map(|value| value == "true"),
             },
         ),
         ("sync", Some(options)) => actions::do_sync(

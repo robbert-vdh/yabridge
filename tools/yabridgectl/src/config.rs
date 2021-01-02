@@ -53,6 +53,7 @@ const YABRIDGE_VST3_HOME: &str = ".vst3/yabridge";
 /// The configuration used for yabridgectl. This will be serialized to and deserialized from
 /// `$XDG_CONFIG_HOME/yabridge/config.toml`.
 #[derive(Deserialize, Serialize, Debug)]
+#[serde(default)]
 pub struct Config {
     /// The installation method to use. We will default to creating copies since that works
     /// everywhere.
@@ -66,6 +67,9 @@ pub struct Config {
     /// Files/Common/VST3`). We're using an ordered set here out of convenience so we can't get
     /// duplicates and the config file is always sorted.
     pub plugin_dirs: BTreeSet<PathBuf>,
+    /// Always skip post-installation setup checks. This can be set temporarily by passing the
+    /// `--no-verify` option to `yabridgectl sync`.
+    pub no_verify: bool,
     /// The last known combination of Wine and yabridge versions that would work together properly.
     /// This is mostly to diagnose issues with older Wine versions (such as those in Ubuntu's repos)
     /// early on.
@@ -144,6 +148,18 @@ pub struct YabridgeFiles {
     pub yabridge_host_exe_so: PathBuf,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            method: InstallationMethod::Copy,
+            yabridge_home: None,
+            plugin_dirs: BTreeSet::new(),
+            no_verify: false,
+            last_known_config: None,
+        }
+    }
+}
+
 impl Config {
     /// Try to read the config file, creating a new default file if necessary. This will fail if the
     /// file could not be created or if it could not be parsed.
@@ -158,12 +174,7 @@ impl Config {
                     .with_context(|| format!("Failed to parse '{}'", path.display()))
             }
             None => {
-                let defaults = Config {
-                    method: InstallationMethod::Copy,
-                    yabridge_home: None,
-                    plugin_dirs: BTreeSet::new(),
-                    last_known_config: None,
-                };
+                let defaults = Config::default();
 
                 // If no existing config file exists, then write a new config file with default
                 // values

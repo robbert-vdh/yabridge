@@ -138,6 +138,7 @@ pub struct SetOptions<'a> {
     pub method: Option<&'a str>,
     pub path: Option<PathBuf>,
     pub path_auto: bool,
+    pub no_verify: Option<bool>,
 }
 
 /// Change configuration settings. The actual options are defined in the clap [app](clap::App).
@@ -155,6 +156,10 @@ pub fn set_settings(config: &mut Config, options: &SetOptions) -> Result<()> {
 
     if options.path_auto {
         config.yabridge_home = None;
+    }
+
+    if let Some(no_verify) = options.no_verify {
+        config.no_verify = no_verify;
     }
 
     config.write()
@@ -383,7 +388,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         num_skipped_files
     );
 
-    if options.no_verify {
+    // Skipping the post-installation seting checks can be done only for this invocation of
+    // `yabridgectl sync`, or it can be skipped permanently through a config file option
+    if options.no_verify || config.no_verify {
         return Ok(());
     }
 

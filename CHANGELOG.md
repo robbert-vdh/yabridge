@@ -69,6 +69,10 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
 - Added the `yabridgectl set --path-auto` option to revert back to automatically
   locating yabridge's files after manually setting a path with
   `yabridgectl set --path=<...>`.
+- Added the `yabridgectl set --no-verify={true,false}` option to permanently
+  disable post-installation setup checks. You can still directly pass the
+  `--no-verify` argument to `yabridgectl sync` to disable these checks for only
+  a single invocation.
 
 ## [2.2.1] - 2020-12-12
 
