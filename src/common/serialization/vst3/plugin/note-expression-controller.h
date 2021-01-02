@@ -27,6 +27,9 @@
 /**
  * Wraps around `INoteExpressionController` for serialization purposes. This is
  * instantiated as part of `Vst3PluginProxy`.
+ *
+ * TODO: Check if these things are being called in the processing loop. If they
+ *       are, handle them on the audio sockets.
  */
 class YaNoteExpressionController
     : public Steinberg::Vst::INoteExpressionController {

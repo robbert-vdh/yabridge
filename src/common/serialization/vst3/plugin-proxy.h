@@ -24,6 +24,7 @@
 #include "plugin/connection-point.h"
 #include "plugin/edit-controller-2.h"
 #include "plugin/edit-controller.h"
+#include "plugin/note-expression-controller.h"
 #include "plugin/plugin-base.h"
 #include "plugin/program-list-data.h"
 #include "plugin/unit-data.h"
@@ -60,6 +61,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
                         public YaConnectionPoint,
                         public YaEditController,
                         public YaEditController2,
+                        public YaNoteExpressionController,
                         public YaPluginBase,
                         public YaProgramListData,
                         public YaUnitData,
@@ -87,6 +89,8 @@ class Vst3PluginProxy : public YaAudioProcessor,
         YaConnectionPoint::ConstructArgs connection_point_args;
         YaEditController::ConstructArgs edit_controller_args;
         YaEditController2::ConstructArgs edit_controller_2_args;
+        YaNoteExpressionController::ConstructArgs
+            note_expression_controller_args;
         YaPluginBase::ConstructArgs plugin_base_args;
         YaProgramListData::ConstructArgs program_list_data_args;
         YaUnitData::ConstructArgs unit_data_args;
@@ -100,6 +104,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
             s.object(connection_point_args);
             s.object(edit_controller_args);
             s.object(edit_controller_2_args);
+            s.object(note_expression_controller_args);
             s.object(plugin_base_args);
             s.object(program_list_data_args);
             s.object(unit_data_args);

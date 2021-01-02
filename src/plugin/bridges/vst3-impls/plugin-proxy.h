@@ -120,6 +120,27 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API openHelp(TBool onlyCheck) override;
     tresult PLUGIN_API openAboutBox(TBool onlyCheck) override;
 
+    // From `INoteExpressionController`
+    int32 PLUGIN_API getNoteExpressionCount(int32 busIndex,
+                                            int16 channel) override;
+    tresult PLUGIN_API getNoteExpressionInfo(
+        int32 busIndex,
+        int16 channel,
+        int32 noteExpressionIndex,
+        Steinberg::Vst::NoteExpressionTypeInfo& info /*out*/) override;
+    tresult PLUGIN_API getNoteExpressionStringByValue(
+        int32 busIndex,
+        int16 channel,
+        Steinberg::Vst::NoteExpressionTypeID id,
+        Steinberg::Vst::NoteExpressionValue valueNormalized /*in*/,
+        Steinberg::Vst::String128 string /*out*/) override;
+    tresult PLUGIN_API getNoteExpressionValueByString(
+        int32 busIndex,
+        int16 channel,
+        Steinberg::Vst::NoteExpressionTypeID id,
+        const Steinberg::Vst::TChar* string /*in*/,
+        Steinberg::Vst::NoteExpressionValue& valueNormalized /*out*/) override;
+
     // From `IPluginBase`
     tresult PLUGIN_API initialize(FUnknown* context) override;
     tresult PLUGIN_API terminate() override;

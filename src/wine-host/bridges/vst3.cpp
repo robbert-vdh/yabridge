@@ -35,6 +35,7 @@ InstanceInterfaces::InstanceInterfaces(
       connection_point(object),
       edit_controller(object),
       edit_controller_2(object),
+      note_expression_controller(object),
       plugin_base(object),
       unit_data(object),
       program_list_data(object),

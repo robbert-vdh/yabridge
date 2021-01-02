@@ -413,6 +413,51 @@ tresult PLUGIN_API Vst3PluginProxyImpl::openAboutBox(TBool onlyCheck) {
         .instance_id = instance_id(), .only_check = onlyCheck});
 }
 
+int32 PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionCount(int32 busIndex,
+                                                             int16 channel) {
+    // TODO: Implement
+    bridge.logger.log(
+        "TODO: Implement INoteExpressionCOntroller::getNoteExpressionCount()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionInfo(
+    int32 busIndex,
+    int16 channel,
+    int32 noteExpressionIndex,
+    Steinberg::Vst::NoteExpressionTypeInfo& info /*out*/) {
+    // TODO: Implement
+    bridge.logger.log(
+        "TODO: Implement INoteExpressionCOntroller::getNoteExpressionInfo()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionStringByValue(
+    int32 busIndex,
+    int16 channel,
+    Steinberg::Vst::NoteExpressionTypeID id,
+    Steinberg::Vst::NoteExpressionValue valueNormalized /*in*/,
+    Steinberg::Vst::String128 string /*out*/) {
+    // TODO: Implement
+    bridge.logger.log(
+        "TODO: Implement "
+        "INoteExpressionCOntroller::getNoteExpressionStringByValue()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionValueByString(
+    int32 busIndex,
+    int16 channel,
+    Steinberg::Vst::NoteExpressionTypeID id,
+    const Steinberg::Vst::TChar* string /*in*/,
+    Steinberg::Vst::NoteExpressionValue& valueNormalized /*out*/) {
+    // TODO: Implement
+    bridge.logger.log(
+        "TODO: Implement "
+        "INoteExpressionCOntroller::getNoteExpressionValueByString()");
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
     if (context) {
         // We will create a proxy object that that supports all the same
