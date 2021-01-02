@@ -94,6 +94,8 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaEditController2::OpenHelp&);
     bool log_request(bool is_host_vst, const YaEditController2::OpenAboutBox&);
     bool log_request(bool is_host_vst,
+                     const YaMidiMapping::GetMidiControllerAssignment&);
+    bool log_request(bool is_host_vst,
                      const YaNoteExpressionController::GetNoteExpressionCount&);
     bool log_request(bool is_host_vst,
                      const YaNoteExpressionController::GetNoteExpressionInfo&);
@@ -191,6 +193,9 @@ class Vst3Logger {
                       const YaEditController::GetParamValueByStringResponse&);
     void log_response(bool is_host_vst,
                       const YaEditController::CreateViewResponse&);
+    void log_response(
+        bool is_host_vst,
+        const YaMidiMapping::GetMidiControllerAssignmentResponse&);
     void log_response(
         bool is_host_vst,
         const YaNoteExpressionController::GetNoteExpressionInfoResponse&);

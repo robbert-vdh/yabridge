@@ -24,6 +24,7 @@
 #include "plugin/connection-point.h"
 #include "plugin/edit-controller-2.h"
 #include "plugin/edit-controller.h"
+#include "plugin/midi-mapping.h"
 #include "plugin/note-expression-controller.h"
 #include "plugin/plugin-base.h"
 #include "plugin/program-list-data.h"

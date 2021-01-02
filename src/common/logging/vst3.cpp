@@ -295,6 +295,18 @@ bool Vst3Logger::log_request(bool is_host_vst,
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
+    const YaMidiMapping::GetMidiControllerAssignment& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IMidiMapping::getMidiControllerAssignment(busIndex = "
+                << request.bus_index << ", channel = " << request.channel
+                << ", midiControllerNumber = " << request.midi_controller_number
+                << ", &id)";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
     const YaNoteExpressionController::GetNoteExpressionCount& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message
@@ -1051,6 +1063,17 @@ void Vst3Logger::log_response(
             message << "<IPlugView*>";
         } else {
             message << "<nullptr>";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaMidiMapping::GetMidiControllerAssignmentResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", " << response.id;
         }
     });
 }
