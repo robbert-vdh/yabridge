@@ -54,11 +54,6 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   with, and it then applies the change conditionally to be able to support
   building with both older and newer versions of Wine.
 
-### Fixed
-
-- Added a background to the editor window to get rid of artifacts that would
-  occur if the plugin or the host didn't resize the window correctly.
-
 ### yabridgectl
 
 - Updated for the changes in yabridge 3.0. Yabridgectl now allows you to set up
