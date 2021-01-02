@@ -6,7 +6,7 @@ for more information on how the serialization works.
 
 The following interfaces are not yet implemented:
 
-- Every interface introduced after VST 3.0.0 with the exceptons of
+- Every interface introduced after VST 3.0.1 with the exceptons of
   `IEditController2` and `INoteExpressionController` which has already been
   implemented
 - The [Presonus extensions](https://presonussoftware.com/en_US/developer),
@@ -26,6 +26,7 @@ VST3 plugin interfaces are implemented as follows:
 | `YaConnectionPoint`          | `Vst3PluginProxy`   | `IConnectionPoint`                                     |
 | `YaEditController`           | `Vst3PluginProxy`   | `IEditController`                                      |
 | `YaEditController2`          | `Vst3PluginProxy`   | `IEditController2`                                     |
+| `YaMidiMapping`              | `Vst3PluginProxy`   | `IMidiMapping`                                         |
 | `YaNoteExpressionController` | `Vst3PluginProxy`   | `INoteExpressionController`                            |
 | `YaPluginBase`               | `Vst3PluginProxy`   | `IPluginBase`                                          |
 | `YaProgramListData`          | `Vst3PluginProxy`   | `IProgramListData`                                     |
