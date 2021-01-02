@@ -295,6 +295,60 @@ bool Vst3Logger::log_request(bool is_host_vst,
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
+    const YaNoteExpressionController::GetNoteExpressionCount& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message
+            << request.instance_id
+            << ": INoteExpressionController::getNoteExpressionCount(busIndex = "
+            << request.bus_index << ", channel = " << request.channel << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaNoteExpressionController::GetNoteExpressionInfo& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message
+            << request.instance_id
+            << ": INoteExpressionController::getNoteExpressionInfo(busIndex = "
+            << request.bus_index << ", channel = " << request.channel
+            << ", noteExpressionIndex = " << request.note_expression_index
+            << ", &info)";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaNoteExpressionController::GetNoteExpressionStringByValue& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": "
+                   "INoteExpressionController::getNoteExpressionStringByValue("
+                   "busIndex = "
+                << request.bus_index << ", channel = " << request.channel
+                << ", id = " << request.id
+                << ", valueNormalized = " << request.value_normalized
+                << ", &string)";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaNoteExpressionController::GetNoteExpressionValueByString& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": "
+                   "INoteExpressionController::getNoteExpressionValueByString("
+                   "busIndex = "
+                << request.bus_index << ", channel = " << request.channel
+                << ", id = " << request.id << ", string = \""
+                << VST3::StringConvert::convert(request.string)
+                << "\", &valueNormalized)";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
     const YaPlugView::IsPlatformTypeSupported& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.owner_instance_id
@@ -993,6 +1047,44 @@ void Vst3Logger::log_response(
             message << "<IPlugView*>";
         } else {
             message << "<nullptr>";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaNoteExpressionController::GetNoteExpressionInfoResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", <NoteExpressionTypeInfo for \""
+                    << VST3::StringConvert::convert(response.info.title)
+                    << "\">";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaNoteExpressionController::GetNoteExpressionStringByValueResponse&
+        response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", \"" << VST3::StringConvert::convert(response.string)
+                    << "\"";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaNoteExpressionController::GetNoteExpressionValueByStringResponse&
+        response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", " << response.value_normalized;
         }
     });
 }

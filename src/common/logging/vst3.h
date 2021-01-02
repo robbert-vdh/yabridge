@@ -94,6 +94,16 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaEditController2::OpenHelp&);
     bool log_request(bool is_host_vst, const YaEditController2::OpenAboutBox&);
     bool log_request(bool is_host_vst,
+                     const YaNoteExpressionController::GetNoteExpressionCount&);
+    bool log_request(bool is_host_vst,
+                     const YaNoteExpressionController::GetNoteExpressionInfo&);
+    bool log_request(
+        bool is_host_vst,
+        const YaNoteExpressionController::GetNoteExpressionStringByValue&);
+    bool log_request(
+        bool is_host_vst,
+        const YaNoteExpressionController::GetNoteExpressionValueByString&);
+    bool log_request(bool is_host_vst,
                      const YaPlugView::IsPlatformTypeSupported&);
     bool log_request(bool is_host_vst, const YaPlugView::Attached&);
     bool log_request(bool is_host_vst, const YaPlugView::Removed&);
@@ -181,6 +191,15 @@ class Vst3Logger {
                       const YaEditController::GetParamValueByStringResponse&);
     void log_response(bool is_host_vst,
                       const YaEditController::CreateViewResponse&);
+    void log_response(
+        bool is_host_vst,
+        const YaNoteExpressionController::GetNoteExpressionInfoResponse&);
+    void log_response(bool is_host_vst,
+                      const YaNoteExpressionController::
+                          GetNoteExpressionStringByValueResponse&);
+    void log_response(bool is_host_vst,
+                      const YaNoteExpressionController::
+                          GetNoteExpressionValueByStringResponse&);
     void log_response(bool is_host_vst, const YaPlugView::GetSizeResponse&);
     void log_response(bool is_host_vst,
                       const YaPlugView::CheckSizeConstraintResponse&);
