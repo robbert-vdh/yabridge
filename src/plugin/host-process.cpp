@@ -41,11 +41,10 @@ template <typename... Args>
 bp::child launch_host(fs::path host_path, Args&&... args) {
     return bp::child(
 #ifdef WITH_WINEDBG
-        // This is set up for KDE Plasma. Other desktop environments and
-        // window managers require some slight modifications to spawn a
-        // detached terminal emulator.
-        "/usr/bin/kstart5", "konsole", "--", "-e", "winedbg", "--gdb",
-        host_path.string() + ".so",
+        // Use the terminal output or `$YABRIDGE_DEBUG_LOG` to get yabridge's
+        // output, and use the printed target command in a GDB session where you
+        // load the yabridge `.so` file you're trying to debug
+        "/usr/bin/winedbg", "--gdb", "--no-start", host_path.string() + ".so",
 #else
         host_path,
 #endif
