@@ -61,6 +61,45 @@ class YaMidiMapping : public Steinberg::Vst::IMidiMapping {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * The response code and returned parameter ID for a call to
+     * `IMidiMapping::getMidiControllerAssignment(bus_index, channel,
+     * midi_controller_number, &id)`.
+     */
+    struct GetMidiControllerAssignmentResponse {
+        UniversalTResult result;
+        Steinberg::Vst::ParamID id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.value4b(id);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IMidiMapping::getMidiControllerAssignment(bus_index, channel,
+     * midi_controller_number, &id)` to the Wine plugin host.
+     */
+    struct GetMidiControllerAssignment {
+        using Response = GetMidiControllerAssignmentResponse;
+
+        native_size_t instance_id;
+
+        int32 bus_index;
+        int16 channel;
+        Steinberg::Vst::CtrlNumber midi_controller_number;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(bus_index);
+            s.value2b(channel);
+            s.value2b(midi_controller_number);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getMidiControllerAssignment(int32 busIndex,
                                 int16 channel,
