@@ -677,6 +677,11 @@ xcb_window_t get_x11_handle(HWND win32_handle) {
 ATOM register_window_class(std::string window_class_name) {
     WNDCLASSEX window_class{};
 
+    // XXX: We could also add a background here. This would get rid of any
+    //      artifacts on hosts that don't resize the window properly (e.g.
+    //      REAPER with VST2 plugins), but it can also cause that background to
+    //      briefly become visible on a call to `fix_local_coordinates()` which
+    //      can look very jarring.
     window_class.cbSize = sizeof(WNDCLASSEX);
     window_class.style = CS_DBLCLKS;
     window_class.lpfnWndProc = window_proc;
