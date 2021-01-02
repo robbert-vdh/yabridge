@@ -66,6 +66,9 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   `libyabridge-vst2.so` in this version, it's advised to carefully remove the
   old `libyabridge.so` and `yabridgectl` files before upgrading to avoid
   confusing situations.
+- Added the `yabridgectl set --path-auto` option to revert back to automatically
+  locating yabridge's files after manually setting a path with
+  `yabridgectl set --path=<...>`.
 
 ## [2.2.1] - 2020-12-12
 

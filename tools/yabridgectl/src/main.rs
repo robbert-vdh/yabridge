@@ -106,7 +106,17 @@ fn main() -> Result<()> {
                              '~/.local/share/yabridge' by default.",
                         )
                         .validator(validate_path)
-                        .takes_value(true),
+                        .takes_value(true).conflicts_with("path_auto"),
+                )
+                .arg(
+                    Arg::with_name("path_auto")
+                        .long("path-auto")
+                        .about("Automatically locate yabridge's files")
+                        .long_about(
+                            "Automatically locate yabridge's files. This can be used after manually \
+                             setting a path with the '--path' option to revert back to the default \
+                             auto detection behaviour.",
+                        )
                 ),
         )
         .subcommand(
@@ -166,6 +176,7 @@ fn main() -> Result<()> {
                     .value_of_t::<PathBuf>("path")
                     .ok()
                     .and_then(|path| path.canonicalize().ok()),
+                path_auto: options.is_present("path_auto"),
             },
         ),
         ("sync", Some(options)) => actions::do_sync(

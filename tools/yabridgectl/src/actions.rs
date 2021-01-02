@@ -137,6 +137,7 @@ pub fn show_status(config: &Config) -> Result<()> {
 pub struct SetOptions<'a> {
     pub method: Option<&'a str>,
     pub path: Option<PathBuf>,
+    pub path_auto: bool,
 }
 
 /// Change configuration settings. The actual options are defined in the clap [app](clap::App).
@@ -150,6 +151,10 @@ pub fn set_settings(config: &mut Config, options: &SetOptions) -> Result<()> {
 
     if let Some(path) = &options.path {
         config.yabridge_home = Some(path.clone());
+    }
+
+    if options.path_auto {
+        config.yabridge_home = None;
     }
 
     config.write()
