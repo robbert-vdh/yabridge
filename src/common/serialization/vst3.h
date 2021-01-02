@@ -85,6 +85,7 @@ using ControlRequest =
                  YaEditController2::SetKnobMode,
                  YaEditController2::OpenHelp,
                  YaEditController2::OpenAboutBox,
+                 YaMidiMapping::GetMidiControllerAssignment,
                  YaNoteExpressionController::GetNoteExpressionCount,
                  YaNoteExpressionController::GetNoteExpressionInfo,
                  YaNoteExpressionController::GetNoteExpressionStringByValue,

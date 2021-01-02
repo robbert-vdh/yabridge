@@ -418,9 +418,16 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getMidiControllerAssignment(
     int16 channel,
     Steinberg::Vst::CtrlNumber midiControllerNumber,
     Steinberg::Vst::ParamID& id /*out*/) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IMidiMapping::getMidiControllerAssignment()");
-    return Steinberg::kNotImplemented;
+    const GetMidiControllerAssignmentResponse response =
+        bridge.send_message(YaMidiMapping::GetMidiControllerAssignment{
+            .instance_id = instance_id(),
+            .bus_index = busIndex,
+            .channel = channel,
+            .midi_controller_number = midiControllerNumber});
+
+    id = response.id;
+
+    return response.result;
 }
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionCount(int32 busIndex,

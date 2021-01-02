@@ -35,6 +35,7 @@ InstanceInterfaces::InstanceInterfaces(
       connection_point(object),
       edit_controller(object),
       edit_controller_2(object),
+      midi_mapping(object),
       note_expression_controller(object),
       plugin_base(object),
       unit_data(object),
@@ -369,6 +370,18 @@ void Vst3Bridge::run() {
                 -> YaEditController2::OpenAboutBox::Response {
                 return object_instances[request.instance_id]
                     .edit_controller_2->openAboutBox(request.only_check);
+            },
+            [&](const YaMidiMapping::GetMidiControllerAssignment& request)
+                -> YaMidiMapping::GetMidiControllerAssignment::Response {
+                Steinberg::Vst::ParamID id;
+                const tresult result =
+                    object_instances[request.instance_id]
+                        .midi_mapping->getMidiControllerAssignment(
+                            request.bus_index, request.channel,
+                            request.midi_controller_number, id);
+
+                return YaMidiMapping::GetMidiControllerAssignmentResponse{
+                    .result = result, .id = id};
             },
             [&](const YaNoteExpressionController::GetNoteExpressionCount&
                     request)
