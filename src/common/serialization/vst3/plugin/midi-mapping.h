@@ -100,11 +100,11 @@ class YaMidiMapping : public Steinberg::Vst::IMidiMapping {
         }
     };
 
-    virtual tresult PLUGIN_API
-    getMidiControllerAssignment(int32 busIndex,
-                                int16 channel,
-                                Steinberg::Vst::CtrlNumber midiControllerNumber,
-                                Steinberg::Vst::ParamID& id /*out*/) = 0;
+    virtual tresult PLUGIN_API getMidiControllerAssignment(
+        int32 busIndex,
+        int16 channel,
+        Steinberg::Vst::CtrlNumber midiControllerNumber,
+        Steinberg::Vst::ParamID& id /*out*/) override = 0;
 
    protected:
     ConstructArgs arguments;

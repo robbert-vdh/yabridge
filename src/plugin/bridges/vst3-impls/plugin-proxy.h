@@ -120,6 +120,13 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API openHelp(TBool onlyCheck) override;
     tresult PLUGIN_API openAboutBox(TBool onlyCheck) override;
 
+    // From `IMidiMapping`
+    tresult PLUGIN_API
+    getMidiControllerAssignment(int32 busIndex,
+                                int16 channel,
+                                Steinberg::Vst::CtrlNumber midiControllerNumber,
+                                Steinberg::Vst::ParamID& id /*out*/) override;
+
     // From `INoteExpressionController`
     int32 PLUGIN_API getNoteExpressionCount(int32 busIndex,
                                             int16 channel) override;

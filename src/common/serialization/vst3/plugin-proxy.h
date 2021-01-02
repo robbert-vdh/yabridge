@@ -62,6 +62,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
                         public YaConnectionPoint,
                         public YaEditController,
                         public YaEditController2,
+                        public YaMidiMapping,
                         public YaNoteExpressionController,
                         public YaPluginBase,
                         public YaProgramListData,
@@ -90,6 +91,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
         YaConnectionPoint::ConstructArgs connection_point_args;
         YaEditController::ConstructArgs edit_controller_args;
         YaEditController2::ConstructArgs edit_controller_2_args;
+        YaMidiMapping::ConstructArgs midi_mapping_args;
         YaNoteExpressionController::ConstructArgs
             note_expression_controller_args;
         YaPluginBase::ConstructArgs plugin_base_args;

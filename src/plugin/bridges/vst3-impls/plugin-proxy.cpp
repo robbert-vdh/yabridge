@@ -413,6 +413,16 @@ tresult PLUGIN_API Vst3PluginProxyImpl::openAboutBox(TBool onlyCheck) {
         .instance_id = instance_id(), .only_check = onlyCheck});
 }
 
+tresult PLUGIN_API Vst3PluginProxyImpl::getMidiControllerAssignment(
+    int32 busIndex,
+    int16 channel,
+    Steinberg::Vst::CtrlNumber midiControllerNumber,
+    Steinberg::Vst::ParamID& id /*out*/) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IMidiMapping::getMidiControllerAssignment()");
+    return Steinberg::kNotImplemented;
+}
+
 int32 PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionCount(int32 busIndex,
                                                              int16 channel) {
     return bridge.send_message(
