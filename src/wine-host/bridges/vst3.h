@@ -27,6 +27,25 @@
 #include "common.h"
 
 /**
+ * A holder for an object instance's `IPlugView` object and all smart pointers
+ * casted from it.
+ *
+ * @relates InstanceInterfaces
+ */
+struct InstancePlugView {
+    InstancePlugView();
+
+    InstancePlugView(Steinberg::IPtr<Steinberg::IPlugView> plug_View);
+
+    Steinberg::IPtr<Steinberg::IPlugView> plug_view;
+
+    // All smart pointers below are created from `plug_view`. They will be null
+    // pointers if `plug_view` did not implement the interface.
+
+    Steinberg::FUnknownPtr<Steinberg::Vst::IParameterFinder> parameter_finder;
+};
+
+/**
  * A holder for plugin object instance created from the factory. This stores all
  * relevant interface smart pointers to that object so we can handle control
  * messages sent by the plugin without having to do these expensive casts all
@@ -98,7 +117,7 @@ struct InstanceInterfaces {
      *      multiple different view for a single plugin. This is not used within
      *      the SDK, so a single pointer should be fine for now.
      */
-    Steinberg::IPtr<Steinberg::IPlugView> plug_view;
+    std::optional<InstancePlugView> plug_view_instance;
 
     /**
      * This instance's editor, if it has an open editor. Embedding here works

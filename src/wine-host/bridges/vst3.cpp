@@ -25,6 +25,12 @@
 #include "vst3-impls/host-context-proxy.h"
 #include "vst3-impls/plug-frame-proxy.h"
 
+InstancePlugView::InstancePlugView() {}
+
+InstancePlugView::InstancePlugView(
+    Steinberg::IPtr<Steinberg::IPlugView> plug_view)
+    : plug_view(plug_view), parameter_finder(plug_view) {}
+
 InstanceInterfaces::InstanceInterfaces() {}
 
 InstanceInterfaces::InstanceInterfaces(
@@ -84,7 +90,7 @@ void Vst3Bridge::run() {
                         // proxy object it may have received in
                         // `IPlugView::setFrame()`.
                         object_instances[request.owner_instance_id]
-                            .plug_view.reset();
+                            .plug_view_instance.reset();
                         object_instances[request.owner_instance_id]
                             .plug_frame_proxy.reset();
                     })
@@ -336,11 +342,11 @@ void Vst3Bridge::run() {
                 // Instantiate the object from the GUI thread
                 main_context
                     .run_in_context<void>([&]() {
-                        object_instances[request.instance_id].plug_view =
-                            Steinberg::owned(
+                        object_instances[request.instance_id]
+                            .plug_view_instance.emplace(Steinberg::owned(
                                 object_instances[request.instance_id]
                                     .edit_controller->createView(
-                                        request.name.c_str()));
+                                        request.name.c_str())));
                     })
                     .wait();
 
@@ -348,11 +354,12 @@ void Vst3Bridge::run() {
                 // `IPlugView` object
                 return YaEditController::CreateViewResponse{
                     .plug_view_args =
-                        (object_instances[request.instance_id].plug_view
+                        (object_instances[request.instance_id]
+                                 .plug_view_instance
                              ? std::make_optional<
                                    Vst3PlugViewProxy::ConstructArgs>(
                                    object_instances[request.instance_id]
-                                       .plug_view,
+                                       .plug_view_instance->plug_view,
                                    request.instance_id)
                              : std::nullopt)};
             },
@@ -453,7 +460,8 @@ void Vst3Bridge::run() {
                         : request.type;
 
                 return object_instances[request.owner_instance_id]
-                    .plug_view->isPlatformTypeSupported(type.c_str());
+                    .plug_view_instance->plug_view->isPlatformTypeSupported(
+                        type.c_str());
             },
             [&](const YaPlugView::Attached& request)
                 -> YaPlugView::Attached::Response {
@@ -481,7 +489,7 @@ void Vst3Bridge::run() {
 
                         const tresult result =
                             object_instances[request.owner_instance_id]
-                                .plug_view->attached(
+                                .plug_view_instance->plug_view->attached(
                                     editor_instance.get_win32_handle(),
                                     type.c_str());
 
@@ -502,7 +510,7 @@ void Vst3Bridge::run() {
                     .run_in_context<tresult>([&]() {
                         const tresult result =
                             object_instances[request.owner_instance_id]
-                                .plug_view->removed();
+                                .plug_view_instance->plug_view->removed();
 
                         object_instances[request.owner_instance_id]
                             .editor.reset();
@@ -518,7 +526,8 @@ void Vst3Bridge::run() {
                 return main_context
                     .run_in_context<tresult>([&]() {
                         return object_instances[request.owner_instance_id]
-                            .plug_view->onWheel(request.distance);
+                            .plug_view_instance->plug_view->onWheel(
+                                request.distance);
                     })
                     .get();
             },
@@ -527,8 +536,9 @@ void Vst3Bridge::run() {
                 return main_context
                     .run_in_context<tresult>([&]() {
                         return object_instances[request.owner_instance_id]
-                            .plug_view->onKeyDown(request.key, request.key_code,
-                                                  request.modifiers);
+                            .plug_view_instance->plug_view->onKeyDown(
+                                request.key, request.key_code,
+                                request.modifiers);
                     })
                     .get();
             },
@@ -537,15 +547,16 @@ void Vst3Bridge::run() {
                 return main_context
                     .run_in_context<tresult>([&]() {
                         return object_instances[request.owner_instance_id]
-                            .plug_view->onKeyUp(request.key, request.key_code,
-                                                request.modifiers);
+                            .plug_view_instance->plug_view->onKeyUp(
+                                request.key, request.key_code,
+                                request.modifiers);
                     })
                     .get();
             },
             [&](YaPlugView::GetSize& request) -> YaPlugView::GetSize::Response {
                 const tresult result =
                     object_instances[request.owner_instance_id]
-                        .plug_view->getSize(&request.size);
+                        .plug_view_instance->plug_view->getSize(&request.size);
 
                 return YaPlugView::GetSizeResponse{
                     .result = result, .updated_size = std::move(request.size)};
@@ -563,7 +574,8 @@ void Vst3Bridge::run() {
                 return do_mutual_recursion_or_handle_in_main_context<tresult>(
                     [&]() {
                         return object_instances[request.owner_instance_id]
-                            .plug_view->onSize(&request.new_size);
+                            .plug_view_instance->plug_view->onSize(
+                                &request.new_size);
                     });
             },
             [&](const YaPlugView::OnFocus& request)
@@ -571,7 +583,8 @@ void Vst3Bridge::run() {
                 return main_context
                     .run_in_context<tresult>([&]() {
                         return object_instances[request.owner_instance_id]
-                            .plug_view->onFocus(request.state);
+                            .plug_view_instance->plug_view->onFocus(
+                                request.state);
                     })
                     .get();
             },
@@ -588,20 +601,21 @@ void Vst3Bridge::run() {
                 // TODO: Does this have to be run from the UI thread? Figure out
                 //       if it does
                 return object_instances[request.owner_instance_id]
-                    .plug_view->setFrame(
+                    .plug_view_instance->plug_view->setFrame(
                         object_instances[request.owner_instance_id]
                             .plug_frame_proxy);
             },
             [&](YaPlugView::CanResize& request)
                 -> YaPlugView::CanResize::Response {
                 return object_instances[request.owner_instance_id]
-                    .plug_view->canResize();
+                    .plug_view_instance->plug_view->canResize();
             },
             [&](YaPlugView::CheckSizeConstraint& request)
                 -> YaPlugView::CheckSizeConstraint::Response {
                 const tresult result =
                     object_instances[request.owner_instance_id]
-                        .plug_view->checkSizeConstraint(&request.rect);
+                        .plug_view_instance->plug_view->checkSizeConstraint(
+                            &request.rect);
 
                 return YaPlugView::CheckSizeConstraintResponse{
                     .result = result, .updated_rect = std::move(request.rect)};
