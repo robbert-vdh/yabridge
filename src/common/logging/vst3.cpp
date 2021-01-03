@@ -359,6 +359,15 @@ bool Vst3Logger::log_request(
     });
 }
 
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaParameterFinder::FindParameter& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IParameterFinder::findParameter(xPos = " << request.x_pos
+                << ", yPos = " << request.y_pos << ", &resultTag)";
+    });
+}
+
 bool Vst3Logger::log_request(
     bool is_host_vst,
     const YaPlugView::IsPlatformTypeSupported& request) {
@@ -1112,6 +1121,17 @@ void Vst3Logger::log_response(
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
             message << ", " << response.value_normalized;
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaParameterFinder::FindParameterResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << response.result_tag;
         }
     });
 }

@@ -105,6 +105,7 @@ class Vst3Logger {
     bool log_request(
         bool is_host_vst,
         const YaNoteExpressionController::GetNoteExpressionValueByString&);
+    bool log_request(bool is_host_vst, const YaParameterFinder::FindParameter&);
     bool log_request(bool is_host_vst,
                      const YaPlugView::IsPlatformTypeSupported&);
     bool log_request(bool is_host_vst, const YaPlugView::Attached&);
@@ -205,6 +206,8 @@ class Vst3Logger {
     void log_response(bool is_host_vst,
                       const YaNoteExpressionController::
                           GetNoteExpressionValueByStringResponse&);
+    void log_response(bool is_host_vst,
+                      const YaParameterFinder::FindParameterResponse&);
     void log_response(bool is_host_vst, const YaPlugView::GetSizeResponse&);
     void log_response(bool is_host_vst,
                       const YaPlugView::CheckSizeConstraintResponse&);

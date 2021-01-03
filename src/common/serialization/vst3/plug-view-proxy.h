@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../common.h"
+#include "plug-view/parameter-finder.h"
 #include "plug-view/plug-view.h"
 
 #pragma GCC diagnostic push
