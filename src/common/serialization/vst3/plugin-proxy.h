@@ -107,6 +107,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
             s.object(connection_point_args);
             s.object(edit_controller_args);
             s.object(edit_controller_2_args);
+            s.object(midi_mapping_args);
             s.object(note_expression_controller_args);
             s.object(plugin_base_args);
             s.object(program_list_data_args);
