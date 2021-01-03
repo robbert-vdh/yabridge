@@ -97,6 +97,7 @@ vst3_plugin_sources = [
   'src/common/communication/common.cpp',
   'src/common/logging/common.cpp',
   'src/common/logging/vst3.cpp',
+  'src/common/serialization/vst3/plug-view/parameter-finder.cpp',
   'src/common/serialization/vst3/plug-view/plug-view.cpp',
   'src/common/serialization/vst3/plug-frame/plug-frame.cpp',
   'src/common/serialization/vst3/plugin/audio-processor.cpp',
@@ -159,6 +160,7 @@ host_sources = [
 if with_vst3
   host_sources += [
     'src/common/logging/vst3.cpp',
+    'src/common/serialization/vst3/plug-view/parameter-finder.cpp',
     'src/common/serialization/vst3/plug-view/plug-view.cpp',
     'src/common/serialization/vst3/plug-frame/plug-frame.cpp',
     'src/common/serialization/vst3/plugin/audio-processor.cpp',

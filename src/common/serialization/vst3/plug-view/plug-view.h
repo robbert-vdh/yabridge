@@ -18,7 +18,6 @@
 
 #include <pluginterfaces/gui/iplugview.h>
 
-#include "../../common.h"
 #include "../base.h"
 #include "../plug-frame-proxy.h"
 
