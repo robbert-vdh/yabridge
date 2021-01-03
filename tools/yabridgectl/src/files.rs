@@ -87,8 +87,12 @@ impl NativeFile {
 pub struct Vst3Module {
     /// The actual VST3 module and its type.
     pub module: Vst3ModuleType,
-    /// The architecture of the `.vst3` file in the module.
+    /// The architecture of the VST3 module.
     pub architecture: LibArchitecture,
+    /// The VST3 subdirectory the orignal module was in, if any. This is usually used to group
+    /// plugisn by the same manufacturer together. We detect this by looking for a parent `VST3`
+    /// directory. If we can't find that, this will be `None`.
+    pub subdirectory: Option<PathBuf>,
 }
 
 /// The type of the VST3 module. VST 3.6.10 style bundles require slightly different handling
@@ -414,17 +418,41 @@ impl SearchIndex {
                         })
                         .unwrap_or(false);
 
-                    if module_is_in_bundle {
-                        Ok(Ok(Vst3Module {
-                            module: Vst3ModuleType::Bundle(bundle_root.unwrap().to_owned()),
-                            architecture,
-                        }))
+                    let (module, module_home) = if module_is_in_bundle {
+                        (
+                            Vst3ModuleType::Bundle(bundle_root.unwrap().to_owned()),
+                            bundle_root.unwrap(),
+                        )
                     } else {
-                        Ok(Ok(Vst3Module {
-                            module: Vst3ModuleType::Legacy(module_path),
-                            architecture,
-                        }))
-                    }
+                        (
+                            Vst3ModuleType::Legacy(module_path.clone()),
+                            module_path.as_path(),
+                        )
+                    };
+
+                    // We want to recreate the original subdirectory structure, so plugins are still
+                    // grouped by manufacturer
+                    let vst3_directory = module_home.ancestors().find(|path| {
+                        path.file_name()
+                            .and_then(|name| name.to_str())
+                            .map(|name| name.to_lowercase().as_str() == "vst3")
+                            .unwrap_or(false)
+                    });
+                    let subdirectory = match vst3_directory {
+                        Some(directory) => module_home
+                            .strip_prefix(directory)
+                            .ok()
+                            // We should of coruse pop the `.vst3` directory
+                            .and_then(|suffix| suffix.parent())
+                            .map(|subdirectory| subdirectory.to_owned()),
+                        None => None,
+                    };
+
+                    Ok(Ok(Vst3Module {
+                        module,
+                        architecture,
+                        subdirectory,
+                    }))
                 } else {
                     Ok(Err(module_path))
                 }
