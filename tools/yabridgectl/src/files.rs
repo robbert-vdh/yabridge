@@ -84,39 +84,39 @@ impl NativeFile {
 
 /// VST3 modules we found during a serach.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Vst3Module {
+pub struct Vst3Module {
+    /// The actual VST3 module and its type.
+    pub module: Vst3ModuleType,
+    /// The architecture of the `.vst3` file in the module.
+    pub architecture: LibArchitecture,
+}
+
+/// The type of the VST3 module. VST 3.6.10 style bundles require slightly different handling
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Vst3ModuleType {
     /// Old, pre-VST 3.6.10 style `.vst3` modules. These are simply `.dll` files with a different p
     /// refix. Even though this is a legacy format, almost all VST3 plugins in the wild still use
     /// this format.
-    Legacy(PathBuf, LibArchitecture),
+    Legacy(PathBuf),
     /// A VST 3.6.10 bundle, with the same format as the VST3 bundles used on Linux and macOS. These
     /// kinds of bundles can come with resource files and presets, which should also be symlinked to
     /// `~/.vst3/`
-    Bundle(PathBuf, LibArchitecture),
+    Bundle(PathBuf),
 }
 
 impl Vst3Module {
-    /// The architecture of this VST3 module.
-    pub fn architecture(&self) -> LibArchitecture {
-        match &self {
-            Vst3Module::Legacy(_, architecture) | Vst3Module::Bundle(_, architecture) => {
-                *architecture
-            }
-        }
-    }
-
     /// Get the path to the Windows VST3 plugin. This can be either a file or a directory depending
     /// on the type of moudle.
     pub fn original_path(&self) -> &Path {
-        match &self {
-            Vst3Module::Legacy(path, _) | Vst3Module::Bundle(path, _) => path,
+        match &self.module {
+            Vst3ModuleType::Legacy(path) | Vst3ModuleType::Bundle(path) => path,
         }
     }
 
     /// Get the name of the module as a string. Should be in the format `Plugin Name.vst3`.
     pub fn original_module_name(&self) -> &str {
-        match &self {
-            Vst3Module::Legacy(path, _) | Vst3Module::Bundle(path, _) => path
+        match &self.module {
+            Vst3ModuleType::Legacy(path) | Vst3ModuleType::Bundle(path) => path
                 .file_name()
                 .unwrap()
                 .to_str()
@@ -126,11 +126,11 @@ impl Vst3Module {
 
     /// Get the path to the actual `.vst3` module file.
     pub fn original_module_path(&self) -> PathBuf {
-        match &self {
-            Vst3Module::Legacy(path, _) => path.to_owned(),
-            Vst3Module::Bundle(bundle_home, architecture) => {
+        match &self.module {
+            Vst3ModuleType::Legacy(path) => path.to_owned(),
+            Vst3ModuleType::Bundle(bundle_home) => {
                 let mut path = bundle_home.join("Contents");
-                path.push(architecture.vst_arch());
+                path.push(self.architecture.vst_arch());
                 path.push(self.original_module_name());
 
                 path
@@ -141,8 +141,8 @@ impl Vst3Module {
     /// If this was a VST 3.6.10 style bundle, then return the path to the `Resources` directory if
     /// it has one.
     pub fn original_resources_dir(&self) -> Option<PathBuf> {
-        match &self {
-            Vst3Module::Bundle(bundle_home, _) => {
+        match &self.module {
+            Vst3ModuleType::Bundle(bundle_home) => {
                 let mut path = bundle_home.join("Contents");
                 path.push("Resources");
                 if path.exists() {
@@ -151,7 +151,7 @@ impl Vst3Module {
                     None
                 }
             }
-            Vst3Module::Legacy(_, _) => None,
+            Vst3ModuleType::Legacy(_) => None,
         }
     }
 
@@ -166,8 +166,8 @@ impl Vst3Module {
     /// Get the path to the `libyabridge.so` file in `~/.vst3` corresponding to the bridged version
     /// of this module.
     pub fn target_native_module_path(&self) -> PathBuf {
-        let native_module_name = match &self {
-            Vst3Module::Legacy(path, _) | Vst3Module::Bundle(path, _) => path
+        let native_module_name = match &self.module {
+            Vst3ModuleType::Legacy(path) | Vst3ModuleType::Bundle(path) => path
                 .with_extension("so")
                 .file_name()
                 .unwrap()
@@ -188,7 +188,7 @@ impl Vst3Module {
     pub fn target_windows_module_path(&self) -> PathBuf {
         let mut path = self.target_bundle_home();
         path.push("Contents");
-        path.push(self.architecture().vst_arch());
+        path.push(self.architecture.vst_arch());
         path.push(self.original_module_name());
         path
     }
@@ -415,12 +415,15 @@ impl SearchIndex {
                         .unwrap_or(false);
 
                     if module_is_in_bundle {
-                        Ok(Ok(Vst3Module::Bundle(
-                            bundle_root.unwrap().to_owned(),
+                        Ok(Ok(Vst3Module {
+                            module: Vst3ModuleType::Bundle(bundle_root.unwrap().to_owned()),
                             architecture,
-                        )))
+                        }))
                     } else {
-                        Ok(Ok(Vst3Module::Legacy(module_path, architecture)))
+                        Ok(Ok(Vst3Module {
+                            module: Vst3ModuleType::Legacy(module_path),
+                            architecture,
+                        }))
                     }
                 } else {
                     Ok(Err(module_path))
