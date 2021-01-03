@@ -449,6 +449,17 @@ void Vst3Bridge::run() {
                                 .result = result,
                                 .value_normalized = value_normalized};
                     },
+            [&](const YaParameterFinder::FindParameter& request)
+                -> YaParameterFinder::FindParameter::Response {
+                Steinberg::Vst::ParamID result_tag;
+                const tresult result =
+                    object_instances[request.owner_instance_id]
+                        .plug_view_instance->parameter_finder->findParameter(
+                            request.x_pos, request.y_pos, result_tag);
+
+                return YaParameterFinder::FindParameterResponse{
+                    .result = result, .result_tag = result_tag};
+            },
             [&](const YaPlugView::IsPlatformTypeSupported& request)
                 -> YaPlugView::IsPlatformTypeSupported::Response {
                 // The host will of course want to pass an X11 window ID for the

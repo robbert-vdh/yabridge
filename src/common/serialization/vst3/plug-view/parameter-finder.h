@@ -99,7 +99,7 @@ class YaParameterFinder : public Steinberg::Vst::IParameterFinder {
     virtual tresult PLUGIN_API
     findParameter(int32 xPos,
                   int32 yPos,
-                  Steinberg::Vst::ParamID& resultTag /*out*/) = 0;
+                  Steinberg::Vst::ParamID& resultTag /*out*/) override = 0;
 
    protected:
     ConstructArgs arguments;

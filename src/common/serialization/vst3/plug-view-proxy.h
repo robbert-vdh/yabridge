@@ -30,7 +30,7 @@
  * `IEditController::createView()`, and it works exactly the same as
  * `Vst3PluginProxy`.
  */
-class Vst3PlugViewProxy : public YaPlugView {
+class Vst3PlugViewProxy : public YaPlugView, public YaParameterFinder {
    public:
     /**
      * These are the arguments for constructing a
@@ -55,10 +55,13 @@ class Vst3PlugViewProxy : public YaPlugView {
 
         YaPlugView::ConstructArgs plug_view_args;
 
+        YaParameterFinder::ConstructArgs parameter_finder_args;
+
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
             s.object(plug_view_args);
+            s.object(parameter_finder_args);
         }
     };
 

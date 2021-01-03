@@ -21,10 +21,13 @@ Vst3PlugViewProxy::ConstructArgs::ConstructArgs() {}
 Vst3PlugViewProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
     size_t owner_instance_id)
-    : owner_instance_id(owner_instance_id), plug_view_args(object) {}
+    : owner_instance_id(owner_instance_id),
+      plug_view_args(object),
+      parameter_finder_args(object) {}
 
 Vst3PlugViewProxy::Vst3PlugViewProxy(const ConstructArgs&& args)
     : YaPlugView(std::move(args.plug_view_args)),
+      YaParameterFinder(std::move(args.parameter_finder_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3PlugViewProxy::~Vst3PlugViewProxy() {
@@ -43,6 +46,10 @@ tresult PLUGIN_API Vst3PlugViewProxy::queryInterface(Steinberg::FIDString _iid,
                         Steinberg::IPlugView)
         QUERY_INTERFACE(_iid, obj, Steinberg::IPlugView::iid,
                         Steinberg::IPlugView)
+    }
+    if (YaParameterFinder::supported()) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IParameterFinder::iid,
+                        Steinberg::Vst::IParameterFinder)
     }
 
     *obj = nullptr;

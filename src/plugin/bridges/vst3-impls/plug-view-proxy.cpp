@@ -157,3 +157,18 @@ Vst3PlugViewProxyImpl::checkSizeConstraint(Steinberg::ViewRect* rect) {
         return Steinberg::kInvalidArgument;
     }
 }
+
+tresult PLUGIN_API Vst3PlugViewProxyImpl::findParameter(
+    int32 xPos,
+    int32 yPos,
+    Steinberg::Vst::ParamID& resultTag /*out*/) {
+    const FindParameterResponse response =
+        bridge.send_message(YaParameterFinder::FindParameter{
+            .owner_instance_id = owner_instance_id(),
+            .x_pos = xPos,
+            .y_pos = yPos});
+
+    resultTag = response.result_tag;
+
+    return response.result;
+}
