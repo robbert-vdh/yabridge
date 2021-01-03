@@ -21,6 +21,7 @@ use colored::Colorize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
 
 use crate::config::{yabridge_vst3_home, Config, InstallationMethod, YabridgeFiles};
 use crate::files::{self, LibArchitecture, NativeFile};
@@ -327,24 +328,27 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         println!();
     }
 
-    if let Ok(dirs) = fs::read_dir(yabridge_vst3_home()) {
-        orphan_files.extend(
-            dirs.filter_map(|entry| entry.ok())
-                .map(|entry| entry.path())
-                .filter_map(|path| {
-                    // Add all directories in `~/.vst3/yabridge` to `orphan_files` if they are not a
-                    // VST3 module we just created. We'll ignore symlinks and regular files since
-                    // those are always user created.
-                    match (
-                        yabridge_vst3_bundles.contains_key(&path),
-                        utils::get_file_type(path),
-                    ) {
-                        (false, result @ Some(NativeFile::Directory(_))) => result,
-                        _ => None,
-                    }
-                }),
-        );
-    }
+    // TODO: Move this elsewhere
+    orphan_files.extend(
+        WalkDir::new(yabridge_vst3_home())
+            .follow_links(true)
+            .same_file_system(true)
+            .into_iter()
+            .filter_entry(|entry| entry.file_type().is_dir())
+            .filter_map(|e| e.ok())
+            .filter(|entry| {
+                // Add all directories in `~/.vst3/yabridge` to `orphan_files` if they are not a
+                // VST3 module we just created. We'll ignore symlinks and regular files since those
+                // are always user created.
+                let extension = entry
+                    .path()
+                    .extension()
+                    .and_then(|extension| extension.to_str());
+
+                extension == Some("vst3") && !yabridge_vst3_bundles.contains_key(entry.path())
+            })
+            .map(|entry| NativeFile::Directory(entry.path().to_owned())),
+    );
 
     // Always warn about leftover files since those might cause warnings or errors when a VST host
     // tries to load them
