@@ -160,11 +160,18 @@ impl Vst3Module {
     }
 
     /// Get the path to the bundle in `~/.vst3` corresponding to the bridged version of this module.
+    /// We will try to recreate the original subdirectory structure so plugins are still grouped by
+    /// manufacturer.
     ///
     /// FIXME: How do we solve naming clashes from the same VST3 plugin being installed to multiple
     ///        Wine prefixes?
     pub fn target_bundle_home(&self) -> PathBuf {
-        yabridge_vst3_home().join(self.original_module_name())
+        match &self.subdirectory {
+            Some(directory) => yabridge_vst3_home()
+                .join(directory)
+                .join(self.original_module_name()),
+            None => yabridge_vst3_home().join(self.original_module_name()),
+        }
     }
 
     /// Get the path to the `libyabridge.so` file in `~/.vst3` corresponding to the bridged version
