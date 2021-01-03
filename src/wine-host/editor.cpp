@@ -242,16 +242,26 @@ Editor::Editor(const Configuration& config, const size_t parent_window_handle)
 }
 
 Editor::~Editor() {
-    // Wine will wait for the parent window to properly delete the window during
-    // `DestroyWindow()`. Instead of implementing this behavior ourselves we
-    // just reparent the window back to the window root and let the WM handle
-    // it.
+    // Reparent the window back to the root window, as the actual window will be
+    // destroyed as part of the next Win32 message loop cycle
     xcb_window_t root =
         xcb_setup_roots_iterator(xcb_get_setup(x11_connection.get()))
             .data->root;
 
     xcb_reparent_window(x11_connection.get(), wine_window, root, 0, 0);
     xcb_flush(x11_connection.get());
+
+    // XXX: I'm pretty sure this is a Wine bug (or, well, an unfortunate
+    //      interaction of Wine's behaviour and our embedding). If we don't
+    //      explicitly hide the window before sending a `WM_CLOSE` (in
+    //      `destroy_window_async()`), then we might get an X11 error because
+    //      the closing of the window will trigger an X11 event in Wine's X11drv
+    //      which then tries to interact with the no longer existing window.
+    //      Manually hiding the window seems to work around this.
+    // TODO: Check if we also have to do something special for
+    //       editor_double_embed (probalby not)
+    // TODO: Retest XEmbed after all of these changes
+    ShowWindow(win32_handle.get(), SW_HIDE);
 }
 
 HWND Editor::get_win32_handle() const {
