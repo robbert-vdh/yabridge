@@ -62,6 +62,29 @@ class YaAudioPresentationLatency
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IAudioPresentationLatency::setAudioPresentationLatencySamples(dir,
+     * bus_index, latency_in_samples` to the Wine plugin host.
+     */
+    struct SetAudioPresentationLatencySamples {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::BusDirection dir;
+        int32 bus_index;
+        uint32 latency_in_samples;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(dir);
+            s.value4b(bus_index);
+            s.value4b(latency_in_samples);
+        }
+    };
+
     virtual tresult PLUGIN_API
     setAudioPresentationLatencySamples(Steinberg::Vst::BusDirection dir,
                                        int32 busIndex,
