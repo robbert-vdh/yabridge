@@ -226,7 +226,9 @@ class Win32Thread {
  */
 class Win32Timer {
    public:
+    Win32Timer();
     Win32Timer(HWND window_handle, size_t timer_id, unsigned int interval_ms);
+
     ~Win32Timer();
 
     Win32Timer(const Win32Timer&) = delete;

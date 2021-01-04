@@ -25,6 +25,7 @@
 #define WINE_NOWINSOCK
 #endif
 #include <windows.h>
+#include <function2/function2.hpp>
 
 // Use the native version of xcb
 #pragma push_macro("_WIN32")
@@ -99,10 +100,16 @@ class Editor {
      *   editor behaviours.
      * @param parent_window_handle The X11 window handle passed by the VST host
      *   for the editor to embed itself into.
+     * @param timer_proc A function to run on a timer. This is used for VST2
+     *   plugins to periodically call `effEditIdle` from the message loop
+     *   thread, even when the GUI is blocked.
      *
      * @see win32_handle
      */
-    Editor(const Configuration& config, const size_t parent_window_handle);
+    Editor(
+        const Configuration& config,
+        const size_t parent_window_handle,
+        std::optional<fu2::unique_function<void()>> timer_proc = std::nullopt);
 
     ~Editor();
 
@@ -146,6 +153,14 @@ class Editor {
      *   focus to `topmost_window` (if `false`).
      */
     void set_input_focus(bool grab) const;
+
+    /**
+     * Run the timer proc function passed to the constructor, if one was passed.
+     *
+     * @see idle_timer
+     * @see idle_timer_proc
+     */
+    void maybe_run_timer_proc();
 
     /**
      * Whether to use XEmbed instead of yabridge's normal window embedded. Wine
@@ -235,6 +250,23 @@ class Editor {
         win32_child_handle;
 
 #pragma GCC diagnostic pop
+
+    /**
+     * A timer we'll use to periodically run `idle_timer_proc`, if set. Thisi is
+     * only needed for VST2 plugins, as they expected the host to periodically
+     * send an idle event. We used to just pass through the calls from the host
+     * before yabridge 3.x, but doing it ourselves here makes things m much more
+     * manageable and we'd still need a timer anyways for when the GUI is
+     * blocked.
+     */
+    Win32Timer idle_timer;
+
+    /**
+     * A function to call when the Win32 timer procs. This is used to
+     * periodically call `effEditIdle()` for VST2 plugins even if the GUI is
+     * being blocked.
+     */
+    std::optional<fu2::unique_function<void()>> idle_timer_proc;
 
     /**
      * The window handle of the editor window created by the DAW.

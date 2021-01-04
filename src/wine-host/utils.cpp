@@ -50,6 +50,8 @@ Win32Thread::~Win32Thread() {
 
 Win32Thread::Win32Thread() : handle(nullptr, nullptr) {}
 
+Win32Timer::Win32Timer() {}
+
 Win32Timer::Win32Timer(HWND window_handle,
                        size_t timer_id,
                        unsigned int interval_ms)
@@ -63,13 +65,12 @@ Win32Timer::~Win32Timer() {
     }
 }
 
-Win32Timer::Win32Timer(Win32Timer&& o) : timer_id(o.timer_id) {
-    o.timer_id = std::nullopt;
-}
+Win32Timer::Win32Timer(Win32Timer&& o)
+    : window_handle(o.window_handle), timer_id(std::move(o.timer_id)) {}
 
 Win32Timer& Win32Timer::operator=(Win32Timer&& o) {
-    timer_id = o.timer_id;
-    o.timer_id = std::nullopt;
+    window_handle = o.window_handle;
+    timer_id = std::move(o.timer_id);
 
     return *this;
 }

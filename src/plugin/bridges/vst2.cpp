@@ -398,6 +398,20 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
 
             return return_value;
         }; break;
+        case effEditIdle: {
+            // This is the only place where we'll deviate from yabridge's
+            // 'one-to-one passthrough' philosophy. While in practice we can
+            // just pass through `effEditIdle` and we have been doing so until
+            // yabridge 3.x, in reality it's much more practical to just run
+            // this on a Win32 timer. We would either need to run `effEditIdle`
+            // from a non-GUI thread (which could cause issues), or we would
+            // need a timer anyways to proc the function when the GUI is being
+            // blocked by for instance an open dropdown.
+            logger.log_event(true, opcode, index, value, nullptr, option,
+                             std::nullopt);
+            logger.log_event_response(true, opcode, 0, nullptr, std::nullopt);
+            return 0;
+        }; break;
         case effCanDo: {
             const std::string query(static_cast<const char*>(data));
 

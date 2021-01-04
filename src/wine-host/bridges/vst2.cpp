@@ -40,12 +40,10 @@ std::mutex current_bridge_instance_mutex;
 /**
  * Opcodes that should always be handled on the main thread because they may
  * involve GUI operations.
- *
- * XXX: We removed effEditIdle from here and everything still seems to work
- *      fine. Verify that this didn't break any plugins.
  */
 const std::set<int> unsafe_opcodes{effOpen,     effClose,     effEditGetRect,
-                                   effEditOpen, effEditClose, effEditTop};
+                                   effEditOpen, effEditClose, effEditIdle,
+                                   effEditTop};
 
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);
@@ -313,6 +311,11 @@ void Vst2Bridge::run() {
                         //       https://github.com/Ardour/ardour/commit/f7cb1b0b481eeda755bdf8eb9fc5f90a81d2aa01.
                         //       We should keep this in until Ardour 6.3 is no
                         //       longer in distro repositories.
+                        //
+                        //       Note that now that we run `effEditIdle`
+                        //       entirely off of a Win32 timer this will never
+                        //       get hit, but we'll keep it in for the sake of
+                        //       preserving correct behaviour.
                         if (opcode == effEditIdle && !editor) {
                             std::cerr << "WARNING: The host is calling "
                                          "`effEditIdle()` while the "
@@ -379,7 +382,10 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             // provided by the host, and let the plugin embed itself into
             // the Wine window
             const auto x11_handle = reinterpret_cast<size_t>(data);
-            Editor& editor_instance = editor.emplace(config, x11_handle);
+            Editor& editor_instance =
+                editor.emplace(config, x11_handle, [plugin = this->plugin]() {
+                    plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0.0);
+                });
 
             return plugin->dispatcher(plugin, opcode, index, value,
                                       editor_instance.get_win32_handle(),

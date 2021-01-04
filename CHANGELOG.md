@@ -44,9 +44,7 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   Most hosts already do something similar themselves, so this may not make any
   difference in responsiveness.
 - VST2 editor idle events are now handled slightly differently. This should
-  result in even more responsive GUIs and I have not come across any plugins
-  where this change introduced issues, but please let me know if it does break
-  anything for you.
+  result in even more responsive GUIs for VST2 plugins.
 - Changed part of the build process considering [this Wine
   bug](https://bugs.winehq.org/show_bug.cgi?id=49138). Building with Wine 5.7
   and 5.8 required a change, but that change now breaks builds using Wine 6.0

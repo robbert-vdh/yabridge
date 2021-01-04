@@ -19,6 +19,15 @@
 #include <iostream>
 
 /**
+ * The Win32 timer ID we'll use to periodically call the VST2 `effeditidle`
+ * function with. We have to do this on a timer because the function has to be
+ * called from the GUI thread, and it should also be called while the Win32
+ * event loop is being blocked (for instance when a plugin opens a dropdown
+ * menu).
+ */
+constexpr size_t idle_timer_id = 1337;
+
+/**
  * The most significant bit in an X11 event's response type is used to indicate
  * the event source.
  */
@@ -100,7 +109,9 @@ WindowClass::~WindowClass() {
     UnregisterClass(reinterpret_cast<LPCSTR>(atom), GetModuleHandle(nullptr));
 }
 
-Editor::Editor(const Configuration& config, const size_t parent_window_handle)
+Editor::Editor(const Configuration& config,
+               const size_t parent_window_handle,
+               std::optional<fu2::unique_function<void()>> timer_proc)
     : use_xembed(config.editor_xembed),
       x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
       client_area(get_maximum_screen_dimensions(*x11_connection)),
@@ -128,6 +139,16 @@ Editor::Editor(const Configuration& config, const size_t parent_window_handle)
       // window in `win32_child_handle`. If we do this before calling
       // `ShowWindow()` on `win32_handle` we'll run into X11 errors.
       win32_child_handle(std::nullopt),
+      idle_timer(
+          timer_proc
+              ? Win32Timer(
+                    win32_handle.get(),
+                    idle_timer_id,
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        event_loop_interval)
+                        .count())
+              : Win32Timer()),
+      idle_timer_proc(std::move(timer_proc)),
       parent_window(parent_window_handle),
       wine_window(get_x11_handle(win32_handle.get())),
       topmost_window(find_topmost_window(*x11_connection, parent_window)) {
@@ -423,6 +444,12 @@ void Editor::set_input_focus(bool grab) const {
     xcb_flush(x11_connection.get());
 }
 
+void Editor::maybe_run_timer_proc() {
+    if (idle_timer_proc) {
+        (*idle_timer_proc)();
+    }
+}
+
 void Editor::destroy_window_async(HWND window_handle) {
     PostMessage(window_handle, WM_CLOSE, 0, 0);
 }
@@ -565,6 +592,20 @@ LRESULT CALLBACK window_proc(HWND handle,
 
             WINDOWPOS* info = reinterpret_cast<WINDOWPOS*>(lParam);
             info->flags |= SWP_NOCOPYBITS | SWP_DEFERERASE;
+        } break;
+        case WM_TIMER: {
+            auto editor = reinterpret_cast<Editor*>(
+                GetWindowLongPtr(handle, GWLP_USERDATA));
+            if (!editor || wParam != idle_timer_id) {
+                break;
+            }
+
+            // We'll send idle messages on a timer for VST2 plugins. This way
+            // the plugin will get keep periodically updating its editor either
+            // when the host sends `effEditIdle` themself, or periodically when
+            // the GUI is being blocked by a dropdown or a message box.
+            editor->maybe_run_timer_proc();
+            return 0;
         } break;
         // In case the WM does not support the EWMH active window property,
         // we'll fall back to grabbing focus when the user clicks on the window
