@@ -66,24 +66,23 @@ Vst3HostContextProxyImpl::createInstance(Steinberg::TUID /*cid*/,
     // These objects don't have to be created by the actual host since they'll
     // only be used as an argument to other functions. We can just serialize
     // them at that point.
+    tresult response;
     Steinberg::FUID iid = Steinberg::FUID::fromTUID(_iid);
     if (iid == Steinberg::Vst::IMessage::iid) {
-        // TODO: Add logging for this on verbosity level 1
         *obj = static_cast<Steinberg::Vst::IMessage*>(new YaMessage{});
-        return Steinberg::kResultTrue;
+        response = Steinberg::kResultTrue;
     } else if (iid == Steinberg::Vst::IAttributeList::iid) {
-        // TODO: Add logging for this on verbosity level 1
         *obj =
             static_cast<Steinberg::Vst::IAttributeList*>(new YaAttributeList{});
-        return Steinberg::kResultTrue;
+        response = Steinberg::kResultTrue;
     } else {
-        // When the host requests an interface we do not (yet) implement,
-        // we'll print a recognizable log message
-        const Steinberg::FUID uid = Steinberg::FUID::fromTUID(_iid);
-        bridge.logger.log_query_interface(
-            "In IHostApplication::createInstance()", Steinberg::kNotImplemented,
-            uid);
-
-        return Steinberg::kNotImplemented;
+        *obj = nullptr;
+        response = Steinberg::kNotImplemented;
     }
+
+    const Steinberg::FUID uid = Steinberg::FUID::fromTUID(_iid);
+    bridge.logger.log_query_interface("In IHostApplication::createInstance()",
+                                      response, uid);
+
+    return response;
 }
