@@ -172,6 +172,10 @@ using CallbackRequest = std::variant<WantsConfiguration,
                                      YaComponentHandler::PerformEdit,
                                      YaComponentHandler::EndEdit,
                                      YaComponentHandler::RestartComponent,
+                                     YaComponentHandler2::SetDirty,
+                                     YaComponentHandler2::RequestOpenEditor,
+                                     YaComponentHandler2::StartGroupEdit,
+                                     YaComponentHandler2::FinishGroupEdit,
                                      // Used when the host uses proxy objects,
                                      // and we have to route
                                      // `IConnectionPoint::notify` calls through

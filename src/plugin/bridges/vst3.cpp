@@ -72,10 +72,35 @@ Vst3PluginBridge::Vst3PluginBridge()
                         .component_handler->endEdit(request.id);
                 },
                 [&](const YaComponentHandler::RestartComponent& request)
-                    -> YaComponentHandler::EndEdit::Response {
+                    -> YaComponentHandler::RestartComponent::Response {
                     return plugin_proxies.at(request.owner_instance_id)
                         .get()
                         .component_handler->restartComponent(request.flags);
+                },
+                [&](const YaComponentHandler2::SetDirty& request)
+                    -> YaComponentHandler2::SetDirty::Response {
+                    return plugin_proxies.at(request.owner_instance_id)
+                        .get()
+                        .component_handler_2->setDirty(request.state);
+                },
+                [&](const YaComponentHandler2::RequestOpenEditor& request)
+                    -> YaComponentHandler2::RequestOpenEditor::Response {
+                    return plugin_proxies.at(request.owner_instance_id)
+                        .get()
+                        .component_handler_2->requestOpenEditor(
+                            request.name.c_str());
+                },
+                [&](const YaComponentHandler2::StartGroupEdit& request)
+                    -> YaComponentHandler2::StartGroupEdit::Response {
+                    return plugin_proxies.at(request.owner_instance_id)
+                        .get()
+                        .component_handler_2->startGroupEdit();
+                },
+                [&](const YaComponentHandler2::FinishGroupEdit& request)
+                    -> YaComponentHandler2::FinishGroupEdit::Response {
+                    return plugin_proxies.at(request.owner_instance_id)
+                        .get()
+                        .component_handler_2->finishGroupEdit();
                 },
                 [&](YaConnectionPoint::Notify& request)
                     -> YaConnectionPoint::Notify::Response {

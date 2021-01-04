@@ -360,6 +360,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
 
         // Automatically converted smart pointers for when the plugin performs a
         // callback later
+        component_handler_2 = component_handler;
         unit_handler = component_handler;
 
         return bridge.send_message(YaEditController::SetComponentHandler{

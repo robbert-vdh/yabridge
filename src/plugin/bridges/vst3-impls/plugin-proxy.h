@@ -244,6 +244,8 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     // The following pointers are cast from `component_handler` if
     // `IEditController::setComponentHandler()` has been called
 
+    Steinberg::FUnknownPtr<Steinberg::Vst::IComponentHandler2>
+        component_handler_2;
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler> unit_handler;
 
    private:

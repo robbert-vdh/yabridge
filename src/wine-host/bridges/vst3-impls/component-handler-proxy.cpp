@@ -64,31 +64,31 @@ Vst3ComponentHandlerProxyImpl::restartComponent(int32 flags) {
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::setDirty(TBool state) {
-    // TODO: Implement
-    std::cerr << "TODO: Implement IComponentHandler2::setDirty()" << std::endl;
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaComponentHandler2::SetDirty{
+        .owner_instance_id = owner_instance_id(), .state = state});
 }
 
 tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::requestOpenEditor(Steinberg::FIDString name) {
-    // TODO: Implement
-    std::cerr << "TODO: Implement IComponentHandler2::requestOpenEditor()"
-              << std::endl;
-    return Steinberg::kNotImplemented;
+    if (name) {
+        return bridge.send_message(YaComponentHandler2::RequestOpenEditor{
+            .owner_instance_id = owner_instance_id(), .name = name});
+    } else {
+        std::cerr << "WARNING: Null pointer passed to "
+                     "IComponentHandler2::requestOpenEditor()"
+                  << std::endl;
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::startGroupEdit() {
-    // TODO: Implement
-    std::cerr << "TODO: Implement IComponentHandler2::startGroupEdit()"
-              << std::endl;
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaComponentHandler2::StartGroupEdit{
+        .owner_instance_id = owner_instance_id()});
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::finishGroupEdit() {
-    // TODO: Implement
-    std::cerr << "TODO: Implement IComponentHandler2::finishGroupEdit()"
-              << std::endl;
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaComponentHandler2::FinishGroupEdit{
+        .owner_instance_id = owner_instance_id()});
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitSelection(
