@@ -173,6 +173,13 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaComponentHandler::EndEdit&);
     bool log_request(bool is_host_vst,
                      const YaComponentHandler::RestartComponent&);
+    bool log_request(bool is_host_vst, const YaComponentHandler2::SetDirty&);
+    bool log_request(bool is_host_vst,
+                     const YaComponentHandler2::RequestOpenEditor&);
+    bool log_request(bool is_host_vst,
+                     const YaComponentHandler2::StartGroupEdit&);
+    bool log_request(bool is_host_vst,
+                     const YaComponentHandler2::FinishGroupEdit&);
     bool log_request(bool is_host_vst, const YaHostApplication::GetName&);
     bool log_request(bool is_host_vst, const YaPlugFrame::ResizeView&);
     bool log_request(bool is_host_vst,

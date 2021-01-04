@@ -952,6 +952,43 @@ bool Vst3Logger::log_request(
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaComponentHandler2::SetDirty& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IComponentHandler2::setDirty(state = "
+                << (request.state ? "true" : "False") << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaComponentHandler2::RequestOpenEditor& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IComponentHandler2::requestOpenEditor(name = "
+                << request.name << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaComponentHandler2::StartGroupEdit& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IComponentHandler2::startGroupEdit()";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaComponentHandler2::FinishGroupEdit& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IComponentHandler2::finishGroupEdit()";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
                              const YaHostApplication::GetName& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         // This can be called either from a plugin object or from the plugin's
