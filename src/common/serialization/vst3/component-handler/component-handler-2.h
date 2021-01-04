@@ -61,10 +61,80 @@ class YaComponentHandler2 : public Steinberg::Vst::IComponentHandler2 {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to `IComponentHandler2::setDirty(state)`
+     * to the component handler provided by the host.
+     */
+    struct SetDirty {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        TBool state;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value1b(state);
+        }
+    };
+
     virtual tresult PLUGIN_API setDirty(TBool state) override = 0;
+
+    /**
+     * Message to pass through a call to
+     * `IComponentHandler2::requestOpenEditor(name)` to the component handler
+     * provided by the host.
+     */
+    struct RequestOpenEditor {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        std::string name;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.text1b(name, 256);
+        }
+    };
+
     virtual tresult PLUGIN_API
     requestOpenEditor(Steinberg::FIDString name) override = 0;
+
+    /**
+     * Message to pass through a call to `IComponentHandler2::startGroupEdit()`
+     * to the component handler provided by the host.
+     */
+    struct StartGroupEdit {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+        }
+    };
+
     virtual tresult PLUGIN_API startGroupEdit() override = 0;
+
+    /**
+     * Message to pass through a call to `IComponentHandler2::finishGroupEdit()`
+     * to the component handler provided by the host.
+     */
+    struct FinishGroupEdit {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+        }
+    };
+
     virtual tresult PLUGIN_API finishGroupEdit() override = 0;
 
    protected:
