@@ -19,6 +19,7 @@
 #include <bitsery/ext/std_variant.h>
 
 #include "../common.h"
+#include "plugin/audio-presentation-latency.h"
 #include "plugin/audio-processor.h"
 #include "plugin/component.h"
 #include "plugin/connection-point.h"
@@ -57,7 +58,8 @@
  * implements any interface such an object might also implement, we can allow
  * perfect proxying behaviour for connecting components.
  */
-class Vst3PluginProxy : public YaAudioProcessor,
+class Vst3PluginProxy : public YaAudioPresentationLatency,
+                        public YaAudioProcessor,
                         public YaComponent,
                         public YaConnectionPoint,
                         public YaEditController,
@@ -86,6 +88,8 @@ class Vst3PluginProxy : public YaAudioProcessor,
          */
         native_size_t instance_id;
 
+        YaAudioPresentationLatency::ConstructArgs
+            audio_presentation_latency_args;
         YaAudioProcessor::ConstructArgs audio_processor_args;
         YaComponent::ConstructArgs component_args;
         YaConnectionPoint::ConstructArgs connection_point_args;
@@ -102,6 +106,7 @@ class Vst3PluginProxy : public YaAudioProcessor,
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
+            s.object(audio_presentation_latency_args);
             s.object(audio_processor_args);
             s.object(component_args);
             s.object(connection_point_args);

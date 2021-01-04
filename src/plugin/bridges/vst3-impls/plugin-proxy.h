@@ -38,6 +38,12 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API queryInterface(const Steinberg::TUID _iid,
                                       void** obj) override;
 
+    // From `IAudioPresentationLatency`
+    tresult PLUGIN_API
+    setAudioPresentationLatencySamples(Steinberg::Vst::BusDirection dir,
+                                       int32 busIndex,
+                                       uint32 latencyInSamples) override;
+
     // From `IAudioProcessor`
     tresult PLUGIN_API
     setBusArrangements(Steinberg::Vst::SpeakerArrangement* inputs,

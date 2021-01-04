@@ -39,6 +39,17 @@ Vst3PluginProxyImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
     return result;
 }
 
+tresult PLUGIN_API Vst3PluginProxyImpl::setAudioPresentationLatencySamples(
+    Steinberg::Vst::BusDirection dir,
+    int32 busIndex,
+    uint32 latencyInSamples) {
+    // TODO: Implement
+    bridge.logger.log(
+        "TODO: "
+        "IAudioPresentationLatency::setAudioPresentationLatencySamples()");
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::setBusArrangements(
     Steinberg::Vst::SpeakerArrangement* inputs,
     int32 numIns,
