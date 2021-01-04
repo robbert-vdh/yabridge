@@ -36,15 +36,16 @@ VST3 plugin interfaces are implemented as follows:
 
 VST3 host interfaces are implemented as follows:
 
-| yabridge class              | Included in                 | Interfaces          |
-| --------------------------- | --------------------------- | ------------------- |
-| `Vst3HostContextProxy`      |                             | All of the below:   |
-| `YaHostApplication`         | `Vst3HostContextProxy`      | `IHostApplication`  |
-| `Vst3ComponentHandlerProxy` |                             | All of the below:   |
-| `YaComponentHandler`        | `Vst3ComponentHandlerProxy` | `IComponentHandler` |
-| `YaUnitHandler`             | `Vst3ComponentHandlerProxy` | `IUnitHandler`      |
-| `Vst3PlugFrameProxy`        |                             | All of the below:   |
-| `YaPlugFrame`               | `Vst3PlugFrameProxy`        | `IPlugFrame`        |
+| yabridge class              | Included in                 | Interfaces           |
+| --------------------------- | --------------------------- | -------------------- |
+| `Vst3HostContextProxy`      |                             | All of the below:    |
+| `YaHostApplication`         | `Vst3HostContextProxy`      | `IHostApplication`   |
+| `Vst3ComponentHandlerProxy` |                             | All of the below:    |
+| `YaComponentHandler`        | `Vst3ComponentHandlerProxy` | `IComponentHandler`  |
+| `YaComponentHandler2`       | `Vst3ComponentHandlerProxy` | `IComponentHandler2` |
+| `YaUnitHandler`             | `Vst3ComponentHandlerProxy` | `IUnitHandler`       |
+| `Vst3PlugFrameProxy`        |                             | All of the below:    |
+| `YaPlugFrame`               | `Vst3PlugFrameProxy`        | `IPlugFrame`         |
 
 The following host interfaces are passed as function arguments and are thus also
 implemented for serialization purposes:
