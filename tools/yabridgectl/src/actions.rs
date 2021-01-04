@@ -329,6 +329,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     }
 
     // TODO: Move this elsewhere
+    // TODO: This can leave behind empty directories if we remove a subdirectory
     orphan_files.extend(
         WalkDir::new(yabridge_vst3_home())
             .follow_links(true)
