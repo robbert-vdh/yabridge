@@ -36,6 +36,7 @@ InstanceInterfaces::InstanceInterfaces() {}
 InstanceInterfaces::InstanceInterfaces(
     Steinberg::IPtr<Steinberg::FUnknown> object)
     : object(object),
+      audio_presentation_latency(object),
       audio_processor(object),
       component(object),
       connection_point(object),
@@ -183,6 +184,16 @@ void Vst3Bridge::run() {
                 return Vst3PluginProxy::GetStateResponse{
                     .result = result, .updated_state = std::move(stream)};
             },
+            [&](YaAudioPresentationLatency::SetAudioPresentationLatencySamples&
+                    request)
+                -> YaAudioPresentationLatency::
+                    SetAudioPresentationLatencySamples::Response {
+                        return object_instances[request.instance_id]
+                            .audio_presentation_latency
+                            ->setAudioPresentationLatencySamples(
+                                request.dir, request.bus_index,
+                                request.latency_in_samples);
+                    },
             [&](YaConnectionPoint::Connect& request)
                 -> YaConnectionPoint::Connect::Response {
                 // If the host directly connected the underlying objects then we

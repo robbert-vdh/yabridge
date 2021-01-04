@@ -128,6 +128,8 @@ struct InstanceInterfaces {
     // All smart pointers below are created from `component`. They will be null
     // pointers if `component` did not implement the interface.
 
+    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioPresentationLatency>
+        audio_presentation_latency;
     Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audio_processor;
     Steinberg::FUnknownPtr<Steinberg::Vst::IComponent> component;
     Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> connection_point;

@@ -43,11 +43,12 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setAudioPresentationLatencySamples(
     Steinberg::Vst::BusDirection dir,
     int32 busIndex,
     uint32 latencyInSamples) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: "
-        "IAudioPresentationLatency::setAudioPresentationLatencySamples()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaAudioPresentationLatency::SetAudioPresentationLatencySamples{
+            .instance_id = instance_id(),
+            .dir = dir,
+            .bus_index = busIndex,
+            .latency_in_samples = latencyInSamples});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setBusArrangements(
