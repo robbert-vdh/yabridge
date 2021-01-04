@@ -261,7 +261,7 @@ Editor::~Editor() {
     // TODO: Check if we also have to do something special for
     //       editor_double_embed (probalby not)
     // TODO: Retest XEmbed after all of these changes
-    ShowWindow(win32_handle.get(), SW_HIDE);
+    ShowWindow(win32_handle.get(), SW_MINIMIZE);
 }
 
 HWND Editor::get_win32_handle() const {
