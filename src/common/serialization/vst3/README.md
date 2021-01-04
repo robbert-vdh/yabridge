@@ -6,9 +6,8 @@ for more information on how the serialization works.
 
 The following interfaces are not yet implemented:
 
-- Every interface introduced after VST 3.0.2 with the exceptons of
-  `IEditController2` and `INoteExpressionController` which has already been
-  implemented
+- Every interface introduced after VST 3.1.0 with the exception of
+  `INoteExpressionController` which has already been implemented
 - The [Presonus extensions](https://presonussoftware.com/en_US/developer),
   although most of these things seem to overlap with newer VST3 interfaces
 
@@ -22,6 +21,7 @@ VST3 plugin interfaces are implemented as follows:
 | `YaParameterFinder`          | `Vst3PlugViewProxy` | `IParameterFinder`                                     |
 | `YaPlugView`                 | `Vst3PlugViewProxy` | `IPlugView`                                            |
 | `Vst3PluginProxy`            |                     | All of the below:                                      |
+| `YaAudioPresentationLatency` | `Vst3PluginProxy`   | `IAudioPresentationLatency`                            |
 | `YaAudioProcessor`           | `Vst3PluginProxy`   | `IAudioProcessor`                                      |
 | `YaComponent`                | `Vst3PluginProxy`   | `IComponent`                                           |
 | `YaConnectionPoint`          | `Vst3PluginProxy`   | `IConnectionPoint`                                     |
