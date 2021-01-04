@@ -39,6 +39,12 @@ class Vst3ComponentHandlerProxyImpl : public Vst3ComponentHandlerProxy {
     tresult PLUGIN_API endEdit(Steinberg::Vst::ParamID id) override;
     tresult PLUGIN_API restartComponent(int32 flags) override;
 
+    // From `IComponentHandler2`
+    tresult PLUGIN_API setDirty(TBool state) override;
+    tresult PLUGIN_API requestOpenEditor(Steinberg::FIDString name) override;
+    tresult PLUGIN_API startGroupEdit() override;
+    tresult PLUGIN_API finishGroupEdit() override;
+
     // From `IUnitHandler`
     tresult PLUGIN_API
     notifyUnitSelection(Steinberg::Vst::UnitID unitId) override;

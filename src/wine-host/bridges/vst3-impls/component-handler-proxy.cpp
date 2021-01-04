@@ -63,6 +63,34 @@ Vst3ComponentHandlerProxyImpl::restartComponent(int32 flags) {
         .owner_instance_id = owner_instance_id(), .flags = flags});
 }
 
+tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::setDirty(TBool state) {
+    // TODO: Implement
+    std::cerr << "TODO: Implement IComponentHandler2::setDirty()" << std::endl;
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3ComponentHandlerProxyImpl::requestOpenEditor(Steinberg::FIDString name) {
+    // TODO: Implement
+    std::cerr << "TODO: Implement IComponentHandler2::requestOpenEditor()"
+              << std::endl;
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::startGroupEdit() {
+    // TODO: Implement
+    std::cerr << "TODO: Implement IComponentHandler2::startGroupEdit()"
+              << std::endl;
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::finishGroupEdit() {
+    // TODO: Implement
+    std::cerr << "TODO: Implement IComponentHandler2::finishGroupEdit()"
+              << std::endl;
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitSelection(
     Steinberg::Vst::UnitID unitId) {
     return bridge.send_message(YaUnitHandler::NotifyUnitSelection{
