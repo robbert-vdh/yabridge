@@ -101,6 +101,20 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaAudioPresentationLatency::SetAudioPresentationLatencySamples&
+        request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": "
+                   "IAudioPresentationLatency::"
+                   "setAudioPresentationLatencySamples(dir = "
+                << request.dir << ", busIndex = " << request.bus_index
+                << ", latencyInSamples = " << request.latency_in_samples << ")";
+    });
+}
+
 bool Vst3Logger::log_request(bool is_host_vst,
                              const YaConnectionPoint::Connect& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
