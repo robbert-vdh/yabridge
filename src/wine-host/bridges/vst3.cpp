@@ -637,8 +637,6 @@ void Vst3Bridge::run() {
                 // the host and pass that to the initialize function. The
                 // lifetime of this object is tied to that of the actual plugin
                 // object we're proxying for.
-                // TODO: This needs changing if it turns out we need a
-                //       `Vst3HostProxy`
                 object_instances[request.instance_id].host_context_proxy =
                     Steinberg::owned(new Vst3HostContextProxyImpl(
                         *this, std::move(request.host_context_args)));

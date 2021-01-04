@@ -22,37 +22,6 @@
 
 using namespace std::literals::string_literals;
 
-// There are still some design decisions that need some more thought
-// TODO: The documentation mentions that private communication through VST3's
-//       message system should be handled on a separate timer thread.  Do we
-//       need special handling for this on the Wine side (e.g. during the event
-//       handling loop)? Probably not, since the actual host should manage all
-//       messaging.
-// TODO: The docs very explicitly mention that
-//       the`IComponentHandler::{begin,perform,end}Edit()` functions have to be
-//       called from the UI thread. Should we have special handling for this or
-//       does everything just magically work out?
-// TODO: Something that's not relevant here but that will require some thinking
-//       is that VST3 requires all plugins to be installed in ~/.vst3. I can
-//       think of two options and I"m not sure what's the best one:
-//
-//       1. We can add the required files for the Linux VST3 plugin to the
-//          location of the Windows VST3 plugin (by adding some files to the
-//          bundle or creating a bundle next to it) and then symlink that bundle
-//          to ~/.vst3.
-//       2. We can create the bundle in ~/.vst3 and symlink the Windows plugin
-//          and all of its resources into bundle as if they were also installed
-//          there.
-//
-//       The second one sounds much better, but it will still need some more
-//       consideration. Aside from that VST3 plugins also have a centralized
-//       preset location, even though barely anyone uses it, yabridgectl will
-//       also have to make a symlink of that. Also, yabridgectl will need to do
-//       some extra work there to detect removed plugins.
-// TODO: Also symlink presets, and allow pruning broken symlinks there as well
-// TODO: And how do we choose between 32-bit and 64-bit versions of a VST3
-//       plugin if they exist? Config files?
-
 Vst3PluginBridge::Vst3PluginBridge()
     : PluginBridge(
           PluginType::vst3,
