@@ -40,10 +40,14 @@ std::mutex current_bridge_instance_mutex;
 /**
  * Opcodes that should always be handled on the main thread because they may
  * involve GUI operations.
+ *
+ * NOTE: `effMainsChanged` is the odd one here. EZdrummer interacts with the
+ *       Win32 message loop while handling this function. If we don't execute
+ *       this from the main GUI thread, then EZdrummer won't produce any sound.
  */
-const std::set<int> unsafe_opcodes{effOpen,     effClose,     effEditGetRect,
-                                   effEditOpen, effEditClose, effEditIdle,
-                                   effEditTop};
+const std::set<int> unsafe_opcodes{effOpen,     effClose,       effEditGetRect,
+                                   effEditOpen, effEditClose,   effEditIdle,
+                                   effEditTop,  effMainsChanged};
 
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);

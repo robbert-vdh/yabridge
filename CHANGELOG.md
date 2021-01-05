@@ -52,6 +52,13 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   with, and it then applies the change conditionally to be able to support
   building with both older and newer versions of Wine.
 
+### Fixed
+
+- The function for suspending and resuming audio, `effMainsChanged()`, is now
+  always executed from the GUI thread. This fixes **EZdrummer** not producing
+  any sound as it makes the incorrect assumption that `effMainsChanged()` is
+  always called from the GUI thread.
+
 ### yabridgectl
 
 - Updated for the changes in yabridge 3.0. Yabridgectl now allows you to set up
