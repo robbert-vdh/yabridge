@@ -33,18 +33,43 @@
 class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
    public:
     /**
+     * These are the arguments for constructing a
+     * `YaContextMenuTargetImpl`.
+     */
+    struct ConstructArgs {
+        ConstructArgs();
+
+        /**
+         * Read from an existing object. We will try to mimic this object, so
+         * we'll support any interfaces this object also supports.
+         *
+         * @param owner_instance_id The object instance that this target's
+         * context menu belongs to.
+         * @param context_menu_id The unique ID of the context menu requested by
+         *   `owwner_instance_id`.
+         * @param tag The tag of the menu item this target belongs to.
+         */
+        ConstructArgs(native_size_t owner_instance_id,
+                      native_size_t context_menu_id,
+                      int32 tag);
+
+        native_size_t owner_instance_id;
+        native_size_t context_menu_id;
+        int32 tag;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value8b(context_menu_id);
+            s.value4b(tag);
+        }
+    };
+
+    /**
      * Create context menu target that when called, calls the corresponding
      * context menu target provided by the object.
-     *
-     * @param owner_instance_id The object instance that this target's context
-     *   menu belongs to.
-     * @param context_menu_id The unique ID of the context menu requested by
-     *   `owwner_instance_id`.
-     * @param tag The tag of the menu item this target belongs to.
      */
-    YaContextMenuTarget(native_size_t owner_instance_id,
-                        native_size_t context_menu_id,
-                        int32 tag);
+    YaContextMenuTarget(const ConstructArgs&& args);
 
     ~YaContextMenuTarget();
 
@@ -53,9 +78,7 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
     virtual tresult PLUGIN_API executeMenuItem(int32 tag) override = 0;
 
    protected:
-    native_size_t owner_instance_id;
-    native_size_t context_menu_id;
-    int32 tag;
+    ConstructArgs arguments;
 };
 
 #pragma GCC diagnostic pop

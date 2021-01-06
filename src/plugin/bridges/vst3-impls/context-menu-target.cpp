@@ -16,13 +16,9 @@
 
 #include "context-menu-target.h"
 
-YaContextMenuTargetImpl::YaContextMenuTargetImpl(
-    Vst3PluginBridge& bridge,
-    native_size_t owner_instance_id,
-    native_size_t context_menu_id,
-    int32 tag)
-    : YaContextMenuTarget(owner_instance_id, context_menu_id, tag),
-      bridge(bridge) {}
+YaContextMenuTargetImpl::YaContextMenuTargetImpl(Vst3PluginBridge& bridge,
+                                                 const ConstructArgs&& args)
+    : YaContextMenuTarget(std::move(args)), bridge(bridge) {}
 
 tresult PLUGIN_API
 YaContextMenuTargetImpl::queryInterface(const Steinberg::TUID _iid,

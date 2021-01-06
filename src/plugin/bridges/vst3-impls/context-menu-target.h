@@ -20,13 +20,8 @@
 
 class YaContextMenuTargetImpl : public YaContextMenuTarget {
    public:
-    /**
-     * @override
-     */
     YaContextMenuTargetImpl(Vst3PluginBridge& bridge,
-                            native_size_t owner_instance_id,
-                            native_size_t context_menu_id,
-                            int32 tag);
+                            const ConstructArgs&& args);
 
     /**
      * We'll override the query interface to log queries for interfaces we do
