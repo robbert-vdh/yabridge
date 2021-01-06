@@ -26,6 +26,9 @@
 #include "../editor.h"
 #include "common.h"
 
+// Forward declarations
+class Vst3ContextMenuProxyImpl;
+
 /**
  * A holder for an object instance's `IPlugView` object and all smart pointers
  * casted from it.
@@ -114,7 +117,7 @@ struct InstanceInterfaces {
      * @relates Vst3Bridge::register_context_menu
      * @relates Vst3Bridge::unregister_context_menu
      */
-    std::map<size_t, std::reference_wrapper<Vst3ContextMenuProxy>>
+    std::map<size_t, std::reference_wrapper<Vst3ContextMenuProxyImpl>>
         registered_context_menus;
     std::mutex registered_context_menus_mutex;
 
@@ -310,7 +313,7 @@ class Vst3Bridge : public HostBridge {
      * `object_instances`. This will be called during the constructor of
      * `Vst3ContextMenuProxyImpl` so we can refer to the exact instance later.
      */
-    void register_context_menu(Vst3ContextMenuProxy& context_menu);
+    void register_context_menu(Vst3ContextMenuProxyImpl& context_menu);
 
     /**
      * Remove a previously registered context menu from `object_instances`. This

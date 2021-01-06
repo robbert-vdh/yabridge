@@ -22,6 +22,7 @@
 
 #include "vst3-impls/component-handler-proxy.h"
 #include "vst3-impls/connection-point-proxy.h"
+#include "vst3-impls/context-menu-proxy.h"
 #include "vst3-impls/host-context-proxy.h"
 #include "vst3-impls/plug-frame-proxy.h"
 
@@ -858,14 +859,14 @@ void Vst3Bridge::handle_win32_events() {
     }
 }
 
-void Vst3Bridge::register_context_menu(Vst3ContextMenuProxy& context_menu) {
+void Vst3Bridge::register_context_menu(Vst3ContextMenuProxyImpl& context_menu) {
     std::lock_guard lock(object_instances[context_menu.owner_instance_id()]
                              .registered_context_menus_mutex);
 
     object_instances[context_menu.owner_instance_id()]
         .registered_context_menus.emplace(
             context_menu.context_menu_id(),
-            std::ref<Vst3ContextMenuProxy>(context_menu));
+            std::ref<Vst3ContextMenuProxyImpl>(context_menu));
 }
 
 void Vst3Bridge::unregister_context_menu(size_t object_instance_id,
