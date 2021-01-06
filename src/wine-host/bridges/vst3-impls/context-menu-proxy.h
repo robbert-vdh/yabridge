@@ -37,19 +37,18 @@ class Vst3ContextMenuProxyImpl : public Vst3ContextMenuProxy {
                                       void** obj) override;
 
     // From `IContextMenu`
-    virtual int32 PLUGIN_API getItemCount() override = 0;
-    virtual tresult PLUGIN_API
+    int32 PLUGIN_API getItemCount() override;
+    tresult PLUGIN_API
     getItem(int32 index,
             Steinberg::Vst::IContextMenuItem& item /*out*/,
-            Steinberg::Vst::IContextMenuTarget** target /*out*/) override = 0;
-    virtual tresult PLUGIN_API
+            Steinberg::Vst::IContextMenuTarget** target /*out*/) override;
+    tresult PLUGIN_API
     addItem(const Steinberg::Vst::IContextMenuItem& item,
-            Steinberg::Vst::IContextMenuTarget* target) override = 0;
-    virtual tresult PLUGIN_API
+            Steinberg::Vst::IContextMenuTarget* target) override;
+    tresult PLUGIN_API
     removeItem(const Item& item,
-               Steinberg::Vst::IContextMenuTarget* target) override = 0;
-    virtual tresult PLUGIN_API popup(Steinberg::UCoord x,
-                                     Steinberg::UCoord y) override = 0;
+               Steinberg::Vst::IContextMenuTarget* target) override;
+    tresult PLUGIN_API popup(Steinberg::UCoord x, Steinberg::UCoord y) override;
 
    private:
     Vst3Bridge& bridge;

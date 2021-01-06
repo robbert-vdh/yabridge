@@ -18,6 +18,8 @@
 
 #include <iostream>
 
+#include "context-menu-proxy.h"
+
 Vst3ComponentHandlerProxyImpl::Vst3ComponentHandlerProxyImpl(
     Vst3Bridge& bridge,
     Vst3ComponentHandlerProxy::ConstructArgs&& args)
@@ -93,11 +95,23 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::finishGroupEdit() {
 
 Steinberg::Vst::IContextMenu* PLUGIN_API
 Vst3ComponentHandlerProxyImpl::createContextMenu(
-    Steinberg::IPlugView* plugView,
+    Steinberg::IPlugView* /*plugView*/,
     const Steinberg::Vst::ParamID* paramID) {
-    // TODO: Implement
-    std::cerr << "TODO: IComponentHandler3::createContextMenu" << std::endl;
-    return nullptr;
+    // XXX: The does do not make it clear what `paramID` is, so my assumption
+    //      that it really is a pointer to a parameter ID. I'll assume that 'the
+    //      parameter being zero' was a typo and that they mean passign a null
+    //      pointer.
+    CreateContextMenuResponse response =
+        bridge.send_message(YaComponentHandler3::CreateContextMenu{
+            .owner_instance_id = owner_instance_id(),
+            .param_id = (paramID ? std::optional(*paramID) : std::nullopt)});
+
+    if (response.context_menu_args) {
+        return new Vst3ContextMenuProxyImpl(
+            bridge, std::move(*response.context_menu_args));
+    } else {
+        return nullptr;
+    }
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitSelection(
