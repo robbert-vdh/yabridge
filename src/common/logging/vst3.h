@@ -73,6 +73,8 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaConnectionPoint::Disconnect&);
     bool log_request(bool is_host_vst, const YaConnectionPoint::Notify&);
     bool log_request(bool is_host_vst,
+                     const YaContextMenuTarget::ExecuteMenuItem&);
+    bool log_request(bool is_host_vst,
                      const YaEditController::SetComponentState&);
     bool log_request(bool is_host_vst,
                      const YaEditController::GetParameterCount&);
