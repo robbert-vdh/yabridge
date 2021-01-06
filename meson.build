@@ -201,6 +201,7 @@ if with_vst3
     'src/common/serialization/vst3/process-data.cpp',
     'src/wine-host/bridges/vst3-impls/component-handler-proxy.cpp',
     'src/wine-host/bridges/vst3-impls/connection-point-proxy.cpp',
+    'src/wine-host/bridges/vst3-impls/context-menu-proxy.cpp',
     'src/wine-host/bridges/vst3-impls/host-context-proxy.cpp',
     'src/wine-host/bridges/vst3-impls/plug-frame-proxy.cpp',
     'src/wine-host/bridges/vst3.cpp',
