@@ -17,9 +17,11 @@
 #pragma once
 
 #include <pluginterfaces/vst/ivstcontextmenu.h>
+#include "bitsery/ext/std_optional.h"
 
 #include "../../common.h"
 #include "../base.h"
+#include "../context-menu-proxy.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -60,6 +62,48 @@ class YaComponentHandler3 : public Steinberg::Vst::IComponentHandler3 {
     YaComponentHandler3(const ConstructArgs&& args);
 
     inline bool supported() const { return arguments.supported; }
+
+    /**
+     * The arguments needed to create a proxy object for the context menu
+     * returned by the host resulting from a call to
+     * `IComponentHandler3::createContextMenu(<plug_view>, param_id)`, if the
+     * call succeeded.
+     */
+    struct CreateContextMenuResponse {
+        std::optional<Vst3ContextMenuProxy::ConstructArgs> context_menu_args;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.ext(context_menu_args, bitsery::ext::StdOptional{});
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IComponentHandler3::createContextMenu(<plug_view>, param_id)` to the
+     * component handler provided by the host.
+     *
+     * XXX: Since we don't support multiple `IPlugView`s right now (as it's not
+     *      used the SDK's current version), we'll just assume that `view` is
+     *      the view stored in `Vst3PluginProxyImpl::plug_view`
+     */
+    struct CreateContextMenu {
+        using Response = CreateContextMenuResponse;
+
+        native_size_t owner_instance_id;
+
+        // XXX: Why do they pass a pointer to the parameter ID? The docs that
+        //      when the parameter ID is zero, the host should create a generic
+        //      context menu. Did they mean to write 'a null pointer' here?
+        std::optional<Steinberg::Vst::ParamID> param_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.ext(param_id, bitsery::ext::StdOptional{},
+                  [](S& s, Steinberg::Vst::ParamID& id) { s.value4b(id); });
+        }
+    };
 
     virtual Steinberg::Vst::IContextMenu* PLUGIN_API
     createContextMenu(Steinberg::IPlugView* plugView,

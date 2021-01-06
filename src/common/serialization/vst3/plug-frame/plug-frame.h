@@ -62,8 +62,8 @@ class YaPlugFrame : public Steinberg::IPlugFrame {
     inline bool supported() const { return arguments.supported; }
 
     /**
-     * Message to pass through a call to `IPlugFrame::resizeView` to the
-     * `IPlugView` object provided by the host.
+     * Message to pass through a call to `IPlugFrame::resizeView(<plug_view>,
+     * new_size)` to the `IPlugView` object provided by the host.
      *
      * XXX: Since we don't support multiple `IPlugView`s right now (as it's not
      *      used the SDK's current version), we'll just assume that `view` is
