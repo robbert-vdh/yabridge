@@ -88,3 +88,5 @@ class YaAttributeList : public Steinberg::Vst::IAttributeList {
     std::unordered_map<std::string, std::u16string> attrs_string;
     std::unordered_map<std::string, std::vector<uint8_t>> attrs_binary;
 };
+
+#pragma GCC diagnostic pop

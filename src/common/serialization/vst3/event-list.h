@@ -260,6 +260,8 @@ class YaEventList : public Steinberg::Vst::IEventList {
     std::vector<Steinberg::Vst::Event> reconstructed_events;
 };
 
+#pragma GCC diagnostic pop
+
 namespace Steinberg {
 namespace Vst {
 template <typename S>
@@ -305,5 +307,3 @@ void serialize(S& s, LegacyMIDICCOutEvent& event) {
 }
 }  // namespace Vst
 }  // namespace Steinberg
-
-#pragma GCC diagnostic pop
