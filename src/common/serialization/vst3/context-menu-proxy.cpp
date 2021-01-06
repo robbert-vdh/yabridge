@@ -20,8 +20,11 @@ Vst3ContextMenuProxy::ConstructArgs::ConstructArgs() {}
 
 Vst3ContextMenuProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
-    size_t owner_instance_id)
-    : owner_instance_id(owner_instance_id), context_menu_args(object) {}
+    size_t owner_instance_id,
+    size_t context_menu_id)
+    : owner_instance_id(owner_instance_id),
+      context_menu_id(context_menu_id),
+      context_menu_args(object) {}
 
 Vst3ContextMenuProxy::Vst3ContextMenuProxy(const ConstructArgs&& args)
     : YaContextMenu(std::move(args.context_menu_args)),

@@ -48,7 +48,8 @@ class Vst3ContextMenuProxy : public YaContextMenu {
          * we'll support any interfaces this object also supports.
          */
         ConstructArgs(Steinberg::IPtr<FUnknown> object,
-                      size_t owner_instance_id);
+                      size_t owner_instance_id,
+                      size_t context_menu_id);
 
         /**
          * The unique instance identifier of the proxy object instance this
@@ -69,6 +70,7 @@ class Vst3ContextMenuProxy : public YaContextMenu {
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
+            s.value8b(context_menu_id);
             s.object(context_menu_args);
         }
     };
