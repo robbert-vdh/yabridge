@@ -858,6 +858,25 @@ void Vst3Bridge::handle_win32_events() {
     }
 }
 
+void Vst3Bridge::register_context_menu(Vst3ContextMenuProxy& context_menu) {
+    std::lock_guard lock(object_instances[context_menu.owner_instance_id()]
+                             .registered_context_menus_mutex);
+
+    object_instances[context_menu.owner_instance_id()]
+        .registered_context_menus.emplace(
+            context_menu.context_menu_id(),
+            std::ref<Vst3ContextMenuProxy>(context_menu));
+}
+
+void Vst3Bridge::unregister_context_menu(size_t object_instance_id,
+                                         size_t context_menu_id) {
+    std::lock_guard lock(
+        object_instances[object_instance_id].registered_context_menus_mutex);
+
+    object_instances[object_instance_id].registered_context_menus.erase(
+        context_menu_id);
+}
+
 size_t Vst3Bridge::generate_instance_id() {
     return current_instance_id.fetch_add(1);
 }

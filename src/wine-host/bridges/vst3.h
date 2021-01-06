@@ -105,6 +105,20 @@ struct InstanceInterfaces {
     Steinberg::IPtr<Vst3PlugFrameProxy> plug_frame_proxy;
 
     /**
+     * Currently active context menu proxy instances. A call to
+     * `IComponentHandler3::createContextMenu` by the plugin will create a proxy
+     * object for the actual context menu returned by the host. We'll use this
+     * map to refer to a specific context menu later when the host wants to
+     * execute a specific menu item.
+     *
+     * @relates Vst3Bridge::register_context_menu
+     * @relates Vst3Bridge::unregister_context_menu
+     */
+    std::map<size_t, std::reference_wrapper<Vst3ContextMenuProxy>>
+        registered_context_menus;
+    std::mutex registered_context_menus_mutex;
+
+    /**
      * The base object we cast from.
      */
     Steinberg::IPtr<Steinberg::FUnknown> object;
@@ -290,6 +304,21 @@ class Vst3Bridge : public HostBridge {
 
         return do_call_response.get();
     }
+
+    /**
+     * Register a context with with `context_menu`'s ID and owner in
+     * `object_instances`. This will be called during the constructor of
+     * `Vst3ContextMenuProxyImpl` so we can refer to the exact instance later.
+     */
+    void register_context_menu(Vst3ContextMenuProxy& context_menu);
+
+    /**
+     * Remove a previously registered context menu from `object_instances`. This
+     * is called from the destructor of `Vst3ContextMenuProxyImpl` just before
+     * the object gets freed.
+     */
+    void unregister_context_menu(size_t object_instance_id,
+                                 size_t context_menu_id);
 
    private:
     Logger generic_logger;
