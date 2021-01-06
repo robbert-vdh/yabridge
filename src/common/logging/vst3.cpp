@@ -1002,6 +1002,19 @@ bool Vst3Logger::log_request(
     });
 }
 
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaComponentHandler3::CreateContextMenu& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IComponentHandler3::createContextMenu(plugView = "
+                   "<IPlugView*>, paramId = "
+                << (request.param_id ? std::to_string(*request.param_id)
+                                     : "<nullptr>")
+                << ")";
+    });
+}
+
 bool Vst3Logger::log_request(bool is_host_vst,
                              const YaHostApplication::GetName& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
@@ -1417,6 +1430,19 @@ void Vst3Logger::log_response(
                     << ", <RoutingInfo& for bus "
                     << response.updated_out_info.busIndex << " and channel "
                     << response.updated_out_info.channel << ">";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaComponentHandler3::CreateContextMenuResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        if (response.context_menu_args) {
+            message << "<IContextMenu* #"
+                    << response.context_menu_args->context_menu_id << ">";
+        } else {
+            message << "<nullptr>";
         }
     });
 }

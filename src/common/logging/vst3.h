@@ -183,6 +183,8 @@ class Vst3Logger {
                      const YaComponentHandler2::StartGroupEdit&);
     bool log_request(bool is_host_vst,
                      const YaComponentHandler2::FinishGroupEdit&);
+    bool log_request(bool is_host_vst,
+                     const YaComponentHandler3::CreateContextMenu&);
     bool log_request(bool is_host_vst, const YaHostApplication::GetName&);
     bool log_request(bool is_host_vst, const YaPlugFrame::ResizeView&);
     bool log_request(bool is_host_vst,
@@ -248,6 +250,8 @@ class Vst3Logger {
     void log_response(bool is_host_vst,
                       const YaComponent::GetRoutingInfoResponse&);
 
+    void log_response(bool is_host_vst,
+                      const YaComponentHandler3::CreateContextMenuResponse&);
     void log_response(bool is_host_vst,
                       const YaHostApplication::GetNameResponse&);
 
