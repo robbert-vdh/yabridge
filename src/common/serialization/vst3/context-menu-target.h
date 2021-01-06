@@ -47,21 +47,17 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
          * context menu belongs to.
          * @param context_menu_id The unique ID of the context menu requested by
          *   `owwner_instance_id`.
-         * @param tag The tag of the menu item this target belongs to.
          */
         ConstructArgs(native_size_t owner_instance_id,
-                      native_size_t context_menu_id,
-                      int32 tag);
+                      native_size_t context_menu_id);
 
         native_size_t owner_instance_id;
         native_size_t context_menu_id;
-        int32 tag;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
             s.value8b(context_menu_id);
-            s.value4b(tag);
         }
     };
 
@@ -74,6 +70,27 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
     ~YaContextMenuTarget();
 
     DECLARE_FUNKNOWN_METHODS
+
+    /*
+     * Message to pass through a call to
+     * `IContextMenuTarget::executeMenuItem(tag)` to the proxied object provided
+     * by the plugin.
+     */
+    struct ExecuteMenuItem {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+        native_size_t context_menu_id;
+
+        int32 tag;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value8b(context_menu_id);
+            s.value4b(tag);
+        }
+    };
 
     virtual tresult PLUGIN_API executeMenuItem(int32 tag) override = 0;
 

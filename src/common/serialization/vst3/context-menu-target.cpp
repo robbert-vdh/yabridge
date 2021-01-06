@@ -18,11 +18,8 @@
 
 YaContextMenuTarget::ConstructArgs::ConstructArgs(
     native_size_t owner_instance_id,
-    native_size_t context_menu_id,
-    int32 tag)
-    : owner_instance_id(owner_instance_id),
-      context_menu_id(context_menu_id),
-      tag(tag) {}
+    native_size_t context_menu_id)
+    : owner_instance_id(owner_instance_id), context_menu_id(context_menu_id) {}
 
 YaContextMenuTarget::YaContextMenuTarget(const ConstructArgs&& args)
     : arguments(std::move(args)){FUNKNOWN_CTOR}
