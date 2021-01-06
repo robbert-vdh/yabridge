@@ -50,6 +50,13 @@ class Vst3ContextMenuProxyImpl : public Vst3ContextMenuProxy {
                Steinberg::Vst::IContextMenuTarget* target) override;
     tresult PLUGIN_API popup(Steinberg::UCoord x, Steinberg::UCoord y) override;
 
+    /**
+     * The targets passed when to `addItem` calls made by the plugin. This way
+     * we can call these same targets later.
+     */
+    std::map<int32, Steinberg::IPtr<Steinberg::Vst::IContextMenuTarget>>
+        context_menu_targets;
+
    private:
     Vst3Bridge& bridge;
 };

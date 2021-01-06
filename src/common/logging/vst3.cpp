@@ -170,6 +170,7 @@ bool Vst3Logger::log_request(
     const YaContextMenuTarget::ExecuteMenuItem& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.owner_instance_id << ": <IContextMenuTarget* #"
+                << " #" << request.target_tag
                 << ">::executeMenuItem(tag = " << request.tag << ")";
     });
 }

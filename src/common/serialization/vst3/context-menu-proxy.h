@@ -129,7 +129,7 @@ class Vst3ContextMenuProxy : public YaContextMenu {
     }
 
     /**
-     * Get the unique ID for this context menu
+     * Get the unique ID for this context menu.
      */
     inline size_t context_menu_id() const { return arguments.context_menu_id; }
 

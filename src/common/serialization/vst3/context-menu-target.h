@@ -47,17 +47,21 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
          * context menu belongs to.
          * @param context_menu_id The unique ID of the context menu requested by
          *   `owwner_instance_id`.
+         * @param tag The tag of the menu item this target belongs to.
          */
         ConstructArgs(native_size_t owner_instance_id,
-                      native_size_t context_menu_id);
+                      native_size_t context_menu_id,
+                      int32 tag);
 
         native_size_t owner_instance_id;
         native_size_t context_menu_id;
+        int32 tag;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
             s.value8b(context_menu_id);
+            s.value4b(tag);
         }
     };
 
@@ -71,6 +75,23 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
 
     DECLARE_FUNKNOWN_METHODS
 
+    /**
+     * Get the instance ID of the owner of this object.
+     */
+    inline size_t owner_instance_id() const {
+        return arguments.owner_instance_id;
+    }
+
+    /**
+     * Get the unique ID for the context menu this target belongs to.
+     */
+    inline size_t context_menu_id() const { return arguments.context_menu_id; }
+
+    /**
+     * Get the tag of the menu item this target was passed to.
+     */
+    inline int32 target_tag() const { return arguments.tag; }
+
     /*
      * Message to pass through a call to
      * `IContextMenuTarget::executeMenuItem(tag)` to the proxied object provided
@@ -81,6 +102,11 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
 
         native_size_t owner_instance_id;
         native_size_t context_menu_id;
+        /**
+         * The tag this target was passed for. This should be the same as `tag`,
+         * but it doesn't have to be.
+         */
+        int32 target_tag;
 
         int32 tag;
 
@@ -88,6 +114,7 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
         void serialize(S& s) {
             s.value8b(owner_instance_id);
             s.value8b(context_menu_id);
+            s.value4b(target_tag);
             s.value4b(tag);
         }
     };

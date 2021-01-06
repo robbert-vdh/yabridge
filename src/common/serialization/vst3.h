@@ -74,6 +74,7 @@ using ControlRequest =
                  YaConnectionPoint::Connect,
                  YaConnectionPoint::Disconnect,
                  YaConnectionPoint::Notify,
+                 YaContextMenuTarget::ExecuteMenuItem,
                  YaEditController::SetComponentState,
                  YaEditController::GetParameterCount,
                  YaEditController::GetParameterInfo,

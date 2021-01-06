@@ -47,7 +47,7 @@ Vst3ContextMenuProxyImpl::queryInterface(const Steinberg::TUID _iid,
 int32 PLUGIN_API Vst3ContextMenuProxyImpl::getItemCount() {
     // TODO: Implement
     std::cerr << "TODO: IContextMenu::getItemCount()" << std::endl;
-    return Steinberg::kNotImplemented;
+    return 0;
 }
 
 tresult PLUGIN_API Vst3ContextMenuProxyImpl::getItem(

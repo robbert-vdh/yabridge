@@ -31,7 +31,9 @@ YaContextMenuTargetImpl::queryInterface(const Steinberg::TUID _iid,
 }
 
 tresult PLUGIN_API YaContextMenuTargetImpl::executeMenuItem(int32 tag) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IContextMenuTarget::executeMenuItem()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaContextMenuTarget::ExecuteMenuItem{
+        .owner_instance_id = owner_instance_id(),
+        .context_menu_id = context_menu_id(),
+        .target_tag = target_tag(),
+        .tag = tag});
 }

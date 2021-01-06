@@ -261,6 +261,14 @@ void Vst3Bridge::run() {
                     .connection_point->notify(
                         request.message_ptr.get_original());
             },
+            [&](YaContextMenuTarget::ExecuteMenuItem& request)
+                -> YaContextMenuTarget::ExecuteMenuItem::Response {
+                return object_instances[request.owner_instance_id]
+                    .registered_context_menus.at(request.context_menu_id)
+                    .get()
+                    .context_menu_targets[request.target_tag]
+                    ->executeMenuItem(request.tag);
+            },
             [&](YaEditController::SetComponentState& request)
                 -> YaEditController::SetComponentState::Response {
                 return object_instances[request.instance_id]
