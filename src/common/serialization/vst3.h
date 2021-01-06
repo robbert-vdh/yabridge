@@ -170,7 +170,8 @@ void serialize(S& s, AudioProcessorRequest& payload) {
  * information we want or the operation we want to perform. A request of type
  * `CallbackRequest(T)` should send back a `T::Response`.
  */
-using CallbackRequest = std::variant<WantsConfiguration,
+using CallbackRequest = std::variant<Vst3ContextMenuProxy::Destruct,
+                                     WantsConfiguration,
                                      YaComponentHandler::BeginEdit,
                                      YaComponentHandler::PerformEdit,
                                      YaComponentHandler::EndEdit,

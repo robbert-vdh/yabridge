@@ -924,6 +924,16 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const Vst3ContextMenuProxy::Destruct& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        // We don't know what class this instance was originally instantiated
+        // as, but it also doesn't really matter
+        message << request.owner_instance_id << ": <IContextMenu #"
+                << request.context_menu_id << ">::~IContextMenu()";
+    });
+}
+
 bool Vst3Logger::log_request(bool is_host_vst, const WantsConfiguration&) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << "Requesting <Configuration>";

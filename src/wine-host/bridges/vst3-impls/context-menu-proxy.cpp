@@ -26,12 +26,9 @@ Vst3ContextMenuProxyImpl::Vst3ContextMenuProxyImpl(
 Vst3ContextMenuProxyImpl::~Vst3ContextMenuProxyImpl() {
     // Also drop the context menu smart pointer on plugin side when this gets
     // dropped
-    // TODO: Uncomment when we implement this
-    // bridge.send_message(
-    //     Vst3ContextMenuProxy::Destruct{.owner_instance_id =
-    //     owner_instance_id(),
-    //                                    .context_menu_id =
-    //                                    context_menu_id()});
+    bridge.send_message(
+        Vst3ContextMenuProxy::Destruct{.owner_instance_id = owner_instance_id(),
+                                       .context_menu_id = context_menu_id()});
 }
 
 tresult PLUGIN_API

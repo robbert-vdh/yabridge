@@ -170,6 +170,7 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaComponent::ActivateBus&);
     bool log_request(bool is_host_vst, const YaComponent::SetActive&);
 
+    bool log_request(bool is_host_vst, const Vst3ContextMenuProxy::Destruct&);
     bool log_request(bool is_host_vst, const WantsConfiguration&);
     bool log_request(bool is_host_vst, const YaComponentHandler::BeginEdit&);
     bool log_request(bool is_host_vst, const YaComponentHandler::PerformEdit&);

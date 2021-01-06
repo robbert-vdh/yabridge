@@ -49,6 +49,15 @@ Vst3PluginBridge::Vst3PluginBridge()
         sockets.vst_host_callback.receive_messages(
             std::pair<Vst3Logger&, bool>(logger, false),
             overload{
+                [&](const Vst3ContextMenuProxy::Destruct& request)
+                    -> Vst3ContextMenuProxy::Destruct::Response {
+                    assert(
+                        plugin_proxies.at(request.owner_instance_id)
+                            .get()
+                            .unregister_context_menu(request.context_menu_id));
+
+                    return Ack{};
+                },
                 [&](const WantsConfiguration&) -> WantsConfiguration::Response {
                     return config;
                 },
