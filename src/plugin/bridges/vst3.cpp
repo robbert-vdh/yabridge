@@ -102,6 +102,43 @@ Vst3PluginBridge::Vst3PluginBridge()
                         .get()
                         .component_handler_2->finishGroupEdit();
                 },
+                [&](const YaComponentHandler3::CreateContextMenu& request)
+                    -> YaComponentHandler3::CreateContextMenu::Response {
+                    // XXX: As mentioned elsewhere, since VST3 only supports a
+                    //      single plug view type at the moment we'll just
+                    //      assume that this function is called from the last
+                    //      (and only) `IPlugView*` instance returned by the
+                    //      plugin.
+                    Vst3PlugViewProxyImpl* plug_view =
+                        plugin_proxies.at(request.owner_instance_id)
+                            .get()
+                            .last_created_plug_view;
+
+                    Steinberg::IPtr<Steinberg::Vst::IContextMenu> context_menu =
+                        Steinberg::owned(
+                            plugin_proxies.at(request.owner_instance_id)
+                                .get()
+                                .component_handler_3->createContextMenu(
+                                    plug_view, request.param_id
+                                                   ? &*request.param_id
+                                                   : nullptr));
+
+                    if (context_menu) {
+                        const size_t context_menu_id =
+                            plugin_proxies.at(request.owner_instance_id)
+                                .get()
+                                .register_context_menu(std::move(context_menu));
+
+                        return YaComponentHandler3::CreateContextMenuResponse{
+                            .context_menu_args =
+                                Vst3ContextMenuProxy::ConstructArgs(
+                                    context_menu, request.owner_instance_id,
+                                    context_menu_id)};
+                    } else {
+                        return YaComponentHandler3::CreateContextMenuResponse{
+                            .context_menu_args = std::nullopt};
+                    }
+                },
                 [&](YaConnectionPoint::Notify& request)
                     -> YaConnectionPoint::Notify::Response {
                     return plugin_proxies.at(request.instance_id)

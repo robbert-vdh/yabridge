@@ -353,7 +353,7 @@ class Vst3Bridge : public HostBridge {
     Vst3Sockets<Win32Thread> sockets;
 
     /**
-     * Used to assign unique identifier to instances created for
+     * Used to assign unique identifiers to instances created for
      * `IPluginFactory::createInstance()`.
      *
      * @related enerate_instance_id
