@@ -137,6 +137,7 @@ vst3_plugin_sources = [
   'src/common/plugins.cpp',
   'src/common/utils.cpp',
   'src/plugin/bridges/vst3.cpp',
+  'src/plugin/bridges/vst3-impls/context-menu-target.cpp',
   'src/plugin/bridges/vst3-impls/plugin-factory.cpp',
   'src/plugin/bridges/vst3-impls/plug-view-proxy.cpp',
   'src/plugin/bridges/vst3-impls/plugin-proxy.cpp',

@@ -26,6 +26,7 @@
 #include "vst3/component-handler-proxy.h"
 #include "vst3/connection-point-proxy.h"
 #include "vst3/context-menu-proxy.h"
+#include "vst3/context-menu-target.h"
 #include "vst3/host-context-proxy.h"
 #include "vst3/plug-frame-proxy.h"
 #include "vst3/plug-view-proxy.h"
