@@ -18,6 +18,9 @@ A short description of what the issue is, and possibly some steps to reproduce i
 ...
 
 **System information**
+- Plugin: [e.g. Vital]
+- Plugin type: [VST2/VST3]
+- Host: [e.g. Bitwig Studio, REAPER or Ardour]
 - Operating system: [e.g. Manjaro, or Ubuntu 20.04]
 - Wine version: [e.g. Wine Staging 5.13]
 - Installation method: [symlinks/copies], [manual/yabridgectl]

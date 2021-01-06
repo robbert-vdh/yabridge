@@ -14,6 +14,9 @@ Also try our [Discord](https://discord.com/invite/pyNeweqadf) for some quick hel
 A short description of the current situation.
 
 **System information**
+- Plugin: [e.g. Vital, optional if this is a general issue]
+- Plugin type: [VST2/VST3, optional if this is a general issue]
+- Host: [e.g. Bitwig Studio, REAPER or Ardour]
 - Operating system: [e.g. Manjaro, or Ubuntu 20.04]
 - Wine version: [e.g. Wine Staging 5.13]
 - Installation method: [symlinks/copies], [manual/yabridgectl]
