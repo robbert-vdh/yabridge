@@ -45,6 +45,11 @@ class Vst3ComponentHandlerProxyImpl : public Vst3ComponentHandlerProxy {
     tresult PLUGIN_API startGroupEdit() override;
     tresult PLUGIN_API finishGroupEdit() override;
 
+    // From `IComponentHandler3`
+    Steinberg::Vst::IContextMenu* PLUGIN_API
+    createContextMenu(Steinberg::IPlugView* plugView,
+                      const Steinberg::Vst::ParamID* paramID) override;
+
     // From `IUnitHandler`
     tresult PLUGIN_API
     notifyUnitSelection(Steinberg::Vst::UnitID unitId) override;

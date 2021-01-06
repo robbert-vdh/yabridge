@@ -18,6 +18,7 @@
 
 #include "../common.h"
 #include "component-handler/component-handler-2.h"
+#include "component-handler/component-handler-3.h"
 #include "component-handler/component-handler.h"
 #include "component-handler/unit-handler.h"
 
@@ -34,6 +35,7 @@
  */
 class Vst3ComponentHandlerProxy : public YaComponentHandler,
                                   public YaComponentHandler2,
+                                  public YaComponentHandler3,
                                   public YaUnitHandler {
    public:
     /**
@@ -60,6 +62,7 @@ class Vst3ComponentHandlerProxy : public YaComponentHandler,
 
         YaComponentHandler::ConstructArgs component_handler_args;
         YaComponentHandler2::ConstructArgs component_handler_2_args;
+        YaComponentHandler3::ConstructArgs component_handler_3_args;
         YaUnitHandler::ConstructArgs unit_handler_args;
 
         template <typename S>
@@ -67,6 +70,7 @@ class Vst3ComponentHandlerProxy : public YaComponentHandler,
             s.value8b(owner_instance_id);
             s.object(component_handler_args);
             s.object(component_handler_2_args);
+            s.object(component_handler_3_args);
             s.object(unit_handler_args);
         }
     };

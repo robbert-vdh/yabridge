@@ -91,6 +91,15 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::finishGroupEdit() {
         .owner_instance_id = owner_instance_id()});
 }
 
+Steinberg::Vst::IContextMenu* PLUGIN_API
+Vst3ComponentHandlerProxyImpl::createContextMenu(
+    Steinberg::IPlugView* plugView,
+    const Steinberg::Vst::ParamID* paramID) {
+    // TODO: Implement
+    std::cerr << "TODO: IComponentHandler3::createContextMenu" << std::endl;
+    return nullptr;
+}
+
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitSelection(
     Steinberg::Vst::UnitID unitId) {
     return bridge.send_message(YaUnitHandler::NotifyUnitSelection{
