@@ -34,12 +34,6 @@
  * the user clicks on them. As far as I'm aware, not a single Linux VST3 host
  * implements `IComponentHandler3` and thus provides support for these context
  * menus.
- *
- * NOTE: For simplicity's sake (and because this is going to be true 100% of the
- *       time) we'll assume a plugin can only have a single context menu open at
- *       a time. If a host does allow creating multiple context menus for
- *       different parameters at the same time, then we'll just have to add a
- *       unique instance ID to the context menu.
  */
 class Vst3ContextMenuProxy : public YaContextMenu {
    public:
@@ -61,6 +55,14 @@ class Vst3ContextMenuProxy : public YaContextMenu {
          * context menu has been created for.
          */
         native_size_t owner_instance_id;
+        /**
+         * A unique identifier for this specific context menu. Having more than
+         * one context menu at a time will be impossible, but in case the plugin
+         * for whatever reason hangs on to the pointer of an old context menu
+         * after it has opened a new one, we would not want the new context menu
+         * to get destroyed when it drops the old pointer.
+         */
+        native_size_t context_menu_id;
 
         YaContextMenu::ConstructArgs context_menu_args;
 
@@ -80,6 +82,11 @@ class Vst3ContextMenuProxy : public YaContextMenu {
      * message. When the object's reference count reaches zero, we should
      * destroy the actual context menu object provided by the host using the
      * `Destruct` message.
+     *
+     * @note The lifecycle of these objects should be tracked in an
+     *   `std::map<size_t, Vst3ContextMenuProxy*>` in the `InstanceInterfaces`
+     *   struct. We need to use raw pointers or references here so we can refer
+     *   to the object without interfering with the reference count.
      */
     Vst3ContextMenuProxy(const ConstructArgs&& args);
 
@@ -92,10 +99,12 @@ class Vst3ContextMenuProxy : public YaContextMenu {
         using Response = Ack;
 
         native_size_t owner_instance_id;
+        native_size_t context_menu_id;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
+            s.value8b(context_menu_id);
         }
     };
 
@@ -114,6 +123,11 @@ class Vst3ContextMenuProxy : public YaContextMenu {
     inline size_t owner_instance_id() const {
         return arguments.owner_instance_id;
     }
+
+    /**
+     * Get the unique ID for this context menu
+     */
+    inline size_t context_menu_id() const { return arguments.context_menu_id; }
 
    private:
     ConstructArgs arguments;
