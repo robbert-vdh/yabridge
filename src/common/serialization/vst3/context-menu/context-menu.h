@@ -61,17 +61,118 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to `IContextMenu::getItemCount()` to the
+     * corresponding context menu instance returned by the host.
+     */
+    struct GetItemCount {
+        using Response = PrimitiveWrapper<int32>;
+
+        native_size_t owner_instance_id;
+        native_size_t context_menu_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value8b(context_menu_id);
+        }
+    };
+
     virtual int32 PLUGIN_API getItemCount() override = 0;
+
+    // XXX: Can a plugin call this to get items created by the host? Why would
+    //      they do that? We should find a host/plugin combination that supports
+    //      `IComponentHandler3` first.
     virtual tresult PLUGIN_API
     getItem(int32 index,
             Steinberg::Vst::IContextMenuItem& item /*out*/,
             Steinberg::Vst::IContextMenuTarget** target /*out*/) override = 0;
+
+    /**
+     * Message to pass through a call to `IContextMenu::addItem(item, <target>)`
+     * to the corresponding context menu instance returned by the host. We'll
+     * create a proxy for `target` based on `item->tag` on the plugin side that
+     * forwards a call to the original target passed by the Windows VST3 plugin.
+     */
+    struct AddItem {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+        native_size_t context_menu_id;
+
+        // Steinberg seems to hav emessed up their naming scheme here, since
+        // this is most definitely not an interface
+        Steinberg::Vst::IContextMenuItem item;
+
+        /**
+         * Will be true if the plugin passed a `target` pointer. I'm not sure if
+         * this is optional since there are no implementations for this
+         * interface to be found, but I can imagine that this could be optional
+         * for disabled menu items or for group starts/ends.
+         */
+        bool has_target;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value8b(context_menu_id);
+            s.object(item);
+            s.value1b(has_target);
+        }
+    };
+
     virtual tresult PLUGIN_API
     addItem(const Steinberg::Vst::IContextMenuItem& item,
             Steinberg::Vst::IContextMenuTarget* target) override = 0;
+
+    /**
+     * Message to pass through a call to `IContextMenu::removeItem(item,
+     * <target>)` to the corresponding context menu instance returned by the
+     * host. We'll pass the target already stored in our `Vst3PluginProxyImpl`
+     * object. Not sure why it is even needed here.
+     */
+    struct RemoveItem {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+        native_size_t context_menu_id;
+
+        Steinberg::Vst::IContextMenuItem item;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value8b(context_menu_id);
+            s.object(item);
+        }
+    };
+
     virtual tresult PLUGIN_API
     removeItem(const Item& item,
                Steinberg::Vst::IContextMenuTarget* target) override = 0;
+
+    /**
+     * Message to pass through a call to `IContextMenu::popup(x, y)` to the
+     * corresponding context menu instance returned by the host.
+     */
+    struct Popup {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+        native_size_t context_menu_id;
+
+        Steinberg::UCoord x;
+        Steinberg::UCoord y;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value8b(context_menu_id);
+            s.value4b(x);
+            s.value4b(y);
+        }
+    };
+
     virtual tresult PLUGIN_API popup(Steinberg::UCoord x,
                                      Steinberg::UCoord y) override = 0;
 
@@ -80,3 +181,14 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
 };
 
 #pragma GCC diagnostic pop
+
+namespace Steinberg {
+namespace Vst {
+template <typename S>
+void serialize(S& s, IContextMenuItem& item) {
+    s.text2b(item.name, std::extent_v<Steinberg::Vst::String128>);
+    s.value4b(item.tag);
+    s.value4b(item.flags);
+}
+}  // namespace Vst
+}  // namespace Steinberg
