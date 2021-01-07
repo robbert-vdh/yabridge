@@ -188,6 +188,10 @@ class Vst3Logger {
                      const YaComponentHandler2::FinishGroupEdit&);
     bool log_request(bool is_host_vst,
                      const YaComponentHandler3::CreateContextMenu&);
+    bool log_request(bool is_host_vst, const YaContextMenu::GetItemCount&);
+    bool log_request(bool is_host_vst, const YaContextMenu::AddItem&);
+    bool log_request(bool is_host_vst, const YaContextMenu::RemoveItem&);
+    bool log_request(bool is_host_vst, const YaContextMenu::Popup&);
     bool log_request(bool is_host_vst, const YaHostApplication::GetName&);
     bool log_request(bool is_host_vst, const YaPlugFrame::ResizeView&);
     bool log_request(bool is_host_vst,

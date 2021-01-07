@@ -937,8 +937,6 @@ bool Vst3Logger::log_request(bool is_host_vst,
 bool Vst3Logger::log_request(bool is_host_vst,
                              const Vst3ContextMenuProxy::Destruct& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
-        // We don't know what class this instance was originally instantiated
-        // as, but it also doesn't really matter
         message << request.owner_instance_id << ": <IContextMenu* #"
                 << request.context_menu_id << ">::~IContextMenu()";
     });
@@ -1032,6 +1030,46 @@ bool Vst3Logger::log_request(
                 << (request.param_id ? std::to_string(*request.param_id)
                                      : "<nullptr>")
                 << ")";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaContextMenu::GetItemCount& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id << ": <IContextMenu* #"
+                << request.context_menu_id << ">::getItemCount()";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaContextMenu::AddItem& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id << ": <IContextMenu* #"
+                << request.context_menu_id
+                << ">::addItem(item = <IContextMenuItem #" << request.item.tag
+                << " for \"" << VST3::StringConvert::convert(request.item.name)
+                << "\">, target)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaContextMenu::RemoveItem& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id << ": <IContextMenu* #"
+                << request.context_menu_id
+                << ">::removeItem(item = <IContextMenuItem #"
+                << request.item.tag << " for \""
+                << VST3::StringConvert::convert(request.item.name)
+                << "\">, target)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaContextMenu::Popup& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id << ": <IContextMenu* #"
+                << request.context_menu_id << ">::popup(x = " << request.x
+                << ", y = " << request.y << ")";
     });
 }
 
