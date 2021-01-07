@@ -6,8 +6,8 @@ for more information on how the serialization works.
 
 The following interfaces are not yet implemented:
 
-- Every interface introduced after VST 3.1.0 with the exception of
-  `INoteExpressionController` which has already been implemented
+- Every interface introduced after VST 3.1.0, although most of the VST 3.5.0
+  interfaces have already been implemented
 - The [Presonus extensions](https://presonussoftware.com/en_US/developer),
   although most of these things seem to overlap with newer VST3 interfaces
 

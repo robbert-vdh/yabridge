@@ -150,7 +150,7 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
     };
 
     virtual tresult PLUGIN_API
-    removeItem(const Item& item,
+    removeItem(const Steinberg::Vst::IContextMenuItem& item,
                Steinberg::Vst::IContextMenuTarget* target) override = 0;
 
     /**

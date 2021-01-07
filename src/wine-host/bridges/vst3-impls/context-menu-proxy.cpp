@@ -45,39 +45,76 @@ Vst3ContextMenuProxyImpl::queryInterface(const Steinberg::TUID _iid,
 }
 
 int32 PLUGIN_API Vst3ContextMenuProxyImpl::getItemCount() {
-    // TODO: Implement
-    std::cerr << "TODO: IContextMenu::getItemCount()" << std::endl;
-    return 0;
+    return bridge.send_message(
+        YaContextMenu::GetItemCount{.owner_instance_id = owner_instance_id(),
+                                    .context_menu_id = context_menu_id()});
 }
 
 tresult PLUGIN_API Vst3ContextMenuProxyImpl::getItem(
     int32 index,
     Steinberg::Vst::IContextMenuItem& item /*out*/,
     Steinberg::Vst::IContextMenuTarget** target /*out*/) {
-    // TODO: Implement
-    std::cerr << "TODO: IContextMenu::getItem()" << std::endl;
-    return Steinberg::kNotImplemented;
+    // XXX: Should the plugin be able to get targets created by the host this
+    //      way? We'll just assume that this function won't ever be called by
+    //      the plugin (but we'll implement a basic version anyways).
+    if (index < 0 || index >= static_cast<int32>(items.size())) {
+        return Steinberg::kInvalidArgument;
+    } else {
+        item = items[index];
+        *target = context_menu_targets[item.tag];
+
+        return Steinberg::kResultOk;
+    }
 }
 
 tresult PLUGIN_API
 Vst3ContextMenuProxyImpl::addItem(const Steinberg::Vst::IContextMenuItem& item,
                                   Steinberg::Vst::IContextMenuTarget* target) {
-    // TODO: Implement
-    std::cerr << "TODO: IContextMenu::addItem()" << std::endl;
-    return Steinberg::kNotImplemented;
+    const tresult result = bridge.send_message(YaContextMenu::AddItem{
+        .owner_instance_id = owner_instance_id(),
+        .context_menu_id = context_menu_id(),
+        .item = item,
+        .target =
+            (target ? std::make_optional<YaContextMenuTarget::ConstructArgs>(
+                          owner_instance_id(), context_menu_id(), item.tag)
+                    : std::nullopt)});
+
+    if (result == Steinberg::kResultOk) {
+        items.push_back(item);
+        context_menu_targets[item.tag] = target;
+    }
+
+    return result;
 }
 
 tresult PLUGIN_API Vst3ContextMenuProxyImpl::removeItem(
-    const Item& item,
-    Steinberg::Vst::IContextMenuTarget* target) {
-    // TODO: Implement
-    std::cerr << "TODO: IContextMenu::removeItem()" << std::endl;
-    return Steinberg::kNotImplemented;
+    const Steinberg::Vst::IContextMenuItem& item,
+    Steinberg::Vst::IContextMenuTarget* /*target*/) {
+    const tresult result = bridge.send_message(
+        YaContextMenu::RemoveItem{.owner_instance_id = owner_instance_id(),
+                                  .context_menu_id = context_menu_id(),
+                                  .item = item});
+
+    if (result == Steinberg::kResultOk) {
+        items.erase(
+            std::remove_if(
+                items.begin(), items.end(),
+                [&](const Steinberg::Vst::IContextMenuItem& candidate_item) {
+                    // They didn't implement `operator==` on the struct
+                    return candidate_item.tag == item.tag;
+                }),
+            items.end());
+        context_menu_targets.erase(item.tag);
+    }
+
+    return result;
 }
 
 tresult PLUGIN_API Vst3ContextMenuProxyImpl::popup(Steinberg::UCoord x,
                                                    Steinberg::UCoord y) {
-    // TODO: Implement
-    std::cerr << "TODO: IContextMenu::popup()" << std::endl;
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaContextMenu::Popup{.owner_instance_id = owner_instance_id(),
+                             .context_menu_id = context_menu_id(),
+                             .x = x,
+                             .y = y});
 }

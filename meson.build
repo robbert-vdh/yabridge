@@ -193,6 +193,7 @@ if with_vst3
     'src/common/serialization/vst3/component-handler-proxy.cpp',
     'src/common/serialization/vst3/connection-point-proxy.cpp',
     'src/common/serialization/vst3/context-menu-proxy.cpp',
+    'src/common/serialization/vst3/context-menu-target.cpp',
     'src/common/serialization/vst3/event-list.cpp',
     'src/common/serialization/vst3/host-context-proxy.cpp',
     'src/common/serialization/vst3/message.cpp',
