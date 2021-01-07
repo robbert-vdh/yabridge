@@ -70,6 +70,8 @@ tresult PLUGIN_API Vst3ContextMenuProxyImpl::getItem(
 tresult PLUGIN_API
 Vst3ContextMenuProxyImpl::addItem(const Steinberg::Vst::IContextMenuItem& item,
                                   Steinberg::Vst::IContextMenuTarget* target) {
+    // TODO: I haven't come across a plugin that adds its own items, so this
+    //       hasn't been tested yet
     const tresult result = bridge.send_message(YaContextMenu::AddItem{
         .owner_instance_id = owner_instance_id(),
         .context_menu_id = context_menu_id(),

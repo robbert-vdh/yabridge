@@ -195,6 +195,11 @@ Vst3PluginBridge::Vst3PluginBridge()
                 },
                 [&](const YaContextMenu::Popup& request)
                     -> YaContextMenu::Popup::Response {
+                    // FIXME: In REAPER having the menu open without interacting
+                    //        with it causes malloc failures or failing font
+                    //        drawing calls. Valgrind reports all kinds of
+                    //        memory errors within REAPER when this happens, and
+                    //        I'm not sure if yabridge is to blame here.
                     return plugin_proxies.at(request.owner_instance_id)
                         .get()
                         .context_menus.at(request.context_menu_id)

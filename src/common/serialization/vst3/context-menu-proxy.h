@@ -34,9 +34,6 @@
  * the user clicks on them. As far as I'm aware, not a single Linux VST3 host
  * implements `IComponentHandler3` and thus provides support for these context
  * menus.
- *
- * TODO: None of this has been tested because I have not run into any plugins
- *       that use `IComponentHandler3` yet.
  */
 class Vst3ContextMenuProxy : public YaContextMenu {
    public:
