@@ -18,6 +18,10 @@
 
 #include "plug-view-proxy.h"
 
+Vst3PluginProxyImpl::ContextMenu::ContextMenu(
+    Steinberg::IPtr<Steinberg::Vst::IContextMenu> menu)
+    : menu(menu) {}
+
 Vst3PluginProxyImpl::Vst3PluginProxyImpl(Vst3PluginBridge& bridge,
                                          Vst3PluginProxy::ConstructArgs&& args)
     : Vst3PluginProxy(std::move(args)), bridge(bridge) {

@@ -17,6 +17,7 @@
 #include "vst3.h"
 
 #include "src/common/serialization/vst3.h"
+#include "vst3-impls/context-menu-target.h"
 #include "vst3-impls/plugin-factory.h"
 #include "vst3-impls/plugin-proxy.h"
 
@@ -147,6 +148,57 @@ Vst3PluginBridge::Vst3PluginBridge()
                         return YaComponentHandler3::CreateContextMenuResponse{
                             .context_menu_args = std::nullopt};
                     }
+                },
+                [&](const YaContextMenu::GetItemCount& request)
+                    -> YaContextMenu::GetItemCount::Response {
+                    return plugin_proxies.at(request.owner_instance_id)
+                        .get()
+                        .context_menus.at(request.context_menu_id)
+                        .menu->getItemCount();
+                },
+                [&](YaContextMenu::AddItem& request)
+                    -> YaContextMenu::AddItem::Response {
+                    Vst3PluginProxyImpl::ContextMenu& context_menu =
+                        plugin_proxies.at(request.owner_instance_id)
+                            .get()
+                            .context_menus.at(request.context_menu_id);
+
+                    if (request.target) {
+                        context_menu.targets[request.item.tag] =
+                            Steinberg::owned(new YaContextMenuTargetImpl(
+                                *this, std::move(*request.target)));
+
+                        return context_menu.menu->addItem(
+                            request.item,
+                            context_menu.targets[request.item.tag]);
+                    } else {
+                        return context_menu.menu->addItem(request.item,
+                                                          nullptr);
+                    }
+                },
+                [&](const YaContextMenu::RemoveItem& request)
+                    -> YaContextMenu::RemoveItem::Response {
+                    Vst3PluginProxyImpl::ContextMenu& context_menu =
+                        plugin_proxies.at(request.owner_instance_id)
+                            .get()
+                            .context_menus.at(request.context_menu_id);
+
+                    if (const auto it =
+                            context_menu.targets.find(request.item.tag);
+                        it != context_menu.targets.end()) {
+                        return context_menu.menu->removeItem(request.item,
+                                                             it->second);
+                    } else {
+                        return context_menu.menu->removeItem(request.item,
+                                                             nullptr);
+                    }
+                },
+                [&](const YaContextMenu::Popup& request)
+                    -> YaContextMenu::Popup::Response {
+                    return plugin_proxies.at(request.owner_instance_id)
+                        .get()
+                        .context_menus.at(request.context_menu_id)
+                        .menu->popup(request.x, request.y);
                 },
                 [&](YaConnectionPoint::Notify& request)
                     -> YaConnectionPoint::Notify::Response {

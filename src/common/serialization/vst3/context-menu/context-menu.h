@@ -17,9 +17,11 @@
 #pragma once
 
 #include <pluginterfaces/vst/ivstcontextmenu.h>
+#include "bitsery/ext/std_optional.h"
 
 #include "../../common.h"
 #include "../base.h"
+#include "../context-menu-target.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -105,19 +107,19 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
         Steinberg::Vst::IContextMenuItem item;
 
         /**
-         * Will be true if the plugin passed a `target` pointer. I'm not sure if
-         * this is optional since there are no implementations for this
-         * interface to be found, but I can imagine that this could be optional
-         * for disabled menu items or for group starts/ends.
+         * Will be a nullopt if the plugin does not pass a `target` pointer. I'm
+         * not sure if this is optional since there are no implementations for
+         * this interface to be found, but I can imagine that this could be
+         * optional for disabled menu items or for group starts/ends.
          */
-        bool has_target;
+        std::optional<YaContextMenuTarget::ConstructArgs> target;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
             s.value8b(context_menu_id);
             s.object(item);
-            s.value1b(has_target);
+            s.ext(target, bitsery::ext::StdOptional{});
         }
     };
 
@@ -186,7 +188,7 @@ namespace Steinberg {
 namespace Vst {
 template <typename S>
 void serialize(S& s, IContextMenuItem& item) {
-    s.text2b(item.name, std::extent_v<Steinberg::Vst::String128>);
+    s.text2b(item.name);
     s.value4b(item.tag);
     s.value4b(item.flags);
 }

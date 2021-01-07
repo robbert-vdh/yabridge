@@ -259,6 +259,26 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     Vst3PlugViewProxyImpl* last_created_plug_view = nullptr;
 
     /**
+     * A pointer to a context menu returned by the host as a response to a call
+     * to `IComponentHandler3::createContextMenu`, as well as all targets we've
+     * created for it. This way we can drop both all at once.
+     */
+    struct ContextMenu {
+        ContextMenu(Steinberg::IPtr<Steinberg::Vst::IContextMenu> menu);
+
+        Steinberg::IPtr<Steinberg::Vst::IContextMenu> menu;
+
+        /**
+         * All targets we pass to `IContextMenu::addItem`. We'll store them per
+         * item tag, so we can drop them together with the menu. We probably
+         * don't have to use smart pointers for this, but the docs are missing a
+         * lot of details o how this should be implemented and there's no
+         * example implementation around.
+         */
+        std::map<int32, Steinberg::IPtr<YaContextMenuTarget>> targets;
+    };
+
+    /**
      * All context menus created by this object through
      * `IComponentHandler3::createContextMenu()`. We'll generate a unique
      * identifier for each context menu just like we do for plugin objects. When
@@ -269,8 +289,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * @see Vst3PluginProxyImpl::register_context_menu
      * @see Vst3PluginProxyImpl::unregister_context_menu
      */
-    std::map<size_t, Steinberg::IPtr<Steinberg::Vst::IContextMenu>>
-        context_menus;
+    std::map<size_t, ContextMenu> context_menus;
     std::mutex context_menus_mutex;
 
     // The following pointers are cast from `host_context` if

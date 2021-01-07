@@ -187,6 +187,10 @@ using CallbackRequest = std::variant<Vst3ContextMenuProxy::Destruct,
                                      // `IConnectionPoint::notify` calls through
                                      // there
                                      YaConnectionPoint::Notify,
+                                     YaContextMenu::GetItemCount,
+                                     YaContextMenu::AddItem,
+                                     YaContextMenu::RemoveItem,
+                                     YaContextMenu::Popup,
                                      YaHostApplication::GetName,
                                      YaPlugFrame::ResizeView,
                                      YaUnitHandler::NotifyUnitSelection,

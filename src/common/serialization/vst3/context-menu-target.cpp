@@ -16,6 +16,8 @@
 
 #include "context-menu-target.h"
 
+YaContextMenuTarget::ConstructArgs::ConstructArgs() {}
+
 YaContextMenuTarget::ConstructArgs::ConstructArgs(
     native_size_t owner_instance_id,
     native_size_t context_menu_id,
