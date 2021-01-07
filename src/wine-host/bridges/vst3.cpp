@@ -585,9 +585,15 @@ void Vst3Bridge::run() {
                     .get();
             },
             [&](YaPlugView::GetSize& request) -> YaPlugView::GetSize::Response {
+                // Melda plugins will refuse to open dialogs of this function is
+                // not run from the GUI thread
                 const tresult result =
-                    object_instances[request.owner_instance_id]
-                        .plug_view_instance->plug_view->getSize(&request.size);
+                    do_mutual_recursion_or_handle_in_main_context<tresult>(
+                        [&]() {
+                            return object_instances[request.owner_instance_id]
+                                .plug_view_instance->plug_view->getSize(
+                                    &request.size);
+                        });
 
                 return YaPlugView::GetSizeResponse{
                     .result = result, .updated_size = std::move(request.size)};
@@ -629,24 +635,37 @@ void Vst3Bridge::run() {
                     Steinberg::owned(new Vst3PlugFrameProxyImpl(
                         *this, std::move(request.plug_frame_args)));
 
-                // TODO: Does this have to be run from the UI thread? Figure out
-                //       if it does
-                return object_instances[request.owner_instance_id]
-                    .plug_view_instance->plug_view->setFrame(
-                        object_instances[request.owner_instance_id]
-                            .plug_frame_proxy);
+                // This likely doesn't have to be run from the GUI thread, but
+                // since 80% of the `IPlugView` functions have to be we'll do it
+                // here anyways
+                return main_context
+                    .run_in_context<tresult>([&]() {
+                        return object_instances[request.owner_instance_id]
+                            .plug_view_instance->plug_view->setFrame(
+                                object_instances[request.owner_instance_id]
+                                    .plug_frame_proxy);
+                    })
+                    .get();
             },
             [&](YaPlugView::CanResize& request)
                 -> YaPlugView::CanResize::Response {
-                return object_instances[request.owner_instance_id]
-                    .plug_view_instance->plug_view->canResize();
+                // To prevent weird behaviour we'll perform all size related
+                // functions from the GUI thread, including this one
+                return do_mutual_recursion_or_handle_in_main_context<tresult>(
+                    [&]() {
+                        return object_instances[request.owner_instance_id]
+                            .plug_view_instance->plug_view->canResize();
+                    });
             },
             [&](YaPlugView::CheckSizeConstraint& request)
                 -> YaPlugView::CheckSizeConstraint::Response {
                 const tresult result =
-                    object_instances[request.owner_instance_id]
-                        .plug_view_instance->plug_view->checkSizeConstraint(
-                            &request.rect);
+                    do_mutual_recursion_or_handle_in_main_context<tresult>(
+                        [&]() {
+                            return object_instances[request.owner_instance_id]
+                                .plug_view_instance->plug_view
+                                ->checkSizeConstraint(&request.rect);
+                        });
 
                 return YaPlugView::CheckSizeConstraintResponse{
                     .result = result, .updated_rect = std::move(request.rect)};
