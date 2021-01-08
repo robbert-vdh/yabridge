@@ -68,6 +68,41 @@ class YaXmlRepresentationController
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * The response code and written state for a call to
+     * `IXmlRepresentationController::getXmlRepresentationStream(info,
+     * &stream)`.
+     */
+    struct GetXmlRepresentationStreamResponse {
+        UniversalTResult result;
+        VectorStream stream;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(stream);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IXmlRepresentationController::getXmlRepresentationStream(info, &stream)`
+     * to the Wine plugin host.
+     */
+    struct GetXmlRepresentationStream {
+        using Response = GetXmlRepresentationStreamResponse;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::RepresentationInfo info;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.object(info);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getXmlRepresentationStream(Steinberg::Vst::RepresentationInfo& info /*in*/,
                                Steinberg::IBStream* stream /*out*/) = 0;
@@ -77,3 +112,15 @@ class YaXmlRepresentationController
 };
 
 #pragma GCC diagnostic pop
+
+namespace Steinberg {
+namespace Vst {
+template <typename S>
+void serialize(S& s, RepresentationInfo& info) {
+    s.text1b(info.vendor);
+    s.text1b(info.name);
+    s.text1b(info.version);
+    s.text1b(info.host);
+}
+}  // namespace Vst
+}  // namespace Steinberg
