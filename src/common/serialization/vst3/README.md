@@ -13,26 +13,27 @@ The following interfaces are not yet implemented:
 
 VST3 plugin interfaces are implemented as follows:
 
-| yabridge class               | Included in         | Interfaces                                             |
-| ---------------------------- | ------------------- | ------------------------------------------------------ |
-| `YaPluginFactory`            |                     | `IPluginFactory`, `IPluginFactory2`, `IPluginFactory3` |
-| `Vst3ConnectionPointProxy`   |                     | `IConnectionPoint` through `YaConnectionPoint`         |
-| `Vst3PlugViewProxy`          |                     | All of the below:                                      |
-| `YaParameterFinder`          | `Vst3PlugViewProxy` | `IParameterFinder`                                     |
-| `YaPlugView`                 | `Vst3PlugViewProxy` | `IPlugView`                                            |
-| `Vst3PluginProxy`            |                     | All of the below:                                      |
-| `YaAudioPresentationLatency` | `Vst3PluginProxy`   | `IAudioPresentationLatency`                            |
-| `YaAudioProcessor`           | `Vst3PluginProxy`   | `IAudioProcessor`                                      |
-| `YaComponent`                | `Vst3PluginProxy`   | `IComponent`                                           |
-| `YaConnectionPoint`          | `Vst3PluginProxy`   | `IConnectionPoint`                                     |
-| `YaEditController`           | `Vst3PluginProxy`   | `IEditController`                                      |
-| `YaEditController2`          | `Vst3PluginProxy`   | `IEditController2`                                     |
-| `YaMidiMapping`              | `Vst3PluginProxy`   | `IMidiMapping`                                         |
-| `YaNoteExpressionController` | `Vst3PluginProxy`   | `INoteExpressionController`                            |
-| `YaPluginBase`               | `Vst3PluginProxy`   | `IPluginBase`                                          |
-| `YaProgramListData`          | `Vst3PluginProxy`   | `IProgramListData`                                     |
-| `YaUnitData`                 | `Vst3PluginProxy`   | `IUnitData`                                            |
-| `YaUnitInfo`                 | `Vst3PluginProxy`   | `IUnitInfo`                                            |
+| yabridge class                | Included in         | Interfaces                                             |
+| ----------------------------- | ------------------- | ------------------------------------------------------ |
+| `YaPluginFactory`             |                     | `IPluginFactory`, `IPluginFactory2`, `IPluginFactory3` |
+| `Vst3ConnectionPointProxy`    |                     | `IConnectionPoint` through `YaConnectionPoint`         |
+| `Vst3PlugViewProxy`           |                     | All of the below:                                      |
+| `YaParameterFinder`           | `Vst3PlugViewProxy` | `IParameterFinder`                                     |
+| `YaPlugView`                  | `Vst3PlugViewProxy` | `IPlugView`                                            |
+| `Vst3PluginProxy`             |                     | All of the below:                                      |
+| `YaAudioPresentationLatency`  | `Vst3PluginProxy`   | `IAudioPresentationLatency`                            |
+| `YaAudioProcessor`            | `Vst3PluginProxy`   | `IAudioProcessor`                                      |
+| `YaComponent`                 | `Vst3PluginProxy`   | `IComponent`                                           |
+| `YaConnectionPoint`           | `Vst3PluginProxy`   | `IConnectionPoint`                                     |
+| `YaEditController`            | `Vst3PluginProxy`   | `IEditController`                                      |
+| `YaEditController2`           | `Vst3PluginProxy`   | `IEditController2`                                     |
+| `YaEditControllerHostEditing` | `Vst3PluginProxy`   | `IEditControllerHostEditing`                           |
+| `YaMidiMapping`               | `Vst3PluginProxy`   | `IMidiMapping`                                         |
+| `YaNoteExpressionController`  | `Vst3PluginProxy`   | `INoteExpressionController`                            |
+| `YaPluginBase`                | `Vst3PluginProxy`   | `IPluginBase`                                          |
+| `YaProgramListData`           | `Vst3PluginProxy`   | `IProgramListData`                                     |
+| `YaUnitData`                  | `Vst3PluginProxy`   | `IUnitData`                                            |
+| `YaUnitInfo`                  | `Vst3PluginProxy`   | `IUnitInfo`                                            |
 
 VST3 host interfaces are implemented as follows:
 
