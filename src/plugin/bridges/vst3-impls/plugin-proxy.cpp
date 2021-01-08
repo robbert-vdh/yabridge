@@ -788,3 +788,12 @@ Vst3PluginProxyImpl::setUnitProgramData(int32 listOrUnitId,
                                        .program_index = programIndex,
                                        .data = data});
 }
+
+tresult PLUGIN_API Vst3PluginProxyImpl::getXmlRepresentationStream(
+    Steinberg::Vst::RepresentationInfo& info /*in*/,
+    Steinberg::IBStream* stream /*out*/) {
+    // TODO: Implement
+    bridge.logger.log(
+        "TODO: IXmlRepresentationController::getXmlRepresentationStream()");
+    return Steinberg::kNotImplemented;
+}

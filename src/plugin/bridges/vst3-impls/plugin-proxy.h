@@ -244,6 +244,11 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
                                           int32 programIndex,
                                           Steinberg::IBStream* data) override;
 
+    // From `IXmlRepresentationController`
+    tresult PLUGIN_API
+    getXmlRepresentationStream(Steinberg::Vst::RepresentationInfo& info /*in*/,
+                               Steinberg::IBStream* stream /*out*/);
+
     /**
      * The component handler the host passed to us during
      * `IEditController::setComponentHandler()`. When the plugin makes a

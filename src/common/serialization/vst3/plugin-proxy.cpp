@@ -35,7 +35,8 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
       plugin_base_args(object),
       program_list_data_args(object),
       unit_data_args(object),
-      unit_info_args(object) {}
+      unit_info_args(object),
+      xml_representation_controller_args(object) {}
 
 Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
     : YaAudioPresentationLatency(
@@ -55,6 +56,8 @@ Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
       YaProgramListData(std::move(args.program_list_data_args)),
       YaUnitData(std::move(args.unit_data_args)),
       YaUnitInfo(std::move(args.unit_info_args)),
+      YaXmlRepresentationController(
+          std::move(args.xml_representation_controller_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3PluginProxy::~Vst3PluginProxy() {
@@ -140,6 +143,11 @@ tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
     if (YaUnitInfo::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IUnitInfo::iid,
                         Steinberg::Vst::IUnitInfo)
+    }
+    if (YaXmlRepresentationController::supported()) {
+        QUERY_INTERFACE(_iid, obj,
+                        Steinberg::Vst::IXmlRepresentationController::iid,
+                        Steinberg::Vst::IXmlRepresentationController)
     }
 
     *obj = nullptr;

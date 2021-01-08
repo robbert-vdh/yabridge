@@ -33,6 +33,7 @@
 #include "plugin/program-list-data.h"
 #include "plugin/unit-data.h"
 #include "plugin/unit-info.h"
+#include "plugin/xml-representation-controller.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -73,7 +74,8 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
                         public YaPluginBase,
                         public YaProgramListData,
                         public YaUnitData,
-                        public YaUnitInfo {
+                        public YaUnitInfo,
+                        public YaXmlRepresentationController {
    public:
     /**
      * These are the arguments for constructing a `Vst3PluginProxyImpl`.
@@ -109,6 +111,8 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
         YaProgramListData::ConstructArgs program_list_data_args;
         YaUnitData::ConstructArgs unit_data_args;
         YaUnitInfo::ConstructArgs unit_info_args;
+        YaXmlRepresentationController::ConstructArgs
+            xml_representation_controller_args;
 
         template <typename S>
         void serialize(S& s) {
@@ -127,6 +131,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
             s.object(program_list_data_args);
             s.object(unit_data_args);
             s.object(unit_info_args);
+            s.object(xml_representation_controller_args);
         }
     };
 
