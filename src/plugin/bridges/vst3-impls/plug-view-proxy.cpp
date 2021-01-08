@@ -39,20 +39,33 @@ Vst3PlugViewProxyImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
 
 tresult PLUGIN_API
 Vst3PlugViewProxyImpl::isPlatformTypeSupported(Steinberg::FIDString type) {
-    // We'll swap the X11 window ID platform type string for the Win32 HWND
-    // equivalent on the Wine side
-    return bridge.send_message(YaPlugView::IsPlatformTypeSupported{
-        .owner_instance_id = owner_instance_id(), .type = type});
+    if (type) {
+        // We'll swap the X11 window ID platform type string for the Win32 HWND
+        // equivalent on the Wine side
+        return bridge.send_message(YaPlugView::IsPlatformTypeSupported{
+            .owner_instance_id = owner_instance_id(), .type = type});
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IPlugView::isPlatformTypeSupported()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::attached(void* parent,
                                                    Steinberg::FIDString type) {
-    // We will embed the Wine Win32 window into the X11 window provided by the
-    // host
-    return bridge.send_message(
-        YaPlugView::Attached{.owner_instance_id = owner_instance_id(),
-                             .parent = reinterpret_cast<native_size_t>(parent),
-                             .type = type});
+    if (parent && type) {
+        // We will embed the Wine Win32 window into the X11 window provided by
+        // the host
+        return bridge.send_message(YaPlugView::Attached{
+            .owner_instance_id = owner_instance_id(),
+            .parent = reinterpret_cast<native_size_t>(parent),
+            .type = type});
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to 'IPlugView::attached()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::removed() {
@@ -119,6 +132,7 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::onFocus(TBool state) {
 
 tresult PLUGIN_API
 Vst3PlugViewProxyImpl::setFrame(Steinberg::IPlugFrame* frame) {
+    // TODO: Null pointers are valid here, should we pass them through?
     if (frame) {
         // We'll store the pointer for when the plugin later makes a callback to
         // this component handler

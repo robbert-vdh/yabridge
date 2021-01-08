@@ -158,13 +158,22 @@ uint32 PLUGIN_API Vst3PluginProxyImpl::getTailSamples() {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::getControllerClassId(Steinberg::TUID classId) {
-    const GetControllerClassIdResponse response =
-        bridge.send_audio_processor_message(
-            YaComponent::GetControllerClassId{.instance_id = instance_id()});
+    if (classId) {
+        const GetControllerClassIdResponse response =
+            bridge.send_audio_processor_message(
+                YaComponent::GetControllerClassId{.instance_id =
+                                                      instance_id()});
 
-    std::copy(response.editor_cid.begin(), response.editor_cid.end(), classId);
+        std::copy(response.editor_cid.begin(), response.editor_cid.end(),
+                  classId);
 
-    return response.result;
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IComponent::getControllerClassId()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setIoMode(Steinberg::Vst::IoMode mode) {
@@ -227,21 +236,36 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setActive(TBool state) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setState(Steinberg::IBStream* state) {
-    // Since both interfaces contain this function, this is used for both
-    // `IComponent::setState()` as well as `IEditController::setState()`
-    return bridge.send_message(Vst3PluginProxy::SetState{
-        .instance_id = instance_id(), .state = state});
+    if (state) {
+        // Since both interfaces contain this function, this is used for both
+        // `IComponent::setState()` as well as `IEditController::setState()`
+        return bridge.send_message(Vst3PluginProxy::SetState{
+            .instance_id = instance_id(), .state = state});
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'I{Component,EditController}::setState()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
-    // Since both interfaces contain this function, this is used for both
-    // `IComponent::getState()` as well as `IEditController::getState()`
-    const GetStateResponse response = bridge.send_message(
-        Vst3PluginProxy::GetState{.instance_id = instance_id()});
+    if (state) {
+        // Since both interfaces contain this function, this is used for both
+        // `IComponent::getState()` as well as `IEditController::getState()`
+        const GetStateResponse response = bridge.send_message(
+            Vst3PluginProxy::GetState{.instance_id = instance_id()});
 
-    assert(response.updated_state.write_back(state) == Steinberg::kResultOk);
+        assert(response.updated_state.write_back(state) ==
+               Steinberg::kResultOk);
 
-    return response.result;
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'I{Component,EditController}::getState()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::connect(IConnectionPoint* other) {
@@ -305,8 +329,15 @@ Vst3PluginProxyImpl::notify(Steinberg::Vst::IMessage* message) {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setComponentState(Steinberg::IBStream* state) {
-    return bridge.send_message(YaEditController::SetComponentState{
-        .instance_id = instance_id(), .state = state});
+    if (state) {
+        return bridge.send_message(YaEditController::SetComponentState{
+            .instance_id = instance_id(), .state = state});
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IEditController::setComponentState()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getParameterCount() {
@@ -331,29 +362,43 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParamStringByValue(
     Steinberg::Vst::ParamID id,
     Steinberg::Vst::ParamValue valueNormalized /*in*/,
     Steinberg::Vst::String128 string /*out*/) {
-    const GetParamStringByValueResponse response =
-        bridge.send_message(YaEditController::GetParamStringByValue{
-            .instance_id = instance_id(),
-            .id = id,
-            .value_normalized = valueNormalized});
+    if (string) {
+        const GetParamStringByValueResponse response =
+            bridge.send_message(YaEditController::GetParamStringByValue{
+                .instance_id = instance_id(),
+                .id = id,
+                .value_normalized = valueNormalized});
 
-    std::copy(response.string.begin(), response.string.end(), string);
-    string[response.string.size()] = 0;
+        std::copy(response.string.begin(), response.string.end(), string);
+        string[response.string.size()] = 0;
 
-    return response.result;
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IEditController::getParamStringByValue()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getParamValueByString(
     Steinberg::Vst::ParamID id,
     Steinberg::Vst::TChar* string /*in*/,
     Steinberg::Vst::ParamValue& valueNormalized /*out*/) {
-    const GetParamValueByStringResponse response =
-        bridge.send_message(YaEditController::GetParamValueByString{
-            .instance_id = instance_id(), .id = id, .string = string});
+    if (string) {
+        const GetParamValueByStringResponse response =
+            bridge.send_message(YaEditController::GetParamValueByString{
+                .instance_id = instance_id(), .id = id, .string = string});
 
-    valueNormalized = response.value_normalized;
+        valueNormalized = response.value_normalized;
 
-    return response.result;
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IEditController::getParamValueByString()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 Steinberg::Vst::ParamValue PLUGIN_API
@@ -389,6 +434,7 @@ Vst3PluginProxyImpl::setParamNormalized(Steinberg::Vst::ParamID id,
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
     Steinberg::Vst::IComponentHandler* handler) {
+    // TODO: Null pointers are valid here, should we pass them through?
     if (handler) {
         // We'll store the pointer for when the plugin later makes a callback to
         // this component handler
@@ -415,22 +461,29 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
 
 Steinberg::IPlugView* PLUGIN_API
 Vst3PluginProxyImpl::createView(Steinberg::FIDString name) {
-    CreateViewResponse response =
-        bridge.send_message(YaEditController::CreateView{
-            .instance_id = instance_id(), .name = name});
+    if (name) {
+        CreateViewResponse response =
+            bridge.send_message(YaEditController::CreateView{
+                .instance_id = instance_id(), .name = name});
 
-    if (response.plug_view_args) {
-        // The host should manage this. Returning raw pointers feels scary.
-        auto plug_view_proxy = new Vst3PlugViewProxyImpl(
-            bridge, std::move(*response.plug_view_args));
+        if (response.plug_view_args) {
+            // The host should manage this. Returning raw pointers feels scary.
+            auto plug_view_proxy = new Vst3PlugViewProxyImpl(
+                bridge, std::move(*response.plug_view_args));
 
-        // We also need to store an (unmanaged, since we don't want to affect
-        // the reference counting) pointer to this to be able to handle calls to
-        // `IPlugFrame::resizeView()` in the future
-        last_created_plug_view = plug_view_proxy;
+            // We also need to store an (unmanaged, since we don't want to
+            // affect the reference counting) pointer to this to be able to
+            // handle calls to `IPlugFrame::resizeView()` in the future
+            last_created_plug_view = plug_view_proxy;
 
-        return plug_view_proxy;
+            return plug_view_proxy;
+        } else {
+            return nullptr;
+        }
     } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IEditController::createView()'");
         return nullptr;
     }
 }
@@ -537,18 +590,26 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionStringByValue(
     Steinberg::Vst::NoteExpressionTypeID id,
     Steinberg::Vst::NoteExpressionValue valueNormalized /*in*/,
     Steinberg::Vst::String128 string /*out*/) {
-    const GetNoteExpressionStringByValueResponse response = bridge.send_message(
-        YaNoteExpressionController::GetNoteExpressionStringByValue{
-            .instance_id = instance_id(),
-            .bus_index = busIndex,
-            .channel = channel,
-            .id = id,
-            .value_normalized = valueNormalized});
+    if (string) {
+        const GetNoteExpressionStringByValueResponse response =
+            bridge.send_message(
+                YaNoteExpressionController::GetNoteExpressionStringByValue{
+                    .instance_id = instance_id(),
+                    .bus_index = busIndex,
+                    .channel = channel,
+                    .id = id,
+                    .value_normalized = valueNormalized});
 
-    std::copy(response.string.begin(), response.string.end(), string);
-    string[response.string.size()] = 0;
+        std::copy(response.string.begin(), response.string.end(), string);
+        string[response.string.size()] = 0;
 
-    return response.result;
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'INoteExpressionController::getNoteExpressionStringByValue()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionValueByString(
@@ -557,17 +618,25 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionValueByString(
     Steinberg::Vst::NoteExpressionTypeID id,
     const Steinberg::Vst::TChar* string /*in*/,
     Steinberg::Vst::NoteExpressionValue& valueNormalized /*out*/) {
-    const GetNoteExpressionValueByStringResponse response = bridge.send_message(
-        YaNoteExpressionController::GetNoteExpressionValueByString{
-            .instance_id = instance_id(),
-            .bus_index = busIndex,
-            .channel = channel,
-            .id = id,
-            .string = string});
+    if (string) {
+        const GetNoteExpressionValueByStringResponse response =
+            bridge.send_message(
+                YaNoteExpressionController::GetNoteExpressionValueByString{
+                    .instance_id = instance_id(),
+                    .bus_index = busIndex,
+                    .channel = channel,
+                    .id = id,
+                    .string = string});
 
-    valueNormalized = response.value_normalized;
+        valueNormalized = response.value_normalized;
 
-    return response.result;
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'INoteExpressionController::getNoteExpressionValueByString()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
@@ -608,25 +677,39 @@ tresult PLUGIN_API
 Vst3PluginProxyImpl::getProgramData(Steinberg::Vst::ProgramListID listId,
                                     int32 programIndex,
                                     Steinberg::IBStream* data) {
-    const GetProgramDataResponse response = bridge.send_message(
-        YaProgramListData::GetProgramData{.instance_id = instance_id(),
-                                          .list_id = listId,
-                                          .program_index = programIndex});
+    if (data) {
+        const GetProgramDataResponse response = bridge.send_message(
+            YaProgramListData::GetProgramData{.instance_id = instance_id(),
+                                              .list_id = listId,
+                                              .program_index = programIndex});
 
-    assert(response.data.write_back(data) == Steinberg::kResultOk);
+        assert(response.data.write_back(data) == Steinberg::kResultOk);
 
-    return response.result;
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IProgramListData::getProgramData()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setProgramData(Steinberg::Vst::ProgramListID listId,
                                     int32 programIndex,
                                     Steinberg::IBStream* data) {
-    return bridge.send_message(
-        YaProgramListData::SetProgramData{.instance_id = instance_id(),
-                                          .list_id = listId,
-                                          .program_index = programIndex,
-                                          .data = data});
+    if (data) {
+        return bridge.send_message(
+            YaProgramListData::SetProgramData{.instance_id = instance_id(),
+                                              .list_id = listId,
+                                              .program_index = programIndex,
+                                              .data = data});
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IProgramListData::setProgramData()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API
@@ -638,20 +721,32 @@ Vst3PluginProxyImpl::unitDataSupported(Steinberg::Vst::UnitID unitId) {
 tresult PLUGIN_API
 Vst3PluginProxyImpl::getUnitData(Steinberg::Vst::UnitID unitId,
                                  Steinberg::IBStream* data) {
-    const GetUnitDataResponse response =
-        bridge.send_message(YaUnitData::GetUnitData{
-            .instance_id = instance_id(), .unit_id = unitId});
+    if (data) {
+        const GetUnitDataResponse response =
+            bridge.send_message(YaUnitData::GetUnitData{
+                .instance_id = instance_id(), .unit_id = unitId});
 
-    assert(response.data.write_back(data) == Steinberg::kResultOk);
+        assert(response.data.write_back(data) == Steinberg::kResultOk);
 
-    return response.result;
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to 'IUnitData::getUnitData()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setUnitData(Steinberg::Vst::UnitID unitId,
                                  Steinberg::IBStream* data) {
-    return bridge.send_message(YaUnitData::SetUnitData{
-        .instance_id = instance_id(), .unit_id = unitId, .data = data});
+    if (data) {
+        return bridge.send_message(YaUnitData::SetUnitData{
+            .instance_id = instance_id(), .unit_id = unitId, .data = data});
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to 'IUnitData::setUnitData()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getUnitCount() {
@@ -692,15 +787,21 @@ tresult PLUGIN_API
 Vst3PluginProxyImpl::getProgramName(Steinberg::Vst::ProgramListID listId,
                                     int32 programIndex,
                                     Steinberg::Vst::String128 name /*out*/) {
-    const GetProgramNameResponse response = bridge.send_message(
-        YaUnitInfo::GetProgramName{.instance_id = instance_id(),
-                                   .list_id = listId,
-                                   .program_index = programIndex});
+    if (name) {
+        const GetProgramNameResponse response = bridge.send_message(
+            YaUnitInfo::GetProgramName{.instance_id = instance_id(),
+                                       .list_id = listId,
+                                       .program_index = programIndex});
 
-    std::copy(response.name.begin(), response.name.end(), name);
-    name[response.name.size()] = 0;
+        std::copy(response.name.begin(), response.name.end(), name);
+        name[response.name.size()] = 0;
 
-    return response.result;
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to 'IUnitInfo::getProgramName()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getProgramInfo(
@@ -708,19 +809,23 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getProgramInfo(
     int32 programIndex,
     Steinberg::Vst::CString attributeId /*in*/,
     Steinberg::Vst::String128 attributeValue /*out*/) {
-    assert(attributeId);
+    if (attributeId && attributeValue) {
+        const GetProgramInfoResponse response = bridge.send_message(
+            YaUnitInfo::GetProgramInfo{.instance_id = instance_id(),
+                                       .list_id = listId,
+                                       .program_index = programIndex,
+                                       .attribute_id = attributeId});
 
-    const GetProgramInfoResponse response = bridge.send_message(
-        YaUnitInfo::GetProgramInfo{.instance_id = instance_id(),
-                                   .list_id = listId,
-                                   .program_index = programIndex,
-                                   .attribute_id = attributeId});
+        std::copy(response.attribute_value.begin(),
+                  response.attribute_value.end(), attributeValue);
+        attributeValue[response.attribute_value.size()] = 0;
 
-    std::copy(response.attribute_value.begin(), response.attribute_value.end(),
-              attributeValue);
-    attributeValue[response.attribute_value.size()] = 0;
-
-    return response.result;
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to 'IUnitInfo::getProgramInfo()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API
@@ -737,16 +842,23 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getProgramPitchName(
     int32 programIndex,
     int16 midiPitch,
     Steinberg::Vst::String128 name /*out*/) {
-    const GetProgramPitchNameResponse response = bridge.send_message(
-        YaUnitInfo::GetProgramPitchName{.instance_id = instance_id(),
-                                        .list_id = listId,
-                                        .program_index = programIndex,
-                                        .midi_pitch = midiPitch});
+    if (name) {
+        const GetProgramPitchNameResponse response = bridge.send_message(
+            YaUnitInfo::GetProgramPitchName{.instance_id = instance_id(),
+                                            .list_id = listId,
+                                            .program_index = programIndex,
+                                            .midi_pitch = midiPitch});
 
-    std::copy(response.name.begin(), response.name.end(), name);
-    name[response.name.size()] = 0;
+        std::copy(response.name.begin(), response.name.end(), name);
+        name[response.name.size()] = 0;
 
-    return response.result;
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IUnitInfo::getProgramPitchName()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 Steinberg::Vst::UnitID PLUGIN_API Vst3PluginProxyImpl::getSelectedUnit() {
@@ -782,11 +894,18 @@ tresult PLUGIN_API
 Vst3PluginProxyImpl::setUnitProgramData(int32 listOrUnitId,
                                         int32 programIndex,
                                         Steinberg::IBStream* data) {
-    return bridge.send_message(
-        YaUnitInfo::SetUnitProgramData{.instance_id = instance_id(),
-                                       .list_or_unit_id = listOrUnitId,
-                                       .program_index = programIndex,
-                                       .data = data});
+    if (data) {
+        return bridge.send_message(
+            YaUnitInfo::SetUnitProgramData{.instance_id = instance_id(),
+                                           .list_or_unit_id = listOrUnitId,
+                                           .program_index = programIndex,
+                                           .data = data});
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IUnitInfo::setUnitProgramData()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getXmlRepresentationStream(
