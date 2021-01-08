@@ -339,6 +339,29 @@ bool Vst3Logger::log_request(
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
+    const YaKeyswitchController::GetKeyswitchCount& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IKeyswitchController::getKeyswitchCount(busIndex = "
+                << request.bus_index << ", channel = " << request.channel
+                << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaKeyswitchController::GetKeyswitchInfo& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IKeyswitchController::getKeyswitchCount(busIndex = "
+                << request.bus_index << ", channel = " << request.channel
+                << ", keySwitchIndex = " << request.key_switch_index
+                << ", &info)";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
     const YaMidiMapping::GetMidiControllerAssignment& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
@@ -1214,6 +1237,19 @@ void Vst3Logger::log_response(
             message << "<IPlugView*>";
         } else {
             message << "<nullptr>";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaKeyswitchController::GetKeyswitchInfoResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", <KeyswitchInfo for \""
+                    << VST3::StringConvert::convert(response.info.title)
+                    << "\">";
         }
     });
 }
