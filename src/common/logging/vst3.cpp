@@ -754,6 +754,18 @@ bool Vst3Logger::log_request(bool is_host_vst,
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
+    const YaXmlRepresentationController::GetXmlRepresentationStream& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": "
+                   "IXmlRepresentationController::getXmlRepresentationStream("
+                   "info = <RepresentationInfo for \""
+                << request.info.name << "\">, stream = <IBstream*>)";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
     const YaAudioProcessor::SetBusArrangements& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
@@ -1446,6 +1458,19 @@ void Vst3Logger::log_response(
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
             message << ", unit #" << response.unit_id;
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaXmlRepresentationController::GetXmlRepresentationStreamResponse&
+        response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", <IBStream* containing " << response.stream.size()
+                    << " bytes>";
         }
     });
 }
