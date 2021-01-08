@@ -319,6 +319,26 @@ bool Vst3Logger::log_request(bool is_host_vst,
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
+    const YaEditControllerHostEditing::BeginEditFromHost& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IEditControllerHostEditing::beginEditFromHost(paramID = "
+                << request.param_id << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaEditControllerHostEditing::EndEditFromHost& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IEditControllerHostEditing::endEditFromHost(paramID = "
+                << request.param_id << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
     const YaMidiMapping::GetMidiControllerAssignment& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id

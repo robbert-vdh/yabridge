@@ -99,6 +99,10 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaEditController2::OpenHelp&);
     bool log_request(bool is_host_vst, const YaEditController2::OpenAboutBox&);
     bool log_request(bool is_host_vst,
+                     const YaEditControllerHostEditing::BeginEditFromHost&);
+    bool log_request(bool is_host_vst,
+                     const YaEditControllerHostEditing::EndEditFromHost&);
+    bool log_request(bool is_host_vst,
                      const YaMidiMapping::GetMidiControllerAssignment&);
     bool log_request(bool is_host_vst,
                      const YaNoteExpressionController::GetNoteExpressionCount&);
