@@ -399,6 +399,18 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .edit_controller_2->openAboutBox(request.only_check);
             },
+            [&](const YaEditControllerHostEditing::BeginEditFromHost& request)
+                -> YaEditControllerHostEditing::BeginEditFromHost::Response {
+                return object_instances[request.instance_id]
+                    .edit_controller_host_editing->beginEditFromHost(
+                        request.param_id);
+            },
+            [&](const YaEditControllerHostEditing::EndEditFromHost& request)
+                -> YaEditControllerHostEditing::EndEditFromHost::Response {
+                return object_instances[request.instance_id]
+                    .edit_controller_host_editing->endEditFromHost(
+                        request.param_id);
+            },
             [&](const YaMidiMapping::GetMidiControllerAssignment& request)
                 -> YaMidiMapping::GetMidiControllerAssignment::Response {
                 Steinberg::Vst::ParamID id;
