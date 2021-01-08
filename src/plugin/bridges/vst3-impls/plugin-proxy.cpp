@@ -465,9 +465,10 @@ Vst3PluginProxyImpl::endEditFromHost(Steinberg::Vst::ParamID paramID) {
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getKeyswitchCount(int32 busIndex,
                                                         int16 channel) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IKeyswitchController::getKeyswitchCount()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaKeyswitchController::GetKeyswitchCount{.instance_id = instance_id(),
+                                                 .bus_index = busIndex,
+                                                 .channel = channel});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getKeyswitchInfo(
@@ -475,9 +476,16 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getKeyswitchInfo(
     int16 channel,
     int32 keySwitchIndex,
     Steinberg::Vst::KeyswitchInfo& info /*out*/) {
-    // TODO: Implement
-    bridge.logger.log("TODO: IKeyswitchController::getKeyswitchInfo()");
-    return Steinberg::kNotImplemented;
+    const GetKeyswitchInfoResponse response =
+        bridge.send_message(YaKeyswitchController::GetKeyswitchInfo{
+            .instance_id = instance_id(),
+            .bus_index = busIndex,
+            .channel = channel,
+            .key_switch_index = keySwitchIndex});
+
+    info = response.info;
+
+    return response.result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getMidiControllerAssignment(

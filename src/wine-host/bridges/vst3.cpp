@@ -44,6 +44,7 @@ InstanceInterfaces::InstanceInterfaces(
       edit_controller(object),
       edit_controller_2(object),
       edit_controller_host_editing(object),
+      keyswitch_controller(object),
       midi_mapping(object),
       note_expression_controller(object),
       plugin_base(object),
@@ -410,6 +411,24 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .edit_controller_host_editing->endEditFromHost(
                         request.param_id);
+            },
+            [&](const YaKeyswitchController::GetKeyswitchCount& request)
+                -> YaKeyswitchController::GetKeyswitchCount::Response {
+                return object_instances[request.instance_id]
+                    .keyswitch_controller->getKeyswitchCount(request.bus_index,
+                                                             request.channel);
+            },
+            [&](const YaKeyswitchController::GetKeyswitchInfo& request)
+                -> YaKeyswitchController::GetKeyswitchInfo::Response {
+                Steinberg::Vst::KeyswitchInfo info{};
+                const tresult result =
+                    object_instances[request.instance_id]
+                        .keyswitch_controller->getKeyswitchInfo(
+                            request.bus_index, request.channel,
+                            request.key_switch_index, info);
+
+                return YaKeyswitchController::GetKeyswitchInfoResponse{
+                    .result = result, .info = std::move(info)};
             },
             [&](const YaMidiMapping::GetMidiControllerAssignment& request)
                 -> YaMidiMapping::GetMidiControllerAssignment::Response {
@@ -780,7 +799,7 @@ void Vst3Bridge::run() {
             },
             [&](const YaUnitInfo::GetUnitInfo& request)
                 -> YaUnitInfo::GetUnitInfo::Response {
-                Steinberg::Vst::UnitInfo info;
+                Steinberg::Vst::UnitInfo info{};
                 const tresult result =
                     object_instances[request.instance_id]
                         .unit_info->getUnitInfo(request.unit_index, info);
@@ -795,7 +814,7 @@ void Vst3Bridge::run() {
             },
             [&](const YaUnitInfo::GetProgramListInfo& request)
                 -> YaUnitInfo::GetProgramListInfo::Response {
-                Steinberg::Vst::ProgramListInfo info;
+                Steinberg::Vst::ProgramListInfo info{};
                 const tresult result = object_instances[request.instance_id]
                                            .unit_info->getProgramListInfo(
                                                request.list_index, info);
