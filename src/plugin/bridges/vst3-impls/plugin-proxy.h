@@ -148,6 +148,14 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API
     endEditFromHost(Steinberg::Vst::ParamID paramID) override;
 
+    // From `IKeyswitchController`
+    int32 PLUGIN_API getKeyswitchCount(int32 busIndex, int16 channel) override;
+    tresult PLUGIN_API
+    getKeyswitchInfo(int32 busIndex,
+                     int16 channel,
+                     int32 keySwitchIndex,
+                     Steinberg::Vst::KeyswitchInfo& info /*out*/) override;
+
     // From `IMidiMapping`
     tresult PLUGIN_API
     getMidiControllerAssignment(int32 busIndex,

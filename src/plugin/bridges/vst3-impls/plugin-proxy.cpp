@@ -463,6 +463,23 @@ Vst3PluginProxyImpl::endEditFromHost(Steinberg::Vst::ParamID paramID) {
         .instance_id = instance_id(), .param_id = paramID});
 }
 
+int32 PLUGIN_API Vst3PluginProxyImpl::getKeyswitchCount(int32 busIndex,
+                                                        int16 channel) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IKeyswitchController::getKeyswitchCount()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3PluginProxyImpl::getKeyswitchInfo(
+    int32 busIndex,
+    int16 channel,
+    int32 keySwitchIndex,
+    Steinberg::Vst::KeyswitchInfo& info /*out*/) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IKeyswitchController::getKeyswitchInfo()");
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::getMidiControllerAssignment(
     int32 busIndex,
     int16 channel,
