@@ -50,7 +50,8 @@ InstanceInterfaces::InstanceInterfaces(
       plugin_base(object),
       unit_data(object),
       program_list_data(object),
-      unit_info(object) {}
+      unit_info(object),
+      xml_representation_controller(object) {}
 
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
@@ -894,6 +895,21 @@ void Vst3Bridge::run() {
                                                    request.program_index,
                                                    &request.data);
             },
+            [&](YaXmlRepresentationController::GetXmlRepresentationStream&
+                    request) -> YaXmlRepresentationController::
+                                 GetXmlRepresentationStream::Response {
+                                     VectorStream stream{};
+                                     const tresult result =
+                                         object_instances[request.instance_id]
+                                             .xml_representation_controller
+                                             ->getXmlRepresentationStream(
+                                                 request.info, &stream);
+
+                                     return YaXmlRepresentationController::
+                                         GetXmlRepresentationStreamResponse{
+                                             .result = result,
+                                             .stream = std::move(stream)};
+                                 },
         });
 }
 

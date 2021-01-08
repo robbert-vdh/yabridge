@@ -132,7 +132,8 @@ using ControlRequest =
                  YaUnitInfo::GetSelectedUnit,
                  YaUnitInfo::SelectUnit,
                  YaUnitInfo::GetUnitByBus,
-                 YaUnitInfo::SetUnitProgramData>;
+                 YaUnitInfo::SetUnitProgramData,
+                 YaXmlRepresentationController::GetXmlRepresentationStream>;
 
 template <typename S>
 void serialize(S& s, ControlRequest& payload) {

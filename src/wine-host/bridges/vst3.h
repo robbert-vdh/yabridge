@@ -163,6 +163,8 @@ struct InstanceInterfaces {
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitData> unit_data;
     Steinberg::FUnknownPtr<Steinberg::Vst::IProgramListData> program_list_data;
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitInfo> unit_info;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IXmlRepresentationController>
+        xml_representation_controller;
 };
 
 /**

@@ -792,8 +792,18 @@ Vst3PluginProxyImpl::setUnitProgramData(int32 listOrUnitId,
 tresult PLUGIN_API Vst3PluginProxyImpl::getXmlRepresentationStream(
     Steinberg::Vst::RepresentationInfo& info /*in*/,
     Steinberg::IBStream* stream /*out*/) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: IXmlRepresentationController::getXmlRepresentationStream()");
-    return Steinberg::kNotImplemented;
+    if (stream) {
+        const GetXmlRepresentationStreamResponse response = bridge.send_message(
+            YaXmlRepresentationController::GetXmlRepresentationStream{
+                .instance_id = instance_id(), .info = info});
+
+        response.stream.write_back(stream);
+
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IXmlRepresentationController::getXmlRepresentationStream()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
