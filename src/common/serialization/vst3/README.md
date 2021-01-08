@@ -28,6 +28,7 @@ VST3 plugin interfaces are implemented as follows:
 | `YaEditController`            | `Vst3PluginProxy`   | `IEditController`                                      |
 | `YaEditController2`           | `Vst3PluginProxy`   | `IEditController2`                                     |
 | `YaEditControllerHostEditing` | `Vst3PluginProxy`   | `IEditControllerHostEditing`                           |
+| `YaKeyswitchController`       | `Vst3PluginProxy`   | `IKeyswitchController`                                 |
 | `YaMidiMapping`               | `Vst3PluginProxy`   | `IMidiMapping`                                         |
 | `YaNoteExpressionController`  | `Vst3PluginProxy`   | `INoteExpressionController`                            |
 | `YaPluginBase`                | `Vst3PluginProxy`   | `IPluginBase`                                          |
