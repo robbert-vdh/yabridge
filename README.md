@@ -109,10 +109,12 @@ this you can use yabridgectl's `add`, `rm` and `list` commands. You can also use
 `yabridgectl status` to get an overview of the current settings and the
 installation status of all of your plugins. To add the most common VST2 plugin
 directory, use
-`yabridgectl add "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"`. VST3
-plugins under Windows are always installed to the same directory, and you can
-use `yabridgectl add "$HOME/.wine/drive_c/Program Files/Common Files/VST3"` to
-add that one.
+`yabridgectl add "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"`. The
+directory may be capitalized as `VSTPlugins` on your system, and some plugins
+may install themselves to a similar directory directly inside of Program Files.
+VST3 plugins under Windows are always installed to the same directory, and you
+can use `yabridgectl add "$HOME/.wine/drive_c/Program Files/Common Files/VST3"`
+to add that one.
 
 Finally, you can run `yabridgectl sync` to finish setting up yabridge for all of
 your plugins. For VST2 plugins this will create `.so` files alongside the
