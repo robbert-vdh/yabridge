@@ -62,8 +62,47 @@ class YaEditControllerHostEditing
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IEditControllerHostEditing::beginEditFromHost(param_id)` to the Wine
+     * plugin host.
+     */
+    struct BeginEditFromHost {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ParamID param_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(param_id);
+        }
+    };
+
     virtual tresult PLUGIN_API
     beginEditFromHost(Steinberg::Vst::ParamID paramID) override = 0;
+
+    /**
+     * Message to pass through a call to
+     * `IEditControllerHostEditing::endEditFromHost(param_id)` to the Wine
+     * plugin host.
+     */
+    struct EndEditFromHost {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::ParamID param_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(param_id);
+        }
+    };
+
     virtual tresult PLUGIN_API
     endEditFromHost(Steinberg::Vst::ParamID paramID) override = 0;
 
