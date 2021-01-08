@@ -28,6 +28,7 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
       connection_point_args(object),
       edit_controller_args(object),
       edit_controller_2_args(object),
+      edit_controller_host_editing_args(object),
       midi_mapping_args(object),
       note_expression_controller_args(object),
       plugin_base_args(object),
@@ -43,6 +44,8 @@ Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
       YaConnectionPoint(std::move(args.connection_point_args)),
       YaEditController(std::move(args.edit_controller_args)),
       YaEditController2(std::move(args.edit_controller_2_args)),
+      YaEditControllerHostEditing(
+          std::move(args.edit_controller_host_editing_args)),
       YaMidiMapping(std::move(args.midi_mapping_args)),
       YaNoteExpressionController(
           std::move(args.note_expression_controller_args)),
@@ -105,6 +108,11 @@ tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
     if (YaEditController2::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IEditController2::iid,
                         Steinberg::Vst::IEditController2)
+    }
+    if (YaEditControllerHostEditing::supported()) {
+        QUERY_INTERFACE(_iid, obj,
+                        Steinberg::Vst::IEditControllerHostEditing::iid,
+                        Steinberg::Vst::IEditControllerHostEditing)
     }
     if (YaMidiMapping::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IMidiMapping::iid,

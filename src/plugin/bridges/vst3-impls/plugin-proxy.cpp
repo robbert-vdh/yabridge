@@ -451,6 +451,20 @@ tresult PLUGIN_API Vst3PluginProxyImpl::openAboutBox(TBool onlyCheck) {
         .instance_id = instance_id(), .only_check = onlyCheck});
 }
 
+tresult PLUGIN_API
+Vst3PluginProxyImpl::beginEditFromHost(Steinberg::Vst::ParamID paramID) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IEditControllerHostEditing::beginEditFromhost()");
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3PluginProxyImpl::endEditFromHost(Steinberg::Vst::ParamID paramID) {
+    // TODO: Implement
+    bridge.logger.log("TODO: IEditControllerHostEditing::endEditFromhost()");
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::getMidiControllerAssignment(
     int32 busIndex,
     int16 channel,

@@ -24,6 +24,7 @@
 #include "plugin/component.h"
 #include "plugin/connection-point.h"
 #include "plugin/edit-controller-2.h"
+#include "plugin/edit-controller-host-editing.h"
 #include "plugin/edit-controller.h"
 #include "plugin/midi-mapping.h"
 #include "plugin/note-expression-controller.h"
@@ -64,6 +65,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
                         public YaConnectionPoint,
                         public YaEditController,
                         public YaEditController2,
+                        public YaEditControllerHostEditing,
                         public YaMidiMapping,
                         public YaNoteExpressionController,
                         public YaPluginBase,
@@ -95,6 +97,8 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
         YaConnectionPoint::ConstructArgs connection_point_args;
         YaEditController::ConstructArgs edit_controller_args;
         YaEditController2::ConstructArgs edit_controller_2_args;
+        YaEditControllerHostEditing::ConstructArgs
+            edit_controller_host_editing_args;
         YaMidiMapping::ConstructArgs midi_mapping_args;
         YaNoteExpressionController::ConstructArgs
             note_expression_controller_args;
@@ -112,6 +116,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
             s.object(connection_point_args);
             s.object(edit_controller_args);
             s.object(edit_controller_2_args);
+            s.object(edit_controller_host_editing_args);
             s.object(midi_mapping_args);
             s.object(note_expression_controller_args);
             s.object(plugin_base_args);

@@ -43,6 +43,7 @@ InstanceInterfaces::InstanceInterfaces(
       connection_point(object),
       edit_controller(object),
       edit_controller_2(object),
+      edit_controller_host_editing(object),
       midi_mapping(object),
       note_expression_controller(object),
       plugin_base(object),
