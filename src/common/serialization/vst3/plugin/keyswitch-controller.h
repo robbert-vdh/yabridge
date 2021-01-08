@@ -61,8 +61,69 @@ class YaKeyswitchController : public Steinberg::Vst::IKeyswitchController {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IKeyswitchController::getKeyswitchCount(bus_index, channel)` to the Wine
+     * plugin host.
+     */
+    struct GetKeyswitchCount {
+        using Response = PrimitiveWrapper<int32>;
+
+        native_size_t instance_id;
+
+        int32 bus_index;
+        int16 channel;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(bus_index);
+            s.value2b(channel);
+        }
+    };
+
     virtual int32 PLUGIN_API getKeyswitchCount(int32 busIndex,
                                                int16 channel) override = 0;
+
+    /**
+     * The response code and written state for a call to
+     * `IKeyswitchController::getKeyswitchInfo(bus_index, channel,
+     * key_switch_index, &info)`.
+     */
+    struct GetKeyswitchInfoResponse {
+        UniversalTResult result;
+        Steinberg::Vst::KeyswitchInfo info;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(info);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IKeyswitchController::getKeyswitchInfo(bus_index, channel,
+     * key_switch_index, &info)` to the Wine plugin host.
+     */
+    struct GetKeyswitchInfo {
+        using Response = GetKeyswitchInfoResponse;
+
+        native_size_t instance_id;
+
+        int32 bus_index;
+        int16 channel;
+        int32 key_switch_index;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(bus_index);
+            s.value2b(channel);
+            s.value4b(key_switch_index);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getKeyswitchInfo(int32 busIndex,
                      int16 channel,
@@ -74,3 +135,19 @@ class YaKeyswitchController : public Steinberg::Vst::IKeyswitchController {
 };
 
 #pragma GCC diagnostic pop
+
+namespace Steinberg {
+namespace Vst {
+template <typename S>
+void serialize(S& s, Steinberg::Vst::KeyswitchInfo& info) {
+    s.value4b(info.typeId);
+    s.text2b(info.title);
+    s.text2b(info.shortTitle);
+    s.value4b(info.keyswitchMin);
+    s.value4b(info.keyswitchMax);
+    s.value4b(info.keyRemapped);
+    s.value4b(info.unitId);
+    s.value4b(info.flags);
+}
+}  // namespace Vst
+}  // namespace Steinberg
