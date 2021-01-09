@@ -73,6 +73,19 @@ if wine_version.returncode() == 0 and \
   compiler_options += '-DWINE_USE_CDECL'
 endif
 
+# Wine versions below 5.7 will segfault in `CoCreateGuid` which gets called
+# during static initialization. I'm not exactly sure why this is happening, but
+# to prevent this from causing more headaches and confusion in the future we
+# should just immediately error out when building yabridge's VST3 support with
+# these older Wine versions.
+if wine_version.returncode() == 0 and \
+   wine_version.stdout().version_compare('<5.7') and \
+   with_vst3
+  error('Because of a bug in Wine < 5.7\n' +
+        'you cannot build yabridge with VST3 support using these older Wine versions.\n\n' +
+        'https://github.com/robbert-vdh/yabridge/issues/63#issuecomment-757369645')
+endif
+
 # Generate header files for configuration variables such as the current git tag
 # and the name of the host binary
 subdir('src/common/config')
