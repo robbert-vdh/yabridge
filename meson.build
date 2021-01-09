@@ -82,7 +82,8 @@ if wine_version.returncode() == 0 and \
    wine_version.stdout().version_compare('<5.7') and \
    with_vst3
   error('Because of a bug in Wine < 5.7\n' +
-        'you cannot build yabridge with VST3 support using these older Wine versions.\n\n' +
+        'you cannot build yabridge with VST3 support using these older Wine versions.\n' +
+        'Use the \'-Dwith-vst3=false\' build option to disable VST3 support.\n\n' +
         'https://github.com/robbert-vdh/yabridge/issues/63#issuecomment-757369645')
 endif
 
