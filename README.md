@@ -563,7 +563,7 @@ disable unity builds completely by getting rid of `--unity=on` at the cost of
 slightly longer build times.
 
 ```shell
-meson setup --buildtype=release --cross-file cross-wine.conf --unity=on --unity-size=1000 build
+meson setup --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000 build
 ninja -C build
 ```
 
