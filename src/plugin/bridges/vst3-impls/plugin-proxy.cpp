@@ -253,11 +253,11 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
     if (state) {
         // Since both interfaces contain this function, this is used for both
         // `IComponent::getState()` as well as `IEditController::getState()`
-        const GetStateResponse response = bridge.send_message(
-            Vst3PluginProxy::GetState{.instance_id = instance_id()});
+        const GetStateResponse response =
+            bridge.send_message(Vst3PluginProxy::GetState{
+                .instance_id = instance_id(), .state = state});
 
-        assert(response.updated_state.write_back(state) ==
-               Steinberg::kResultOk);
+        assert(response.state.write_back(state) == Steinberg::kResultOk);
 
         return response.result;
     } else {
@@ -681,7 +681,8 @@ Vst3PluginProxyImpl::getProgramData(Steinberg::Vst::ProgramListID listId,
         const GetProgramDataResponse response = bridge.send_message(
             YaProgramListData::GetProgramData{.instance_id = instance_id(),
                                               .list_id = listId,
-                                              .program_index = programIndex});
+                                              .program_index = programIndex,
+                                              .data = data});
 
         assert(response.data.write_back(data) == Steinberg::kResultOk);
 
@@ -724,7 +725,7 @@ Vst3PluginProxyImpl::getUnitData(Steinberg::Vst::UnitID unitId,
     if (data) {
         const GetUnitDataResponse response =
             bridge.send_message(YaUnitData::GetUnitData{
-                .instance_id = instance_id(), .unit_id = unitId});
+                .instance_id = instance_id(), .unit_id = unitId, .data = data});
 
         assert(response.data.write_back(data) == Steinberg::kResultOk);
 
@@ -914,7 +915,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getXmlRepresentationStream(
     if (stream) {
         const GetXmlRepresentationStreamResponse response = bridge.send_message(
             YaXmlRepresentationController::GetXmlRepresentationStream{
-                .instance_id = instance_id(), .info = info});
+                .instance_id = instance_id(), .info = info, .stream = stream});
 
         response.stream.write_back(stream);
 

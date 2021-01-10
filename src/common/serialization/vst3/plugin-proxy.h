@@ -225,31 +225,34 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
 
     /**
      * The response code and written state for a call to
-     * `{IComponent,IEditController}::getState(state)`.
+     * `{IComponent,IEditController}::getState(&state)`.
      */
     struct GetStateResponse {
         UniversalTResult result;
-        YaBStream updated_state;
+        YaBStream state;
 
         template <typename S>
         void serialize(S& s) {
             s.object(result);
-            s.object(updated_state);
+            s.object(state);
         }
     };
 
     /**
      * Message to pass through a call to
-     * `{IComponent,IEditController}::getState(state)` to the Wine plugin host.
+     * `{IComponent,IEditController}::getState(&state)` to the Wine plugin host.
      */
     struct GetState {
         using Response = GetStateResponse;
 
         native_size_t instance_id;
 
+        YaBStream state;
+
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
+            s.object(state);
         }
     };
 

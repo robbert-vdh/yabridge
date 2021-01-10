@@ -96,11 +96,13 @@ class YaXmlRepresentationController
         native_size_t instance_id;
 
         Steinberg::Vst::RepresentationInfo info;
+        YaBStream stream;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
             s.object(info);
+            s.object(stream);
         }
     };
 

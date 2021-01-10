@@ -111,12 +111,14 @@ class YaProgramListData : public Steinberg::Vst::IProgramListData {
 
         Steinberg::Vst::ProgramListID list_id;
         int32 program_index;
+        YaBStream data;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
             s.value4b(list_id);
             s.value4b(program_index);
+            s.object(data);
         }
     };
 

@@ -30,24 +30,24 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
         throw std::runtime_error("Null pointer passed to YaBStream()");
     }
 
-    if (stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekEnd) !=
+    // Copy any existing contents, used for `IComponent::setState` and similar
+    // methods
+    if (stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekEnd) ==
         Steinberg::kResultOk) {
-        throw std::runtime_error(
-            "IBStream passed to YaBStream() does not suport seeking to end");
+        // Now that we're at the end of the stream we know how large the buffer
+        // should be
+        int64 size;
+        assert(stream->tell(&size) == Steinberg::kResultOk);
+
+        int32 num_bytes_read = 0;
+        buffer.resize(size);
+        assert(
+            stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekSet) ==
+            Steinberg::kResultOk);
+        assert(stream->read(buffer.data(), size, &num_bytes_read) ==
+               Steinberg::kResultOk);
+        assert(num_bytes_read == 0 || num_bytes_read == size);
     }
-
-    // Now that we're at the end of the stream we know how large the buffer
-    // should be
-    int64 size;
-    assert(stream->tell(&size) == Steinberg::kResultOk);
-
-    int32 num_bytes_read = 0;
-    buffer.resize(size);
-    assert(stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekSet) ==
-           Steinberg::kResultOk);
-    assert(stream->read(buffer.data(), size, &num_bytes_read) ==
-           Steinberg::kResultOk);
-    assert(num_bytes_read == 0 || num_bytes_read == size);
 
     // Starting at VST 3.6.0 streams provided by the host may contain context
     // based meta data

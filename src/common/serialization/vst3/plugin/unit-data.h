@@ -108,11 +108,13 @@ class YaUnitData : public Steinberg::Vst::IUnitData {
         native_size_t instance_id;
 
         Steinberg::Vst::UnitID unit_id;
+        YaBStream data;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
             s.value4b(unit_id);
+            s.object(data);
         }
     };
 

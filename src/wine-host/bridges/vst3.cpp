@@ -172,21 +172,20 @@ void Vst3Bridge::run() {
             },
             [&](Vst3PluginProxy::GetState& request)
                 -> Vst3PluginProxy::GetState::Response {
-                YaBStream stream{};
                 tresult result;
 
                 // This same function is defined in both `IComponent` and
                 // `IEditController`, so the host is calling one or the other
                 if (object_instances[request.instance_id].component) {
                     result = object_instances[request.instance_id]
-                                 .component->getState(&stream);
+                                 .component->getState(&request.state);
                 } else {
                     result = object_instances[request.instance_id]
-                                 .edit_controller->getState(&stream);
+                                 .edit_controller->getState(&request.state);
                 }
 
                 return Vst3PluginProxy::GetStateResponse{
-                    .result = result, .updated_state = std::move(stream)};
+                    .result = result, .state = std::move(request.state)};
             },
             [&](YaAudioPresentationLatency::SetAudioPresentationLatencySamples&
                     request)
@@ -739,16 +738,16 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .program_list_data->programDataSupported(request.list_id);
             },
-            [&](const YaProgramListData::GetProgramData& request)
+            [&](YaProgramListData::GetProgramData& request)
                 -> YaProgramListData::GetProgramData::Response {
-                YaBStream data{};
                 const tresult result =
                     object_instances[request.instance_id]
                         .program_list_data->getProgramData(
-                            request.list_id, request.program_index, &data);
+                            request.list_id, request.program_index,
+                            &request.data);
 
                 return YaProgramListData::GetProgramDataResponse{
-                    .result = result, .data = std::move(data)};
+                    .result = result, .data = std::move(request.data)};
             },
             [&](YaProgramListData::SetProgramData& request)
                 -> YaProgramListData::SetProgramData::Response {
@@ -761,15 +760,14 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .unit_data->unitDataSupported(request.unit_id);
             },
-            [&](const YaUnitData::GetUnitData& request)
+            [&](YaUnitData::GetUnitData& request)
                 -> YaUnitData::GetUnitData::Response {
-                YaBStream data{};
                 const tresult result =
                     object_instances[request.instance_id]
-                        .unit_data->getUnitData(request.unit_id, &data);
+                        .unit_data->getUnitData(request.unit_id, &request.data);
 
-                return YaUnitData::GetUnitDataResponse{.result = result,
-                                                       .data = std::move(data)};
+                return YaUnitData::GetUnitDataResponse{
+                    .result = result, .data = std::move(request.data)};
             },
             [&](YaUnitData::SetUnitData& request)
                 -> YaUnitData::SetUnitData::Response {
@@ -898,17 +896,17 @@ void Vst3Bridge::run() {
             [&](YaXmlRepresentationController::GetXmlRepresentationStream&
                     request) -> YaXmlRepresentationController::
                                  GetXmlRepresentationStream::Response {
-                                     YaBStream stream{};
                                      const tresult result =
                                          object_instances[request.instance_id]
                                              .xml_representation_controller
                                              ->getXmlRepresentationStream(
-                                                 request.info, &stream);
+                                                 request.info, &request.stream);
 
                                      return YaXmlRepresentationController::
                                          GetXmlRepresentationStreamResponse{
                                              .result = result,
-                                             .stream = std::move(stream)};
+                                             .stream =
+                                                 std::move(request.stream)};
                                  },
         });
 }

@@ -113,9 +113,9 @@ bool Vst3Logger::log_request(bool is_host_vst,
 bool Vst3Logger::log_request(bool is_host_vst,
                              const Vst3PluginProxy::GetState& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
-        message
-            << request.instance_id
-            << ": {IComponent,IEditController}::getState(state = <IBStream*>)";
+        message << request.instance_id
+                << ": {IComponent,IEditController}::getState(state = "
+                << format_bstream(request.state) << ")";
     });
 }
 
@@ -618,7 +618,8 @@ bool Vst3Logger::log_request(bool is_host_vst,
     return log_request_base(is_host_vst, [&](auto& message) {
         message << "IProgramListData::getProgramData(listId = "
                 << request.list_id
-                << ", programIndex = " << request.program_index << ", &data)";
+                << ", programIndex = " << request.program_index
+                << ", data = " << format_bstream(request.data) << ")";
     });
 }
 
@@ -643,7 +644,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
                              const YaUnitData::GetUnitData& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << "IUnitData::getUnitData(listId = " << request.unit_id
-                << ", &data)";
+                << ", data = " << format_bstream(request.data) << ")";
     });
 }
 
@@ -774,7 +775,8 @@ bool Vst3Logger::log_request(
                 << ": "
                    "IXmlRepresentationController::getXmlRepresentationStream("
                    "info = <RepresentationInfo for \""
-                << request.info.name << "\">, stream = <IBstream*>)";
+                << request.info.name
+                << "\">, stream = " << format_bstream(request.stream) << ")";
     });
 }
 
@@ -1213,7 +1215,7 @@ void Vst3Logger::log_response(
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            message << ", " << format_bstream(response.updated_state);
+            message << ", " << format_bstream(response.state);
         }
     });
 }

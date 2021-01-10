@@ -39,6 +39,11 @@ class YaBStream : public Steinberg::IBStream,
                   public Steinberg::ISizeableStream,
                   public Steinberg::Vst::IStreamAttributes {
    public:
+    /**
+     * This constructor should only be used by bitsery for serialization. The
+     * other constructor will check whether the `IBstream*` provided by the host
+     * supports stream attributes and configures the object accordingly.
+     */
     YaBStream();
 
     /**
