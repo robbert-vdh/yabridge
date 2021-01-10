@@ -61,6 +61,22 @@ class YaUnitHandler2 : public Steinberg::Vst::IUnitHandler2 {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IUnitHandler2::notifyUnitByBusChange()` to the unit handler provided by
+     * the host.
+     */
+    struct NotifyUnitByBusChange {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+        }
+    };
+
     virtual tresult PLUGIN_API notifyUnitByBusChange() override = 0;
 
    protected:
