@@ -6,7 +6,8 @@ for more information on how the serialization works.
 
 The following interfaces are not yet implemented:
 
-- Every interface introduced after VST 3.6.0
+- Interfaces introduced after VST 3.6.0, with some VST 3.6.5 interfaces already
+  being implemented
 - The [Presonus extensions](https://presonussoftware.com/en_US/developer),
   although most of these things seem to overlap with newer VST3 interfaces
 
@@ -48,6 +49,7 @@ VST3 host interfaces are implemented as follows:
 | `YaComponentHandler2`       | `Vst3ComponentHandlerProxy` | `IComponentHandler2` |
 | `YaComponentHandler3`       | `Vst3ComponentHandlerProxy` | `IComponentHandler3` |
 | `YaUnitHandler`             | `Vst3ComponentHandlerProxy` | `IUnitHandler`       |
+| `YaUnitHandler2`            | `Vst3ComponentHandlerProxy` | `IUnitHandler2`      |
 | `Vst3ContextMenuProxy`      |                             | All of the below:    |
 | `YaContextMenu`             | `Vst3ContextMenuProxy`      | `IContextMenu`       |
 | `Vst3PlugFrameProxy`        |                             | All of the below:    |
