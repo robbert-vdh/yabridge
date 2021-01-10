@@ -22,6 +22,7 @@ VST3 plugin interfaces are implemented as follows:
 | `Vst3PluginProxy`               |                     | All of the below:                                      |
 | `YaAudioPresentationLatency`    | `Vst3PluginProxy`   | `IAudioPresentationLatency`                            |
 | `YaAudioProcessor`              | `Vst3PluginProxy`   | `IAudioProcessor`                                      |
+| `YaAutomationState`             | `Vst3PluginProxy`   | `IAutomationState`                                     |
 | `YaComponent`                   | `Vst3PluginProxy`   | `IComponent`                                           |
 | `YaConnectionPoint`             | `Vst3PluginProxy`   | `IConnectionPoint`                                     |
 | `YaEditController`              | `Vst3PluginProxy`   | `IEditController`                                      |
