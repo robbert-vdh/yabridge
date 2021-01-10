@@ -58,8 +58,8 @@ class YaBStream : public Steinberg::IBStream,
     DECLARE_FUNKNOWN_METHODS
 
     /**
-     * Write the vector buffer back to an IBStream. After writing the seek
-     * position will be left at the end of the stream.
+     * Write the vector buffer back to a host provided `IBStream`. After writing
+     * the seek position will be left at the end of the stream.
      */
     tresult write_back(Steinberg::IBStream* stream) const;
 

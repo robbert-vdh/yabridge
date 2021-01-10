@@ -29,6 +29,28 @@ IMPLEMENT_FUNKNOWN_METHODS(YaAttributeList,
                            Steinberg::Vst::IAttributeList::iid)
 #pragma GCC diagnostic pop
 
+tresult YaAttributeList::write_back(
+    Steinberg::Vst::IAttributeList* stream) const {
+    if (!stream) {
+        return Steinberg::kInvalidArgument;
+    }
+
+    for (const auto& [key, value] : attrs_int) {
+        stream->setInt(key.c_str(), value);
+    }
+    for (const auto& [key, value] : attrs_float) {
+        stream->setFloat(key.c_str(), value);
+    }
+    for (const auto& [key, value] : attrs_string) {
+        stream->setString(key.c_str(), u16string_to_tchar_pointer(value));
+    }
+    for (const auto& [key, value] : attrs_binary) {
+        stream->setBinary(key.c_str(), value.data(), value.size());
+    }
+
+    return Steinberg::kResultOk;
+}
+
 tresult PLUGIN_API YaAttributeList::setInt(AttrID id, int64 value) {
     attrs_int[id] = value;
     return Steinberg::kResultOk;

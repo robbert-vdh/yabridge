@@ -42,6 +42,13 @@ class YaAttributeList : public Steinberg::Vst::IAttributeList {
 
     DECLARE_FUNKNOWN_METHODS
 
+    /**
+     * Write the attribute list a host provided `IAttributeList`. This is used
+     * in `YaBStream::write_back` to write any preset meta data back to the host
+     * for hosts that support it.
+     */
+    tresult write_back(Steinberg::Vst::IAttributeList* stream) const;
+
     virtual tresult PLUGIN_API setInt(AttrID id, int64 value) override;
     virtual tresult PLUGIN_API getInt(AttrID id, int64& value) override;
     virtual tresult PLUGIN_API setFloat(AttrID id, double value) override;
