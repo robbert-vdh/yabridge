@@ -57,23 +57,22 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
 
     // Copy any existing contents, used for `IComponent::setState` and similar
     // methods
+    int64 old_position;
+    stream->tell(&old_position);
     if (stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekEnd) ==
         Steinberg::kResultOk) {
-        // Now that we're at the end of the stream we know how large the buffer
-        // should be
-        int64 size;
-        assert(stream->tell(&size) == Steinberg::kResultOk);
-
-        int32 num_bytes_read = 0;
-        buffer.resize(size);
-        assert(
-            stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekSet) ==
-            Steinberg::kResultOk);
-
-        // Reading zero bytes will return `kResultFalse` in some implementations
-        stream->read(buffer.data(), size, &num_bytes_read);
-        assert(num_bytes_read == 0 || num_bytes_read == size);
+        int64 size = 0;
+        stream->tell(&size);
+        if (size > 0) {
+            int32 num_bytes_read = 0;
+            buffer.resize(size);
+            stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekSet);
+            stream->read(buffer.data(), size, &num_bytes_read);
+            assert(num_bytes_read == 0 || num_bytes_read == size);
+        }
     }
+    stream->seek(old_position,
+                 Steinberg::IBStream::IStreamSeekMode::kIBSeekSet);
 
     // Starting at VST 3.6.0 streams provided by the host may contain context
     // based meta data
