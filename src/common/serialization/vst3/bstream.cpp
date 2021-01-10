@@ -69,8 +69,9 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
         assert(
             stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekSet) ==
             Steinberg::kResultOk);
-        assert(stream->read(buffer.data(), size, &num_bytes_read) ==
-               Steinberg::kResultOk);
+
+        // Reading zero bytes will return `kResultFalse` in some implementations
+        stream->read(buffer.data(), size, &num_bytes_read);
         assert(num_bytes_read == 0 || num_bytes_read == size);
     }
 
