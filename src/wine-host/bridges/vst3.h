@@ -148,6 +148,7 @@ struct InstanceInterfaces {
     Steinberg::FUnknownPtr<Steinberg::Vst::IAudioPresentationLatency>
         audio_presentation_latency;
     Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audio_processor;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IAutomationState> automation_state;
     Steinberg::FUnknownPtr<Steinberg::Vst::IComponent> component;
     Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> connection_point;
     Steinberg::FUnknownPtr<Steinberg::Vst::IEditController> edit_controller;

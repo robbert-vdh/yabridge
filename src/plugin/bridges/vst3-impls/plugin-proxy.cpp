@@ -157,10 +157,8 @@ uint32 PLUGIN_API Vst3PluginProxyImpl::getTailSamples() {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setAutomationState(int32 state) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: Implyement IAutomationState::setAutomationState()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(YaAutomationState::SetAutomationState{
+        .instance_id = instance_id(), .state = state});
 }
 
 tresult PLUGIN_API

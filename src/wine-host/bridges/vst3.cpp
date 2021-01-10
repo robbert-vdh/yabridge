@@ -39,6 +39,7 @@ InstanceInterfaces::InstanceInterfaces(
     : object(object),
       audio_presentation_latency(object),
       audio_processor(object),
+      automation_state(object),
       component(object),
       connection_point(object),
       edit_controller(object),
@@ -197,6 +198,11 @@ void Vst3Bridge::run() {
                                 request.dir, request.bus_index,
                                 request.latency_in_samples);
                     },
+            [&](YaAutomationState::SetAutomationState& request)
+                -> YaAutomationState::SetAutomationState::Response {
+                return object_instances[request.instance_id]
+                    .automation_state->setAutomationState(request.state);
+            },
             [&](YaConnectionPoint::Connect& request)
                 -> YaConnectionPoint::Connect::Response {
                 // If the host directly connected the underlying objects then we

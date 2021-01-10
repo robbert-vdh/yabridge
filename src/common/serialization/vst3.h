@@ -71,6 +71,7 @@ using ControlRequest =
                  Vst3PluginProxy::SetState,
                  Vst3PluginProxy::GetState,
                  YaAudioPresentationLatency::SetAudioPresentationLatencySamples,
+                 YaAutomationState::SetAutomationState,
                  YaConnectionPoint::Connect,
                  YaConnectionPoint::Disconnect,
                  YaConnectionPoint::Notify,
