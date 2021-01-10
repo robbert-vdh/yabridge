@@ -11,7 +11,7 @@ for VST2 plugins and quick startup times. Its modern concurrent architecture and
 focus on transparency allows yabridge to be both fast and highly compatible,
 while also staying easy to debug and maintain.
 
-_VST3 support is currently experimental and only available on the master branch. Yabridge 3.0 will ship with full VST3 support._
+_VST3 support is currently experimental and only available on the master branch. Yabridge 3.0 will ship with full VST 3.7.1 support._
 _See [this document](https://github.com/robbert-vdh/yabridge/blob/master/src/common/serialization/vst3/README.md) for all currently implemented interfaces._
 
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)

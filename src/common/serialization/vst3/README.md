@@ -6,7 +6,7 @@ for more information on how the serialization works.
 
 The following interfaces are not yet implemented:
 
-- Every interface introduced after VST 3.5.0
+- Every interface introduced after VST 3.6.0
 - The [Presonus extensions](https://presonussoftware.com/en_US/developer),
   although most of these things seem to overlap with newer VST3 interfaces
 
