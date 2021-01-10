@@ -69,6 +69,8 @@ class Vst3Logger {
     bool log_request(
         bool is_host_vst,
         const YaAudioPresentationLatency::SetAudioPresentationLatencySamples&);
+    bool log_request(bool is_host_vst,
+                     const YaAutomationState::SetAutomationState&);
     bool log_request(bool is_host_vst, const YaConnectionPoint::Connect&);
     bool log_request(bool is_host_vst, const YaConnectionPoint::Disconnect&);
     bool log_request(bool is_host_vst, const YaConnectionPoint::Notify&);

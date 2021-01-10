@@ -133,6 +133,17 @@ bool Vst3Logger::log_request(
     });
 }
 
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaAutomationState::SetAutomationState& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": "
+                   "IAutomationState::setAutomationState(state = "
+                << request.state << ")";
+    });
+}
+
 bool Vst3Logger::log_request(bool is_host_vst,
                              const YaConnectionPoint::Connect& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
