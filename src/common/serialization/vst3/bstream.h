@@ -16,8 +16,12 @@
 
 #pragma once
 
-#include <pluginterfaces/base/ibstream.h>
+#include <optional>
 
+#include <pluginterfaces/base/ibstream.h>
+#include <pluginterfaces/vst/ivstattributes.h>
+
+#include "attribute-list.h"
 #include "base.h"
 
 #pragma GCC diagnostic push
@@ -27,9 +31,13 @@
  * Serialize an `IBStream` into an `std::vector<uint8_t>`, and allow the
  * receiving side to use it as an `IBStream` again. `ISizeableStream` is defined
  * but then for whatever reason never used, but we'll implement it anyways.
+ *
+ * If we're copying data from an existing `IBstream` and that stream supports
+ * VST 3.6.0 preset meta data, then we'll copy that meta data as well.
  */
 class YaBStream : public Steinberg::IBStream,
-                  public Steinberg::ISizeableStream {
+                  public Steinberg::ISizeableStream,
+                  public Steinberg::Vst::IStreamAttributes {
    public:
     YaBStream();
 
@@ -71,15 +79,43 @@ class YaBStream : public Steinberg::IBStream,
     tresult PLUGIN_API getStreamSize(int64& size) override;
     tresult PLUGIN_API setStreamSize(int64 size) override;
 
+    // From `IStreamAttributes`
+    tresult PLUGIN_API getFileName(Steinberg::Vst::String128 name) override;
+    Steinberg::Vst::IAttributeList* PLUGIN_API getAttributes() override;
+
     template <typename S>
     void serialize(S& s) {
         s.container1b(buffer, max_vector_stream_size);
         // The seek position should always be initialized at 0
+
+        s.value1b(supports_stream_attributes);
+        s.ext(file_name, bitsery::ext::StdOptional{},
+              [](S& s, std::u16string& name) {
+                  s.text2b(name, std::extent_v<Steinberg::Vst::String128>);
+              });
+        s.ext(attributes, bitsery::ext::StdOptional{});
     }
+
+    /**
+     * Whether this stream supports `IStreamAttributes`. This will be true if we
+     * copied a stream provided by the host that also supported meta data.
+     */
+    bool supports_stream_attributes = false;
+
+    /**
+     * The stream's name, if this stream supports stream attributes.
+     */
+    std::optional<std::u16string> file_name;
 
    private:
     std::vector<uint8_t> buffer;
     size_t seek_position = 0;
+
+    /**
+     * The stream's meta data if we've copied from a stream that supports meta
+     * data.
+     */
+    std::optional<YaAttributeList> attributes;
 };
 
 #pragma GCC diagnostic pop

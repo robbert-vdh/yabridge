@@ -16,6 +16,8 @@
 
 #include "bstream.h"
 
+#include <pluginterfaces/vst/vstpresetkeys.h>
+
 #include <cassert>
 #include <stdexcept>
 
@@ -46,6 +48,50 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
     assert(stream->read(buffer.data(), size, &num_bytes_read) ==
            Steinberg::kResultOk);
     assert(num_bytes_read == 0 || num_bytes_read == size);
+
+    // Starting at VST 3.6.0 streams provided by the host may contain context
+    // based meta data
+    if (Steinberg::FUnknownPtr<Steinberg::Vst::IStreamAttributes>
+            stream_attributes = stream) {
+        supports_stream_attributes = true;
+
+        Steinberg::Vst::String128 vst_string{0};
+        if (stream_attributes->getFileName(vst_string) ==
+            Steinberg::kResultOk) {
+            file_name.emplace(tchar_pointer_to_u16string(vst_string));
+        }
+
+        // Copy over all predefined meta data keys. `IAttributeList` does not
+        // offer any interface to enumerate over the stored keys.
+        // TODO: There's also
+        //       `Steinberg::Vst::PresetAttributes::kFilePathStringType`
+        //       This would require translating between Windows and Unix style
+        //       paths, which we can't easily do outside of Wine. If this ends
+        //       up being important, then we'll have to shell out to `winepath`
+        //       which is not ideal. On the Wine side we can just use the
+        //       `wine_get_dos_file_name` and `wine_get_unix_file_name`
+        //       functions instead. Requesting this should also use a 1024
+        //       character buffer.
+        attributes.emplace();
+        Steinberg::IPtr<Steinberg::Vst::IAttributeList> stream_attributes_list =
+            stream_attributes->getAttributes();
+        for (const auto& key :
+             {Steinberg::Vst::PresetAttributes::kPlugInName,
+              Steinberg::Vst::PresetAttributes::kPlugInCategory,
+              Steinberg::Vst::PresetAttributes::kInstrument,
+              Steinberg::Vst::PresetAttributes::kStyle,
+              Steinberg::Vst::PresetAttributes::kCharacter,
+              Steinberg::Vst::PresetAttributes::kStateType,
+              Steinberg::Vst::PresetAttributes::kName,
+              Steinberg::Vst::PresetAttributes::kFileName}) {
+            vst_string[0] = 0;
+            if (stream_attributes_list->getString(key, vst_string,
+                                                  sizeof(vst_string)) ==
+                Steinberg::kResultOk) {
+                attributes->setString(key, vst_string);
+            }
+        }
+    }
 }
 
 YaBStream::~YaBStream() {
@@ -63,6 +109,12 @@ tresult PLUGIN_API YaBStream::queryInterface(Steinberg::FIDString _iid,
     QUERY_INTERFACE(_iid, obj, Steinberg::IBStream::iid, Steinberg::IBStream)
     QUERY_INTERFACE(_iid, obj, Steinberg::ISizeableStream::iid,
                     Steinberg::ISizeableStream)
+
+    // TODO: We don't have any logging for this
+    if (supports_stream_attributes) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IStreamAttributes::iid,
+                        Steinberg::Vst::IStreamAttributes)
+    }
 
     *obj = nullptr;
     return Steinberg::kNoInterface;
@@ -82,6 +134,11 @@ tresult YaBStream::write_back(Steinberg::IBStream* stream) const {
         assert(num_bytes_written == 0 ||
                static_cast<size_t>(num_bytes_written) == buffer.size());
     }
+
+    // TODO: Can plugins write their own meta data, and should we write those
+    //       back after `*::getState()`? I'd assume so, but the docs don't
+    //       mention this. If so then we need to always store whether the host
+    //       supports `IStreamAttributes`.
 
     return Steinberg::kResultOk;
 }
@@ -173,4 +230,23 @@ tresult PLUGIN_API YaBStream::getStreamSize(int64& size) {
 tresult PLUGIN_API YaBStream::setStreamSize(int64 size) {
     buffer.resize(size);
     return Steinberg::kResultOk;
+}
+
+tresult PLUGIN_API YaBStream::getFileName(Steinberg::Vst::String128 name) {
+    if (name && file_name) {
+        std::copy(file_name->begin(), file_name->end(), name);
+        name[file_name->size()] = 0;
+
+        return Steinberg::kResultOk;
+    } else {
+        return Steinberg::kResultFalse;
+    }
+}
+
+Steinberg::Vst::IAttributeList* PLUGIN_API YaBStream::getAttributes() {
+    if (attributes) {
+        return &*attributes;
+    } else {
+        return nullptr;
+    }
 }

@@ -55,16 +55,16 @@ VST3 host interfaces are implemented as follows:
 The following host interfaces are passed as function arguments and are thus also
 implemented for serialization purposes:
 
-| yabridge class        | Interfaces                    | Notes                                                                 |
-| --------------------- | ----------------------------- | --------------------------------------------------------------------- |
-| `YaAttributeList`     | `IAttributeList`              |                                                                       |
-| `YaBStream`           | `IBStream`, `ISizeableStream` | Used for serializing data streams                                     |
-| `YaContextMenuTarget` | `IContextMenuTarget`          | Used in `YaContextMenu` to proxy specific menu items                  |
-| `YaEventList`         | `IEventList`                  | Comes with a lot of serialization wrappers around the related structs |
-| `YaMessage`           | `IMessage`                    |                                                                       |
-| `YaMessagePtr`        | `IMessage`                    | Should be used in inter process communication to exchange messages    |
-| `YaParameterChanges`  | `IParameterChanges`           |                                                                       |
-| `YaParamValueQueue`   | `IParamValueQueue`            |                                                                       |
+| yabridge class        | Interfaces                                         | Notes                                                                 |
+| --------------------- | -------------------------------------------------- | --------------------------------------------------------------------- |
+| `YaAttributeList`     | `IAttributeList`                                   |                                                                       |
+| `YaBStream`           | `IBStream`, `ISizeableStream`, `IStreamAttributes` | Used for serializing data streams                                     |
+| `YaContextMenuTarget` | `IContextMenuTarget`                               | Used in `YaContextMenu` to proxy specific menu items                  |
+| `YaEventList`         | `IEventList`                                       | Comes with a lot of serialization wrappers around the related structs |
+| `YaMessage`           | `IMessage`                                         |                                                                       |
+| `YaMessagePtr`        | `IMessage`                                         | Should be used in inter process communication to exchange messages    |
+| `YaParameterChanges`  | `IParameterChanges`                                |                                                                       |
+| `YaParamValueQueue`   | `IParamValueQueue`                                 |                                                                       |
 
 And finally `YaProcessData` uses the above along with `YaAudioBusBuffers` to
 wrap around `ProcessData`.

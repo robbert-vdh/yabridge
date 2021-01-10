@@ -22,6 +22,25 @@
 
 #include "src/common/serialization/vst3.h"
 
+/**
+ * Format a `YaBStream` object as a string so we don't have to repeat this
+ * everywhere.
+ */
+std::string format_bstream(const YaBStream& stream) {
+    std::ostringstream formatted;
+    formatted << "<IBStream* ";
+    if (stream.supports_stream_attributes) {
+        formatted << "with meta data ";
+    }
+    if (stream.file_name) {
+        formatted << "for \"" << VST3::StringConvert::convert(*stream.file_name)
+                  << "\" ";
+    }
+    formatted << "containing " << stream.size() << " bytes>";
+
+    return formatted.str();
+}
+
 Vst3Logger::Vst3Logger(Logger& generic_logger) : logger(generic_logger) {}
 
 void Vst3Logger::log_query_interface(
@@ -87,8 +106,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
                 << ": {IComponent,IEditController}::setState(state = "
-                   "<IBStream* containing "
-                << request.state.size() << "bytes>)";
+                << format_bstream(request.state) << ")";
     });
 }
 
@@ -180,9 +198,8 @@ bool Vst3Logger::log_request(
     const YaEditController::SetComponentState& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
-                << ": IEditController::setComponentState(state = <IBStream* "
-                   "containing "
-                << request.state.size() << " bytes>)";
+                << ": IEditController::setComponentState(state = "
+                << format_bstream(request.state) << ")";
     });
 }
 
@@ -611,8 +628,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
         message << "IProgramListData::setProgramData(listId = "
                 << request.list_id
                 << ", programIndex = " << request.program_index
-                << ", data = <IBStream* containing " << request.data.size()
-                << "bytes>)";
+                << ", data = " << format_bstream(request.data) << ")";
     });
 }
 
@@ -635,8 +651,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
                              const YaUnitData::SetUnitData& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << "IUnitData::setUnitData(listId = " << request.unit_id
-                << ", data = <IBStream* containing " << request.data.size()
-                << "bytes>)";
+                << ", data = " << format_bstream(request.data) << ")";
     });
 }
 
@@ -747,8 +762,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
                 << ": IUnitInfo::setUnitProgramData(listOrUnitId = "
                 << request.list_or_unit_id
                 << ", programIndex = " << request.program_index
-                << ", data = <IBStream* containing " << request.data.size()
-                << "bytes>)";
+                << ", data = " << format_bstream(request.data) << ")";
     });
 }
 
@@ -1199,8 +1213,7 @@ void Vst3Logger::log_response(
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            message << ", <IBStream* containing "
-                    << response.updated_state.size() << " bytes>";
+            message << ", " << format_bstream(response.updated_state);
         }
     });
 }
@@ -1372,8 +1385,7 @@ void Vst3Logger::log_response(
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            message << ", <IBStream* containing " << response.data.size()
-                    << " bytes>";
+            message << ", " << format_bstream(response.data);
         }
     });
 }
@@ -1383,8 +1395,7 @@ void Vst3Logger::log_response(bool is_host_vst,
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            message << ", <IBStream* containing " << response.data.size()
-                    << " bytes>";
+            message << ", " << format_bstream(response.data);
         }
     });
 }
@@ -1469,8 +1480,7 @@ void Vst3Logger::log_response(
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            message << ", <IBStream* containing " << response.stream.size()
-                    << " bytes>";
+            message << ", " << format_bstream(response.stream);
         }
     });
 }
