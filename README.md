@@ -153,6 +153,14 @@ you've added in yabridgectl. That way it will automatically pick up all of your
 Windows VST2 plugins. For VST3 plugins no additional DAW configuration is
 needed, as those plugins will be set up under `~/.vst3/yabridge`.
 
+If you're using a DAW that does not have an easy way to configure VST2 plugin
+paths, such as Renoise, then you may want to consider using the following to
+just symlink the plugin directories to their default search locations:
+
+```shell
+ln -s "$HOME/.wine/drive_c/Program Files/Steinberg/" ~/.vst/yabridge-steinberg
+```
+
 ### Bitbridge
 
 If you have downloaded the prebuilt version of yabridge or if have followed the
