@@ -450,6 +450,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
         component_handler_2 = component_handler;
         component_handler_3 = component_handler;
         unit_handler = component_handler;
+        unit_handler_2 = component_handler;
 
         return bridge.send_message(YaEditController::SetComponentHandler{
             .instance_id = instance_id(),

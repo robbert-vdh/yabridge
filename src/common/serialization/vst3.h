@@ -200,7 +200,8 @@ using CallbackRequest = std::variant<Vst3ContextMenuProxy::Destruct,
                                      YaHostApplication::GetName,
                                      YaPlugFrame::ResizeView,
                                      YaUnitHandler::NotifyUnitSelection,
-                                     YaUnitHandler::NotifyProgramListChange>;
+                                     YaUnitHandler::NotifyProgramListChange,
+                                     YaUnitHandler2::NotifyUnitByBusChange>;
 
 template <typename S>
 void serialize(S& s, CallbackRequest& payload) {

@@ -327,6 +327,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     Steinberg::FUnknownPtr<Steinberg::Vst::IComponentHandler3>
         component_handler_3;
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler> unit_handler;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler2> unit_handler_2;
 
    private:
     Vst3PluginBridge& bridge;

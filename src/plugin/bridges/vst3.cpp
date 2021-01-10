@@ -267,6 +267,12 @@ Vst3PluginBridge::Vst3PluginBridge()
                         .unit_handler->notifyProgramListChange(
                             request.list_id, request.program_index);
                 },
+                [&](const YaUnitHandler2::NotifyUnitByBusChange& request)
+                    -> YaUnitHandler2::NotifyUnitByBusChange::Response {
+                    return plugin_proxies.at(request.owner_instance_id)
+                        .get()
+                        .unit_handler_2->notifyUnitByBusChange();
+                },
             });
     });
 }
