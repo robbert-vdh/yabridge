@@ -144,10 +144,6 @@ tresult YaBStream::write_back(Steinberg::IBStream* stream) const {
                static_cast<size_t>(num_bytes_written) == buffer.size());
     }
 
-    // TODO: Can plugins write their own meta data, and should we write those
-    //       back after `*::getState()`? I'd assume so, but the docs don't
-    //       mention this. If so then we need to always store whether the host
-    //       supports `IStreamAttributes`.
     // Write back any attributes written by the plugin if the host supports
     // preset meta data
     if (Steinberg::FUnknownPtr<Steinberg::Vst::IStreamAttributes>
