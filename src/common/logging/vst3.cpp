@@ -1201,6 +1201,15 @@ bool Vst3Logger::log_request(
     });
 }
 
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaUnitHandler2::NotifyUnitByBusChange& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IUnitHandler2::notifyUnitByBusChange()";
+    });
+}
+
 void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
     log_response_base(is_host_vst, [&](auto& message) { message << "ACK"; });
 }
