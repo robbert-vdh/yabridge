@@ -20,6 +20,7 @@
 
 #include "../../common.h"
 #include "../base.h"
+#include "../bstream.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -75,7 +76,7 @@ class YaXmlRepresentationController
      */
     struct GetXmlRepresentationStreamResponse {
         UniversalTResult result;
-        VectorStream stream;
+        YaBStream stream;
 
         template <typename S>
         void serialize(S& s) {

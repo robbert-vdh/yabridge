@@ -20,6 +20,7 @@
 
 #include "../../common.h"
 #include "../base.h"
+#include "../bstream.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -89,7 +90,7 @@ class YaProgramListData : public Steinberg::Vst::IProgramListData {
      */
     struct GetProgramDataResponse {
         UniversalTResult result;
-        VectorStream data;
+        YaBStream data;
 
         template <typename S>
         void serialize(S& s) {
@@ -136,7 +137,7 @@ class YaProgramListData : public Steinberg::Vst::IProgramListData {
 
         Steinberg::Vst::ProgramListID list_id;
         int32 program_index;
-        VectorStream data;
+        YaBStream data;
 
         template <typename S>
         void serialize(S& s) {

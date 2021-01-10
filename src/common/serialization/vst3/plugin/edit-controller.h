@@ -21,6 +21,7 @@
 
 #include "../../common.h"
 #include "../base.h"
+#include "../bstream.h"
 #include "../component-handler-proxy.h"
 #include "../plug-view-proxy.h"
 
@@ -73,7 +74,7 @@ class YaEditController : public Steinberg::Vst::IEditController {
 
         native_size_t instance_id;
 
-        VectorStream state;
+        YaBStream state;
 
         template <typename S>
         void serialize(S& s) {

@@ -20,6 +20,7 @@
 
 #include "../../common.h"
 #include "../base.h"
+#include "../bstream.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -420,7 +421,7 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
 
         int32 list_or_unit_id;
         int32 program_index;
-        VectorStream data;
+        YaBStream data;
 
         template <typename S>
         void serialize(S& s) {

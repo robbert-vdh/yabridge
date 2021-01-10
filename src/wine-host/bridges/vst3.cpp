@@ -172,7 +172,7 @@ void Vst3Bridge::run() {
             },
             [&](Vst3PluginProxy::GetState& request)
                 -> Vst3PluginProxy::GetState::Response {
-                VectorStream stream{};
+                YaBStream stream{};
                 tresult result;
 
                 // This same function is defined in both `IComponent` and
@@ -741,7 +741,7 @@ void Vst3Bridge::run() {
             },
             [&](const YaProgramListData::GetProgramData& request)
                 -> YaProgramListData::GetProgramData::Response {
-                VectorStream data{};
+                YaBStream data{};
                 const tresult result =
                     object_instances[request.instance_id]
                         .program_list_data->getProgramData(
@@ -763,7 +763,7 @@ void Vst3Bridge::run() {
             },
             [&](const YaUnitData::GetUnitData& request)
                 -> YaUnitData::GetUnitData::Response {
-                VectorStream data{};
+                YaBStream data{};
                 const tresult result =
                     object_instances[request.instance_id]
                         .unit_data->getUnitData(request.unit_id, &data);
@@ -898,7 +898,7 @@ void Vst3Bridge::run() {
             [&](YaXmlRepresentationController::GetXmlRepresentationStream&
                     request) -> YaXmlRepresentationController::
                                  GetXmlRepresentationStream::Response {
-                                     VectorStream stream{};
+                                     YaBStream stream{};
                                      const tresult result =
                                          object_instances[request.instance_id]
                                              .xml_representation_controller

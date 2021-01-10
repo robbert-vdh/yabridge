@@ -214,7 +214,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
 
         native_size_t instance_id;
 
-        VectorStream state;
+        YaBStream state;
 
         template <typename S>
         void serialize(S& s) {
@@ -229,7 +229,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
      */
     struct GetStateResponse {
         UniversalTResult result;
-        VectorStream updated_state;
+        YaBStream updated_state;
 
         template <typename S>
         void serialize(S& s) {

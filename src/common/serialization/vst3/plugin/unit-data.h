@@ -20,6 +20,7 @@
 
 #include "../../common.h"
 #include "../base.h"
+#include "../bstream.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -88,7 +89,7 @@ class YaUnitData : public Steinberg::Vst::IUnitData {
      */
     struct GetUnitDataResponse {
         UniversalTResult result;
-        VectorStream data;
+        YaBStream data;
 
         template <typename S>
         void serialize(S& s) {
@@ -129,7 +130,7 @@ class YaUnitData : public Steinberg::Vst::IUnitData {
         native_size_t instance_id;
 
         Steinberg::Vst::UnitID unit_id;
-        VectorStream data;
+        YaBStream data;
 
         template <typename S>
         void serialize(S& s) {
