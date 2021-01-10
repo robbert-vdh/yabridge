@@ -64,6 +64,24 @@ class YaAutomationState : public Steinberg::Vst::IAutomationState {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IAutomationState::setAutomationState(state)` to the Wine plugin host.
+     */
+    struct SetAutomationState {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        int32 state;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(state);
+        }
+    };
+
     virtual tresult PLUGIN_API setAutomationState(int32 state) override = 0;
 
    protected:
