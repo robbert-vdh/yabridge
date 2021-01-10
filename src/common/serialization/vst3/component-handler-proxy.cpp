@@ -25,13 +25,15 @@ Vst3ComponentHandlerProxy::ConstructArgs::ConstructArgs(
       component_handler_args(object),
       component_handler_2_args(object),
       component_handler_3_args(object),
-      unit_handler_args(object) {}
+      unit_handler_args(object),
+      unit_handler_2_args(object) {}
 
 Vst3ComponentHandlerProxy::Vst3ComponentHandlerProxy(const ConstructArgs&& args)
     : YaComponentHandler(std::move(args.component_handler_args)),
       YaComponentHandler2(std::move(args.component_handler_2_args)),
       YaComponentHandler3(std::move(args.component_handler_3_args)),
       YaUnitHandler(std::move(args.unit_handler_args)),
+      YaUnitHandler2(std::move(args.unit_handler_2_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3ComponentHandlerProxy::~Vst3ComponentHandlerProxy() {
@@ -63,6 +65,10 @@ Vst3ComponentHandlerProxy::queryInterface(Steinberg::FIDString _iid,
     if (YaUnitHandler::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IUnitHandler::iid,
                         Steinberg::Vst::IUnitHandler)
+    }
+    if (YaUnitHandler2::supported()) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IUnitHandler2::iid,
+                        Steinberg::Vst::IUnitHandler2)
     }
 
     *obj = nullptr;

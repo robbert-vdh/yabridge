@@ -57,6 +57,9 @@ class Vst3ComponentHandlerProxyImpl : public Vst3ComponentHandlerProxy {
     notifyProgramListChange(Steinberg::Vst::ProgramListID listId,
                             int32 programIndex) override;
 
+    // From `IUnitHandler2`
+    tresult PLUGIN_API notifyUnitByBusChange() override;
+
    private:
     Vst3Bridge& bridge;
 };

@@ -128,3 +128,9 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyProgramListChange(
         .list_id = listId,
         .program_index = programIndex});
 }
+
+tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitByBusChange() {
+    // TODO: Implement
+    std::cerr << "TODO: IUnitHandler2::notifyUnitSelection()" << std::endl;
+    return Steinberg::kNotImplemented;
+}
