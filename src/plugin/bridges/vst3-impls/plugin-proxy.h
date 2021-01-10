@@ -78,6 +78,9 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API process(Steinberg::Vst::ProcessData& data) override;
     uint32 PLUGIN_API getTailSamples() override;
 
+    // From `IAutomationState`
+    tresult PLUGIN_API setAutomationState(int32 state) override;
+
     // From `IComponent`
     tresult PLUGIN_API getControllerClassId(Steinberg::TUID classId) override;
     tresult PLUGIN_API setIoMode(Steinberg::Vst::IoMode mode) override;

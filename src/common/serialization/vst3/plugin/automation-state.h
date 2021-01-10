@@ -64,7 +64,7 @@ class YaAutomationState : public Steinberg::Vst::IAutomationState {
 
     inline bool supported() const { return arguments.supported; }
 
-    virtual tresult PLUGIN_API setAutomationState(int32 state) = 0;
+    virtual tresult PLUGIN_API setAutomationState(int32 state) override = 0;
 
    protected:
     ConstructArgs arguments;

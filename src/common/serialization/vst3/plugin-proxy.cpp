@@ -24,6 +24,7 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
     : instance_id(instance_id),
       audio_presentation_latency_args(object),
       audio_processor_args(object),
+      automation_state_args(object),
       component_args(object),
       connection_point_args(object),
       edit_controller_args(object),
@@ -42,6 +43,7 @@ Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
     : YaAudioPresentationLatency(
           std::move(args.audio_presentation_latency_args)),
       YaAudioProcessor(std::move(args.audio_processor_args)),
+      YaAutomationState(std::move(args.automation_state_args)),
       YaComponent(std::move(args.component_args)),
       YaConnectionPoint(std::move(args.connection_point_args)),
       YaEditController(std::move(args.edit_controller_args)),
@@ -97,6 +99,10 @@ tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
     if (YaAudioProcessor::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IAudioProcessor::iid,
                         Steinberg::Vst::IAudioProcessor)
+    }
+    if (YaAutomationState::supported()) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IAutomationState::iid,
+                        Steinberg::Vst::IAutomationState)
     }
     if (YaComponent::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IComponent::iid,

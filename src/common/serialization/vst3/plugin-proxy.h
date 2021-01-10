@@ -21,6 +21,7 @@
 #include "../common.h"
 #include "plugin/audio-presentation-latency.h"
 #include "plugin/audio-processor.h"
+#include "plugin/automation-state.h"
 #include "plugin/component.h"
 #include "plugin/connection-point.h"
 #include "plugin/edit-controller-2.h"
@@ -63,6 +64,7 @@
  */
 class Vst3PluginProxy : public YaAudioPresentationLatency,
                         public YaAudioProcessor,
+                        public YaAutomationState,
                         public YaComponent,
                         public YaConnectionPoint,
                         public YaEditController,
@@ -97,6 +99,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
         YaAudioPresentationLatency::ConstructArgs
             audio_presentation_latency_args;
         YaAudioProcessor::ConstructArgs audio_processor_args;
+        YaAutomationState::ConstructArgs automation_state_args;
         YaComponent::ConstructArgs component_args;
         YaConnectionPoint::ConstructArgs connection_point_args;
         YaEditController::ConstructArgs edit_controller_args;
@@ -119,6 +122,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
             s.value8b(instance_id);
             s.object(audio_presentation_latency_args);
             s.object(audio_processor_args);
+            s.object(automation_state_args);
             s.object(component_args);
             s.object(connection_point_args);
             s.object(edit_controller_args);

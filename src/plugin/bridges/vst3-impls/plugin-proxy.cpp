@@ -156,6 +156,13 @@ uint32 PLUGIN_API Vst3PluginProxyImpl::getTailSamples() {
         YaAudioProcessor::GetTailSamples{.instance_id = instance_id()});
 }
 
+tresult PLUGIN_API Vst3PluginProxyImpl::setAutomationState(int32 state) {
+    // TODO: Implement
+    bridge.logger.log(
+        "TODO: Implyement IAutomationState::setAutomationState()");
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API
 Vst3PluginProxyImpl::getControllerClassId(Steinberg::TUID classId) {
     if (classId) {
