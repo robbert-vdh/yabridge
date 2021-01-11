@@ -32,13 +32,13 @@
 // plugin symlinked to either the `x86_64-win` or the `x86-win` directory inside
 // of the bundle, even if it does not come in a bundle itself.
 
-Vst3PluginBridge* bridge = nullptr;
+std::unique_ptr<Vst3PluginBridge> bridge;
 
 bool InitModule() {
-    assert(bridge == nullptr);
+    assert(!bridge);
 
     try {
-        bridge = new Vst3PluginBridge();
+        bridge = std::make_unique<Vst3PluginBridge>();
 
         return true;
     } catch (const std::exception& error) {
@@ -51,10 +51,9 @@ bool InitModule() {
 }
 
 bool DeinitModule() {
-    assert(bridge != nullptr);
+    assert(bridge);
 
-    delete bridge;
-    bridge = nullptr;
+    bridge.reset();
 
     return true;
 }
