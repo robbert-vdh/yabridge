@@ -49,6 +49,9 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   scheduling priority than other tasks. With a properly configured system GUI
   drawing should not affect DSP load at all, but this should help with less than
   optimal setups some people were getting DSP load spikes with the editor open.
+- Opening and closing plugin editors is now also no longer done with realtime
+  priority. This should get rid of any latency spikes during those operations,
+  as the this could otherwise preempt the threads that were processing audio.
 - Changed part of the build process considering [this Wine
   bug](https://bugs.winehq.org/show_bug.cgi?id=49138). Building with Wine 5.7
   and 5.8 required a change, but that change now breaks builds using Wine 6.0

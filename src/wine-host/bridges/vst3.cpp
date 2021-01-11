@@ -552,15 +552,20 @@ void Vst3Bridge::run() {
                 // be done in the main UI thread
                 return main_context
                     .run_in_context<tresult>([&]() {
+                        // NOTE: Just like in the event loop, we want to run
+                        //       this with lower priority to prevent whatever
+                        //       operation the plugin does while it's loading
+                        //       its editor from preempting the audio thread.
+                        set_realtime_priority(false);
                         Editor& editor_instance =
                             object_instances[request.owner_instance_id]
                                 .editor.emplace(config, x11_handle);
-
                         const tresult result =
                             object_instances[request.owner_instance_id]
                                 .plug_view_instance->plug_view->attached(
                                     editor_instance.get_win32_handle(),
                                     type.c_str());
+                        set_realtime_priority(true);
 
                         // Get rid of the editor again if the plugin didn't
                         // embed itself in it
@@ -577,12 +582,14 @@ void Vst3Bridge::run() {
                 -> YaPlugView::Removed::Response {
                 return main_context
                     .run_in_context<tresult>([&]() {
+                        // Cleanup is handled through RAII
+                        set_realtime_priority(false);
                         const tresult result =
                             object_instances[request.owner_instance_id]
                                 .plug_view_instance->plug_view->removed();
-
                         object_instances[request.owner_instance_id]
                             .editor.reset();
+                        set_realtime_priority(true);
 
                         return result;
                     })

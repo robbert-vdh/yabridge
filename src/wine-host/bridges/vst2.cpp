@@ -386,21 +386,30 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             // provided by the host, and let the plugin embed itself into
             // the Wine window
             const auto x11_handle = reinterpret_cast<size_t>(data);
+
+            // NOTE: Just like in the event loop, we want to run this with lower
+            //       priority to prevent whatever operation the plugin does
+            //       while it's loading its editor from preempting the audio
+            //       thread.
+            set_realtime_priority(false);
             Editor& editor_instance =
                 editor.emplace(config, x11_handle, [plugin = this->plugin]() {
                     plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0.0);
                 });
+            const intptr_t result =
+                plugin->dispatcher(plugin, opcode, index, value,
+                                   editor_instance.get_win32_handle(), option);
+            set_realtime_priority(true);
 
-            return plugin->dispatcher(plugin, opcode, index, value,
-                                      editor_instance.get_win32_handle(),
-                                      option);
+            return result;
         } break;
         case effEditClose: {
+            // Cleanup is handled through RAII
+            set_realtime_priority(false);
             const intptr_t return_value =
                 plugin->dispatcher(plugin, opcode, index, value, data, option);
-
-            // Cleanup is handled through RAII
             editor.reset();
+            set_realtime_priority(true);
 
             return return_value;
         } break;
