@@ -45,6 +45,10 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   difference in responsiveness.
 - VST2 editor idle events are now handled slightly differently. This should
   result in even more responsive GUIs for VST2 plugins.
+- Win32 and X11 events in the Wine plugin host are now handled with lower
+  scheduling priority than other tasks. With a properly configured system GUI
+  drawing should not affect DSP load at all, but this should help with less than
+  optimal setups some people were getting DSP load spikes with the editor open.
 - Changed part of the build process considering [this Wine
   bug](https://bugs.winehq.org/show_bug.cgi?id=49138). Building with Wine 5.7
   and 5.8 required a change, but that change now breaks builds using Wine 6.0

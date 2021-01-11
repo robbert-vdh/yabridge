@@ -32,6 +32,8 @@
 #include <boost/asio/io_context.hpp>
 #include <function2/function2.hpp>
 
+#include "../common/utils.h"
+
 /**
  * The delay between calls to the event loop so we can keep a nice 60 fps. We
  * could bump this up to the monitor's refresh rate, but I'm afraid that it will
@@ -108,7 +110,18 @@ class MainContext {
                     return;
                 }
 
+                // NOTE: These periodic callbacks should not be able to
+                //       interrupt other threads that are actively processing
+                //       audio. For me personally having the GUI open makes
+                //       absolutely zero difference on DSP usage (as it should),
+                //       but for some others it does have an impact.
+                // TODO: Benchmark this further on a properly configured system,
+                //       see if it does not increase average load because of the
+                //       rapid scheduling switching.
+                set_realtime_priority(false);
                 handler();
+                set_realtime_priority(true);
+
                 async_handle_events(handler);
             });
     }
