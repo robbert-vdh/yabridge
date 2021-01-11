@@ -95,10 +95,12 @@ void Vst3Bridge::run() {
                         // drop it here as well, along with the `IPlugFrame`
                         // proxy object it may have received in
                         // `IPlugView::setFrame()`.
+                        set_realtime_priority(false);
                         object_instances[request.owner_instance_id]
                             .plug_view_instance.reset();
                         object_instances[request.owner_instance_id]
                             .plug_frame_proxy.reset();
+                        set_realtime_priority(true);
                     })
                     .wait();
 
@@ -370,11 +372,17 @@ void Vst3Bridge::run() {
                 // Instantiate the object from the GUI thread
                 main_context
                     .run_in_context<void>([&]() {
+                        // NOTE: Just like in the event loop, we want to run
+                        //       this with lower priority to prevent whatever
+                        //       operation the plugin does while it's loading
+                        //       its editor from preempting the audio thread.
+                        set_realtime_priority(false);
                         object_instances[request.instance_id]
                             .plug_view_instance.emplace(Steinberg::owned(
                                 object_instances[request.instance_id]
                                     .edit_controller->createView(
                                         request.name.c_str())));
+                        set_realtime_priority(true);
                     })
                     .wait();
 
@@ -552,10 +560,6 @@ void Vst3Bridge::run() {
                 // be done in the main UI thread
                 return main_context
                     .run_in_context<tresult>([&]() {
-                        // NOTE: Just like in the event loop, we want to run
-                        //       this with lower priority to prevent whatever
-                        //       operation the plugin does while it's loading
-                        //       its editor from preempting the audio thread.
                         set_realtime_priority(false);
                         Editor& editor_instance =
                             object_instances[request.owner_instance_id]
