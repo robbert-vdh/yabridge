@@ -99,6 +99,11 @@ Configuration::Configuration(const fs::path& config_path,
             } else if (key == "frame_rate") {
                 if (const auto parsed_value = value.as_floating_point()) {
                     frame_rate = parsed_value->get();
+                } else if (const auto parsed_value = value.as_integer()) {
+                    // For usability's sake we want to be a bit more lax than a
+                    // normal TOML file would be and accept both floating point
+                    // values and integers here
+                    frame_rate = parsed_value->get();
                 } else {
                     invalid_options.push_back(key);
                 }
