@@ -37,7 +37,7 @@ int __attribute__((visibility("default")))
 __cdecl
 #endif
     main(int argc, char* argv[]) {
-    set_realtime_priority();
+    set_realtime_priority(true);
 
     // We pass plugin format, the name of the VST2 plugin .dll file or VST3
     // bundle to load, and the base directory for the Unix domain socket

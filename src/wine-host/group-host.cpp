@@ -41,7 +41,7 @@ int __attribute__((visibility("default")))
 __cdecl
 #endif
     main(int argc, char* argv[]) {
-    set_realtime_priority();
+    set_realtime_priority(true);
 
     // Instead of directly hosting a plugin, this process will receive a UNIX
     // domain socket endpoint path that it should listen on to allow yabridge

@@ -41,7 +41,10 @@ boost::filesystem::path get_temporary_directory();
  * We explicitly don't do this for wineserver itself since from my testing that
  * can actually increase latencies.
  *
+ * @param sched_fifo If true, set the current process/thread's scheudling policy
+ *   to `SCHED_FIFO`. Otherwise reset it back to `SCHWED_OTHER`.
+ *
  * @return Whether the operation was successful or not. This will fail if the
  *   user does not have the privileges to set realtime priorities.
  */
-bool set_realtime_priority();
+bool set_realtime_priority(bool sched_fifo);

@@ -86,7 +86,7 @@ class PluginBridge {
                                             info.windows_plugin_path.string(),
                                         .endpoint_base_dir =
                                             sockets.base_dir.string()}))),
-          has_realtime_priority(set_realtime_priority()),
+          has_realtime_priority(set_realtime_priority(true)),
           wine_io_handler([&]() { io_context.run(); }) {}
 
     virtual ~PluginBridge(){};

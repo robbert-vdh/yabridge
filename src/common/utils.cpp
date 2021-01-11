@@ -31,7 +31,8 @@ fs::path get_temporary_directory() {
     }
 }
 
-bool set_realtime_priority() {
+bool set_realtime_priority(bool sched_fifo) {
     sched_param params{.sched_priority = 5};
-    return sched_setscheduler(0, SCHED_FIFO, &params) == 0;
+    return sched_setscheduler(0, sched_fifo ? SCHED_FIFO : SCHED_OTHER,
+                              &params) == 0;
 }
