@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <iomanip>
+
 // Generated inside of the build directory
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
@@ -162,6 +164,12 @@ class PluginBridge {
         }
         if (config.editor_xembed) {
             other_options.push_back("editor: XEmbed");
+        }
+        if (config.frame_rate) {
+            std::ostringstream option;
+            option << "frame rate: " << std::setprecision(2)
+                   << *config.frame_rate << " fps";
+            other_options.push_back(option.str());
         }
         if (!other_options.empty()) {
             init_msg << join_quoted_strings(other_options) << std::endl;

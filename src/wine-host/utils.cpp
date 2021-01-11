@@ -26,6 +26,11 @@ void MainContext::stop() {
     context.stop();
 }
 
+void MainContext::update_timer_interval(
+    std::chrono::steady_clock::duration new_interval) {
+    timer_interval = new_interval;
+}
+
 uint32_t WINAPI
 win32_thread_trampoline(fu2::unique_function<void()>* entry_point) {
     (*entry_point)();

@@ -22,6 +22,7 @@
 #include <boost/filesystem.hpp>
 
 #include <bitsery/ext/std_optional.h>
+#include <chrono>
 #include <optional>
 
 #include "bitsery/ext/boost-path.h"
@@ -110,6 +111,18 @@ class Configuration {
     bool editor_xembed = false;
 
     /**
+     * The number of times per second we'll handle the event loop. In most
+     * plugins this also controls the plugin editor GUI's refresh rate.
+     *
+     * This defaults to 60 fps, but we'll store it in an optional as we only
+     * want to show it in the startup message if this setting has explicitly
+     * been set.
+     *
+     * @relates event_loop_interval
+     */
+    std::optional<float> frame_rate;
+
+    /**
      * The name of the plugin group that should be used for the plugin this
      * configuration object was created for. If not set, then the plugin should
      * be hosted individually instead.
@@ -139,13 +152,22 @@ class Configuration {
      */
     std::vector<std::string> unknown_options;
 
+    /**
+     * The delay in milliseconds between calls to the event loop and to
+     * `effEditIdle` for VST2 plugins. This is based on `frame_rate`.
+     */
+    std::chrono::steady_clock::duration event_loop_interval() const;
+
     template <typename S>
     void serialize(S& s) {
         s.value1b(cache_time_info);
         s.value1b(editor_double_embed);
         s.value1b(editor_xembed);
+        s.ext(frame_rate, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.value4b(v); });
         s.ext(group, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
+
         s.ext(matched_file, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath{}); });
         s.ext(matched_pattern, bitsery::ext::StdOptional(),

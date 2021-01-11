@@ -75,6 +75,9 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
     // process
     config = sockets.vst_host_callback.send_message(WantsConfiguration{},
                                                     std::nullopt);
+
+    // Allow this plugin to configure the main context's tick rate
+    main_context.update_timer_interval(config.event_loop_interval());
 }
 
 void Vst3Bridge::run() {

@@ -35,14 +35,6 @@
 #include "../common/utils.h"
 
 /**
- * The delay between calls to the event loop so we can keep a nice 60 fps. We
- * could bump this up to the monitor's refresh rate, but I'm afraid that it will
- * start to noticeably take up resources in plugin groups.
- */
-constexpr std::chrono::duration event_loop_interval =
-    std::chrono::milliseconds(1000) / 60;
-
-/**
  * A wrapper around `boost::asio::io_context()` to serve as the application's
  * main IO context. A single instance is shared for all plugins in a plugin
  * group so that several important events can be handled on the main thread,
@@ -65,6 +57,14 @@ class MainContext {
      * that the thread that called `main_context.run()` immediatly returns.
      */
     void stop();
+
+    /**
+     * Set a new timer interval. We'll do this whenever a new plugin loads,
+     * because we can't know in advance what the plugin's frame rate option is
+     * set to.
+     */
+    void update_timer_interval(
+        std::chrono::steady_clock::duration new_interval);
 
     /**
      * Asynchronously execute a function inside of this main IO context and
@@ -91,7 +91,9 @@ class MainContext {
     }
 
     /**
-     * Start a timer to handle events every `event_loop_interval` milliseconds.
+     * Start a timer to handle events on a user configurable interval. The
+     * interval is controllable through the `frame_rate` option and defaults to
+     * 60 updates per second.
      *
      * @param handler The function that should be executed in the IO context
      *   when the timer ticks. This should be a function that handles both the
@@ -101,9 +103,9 @@ class MainContext {
     void async_handle_events(F handler) {
         // Try to keep a steady framerate, but add in delays to let other events
         // get handled if the GUI message handling somehow takes very long.
-        events_timer.expires_at(std::max(
-            events_timer.expiry() + event_loop_interval,
-            std::chrono::steady_clock::now() + std::chrono::milliseconds(5)));
+        events_timer.expires_at(
+            std::max(events_timer.expiry() + timer_interval,
+                     std::chrono::steady_clock::now() + timer_interval / 4));
         events_timer.async_wait(
             [&, handler](const boost::system::error_code& error) {
                 if (error.failed()) {
@@ -137,6 +139,16 @@ class MainContext {
      * The timer used to periodically handle X11 events and Win32 messages.
      */
     boost::asio::steady_timer events_timer;
+
+    /**
+     * The time between timer ticks in `async_handle_events`. This gets
+     * initialized at 60 ticks per second, and when a plugin load we'll update
+     * this value based on the plugin's `frame_rate` option.
+     *
+     * @see update_timer_interval
+     */
+    std::chrono::steady_clock::duration timer_interval =
+        std::chrono::milliseconds(1000) / 60;
 };
 
 /**

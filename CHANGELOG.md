@@ -30,6 +30,12 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   Wine's XEmbed implementation instead of yabridge's normal window embedding
   method. Some plugins have will have redrawing issues when using XEmbed or the
   editor might not show up at all, so your mileage may very much vary.
+- Added a frame rate
+  [option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
+  change the rate at which events are being handled. This usually also controls
+  the refresh rate of a plugin's editor GUI. The default 60 updates per second
+  may be too high if your computer's cannot keep up, or if you're using a host
+  that never closes the editor such as Ardour.
 
 ### Changed
 

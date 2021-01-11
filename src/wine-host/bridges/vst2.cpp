@@ -130,6 +130,9 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     // configuration as a response
     config = sockets.host_vst_control.receive_single<Configuration>();
 
+    // Allow this plugin to configure the main context's tick rate
+    main_context.update_timer_interval(config.event_loop_interval());
+
     parameters_handler = Win32Thread([&]() {
         sockets.host_vst_parameters.receive_multi<Parameter>(
             [&](Parameter request, std::vector<uint8_t>& buffer) {

@@ -145,7 +145,7 @@ Editor::Editor(const Configuration& config,
                     win32_handle.get(),
                     idle_timer_id,
                     std::chrono::duration_cast<std::chrono::milliseconds>(
-                        event_loop_interval)
+                        config.event_loop_interval())
                         .count())
               : Win32Timer()),
       idle_timer_proc(std::move(timer_proc)),
