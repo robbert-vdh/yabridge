@@ -413,6 +413,14 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
 
             return return_value;
         } break;
+        case effEditGetRect: {
+            set_realtime_priority(false);
+            const intptr_t return_value =
+                plugin->dispatcher(plugin, opcode, index, value, data, option);
+            set_realtime_priority(true);
+
+            return return_value;
+        } break;
         default:
             return plugin->dispatcher(plugin, opcode, index, value, data,
                                       option);
