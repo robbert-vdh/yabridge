@@ -316,6 +316,9 @@ editor_xembed = true
 ["SWAM Cello 64bit.so"]
 cache_time_info = true
 
+["sforzando VST_x64.so"]
+frame_rate = 24
+
 # Simple glob patterns can be used to avoid unneeded repetition
 ["iZotope*/Neutron *"]
 group = "izotope"
