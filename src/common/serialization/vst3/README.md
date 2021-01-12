@@ -33,6 +33,7 @@ VST3 plugin interfaces are implemented as follows:
 | `YaMidiMapping`                 | `Vst3PluginProxy`   | `IMidiMapping`                                         |
 | `YaNoteExpressionController`    | `Vst3PluginProxy`   | `INoteExpressionController`                            |
 | `YaPluginBase`                  | `Vst3PluginProxy`   | `IPluginBase`                                          |
+| `YaPrefetchableSupport`         | `Vst3PluginProxy`   | `IPrefetchableSupport`                                 |
 | `YaProgramListData`             | `Vst3PluginProxy`   | `IProgramListData`                                     |
 | `YaUnitData`                    | `Vst3PluginProxy`   | `IUnitData`                                            |
 | `YaUnitInfo`                    | `Vst3PluginProxy`   | `IUnitInfo`                                            |
