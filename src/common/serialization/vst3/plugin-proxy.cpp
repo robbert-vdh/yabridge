@@ -140,6 +140,10 @@ tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
                         Steinberg::Vst::INoteExpressionController::iid,
                         Steinberg::Vst::INoteExpressionController)
     }
+    if (YaPrefetchableSupport::supported()) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IPrefetchableSupport::iid,
+                        Steinberg::Vst::IPrefetchableSupport)
+    }
     if (YaProgramListData::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IProgramListData::iid,
                         Steinberg::Vst::IProgramListData)
