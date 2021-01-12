@@ -1016,6 +1016,16 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaPrefetchableSupport::GetPrefetchableSupport& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message
+            << request.instance_id
+            << ": IPrefetchableSupport::getPrefetchableSupport(&prefetchable)";
+    });
+}
+
 bool Vst3Logger::log_request(bool is_host_vst,
                              const Vst3ContextMenuProxy::Destruct& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
@@ -1601,6 +1611,17 @@ void Vst3Logger::log_response(
                     << ", <RoutingInfo& for bus "
                     << response.updated_out_info.busIndex << " and channel "
                     << response.updated_out_info.channel << ">";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaPrefetchableSupport::GetPrefetchableSupportResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", " << response.prefetchable;
         }
     });
 }

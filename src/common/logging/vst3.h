@@ -184,6 +184,8 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaComponent::GetRoutingInfo&);
     bool log_request(bool is_host_vst, const YaComponent::ActivateBus&);
     bool log_request(bool is_host_vst, const YaComponent::SetActive&);
+    bool log_request(bool is_host_vst,
+                     const YaPrefetchableSupport::GetPrefetchableSupport&);
 
     bool log_request(bool is_host_vst, const Vst3ContextMenuProxy::Destruct&);
     bool log_request(bool is_host_vst, const WantsConfiguration&);
@@ -276,6 +278,9 @@ class Vst3Logger {
     void log_response(bool is_host_vst, const YaComponent::GetBusInfoResponse&);
     void log_response(bool is_host_vst,
                       const YaComponent::GetRoutingInfoResponse&);
+    void log_response(
+        bool is_host_vst,
+        const YaPrefetchableSupport::GetPrefetchableSupportResponse&);
 
     void log_response(bool is_host_vst,
                       const YaComponentHandler3::CreateContextMenuResponse&);
