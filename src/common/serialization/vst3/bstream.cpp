@@ -16,35 +16,8 @@
 
 #include "bstream.h"
 
-#include <pluginterfaces/vst/vstpresetkeys.h>
-
 #include <cassert>
 #include <stdexcept>
-
-/**
- * These are the meta data keys used for `IStreamAttributes`. We need to keep
- * track of this because `IAttributeList` has no way to just iterate over the
- * stored keys. We'll read these from the host if the host supports this
- * interface, and if the plugin writes an attribute with one of these keys we'll
- * write the value back to the host.
- *
- * TODO: There's also `Steinberg::Vst::PresetAttributes::kFilePathStringType`
- *       This would require translating between Windows and Unix style paths,
- *       which we can't easily do outside of Wine. If this ends up being
- *       important, then we'll have to shell out to `winepath` which is not
- *       ideal. On the Wine side we can just use the `wine_get_dos_file_name`
- *       and `wine_get_unix_file_name` functions instead. Requesting this should
- *       also use a 1024 character buffer.
- */
-const static char* stream_meta_data_keys[] = {
-    Steinberg::Vst::PresetAttributes::kPlugInName,
-    Steinberg::Vst::PresetAttributes::kPlugInCategory,
-    Steinberg::Vst::PresetAttributes::kInstrument,
-    Steinberg::Vst::PresetAttributes::kStyle,
-    Steinberg::Vst::PresetAttributes::kCharacter,
-    Steinberg::Vst::PresetAttributes::kStateType,
-    Steinberg::Vst::PresetAttributes::kName,
-    Steinberg::Vst::PresetAttributes::kFileName};
 
 YaBStream::YaBStream(){FUNKNOWN_CTOR}
 
@@ -86,19 +59,12 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
             file_name.emplace(tchar_pointer_to_u16string(vst_string));
         }
 
-        attributes.emplace();
         if (Steinberg::IPtr<Steinberg::Vst::IAttributeList>
                 stream_attributes_list = stream_attributes->getAttributes()) {
-            // Copy over all predefined meta data keys. `IAttributeList` does
-            // not offer any interface to enumerate the stored keys.
-            for (const auto& key : stream_meta_data_keys) {
-                vst_string[0] = 0;
-                if (stream_attributes_list->getString(key, vst_string,
-                                                      sizeof(vst_string)) ==
-                    Steinberg::kResultOk) {
-                    attributes->setString(key, vst_string);
-                }
-            }
+            attributes.emplace(YaAttributeList::read_stream_attributes(
+                stream_attributes_list));
+        } else {
+            attributes.emplace();
         }
     }
 }

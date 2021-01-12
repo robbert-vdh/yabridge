@@ -60,6 +60,14 @@ class YaAttributeList : public Steinberg::Vst::IAttributeList {
     static YaAttributeList read_channel_context(
         Steinberg::Vst::IAttributeList* context);
 
+    /**
+     * Read the the meta data attributes provided by `IBStraem`s that support
+     * `IStreamAttributes`. This works the same was as
+     * `YaAttributeList::read_channel_context`.
+     */
+    static YaAttributeList read_stream_attributes(
+        Steinberg::Vst::IAttributeList* stream_attributes);
+
     virtual tresult PLUGIN_API setInt(AttrID id, int64 value) override;
     virtual tresult PLUGIN_API getInt(AttrID id, int64& value) override;
     virtual tresult PLUGIN_API setFloat(AttrID id, double value) override;
