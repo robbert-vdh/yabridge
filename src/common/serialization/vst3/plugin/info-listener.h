@@ -19,6 +19,7 @@
 #include <pluginterfaces/vst/ivstchannelcontextinfo.h>
 
 #include "../../common.h"
+#include "../attribute-list.h"
 #include "../base.h"
 
 #pragma GCC diagnostic push
@@ -60,6 +61,28 @@ class YaInfoListener : public Steinberg::Vst::ChannelContext::IInfoListener {
     YaInfoListener(const ConstructArgs&& args);
 
     inline bool supported() const { return arguments.supported; }
+
+    /**
+     * Message to pass through a call to
+     * `IInfoListeener::setChannelContextInfos(list)` to the Wine plugin host.
+     */
+    struct SetChannelContextInfos {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        /**
+         * The passed channel context attributes, read using
+         * `YaAttributeList::read_channel_context()`.
+         */
+        YaAttributeList list;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.object(list);
+        }
+    };
 
     virtual tresult PLUGIN_API
     setChannelContextInfos(Steinberg::Vst::IAttributeList* list) override = 0;
