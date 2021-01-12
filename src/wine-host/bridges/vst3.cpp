@@ -433,8 +433,16 @@ void Vst3Bridge::run() {
             },
             [&](YaInfoListener::SetChannelContextInfos& request)
                 -> YaInfoListener::SetChannelContextInfos::Response {
-                return object_instances[request.instance_id]
-                    .info_listener->setChannelContextInfos(&request.list);
+                // Melodyne wants to immediately update the GUI upon receiving
+                // certain channel context data, so this has to be run from the
+                // main thread
+                return main_context
+                    .run_in_context<tresult>([&]() {
+                        return object_instances[request.instance_id]
+                            .info_listener->setChannelContextInfos(
+                                &request.list);
+                    })
+                    .get();
             },
             [&](const YaKeyswitchController::GetKeyswitchCount& request)
                 -> YaKeyswitchController::GetKeyswitchCount::Response {
