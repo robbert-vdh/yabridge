@@ -155,6 +155,8 @@ struct InstanceInterfaces {
     Steinberg::FUnknownPtr<Steinberg::Vst::IEditController2> edit_controller_2;
     Steinberg::FUnknownPtr<Steinberg::Vst::IEditControllerHostEditing>
         edit_controller_host_editing;
+    Steinberg::FUnknownPtr<Steinberg::Vst::ChannelContext::IInfoListener>
+        info_listener;
     Steinberg::FUnknownPtr<Steinberg::Vst::IKeyswitchController>
         keyswitch_controller;
     Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midi_mapping;

@@ -92,6 +92,7 @@ using ControlRequest =
                  YaEditController2::OpenAboutBox,
                  YaEditControllerHostEditing::BeginEditFromHost,
                  YaEditControllerHostEditing::EndEditFromHost,
+                 YaInfoListener::SetChannelContextInfos,
                  YaKeyswitchController::GetKeyswitchCount,
                  YaKeyswitchController::GetKeyswitchInfo,
                  YaMidiMapping::GetMidiControllerAssignment,

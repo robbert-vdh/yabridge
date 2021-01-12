@@ -45,6 +45,7 @@ InstanceInterfaces::InstanceInterfaces(
       edit_controller(object),
       edit_controller_2(object),
       edit_controller_host_editing(object),
+      info_listener(object),
       keyswitch_controller(object),
       midi_mapping(object),
       note_expression_controller(object),
@@ -429,6 +430,11 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .edit_controller_host_editing->endEditFromHost(
                         request.param_id);
+            },
+            [&](YaInfoListener::SetChannelContextInfos& request)
+                -> YaInfoListener::SetChannelContextInfos::Response {
+                return object_instances[request.instance_id]
+                    .info_listener->setChannelContextInfos(&request.list);
             },
             [&](const YaKeyswitchController::GetKeyswitchCount& request)
                 -> YaKeyswitchController::GetKeyswitchCount::Response {

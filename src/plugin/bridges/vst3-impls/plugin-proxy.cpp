@@ -524,10 +524,16 @@ Vst3PluginProxyImpl::endEditFromHost(Steinberg::Vst::ParamID paramID) {
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setChannelContextInfos(
     Steinberg::Vst::IAttributeList* list) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: Implement IInfoListener::setChannelContextInfos()");
-    return Steinberg::kNotImplemented;
+    if (list) {
+        return bridge.send_message(YaInfoListener::SetChannelContextInfos{
+            .instance_id = instance_id(),
+            .list = YaAttributeList::read_channel_context(list)});
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IInfoListener::setChannelContextInfos()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getKeyswitchCount(int32 busIndex,
