@@ -105,6 +105,8 @@ class Vst3Logger {
     bool log_request(bool is_host_vst,
                      const YaEditControllerHostEditing::EndEditFromHost&);
     bool log_request(bool is_host_vst,
+                     const YaInfoListener::SetChannelContextInfos&);
+    bool log_request(bool is_host_vst,
                      const YaKeyswitchController::GetKeyswitchCount&);
     bool log_request(bool is_host_vst,
                      const YaKeyswitchController::GetKeyswitchInfo&);

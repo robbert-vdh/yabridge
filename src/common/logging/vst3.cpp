@@ -367,6 +367,16 @@ bool Vst3Logger::log_request(
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
+    const YaInfoListener::SetChannelContextInfos& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IInfoListener::setChannelContextInfos(list = "
+                   "<IAtributeList*>)";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
     const YaKeyswitchController::GetKeyswitchCount& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
