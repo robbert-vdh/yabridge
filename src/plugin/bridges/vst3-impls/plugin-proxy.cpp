@@ -675,10 +675,14 @@ tresult PLUGIN_API Vst3PluginProxyImpl::terminate() {
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getPrefetchableSupport(
     Steinberg::Vst::PrefetchableSupport& prefetchable /*out*/) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: Implement IPrefetchableSupport::getPrefetchableSupport()");
-    return Steinberg::kNotImplemented;
+    const GetPrefetchableSupportResponse response =
+        bridge.send_audio_processor_message(
+            YaPrefetchableSupport::GetPrefetchableSupport{.instance_id =
+                                                              instance_id()});
+
+    prefetchable = response.prefetchable;
+
+    return response.result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::programDataSupported(

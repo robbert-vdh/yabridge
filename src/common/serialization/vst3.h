@@ -163,7 +163,8 @@ using AudioProcessorRequest =
                  YaComponent::GetBusInfo,
                  YaComponent::GetRoutingInfo,
                  YaComponent::ActivateBus,
-                 YaComponent::SetActive>;
+                 YaComponent::SetActive,
+                 YaPrefetchableSupport::GetPrefetchableSupport>;
 
 template <typename S>
 void serialize(S& s, AudioProcessorRequest& payload) {

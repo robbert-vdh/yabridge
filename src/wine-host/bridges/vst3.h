@@ -162,6 +162,8 @@ struct InstanceInterfaces {
         note_expression_controller;
     Steinberg::FUnknownPtr<Steinberg::IPluginBase> plugin_base;
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitData> unit_data;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IPrefetchableSupport>
+        prefetchable_support;
     Steinberg::FUnknownPtr<Steinberg::Vst::IProgramListData> program_list_data;
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitInfo> unit_info;
     Steinberg::FUnknownPtr<Steinberg::Vst::IXmlRepresentationController>

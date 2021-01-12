@@ -50,6 +50,7 @@ InstanceInterfaces::InstanceInterfaces(
       note_expression_controller(object),
       plugin_base(object),
       unit_data(object),
+      prefetchable_support(object),
       program_list_data(object),
       unit_info(object),
       xml_representation_controller(object) {}
@@ -1103,6 +1104,22 @@ size_t Vst3Bridge::register_object_instance(
                         return object_instances[request.instance_id]
                             .component->setActive(request.state);
                     },
+                    [&](const YaPrefetchableSupport::GetPrefetchableSupport&
+                            request)
+                        -> YaPrefetchableSupport::GetPrefetchableSupport::
+                            Response {
+                                Steinberg::Vst::PrefetchableSupport
+                                    prefetchable;
+                                const tresult result =
+                                    object_instances[request.instance_id]
+                                        .prefetchable_support
+                                        ->getPrefetchableSupport(prefetchable);
+
+                                return YaPrefetchableSupport::
+                                    GetPrefetchableSupportResponse{
+                                        .result = result,
+                                        .prefetchable = prefetchable};
+                            },
                 });
         });
 
