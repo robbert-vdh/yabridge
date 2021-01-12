@@ -16,6 +16,8 @@
 
 #include "attribute-list.h"
 
+#include <iostream>
+
 #include <pluginterfaces/vst/vstpresetkeys.h>
 
 #include "pluginterfaces/vst/ivstchannelcontextinfo.h"

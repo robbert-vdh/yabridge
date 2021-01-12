@@ -30,6 +30,7 @@ std::string format_bstream(const YaBStream& stream) {
     std::ostringstream formatted;
     formatted << "<IBStream* ";
     if (stream.supports_stream_attributes) {
+        // TODO: Log the keys for the stored values
         formatted << "with meta data ";
     }
     if (stream.file_name) {
@@ -369,9 +370,10 @@ bool Vst3Logger::log_request(
     bool is_host_vst,
     const YaInfoListener::SetChannelContextInfos& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
+        // TODO: Log the keys for the values provided by the host
         message << request.instance_id
                 << ": IInfoListener::setChannelContextInfos(list = "
-                   "<IAtributeList*>)";
+                   "<IAttributeList*>)";
     });
 }
 
