@@ -49,6 +49,17 @@ class YaAttributeList : public Steinberg::Vst::IAttributeList {
      */
     tresult write_back(Steinberg::Vst::IAttributeList* stream) const;
 
+    /**
+     * Read the channel context info passed to
+     * `IInfoListener::setChannelContextInfos` into a `YaAttributeList`. We
+     * normally can't serialize any arbitrary `IAttributeList` because there's
+     * no way to enumerate the keys, but in this case the keys are fixed. This
+     * works in a similar was as reading preset meta data in
+     * `IStreamAttributes`.
+     */
+    static YaAttributeList read_channel_context(
+        Steinberg::Vst::IAttributeList* context);
+
     virtual tresult PLUGIN_API setInt(AttrID id, int64 value) override;
     virtual tresult PLUGIN_API getInt(AttrID id, int64& value) override;
     virtual tresult PLUGIN_API setFloat(AttrID id, double value) override;

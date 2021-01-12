@@ -16,6 +16,37 @@
 
 #include "attribute-list.h"
 
+#include "pluginterfaces/vst/ivstchannelcontextinfo.h"
+
+/**
+ * Keys for channel context attributes passed in
+ * `IInfoListener::setChannelContextInfos` that contain a string value.
+ */
+const static char* channel_context_string_keys[] = {
+    Steinberg::Vst::ChannelContext::kChannelUIDKey,
+    Steinberg::Vst::ChannelContext::kChannelNameKey,
+    Steinberg::Vst::ChannelContext::kChannelIndexNamespaceKey};
+
+/**
+ * Keys for channel context attributes passed in
+ * `IInfoListener::setChannelContextInfos` that contain an integer value.
+ */
+const static char* channel_context_integer_keys[] = {
+    Steinberg::Vst::ChannelContext::kChannelUIDLengthKey,
+    Steinberg::Vst::ChannelContext::kChannelNameLengthKey,
+    Steinberg::Vst::ChannelContext::kChannelColorKey,
+    Steinberg::Vst::ChannelContext::kChannelIndexKey,
+    Steinberg::Vst::ChannelContext::kChannelIndexNamespaceOrderKey,
+    Steinberg::Vst::ChannelContext::kChannelIndexNamespaceLengthKey,
+    Steinberg::Vst::ChannelContext::kChannelPluginLocationKey};
+
+/**
+ * Keys for channel context attributes passed in
+ * `IInfoListener::setChannelContextInfos` that contain a binary value.
+ */
+const static char* channel_context_binary_keys[] = {
+    Steinberg::Vst::ChannelContext::kChannelImageKey};
+
 YaAttributeList::YaAttributeList(){FUNKNOWN_CTOR}
 
 YaAttributeList::~YaAttributeList() {
@@ -49,6 +80,39 @@ tresult YaAttributeList::write_back(
     }
 
     return Steinberg::kResultOk;
+}
+
+YaAttributeList YaAttributeList::read_channel_context(
+    Steinberg::Vst::IAttributeList* context) {
+    YaAttributeList attributes{};
+    // Copy over all predefined channel context attributes. `IAttributeList`
+    // does not offer any interface to enumerate the stored keys.
+    Steinberg::Vst::String128 vst_string{0};
+    for (const auto& key : channel_context_string_keys) {
+        vst_string[0] = 0;
+        if (context->getString(key, vst_string, sizeof(vst_string)) ==
+            Steinberg::kResultOk) {
+            attributes.setString(key, vst_string);
+        }
+    }
+
+    int64 vst_integer;
+    for (const auto& key : channel_context_integer_keys) {
+        if (context->getInt(key, vst_integer) == Steinberg::kResultOk) {
+            attributes.setInt(key, vst_integer);
+        }
+    }
+
+    const void* vst_binary_ptr;
+    uint32 vst_binary_size;
+    for (const auto& key : channel_context_binary_keys) {
+        if (context->getBinary(key, vst_binary_ptr, vst_binary_size) ==
+            Steinberg::kResultOk) {
+            attributes.setBinary(key, vst_binary_ptr, vst_binary_size);
+        }
+    }
+
+    return attributes;
 }
 
 tresult PLUGIN_API YaAttributeList::setInt(AttrID id, int64 value) {
