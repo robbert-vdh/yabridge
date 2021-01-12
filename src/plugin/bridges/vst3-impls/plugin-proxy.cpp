@@ -673,6 +673,14 @@ tresult PLUGIN_API Vst3PluginProxyImpl::terminate() {
         YaPluginBase::Terminate{.instance_id = instance_id()});
 }
 
+tresult PLUGIN_API Vst3PluginProxyImpl::getPrefetchableSupport(
+    Steinberg::Vst::PrefetchableSupport& prefetchable /*out*/) {
+    // TODO: Implement
+    bridge.logger.log(
+        "TODO: Implement IPrefetchableSupport::getPrefetchableSupport()");
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::programDataSupported(
     Steinberg::Vst::ProgramListID listId) {
     return bridge.send_message(YaProgramListData::ProgramDataSupported{

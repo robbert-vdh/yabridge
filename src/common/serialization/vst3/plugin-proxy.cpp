@@ -34,6 +34,7 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
       midi_mapping_args(object),
       note_expression_controller_args(object),
       plugin_base_args(object),
+      prefetchable_support_args(object),
       program_list_data_args(object),
       unit_data_args(object),
       unit_info_args(object),
@@ -55,6 +56,7 @@ Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
       YaNoteExpressionController(
           std::move(args.note_expression_controller_args)),
       YaPluginBase(std::move(args.plugin_base_args)),
+      YaPrefetchableSupport(std::move(args.prefetchable_support_args)),
       YaProgramListData(std::move(args.program_list_data_args)),
       YaUnitData(std::move(args.unit_data_args)),
       YaUnitInfo(std::move(args.unit_info_args)),

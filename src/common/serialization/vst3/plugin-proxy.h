@@ -31,6 +31,7 @@
 #include "plugin/midi-mapping.h"
 #include "plugin/note-expression-controller.h"
 #include "plugin/plugin-base.h"
+#include "plugin/prefetchable-support.h"
 #include "plugin/program-list-data.h"
 #include "plugin/unit-data.h"
 #include "plugin/unit-info.h"
@@ -74,6 +75,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
                         public YaMidiMapping,
                         public YaNoteExpressionController,
                         public YaPluginBase,
+                        public YaPrefetchableSupport,
                         public YaProgramListData,
                         public YaUnitData,
                         public YaUnitInfo,
@@ -111,6 +113,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
         YaNoteExpressionController::ConstructArgs
             note_expression_controller_args;
         YaPluginBase::ConstructArgs plugin_base_args;
+        YaPrefetchableSupport::ConstructArgs prefetchable_support_args;
         YaProgramListData::ConstructArgs program_list_data_args;
         YaUnitData::ConstructArgs unit_data_args;
         YaUnitInfo::ConstructArgs unit_info_args;
@@ -132,6 +135,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
             s.object(midi_mapping_args);
             s.object(note_expression_controller_args);
             s.object(plugin_base_args);
+            s.object(prefetchable_support_args);
             s.object(program_list_data_args);
             s.object(unit_data_args);
             s.object(unit_info_args);
