@@ -62,6 +62,37 @@ class YaPrefetchableSupport : public Steinberg::Vst::IPrefetchableSupport {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * The response code and returned bus information for a call to
+     * `IPrefetchableSupport::getPrefetchableSupport(&prefetchable)`.
+     */
+    struct GetPrefetchableSupportResponse {
+        UniversalTResult result;
+        Steinberg::Vst::PrefetchableSupport prefetchable;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.value4b(prefetchable);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IPrefetchableSupport::getPrefetchableSupport(&prefetchable)` to the Wine
+     * plugin host.
+     */
+    struct GetPrefetchableSupport {
+        using Response = GetPrefetchableSupportResponse;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
     virtual tresult PLUGIN_API getPrefetchableSupport(
         Steinberg::Vst::PrefetchableSupport& prefetchable /*out*/) override = 0;
 
