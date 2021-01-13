@@ -441,10 +441,13 @@ these negative side effects:
   try enabling the `threadirqs` kernel parameter which can in some situations
   help with xruns.
 
-- The other even more important thing you can do is to use a build of Wine with
-  Proton's fsync patches. This can improve performance significantly, especially
-  when using a lot of plugins at the same time. If you're running Arch or
-  Manjaro, then you can use
+- Make sure you're using the performance frequency scaling governor, as changing
+  clock speeds in the middle of a real time workload can cause latency spikes.
+
+- The last but probably even more important thing you can do is to use a build
+  of Wine with Proton's fsync patches. This can improve performance
+  significantly, especially when using a lot of plugins at the same time. If
+  you're running Arch or Manjaro, then you can use
   [Tk-Glitch's Wine fork](https://github.com/Frogging-Family/wine-tkg-git) for a
   customizable version of Wine with the fsync patches included. Aside from a
   patched copy of Wine you'll also need a supported kernel for this to work.
