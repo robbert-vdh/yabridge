@@ -444,17 +444,15 @@ these negative side effects:
 - The other even more important thing you can do is to use a build of Wine with
   Proton's fsync patches. This can improve performance significantly, especially
   when using a lot of plugins at the same time. If you're running Arch or
-  Manjaro, then you can use the
-  [wine-nspa](https://github.com/nine7nine/pkgbuilds_nspa/tree/master/wine-nspa)
-  PKGBUILD for an audio production optimized version of Wine Staging 5.9, or
-  [wine-tkg](https://github.com/Frogging-Family/wine-tkg-git) for a more up to
-  date version with a different patch set. Aside from a patched copy of Wine
-  you'll also need a supported kernel for this to work. Manjaro's kernel
-  supports fsync out of the box, and on Arch you can use the `linux-zen` kernel.
-  Finally you'll have to set the `WINEFSYNC` environment variable to `1` to
-  enable fsync. See the [search path setup](#search-path-setup) section for more
-  information on where to do this. You can use the following command to check if
-  this is set correctly:
+  Manjaro, then you can use
+  [Tk-Glitch's Wine fork](https://github.com/Frogging-Family/wine-tkg-git) for a
+  customizable version of Wine with the fsync patches included. Aside from a
+  patched copy of Wine you'll also need a supported kernel for this to work.
+  Manjaro's kernel supports fsync out of the box, and on Arch you can use the
+  `linux-zen` kernel. Finally you'll have to set the `WINEFSYNC` environment
+  variable to `1` to enable fsync. See the [search path
+  setup](#search-path-setup) section for more information on where to do this.
+  You can use the following command to check if this is set correctly:
 
   ```shell
   env -i HOME="$HOME" $SHELL -l -c 'echo $WINEFSYNC'
