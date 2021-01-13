@@ -437,7 +437,9 @@ these negative side effects:
   priorities. Note that on Arch and Manjaro this does not necessarily require a
   realtime kernel as they include the `PREEMPT` patch set in their regular
   kernels. You can verify that this is workign correctly by running
-  `chrt -f 10 whoami`, which should print your username.
+  `chrt -f 10 date`, which should print the current date and time. You can also
+  try enabling the `threadirqs` kernel parameter which can in some situations
+  help with xruns.
 
 - The other even more important thing you can do is to use a build of Wine with
   Proton's fsync patches. This can improve performance significantly, especially
