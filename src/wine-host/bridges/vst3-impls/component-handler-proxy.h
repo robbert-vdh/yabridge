@@ -50,6 +50,12 @@ class Vst3ComponentHandlerProxyImpl : public Vst3ComponentHandlerProxy {
     createContextMenu(Steinberg::IPlugView* plugView,
                       const Steinberg::Vst::ParamID* paramID) override;
 
+    // From `IComponentHandlerBusActivation`
+    tresult PLUGIN_API requestBusActivation(Steinberg::Vst::MediaType type,
+                                            Steinberg::Vst::BusDirection dir,
+                                            int32 index,
+                                            TBool state) override;
+
     // From `IUnitHandler`
     tresult PLUGIN_API
     notifyUnitSelection(Steinberg::Vst::UnitID unitId) override;

@@ -114,6 +114,17 @@ Vst3ComponentHandlerProxyImpl::createContextMenu(
     }
 }
 
+tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::requestBusActivation(
+    Steinberg::Vst::MediaType type,
+    Steinberg::Vst::BusDirection dir,
+    int32 index,
+    TBool state) {
+    // TODO: Implement
+    std::cerr << "TODO: IComponentHandlerBusActivation::requestBusActivation()"
+              << std::endl;
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitSelection(
     Steinberg::Vst::UnitID unitId) {
     return bridge.send_message(YaUnitHandler::NotifyUnitSelection{

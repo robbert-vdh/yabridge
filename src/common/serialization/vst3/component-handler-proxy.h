@@ -19,6 +19,7 @@
 #include "../common.h"
 #include "component-handler/component-handler-2.h"
 #include "component-handler/component-handler-3.h"
+#include "component-handler/component-handler-bus-activation.h"
 #include "component-handler/component-handler.h"
 #include "component-handler/unit-handler-2.h"
 #include "component-handler/unit-handler.h"
@@ -37,6 +38,7 @@
 class Vst3ComponentHandlerProxy : public YaComponentHandler,
                                   public YaComponentHandler2,
                                   public YaComponentHandler3,
+                                  public YaComponentHandlerBusActivation,
                                   public YaUnitHandler,
                                   public YaUnitHandler2 {
    public:
@@ -65,6 +67,8 @@ class Vst3ComponentHandlerProxy : public YaComponentHandler,
         YaComponentHandler::ConstructArgs component_handler_args;
         YaComponentHandler2::ConstructArgs component_handler_2_args;
         YaComponentHandler3::ConstructArgs component_handler_3_args;
+        YaComponentHandlerBusActivation::ConstructArgs
+            component_handler_bus_activation_args;
         YaUnitHandler::ConstructArgs unit_handler_args;
         YaUnitHandler2::ConstructArgs unit_handler_2_args;
 
@@ -74,6 +78,7 @@ class Vst3ComponentHandlerProxy : public YaComponentHandler,
             s.object(component_handler_args);
             s.object(component_handler_2_args);
             s.object(component_handler_3_args);
+            s.object(component_handler_bus_activation_args);
             s.object(unit_handler_args);
             s.object(unit_handler_2_args);
         }
