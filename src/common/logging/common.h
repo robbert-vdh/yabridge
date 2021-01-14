@@ -89,6 +89,8 @@ class Logger {
      * Create a special logger instance that outputs directly to STDERR without
      * any prefixes. This is used to be able to log filterable messages from the
      * Wine side of things.
+     *
+     * TODO: Don't prefix this with a timestamp
      */
     static Logger create_wine_stderr();
 
