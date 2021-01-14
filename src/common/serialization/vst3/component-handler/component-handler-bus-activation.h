@@ -64,6 +64,31 @@ class YaComponentHandlerBusActivation
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IComponentHandlerBusActivation::requestBusActivation(type, dir, index,
+     * state)` to the component handler provided by the host.
+     */
+    struct RequestBusActivation {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        Steinberg::Vst::MediaType type;
+        Steinberg::Vst::BusDirection dir;
+        int32 index;
+        TBool state;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value4b(type);
+            s.value4b(dir);
+            s.value4b(index);
+            s.value1b(state);
+        }
+    };
+
     virtual tresult PLUGIN_API
     requestBusActivation(Steinberg::Vst::MediaType type,
                          Steinberg::Vst::BusDirection dir,
