@@ -46,6 +46,8 @@ struct InstancePlugView {
     // pointers if `plug_view` did not implement the interface.
 
     Steinberg::FUnknownPtr<Steinberg::Vst::IParameterFinder> parameter_finder;
+    Steinberg::FUnknownPtr<Steinberg::IPlugViewContentScaleSupport>
+        plug_view_content_scale_support;
 };
 
 /**

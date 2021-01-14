@@ -113,6 +113,7 @@ using ControlRequest =
                  YaPlugView::SetFrame,
                  YaPlugView::CanResize,
                  YaPlugView::CheckSizeConstraint,
+                 YaPlugViewContentScaleSupport::SetContentScaleFactor,
                  YaPluginBase::Initialize,
                  YaPluginBase::Terminate,
                  YaPluginFactory::Construct,

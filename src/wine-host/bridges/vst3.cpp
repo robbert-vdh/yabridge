@@ -30,7 +30,9 @@ InstancePlugView::InstancePlugView() {}
 
 InstancePlugView::InstancePlugView(
     Steinberg::IPtr<Steinberg::IPlugView> plug_view)
-    : plug_view(plug_view), parameter_finder(plug_view) {}
+    : plug_view(plug_view),
+      parameter_finder(plug_view),
+      plug_view_content_scale_support(plug_view) {}
 
 InstanceInterfaces::InstanceInterfaces() {}
 
@@ -737,6 +739,19 @@ void Vst3Bridge::run() {
                 return YaPlugView::CheckSizeConstraintResponse{
                     .result = result, .updated_rect = std::move(request.rect)};
             },
+            [&](YaPlugViewContentScaleSupport::SetContentScaleFactor& request)
+                -> YaPlugViewContentScaleSupport::SetContentScaleFactor::
+                    Response {
+                        return main_context
+                            .run_in_context<tresult>([&]() {
+                                return object_instances[request
+                                                            .owner_instance_id]
+                                    .plug_view_instance
+                                    ->plug_view_content_scale_support
+                                    ->setContentScaleFactor(request.factor);
+                            })
+                            .get();
+                    },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {
                 // We'll create a proxy object for the host context passed by

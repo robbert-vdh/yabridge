@@ -189,9 +189,7 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::findParameter(
 
 tresult PLUGIN_API
 Vst3PlugViewProxyImpl::setContentScaleFactor(ScaleFactor factor) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: Implement "
-        "iplugviewcontentscalesupport::setContentScaleFactor()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaPlugViewContentScaleSupport::SetContentScaleFactor{
+            .owner_instance_id = owner_instance_id(), .factor = factor});
 }
