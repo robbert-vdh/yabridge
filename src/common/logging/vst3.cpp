@@ -601,6 +601,17 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaPlugViewContentScaleSupport::SetContentScaleFactor& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message
+            << request.owner_instance_id
+            << ": IPlugViewContentScaleSupport::setContentScaleFactor(factor = "
+            << request.factor << ")";
+    });
+}
+
 bool Vst3Logger::log_request(bool is_host_vst,
                              const YaPluginBase::Initialize& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
