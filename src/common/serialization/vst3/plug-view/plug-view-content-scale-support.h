@@ -62,6 +62,25 @@ class YaPlugViewContentScaleSupport
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IPlugViewContentScaleSupport::setContentScaleFactor(factor)` to the Wine
+     * plugin host.
+     */
+    struct SetContentScaleFactor {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        ScaleFactor factor;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value4b(factor);
+        }
+    };
+
     virtual tresult PLUGIN_API
     setContentScaleFactor(ScaleFactor factor) override = 0;
 
