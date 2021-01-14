@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <pluginterfaces/vst/ivstplugview.h>
+#include <pluginterfaces/gui/iplugviewcontentscalesupport.h>
 
 #include "../../common.h"
 #include "../base.h"
@@ -25,20 +25,21 @@
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 
 /**
- * Wraps around `IParameterFinder` for serialization purposes. This is
- * instantiated as part of `Vst3PlugViewProxy`.
+ * Wraps around `IPlugViewContentScaleSupport` for serialization purposes. This
+ * is instantiated as part of `Vst3PlugViewProxy`.
  */
-class YaParameterFinder : public Steinberg::Vst::IParameterFinder {
+class YaPlugViewContentScaleSupport
+    : public Steinberg::IPlugViewContentScaleSupport {
    public:
     /**
-     * These are the arguments for creating a `YaParameterFinder`.
+     * These are the arguments for creating a `YaPlugViewContentScaleSupport`.
      */
     struct ConstructArgs {
         ConstructArgs();
 
         /**
          * Check whether an existing implementation implements
-         * `IParameterFinder` and read arguments from it.
+         * `IPlugViewContentScaleSupport` and read arguments from it.
          */
         ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
 
@@ -57,49 +58,12 @@ class YaParameterFinder : public Steinberg::Vst::IParameterFinder {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaParameterFinder(const ConstructArgs&& args);
+    YaPlugViewContentScaleSupport(const ConstructArgs&& args);
 
     inline bool supported() const { return arguments.supported; }
 
-    /**
-     * The response code and editor size returned by a call to
-     * `IParameterFinder::findParameter(x_pos, y_pos, &result_tag)`.
-     */
-    struct FindParameterResponse {
-        UniversalTResult result;
-        Steinberg::Vst::ParamID result_tag;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.object(result);
-            s.value4b(result_tag);
-        }
-    };
-
-    /**
-     * Message to pass through a call to `IParameterFinder::findParameter(x_pos,
-     * y_pos, &result_tag)` to the Wine plugin host.
-     */
-    struct FindParameter {
-        using Response = FindParameterResponse;
-
-        native_size_t owner_instance_id;
-
-        int32 x_pos;
-        int32 y_pos;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(owner_instance_id);
-            s.value4b(x_pos);
-            s.value4b(y_pos);
-        }
-    };
-
     virtual tresult PLUGIN_API
-    findParameter(int32 xPos,
-                  int32 yPos,
-                  Steinberg::Vst::ParamID& resultTag /*out*/) override = 0;
+    setContentScaleFactor(ScaleFactor factor) override = 0;
 
    protected:
     ConstructArgs arguments;

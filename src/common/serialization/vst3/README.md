@@ -6,7 +6,7 @@ for more information on how the serialization works.
 
 The following interfaces are not yet implemented:
 
-- Interfaces introduced after VST 3.6.5
+- Interfaces introduced after VST 3.6.6
 - The [Presonus extensions](https://presonussoftware.com/en_US/developer),
   although most of these things seem to overlap with newer VST3 interfaces
 
@@ -19,6 +19,7 @@ VST3 plugin interfaces are implemented as follows:
 | `Vst3PlugViewProxy`             |                     | All of the below:                                      |
 | `YaParameterFinder`             | `Vst3PlugViewProxy` | `IParameterFinder`                                     |
 | `YaPlugView`                    | `Vst3PlugViewProxy` | `IPlugView`                                            |
+| `YaPlugViewContentScaleSupport` | `Vst3PlugViewProxy` | `IPlugViewContentScaleSupport`                         |
 | `Vst3PluginProxy`               |                     | All of the below:                                      |
 | `YaAudioPresentationLatency`    | `Vst3PluginProxy`   | `IAudioPresentationLatency`                            |
 | `YaAudioProcessor`              | `Vst3PluginProxy`   | `IAudioProcessor`                                      |
