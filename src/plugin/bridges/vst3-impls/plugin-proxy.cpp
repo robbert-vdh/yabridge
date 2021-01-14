@@ -449,6 +449,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setComponentHandler(
         // callback later
         component_handler_2 = component_handler;
         component_handler_3 = component_handler;
+        component_handler_bus_activation = component_handler;
         unit_handler = component_handler;
         unit_handler_2 = component_handler;
 

@@ -119,10 +119,13 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::requestBusActivation(
     Steinberg::Vst::BusDirection dir,
     int32 index,
     TBool state) {
-    // TODO: Implement
-    std::cerr << "TODO: IComponentHandlerBusActivation::requestBusActivation()"
-              << std::endl;
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaComponentHandlerBusActivation::RequestBusActivation{
+            .owner_instance_id = owner_instance_id(),
+            .type = type,
+            .dir = dir,
+            .index = index,
+            .state = state});
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitSelection(

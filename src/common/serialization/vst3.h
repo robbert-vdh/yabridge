@@ -180,31 +180,33 @@ void serialize(S& s, AudioProcessorRequest& payload) {
  * information we want or the operation we want to perform. A request of type
  * `CallbackRequest(T)` should send back a `T::Response`.
  */
-using CallbackRequest = std::variant<Vst3ContextMenuProxy::Destruct,
-                                     WantsConfiguration,
-                                     YaComponentHandler::BeginEdit,
-                                     YaComponentHandler::PerformEdit,
-                                     YaComponentHandler::EndEdit,
-                                     YaComponentHandler::RestartComponent,
-                                     YaComponentHandler2::SetDirty,
-                                     YaComponentHandler2::RequestOpenEditor,
-                                     YaComponentHandler2::StartGroupEdit,
-                                     YaComponentHandler2::FinishGroupEdit,
-                                     YaComponentHandler3::CreateContextMenu,
-                                     // Used when the host uses proxy objects,
-                                     // and we have to route
-                                     // `IConnectionPoint::notify` calls through
-                                     // there
-                                     YaConnectionPoint::Notify,
-                                     YaContextMenu::GetItemCount,
-                                     YaContextMenu::AddItem,
-                                     YaContextMenu::RemoveItem,
-                                     YaContextMenu::Popup,
-                                     YaHostApplication::GetName,
-                                     YaPlugFrame::ResizeView,
-                                     YaUnitHandler::NotifyUnitSelection,
-                                     YaUnitHandler::NotifyProgramListChange,
-                                     YaUnitHandler2::NotifyUnitByBusChange>;
+using CallbackRequest =
+    std::variant<Vst3ContextMenuProxy::Destruct,
+                 WantsConfiguration,
+                 YaComponentHandler::BeginEdit,
+                 YaComponentHandler::PerformEdit,
+                 YaComponentHandler::EndEdit,
+                 YaComponentHandler::RestartComponent,
+                 YaComponentHandler2::SetDirty,
+                 YaComponentHandler2::RequestOpenEditor,
+                 YaComponentHandler2::StartGroupEdit,
+                 YaComponentHandler2::FinishGroupEdit,
+                 YaComponentHandler3::CreateContextMenu,
+                 YaComponentHandlerBusActivation::RequestBusActivation,
+                 // Used when the host uses proxy objects,
+                 // and we have to route
+                 // `IConnectionPoint::notify` calls through
+                 // there
+                 YaConnectionPoint::Notify,
+                 YaContextMenu::GetItemCount,
+                 YaContextMenu::AddItem,
+                 YaContextMenu::RemoveItem,
+                 YaContextMenu::Popup,
+                 YaHostApplication::GetName,
+                 YaPlugFrame::ResizeView,
+                 YaUnitHandler::NotifyUnitSelection,
+                 YaUnitHandler::NotifyProgramListChange,
+                 YaUnitHandler2::NotifyUnitByBusChange>;
 
 template <typename S>
 void serialize(S& s, CallbackRequest& payload) {

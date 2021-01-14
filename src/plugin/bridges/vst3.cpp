@@ -149,6 +149,17 @@ Vst3PluginBridge::Vst3PluginBridge()
                             .context_menu_args = std::nullopt};
                     }
                 },
+                [&](const YaComponentHandlerBusActivation::RequestBusActivation&
+                        request) -> YaComponentHandlerBusActivation::
+                                     RequestBusActivation::Response {
+                                         return plugin_proxies
+                                             .at(request.owner_instance_id)
+                                             .get()
+                                             .component_handler_bus_activation
+                                             ->requestBusActivation(
+                                                 request.type, request.dir,
+                                                 request.index, request.state);
+                                     },
                 [&](const YaContextMenu::GetItemCount& request)
                     -> YaContextMenu::GetItemCount::Response {
                     return plugin_proxies.at(request.owner_instance_id)
