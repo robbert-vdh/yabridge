@@ -39,8 +39,10 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
 - Added a [compatibility
   option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
   disable HiDPI scaling for VST3 plugins. At the moment Wine does not have
-  proper HiDPI support, so some plugins might not scale their interfaces
-  correctly when the host tells those plugins to scale their GUIs.
+  proper fractional HiDPI support, so some plugins might not scale their
+  interfaces correctly when the host tells those plugins to scale their GUIs. In
+  most cases setting the font DPI in `winecfg`'s graphics tab to 192 will also
+  cause the GUIs to scale correctly at 200%.
 
 ### Changed
 

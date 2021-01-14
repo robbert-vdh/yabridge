@@ -124,10 +124,12 @@ class Configuration {
 
     /**
      * Disable `IPlugViewContentScaleSupport::setContentScaleFactor()`. Wine
-     * does not properly implement DPI scaling, so without this option plugins
-     * using GDI+ would draw their editor GUIs at the normal size even though
-     * their window would actually be scaled. That would result in giant black
-     * borders at the top and the right of the window.
+     * does not properly implement fractional DPI scaling, so without this
+     * option plugins using GDI+ would draw their editor GUIs at the normal size
+     * even though their window would actually be scaled. That would result in
+     * giant black borders at the top and the right of the window. It appears
+     * that with a Wine font DPI of 192 plugins often do draw correctly at 200%
+     * scale.
      */
     bool vst3_no_scaling = false;
 
