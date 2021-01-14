@@ -6,7 +6,7 @@ for more information on how the serialization works.
 
 The following interfaces are not yet implemented:
 
-- Interfaces introduced after VST 3.6.6
+- Interfaces introduced after VST 3.6.8
 - The [Presonus extensions](https://presonussoftware.com/en_US/developer),
   although most of these things seem to overlap with newer VST3 interfaces
 
@@ -42,20 +42,21 @@ VST3 plugin interfaces are implemented as follows:
 
 VST3 host interfaces are implemented as follows:
 
-| yabridge class              | Included in                 | Interfaces           |
-| --------------------------- | --------------------------- | -------------------- |
-| `Vst3HostContextProxy`      |                             | All of the below:    |
-| `YaHostApplication`         | `Vst3HostContextProxy`      | `IHostApplication`   |
-| `Vst3ComponentHandlerProxy` |                             | All of the below:    |
-| `YaComponentHandler`        | `Vst3ComponentHandlerProxy` | `IComponentHandler`  |
-| `YaComponentHandler2`       | `Vst3ComponentHandlerProxy` | `IComponentHandler2` |
-| `YaComponentHandler3`       | `Vst3ComponentHandlerProxy` | `IComponentHandler3` |
-| `YaUnitHandler`             | `Vst3ComponentHandlerProxy` | `IUnitHandler`       |
-| `YaUnitHandler2`            | `Vst3ComponentHandlerProxy` | `IUnitHandler2`      |
-| `Vst3ContextMenuProxy`      |                             | All of the below:    |
-| `YaContextMenu`             | `Vst3ContextMenuProxy`      | `IContextMenu`       |
-| `Vst3PlugFrameProxy`        |                             | All of the below:    |
-| `YaPlugFrame`               | `Vst3PlugFrameProxy`        | `IPlugFrame`         |
+| yabridge class                    | Included in                 | Interfaces                       |
+| --------------------------------- | --------------------------- | -------------------------------- |
+| `Vst3HostContextProxy`            |                             | All of the below:                |
+| `YaHostApplication`               | `Vst3HostContextProxy`      | `IHostApplication`               |
+| `Vst3ComponentHandlerProxy`       |                             | All of the below:                |
+| `YaComponentHandler`              | `Vst3ComponentHandlerProxy` | `IComponentHandler`              |
+| `YaComponentHandler2`             | `Vst3ComponentHandlerProxy` | `IComponentHandler2`             |
+| `YaComponentHandler3`             | `Vst3ComponentHandlerProxy` | `IComponentHandler3`             |
+| `YaComponentHandlerBusActivation` | `Vst3ComponentHandlerProxy` | `IComponentHandlerBusActivation` |
+| `YaUnitHandler`                   | `Vst3ComponentHandlerProxy` | `IUnitHandler`                   |
+| `YaUnitHandler2`                  | `Vst3ComponentHandlerProxy` | `IUnitHandler2`                  |
+| `Vst3ContextMenuProxy`            |                             | All of the below:                |
+| `YaContextMenu`                   | `Vst3ContextMenuProxy`      | `IContextMenu`                   |
+| `Vst3PlugFrameProxy`              |                             | All of the below:                |
+| `YaPlugFrame`                     | `Vst3PlugFrameProxy`        | `IPlugFrame`                     |
 
 The following host interfaces are passed as function arguments and are thus also
 implemented for serialization purposes:
