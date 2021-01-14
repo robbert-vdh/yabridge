@@ -742,15 +742,26 @@ void Vst3Bridge::run() {
             [&](YaPlugViewContentScaleSupport::SetContentScaleFactor& request)
                 -> YaPlugViewContentScaleSupport::SetContentScaleFactor::
                     Response {
-                        return main_context
-                            .run_in_context<tresult>([&]() {
-                                return object_instances[request
-                                                            .owner_instance_id]
-                                    .plug_view_instance
-                                    ->plug_view_content_scale_support
-                                    ->setContentScaleFactor(request.factor);
-                            })
-                            .get();
+                        if (config.vst3_no_scaling) {
+                            std::cerr << "The host requested the editor GUI to "
+                                         "be scaled by a factor of "
+                                      << request.factor
+                                      << ", but the 'vst3_no_scale' option is "
+                                         "enabled. Ignoring the request."
+                                      << std::endl;
+                            return Steinberg::kResultFalse;
+                        } else {
+                            return main_context
+                                .run_in_context<tresult>([&]() {
+                                    return object_instances
+                                        [request.owner_instance_id]
+                                            .plug_view_instance
+                                            ->plug_view_content_scale_support
+                                            ->setContentScaleFactor(
+                                                request.factor);
+                                })
+                                .get();
+                        }
                     },
             [&](YaPluginBase::Initialize& request)
                 -> YaPluginBase::Initialize::Response {

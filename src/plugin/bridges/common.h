@@ -171,6 +171,9 @@ class PluginBridge {
                    << *config.frame_rate << " fps";
             other_options.push_back(option.str());
         }
+        if (config.vst3_no_scaling) {
+            other_options.push_back("vst3: no GUI scaling");
+        }
         if (!other_options.empty()) {
             init_msg << join_quoted_strings(other_options) << std::endl;
         } else {

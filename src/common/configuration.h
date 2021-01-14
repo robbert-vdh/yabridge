@@ -123,6 +123,15 @@ class Configuration {
     std::optional<float> frame_rate;
 
     /**
+     * Disable `IPlugViewContentScaleSupport::setContentScaleFactor()`. Wine
+     * does not properly implement DPI scaling, so without this option plugins
+     * using GDI+ would draw their editor GUIs at the normal size even though
+     * their window would actually be scaled. That would result in giant black
+     * borders at the top and the right of the window.
+     */
+    bool vst3_no_scaling = false;
+
+    /**
      * The name of the plugin group that should be used for the plugin this
      * configuration object was created for. If not set, then the plugin should
      * be hosted individually instead.
@@ -165,6 +174,7 @@ class Configuration {
         s.value1b(editor_xembed);
         s.ext(frame_rate, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.value4b(v); });
+        s.value1b(vst3_no_scaling);
         s.ext(group, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
 

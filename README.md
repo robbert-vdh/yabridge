@@ -283,6 +283,7 @@ plugin._
 | `editor_double_embed` | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`.                                |
 | `editor_xembed`       | `{true,false}` | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't always work properly with it, but it could be useful in certain setups. You may need to use [this Wine patch](https://github.com/psycha0s/airwave/blob/master/fix-xembed-wine-windows.patch) if you're getting blank editor windows. Defaults to `false`. _This option is only availble on the master branch._ |
 | `frame_rate`          | `<number>`     | The rate at which Win32 events are being handled and usually also the refresh rate of a plugin's editor GUI. When using plugin groups all plugins share the same event handling loop, so in those the last loaded plugin will set the refresh rate. Defaults to `60`. _This option is only available on the master branch._                                                                                                                                                               |
+| `vst3_no_scaling`     | `{true,false}` | Disable HiDPI scaling for VST3 plugins. Wine currently does not have proper HiDPI support, so you might have to enable this option if you're using a HiDPI display. Defaults to `false`. _This option is only available on the master branch._                                                                                                                                                                                                                                            |
 
 These options are workarounds for issues mentioned in the [known
 issues](#runtime-dependencies-and-known-issues) section. Depending on the hosts
@@ -348,11 +349,15 @@ deep within in, like this:
 
 ["FabFilter*.vst3"]
 group = "fabfilter"
+vst3_no_scaling = true
 
 ["Misstortion2.vst3"]
-# This option is not needed and also not recommended, but an example config file
-# without any options looks weird
-editor_xembed = true
+vst3_no_scaling = true
+
+# These options would be applied to all plugins that do not already have their
+# own configuration set
+["*"]
+vst3_no_scaling = true
 ```
 
 ## Troubleshooting common issues
