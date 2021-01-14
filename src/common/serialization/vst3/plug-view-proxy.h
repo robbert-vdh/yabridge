@@ -18,6 +18,7 @@
 
 #include "../common.h"
 #include "plug-view/parameter-finder.h"
+#include "plug-view/plug-view-content-scale-support.h"
 #include "plug-view/plug-view.h"
 
 #pragma GCC diagnostic push
@@ -30,7 +31,9 @@
  * `IEditController::createView()`, and it works exactly the same as
  * `Vst3PluginProxy`.
  */
-class Vst3PlugViewProxy : public YaPlugView, public YaParameterFinder {
+class Vst3PlugViewProxy : public YaPlugView,
+                          public YaParameterFinder,
+                          public YaPlugViewContentScaleSupport {
    public:
     /**
      * These are the arguments for constructing a
@@ -56,12 +59,15 @@ class Vst3PlugViewProxy : public YaPlugView, public YaParameterFinder {
         YaPlugView::ConstructArgs plug_view_args;
 
         YaParameterFinder::ConstructArgs parameter_finder_args;
+        YaPlugViewContentScaleSupport::ConstructArgs
+            plug_view_content_scale_support_args;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
             s.object(plug_view_args);
             s.object(parameter_finder_args);
+            s.object(plug_view_content_scale_support_args);
         }
     };
 

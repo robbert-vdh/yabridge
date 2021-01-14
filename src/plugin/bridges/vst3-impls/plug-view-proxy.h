@@ -63,6 +63,9 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
                   int32 yPos,
                   Steinberg::Vst::ParamID& resultTag /*out*/) override;
 
+    // From `iplugviewcontentscalesupport`
+    tresult PLUGIN_API setContentScaleFactor(ScaleFactor factor) override;
+
     /**
      * The `IPlugFrame` object passed by the host passed to us in
      * `IPlugView::setFrame()`. When the plugin makes a callback on the

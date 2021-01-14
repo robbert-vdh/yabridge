@@ -23,11 +23,14 @@ Vst3PlugViewProxy::ConstructArgs::ConstructArgs(
     size_t owner_instance_id)
     : owner_instance_id(owner_instance_id),
       plug_view_args(object),
-      parameter_finder_args(object) {}
+      parameter_finder_args(object),
+      plug_view_content_scale_support_args(object) {}
 
 Vst3PlugViewProxy::Vst3PlugViewProxy(const ConstructArgs&& args)
     : YaPlugView(std::move(args.plug_view_args)),
       YaParameterFinder(std::move(args.parameter_finder_args)),
+      YaPlugViewContentScaleSupport(
+          std::move(args.plug_view_content_scale_support_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3PlugViewProxy::~Vst3PlugViewProxy() {
@@ -50,6 +53,10 @@ tresult PLUGIN_API Vst3PlugViewProxy::queryInterface(Steinberg::FIDString _iid,
     if (YaParameterFinder::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IParameterFinder::iid,
                         Steinberg::Vst::IParameterFinder)
+    }
+    if (YaPlugViewContentScaleSupport::supported()) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::IPlugViewContentScaleSupport::iid,
+                        Steinberg::IPlugViewContentScaleSupport)
     }
 
     *obj = nullptr;
