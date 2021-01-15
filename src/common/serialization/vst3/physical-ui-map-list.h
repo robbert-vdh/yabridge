@@ -22,7 +22,10 @@
 
 /**
  * Serialization wrapper around `PhysicalUIMapList` that allows loading such a
- * list and recreating one from a `YaPhysicalUIMapList` object.
+ * list and writing the changes made by the plugin back to the original list.
+ * The host provides a list with the `physicalUITypeID` field set for each
+ * mapping, and the plugin then sets the `noteExpressionTypeID` to one of its
+ * note expression of it can handle it.
  */
 class YaPhysicalUIMapList {
    public:
@@ -35,11 +38,18 @@ class YaPhysicalUIMapList {
 
     /**
      * Reconstruct the original `PhysicalUIMapList` object passed to the
-     * constructor and return it. This is used as part of
-     * `YaProcessData::get()`. The returned object is valid as long as this
-     * object is alive.
+     * constructor and return it. This is used to handle
+     * `INoteExpressionPhysicalUIMapping::getPhysicalUIMapping()` on the Wine
+     * plugin host side. The returned object is valid as long as this object is
+     * alive.
      */
     Steinberg::Vst::PhysicalUIMapList get();
+
+    /**
+     * Write the `noteExpressionTypeID` values stored in `maps` back to the
+     * original physical UI mapping list we copied `maps` from.
+     */
+    void write_back(Steinberg::Vst::PhysicalUIMapList& list) const;
 
     template <typename S>
     void serialize(S& s) {

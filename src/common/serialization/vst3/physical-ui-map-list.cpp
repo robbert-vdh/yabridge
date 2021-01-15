@@ -16,6 +16,8 @@
 
 #include "physical-ui-map-list.h"
 
+#include <cassert>
+
 YaPhysicalUIMapList::YaPhysicalUIMapList() {}
 
 YaPhysicalUIMapList::YaPhysicalUIMapList(
@@ -26,4 +28,15 @@ Steinberg::Vst::PhysicalUIMapList YaPhysicalUIMapList::get() {
     return Steinberg::Vst::PhysicalUIMapList{
         .count = static_cast<Steinberg::uint32>(maps.size()),
         .map = maps.data()};
+}
+
+void YaPhysicalUIMapList::write_back(
+    Steinberg::Vst::PhysicalUIMapList& list) const {
+    assert(list.count == maps.size());
+
+    // Write the note expression IDs as updated by the plugin (if the plugin
+    // updated them) back to the original list we've read from
+    for (Steinberg::uint32 i = 0; i < list.count; i++) {
+        list.map[i].noteExpressionTypeID = maps[i].noteExpressionTypeID;
+    }
 }
