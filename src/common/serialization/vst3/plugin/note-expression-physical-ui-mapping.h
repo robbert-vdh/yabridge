@@ -64,6 +64,51 @@ class YaNoteExpressionPhysicalUIMapping
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * The response code and returned info for a call to
+     * `INoteExpressionPhysicalUIMapping::getNotePhysicalUIMapping(bus_index,
+     * channel, list)`.
+     */
+    struct GetNotePhysicalUIMappingResponse {
+        UniversalTResult result;
+        /**
+         * The list as updated by the plugin.
+         */
+        YaPhysicalUIMapList list;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(list);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `INoteExpressionPhysicalUIMapping::getNotePhysicalUIMapping(bus_index,
+     * channel, list)` to the Wine plugin host.
+     */
+    struct GetNotePhysicalUIMapping {
+        using Response = GetNotePhysicalUIMappingResponse;
+
+        native_size_t instance_id;
+
+        int32 bus_index;
+        int16 channel;
+        /**
+         * The host will provide a partially filled of physical controls, and
+         * the plugin has to assign note expression IDs to each of them.
+         */
+        YaPhysicalUIMapList list;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(bus_index);
+            s.value2b(channel);
+        }
+    };
+
     virtual tresult PLUGIN_API
     getPhysicalUIMapping(int32 busIndex,
                          int16 channel,
