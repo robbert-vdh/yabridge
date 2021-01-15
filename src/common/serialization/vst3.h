@@ -100,6 +100,7 @@ using ControlRequest =
                  YaNoteExpressionController::GetNoteExpressionInfo,
                  YaNoteExpressionController::GetNoteExpressionStringByValue,
                  YaNoteExpressionController::GetNoteExpressionValueByString,
+                 YaNoteExpressionPhysicalUIMapping::GetNotePhysicalUIMapping,
                  YaParameterFinder::FindParameter,
                  YaPlugView::IsPlatformTypeSupported,
                  YaPlugView::Attached,

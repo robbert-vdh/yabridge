@@ -164,6 +164,8 @@ struct InstanceInterfaces {
     Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midi_mapping;
     Steinberg::FUnknownPtr<Steinberg::Vst::INoteExpressionController>
         note_expression_controller;
+    Steinberg::FUnknownPtr<Steinberg::Vst::INoteExpressionPhysicalUIMapping>
+        note_expression_physical_ui_mapping;
     Steinberg::FUnknownPtr<Steinberg::IPluginBase> plugin_base;
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitData> unit_data;
     Steinberg::FUnknownPtr<Steinberg::Vst::IPrefetchableSupport>

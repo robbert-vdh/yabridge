@@ -664,11 +664,16 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getPhysicalUIMapping(
     int32 busIndex,
     int16 channel,
     Steinberg::Vst::PhysicalUIMapList& list) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: Implement "
-        "INoteExpressionPhysicalUIMapping::getPhysicalUIMapping()");
-    return Steinberg::kNotImplemented;
+    const GetNotePhysicalUIMappingResponse response = bridge.send_message(
+        YaNoteExpressionPhysicalUIMapping::GetNotePhysicalUIMapping{
+            .instance_id = instance_id(),
+            .bus_index = busIndex,
+            .channel = channel,
+            .list = list});
+
+    response.list.write_back(list);
+
+    return response.result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {

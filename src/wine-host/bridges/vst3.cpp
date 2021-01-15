@@ -51,6 +51,7 @@ InstanceInterfaces::InstanceInterfaces(
       keyswitch_controller(object),
       midi_mapping(object),
       note_expression_controller(object),
+      note_expression_physical_ui_mapping(object),
       plugin_base(object),
       unit_data(object),
       prefetchable_support(object),
@@ -534,6 +535,24 @@ void Vst3Bridge::run() {
                             GetNoteExpressionValueByStringResponse{
                                 .result = result,
                                 .value_normalized = value_normalized};
+                    },
+            [&](YaNoteExpressionPhysicalUIMapping::GetNotePhysicalUIMapping&
+                    request)
+                -> YaNoteExpressionPhysicalUIMapping::GetNotePhysicalUIMapping::
+                    Response {
+                        Steinberg::Vst::PhysicalUIMapList reconstructed_list =
+                            request.list.get();
+                        const tresult result =
+                            object_instances[request.instance_id]
+                                .note_expression_physical_ui_mapping
+                                ->getPhysicalUIMapping(request.bus_index,
+                                                       request.channel,
+                                                       reconstructed_list);
+
+                        return YaNoteExpressionPhysicalUIMapping::
+                            GetNotePhysicalUIMappingResponse{
+                                .result = result,
+                                .list = std::move(request.list)};
                     },
             [&](const YaParameterFinder::FindParameter& request)
                 -> YaParameterFinder::FindParameter::Response {
