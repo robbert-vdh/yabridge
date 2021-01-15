@@ -61,6 +61,29 @@ class YaMidiLearn : public Steinberg::Vst::IMidiLearn {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IMidiLearn::onLiveMIDIControllerInput(bus_index, channel, midi_cc)` to
+     * the Wine plugin host.
+     */
+    struct OnLiveMIDIControllerInput {
+        using Response = UniversalTResult;
+
+        native_size_t instance_id;
+
+        int32 bus_index;
+        int16 channel;
+        Steinberg::Vst::CtrlNumber midi_cc;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(bus_index);
+            s.value2b(channel);
+            s.value2b(midi_cc);
+        }
+    };
+
     virtual tresult PLUGIN_API
     onLiveMIDIControllerInput(int32 busIndex,
                               int16 channel,
