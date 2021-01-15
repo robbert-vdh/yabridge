@@ -466,6 +466,31 @@ bool Vst3Logger::log_request(
     });
 }
 
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaNoteExpressionPhysicalUIMapping::GetNotePhysicalUIMapping&
+        request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": "
+                   "INoteExpressionPhysicalUIMapping::getNotePhysicalUIMapping("
+                   "busIndex = "
+                << request.bus_index << ", channel = " << request.channel
+                << ", list = ";
+        for (bool first = true; const auto& mapping : request.list.maps) {
+            if (!first) {
+                message << ", ";
+            }
+
+            // The host provides the physical UI elements, and the plugin should
+            // fill in a note expression ID for each of them.
+            message << mapping.physicalUITypeID << " => ?";
+            first = false;
+        }
+        message << ")";
+    });
+}
+
 bool Vst3Logger::log_request(bool is_host_vst,
                              const YaParameterFinder::FindParameter& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
@@ -1392,6 +1417,26 @@ void Vst3Logger::log_response(
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
             message << ", " << response.value_normalized;
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaNoteExpressionPhysicalUIMapping::GetNotePhysicalUIMappingResponse&
+        response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", [";
+            for (bool first = true; const auto& mapping : response.list.maps) {
+                if (!first) {
+                    message << ", ";
+                }
+                message << mapping.physicalUITypeID << " => "
+                        << mapping.noteExpressionTypeID;
+                first = false;
+            }
         }
     });
 }

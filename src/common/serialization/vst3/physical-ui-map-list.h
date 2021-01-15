@@ -46,7 +46,6 @@ class YaPhysicalUIMapList {
         s.container(maps, 1 << 31);
     }
 
-   private:
     std::vector<Steinberg::Vst::PhysicalUIMap> maps;
 };
 
