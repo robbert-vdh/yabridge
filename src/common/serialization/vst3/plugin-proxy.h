@@ -31,6 +31,7 @@
 #include "plugin/keyswitch-controller.h"
 #include "plugin/midi-mapping.h"
 #include "plugin/note-expression-controller.h"
+#include "plugin/note-expression-physical-ui-mapping.h"
 #include "plugin/plugin-base.h"
 #include "plugin/prefetchable-support.h"
 #include "plugin/program-list-data.h"
@@ -76,6 +77,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
                         public YaKeyswitchController,
                         public YaMidiMapping,
                         public YaNoteExpressionController,
+                        public YaNoteExpressionPhysicalUIMapping,
                         public YaPluginBase,
                         public YaPrefetchableSupport,
                         public YaProgramListData,
@@ -115,6 +117,8 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
         YaMidiMapping::ConstructArgs midi_mapping_args;
         YaNoteExpressionController::ConstructArgs
             note_expression_controller_args;
+        YaNoteExpressionPhysicalUIMapping::ConstructArgs
+            note_expression_physical_ui_mapping_args;
         YaPluginBase::ConstructArgs plugin_base_args;
         YaPrefetchableSupport::ConstructArgs prefetchable_support_args;
         YaProgramListData::ConstructArgs program_list_data_args;
@@ -138,6 +142,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
             s.object(keyswitch_controller_args);
             s.object(midi_mapping_args);
             s.object(note_expression_controller_args);
+            s.object(note_expression_physical_ui_mapping_args);
             s.object(plugin_base_args);
             s.object(prefetchable_support_args);
             s.object(program_list_data_args);

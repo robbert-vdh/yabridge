@@ -660,6 +660,17 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getNoteExpressionValueByString(
     }
 }
 
+tresult PLUGIN_API Vst3PluginProxyImpl::getPhysicalUIMapping(
+    int32 busIndex,
+    int16 channel,
+    Steinberg::Vst::PhysicalUIMapList& list) {
+    // TODO: Implement
+    bridge.logger.log(
+        "TODO: Implement "
+        "INoteExpressionPhysicalUIMapping::getPhysicalUIMapping()");
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
     if (context) {
         // We will create a proxy object that that supports all the same

@@ -57,6 +57,8 @@ Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
       YaMidiMapping(std::move(args.midi_mapping_args)),
       YaNoteExpressionController(
           std::move(args.note_expression_controller_args)),
+      YaNoteExpressionPhysicalUIMapping(
+          std::move(args.note_expression_physical_ui_mapping_args)),
       YaPluginBase(std::move(args.plugin_base_args)),
       YaPrefetchableSupport(std::move(args.prefetchable_support_args)),
       YaProgramListData(std::move(args.program_list_data_args)),
@@ -146,6 +148,11 @@ tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
         QUERY_INTERFACE(_iid, obj,
                         Steinberg::Vst::INoteExpressionController::iid,
                         Steinberg::Vst::INoteExpressionController)
+    }
+    if (YaNoteExpressionPhysicalUIMapping::supported()) {
+        QUERY_INTERFACE(_iid, obj,
+                        Steinberg::Vst::INoteExpressionPhysicalUIMapping::iid,
+                        Steinberg::Vst::INoteExpressionPhysicalUIMapping)
     }
     if (YaPrefetchableSupport::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IPrefetchableSupport::iid,

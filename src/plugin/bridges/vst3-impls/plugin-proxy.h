@@ -191,6 +191,12 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
         const Steinberg::Vst::TChar* string /*in*/,
         Steinberg::Vst::NoteExpressionValue& valueNormalized /*out*/) override;
 
+    // From `INoteExpressionPhysicalUIMapping`
+    tresult PLUGIN_API
+    getPhysicalUIMapping(int32 busIndex,
+                         int16 channel,
+                         Steinberg::Vst::PhysicalUIMapList& list) override;
+
     // From `IPluginBase`
     tresult PLUGIN_API initialize(FUnknown* context) override;
     tresult PLUGIN_API terminate() override;
