@@ -203,6 +203,15 @@ then you can open a terminal and run `echo $SHELL` to find out. For the below
 examples I'll assume you're using the default installation location at
 `~/.local/share/yabridge`.
 
+- First if all, if you're using GDM, LightDM or LXDM as your display manager
+  (for instance if you're using GNOME, XFCE or LXDE), then your display manager
+  won't respect your login shell and it will always use `/bin/sh` instead. In
+  that case you will need to add the following line to `~/.profile`:
+
+  ```shell
+  export PATH="$HOME/.local/share/yabridge:$PATH"
+  ```
+
 - If you are using the default **Bash** shell, then you will want to add the
   following line to `~/.bash_profile` (or `~/.profile` if it does not exist):
 
@@ -452,15 +461,15 @@ these negative side effects:
 - The last but probably even more important thing you can do is to use a build
   of Wine with Proton's fsync patches. This can improve performance
   significantly, especially when using a lot of plugins at the same time. If
-  you're running Arch or Manjaro, then you can use
-  [Tk-Glitch's Wine fork](https://github.com/Frogging-Family/wine-tkg-git) for a
-  customizable version of Wine with the fsync patches included. Aside from a
-  patched copy of Wine you'll also need a supported kernel for this to work.
-  Manjaro's kernel supports fsync out of the box, and on Arch you can use the
-  `linux-zen` kernel. Finally you'll have to set the `WINEFSYNC` environment
-  variable to `1` to enable fsync. See the [search path
-  setup](#search-path-setup) section for more information on where to do this.
-  You can use the following command to check if this is set correctly:
+  you're running Arch or Manjaro, then you can use [Tk-Glitch's Wine
+  fork](https://github.com/Frogging-Family/wine-tkg-git) for a customizable
+  version of Wine with the fsync patches included. Aside from a patched copy of
+  Wine you'll also need a supported kernel for this to work. Manjaro's kernel
+  supports fsync out of the box, and on Arch you can use the `linux-zen` kernel.
+  Finally you'll have to set the `WINEFSYNC` environment variable to `1` to
+  enable fsync. See the [search path setup](#search-path-setup) section for more
+  information on where to set this environment variable. You can use the
+  following command to check if this is set correctly:
 
   ```shell
   env -i HOME="$HOME" $SHELL -l -c 'echo $WINEFSYNC'
