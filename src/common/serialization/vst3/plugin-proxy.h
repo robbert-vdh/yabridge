@@ -29,6 +29,7 @@
 #include "plugin/edit-controller.h"
 #include "plugin/info-listener.h"
 #include "plugin/keyswitch-controller.h"
+#include "plugin/midi-learn.h"
 #include "plugin/midi-mapping.h"
 #include "plugin/note-expression-controller.h"
 #include "plugin/note-expression-physical-ui-mapping.h"
@@ -75,6 +76,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
                         public YaEditControllerHostEditing,
                         public YaInfoListener,
                         public YaKeyswitchController,
+                        public YaMidiLearn,
                         public YaMidiMapping,
                         public YaNoteExpressionController,
                         public YaNoteExpressionPhysicalUIMapping,
@@ -114,6 +116,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
             edit_controller_host_editing_args;
         YaInfoListener::ConstructArgs info_listener_args;
         YaKeyswitchController::ConstructArgs keyswitch_controller_args;
+        YaMidiLearn::ConstructArgs midi_learn_args;
         YaMidiMapping::ConstructArgs midi_mapping_args;
         YaNoteExpressionController::ConstructArgs
             note_expression_controller_args;
@@ -140,6 +143,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
             s.object(edit_controller_host_editing_args);
             s.object(info_listener_args);
             s.object(keyswitch_controller_args);
+            s.object(midi_learn_args);
             s.object(midi_mapping_args);
             s.object(note_expression_controller_args);
             s.object(note_expression_physical_ui_mapping_args);

@@ -562,6 +562,16 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getKeyswitchInfo(
     return response.result;
 }
 
+tresult PLUGIN_API Vst3PluginProxyImpl::onLiveMIDIControllerInput(
+    int32 busIndex,
+    int16 channel,
+    Steinberg::Vst::CtrlNumber midiCC) {
+    // TODO: Implement
+    bridge.logger.log(
+        "TODO: Implement IMidiLearn::onLiveMIDIControllerInput()");
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::getMidiControllerAssignment(
     int32 busIndex,
     int16 channel,

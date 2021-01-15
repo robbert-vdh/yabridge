@@ -32,6 +32,7 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
       edit_controller_host_editing_args(object),
       info_listener_args(object),
       keyswitch_controller_args(object),
+      midi_learn_args(object),
       midi_mapping_args(object),
       note_expression_controller_args(object),
       plugin_base_args(object),
@@ -54,6 +55,7 @@ Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
           std::move(args.edit_controller_host_editing_args)),
       YaInfoListener(std::move(args.info_listener_args)),
       YaKeyswitchController(std::move(args.keyswitch_controller_args)),
+      YaMidiLearn(std::move(args.midi_learn_args)),
       YaMidiMapping(std::move(args.midi_mapping_args)),
       YaNoteExpressionController(
           std::move(args.note_expression_controller_args)),
@@ -139,6 +141,10 @@ tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
     if (YaKeyswitchController::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IKeyswitchController::iid,
                         Steinberg::Vst::IKeyswitchController)
+    }
+    if (YaMidiLearn::supported()) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IMidiLearn::iid,
+                        Steinberg::Vst::IMidiLearn)
     }
     if (YaMidiMapping::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IMidiMapping::iid,

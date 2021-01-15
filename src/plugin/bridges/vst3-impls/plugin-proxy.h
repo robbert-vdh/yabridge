@@ -163,6 +163,12 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
                      int32 keySwitchIndex,
                      Steinberg::Vst::KeyswitchInfo& info /*out*/) override;
 
+    // From `IMidiLearn`
+    tresult PLUGIN_API
+    onLiveMIDIControllerInput(int32 busIndex,
+                              int16 channel,
+                              Steinberg::Vst::CtrlNumber midiCC) override;
+
     // From `IMidiMapping`
     tresult PLUGIN_API
     getMidiControllerAssignment(int32 busIndex,
