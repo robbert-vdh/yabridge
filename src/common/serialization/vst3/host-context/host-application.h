@@ -105,6 +105,10 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
 
     virtual tresult PLUGIN_API
     getName(Steinberg::Vst::String128 name) override = 0;
+
+    // We don't have to (and can't) pass this through. This is only used to
+    // create `IMessage` and `IAttributeList` objects that the plugin can use to
+    // pass messages between the processor and the controller objects.
     virtual tresult PLUGIN_API createInstance(Steinberg::TUID cid,
                                               Steinberg::TUID _iid,
                                               void** obj) override = 0;
