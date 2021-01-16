@@ -1264,6 +1264,22 @@ bool Vst3Logger::log_request(bool is_host_vst,
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
+    const YaPlugInterfaceSupport::IsPlugInterfaceSupported& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        // This can be called either from a plugin object or from the plugin's
+        // plugin factory
+        if (request.owner_instance_id) {
+            message << *request.owner_instance_id << ": ";
+        }
+
+        message << ": IPlugInterfaceSupport::isPlugInterfaceSupported(unitId = "
+                << format_uid(Steinberg::FUID::fromTUID(request.iid.data()))
+                << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
     const YaUnitHandler::NotifyUnitSelection& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.owner_instance_id

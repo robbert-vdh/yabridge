@@ -223,6 +223,8 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaHostApplication::GetName&);
     bool log_request(bool is_host_vst, const YaPlugFrame::ResizeView&);
     bool log_request(bool is_host_vst,
+                     const YaPlugInterfaceSupport::IsPlugInterfaceSupported&);
+    bool log_request(bool is_host_vst,
                      const YaUnitHandler::NotifyUnitSelection&);
     bool log_request(bool is_host_vst,
                      const YaUnitHandler::NotifyProgramListChange&);
