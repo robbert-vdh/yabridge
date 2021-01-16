@@ -18,6 +18,7 @@
 
 #include "../common.h"
 #include "host-context/host-application.h"
+#include "host-context/plug-interface-support.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -32,7 +33,8 @@
  * `IPluginBase::initialize()` we'll keep track of the object instance ID the
  * actual context object belongs to.
  */
-class Vst3HostContextProxy : public YaHostApplication {
+class Vst3HostContextProxy : public YaHostApplication,
+                             public YaPlugInterfaceSupport {
    public:
     /**
      * These are the arguments for constructing a
@@ -56,6 +58,7 @@ class Vst3HostContextProxy : public YaHostApplication {
         std::optional<native_size_t> owner_instance_id;
 
         YaHostApplication::ConstructArgs host_application_args;
+        YaPlugInterfaceSupport::ConstructArgs plug_interface_support_args;
 
         template <typename S>
         void serialize(S& s) {
@@ -64,6 +67,7 @@ class Vst3HostContextProxy : public YaHostApplication {
                       s.value8b(instance_id);
                   });
             s.object(host_application_args);
+            s.object(plug_interface_support_args);
         }
     };
 

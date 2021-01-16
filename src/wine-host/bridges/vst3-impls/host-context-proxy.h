@@ -36,6 +36,10 @@ class Vst3HostContextProxyImpl : public Vst3HostContextProxy {
                                       Steinberg::TUID _iid,
                                       void** obj) override;
 
+    // From `IPlugInterfaceSupport`
+    tresult PLUGIN_API
+    isPlugInterfaceSupported(const Steinberg::TUID _iid) override;
+
    private:
     Vst3Bridge& bridge;
 };

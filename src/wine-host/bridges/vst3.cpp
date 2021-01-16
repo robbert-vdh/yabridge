@@ -804,10 +804,12 @@ void Vst3Bridge::run() {
                 //      start timers from here.
                 return main_context
                     .run_in_context<tresult>([&]() {
+                        // This static cast is required to upcast to `FUnknown*`
                         return object_instances[request.instance_id]
                             .plugin_base->initialize(
-                                object_instances[request.instance_id]
-                                    .host_context_proxy);
+                                static_cast<YaHostApplication*>(
+                                    object_instances[request.instance_id]
+                                        .host_context_proxy));
                     })
                     .get();
             },
@@ -876,7 +878,10 @@ void Vst3Bridge::run() {
                     module->getFactory().get());
                 assert(factory_3);
 
-                return factory_3->setHostContext(plugin_factory_host_context);
+                // This static cast is required to upcast to `FUnknown*`
+                return factory_3->setHostContext(
+                    static_cast<YaHostApplication*>(
+                        plugin_factory_host_context));
             },
             [&](const YaUnitInfo::GetUnitCount& request)
                 -> YaUnitInfo::GetUnitCount::Response {

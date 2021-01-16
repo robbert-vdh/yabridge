@@ -93,3 +93,12 @@ Vst3HostContextProxyImpl::createInstance(Steinberg::TUID /*cid*/,
 
     return response;
 }
+
+tresult PLUGIN_API
+Vst3HostContextProxyImpl::isPlugInterfaceSupported(const Steinberg::TUID _iid) {
+    // TODO: Implement
+    std::cerr
+        << "TODO: Implement IPlugInterfaceSupport::isPlugInterfaceSupported()"
+        << std::endl;
+    return Steinberg::kNotImplemented;
+}

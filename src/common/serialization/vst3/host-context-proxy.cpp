@@ -21,10 +21,13 @@ Vst3HostContextProxy::ConstructArgs::ConstructArgs() {}
 Vst3HostContextProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
     std::optional<size_t> owner_instance_id)
-    : owner_instance_id(owner_instance_id), host_application_args(object) {}
+    : owner_instance_id(owner_instance_id),
+      host_application_args(object),
+      plug_interface_support_args(object) {}
 
 Vst3HostContextProxy::Vst3HostContextProxy(const ConstructArgs&& args)
     : YaHostApplication(std::move(args.host_application_args)),
+      YaPlugInterfaceSupport(std::move(args.plug_interface_support_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3HostContextProxy::~Vst3HostContextProxy() {
@@ -43,6 +46,10 @@ Vst3HostContextProxy::queryInterface(Steinberg::FIDString _iid, void** obj) {
                         Steinberg::Vst::IHostApplication)
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IHostApplication::iid,
                         Steinberg::Vst::IHostApplication)
+    }
+    if (YaPlugInterfaceSupport::supported()) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IPlugInterfaceSupport::iid,
+                        Steinberg::Vst::IPlugInterfaceSupport)
     }
 
     *obj = nullptr;
