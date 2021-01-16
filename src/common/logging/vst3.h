@@ -148,6 +148,9 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaPluginBase::Terminate&);
     bool log_request(bool is_host_vst, const YaPluginFactory::Construct&);
     bool log_request(bool is_host_vst, const YaPluginFactory::SetHostContext&);
+    bool log_request(
+        bool is_host_vst,
+        const YaProcessContextRequirements::GetProcessContextRequirements&);
     bool log_request(bool is_host_vst,
                      const YaProgramListData::ProgramDataSupported&);
     bool log_request(bool is_host_vst,

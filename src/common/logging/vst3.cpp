@@ -676,6 +676,15 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const YaProcessContextRequirements::GetProcessContextRequirements&) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message
+            << "IProcessContextRequirements::getProcessContextRequirements()";
+    });
+}
+
 bool Vst3Logger::log_request(bool is_host_vst,
                              const YaProgramListData::ProgramDataSupported&) {
     return log_request_base(is_host_vst, [&](auto& message) {
