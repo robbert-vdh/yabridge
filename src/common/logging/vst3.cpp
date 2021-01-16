@@ -402,6 +402,17 @@ bool Vst3Logger::log_request(
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
+    const YaMidiLearn::OnLiveMIDIControllerInput& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": IMidiLearn::onLiveMIDIControllerInput(busIndex = "
+                << request.bus_index << ", channel = " << request.channel
+                << ", midiCC = " << request.midi_cc << ")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
     const YaMidiMapping::GetMidiControllerAssignment& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id

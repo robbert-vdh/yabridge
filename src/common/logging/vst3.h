@@ -111,6 +111,8 @@ class Vst3Logger {
     bool log_request(bool is_host_vst,
                      const YaKeyswitchController::GetKeyswitchInfo&);
     bool log_request(bool is_host_vst,
+                     const YaMidiLearn::OnLiveMIDIControllerInput&);
+    bool log_request(bool is_host_vst,
                      const YaMidiMapping::GetMidiControllerAssignment&);
     bool log_request(bool is_host_vst,
                      const YaNoteExpressionController::GetNoteExpressionCount&);
