@@ -128,6 +128,29 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::requestBusActivation(
             .state = state});
 }
 
+tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::start(
+    ProgressType type,
+    const Steinberg::tchar* optionalDescription,
+    ID& outID) {
+    // TODO: Implement
+    std::cerr << "TODO: Implement IProgress::start()" << std::endl;
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API
+Vst3ComponentHandlerProxyImpl::update(ID id,
+                                      Steinberg::Vst::ParamValue normValue) {
+    // TODO: Implement
+    std::cerr << "TODO: Implement IProgress::update()" << std::endl;
+    return Steinberg::kNotImplemented;
+}
+
+tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::finish(ID id) {
+    // TODO: Implement
+    std::cerr << "TODO: Implement IProgress::finish()" << std::endl;
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitSelection(
     Steinberg::Vst::UnitID unitId) {
     return bridge.send_message(YaUnitHandler::NotifyUnitSelection{

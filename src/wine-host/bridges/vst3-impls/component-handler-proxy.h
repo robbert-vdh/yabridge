@@ -56,6 +56,14 @@ class Vst3ComponentHandlerProxyImpl : public Vst3ComponentHandlerProxy {
                                             int32 index,
                                             TBool state) override;
 
+    // From `IProgress`
+    tresult PLUGIN_API start(ProgressType type,
+                             const Steinberg::tchar* optionalDescription,
+                             ID& outID) override;
+    tresult PLUGIN_API update(ID id,
+                              Steinberg::Vst::ParamValue normValue) override;
+    tresult PLUGIN_API finish(ID id) override;
+
     // From `IUnitHandler`
     tresult PLUGIN_API
     notifyUnitSelection(Steinberg::Vst::UnitID unitId) override;
