@@ -26,7 +26,7 @@
 
 /**
  * Wraps around `IUnitHandler` for serialization purposes. This is instantiated
- * as part of `Vst3UnitHandlerProxy`.
+ * as part of `Vst3ComponentHandlerProxy`.
  */
 class YaUnitHandler : public Steinberg::Vst::IUnitHandler {
    public:

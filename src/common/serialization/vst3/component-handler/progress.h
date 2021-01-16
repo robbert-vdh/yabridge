@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <pluginterfaces/vst/ivstunits.h>
+#include <pluginterfaces/vst/ivsteditcontroller.h>
 
 #include "../../common.h"
 #include "../base.h"
@@ -25,19 +25,19 @@
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 
 /**
- * Wraps around `IUnitHandler2` for serialization purposes. This is instantiated
- * as part of `Vst3ComponentHandlerProxy`.
+ * Wraps around `IProgress` for serialization purposes. This is instantiated as
+ * part of `Vst3ComponentHandlerProxy`.
  */
-class YaUnitHandler2 : public Steinberg::Vst::IUnitHandler2 {
+class YaProgress : public Steinberg::Vst::IProgress {
    public:
     /**
-     * These are the arguments for creating a `YaUnitHandler2`.
+     * These are the arguments for creating a `YaProgress`.
      */
     struct ConstructArgs {
         ConstructArgs();
 
         /**
-         * Check whether an existing implementation implements `IUnitHandler2`
+         * Check whether an existing implementation implements `IProgress`
          * and read arguments from it.
          */
         ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
@@ -57,27 +57,17 @@ class YaUnitHandler2 : public Steinberg::Vst::IUnitHandler2 {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaUnitHandler2(const ConstructArgs&& args);
+    YaProgress(const ConstructArgs&& args);
 
     inline bool supported() const { return arguments.supported; }
 
-    /**
-     * Message to pass through a call to
-     * `IUnitHandler2::notifyUnitByBusChange()` to the unit handler provided by
-     * the host.
-     */
-    struct NotifyUnitByBusChange {
-        using Response = UniversalTResult;
-
-        native_size_t owner_instance_id;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(owner_instance_id);
-        }
-    };
-
-    virtual tresult PLUGIN_API notifyUnitByBusChange() override = 0;
+    virtual tresult PLUGIN_API
+    start(ProgressType type,
+          const Steinberg::tchar* optionalDescription,
+          ID& outID) override = 0;
+    virtual tresult PLUGIN_API
+    update(ID id, Steinberg::Vst::ParamValue normValue) override = 0;
+    virtual tresult PLUGIN_API finish(ID id) override = 0;
 
    protected:
     ConstructArgs arguments;

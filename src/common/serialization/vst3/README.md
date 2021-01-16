@@ -55,6 +55,7 @@ VST3 host interfaces are implemented as follows:
 | `YaComponentHandler2`             | `Vst3ComponentHandlerProxy` | `IComponentHandler2`             |
 | `YaComponentHandler3`             | `Vst3ComponentHandlerProxy` | `IComponentHandler3`             |
 | `YaComponentHandlerBusActivation` | `Vst3ComponentHandlerProxy` | `IComponentHandlerBusActivation` |
+| `YaProgress`                      | `Vst3ComponentHandlerProxy` | `IProgress`                      |
 | `YaUnitHandler`                   | `Vst3ComponentHandlerProxy` | `IUnitHandler`                   |
 | `YaUnitHandler2`                  | `Vst3ComponentHandlerProxy` | `IUnitHandler2`                  |
 | `Vst3ContextMenuProxy`            |                             | All of the below:                |
