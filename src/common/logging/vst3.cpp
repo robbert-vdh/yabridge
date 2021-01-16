@@ -1287,6 +1287,41 @@ bool Vst3Logger::log_request(
     });
 }
 
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaProgress::Start& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IProgress::start(type = " << request.type
+                << ", optionalDescription = ";
+        if (request.optional_description) {
+            message << "\""
+                    << VST3::StringConvert::convert(
+                           *request.optional_description)
+                    << "\"";
+        } else {
+            message << "<nullptr>";
+        }
+        message << ", &outID)";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaProgress::Update& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IProgress::update(id = " << request.id
+                << ", normValue = " << request.norm_value << ")";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
+                             const YaProgress::Finish& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": IProgress::finish(id = " << request.id << ")";
+    });
+}
+
 bool Vst3Logger::log_request(
     bool is_host_vst,
     const YaUnitHandler::NotifyUnitSelection& request) {
@@ -1764,6 +1799,16 @@ void Vst3Logger::log_response(
         if (response.result == Steinberg::kResultOk) {
             std::string value = VST3::StringConvert::convert(response.name);
             message << ", \"" << value << "\"";
+        }
+    });
+}
+
+void Vst3Logger::log_response(bool is_host_vst,
+                              const YaProgress::StartResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", " << response.out_id;
         }
     });
 }

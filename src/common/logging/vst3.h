@@ -227,6 +227,9 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const YaPlugFrame::ResizeView&);
     bool log_request(bool is_host_vst,
                      const YaPlugInterfaceSupport::IsPlugInterfaceSupported&);
+    bool log_request(bool is_host_vst, const YaProgress::Start&);
+    bool log_request(bool is_host_vst, const YaProgress::Update&);
+    bool log_request(bool is_host_vst, const YaProgress::Finish&);
     bool log_request(bool is_host_vst,
                      const YaUnitHandler::NotifyUnitSelection&);
     bool log_request(bool is_host_vst,
@@ -307,6 +310,7 @@ class Vst3Logger {
                       const YaComponentHandler3::CreateContextMenuResponse&);
     void log_response(bool is_host_vst,
                       const YaHostApplication::GetNameResponse&);
+    void log_response(bool is_host_vst, const YaProgress::StartResponse&);
 
     template <typename T>
     void log_response(bool is_host_vst, const PrimitiveWrapper<T>& value) {
