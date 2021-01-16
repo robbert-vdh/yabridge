@@ -208,6 +208,9 @@ using CallbackRequest =
                  YaHostApplication::GetName,
                  YaPlugFrame::ResizeView,
                  YaPlugInterfaceSupport::IsPlugInterfaceSupported,
+                 YaProgress::Start,
+                 YaProgress::Update,
+                 YaProgress::Finish,
                  YaUnitHandler::NotifyUnitSelection,
                  YaUnitHandler::NotifyProgramListChange,
                  YaUnitHandler2::NotifyUnitByBusChange>;

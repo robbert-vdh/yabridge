@@ -287,6 +287,35 @@ Vst3PluginBridge::Vst3PluginBridge()
                                                      request.iid.data());
                                          }
                                      },
+                [&](const YaProgress::Start& request)
+                    -> YaProgress::Start::Response {
+                    Steinberg::Vst::IProgress::ID out_id;
+                    const tresult result =
+                        plugin_proxies.at(request.owner_instance_id)
+                            .get()
+                            .progress->start(
+                                request.type,
+                                request.optional_description
+                                    ? u16string_to_tchar_pointer(
+                                          *request.optional_description)
+                                    : nullptr,
+                                out_id);
+
+                    return YaProgress::StartResponse{.result = result,
+                                                     .out_id = out_id};
+                },
+                [&](const YaProgress::Update& request)
+                    -> YaProgress::Update::Response {
+                    return plugin_proxies.at(request.owner_instance_id)
+                        .get()
+                        .progress->update(request.id, request.norm_value);
+                },
+                [&](const YaProgress::Finish& request)
+                    -> YaProgress::Finish::Response {
+                    return plugin_proxies.at(request.owner_instance_id)
+                        .get()
+                        .progress->finish(request.id);
+                },
                 [&](const YaUnitHandler::NotifyUnitSelection& request)
                     -> YaUnitHandler::NotifyUnitSelection::Response {
                     return plugin_proxies.at(request.owner_instance_id)

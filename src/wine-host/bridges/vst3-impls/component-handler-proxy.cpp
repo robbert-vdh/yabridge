@@ -132,23 +132,32 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::start(
     ProgressType type,
     const Steinberg::tchar* optionalDescription,
     ID& outID) {
-    // TODO: Implement
-    std::cerr << "TODO: Implement IProgress::start()" << std::endl;
-    return Steinberg::kNotImplemented;
+    const StartResponse response = bridge.send_message(YaProgress::Start{
+        .owner_instance_id = owner_instance_id(),
+        .type = type,
+        .optional_description =
+            (optionalDescription
+                 ? std::optional<std::u16string>(
+                       tchar_pointer_to_u16string(optionalDescription))
+                 : std::nullopt)});
+
+    outID = response.out_id;
+
+    return response.result;
 }
 
 tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::update(ID id,
                                       Steinberg::Vst::ParamValue normValue) {
-    // TODO: Implement
-    std::cerr << "TODO: Implement IProgress::update()" << std::endl;
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaProgress::Update{.owner_instance_id = owner_instance_id(),
+                           .id = id,
+                           .norm_value = normValue});
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::finish(ID id) {
-    // TODO: Implement
-    std::cerr << "TODO: Implement IProgress::finish()" << std::endl;
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaProgress::Finish{.owner_instance_id = owner_instance_id(), .id = id});
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitSelection(

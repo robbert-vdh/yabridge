@@ -353,6 +353,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
         component_handler_3;
     Steinberg::FUnknownPtr<Steinberg::Vst::IComponentHandlerBusActivation>
         component_handler_bus_activation;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IProgress> progress;
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler> unit_handler;
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler2> unit_handler_2;
 
