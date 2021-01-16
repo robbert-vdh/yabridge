@@ -20,6 +20,7 @@
 
 #include "../../common.h"
 #include "../base.h"
+#include "bitsery/ext/std_optional.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -61,12 +62,95 @@ class YaProgress : public Steinberg::Vst::IProgress {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * The response code and returned ID for a call to `IProgress::start(type,
+     * optional_description, &out_id)`.
+     */
+    struct StartResponse {
+        UniversalTResult result;
+        ID out_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.value8b(out_id);
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IProgress::start(type,
+     * optional_description, &out_id)` to the component handler provided by the
+     * host.
+     */
+    struct Start {
+        using Response = StartResponse;
+
+        native_size_t owner_instance_id;
+
+        ProgressType type;
+        /**
+         * The docs mention that this is optional. They don't specify whether
+         * optional means a null pointer or an empty string.
+         */
+        std::optional<std::u16string> optional_description;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value4b(type);
+            s.ext(optional_description, bitsery::ext::StdOptional{},
+                  [](S& s, std::u16string& description) {
+                      s.text2b(description, 1024);
+                  });
+        }
+    };
+
     virtual tresult PLUGIN_API
     start(ProgressType type,
           const Steinberg::tchar* optionalDescription,
           ID& outID) override = 0;
+
+    /**
+     * Message to pass through a call to `IProgress::update(id, norm_value)` to
+     * the component handler provided by the host.
+     */
+    struct Update {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        ID id;
+        Steinberg::Vst::ParamValue norm_value;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value8b(id);
+            s.value8b(norm_value);
+        }
+    };
+
     virtual tresult PLUGIN_API
     update(ID id, Steinberg::Vst::ParamValue normValue) override = 0;
+
+    /**
+     * Message to pass through a call to `IProgress::finish(id)` to the
+     * component handler provided by the host.
+     */
+    struct Finish {
+        using Response = UniversalTResult;
+
+        native_size_t owner_instance_id;
+
+        ID id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(owner_instance_id);
+            s.value8b(id);
+        }
+    };
+
     virtual tresult PLUGIN_API finish(ID id) override = 0;
 
    protected:
