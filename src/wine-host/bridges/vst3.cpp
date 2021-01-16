@@ -56,6 +56,7 @@ InstanceInterfaces::InstanceInterfaces(
       plugin_base(object),
       unit_data(object),
       prefetchable_support(object),
+      process_context_requirements(object),
       program_list_data(object),
       unit_info(object),
       xml_representation_controller(object) {}
@@ -827,6 +828,14 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .program_list_data->programDataSupported(request.list_id);
             },
+            [&](const YaProcessContextRequirements::
+                    GetProcessContextRequirements& request)
+                -> YaProcessContextRequirements::GetProcessContextRequirements::
+                    Response {
+                        return object_instances[request.instance_id]
+                            .process_context_requirements
+                            ->getProcessContextRequirements();
+                    },
             [&](YaProgramListData::GetProgramData& request)
                 -> YaProgramListData::GetProgramData::Response {
                 const tresult result =

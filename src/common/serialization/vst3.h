@@ -120,6 +120,7 @@ using ControlRequest =
                  YaPluginBase::Terminate,
                  YaPluginFactory::Construct,
                  YaPluginFactory::SetHostContext,
+                 YaProcessContextRequirements::GetProcessContextRequirements,
                  YaProgramListData::ProgramDataSupported,
                  YaProgramListData::GetProgramData,
                  YaProgramListData::SetProgramData,

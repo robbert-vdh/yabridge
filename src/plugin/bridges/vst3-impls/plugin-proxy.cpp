@@ -729,11 +729,9 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getPrefetchableSupport(
 }
 
 uint32 PLUGIN_API Vst3PluginProxyImpl::getProcessContextRequirements() {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: Implement "
-        "IProcessContextRequirements::getProcessContextRequirements()");
-    return 0;
+    return bridge.send_message(
+        YaProcessContextRequirements::GetProcessContextRequirements{
+            .instance_id = instance_id()});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::programDataSupported(
