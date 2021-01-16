@@ -161,6 +161,7 @@ struct InstanceInterfaces {
         info_listener;
     Steinberg::FUnknownPtr<Steinberg::Vst::IKeyswitchController>
         keyswitch_controller;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IMidiLearn> midi_learn;
     Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midi_mapping;
     Steinberg::FUnknownPtr<Steinberg::Vst::INoteExpressionController>
         note_expression_controller;

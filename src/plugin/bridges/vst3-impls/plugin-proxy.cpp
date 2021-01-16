@@ -566,10 +566,11 @@ tresult PLUGIN_API Vst3PluginProxyImpl::onLiveMIDIControllerInput(
     int32 busIndex,
     int16 channel,
     Steinberg::Vst::CtrlNumber midiCC) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: Implement IMidiLearn::onLiveMIDIControllerInput()");
-    return Steinberg::kNotImplemented;
+    return bridge.send_message(
+        YaMidiLearn::OnLiveMIDIControllerInput{.instance_id = instance_id(),
+                                               .bus_index = busIndex,
+                                               .channel = channel,
+                                               .midi_cc = midiCC});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getMidiControllerAssignment(

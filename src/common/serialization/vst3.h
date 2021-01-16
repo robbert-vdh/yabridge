@@ -95,6 +95,7 @@ using ControlRequest =
                  YaInfoListener::SetChannelContextInfos,
                  YaKeyswitchController::GetKeyswitchCount,
                  YaKeyswitchController::GetKeyswitchInfo,
+                 YaMidiLearn::OnLiveMIDIControllerInput,
                  YaMidiMapping::GetMidiControllerAssignment,
                  YaNoteExpressionController::GetNoteExpressionCount,
                  YaNoteExpressionController::GetNoteExpressionInfo,

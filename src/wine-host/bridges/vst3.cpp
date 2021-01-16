@@ -49,6 +49,7 @@ InstanceInterfaces::InstanceInterfaces(
       edit_controller_host_editing(object),
       info_listener(object),
       keyswitch_controller(object),
+      midi_learn(object),
       midi_mapping(object),
       note_expression_controller(object),
       note_expression_physical_ui_mapping(object),
@@ -464,6 +465,12 @@ void Vst3Bridge::run() {
 
                 return YaKeyswitchController::GetKeyswitchInfoResponse{
                     .result = result, .info = std::move(info)};
+            },
+            [&](const YaMidiLearn::OnLiveMIDIControllerInput& request)
+                -> YaMidiLearn::OnLiveMIDIControllerInput::Response {
+                return object_instances[request.instance_id]
+                    .midi_learn->onLiveMIDIControllerInput(
+                        request.bus_index, request.channel, request.midi_cc);
             },
             [&](const YaMidiMapping::GetMidiControllerAssignment& request)
                 -> YaMidiMapping::GetMidiControllerAssignment::Response {
