@@ -64,6 +64,22 @@ class YaProcessContextRequirements
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * Message to pass through a call to
+     * `IProcessContextRequirements::getProcessContextRequirements()` to the
+     * Wine plugin host.
+     */
+    struct GetProcessContextRequirements {
+        using Response = PrimitiveWrapper<uint32>;
+
+        native_size_t instance_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+        }
+    };
+
     virtual uint32 PLUGIN_API getProcessContextRequirements() override = 0;
 
    protected:
