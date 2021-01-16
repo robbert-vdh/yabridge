@@ -698,6 +698,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
         // Automatically converted smart pointers for when the plugin performs a
         // callback later
         host_application = host_context;
+        plug_interface_support = host_context;
 
         return bridge.send_message(YaPluginBase::Initialize{
             .instance_id = instance_id(),

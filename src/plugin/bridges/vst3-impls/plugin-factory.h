@@ -32,6 +32,8 @@ class YaPluginFactoryImpl : public YaPluginFactory {
     // `IPluginFactory3::setHostContext()` has been called
 
     Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication> host_application;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IPlugInterfaceSupport>
+        plug_interface_support;
 
    private:
     Vst3PluginBridge& bridge;

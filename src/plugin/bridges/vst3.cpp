@@ -265,6 +265,28 @@ Vst3PluginBridge::Vst3PluginBridge()
                     return plug_view->plug_frame->resizeView(plug_view,
                                                              &request.new_size);
                 },
+                [&](const YaPlugInterfaceSupport::IsPlugInterfaceSupported&
+                        request) -> YaPlugInterfaceSupport::
+                                     IsPlugInterfaceSupported::Response {
+                                         // TODO: For correctness' sake we
+                                         //       should automatically reject
+                                         //       queries for interfaces we
+                                         //       don't yet or can't implement,
+                                         //       like the ARA interfaces.
+                                         if (request.owner_instance_id) {
+                                             return plugin_proxies
+                                                 .at(*request.owner_instance_id)
+                                                 .get()
+                                                 .plug_interface_support
+                                                 ->isPlugInterfaceSupported(
+                                                     request.iid.data());
+                                         } else {
+                                             return plugin_factory
+                                                 ->plug_interface_support
+                                                 ->isPlugInterfaceSupported(
+                                                     request.iid.data());
+                                         }
+                                     },
                 [&](const YaUnitHandler::NotifyUnitSelection& request)
                     -> YaUnitHandler::NotifyUnitSelection::Response {
                     return plugin_proxies.at(request.owner_instance_id)

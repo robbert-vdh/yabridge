@@ -338,6 +338,8 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     // `IPluginBase::initialize()` has been called
 
     Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication> host_application;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IPlugInterfaceSupport>
+        plug_interface_support;
 
     // The following pointers are cast from `component_handler` if
     // `IEditController::setComponentHandler()` has been called

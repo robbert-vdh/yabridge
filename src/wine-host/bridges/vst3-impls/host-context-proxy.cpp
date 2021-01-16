@@ -96,9 +96,16 @@ Vst3HostContextProxyImpl::createInstance(Steinberg::TUID /*cid*/,
 
 tresult PLUGIN_API
 Vst3HostContextProxyImpl::isPlugInterfaceSupported(const Steinberg::TUID _iid) {
-    // TODO: Implement
-    std::cerr
-        << "TODO: Implement IPlugInterfaceSupport::isPlugInterfaceSupported()"
-        << std::endl;
-    return Steinberg::kNotImplemented;
+    if (_iid) {
+        return bridge.send_message(
+            YaPlugInterfaceSupport::IsPlugInterfaceSupported{
+                .owner_instance_id = owner_instance_id(),
+                .iid = std::to_array(
+                    *reinterpret_cast<const Steinberg::TUID*>(&_iid))});
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IPlugInterfaceSupport::isPlugInterfaceSupported()'");
+        return Steinberg::kInvalidArgument;
+    }
 }

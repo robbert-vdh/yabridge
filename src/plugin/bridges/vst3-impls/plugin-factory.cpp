@@ -111,6 +111,7 @@ YaPluginFactoryImpl::setHostContext(Steinberg::FUnknown* context) {
         // Automatically converted smart pointers for when the plugin performs a
         // callback later
         host_application = host_context;
+        plug_interface_support = host_context;
 
         return bridge.send_message(YaPluginFactory::SetHostContext{
             .host_context_args = Vst3HostContextProxy::ConstructArgs(

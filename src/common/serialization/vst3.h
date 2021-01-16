@@ -206,6 +206,7 @@ using CallbackRequest =
                  YaContextMenu::Popup,
                  YaHostApplication::GetName,
                  YaPlugFrame::ResizeView,
+                 YaPlugInterfaceSupport::IsPlugInterfaceSupported,
                  YaUnitHandler::NotifyUnitSelection,
                  YaUnitHandler::NotifyProgramListChange,
                  YaUnitHandler2::NotifyUnitByBusChange>;
