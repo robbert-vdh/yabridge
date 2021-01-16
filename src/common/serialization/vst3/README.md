@@ -6,7 +6,7 @@ for more information on how the serialization works.
 
 The following interfaces are not yet implemented:
 
-- Interfaces introduced after VST 3.6.12
+- The last few VST 3.7.0 interfaces
 - The [Presonus extensions](https://presonussoftware.com/en_US/developer),
   although most of these things seem to overlap with newer VST3 interfaces
 
@@ -36,6 +36,7 @@ VST3 plugin interfaces are implemented as follows:
 | `YaNoteExpressionController`        | `Vst3PluginProxy`   | `INoteExpressionController`                            |
 | `YaNoteExpressionPhysicalUIMapping` | `Vst3PluginProxy`   | `INoteExpressionPhysicalUIMapping`                     |
 | `YaPluginBase`                      | `Vst3PluginProxy`   | `IPluginBase`                                          |
+| `YaProcessContextRequirements`      | `Vst3PluginProxy`   | `IProcessContextRequirements`                          |
 | `YaPrefetchableSupport`             | `Vst3PluginProxy`   | `IPrefetchableSupport`                                 |
 | `YaProgramListData`                 | `Vst3PluginProxy`   | `IProgramListData`                                     |
 | `YaUnitData`                        | `Vst3PluginProxy`   | `IUnitData`                                            |
