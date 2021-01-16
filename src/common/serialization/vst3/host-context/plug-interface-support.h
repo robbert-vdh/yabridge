@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/vst/ivstpluginterfacesupport.h>
 
 #include "../../common.h"
@@ -60,6 +61,33 @@ class YaPlugInterfaceSupport : public Steinberg::Vst::IPlugInterfaceSupport {
     YaPlugInterfaceSupport(const ConstructArgs&& args);
 
     inline bool supported() const { return arguments.supported; }
+
+    /**
+     * Message to pass through a call to
+     * `IPlugInterfaceSupport::isPlugInterfaceSupported(iid)` to the host
+     * context provided by the host.
+     */
+    struct IsPlugInterfaceSupported {
+        using Response = UniversalTResult;
+
+        /**
+         * The object instance whose host context to call this function to. Of
+         * empty, then the function will be called on the factory's host context
+         * instead.
+         */
+        std::optional<native_size_t> owner_instance_id;
+
+        ArrayUID iid;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.ext(owner_instance_id, bitsery::ext::StdOptional{},
+                  [](S& s, native_size_t& instance_id) {
+                      s.value8b(instance_id);
+                  });
+            s.container1b(iid);
+        }
+    };
 
     virtual tresult PLUGIN_API
     isPlugInterfaceSupported(const Steinberg::TUID _iid) override = 0;
