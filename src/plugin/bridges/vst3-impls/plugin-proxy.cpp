@@ -728,6 +728,14 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getPrefetchableSupport(
     return response.result;
 }
 
+uint32 PLUGIN_API Vst3PluginProxyImpl::getProcessContextRequirements() {
+    // TODO: Implement
+    bridge.logger.log(
+        "TODO: Implement "
+        "IProcessContextRequirements::getProcessContextRequirements()");
+    return 0;
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::programDataSupported(
     Steinberg::Vst::ProgramListID listId) {
     return bridge.send_message(YaProgramListData::ProgramDataSupported{

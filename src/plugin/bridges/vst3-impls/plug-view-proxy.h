@@ -63,7 +63,7 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
                   int32 yPos,
                   Steinberg::Vst::ParamID& resultTag /*out*/) override;
 
-    // From `iplugviewcontentscalesupport`
+    // From `IPlugViewContentScaleSupport`
     tresult PLUGIN_API setContentScaleFactor(ScaleFactor factor) override;
 
     /**

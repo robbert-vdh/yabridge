@@ -211,6 +211,9 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     tresult PLUGIN_API getPrefetchableSupport(
         Steinberg::Vst::PrefetchableSupport& prefetchable /*out*/) override;
 
+    // From `IProcessContextRequirements`
+    uint32 PLUGIN_API getProcessContextRequirements() override;
+
     // From `IProgramListData`
     tresult PLUGIN_API
     programDataSupported(Steinberg::Vst::ProgramListID listId) override;

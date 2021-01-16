@@ -35,6 +35,7 @@
 #include "plugin/note-expression-physical-ui-mapping.h"
 #include "plugin/plugin-base.h"
 #include "plugin/prefetchable-support.h"
+#include "plugin/process-context-requirements.h"
 #include "plugin/program-list-data.h"
 #include "plugin/unit-data.h"
 #include "plugin/unit-info.h"
@@ -82,6 +83,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
                         public YaNoteExpressionPhysicalUIMapping,
                         public YaPluginBase,
                         public YaPrefetchableSupport,
+                        public YaProcessContextRequirements,
                         public YaProgramListData,
                         public YaUnitData,
                         public YaUnitInfo,
@@ -124,6 +126,8 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
             note_expression_physical_ui_mapping_args;
         YaPluginBase::ConstructArgs plugin_base_args;
         YaPrefetchableSupport::ConstructArgs prefetchable_support_args;
+        YaProcessContextRequirements::ConstructArgs
+            process_context_requirements_args;
         YaProgramListData::ConstructArgs program_list_data_args;
         YaUnitData::ConstructArgs unit_data_args;
         YaUnitInfo::ConstructArgs unit_info_args;
@@ -149,6 +153,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
             s.object(note_expression_physical_ui_mapping_args);
             s.object(plugin_base_args);
             s.object(prefetchable_support_args);
+            s.object(process_context_requirements_args);
             s.object(program_list_data_args);
             s.object(unit_data_args);
             s.object(unit_info_args);
