@@ -4,10 +4,7 @@ See
 [docs/vst3.md](https://github.com/robbert-vdh/yabridge/blob/master/docs/vst3.md)
 for more information on how the serialization works.
 
-The following interfaces are not yet implemented:
-
-- The [Presonus extensions](https://presonussoftware.com/en_US/developer),
-  although most of these things seem to overlap with newer VST3 interfaces
+We currently support all official VST 3.7.1 interfaces.
 
 VST3 plugin interfaces are implemented as follows:
 

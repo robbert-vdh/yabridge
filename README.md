@@ -521,15 +521,18 @@ include:
 - **PSPaudioware** plugins with expandable GUIs, such as E27, may have their GUI
   appear in the wrong location after the GUI has been expanded. You can enable
   an alternative [editor hosting mode](#compatibility-options) to fix this.
-- **SWAM Cello** has a bug where it asks the host for the current buffer's time
-  and tempo information for every sample it processes instead of doing it only
-  once per buffer, resulting in very bad performance. You can enable the time
-  info cache [compatibility option](#compatibility-options) to work around this
-  until this is fixed on the plugin's side.
-- Plugins like **FabFilter Pro-Q 3** that can share data between different
+- The VST2 version of **SWAM Cello** has a bug where it asks the host for the
+  current buffer's time and tempo information for every sample it processes
+  instead of doing it only once per buffer, resulting in very bad performance.
+  You can enable the time info cache [compatibility
+  option](#compatibility-options) to work around this until this is fixed on the
+  plugin's side.
+- VST2 plugins like **FabFilter Pro-Q 3** that can share data between different
   instances of the same plugin plugins have to be hosted within a single process
   for that functionality to work. See the [plugin groups](#plugin-groups)
-  section for instructions on how to set this up.
+  section for instructions on how to set this up. This is not necessary for VST3
+  plugins, as multiple instances of those plugins will always be hosted in a
+  single process by design.
 - **Drag-and-drop** from applications running under Wine to X11 does not yet
   work, so you won't be able to drag samples and MIDI files from a plugin to the
   host. At least, not directly. Because Windows applications have to create
@@ -548,22 +551,29 @@ Aside from that, these are some known caveats:
 - Most recent **iZotope** plugins don't have a functional GUI in a typical out
   of the box Wine setup because of missing dependencies. Please let me know if
   you know which dependencies are needed for these plugins to render correctly.
-- MIDI key labels (commonly used for drum machines and multisamplers) will not
-  be updated after the host first asks for them since VST 2.4 has no way to let
-  the host know that those labels have been updated. Deactivating and
-  reactivating the plugin will cause these labels to be updated again for the
-  current patch.
+- MIDI key labels for VST2 plugins (commonly used for drum machines and
+  multisamplers) will not be updated after the host first asks for them since
+  VST 2.4 has no way to let the host know that those labels have been updated.
+  Deactivating and reactivating the plugin will cause these labels to be updated
+  again for the current patch.
 
-There are also some VST2.X extension features that have not been implemented yet
-because I haven't seen them used. Let me know if you need any of these features
-for a certain plugin or VST host:
+There are also some extension features for both VST2.4 and VST3 that have not
+been implemented yet because I either haven't seen them used or because we don't
+have permission to do so yet. Examples of this are:
 
-- SysEx messages. In addition to MIDI, VST 2.4 also supports SysEx. I don't know
-  of any hosts or plugins that use this, but please let me know if this is
-  needed for something.
-- Vendor specific extension (for instance, for
+- SysEx messages for VST2 plugins. In addition to MIDI, VST 2.4 also supports
+  SysEx. I don't know of any hosts or plugins that use this, but please let me
+  know if this is needed for something.
+- Vendor specific VST2.4 extensions (for instance, for
   [REAPER](https://www.reaper.fm/sdk/vst/vst_ext.php), though most of these
   extension functions will work out of the box without any modifications).
+- The [Presonus extensions](https://presonussoftware.com/en_US/developer) to teh
+  VST3 interfaces. All of these extensions have been superseded by official VST3
+  interfaces in later versions of the VST3 SDK.
+- VST3 plugin support for
+  [ARA](https://www.celemony.com/en/service1/about-celemony/technologies). These
+  interfaces are currently closed source so we cannot yet implement them, but
+  this may chance soon.
 
 ## Building
 
