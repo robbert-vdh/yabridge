@@ -169,6 +169,8 @@ struct InstanceInterfaces {
         note_expression_physical_ui_mapping;
     Steinberg::FUnknownPtr<Steinberg::IPluginBase> plugin_base;
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitData> unit_data;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IParameterFunctionName>
+        parameter_function_name;
     Steinberg::FUnknownPtr<Steinberg::Vst::IPrefetchableSupport>
         prefetchable_support;
     Steinberg::FUnknownPtr<Steinberg::Vst::IProcessContextRequirements>

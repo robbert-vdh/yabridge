@@ -692,11 +692,23 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParameterIDFromFunctionName(
     Steinberg::Vst::UnitID unitID,
     Steinberg::FIDString functionName,
     Steinberg::Vst::ParamID& paramID) {
-    // TODO: Implement
-    bridge.logger.log(
-        "TODO: Implement "
-        "IParameterFunctionName::getParameterIDFromFunctionName()");
-    return Steinberg::kNotImplemented;
+    if (functionName) {
+        const GetParameterIDFromFunctionNameResponse response =
+            bridge.send_message(
+                YaParameterFunctionName::GetParameterIDFromFunctionName{
+                    .instance_id = instance_id(),
+                    .unit_id = unitID,
+                    .function_name = functionName});
+
+        paramID = response.param_id;
+
+        return response.result;
+    } else {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IParameterFunctionName::getParameterIDFromFunctionName()'");
+        return Steinberg::kInvalidArgument;
+    }
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {

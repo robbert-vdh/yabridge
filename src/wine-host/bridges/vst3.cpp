@@ -55,6 +55,7 @@ InstanceInterfaces::InstanceInterfaces(
       note_expression_physical_ui_mapping(object),
       plugin_base(object),
       unit_data(object),
+      parameter_function_name(object),
       prefetchable_support(object),
       process_context_requirements(object),
       program_list_data(object),
@@ -573,6 +574,23 @@ void Vst3Bridge::run() {
                 return YaParameterFinder::FindParameterResponse{
                     .result = result, .result_tag = result_tag};
             },
+            [&](const YaParameterFunctionName::GetParameterIDFromFunctionName&
+                    request) -> YaParameterFunctionName::
+                                 GetParameterIDFromFunctionName::Response {
+                                     Steinberg::Vst::ParamID param_id;
+                                     const tresult result =
+                                         object_instances[request.instance_id]
+                                             .parameter_function_name
+                                             ->getParameterIDFromFunctionName(
+                                                 request.unit_id,
+                                                 request.function_name.c_str(),
+                                                 param_id);
+
+                                     return YaParameterFunctionName::
+                                         GetParameterIDFromFunctionNameResponse{
+                                             .result = result,
+                                             .param_id = param_id};
+                                 },
             [&](const YaPlugView::IsPlatformTypeSupported& request)
                 -> YaPlugView::IsPlatformTypeSupported::Response {
                 // The host will of course want to pass an X11 window ID for the
