@@ -513,6 +513,20 @@ bool Vst3Logger::log_request(bool is_host_vst,
 
 bool Vst3Logger::log_request(
     bool is_host_vst,
+    const YaParameterFunctionName::GetParameterIDFromFunctionName& request) {
+    return log_request_base(is_host_vst, [&](auto& message) {
+        message << request.instance_id
+                << ": "
+                   "IParameterFunctionName::getParameterIDFromFunctionName("
+                   "unitID = "
+                << request.unit_id
+                << ", functionName = " << request.function_name
+                << ", &paramID)";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_vst,
     const YaPlugView::IsPlatformTypeSupported& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.owner_instance_id
@@ -1518,7 +1532,19 @@ void Vst3Logger::log_response(
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            message << response.result_tag;
+            message << ", " << response.result_tag;
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const YaParameterFunctionName::GetParameterIDFromFunctionNameResponse&
+        response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", " << response.param_id;
         }
     });
 }

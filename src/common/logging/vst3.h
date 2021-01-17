@@ -128,6 +128,9 @@ class Vst3Logger {
         bool is_host_vst,
         const YaNoteExpressionPhysicalUIMapping::GetNotePhysicalUIMapping&);
     bool log_request(bool is_host_vst, const YaParameterFinder::FindParameter&);
+    bool log_request(
+        bool is_host_vst,
+        const YaParameterFunctionName::GetParameterIDFromFunctionName&);
     bool log_request(bool is_host_vst,
                      const YaPlugView::IsPlatformTypeSupported&);
     bool log_request(bool is_host_vst, const YaPlugView::Attached&);
@@ -270,6 +273,9 @@ class Vst3Logger {
                           GetNotePhysicalUIMappingResponse&);
     void log_response(bool is_host_vst,
                       const YaParameterFinder::FindParameterResponse&);
+    void log_response(
+        bool is_host_vst,
+        const YaParameterFunctionName::GetParameterIDFromFunctionNameResponse&);
     void log_response(bool is_host_vst, const YaPlugView::GetSizeResponse&);
     void log_response(bool is_host_vst,
                       const YaPlugView::CheckSizeConstraintResponse&);
