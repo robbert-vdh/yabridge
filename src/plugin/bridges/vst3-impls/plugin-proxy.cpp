@@ -688,6 +688,17 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getPhysicalUIMapping(
     return response.result;
 }
 
+tresult PLUGIN_API Vst3PluginProxyImpl::getParameterIDFromFunctionName(
+    Steinberg::Vst::UnitID unitID,
+    Steinberg::FIDString functionName,
+    Steinberg::Vst::ParamID& paramID) {
+    // TODO: Implement
+    bridge.logger.log(
+        "TODO: Implement "
+        "IParameterFunctionName::getParameterIDFromFunctionName()");
+    return Steinberg::kNotImplemented;
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
     if (context) {
         // We will create a proxy object that that supports all the same

@@ -35,6 +35,7 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
       midi_learn_args(object),
       midi_mapping_args(object),
       note_expression_controller_args(object),
+      parameter_function_name_args(object),
       plugin_base_args(object),
       prefetchable_support_args(object),
       process_context_requirements_args(object),
@@ -62,6 +63,7 @@ Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
           std::move(args.note_expression_controller_args)),
       YaNoteExpressionPhysicalUIMapping(
           std::move(args.note_expression_physical_ui_mapping_args)),
+      YaParameterFunctionName(std::move(args.parameter_function_name_args)),
       YaPluginBase(std::move(args.plugin_base_args)),
       YaPrefetchableSupport(std::move(args.prefetchable_support_args)),
       YaProcessContextRequirements(
@@ -162,6 +164,10 @@ tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
         QUERY_INTERFACE(_iid, obj,
                         Steinberg::Vst::INoteExpressionPhysicalUIMapping::iid,
                         Steinberg::Vst::INoteExpressionPhysicalUIMapping)
+    }
+    if (YaParameterFunctionName::supported()) {
+        QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IParameterFunctionName::iid,
+                        Steinberg::Vst::IParameterFunctionName)
     }
     if (YaPrefetchableSupport::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IPrefetchableSupport::iid,

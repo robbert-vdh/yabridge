@@ -203,6 +203,12 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
                          int16 channel,
                          Steinberg::Vst::PhysicalUIMapList& list) override;
 
+    // From `IParameterFunctionName`
+    tresult PLUGIN_API
+    getParameterIDFromFunctionName(Steinberg::Vst::UnitID unitID,
+                                   Steinberg::FIDString functionName,
+                                   Steinberg::Vst::ParamID& paramID) override;
+
     // From `IPluginBase`
     tresult PLUGIN_API initialize(FUnknown* context) override;
     tresult PLUGIN_API terminate() override;
