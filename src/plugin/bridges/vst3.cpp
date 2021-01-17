@@ -210,7 +210,12 @@ Vst3PluginBridge::Vst3PluginBridge()
                     //        with it causes malloc failures or failing font
                     //        drawing calls. Valgrind reports all kinds of
                     //        memory errors within REAPER when this happens, and
-                    //        I'm not sure if yabridge is to blame here.
+                    //        I'm not sure if yabridge is to blame here. - As it
+                    //        turns out a lot of stuff in REAPEr, including
+                    //        calls to `IPlugFrame::resizeView()`, are not
+                    //        thread safe. We need to hook into `IRunLoop` and
+                    //        execute `IContextMenu::popup()` and
+                    //        `IPlugFrame::resizeView()` functions from there.
                     return plugin_proxies.at(request.owner_instance_id)
                         .get()
                         .context_menus.at(request.context_menu_id)
