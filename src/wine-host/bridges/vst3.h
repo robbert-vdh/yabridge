@@ -307,7 +307,7 @@ class Vst3Bridge : public HostBridge {
      */
     template <typename T, typename F>
     T do_mutual_recursion_or_handle_in_main_context(F f) {
-        std::packaged_task<T()> do_call(f);
+        std::packaged_task<T()> do_call(std::move(f));
         std::future<T> do_call_response = do_call.get_future();
 
         // If the above function is currently being called from some thread,
