@@ -128,6 +128,8 @@ bool IndividualHost::running() {
 
 void IndividualHost::terminate() {
     host.terminate();
+    // NOTE: This leaves a zombie, because Boost.Process will actually not call
+    //       `wait()` after we have terminated the process.
     host.wait();
 }
 
