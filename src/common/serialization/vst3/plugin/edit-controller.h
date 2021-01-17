@@ -159,7 +159,6 @@ class YaEditController : public Steinberg::Vst::IEditController {
      */
     struct GetParamStringByValueResponse {
         UniversalTResult result;
-
         std::u16string string;
 
         template <typename S>
@@ -202,7 +201,6 @@ class YaEditController : public Steinberg::Vst::IEditController {
      */
     struct GetParamValueByStringResponse {
         UniversalTResult result;
-
         Steinberg::Vst::ParamValue value_normalized;
 
         template <typename S>
