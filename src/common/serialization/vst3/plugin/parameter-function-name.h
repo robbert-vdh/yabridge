@@ -63,6 +63,43 @@ class YaParameterFunctionName : public Steinberg::Vst::IParameterFunctionName {
 
     inline bool supported() const { return arguments.supported; }
 
+    /**
+     * The response code and returned parameter ID for a call to
+     * `IParameterFunctionName::getParameterIDFromFunctionName(unit_id,
+     * function_name, &param_id)`.
+     */
+    struct GetParameterIDFromFunctionNameResponse {
+        UniversalTResult result;
+        Steinberg::Vst::ParamID param_id;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.value4b(param_id);
+        }
+    };
+
+    /**
+     * Message to pass through a call to
+     * `IParameterFunctionName::getParameterIDFromFunctionName(unit_id,
+     * function_name, &param_id)` to the Wine plugin host.
+     */
+    struct GetParameterIDFromFunctionName {
+        using Response = GetParameterIDFromFunctionNameResponse;
+
+        native_size_t instance_id;
+
+        Steinberg::Vst::UnitID unit_id;
+        std::string function_name;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.value4b(unit_id);
+            s.text1b(function_name, 1024);
+        }
+    };
+
     virtual tresult PLUGIN_API getParameterIDFromFunctionName(
         Steinberg::Vst::UnitID unitID,
         Steinberg::FIDString functionName,
