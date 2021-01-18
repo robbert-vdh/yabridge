@@ -256,13 +256,13 @@ class Vst3Bridge : public HostBridge {
             std::unique_lock lock(mutual_recursion_context_mutex);
 
             // In case some other thread is already calling
-            // `send_mutually_recursive_message()` (which should never be the
-            // case since this should only be called from the UI thread), we'll
-            // wait for that function to finish
+            // `send_mutually_recursive_message()`, we're likely in mutually
+            // recursive calling sequence from within the GUI thread, and we
+            // should thus run the message from the current thread.
             if (mutual_recursion_context) {
-                mutual_recursion_context_cv.wait(lock, [&]() {
-                    return !mutual_recursion_context.has_value();
-                });
+                lock.unlock();
+
+                return send_message(object);
             }
 
             mutual_recursion_context.emplace();
@@ -276,12 +276,9 @@ class Vst3Bridge : public HostBridge {
 
             // Stop accepting additional work to be run from the calling thread
             // once we receive a response
-            {
-                std::lock_guard lock(mutual_recursion_context_mutex);
-                mutual_recursion_context->stop();
-                mutual_recursion_context.reset();
-            }
-            mutual_recursion_context_cv.notify_one();
+            std::lock_guard lock(mutual_recursion_context_mutex);
+            mutual_recursion_context->stop();
+            mutual_recursion_context.reset();
 
             response_promise.set_value(response);
         });
@@ -440,10 +437,4 @@ class Vst3Bridge : public HostBridge {
      */
     std::optional<boost::asio::io_context> mutual_recursion_context;
     std::mutex mutual_recursion_context_mutex;
-    /**
-     * Used to make sure only a single call to
-     * `send_mutually_recursive_message()` at a time can be processed (this
-     * should never happen, but better safe tha nsorry).
-     */
-    std::condition_variable mutual_recursion_context_cv;
 };
