@@ -295,6 +295,12 @@ HWND Editor::get_win32_handle() const {
 }
 
 void Editor::handle_x11_events() const {
+    // Calling `set_input_focus(true)` can trigger another `FocusIn` event,
+    // which will then once again call `set_input_focus(true)`. To work around
+    // this we prevent successive keyboard focus grabs within a single call of
+    // this function.
+    bool have_requested_input_focus = false;
+
     xcb_generic_event_t* generic_event;
     while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
            nullptr) {
@@ -338,8 +344,10 @@ void Editor::handle_x11_events() const {
                 // In case the WM somehow does not support `_NET_ACTIVE_WINDOW`,
                 // a more naive focus grabbing method implemented in the
                 // `WM_PARENTNOTIFY` handler will be used.
-                if (supports_ewmh_active_window() && is_wine_window_active()) {
+                if (!have_requested_input_focus &&
+                    supports_ewmh_active_window() && is_wine_window_active()) {
                     set_input_focus(true);
+                    have_requested_input_focus = true;
                 }
                 break;
             // When the user moves their mouse away from the Wine window _while
@@ -365,6 +373,7 @@ void Editor::handle_x11_events() const {
                 if (event->detail != XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL &&
                     supports_ewmh_active_window() && is_wine_window_active()) {
                     set_input_focus(false);
+                    have_requested_input_focus = false;
                 }
             } break;
         }
