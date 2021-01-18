@@ -454,6 +454,7 @@ if with_vst3
       boost_dep,
       boost_filesystem_dep,
       bitsery_dep,
+      function2_dep,
       threads_dep,
       tomlplusplus_dep,
       vst3_sdk_native_dep,

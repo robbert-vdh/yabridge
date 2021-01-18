@@ -206,20 +206,16 @@ Vst3PluginBridge::Vst3PluginBridge()
                 },
                 [&](const YaContextMenu::Popup& request)
                     -> YaContextMenu::Popup::Response {
-                    // FIXME: In REAPER having the menu open without interacting
-                    //        with it causes malloc failures or failing font
-                    //        drawing calls. Valgrind reports all kinds of
-                    //        memory errors within REAPER when this happens, and
-                    //        I'm not sure if yabridge is to blame here. - As it
-                    //        turns out a lot of stuff in REAPEr, including
-                    //        calls to `IPlugFrame::resizeView()`, are not
-                    //        thread safe. We need to hook into `IRunLoop` and
-                    //        execute `IContextMenu::popup()` and
-                    //        `IPlugFrame::resizeView()` functions from there.
+                    // REAPER requires this to be run from its provided event
+                    // loop or else it will likely segfault at some point
                     return plugin_proxies.at(request.owner_instance_id)
                         .get()
-                        .context_menus.at(request.context_menu_id)
-                        .menu->popup(request.x, request.y);
+                        .last_created_plug_view->run_gui_task<tresult>([&]() {
+                            return plugin_proxies.at(request.owner_instance_id)
+                                .get()
+                                .context_menus.at(request.context_menu_id)
+                                .menu->popup(request.x, request.y);
+                        });
                 },
                 [&](YaConnectionPoint::Notify& request)
                     -> YaConnectionPoint::Notify::Response {
@@ -267,8 +263,12 @@ Vst3PluginBridge::Vst3PluginBridge()
                             .get()
                             .last_created_plug_view;
 
-                    return plug_view->plug_frame->resizeView(plug_view,
-                                                             &request.new_size);
+                    // REAPER requires this to be run from its provided event
+                    // loop or else it will likely segfault at some point
+                    return plug_view->run_gui_task<tresult>([&]() {
+                        return plug_view->plug_frame->resizeView(
+                            plug_view, &request.new_size);
+                    });
                 },
                 [&](const YaPlugInterfaceSupport::IsPlugInterfaceSupported&
                         request) -> YaPlugInterfaceSupport::

@@ -244,6 +244,8 @@ class Vst3Bridge : public HostBridge {
      * The hacky solution here is to send the message from another thread, and
      * to then allow this thread to execute other functions submitted to an IO
      * context.
+     *
+     * We apply the same trick in `Vst3PlugViewProxyImpl`.
      */
     template <typename T>
     typename T::Response send_mutually_recursive_message(const T& object) {
