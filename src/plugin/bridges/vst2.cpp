@@ -81,6 +81,10 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                 // them. Because of this we'll temporarily save any MIDI events
                 // we receive here, and then we'll actually send them to the
                 // host at the end of the `process_replacing()` function.
+                // TODO: We might be able to make editor resizing work in REAPER
+                //       by calling `audioMasterSizeWindow()` from within
+                //       `effEditIdle()`. Something similar was required for
+                //       VST3 plugins in REAPER.
                 if (event.opcode == audioMasterProcessEvents) {
                     std::lock_guard lock(incoming_midi_events_mutex);
 
