@@ -187,4 +187,15 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      * now happens in two different threads.
      */
     std::mutex incoming_midi_events_mutex;
+
+    /**
+     * REAPER requires us to call `audioMasterSizeWidnow()` from the same thread
+     * that's calling `effEditIdle()`. If we call this from any other thread,
+     * then the FX window won't be resized. To accommodate for this, we'll store
+     * the width and the height passed to the last call to
+     * `audioMasterSizeWindow`. If this contains a value, we'll then call
+     * `audioMasterSizeWindow()` with the new size during `effEditIdle()`.
+     */
+    std::optional<std::pair<int, int>> incoming_resize;
+    std::mutex incoming_resize_mutex;
 };

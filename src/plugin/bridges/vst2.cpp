@@ -75,29 +75,43 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
         sockets.vst_host_callback.receive_events(
             std::pair<Vst2Logger&, bool>(logger, false),
             [&](Event& event, bool /*on_main_thread*/) {
-                // MIDI events sent from the plugin back to the host are a
-                // special case here. They have to sent during the
-                // `processReplacing()` function or else the host will ignore
-                // them. Because of this we'll temporarily save any MIDI events
-                // we receive here, and then we'll actually send them to the
-                // host at the end of the `process_replacing()` function.
-                // TODO: We might be able to make editor resizing work in REAPER
-                //       by calling `audioMasterSizeWindow()` from within
-                //       `effEditIdle()`. Something similar was required for
-                //       VST3 plugins in REAPER.
-                if (event.opcode == audioMasterProcessEvents) {
-                    std::lock_guard lock(incoming_midi_events_mutex);
+                switch (event.opcode) {
+                    // MIDI events sent from the plugin back to the host are
+                    // a special case here. They have to sent during the
+                    // `processReplacing()` function or else the host will
+                    // ignore them. Because of this we'll temporarily save
+                    // any MIDI events we receive here, and then we'll
+                    // actually send them to the host at the end of the
+                    // `process_replacing()` function.
+                    case audioMasterProcessEvents: {
+                        std::lock_guard lock(incoming_midi_events_mutex);
 
-                    incoming_midi_events.push_back(
-                        std::get<DynamicVstEvents>(event.payload));
-                    EventResult response{.return_value = 1,
-                                         .payload = nullptr,
-                                         .value_payload = std::nullopt};
+                        incoming_midi_events.push_back(
+                            std::get<DynamicVstEvents>(event.payload));
+                        EventResult response{.return_value = 1,
+                                             .payload = nullptr,
+                                             .value_payload = std::nullopt};
 
-                    return response;
-                } else {
-                    return passthrough_event(&plugin, host_callback_function,
-                                             event);
+                        return response;
+                    } break;
+                    // REAPER requires that `audioMasterSizeWindow()` calls are
+                    // handled from the GUI thread, which is the thread that
+                    // will call `effEditIdle()`. To account for this, we'll
+                    // store the last resize request and then only pass it to
+                    // the host when it calls `effEditIdle()`.
+                    case audioMasterSizeWindow: {
+                        std::lock_guard lock(incoming_resize_mutex);
+
+                        incoming_resize = std::pair(event.index, event.value);
+                        EventResult response{.return_value = 1,
+                                             .payload = nullptr,
+                                             .value_payload = std::nullopt};
+
+                        return response;
+                    } break;
+                    default:
+                        return passthrough_event(&plugin,
+                                                 host_callback_function, event);
                 }
             });
     });
@@ -413,6 +427,23 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
             // blocked by for instance an open dropdown.
             logger.log_event(true, opcode, index, value, nullptr, option,
                              std::nullopt);
+
+            // REAPEr requires `audioMasterSizeWindow()` calls to be done from
+            // the GUI thread. In every other host this doesn't make a
+            // difference, but in REAPER the FX window only resizes when this is
+            // called from here.
+            {
+                std::unique_lock lock(incoming_resize_mutex);
+                if (incoming_resize) {
+                    const auto& [width, height] = *incoming_resize;
+                    incoming_resize.reset();
+                    lock.unlock();
+
+                    host_callback_function(&plugin, audioMasterSizeWindow,
+                                           width, height, nullptr, 0.0);
+                }
+            }
+
             logger.log_event_response(true, opcode, 0, nullptr, std::nullopt);
             return 0;
         }; break;

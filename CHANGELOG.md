@@ -84,6 +84,8 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
 
 ### Fixed
 
+- VST2 plugin editor resizing in **REAPER** would not cause the FX window to be
+  resized like it would in every other host. This has now been fixed.
 - The function for suspending and resuming audio, `effMainsChanged()`, is now
   always executed from the GUI thread. This fixes **EZdrummer** not producing
   any sound because the plugin makes the incorrect assumption that
