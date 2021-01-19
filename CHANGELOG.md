@@ -8,7 +8,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-TODO: Remove the mentions of VST3 support not yet being part of the released version from the readme
+TODO: Remove the mentions of VST3 support not yet being part of the released version from the readme  
 TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
 
 ### Added
@@ -19,23 +19,25 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   `$HOME/.wine/drive_c/Program Files/Common Files/VST3`, run `yabridgectl sync`,
   and your VST3 compatible DAW will pick up the new plugins in
   `~/.vst3/yabridge` automatically. Even though this feature has been tested
-  extensively with a variety of VST3 plugins and hosts, there's still a large
-  part of the VST 3.7.1 specification that none of the hosts or plugins we came
-  across actually used, so please let me know if you run into any weird
-  behaviour!
+  extensively with a variety of VST3 plugins and hosts, there's still a
+  substantial part of the VST 3.7.1 specification that isn't used by any of the
+  hosts or plugins we could get our hands on, so please let me know if you run
+  into any weird behaviour!
 - Added the `with-vst3` compile time option to control whether yabridge should
   be built with VST3 support. This is enabled by default.
 - Added an
   [option](https://github.com/robbert-vdh/yabridge#compatibility-options) to use
   Wine's XEmbed implementation instead of yabridge's normal window embedding
-  method. Some plugins have will have redrawing issues when using XEmbed or the
-  editor might not show up at all, so your mileage may very much vary.
+  method. This can help reduce flickering with certain window managers. Some
+  plugins will have redrawing issues when using XEmbed or the editor might not
+  show up at all, so your mileage may very much vary.
 - Added a [compatibilty
   option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
   forcefully enable drag-and-drop support under _REAPER_. REAPER's FX window
-  supports drag-and-drop itself, which makes it impossible to drag files onto a
-  plugin editor embedded there. This option strips the drag-and-drop support
-  from the FX window, thus allowing you to drag files onto plugin editors again.
+  reports that it supports drag-and-drop itself, which makes it impossible to
+  drag files onto a plugin editor embedded there. This option strips the
+  drag-and-drop support from the FX window, thus allowing you to drag files onto
+  plugin editors again.
 - Added a frame rate
   [option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
   change the rate at which events are being handled. This usually also controls
@@ -45,7 +47,7 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
 - Added a [compatibility
   option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
   disable HiDPI scaling for VST3 plugins. At the moment Wine does not have
-  proper fractional HiDPI support, so some plugins might not scale their
+  proper fractional HiDPI support, so some plugins may not scale their
   interfaces correctly when the host tells those plugins to scale their GUIs. In
   most cases setting the font DPI in `winecfg`'s graphics tab to 192 will also
   cause the GUIs to scale correctly at 200%.
@@ -55,7 +57,7 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
 - `libyabridge.so` is now called `libyabridge-vst2.so`. If you're using
   yabridgectl then nothing changes here. **To avoid any confusion in the future,
   please remove the old `libyabridge.so` file before upgrading.**
-- Slightly increased resposniveness when resizing plugin GUIs by preventing
+- Slightly increased responsiveness when resizing plugin GUIs by preventing
   unnecessary blitting. This also reduces flickering with plugins that don't do
   double buffering.
 - Window closing is now deferred. This means that when closing the editor
@@ -67,10 +69,12 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
 - Win32 and X11 events in the Wine plugin host are now handled with lower
   scheduling priority than other tasks. With a properly configured system GUI
   drawing should not affect DSP load at all, but this should help with less than
-  optimal setups some people were getting DSP load spikes with the editor open.
+  optimal setups where some people were getting DSP latency spikes while having
+  plugin editor open.
 - Opening and closing plugin editors is now also no longer done with realtime
   priority. This should get rid of any latency spikes during those operations,
-  as the this could otherwise preempt the threads that were processing audio.
+  as this could otherwise steal resources away from the threads that are
+  processing audio.
 - Changed part of the build process considering [this Wine
   bug](https://bugs.winehq.org/show_bug.cgi?id=49138). Building with Wine 5.7
   and 5.8 required a change, but that change now breaks builds using Wine 6.0
@@ -82,8 +86,8 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
 
 - The function for suspending and resuming audio, `effMainsChanged()`, is now
   always executed from the GUI thread. This fixes **EZdrummer** not producing
-  any sound as it makes the incorrect assumption that `effMainsChanged()` is
-  always called from the GUI thread.
+  any sound because the plugin makes the incorrect assumption that
+  `effMainsChanged()` is always called from the GUI thread.
 - Fixed a potential issue where an interaction between _Bitwig Studio_ and
   yabridge's input focus grabbing method could cause delayed mouse events when
   clicking on a plugin's GUI in Bitwig. This issue has not been reported for
