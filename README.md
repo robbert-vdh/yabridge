@@ -286,13 +286,14 @@ plugin._
 
 #### Compatibility options
 
-| Option                | Values         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| --------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cache_time_info`     | `{true,false}` | Compatibility option for plugins that call `audioMasterGetTime()` multiple times during a single processing cycle. With this option subsequent calls during a single audio processing cycle will reuse the value returned by the first call to this function. This is a bug in the plugin, and this option serves as a temporary workaround until the plugin fixes the issue.                                                                                                             |
-| `editor_double_embed` | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`.                                |
-| `editor_xembed`       | `{true,false}` | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't always work properly with it, but it could be useful in certain setups. You may need to use [this Wine patch](https://github.com/psycha0s/airwave/blob/master/fix-xembed-wine-windows.patch) if you're getting blank editor windows. Defaults to `false`. _This option is only availble on the master branch._ |
-| `frame_rate`          | `<number>`     | The rate at which Win32 events are being handled and usually also the refresh rate of a plugin's editor GUI. When using plugin groups all plugins share the same event handling loop, so in those the last loaded plugin will set the refresh rate. Defaults to `60`. _This option is only available on the master branch._                                                                                                                                                               |
-| `vst3_no_scaling`     | `{true,false}` | Disable HiDPI scaling for VST3 plugins. Wine currently does not have proper fractional HiDPI support, so you might have to enable this option if you're using a HiDPI display. In most cases setting the font DPI in `winecfg`'s graphics tab to 192 will cause plugins to scale correctly at 200% size. Defaults to `false`. _This option is only available on the master branch._                                                                                                       |
+| Option                | Values         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cache_time_info`     | `{true,false}` | Compatibility option for plugins that call `audioMasterGetTime()` multiple times during a single processing cycle. With this option subsequent calls during a single audio processing cycle will reuse the value returned by the first call to this function. This is a bug in the plugin, and this option serves as a temporary workaround until the plugin fixes the issue.                                                                                                                                                            |
+| `editor_double_embed` | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`.                                                                               |
+| `editor_force_dnd`    | `{true,false}` | This option forcefully enables drag-and-drop support in _REAPER_. Because REAPER's FX window supports drag-and-drop itself, dragging a file onto a plugin editor will cause the drop to be intercepted by the FX window. This makes it impossible to drag files onto plugins in REAPER under normal circumstances. Setting this option to `true` will strip drag-and-drop support from the FX window, thus allowing files to be dragged onto the plugin again. Defaults to `false`. _This option is only availble on the master branch._ |
+| `editor_xembed`       | `{true,false}` | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't always work properly with it, but it could be useful in certain setups. You may need to use [this Wine patch](https://github.com/psycha0s/airwave/blob/master/fix-xembed-wine-windows.patch) if you're getting blank editor windows. Defaults to `false`. _This option is only availble on the master branch._                                                |
+| `frame_rate`          | `<number>`     | The rate at which Win32 events are being handled and usually also the refresh rate of a plugin's editor GUI. When using plugin groups all plugins share the same event handling loop, so in those the last loaded plugin will set the refresh rate. Defaults to `60`. _This option is only available on the master branch._                                                                                                                                                                                                              |
+| `vst3_no_scaling`     | `{true,false}` | Disable HiDPI scaling for VST3 plugins. Wine currently does not have proper fractional HiDPI support, so you might have to enable this option if you're using a HiDPI display. In most cases setting the font DPI in `winecfg`'s graphics tab to 192 will cause plugins to scale correctly at 200% size. Defaults to `false`. _This option is only available on the master branch._                                                                                                                                                      |
 
 These options are workarounds for issues mentioned in the [known
 issues](#runtime-dependencies-and-known-issues) section. Depending on the hosts
@@ -327,6 +328,7 @@ editor_xembed = true
 cache_time_info = true
 
 ["sforzando VST_x64.so"]
+editor_force_dnd = true
 frame_rate = 24
 
 # Simple glob patterns can be used to avoid unneeded repetition
@@ -366,6 +368,7 @@ vst3_no_scaling = true
 # These options would be applied to all plugins that do not already have their
 # own configuration set
 ["*"]
+editor_force_dnd = true
 vst3_no_scaling = true
 ```
 
@@ -545,6 +548,12 @@ include:
   ```shell
   inotifywait -mre CLOSE_WRITE --format '%w%f' ~/.wine/drive_c
   ```
+
+- Aside from the above mentioned Wine issue, _drag-and-drop_ to the plugin
+  window under **REAPER** doesn't work because of a long standing issue in
+  REAPER's FX window implementation. You can use a compatibility option to
+  [force drag-and-drop]([editor hosting mode](#compatibility-options)) to work
+  around this limitation.
 
 Aside from that, these are some known caveats:
 

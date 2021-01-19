@@ -40,6 +40,13 @@ constexpr uint16_t event_type_mask = 0b0111'1111;
 constexpr char active_window_property_name[] = "_NET_ACTIVE_WINDOW";
 
 /**
+ * The name of the X11 property that indicates whether a window supports
+ * drag-and-drop. If the `editor_force_dnd` option is enabled we'll remove this
+ * property from `topmost_window` to work around a bug in REAPER.
+ */
+constexpr char x_dnd_aware_property_name[] = "XdndAware";
+
+/**
  * Client message name for XEmbed messages. See
  * https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html.
  */
@@ -61,17 +68,21 @@ constexpr uint32_t xembed_focus_first = 1;
 std::atomic_size_t window_class_id{};
 
 /**
- * Find the topmost window (i.e. the window before the root window in the window
- * tree) starting from a certain window.
+ * Find the the ancestors for the given window. This returns a list of window
+ * IDs that starts wit h`starting_at`, and then iteratively contains the parent
+ * of the previous window in the list until we reach the root window. The
+ * topmost window (i.e. the window that will show up in the user's window
+ * manager) will be the last window in this list.
  *
  * @param x11_connection The X11 connection to use.
- * @param starting_at The window we want to know the topmost window of.
+ * @param starting_at The window we want to know the ancestor windows of.
  *
- * @return Either `starting_at`, if its parent is already the root window, or
- *   another another window that has `starting_at` as its descendent.
+ * @return A non-empty list containing `starting_at` and all of its ancestor
+ * windows `starting_at`.
  */
-xcb_window_t find_topmost_window(xcb_connection_t& x11_connection,
-                                 xcb_window_t starting_at);
+std::vector<xcb_window_t> find_ancestor_windows(
+    xcb_connection_t& x11_connection,
+    xcb_window_t starting_at);
 /**
  * Check whether `child` is a descendant of `parent` or the same window. Used
  * during focus checks to only grab focus when needed.
@@ -151,7 +162,8 @@ Editor::Editor(const Configuration& config,
       idle_timer_proc(std::move(timer_proc)),
       parent_window(parent_window_handle),
       wine_window(get_x11_handle(win32_handle.get())),
-      topmost_window(find_topmost_window(*x11_connection, parent_window)) {
+      topmost_window(
+          find_ancestor_windows(*x11_connection, parent_window).back()) {
     xcb_generic_error_t* error;
 
     // Used for input focus grabbing to only grab focus when the window is
@@ -177,6 +189,27 @@ Editor::Editor(const Configuration& config,
                   << std::endl;
     }
 
+    // If the `editor_force_dnd` option is set, we'll strip `XdndAware` from all
+    // of `wine_window`'s ancestors (including `parent_window`) to forcefully
+    // enable drag-and-drop support in REAPER. See the docstring on
+    // `Configuration::editor_force_dnd` and the option description in the
+    // readme for more information.
+    if (config.editor_force_dnd) {
+        atom_cookie = xcb_intern_atom(x11_connection.get(), true,
+                                      strlen(x_dnd_aware_property_name),
+                                      x_dnd_aware_property_name);
+        atom_reply =
+            xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
+        assert(!error);
+
+        for (const xcb_window_t& window :
+             find_ancestor_windows(*x11_connection, parent_window)) {
+            xcb_delete_property(x11_connection.get(), window, atom_reply->atom);
+        }
+
+        free(atom_reply);
+    }
+
     // When using XEmbed we'll need the atoms for the corresponding properties
     atom_cookie =
         xcb_intern_atom(x11_connection.get(), true, strlen(xembed_message_name),
@@ -184,6 +217,7 @@ Editor::Editor(const Configuration& config,
     atom_reply =
         xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
     assert(!error);
+
     xcb_xembed_message = atom_reply->atom;
     free(atom_reply);
 
@@ -636,9 +670,11 @@ LRESULT CALLBACK window_proc(HWND handle,
     return DefWindowProc(handle, message, wParam, lParam);
 }
 
-xcb_window_t find_topmost_window(xcb_connection_t& x11_connection,
-                                 xcb_window_t starting_at) {
+std::vector<xcb_window_t> find_ancestor_windows(
+    xcb_connection_t& x11_connection,
+    xcb_window_t starting_at) {
     xcb_window_t current_window = starting_at;
+    std::vector<xcb_window_t> ancestor_windows{current_window};
 
     xcb_generic_error_t* error;
     xcb_query_tree_cookie_t query_cookie =
@@ -650,6 +686,7 @@ xcb_window_t find_topmost_window(xcb_connection_t& x11_connection,
     xcb_window_t root = query_reply->root;
     while (query_reply->parent != root) {
         current_window = query_reply->parent;
+        ancestor_windows.push_back(current_window);
 
         free(query_reply);
         query_cookie = xcb_query_tree(&x11_connection, current_window);
@@ -659,7 +696,7 @@ xcb_window_t find_topmost_window(xcb_connection_t& x11_connection,
     }
 
     free(query_reply);
-    return current_window;
+    return ancestor_windows;
 }
 
 bool is_child_window_or_same(xcb_connection_t& x11_connection,

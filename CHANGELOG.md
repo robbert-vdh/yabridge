@@ -30,6 +30,12 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   Wine's XEmbed implementation instead of yabridge's normal window embedding
   method. Some plugins have will have redrawing issues when using XEmbed or the
   editor might not show up at all, so your mileage may very much vary.
+- Added a [compatibilty
+  option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
+  forcefully enable drag-and-drop support under _REAPER_. REAPER's FX window
+  supports drag-and-drop itself, which makes it impossible to drag files onto a
+  plugin editor embedded there. This option strips the drag-and-drop support
+  from the FX window, thus allowing you to drag files onto plugin editors again.
 - Added a frame rate
   [option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
   change the rate at which events are being handled. This usually also controls

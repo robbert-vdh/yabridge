@@ -162,6 +162,9 @@ class PluginBridge {
         if (config.editor_double_embed) {
             other_options.push_back("editor: double embed");
         }
+        if (config.editor_force_dnd) {
+            other_options.push_back("editor: force drag-and-drop");
+        }
         if (config.editor_xembed) {
             other_options.push_back("editor: XEmbed");
         }
