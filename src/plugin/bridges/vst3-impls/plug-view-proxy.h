@@ -228,8 +228,6 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
         // support multiple levels of mutual recursion. This could happen during
         // `IPlugView::attached() -> IPlugFrame::resizeView() ->
         // IPlugView::onSize()`.
-        // TODO: If this stack-of-io-contexts approach works, apply the same
-        //       thing in `Vst3Brdige`
         std::shared_ptr<boost::asio::io_context> current_io_context =
             std::make_shared<boost::asio::io_context>();
         {
