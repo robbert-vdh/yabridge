@@ -366,8 +366,6 @@ void Vst3Bridge::run() {
                 // pass that to the initialize function. The lifetime of this
                 // object is tied to that of the actual plugin object we're
                 // proxying for.
-                // TODO: Does this have to be run from the UI thread? Figure out
-                //       if it does
                 object_instances[request.instance_id].component_handler_proxy =
                     Steinberg::owned(new Vst3ComponentHandlerProxyImpl(
                         *this,
@@ -614,11 +612,6 @@ void Vst3Bridge::run() {
 
                 // Just like with VST2 plugins, we'll embed a Wine window into
                 // the X11 window provided by the host
-                // TODO: The docs say that we should support XEmbed (and we're
-                //       purposely avoiding that because Wine's implementation
-                //       doesn't work correctly). Check if this causes issues,
-                //       and if it's actually needed (for instance when the host
-                //       resizes the window without informing the plugin)
                 const auto x11_handle = static_cast<size_t>(request.parent);
 
                 // Creating the window and having the plugin embed in it should

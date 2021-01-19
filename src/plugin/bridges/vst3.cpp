@@ -236,7 +236,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                             plugin_factory->host_application->getName(name);
                     }
 
-                    // TODO: Remove this warning ocne Ardour supports multiple
+                    // TODO: Remove this warning once Ardour supports multiple
                     //       inputs and outputs
                     if (result == Steinberg::kResultOk && name == u"Ardour"s) {
                         logger.log(
