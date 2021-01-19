@@ -428,7 +428,7 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
             logger.log_event(true, opcode, index, value, nullptr, option,
                              std::nullopt);
 
-            // REAPEr requires `audioMasterSizeWindow()` calls to be done from
+            // REAPER requires `audioMasterSizeWindow()` calls to be done from
             // the GUI thread. In every other host this doesn't make a
             // difference, but in REAPER the FX window only resizes when this is
             // called from here.
