@@ -78,6 +78,10 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   always executed from the GUI thread. This fixes **EZdrummer** not producing
   any sound as it makes the incorrect assumption that `effMainsChanged()` is
   always called from the GUI thread.
+- Fixed a potential issue where an interaction between _Bitwig Studio_ and
+  yabridge's input focus grabbing method could cause delayed mouse events when
+  clicking on a plugin's GUI in Bitwig. This issue has not been reported for
+  yabridge 2.2.1 and below, but it could in theory also affect those versions.
 
 ### yabridgectl
 
