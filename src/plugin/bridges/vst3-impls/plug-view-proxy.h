@@ -278,9 +278,7 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
      * the host's GUI thread using a run loop event handler in
      * `Vst3PlugViewProxyImpl::run_gui_task`.
      *
-     * _This value is optional_ and it will this be a null pointer of the host
-     * does not support `IRunLoop`. We have to use an `IPtr` instead of a an
-     * `std::optional` in case the host also stores a pointer to this.
+     * This will be an `std::nullopt` if the hostdoes not support `IRunLoop`.
      */
-    Steinberg::IPtr<RunLoopTasks> run_loop_tasks;
+    std::optional<RunLoopTasks> run_loop_tasks;
 };

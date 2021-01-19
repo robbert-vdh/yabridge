@@ -211,12 +211,12 @@ Vst3PlugViewProxyImpl::setFrame(Steinberg::IPlugFrame* frame) {
         // owned by REAPER then REAPER will eventually segfault We should thus
         // try to call those functions from an `IRunLoop` event handler.
         try {
-            run_loop_tasks = Steinberg::owned(new RunLoopTasks(plug_frame));
+            run_loop_tasks.emplace(plug_frame);
         } catch (const std::runtime_error& e) {
             // In case the host does not support `IRunLoop` or if we can't
             // register an event handler, we'll throw during `RunLoopTasks`'
             // constructor
-            run_loop_tasks = nullptr;
+            run_loop_tasks.reset();
 
             bridge.logger.log(
                 "The host does not support IRunLoop, falling back to naive GUI "
