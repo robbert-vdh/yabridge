@@ -147,15 +147,16 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
         // If `send_mutually_recursive_message()` is currently being called
         // (because the host is calling one of `IPlugView`'s methods from its
         // UGI thread) then we'll post a message to an IO context that's
-        // currently accepting work on the that thread. Otherwise we'll schedule
-        // the task to be run from an event handler registered to the host's run
-        // loop. If the host does not support `IRunLoop`, we'll just run `f`
-        // directly.
+        // currently accepting work on the that thread. Since in theory we could
+        // have nested mutual recursion, we need to keep track of a stack of IO
+        // contexts. Great. Otherwise we'll schedule the task to be run from an
+        // event handler registered to the host's run loop. If the host does not
+        // support `IRunLoop`, we'll just run `f` directly.
         {
             std::unique_lock mutual_recursion_lock(
-                mutual_recursion_context_mutex);
-            if (mutual_recursion_context) {
-                boost::asio::dispatch(*mutual_recursion_context,
+                mutual_recursion_contexts_mutex);
+            if (!mutual_recursion_contexts.empty()) {
+                boost::asio::dispatch(*mutual_recursion_contexts.back(),
                                       std::move(do_call));
             } else {
                 mutual_recursion_lock.unlock();
@@ -223,23 +224,17 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
         using TResponse = typename T::Response;
 
         // This IO context will accept incoming calls from `run_gui_task()`
-        // until we receive a response
+        // until we receive a response. We keep these on a stack as we need to
+        // support multiple levels of mutual recursion. This could happen during
+        // `IPlugView::attached() -> IPlugFrame::resizeView() ->
+        // IPlugView::onSize()`.
+        // TODO: If this stack-of-io-contexts approach works, apply the same
+        //       thing in `Vst3Brdige`
+        std::shared_ptr<boost::asio::io_context> current_io_context =
+            std::make_shared<boost::asio::io_context>();
         {
-            std::unique_lock lock(mutual_recursion_context_mutex);
-
-            // In case some other thread is already calling
-            // `send_mutually_recursive_message()`, we're likely in mutually
-            // recursive calling sequence, and we should thus run the message
-            // from the current thread. This can happen during
-            // `IPlugView::attached() -> IPlugFrame::resizeView() ->
-            // IPlugView::onSize()`.
-            if (mutual_recursion_context) {
-                lock.unlock();
-
-                return bridge.send_message(object);
-            }
-
-            mutual_recursion_context.emplace();
+            std::unique_lock lock(mutual_recursion_contexts_mutex);
+            mutual_recursion_contexts.push_back(current_io_context);
         }
 
         // We will call the function from another thread so we can handle calls
@@ -250,18 +245,17 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
 
             // Stop accepting additional work to be run from the calling thread
             // once we receive a response
-            std::lock_guard lock(mutual_recursion_context_mutex);
-            mutual_recursion_context->stop();
-            mutual_recursion_context.reset();
+            std::lock_guard lock(mutual_recursion_contexts_mutex);
+            current_io_context->stop();
+            mutual_recursion_contexts.pop_back();
 
             response_promise.set_value(response);
         });
 
         // Accept work from the other thread until we receive a response, at
         // which point the context will be stopped
-        auto work_guard =
-            boost::asio::make_work_guard(*mutual_recursion_context);
-        mutual_recursion_context->run();
+        auto work_guard = boost::asio::make_work_guard(*current_io_context);
+        current_io_context->run();
 
         return response_promise.get_future().get();
     }
@@ -269,15 +263,17 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
     Vst3PluginBridge& bridge;
 
     /**
-     * The IO context used in `send_mutually_recursive_message()` to be able to
+     * The IO contexts used in `send_mutually_recursive_message()` to be able to
      * execute functions from that same calling thread while we're waiting for a
-     * response. See the docstring there for more information. When this doesn't
+     * response. We need an entire stack of these to support mutual recursion,
+     * how fun! See the docstring there for more information. When this doesn't
      * contain an IO context, this function is not being called and
      * `run_gui_task()` should post the task to `run_loop_tasks`. This works
      * exactly the same as the mutual recursion handling in `Vst3Bridge`.
      */
-    std::optional<boost::asio::io_context> mutual_recursion_context;
-    std::mutex mutual_recursion_context_mutex;
+    std::vector<std::shared_ptr<boost::asio::io_context>>
+        mutual_recursion_contexts;
+    std::mutex mutual_recursion_contexts_mutex;
 
     /**
      * If the host supports `IRunLoop`, we'll use this to run certain tasks from
