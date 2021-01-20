@@ -273,7 +273,9 @@ class Vst3Bridge : public HostBridge {
             // once we receive a response
             std::lock_guard lock(mutual_recursion_contexts_mutex);
             current_io_context->stop();
-            mutual_recursion_contexts.pop_back();
+            mutual_recursion_contexts.erase(
+                std::find(mutual_recursion_contexts.begin(),
+                          mutual_recursion_contexts.end(), current_io_context));
 
             response_promise.set_value(response);
         });
