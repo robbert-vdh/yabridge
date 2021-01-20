@@ -235,6 +235,11 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
             mutual_recursion_contexts.push_back(current_io_context);
         }
 
+        // Instead of directly stopping the IO context, we'll reset this work
+        // guard instead. This prevents us from accidentally cancelling any
+        // outstanding tasks.
+        auto work_guard = boost::asio::make_work_guard(*current_io_context);
+
         // We will call the function from another thread so we can handle calls
         // to  from this thread
         std::promise<TResponse> response_promise{};
@@ -242,9 +247,11 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
             const TResponse response = bridge.send_message(object);
 
             // Stop accepting additional work to be run from the calling thread
-            // once we receive a response
+            // once we receive a response. By resetting the work guard we do not
+            // cancel any pending tasks, but `current_io_context->run()` will
+            // stop blocking eventually.
             std::lock_guard lock(mutual_recursion_contexts_mutex);
-            current_io_context->stop();
+            work_guard.reset();
             mutual_recursion_contexts.erase(
                 std::find(mutual_recursion_contexts.begin(),
                           mutual_recursion_contexts.end(), current_io_context));
@@ -254,7 +261,6 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
 
         // Accept work from the other thread until we receive a response, at
         // which point the context will be stopped
-        auto work_guard = boost::asio::make_work_guard(*current_io_context);
         current_io_context->run();
 
         return response_promise.get_future().get();
