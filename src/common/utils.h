@@ -37,6 +37,13 @@ overload(Ts...) -> overload<Ts...>;
 boost::filesystem::path get_temporary_directory();
 
 /**
+ * Get the current thread's scheduling priority if the thread is using
+ * `SCHED_FIFO`. Returns a nullopt of the calling thread is not under realtime
+ * scheduling.
+ */
+std::optional<int> get_scheduling_priority();
+
+/**
  * Set the scheduling policy to `SCHED_FIFO` with priority 10 for this process.
  * We explicitly don't do this for wineserver itself since from my testing that
  * can actually increase latencies.
