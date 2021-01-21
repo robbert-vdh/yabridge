@@ -369,8 +369,8 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
             new YaPluginFactoryImpl(*this, std::move(factory_args)));
     }
 
-    // Because we're returning a raw pointer, we have to increas the
-    // reference count ourselves
+    // Because we're returning a raw pointer, we have to increase the reference
+    // count ourselves
     plugin_factory->addRef();
 
     return plugin_factory;

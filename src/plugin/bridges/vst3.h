@@ -63,9 +63,9 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
     /**
      * When the host loads the module it will call `GetPluginFactory()` which
      * will in turn call this function. The idea is that we return an
-     * `IPluginFactory*` while doing all the reference counting that `IPtr<T>`
-     * would normally do for us ourselves. This means that when the host frees
-     * its last instance of this factory, `plugin_factory` will also be cleared.
+     * `IPluginFactory*` that acts as an owned `IPtr<IPluginFactory>`, so we
+     * have to manually increase the reference count here for every plugin
+     * factory instance we return.
      *
      * @see plugin_factory
      */
