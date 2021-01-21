@@ -112,6 +112,25 @@ xcb_window_t get_x11_handle(HWND win32_handle);
  */
 ATOM get_window_class();
 
+DeferredWindow::DeferredWindow(HWND window) : handle(window) {}
+
+DeferredWindow::~DeferredWindow() {
+    // XXX: I'm pretty sure this is a Wine bug (or, well, an unfortunate
+    //      interaction of Wine's behaviour and our embedding). If we don't
+    //      explicitly hide the window before sending a `WM_CLOSE` (in
+    //      `destroy_window_async()`), then we might get an X11 error because
+    //      the closing of the window will trigger an X11 event in Wine's X11drv
+    //      which then tries to interact with the no longer existing window.
+    //      Manually hiding the window seems to work around this.
+    // TODO: Check if we also have to do something special for
+    //       editor_double_embed (probalby not)
+    // TODO: Retest XEmbed after all of these changes
+    ShowWindow(handle, SW_MINIMIZE);
+
+    // The actual destroying will happen as part of the Win32 message loop
+    PostMessage(handle, WM_CLOSE, 0, 0);
+}
+
 Editor::Editor(const Configuration& config,
                const size_t parent_window_handle,
                std::optional<fu2::unique_function<void()>> timer_proc)
@@ -123,7 +142,7 @@ Editor::Editor(const Configuration& config,
       // be drawn without any decorations (making resizes behave as you'd
       // expect) and also causes mouse coordinates to be relative to the window
       // itself.
-      win32_handle(CreateWindowEx(WS_EX_TOOLWINDOW,
+      win32_window(CreateWindowEx(WS_EX_TOOLWINDOW,
                                   reinterpret_cast<LPCSTR>(get_window_class()),
                                   "yabridge plugin",
                                   WS_POPUP,
@@ -134,16 +153,15 @@ Editor::Editor(const Configuration& config,
                                   nullptr,
                                   nullptr,
                                   GetModuleHandle(nullptr),
-                                  this),
-                   destroy_window_async),
+                                  this)),
       // If `config.editor_double_embed` is set, then we'll also create a child
-      // window in `win32_child_handle`. If we do this before calling
-      // `ShowWindow()` on `win32_handle` we'll run into X11 errors.
-      win32_child_handle(std::nullopt),
+      // window in `win32_child_window`. If we do this before calling
+      // `ShowWindow()` on `win32_window` we'll run into X11 errors.
+      win32_child_window(std::nullopt),
       idle_timer(
           timer_proc
               ? Win32Timer(
-                    win32_handle.get(),
+                    win32_window.handle,
                     idle_timer_id,
                     std::chrono::duration_cast<std::chrono::milliseconds>(
                         config.event_loop_interval())
@@ -151,7 +169,7 @@ Editor::Editor(const Configuration& config,
               : Win32Timer()),
       idle_timer_proc(std::move(timer_proc)),
       parent_window(parent_window_handle),
-      wine_window(get_x11_handle(win32_handle.get())),
+      wine_window(get_x11_handle(win32_window.handle)),
       topmost_window(
           find_ancestor_windows(*x11_connection, parent_window).back()) {
     xcb_generic_error_t* error;
@@ -251,27 +269,17 @@ Editor::Editor(const Configuration& config,
 
         // If we're using the double embedding option, then the child window
         // should only be created after the parent window is visible
-        ShowWindow(win32_handle.get(), SW_SHOWNORMAL);
+        ShowWindow(win32_window.handle, SW_SHOWNORMAL);
         if (config.editor_double_embed) {
-            // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-attributes"
             // As explained above, we can't do this directly in the initializer
             // list
-            win32_child_handle =
-                std::unique_ptr<std::remove_pointer_t<HWND>,
-                                decltype(&destroy_window_async)>(
-                    CreateWindowEx(WS_EX_TOOLWINDOW,
-                                   reinterpret_cast<LPCSTR>(get_window_class()),
-                                   "yabridge plugin child", WS_CHILD,
-                                   CW_USEDEFAULT, CW_USEDEFAULT,
-                                   client_area.width, client_area.height,
-                                   win32_handle.get(), nullptr,
-                                   GetModuleHandle(nullptr), this),
-                    destroy_window_async);
-#pragma GCC diagnostic pop
+            win32_child_window.emplace(CreateWindowEx(
+                WS_EX_TOOLWINDOW, reinterpret_cast<LPCSTR>(get_window_class()),
+                "yabridge plugin child", WS_CHILD, CW_USEDEFAULT, CW_USEDEFAULT,
+                client_area.width, client_area.height, win32_window.handle,
+                nullptr, GetModuleHandle(nullptr), this));
 
-            ShowWindow(win32_child_handle->get(), SW_SHOWNORMAL);
+            ShowWindow(win32_child_window->handle, SW_SHOWNORMAL);
         }
 
         // HACK: I can't seem to figure why the initial reparent would fail on
@@ -295,26 +303,14 @@ Editor::~Editor() {
 
     xcb_reparent_window(x11_connection.get(), wine_window, root, 0, 0);
     xcb_flush(x11_connection.get());
-
-    // XXX: I'm pretty sure this is a Wine bug (or, well, an unfortunate
-    //      interaction of Wine's behaviour and our embedding). If we don't
-    //      explicitly hide the window before sending a `WM_CLOSE` (in
-    //      `destroy_window_async()`), then we might get an X11 error because
-    //      the closing of the window will trigger an X11 event in Wine's X11drv
-    //      which then tries to interact with the no longer existing window.
-    //      Manually hiding the window seems to work around this.
-    // TODO: Check if we also have to do something special for
-    //       editor_double_embed (probalby not)
-    // TODO: Retest XEmbed after all of these changes
-    ShowWindow(win32_handle.get(), SW_MINIMIZE);
 }
 
 HWND Editor::get_win32_handle() const {
     // FIXME: The double embed and XEmbed options don't work together right now
-    if (win32_child_handle && !use_xembed) {
-        return win32_child_handle->get();
+    if (win32_child_window && !use_xembed) {
+        return win32_child_window->handle;
     } else {
-        return win32_handle.get();
+        return win32_window.handle;
     }
 }
 
@@ -483,10 +479,6 @@ void Editor::maybe_run_timer_proc() {
     }
 }
 
-void Editor::destroy_window_async(HWND window_handle) {
-    PostMessage(window_handle, WM_CLOSE, 0, 0);
-}
-
 bool Editor::is_wine_window_active() const {
     if (!supports_ewmh_active_window()) {
         return false;
@@ -589,7 +581,7 @@ void Editor::do_xembed() const {
     xcb_map_window(x11_connection.get(), wine_window);
     xcb_flush(x11_connection.get());
 
-    ShowWindow(win32_handle.get(), SW_SHOWNORMAL);
+    ShowWindow(win32_window.handle, SW_SHOWNORMAL);
 }
 
 LRESULT CALLBACK window_proc(HWND handle,

@@ -56,6 +56,38 @@ struct Size {
 };
 
 /**
+ * A RAII wrapper around windows created using `CreateWindow()` that will post a
+ * `WM_CLOSE` message to the window's message loop so it can clean itself up
+ * later. Directly calling `DestroyWindow()` might hang for a second or two, so
+ * deferring this increases responsiveness.
+ *
+ * This is essentially an alternative around `std::unique_ptr` with a non-static
+ * custom deleter.
+ *
+ * FIXME: It seems like there's a bug in Wine's X11Drv that _sometimes_ causes
+ *        the window to get deleted twice resulting in an Xlib error inside of
+ *        Wine.
+ */
+class DeferredWindow {
+   public:
+    /**
+     * Manage a window so that it will be asynchronously closed when this object
+     * gets dropped.
+     *
+     * @param window A `HWND` obtained through a call to `CreateWindowEx`
+     */
+    DeferredWindow(HWND window);
+
+    /**
+     * Post a `WM_CLOSE` message to the `handle`'s message queue as described
+     * above.
+     */
+    ~DeferredWindow();
+
+    const HWND handle;
+};
+
+/**
  * A wrapper around the win32 windowing API to create and destroy editor
  * windows. We can embed this window into the window provided by the host, and a
  * VST plugin can then later embed itself in the window create here.
@@ -89,7 +121,7 @@ class Editor {
      *   plugins to periodically call `effEditIdle` from the message loop
      *   thread, even when the GUI is blocked.
      *
-     * @see win32_handle
+     * @see win32_window
      */
     Editor(
         const Configuration& config,
@@ -155,13 +187,6 @@ class Editor {
 
    private:
     /**
-     * Post a message to this window's message queue to clean up the window.
-     * This way we don't have to wait for the window to actually fully close
-     * before returning.
-     */
-    static void destroy_window_async(HWND window_handle);
-
-    /**
      * Returns `true` if the currently active window (as per
      * `_NET_ACTIVE_WINDOW`) contains `wine_window`. If the window manager does
      * not support this hint, this will always return false.
@@ -205,31 +230,21 @@ class Editor {
      */
     const Size client_area;
 
-    // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-attributes"
-
     /**
      * The handle for the window created through Wine that the plugin uses to
      * embed itself in.
      */
-    std::unique_ptr<std::remove_pointer_t<HWND>,
-                    decltype(&destroy_window_async)>
-        win32_handle;
+    DeferredWindow win32_window;
 
     /**
-     * A child window embedded inside of `win32_handle`. This is only used if
+     * A child window embedded inside of `win32_window`. This is only used if
      * the `editor_double_embed` option is enabled. It can be used as a
      * workaround for plugins that rely on their parent window's screen
      * coordinates instead of their own (see the 'Editor hosting modes' section
      * of the readme for more details). The plugin should then embed itself
      * within this child window.
      */
-    std::optional<std::unique_ptr<std::remove_pointer_t<HWND>,
-                                  decltype(&destroy_window_async)>>
-        win32_child_handle;
-
-#pragma GCC diagnostic pop
+    std::optional<DeferredWindow> win32_child_window;
 
     /**
      * A timer we'll use to periodically run `idle_timer_proc`, if set. Thisi is
@@ -253,7 +268,7 @@ class Editor {
      */
     const xcb_window_t parent_window;
     /**
-     * The X11 window handle of the window belonging to  `win32_handle`.
+     * The X11 window handle of the window belonging to  `win32_window`.
      */
     const xcb_window_t wine_window;
     /**
