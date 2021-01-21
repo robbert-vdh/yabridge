@@ -395,8 +395,8 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             //       while it's loading its editor from preempting the audio
             //       thread.
             set_realtime_priority(false);
-            Editor& editor_instance =
-                editor.emplace(config, x11_handle, [plugin = this->plugin]() {
+            Editor& editor_instance = editor.emplace(
+                main_context, config, x11_handle, [plugin = this->plugin]() {
                     plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0.0);
                 });
             const intptr_t result =

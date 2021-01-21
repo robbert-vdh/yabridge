@@ -59,7 +59,9 @@ struct Size {
  * A RAII wrapper around windows created using `CreateWindow()` that will post a
  * `WM_CLOSE` message to the window's message loop so it can clean itself up
  * later. Directly calling `DestroyWindow()` might hang for a second or two, so
- * deferring this increases responsiveness.
+ * deferring this increases responsiveness. We actually defer this even further
+ * by calling this function a little while after the editor has closed to
+ * prevent any potential delays.
  *
  * This is essentially an alternative around `std::unique_ptr` with a non-static
  * custom deleter.
@@ -74,9 +76,11 @@ class DeferredWindow {
      * Manage a window so that it will be asynchronously closed when this object
      * gets dropped.
      *
+     * @param main_context This application's main IO context running on the GUI
+     *   thread.
      * @param window A `HWND` obtained through a call to `CreateWindowEx`
      */
-    DeferredWindow(HWND window);
+    DeferredWindow(MainContext& main_context, HWND window);
 
     /**
      * Post a `WM_CLOSE` message to the `handle`'s message queue as described
@@ -85,6 +89,9 @@ class DeferredWindow {
     ~DeferredWindow();
 
     const HWND handle;
+
+   private:
+    MainContext& main_context;
 };
 
 /**
@@ -113,6 +120,9 @@ class Editor {
      * Open a window, embed it into the DAW's parent window and create a handle
      * to the new Win32 window that can be used by the hosted VST plugin.
      *
+     * @param main_context The application's main IO context running on the GUI
+     *   thread. We use this to defer closing the window in
+     *   `DestroyWindow::~DestroyWindow()`.
      * @param config This instance's configuration, used to enable alternative
      *   editor behaviours.
      * @param parent_window_handle The X11 window handle passed by the VST host
@@ -124,11 +134,10 @@ class Editor {
      * @see win32_window
      */
     Editor(
+        MainContext& main_context,
         const Configuration& config,
         const size_t parent_window_handle,
         std::optional<fu2::unique_function<void()>> timer_proc = std::nullopt);
-
-    ~Editor();
 
     /**
      * Get the Win32 window handle so it can be passed to an `effEditOpen()`

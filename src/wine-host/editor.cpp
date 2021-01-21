@@ -18,6 +18,8 @@
 
 #include <iostream>
 
+using namespace std::literals::chrono_literals;
+
 /**
  * The Win32 timer ID we'll use to periodically call the VST2 `effeditidle`
  * function with. We have to do this on a timer because the function has to be
@@ -112,26 +114,37 @@ xcb_window_t get_x11_handle(HWND win32_handle);
  */
 ATOM get_window_class();
 
-DeferredWindow::DeferredWindow(HWND window) : handle(window) {}
+DeferredWindow::DeferredWindow(MainContext& main_context, HWND window)
+    : handle(window), main_context(main_context) {}
 
 DeferredWindow::~DeferredWindow() {
-    // XXX: I'm pretty sure this is a Wine bug (or, well, an unfortunate
-    //      interaction of Wine's behaviour and our embedding). If we don't
-    //      explicitly hide the window before sending a `WM_CLOSE` (in
-    //      `destroy_window_async()`), then we might get an X11 error because
-    //      the closing of the window will trigger an X11 event in Wine's X11drv
-    //      which then tries to interact with the no longer existing window.
-    //      Manually hiding the window seems to work around this.
-    // TODO: Check if we also have to do something special for
-    //       editor_double_embed (probalby not)
-    // TODO: Retest XEmbed after all of these changes
-    ShowWindow(handle, SW_MINIMIZE);
+    // XXX: We are already deferring this closing by posting `WM_CLOSE` to the
+    //      message loop instead of calling `DestroyWindow()` ourselves, but we
+    //      can take it one step further. If we post this message directly then
+    //      we might still get a delay, for instance if our event loop timer
+    //      would tick exactly between `IPlugView::removed()` and
+    //      `IPlugView::~IPlugView`. Delaying this seems to be a best of both
+    //      worlds solution that works as expected in every host I've tested.
+    std::shared_ptr<boost::asio::steady_timer> destroy_timer =
+        std::make_shared<boost::asio::steady_timer>(main_context.context);
+    destroy_timer->expires_after(1s);
 
-    // The actual destroying will happen as part of the Win32 message loop
-    PostMessage(handle, WM_CLOSE, 0, 0);
+    // Note that we capture a copy of `destroy_timer` here. This way we don't
+    // have to manage the timer instance ourselves as it will just clean itself
+    // up after this lambda gets called.
+    destroy_timer->async_wait([destroy_timer, handle = this->handle](
+                                  const boost::system::error_code& error) {
+        if (error.failed()) {
+            return;
+        }
+
+        // The actual destroying will happen as part of the Win32 message loop
+        PostMessage(handle, WM_CLOSE, 0, 0);
+    });
 }
 
-Editor::Editor(const Configuration& config,
+Editor::Editor(MainContext& main_context,
+               const Configuration& config,
                const size_t parent_window_handle,
                std::optional<fu2::unique_function<void()>> timer_proc)
     : use_xembed(config.editor_xembed),
@@ -142,7 +155,8 @@ Editor::Editor(const Configuration& config,
       // be drawn without any decorations (making resizes behave as you'd
       // expect) and also causes mouse coordinates to be relative to the window
       // itself.
-      win32_window(CreateWindowEx(WS_EX_TOOLWINDOW,
+      win32_window(main_context,
+                   CreateWindowEx(WS_EX_TOOLWINDOW,
                                   reinterpret_cast<LPCSTR>(get_window_class()),
                                   "yabridge plugin",
                                   WS_POPUP,
@@ -273,11 +287,14 @@ Editor::Editor(const Configuration& config,
         if (config.editor_double_embed) {
             // As explained above, we can't do this directly in the initializer
             // list
-            win32_child_window.emplace(CreateWindowEx(
-                WS_EX_TOOLWINDOW, reinterpret_cast<LPCSTR>(get_window_class()),
-                "yabridge plugin child", WS_CHILD, CW_USEDEFAULT, CW_USEDEFAULT,
-                client_area.width, client_area.height, win32_window.handle,
-                nullptr, GetModuleHandle(nullptr), this));
+            win32_child_window.emplace(
+                main_context,
+                CreateWindowEx(WS_EX_TOOLWINDOW,
+                               reinterpret_cast<LPCSTR>(get_window_class()),
+                               "yabridge plugin child", WS_CHILD, CW_USEDEFAULT,
+                               CW_USEDEFAULT, client_area.width,
+                               client_area.height, win32_window.handle, nullptr,
+                               GetModuleHandle(nullptr), this));
 
             ShowWindow(win32_child_window->handle, SW_SHOWNORMAL);
         }
@@ -292,17 +309,6 @@ Editor::Editor(const Configuration& config,
                             0);
         xcb_flush(x11_connection.get());
     }
-}
-
-Editor::~Editor() {
-    // Reparent the window back to the root window, as the actual window will be
-    // destroyed as part of the next Win32 message loop cycle
-    xcb_window_t root =
-        xcb_setup_roots_iterator(xcb_get_setup(x11_connection.get()))
-            .data->root;
-
-    xcb_reparent_window(x11_connection.get(), wine_window, root, 0, 0);
-    xcb_flush(x11_connection.get());
 }
 
 HWND Editor::get_win32_handle() const {

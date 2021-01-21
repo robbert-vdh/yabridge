@@ -621,7 +621,8 @@ void Vst3Bridge::run() {
                         set_realtime_priority(false);
                         Editor& editor_instance =
                             object_instances[request.owner_instance_id]
-                                .editor.emplace(config, x11_handle);
+                                .editor.emplace(main_context, config,
+                                                x11_handle);
                         const tresult result =
                             object_instances[request.owner_instance_id]
                                 .plug_view_instance->plug_view->attached(
