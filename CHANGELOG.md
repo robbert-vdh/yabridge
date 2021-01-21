@@ -75,6 +75,8 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   priority. This should get rid of any latency spikes during those operations,
   as this could otherwise steal resources away from the threads that are
   processing audio.
+- Yabridge no longer overrides the host's scheduling priorities if the thread
+  yabridge is being hosted from is already using realtime scheduling.
 - When `YABRIDGE_DEBUG_LEVEL` is set to 2 or higher and a plugin asks the host
   for the current position in the song, yabridge will now also print the current
   tempo to help debugging host bugs.
