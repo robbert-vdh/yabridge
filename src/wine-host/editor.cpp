@@ -62,12 +62,6 @@ constexpr uint32_t xembed_focus_in_msg = 4;
 constexpr uint32_t xembed_focus_first = 1;
 
 /**
- * Used to generate a globally unique identifier for a window class. This is
- * needed because every window's window class name should be unique.
- */
-std::atomic_size_t window_class_id{};
-
-/**
  * Find the the ancestors for the given window. This returns a list of window
  * IDs that starts wit h`starting_at`, and then iteratively contains the parent
  * of the previous window in the list until we reach the root window. The
@@ -111,14 +105,12 @@ xcb_window_t get_root_window(xcb_connection_t& x11_connection,
  * Return the X11 window handle for the window if it's currently open.
  */
 xcb_window_t get_x11_handle(HWND win32_handle);
-ATOM register_window_class(std::string window_class_name);
 
-WindowClass::WindowClass(const std::string& name)
-    : atom(register_window_class(name)) {}
-
-WindowClass::~WindowClass() {
-    UnregisterClass(reinterpret_cast<LPCSTR>(atom), GetModuleHandle(nullptr));
-}
+/**
+ * Return a handle to the window class used for all Win32 windows created by
+ * yabridge.
+ */
+ATOM get_window_class();
 
 Editor::Editor(const Configuration& config,
                const size_t parent_window_handle,
@@ -126,15 +118,13 @@ Editor::Editor(const Configuration& config,
     : use_xembed(config.editor_xembed),
       x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
       client_area(get_maximum_screen_dimensions(*x11_connection)),
-      window_class("yabridge plugin " +
-                   std::to_string(window_class_id.fetch_add(1))),
       // Create a window without any decoratiosn for easy embedding. The
       // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to
       // be drawn without any decorations (making resizes behave as you'd
       // expect) and also causes mouse coordinates to be relative to the window
       // itself.
       win32_handle(CreateWindowEx(WS_EX_TOOLWINDOW,
-                                  reinterpret_cast<LPCSTR>(window_class.atom),
+                                  reinterpret_cast<LPCSTR>(get_window_class()),
                                   "yabridge plugin",
                                   WS_POPUP,
                                   CW_USEDEFAULT,
@@ -272,7 +262,7 @@ Editor::Editor(const Configuration& config,
                 std::unique_ptr<std::remove_pointer_t<HWND>,
                                 decltype(&destroy_window_async)>(
                     CreateWindowEx(WS_EX_TOOLWINDOW,
-                                   reinterpret_cast<LPCSTR>(window_class.atom),
+                                   reinterpret_cast<LPCSTR>(get_window_class()),
                                    "yabridge plugin child", WS_CHILD,
                                    CW_USEDEFAULT, CW_USEDEFAULT,
                                    client_area.width, client_area.height,
@@ -771,20 +761,26 @@ xcb_window_t get_x11_handle(HWND win32_handle) {
         GetProp(win32_handle, "__wine_x11_whole_window"));
 }
 
-ATOM register_window_class(std::string window_class_name) {
-    WNDCLASSEX window_class{};
+ATOM get_window_class() {
+    // Lazily iniitialize our window class
+    static ATOM window_class_handle = 0;
+    if (!window_class_handle) {
+        WNDCLASSEX window_class{};
 
-    // XXX: We could also add a background here. This would get rid of any
-    //      artifacts on hosts that don't resize the window properly (e.g.
-    //      REAPER with VST2 plugins), but it can also cause that background to
-    //      briefly become visible on a call to `fix_local_coordinates()` which
-    //      can look very jarring.
-    window_class.cbSize = sizeof(WNDCLASSEX);
-    window_class.style = CS_DBLCLKS;
-    window_class.lpfnWndProc = window_proc;
-    window_class.hInstance = GetModuleHandle(nullptr);
-    window_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    window_class.lpszClassName = window_class_name.c_str();
+        // XXX: We could also add a background here. This would get rid of any
+        //      artifacts on hosts that don't resize the window properly (e.g.
+        //      REAPER with VST2 plugins), but it can also cause that background
+        //      to briefly become visible on a call to `fix_local_coordinates()`
+        //      which can look very jarring.
+        window_class.cbSize = sizeof(WNDCLASSEX);
+        window_class.style = CS_DBLCLKS;
+        window_class.lpfnWndProc = window_proc;
+        window_class.hInstance = GetModuleHandle(nullptr);
+        window_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        window_class.lpszClassName = "yabridge plugin";
 
-    return RegisterClassEx(&window_class);
+        window_class_handle = RegisterClassEx(&window_class);
+    }
+
+    return window_class_handle;
 }

@@ -56,21 +56,6 @@ struct Size {
 };
 
 /**
- * A basic RAII wrapper around the Win32 window class system, for use in the
- * Editor class below.
- */
-class WindowClass {
-   public:
-    explicit WindowClass(const std::string& name);
-    ~WindowClass();
-
-    /**
-     * The Win32 window class registered for the windows window.
-     */
-    const ATOM atom;
-};
-
-/**
  * A wrapper around the win32 windowing API to create and destroy editor
  * windows. We can embed this window into the window provided by the host, and a
  * VST plugin can then later embed itself in the window create here.
@@ -219,11 +204,6 @@ class Editor {
      * resizing will feel smooth and native.
      */
     const Size client_area;
-
-    /**
-     * The Win32 window class registered for the windows window.
-     */
-    const WindowClass window_class;
 
     // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
 #pragma GCC diagnostic push
