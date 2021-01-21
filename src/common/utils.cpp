@@ -32,17 +32,7 @@ fs::path get_temporary_directory() {
 }
 
 bool set_realtime_priority(bool sched_fifo) {
-    // If we're already using SCHED_FIFO then this is likely set by the host,
-    // and we should not make any additional changes
-    if (sched_fifo) {
-        sched_param current_params{};
-        if (sched_getparam(0, &current_params) == 0 &&
-            current_params.sched_priority > 0) {
-            return true;
-        }
-    }
-
-    sched_param params{.sched_priority = (sched_fifo ? 5 : 0)};
+    sched_param params{.sched_priority = 5};
     return sched_setscheduler(0, sched_fifo ? SCHED_FIFO : SCHED_OTHER,
                               &params) == 0;
 }
