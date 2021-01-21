@@ -22,10 +22,8 @@
 #include "../../common/communication/vst3.h"
 #include "../../common/logging/vst3.h"
 #include "common.h"
-
-// Forward declarations
-class Vst3PluginProxyImpl;
-class YaPluginFactoryImpl;
+#include "vst3-impls/plugin-factory.h"
+#include "vst3-impls/plugin-proxy.h"
 
 /**
  * This handles the communication between the native host and a VST3 plugin
@@ -139,13 +137,11 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * Our plugin factory. All information about the plugin and its supported
      * classes are copied directly from the Windows VST3 plugin's factory on the
      * Wine side, and we'll provide an implementation that can send control
-     * messages to the Wine plugin host. As explained in `get_plugin_factory()`,
-     * this cannot be a smart pointer because the factory is supposed to free
-     * itself when the host removes its last adopted `IPtr<IpluginFactory>`.
+     * messages to the Wine plugin host.
      *
      * @related get_plugin_factory
      */
-    YaPluginFactoryImpl* plugin_factory = nullptr;
+    Steinberg::IPtr<YaPluginFactoryImpl> plugin_factory = nullptr;
 
    private:
     /**

@@ -16,7 +16,11 @@
 
 #pragma once
 
-#include "../vst3.h"
+#include "../../../common/serialization/vst3/plugin-factory.h"
+
+// We need an `IPtr<YaPluginFactoryImpl>` in `Vst3PluginBridge`, so we need to
+// declare this slightly differently to avoid circular includes.
+class Vst3PluginBridge;
 
 class YaPluginFactoryImpl : public YaPluginFactory {
    public:

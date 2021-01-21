@@ -18,6 +18,7 @@
 
 #include <pluginterfaces/vst/ivstcomponent.h>
 
+#include "../vst3.h"
 #include "plugin-proxy.h"
 
 YaPluginFactoryImpl::YaPluginFactoryImpl(Vst3PluginBridge& bridge,

@@ -351,15 +351,12 @@ Vst3PluginBridge::~Vst3PluginBridge() {
 }
 
 Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
-    // Even though we're working with raw pointers here, we should pretend that
-    // we're `IPtr<Steinberg::IPluginFactory>` and do the reference counting
-    // ourselves. This should work the same was as the standard implementation
-    // in `public.sdk/source/main/pluginfactory.h`. If we were to use an IPtr or
-    // an STL smart pointer we would get a double free (or rather, a use after
-    // free).
-    if (plugin_factory) {
-        plugin_factory->addRef();
-    } else {
+    // This works the same way as the default implementation in
+    // `public.sdk/source/main/pluginfactory.h`, with the exception that we back
+    // the plugin factory with an `IPtr` ourselves so it cannot be freed before
+    // `Vst3PluginBridge` gets freed. This is needed for REAPER as REAPER does
+    // not call `ModuleExit()`.
+    if (!plugin_factory) {
         // Set up the plugin factory, since this is the first thing the host
         // will request after loading the module. Host callback handlers should
         // have started before this since the Wine plugin host will request a
@@ -368,9 +365,13 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
             sockets.host_vst_control.send_message(
                 YaPluginFactory::Construct{},
                 std::pair<Vst3Logger&, bool>(logger, true));
-        plugin_factory =
-            new YaPluginFactoryImpl(*this, std::move(factory_args));
+        plugin_factory = Steinberg::owned(
+            new YaPluginFactoryImpl(*this, std::move(factory_args)));
     }
+
+    // Because we're returning a raw pointer, we have to increas the
+    // reference count ourselves
+    plugin_factory->addRef();
 
     return plugin_factory;
 }
