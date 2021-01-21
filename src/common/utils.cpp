@@ -42,7 +42,7 @@ bool set_realtime_priority(bool sched_fifo) {
         }
     }
 
-    sched_param params{.sched_priority = 5};
+    sched_param params{.sched_priority = (sched_fifo ? 5 : 0)};
     return sched_setscheduler(0, sched_fifo ? SCHED_FIFO : SCHED_OTHER,
                               &params) == 0;
 }
