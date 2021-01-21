@@ -23,7 +23,9 @@
 #include "../../common/logging/vst3.h"
 #include "common.h"
 #include "vst3-impls/plugin-factory.h"
-#include "vst3-impls/plugin-proxy.h"
+
+// Forward declarations
+class Vst3PluginProxyImpl;
 
 /**
  * This handles the communication between the native host and a VST3 plugin
