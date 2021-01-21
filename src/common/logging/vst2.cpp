@@ -504,7 +504,8 @@ void Vst2Logger::log_event_response(
                 },
                 [&](const VstTimeInfo& info) {
                     message << ", <"
-                            << "quarter_notes = " << info.ppqPos
+                            << "tempo = " << info.tempo << " bpm"
+                            << ", quarter_notes = " << info.ppqPos
                             << ", samples = " << info.samplePos << ">";
                 }},
             payload);

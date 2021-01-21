@@ -75,6 +75,9 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   priority. This should get rid of any latency spikes during those operations,
   as this could otherwise steal resources away from the threads that are
   processing audio.
+- When `YABRIDGE_DEBUG_LEVEL` is set to 2 or higher and a plugin asks the host
+  for the current position in the song, yabridge will now also print the current
+  tempo to help debugging host bugs.
 - Changed part of the build process considering [this Wine
   bug](https://bugs.winehq.org/show_bug.cgi?id=49138). Building with Wine 5.7
   and 5.8 required a change, but that change now breaks builds using Wine 6.0
