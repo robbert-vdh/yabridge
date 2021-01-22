@@ -217,6 +217,11 @@ class Sockets {
      */
     virtual ~Sockets() {
         try {
+            // TODO: Check whether `base_dir` is actually in `/tmp` or
+            //       `$XDG_RUNTIME_DIR`, don't do anything if it's not. Someone
+            //       has deleted their entire home directory while messing with
+            //       `yabridge-host.exe`'s arguments, and that sounds like
+            //       something that would be easy to prevent.
             boost::filesystem::remove_all(base_dir);
         } catch (const boost::filesystem::filesystem_error&) {
             // There should not be any filesystem errors since only one side
