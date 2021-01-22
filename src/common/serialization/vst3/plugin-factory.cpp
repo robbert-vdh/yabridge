@@ -25,13 +25,6 @@ YaPluginFactory::ConstructArgs::ConstructArgs() {}
 
 YaPluginFactory::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::IPluginFactory> factory) {
-    // FIXME: The class IDs are incorrect! See the `INLINE_UID` macro. We need
-    //        to shuffle the byte orders around for plugins to be compatible
-    //        with projects saved under Windows and with native Linux versions
-    //        of the same plugin.
-    // FIXME: We need to do similar translations everywhere where we encounter
-    //        `ArrayUID`, such as `IComponent::getControllerClassId()`
-
     // `IPluginFactory::getFactoryInfo`
     if (Steinberg::PFactoryInfo info;
         factory->getFactoryInfo(&info) == Steinberg::kResultOk) {
@@ -131,6 +124,13 @@ tresult PLUGIN_API YaPluginFactory::getClassInfo(Steinberg::int32 index,
         return Steinberg::kInvalidArgument;
     }
 
+    // FIXME: The class IDs are incorrect! See the `INLINE_UID` macro. We need
+    //        to shuffle the byte orders around for plugins to be compatible
+    //        with projects saved under Windows and with native Linux versions
+    //        of the same plugin. We need to do this transformation for all of
+    //        these functions
+    // FIXME: We need to do similar translations everywhere where we encounter
+    //        `ArrayUID`, such as `IComponent::getControllerClassId()`
     if (arguments.class_infos_1[index]) {
         *info = *arguments.class_infos_1[index];
         return Steinberg::kResultOk;

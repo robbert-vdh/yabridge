@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include <bitsery/traits/array.h>
 #include <pluginterfaces/base/ftypes.h>
 #include <pluginterfaces/base/funknown.h>
 #include <pluginterfaces/vst/vsttypes.h>
@@ -30,15 +31,6 @@
 using Steinberg::TBool, Steinberg::char16, Steinberg::int8, Steinberg::int16,
     Steinberg::int32, Steinberg::int64, Steinberg::uint8, Steinberg::uint16,
     Steinberg::uint32, Steinberg::uint64, Steinberg::tresult;
-
-/**
- * Both `TUID` (`int8_t[16]`) and `FIDString` (`char*`) are hard to work with
- * because you can't just copy them. So when serializing/deserializing them
- * we'll use `std::array`.
- */
-using ArrayUID = std::array<
-    std::remove_reference_t<decltype(std::declval<Steinberg::TUID>()[0])>,
-    std::extent_v<Steinberg::TUID>>;
 
 /**
  * The maximum number of speakers or busses we support.
@@ -84,6 +76,82 @@ const Steinberg::Vst::TChar* u16string_to_tchar_pointer(
 struct Ack {
     template <typename S>
     void serialize(S&) {}
+};
+
+/**
+ * Both `TUID` (`int8_t[16]`) and `FIDString` (`char*`) are hard to work with
+ * because you can't just copy them. So when serializing/deserializing them
+ * we'll use `std::array`.
+ *
+ * FIXME: Replace usages of ArrayUID everywhere with either `WineUID` or
+ *        `NativeUID`
+ */
+using ArrayUID = std::array<
+    std::remove_reference_t<decltype(std::declval<Steinberg::TUID>()[0])>,
+    std::extent_v<Steinberg::TUID>>;
+
+/**
+ * Store a serializable UID in the format used on the Wine host. This then has
+ * to be converted to the correct native format on the plugin side.
+ *
+ * NOTE: This is crucial. The `INLINE_UID` macro from the VST3 SDK uses
+ *       different byte ordering on Windows (with COM support) versus on other
+ *       platforms. We need to reverse this transformation manually in order for
+ *       projects with the Windows VST3 version of plugin X, the Linux VST3
+ *       version of plugin X, and the Windows VST3 version of plugin X running
+ *       through yabridge to be compatible.
+ */
+class WineUID {
+   public:
+    WineUID();
+    WineUID(const Steinberg::TUID& tuid);
+
+    ArrayUID get_native_uid() const;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.container1b(uid);
+    }
+
+   protected:
+    ArrayUID uid;
+};
+
+/**
+ * Store a serializable UID in the 'real' format as used by the Windows version
+ * of the VST3 plugin on Windows and the Linux version of the same plugin on
+ * Linux. This then has to be converted to the format reported by the plugin on
+ * the Wine host.
+ *
+ * NOTE: This is crucial. The `INLINE_UID` macro from the VST3 SDK uses
+ *       different byte ordering on Windows (with COM support) versus on other
+ *       platforms. We need to reverse this transformation manually in order for
+ *       projects with the Windows VST3 version of plugin X, the Linux VST3
+ *       version of plugin X, and the Windows VST3 version of plugin X running
+ *       through yabridge to be compatible.
+ */
+class NativeUID {
+   public:
+    NativeUID();
+    NativeUID(const Steinberg::TUID& tuid);
+
+    /**
+     * Convert to the garbled byte order used in the Wine plugin host.
+     */
+    ArrayUID get_wine_uid() const;
+
+    /**
+     * Get a reference to the proper native UID.
+     */
+    inline const ArrayUID& native_uid() const { return uid; };
+
+    template <typename S>
+    void serialize(S& s) {
+        s.container1b(uid);
+    }
+
+   protected:
+    ArrayUID uid;
 };
 
 /**

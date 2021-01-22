@@ -66,6 +66,51 @@ const Steinberg::Vst::TChar* u16string_to_tchar_pointer(
 #endif
 }
 
+WineUID::WineUID() {}
+WineUID::WineUID(const Steinberg::TUID& tuid) : uid(std::to_array(tuid)) {}
+
+ArrayUID WineUID::get_native_uid() const {
+    // We need to shuffle the first 8 bytes around to convert between the
+    // COM-compatible and non COM-compatible formats described by the
+    // `INLINE_UID` macro. See that macro as a reference for the transformations
+    // we're applying here.
+    ArrayUID converted_uid = uid;
+
+    converted_uid[0] = uid[3];
+    converted_uid[1] = uid[2];
+    converted_uid[2] = uid[1];
+    converted_uid[3] = uid[0];
+
+    converted_uid[4] = uid[5];
+    converted_uid[5] = uid[4];
+    converted_uid[6] = uid[7];
+    converted_uid[7] = uid[6];
+
+    return converted_uid;
+}
+
+NativeUID::NativeUID() {}
+NativeUID::NativeUID(const Steinberg::TUID& tuid) : uid(std::to_array(tuid)) {}
+
+ArrayUID NativeUID::get_wine_uid() const {
+    // This transformation is actually the same as the one in
+    // `WineUID::get_native_uid()`, but we'll spell it out here in full for
+    // understandability's sake.
+    ArrayUID converted_uid = uid;
+
+    converted_uid[0] = uid[3];
+    converted_uid[1] = uid[2];
+    converted_uid[2] = uid[1];
+    converted_uid[3] = uid[0];
+
+    converted_uid[4] = uid[5];
+    converted_uid[5] = uid[4];
+    converted_uid[6] = uid[7];
+    converted_uid[7] = uid[6];
+
+    return converted_uid;
+}
+
 UniversalTResult::UniversalTResult() : universal_result(Value::kResultFalse) {}
 
 UniversalTResult::UniversalTResult(tresult native_result)

@@ -17,7 +17,6 @@
 #pragma once
 
 #include <bitsery/ext/std_optional.h>
-#include <bitsery/traits/array.h>
 #include <pluginterfaces/vst/ivstcomponent.h>
 
 #include "../../../bitsery/ext/vst3.h"
