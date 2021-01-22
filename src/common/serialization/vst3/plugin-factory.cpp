@@ -66,7 +66,7 @@ YaPluginFactory::ConstructArgs::ConstructArgs(
             //       plugins. See `WineUID` for more information.
             ArrayUID native_uid = WineUID(info.cid).get_native_uid();
             std::copy(native_uid.begin(), native_uid.end(),
-                      class_infos_1[i]->cid);
+                      class_infos_2[i]->cid);
         }
     }
 
@@ -88,7 +88,7 @@ YaPluginFactory::ConstructArgs::ConstructArgs(
             //       plugins. See `WineUID` for more information.
             ArrayUID native_uid = WineUID(info.cid).get_native_uid();
             std::copy(native_uid.begin(), native_uid.end(),
-                      class_infos_1[i]->cid);
+                      class_infos_unicode[i]->cid);
         }
     }
 }
