@@ -18,6 +18,18 @@ To use these, download the migration scripts for the DAWs you need to migrate an
 old project file for and run them. You'll get on screen instructions with what
 to do after that.
 
+## Ardour
+
+```shell
+# First download the script
+curl -o migrate-ardour.py https://raw.githubusercontent.com/robbert-vdh/yabridge/master/tools/migration/migrate-ardour.py
+chmod +x migrate-ardour.py
+
+# And then run it on any old .ardour files, the script will guide you through the
+# migration process
+./migrate-ardour.py /path/to/some/project/project.ardour
+```
+
 ## Bitwig Studio
 
 ```shell

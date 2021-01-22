@@ -48,7 +48,7 @@ print(
         textwrap.wrap(
             f"This script will go through '{filename}' to migrate old yabridge VST3 plugin instances. "
             f"The output will be saved to '{migrated_filename}', but make sure to still create a backup of the original file in case something does go wrong. "
-            f"Migrating Bitwig project files is a two stop process. ",
+            "Migrating Bitwig project files is a two stop process. ",
             width=80,
             break_on_hyphens=False,
         )
@@ -59,9 +59,9 @@ print()
 print(
     "\n".join(
         textwrap.wrap(
-            f"First this script will rewrite the .bwproject file to use thew new plugin IDs. "
-            f"For every yabridge VST3 plugin found you will be prompted with the question if you want to migrate it. "
-            f"Answer 'yes' for all old yabridge VST3 plugin instances, and 'no' if this instance should not be migrated (for instance if you have a project file with mixed old and new instances). ",
+            "First this script will rewrite the .bwproject file to use thew new plugin IDs. "
+            "For every yabridge VST3 plugin found you will be prompted with the question if you want to migrate it. "
+            "Answer 'yes' for all old yabridge VST3 plugin instances, and 'no' if this instance should not be migrated (for instance if you have a project file with mixed old and new instances). ",
             width=80,
             break_on_hyphens=False,
         )
@@ -73,11 +73,11 @@ print(
     "\n".join(
         textwrap.wrap(
             f"After that you will be asked to open the new '{migrated_filename}' project. "
-            f"During this process you should make that all other Bitwig projects are closed. "
-            f"When opening the new project you will notice that the migrated plugins will try to load but then fail because they cannot load their preset files. "
-            f"At this point you should tell this script to continue, and it will rewrite the preset files. "
-            f"If you then save and reopen the project, everything should work again. "
-            f"Make sure to test whether the new project works immediately after finishing this migration process.",
+            "During this process you should make that all other Bitwig projects are closed. "
+            "When opening the new project you will notice that the migrated plugins will try to load but then fail because they cannot load their preset files. "
+            "At this point you should tell this script to continue, and it will rewrite the preset files. "
+            "If you then save and reopen the project, everything should work again. "
+            "Make sure to test whether the new project works immediately after finishing this migration process.",
             width=80,
             break_on_hyphens=False,
         )
