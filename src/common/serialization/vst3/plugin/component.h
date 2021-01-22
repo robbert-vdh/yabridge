@@ -19,7 +19,6 @@
 #include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/vst/ivstcomponent.h>
 
-#include "../../../bitsery/ext/vst3.h"
 #include "../../common.h"
 #include "../base.h"
 

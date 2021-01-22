@@ -20,7 +20,6 @@
 #include <bitsery/traits/string.h>
 #include <pluginterfaces/base/ipluginbase.h>
 
-#include "../../bitsery/ext/vst3.h"
 #include "base.h"
 #include "host-context-proxy.h"
 
