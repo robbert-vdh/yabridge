@@ -66,9 +66,6 @@ class YaPlugInterfaceSupport : public Steinberg::Vst::IPlugInterfaceSupport {
      * Message to pass through a call to
      * `IPlugInterfaceSupport::isPlugInterfaceSupported(iid)` to the host
      * context provided by the host.
-     *
-     * TODO: Figure out if we should translate the UIDs from Windows COM to
-     *       non-Windows COM.
      */
     struct IsPlugInterfaceSupported {
         using Response = UniversalTResult;
@@ -80,7 +77,10 @@ class YaPlugInterfaceSupport : public Steinberg::Vst::IPlugInterfaceSupport {
          */
         std::optional<native_size_t> owner_instance_id;
 
-        ArrayUID iid;
+        // TODO: Figure out if we should translate the UIDs from Windows COM to
+        //       non-Windows COM here. I have not actually seen this interface
+        //       used.
+        WineUID iid;
 
         template <typename S>
         void serialize(S& s) {
@@ -88,7 +88,7 @@ class YaPlugInterfaceSupport : public Steinberg::Vst::IPlugInterfaceSupport {
                   [](S& s, native_size_t& instance_id) {
                       s.value8b(instance_id);
                   });
-            s.container1b(iid);
+            s.object(iid);
         }
     };
 

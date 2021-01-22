@@ -100,8 +100,7 @@ Vst3HostContextProxyImpl::isPlugInterfaceSupported(const Steinberg::TUID _iid) {
         return bridge.send_message(
             YaPlugInterfaceSupport::IsPlugInterfaceSupported{
                 .owner_instance_id = owner_instance_id(),
-                .iid = std::to_array(
-                    *reinterpret_cast<const Steinberg::TUID*>(&_iid))});
+                .iid = *reinterpret_cast<const Steinberg::TUID*>(&_iid)});
     } else {
         bridge.logger.log(
             "WARNING: Null pointer passed to "

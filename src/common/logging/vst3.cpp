@@ -1296,7 +1296,8 @@ bool Vst3Logger::log_request(
         }
 
         message << ": IPlugInterfaceSupport::isPlugInterfaceSupported(unitId = "
-                << format_uid(Steinberg::FUID::fromTUID(request.iid.data()))
+                << format_uid(Steinberg::FUID::fromTUID(
+                       request.iid.get_native_uid().data()))
                 << ")";
     });
 }
