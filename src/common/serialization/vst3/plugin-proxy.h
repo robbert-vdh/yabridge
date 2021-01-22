@@ -173,7 +173,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
     struct Construct {
         using Response = std::variant<ConstructArgs, UniversalTResult>;
 
-        ArrayUID cid;
+        NativeUID cid;
 
         /**
          * The interface the host was trying to instantiate an object for.
@@ -189,7 +189,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
 
         template <typename S>
         void serialize(S& s) {
-            s.container1b(cid);
+            s.object(cid);
             s.value4b(requested_interface);
         }
     };

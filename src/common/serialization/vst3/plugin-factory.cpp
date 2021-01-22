@@ -38,6 +38,13 @@ YaPluginFactory::ConstructArgs::ConstructArgs(
         Steinberg::PClassInfo info;
         if (factory->getClassInfo(i, &info) == Steinberg::kResultOk) {
             class_infos_1[i] = info;
+
+            // NOTE: We'll need to do a byte order conversion to the reported
+            //       class IDs match up with native and 'real' Windows VST3
+            //       plugins. See `WineUID` for more information.
+            ArrayUID native_uid = WineUID(info.cid).get_native_uid();
+            std::copy(native_uid.begin(), native_uid.end(),
+                      class_infos_1[i]->cid);
         }
     }
 
@@ -53,6 +60,13 @@ YaPluginFactory::ConstructArgs::ConstructArgs(
         Steinberg::PClassInfo2 info;
         if (factory2->getClassInfo2(i, &info) == Steinberg::kResultOk) {
             class_infos_2[i] = info;
+
+            // NOTE: We'll need to do a byte order conversion to the reported
+            //       class IDs match up with native and 'real' Windows VST3
+            //       plugins. See `WineUID` for more information.
+            ArrayUID native_uid = WineUID(info.cid).get_native_uid();
+            std::copy(native_uid.begin(), native_uid.end(),
+                      class_infos_1[i]->cid);
         }
     }
 
@@ -68,6 +82,13 @@ YaPluginFactory::ConstructArgs::ConstructArgs(
         Steinberg::PClassInfoW info;
         if (factory3->getClassInfoUnicode(i, &info) == Steinberg::kResultOk) {
             class_infos_unicode[i] = info;
+
+            // NOTE: We'll need to do a byte order conversion to the reported
+            //       class IDs match up with native and 'real' Windows VST3
+            //       plugins. See `WineUID` for more information.
+            ArrayUID native_uid = WineUID(info.cid).get_native_uid();
+            std::copy(native_uid.begin(), native_uid.end(),
+                      class_infos_1[i]->cid);
         }
     }
 }

@@ -35,8 +35,8 @@ YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
         return Steinberg::kInvalidArgument;
     }
 
-    ArrayUID cid_array;
-    std::copy(cid, cid + std::extent_v<Steinberg::TUID>, cid_array.begin());
+    Steinberg::TUID cid_array;
+    std::copy(cid, cid + std::extent_v<Steinberg::TUID>, cid_array);
 
     // FIXME: `_iid` in Bitwig Studio 3.3.1 is not null terminated, and the
     //        comparison below will thus fail since the strings have different

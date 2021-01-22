@@ -120,7 +120,9 @@ void Vst3Bridge::run() {
             [&](const Vst3PluginProxy::Construct& request)
                 -> Vst3PluginProxy::Construct::Response {
                 Steinberg::TUID cid;
-                std::copy(request.cid.begin(), request.cid.end(), cid);
+
+                ArrayUID wine_cid = request.cid.get_wine_uid();
+                std::copy(wine_cid.begin(), wine_cid.end(), cid);
 
                 // Even though we're requesting a specific interface (to mimic
                 // what the host is doing), we're immediately upcasting it to an

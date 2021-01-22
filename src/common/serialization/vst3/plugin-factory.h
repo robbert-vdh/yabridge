@@ -29,6 +29,8 @@
 /**
  * Wraps around `IPluginFactory{1,2,3}` for serialization purposes. See
  * `docs/vst3.md` for more information on how this works.
+ *
+ * TODO: Redo this in the new 'Vst3PluginFactoryProxy' style
  */
 class YaPluginFactory : public Steinberg::IPluginFactory3 {
    public:
@@ -70,6 +72,10 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
          * info versions if the plugin can provide them since we don't know
          * which version of the interface the host will use. Will be
          * `std::nullopt` if the plugin doesn't return a class info.
+         *
+         * NOTE: We'll have already converted all returned class IDs to native
+         *       class IDs using `WienUID::to_native_uid()` for cross-platform
+         *       compatibility. This applies to all `class_info_*` fields here.
          */
         std::vector<std::optional<Steinberg::PClassInfo>> class_infos_1;
 
