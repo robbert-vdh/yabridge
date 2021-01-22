@@ -66,6 +66,9 @@ class YaPlugInterfaceSupport : public Steinberg::Vst::IPlugInterfaceSupport {
      * Message to pass through a call to
      * `IPlugInterfaceSupport::isPlugInterfaceSupported(iid)` to the host
      * context provided by the host.
+     *
+     * TODO: Figure out if we should translate the UIDs from Windows COM to
+     *       non-Windows COM.
      */
     struct IsPlugInterfaceSupported {
         using Response = UniversalTResult;
