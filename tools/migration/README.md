@@ -14,4 +14,30 @@ the new format.
 These scripts won't overwrite any existing files, but remember to always make
 more backups than you really need!
 
-TODO: Document further once we finish the Bitwig, Ardour and Renoise scripts
+To use these, download the migration scripts for the DAWs you need to migrate an
+old project file for and run them. You'll get on screen instructions with what
+to do after that.
+
+## Bitwig Studio
+
+```shell
+# First download the script
+curl -o migrate-bitwig.py https://raw.githubusercontent.com/robbert-vdh/yabridge/master/tools/migration/migrate-bitwig.py
+chmod +x migrate-bitwig.py
+
+# And then run it on any old .bwproject files, the script will guide you through
+# the migration process
+./migrate-bitwig.py /path/to/some/project/project.bwproject
+```
+
+## REAPER
+
+```shell
+# First download the script
+curl -o migrate-reaper.py https://raw.githubusercontent.com/robbert-vdh/yabridge/master/tools/migration/migrate-reaper.py
+chmod +x migrate-reaper.py
+
+# And then run it on any old .RPP files, the script will guide you through the
+# migration process
+./migrate-reaper.py /path/to/some/project.RPP
+```
