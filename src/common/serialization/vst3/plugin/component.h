@@ -73,12 +73,12 @@ class YaComponent : public Steinberg::Vst::IComponent {
      */
     struct GetControllerClassIdResponse {
         UniversalTResult result;
-        ArrayUID editor_cid;
+        WineUID editor_cid;
 
         template <typename S>
         void serialize(S& s) {
             s.object(result);
-            s.container1b(editor_cid);
+            s.object(editor_cid);
         }
     };
 

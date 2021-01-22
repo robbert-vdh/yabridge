@@ -1149,7 +1149,7 @@ size_t Vst3Bridge::register_object_instance(
                                 .component->getControllerClassId(cid);
 
                         return YaComponent::GetControllerClassIdResponse{
-                            .result = result, .editor_cid = std::to_array(cid)};
+                            .result = result, .editor_cid = cid};
                     },
                     [&](const YaComponent::SetIoMode& request)
                         -> YaComponent::SetIoMode::Response {

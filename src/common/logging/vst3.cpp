@@ -1759,7 +1759,7 @@ void Vst3Logger::log_response(
         if (response.result == Steinberg::kResultOk) {
             message << ", "
                     << format_uid(Steinberg::FUID::fromTUID(
-                           response.editor_cid.data()));
+                           response.editor_cid.get_native_uid().data()));
         }
     });
 }

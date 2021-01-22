@@ -169,8 +169,8 @@ Vst3PluginProxyImpl::getControllerClassId(Steinberg::TUID classId) {
                 YaComponent::GetControllerClassId{.instance_id =
                                                       instance_id()});
 
-        std::copy(response.editor_cid.begin(), response.editor_cid.end(),
-                  classId);
+        ArrayUID native_uid = response.editor_cid.get_native_uid();
+        std::copy(native_uid.begin(), native_uid.end(), classId);
 
         return response.result;
     } else {
