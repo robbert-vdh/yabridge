@@ -48,6 +48,7 @@ print(
             f"Answer 'yes' for all old yabridge VST3 plugin instances, and 'no' for any other VST3 plugin."
             f"Make sure to test whether the new project works immediately after migration.",
             width=80,
+            break_on_hyphens=False,
         )
     )
 )
@@ -85,10 +86,9 @@ with open(filename, "rb") as f_input, open(migrated_filename, "xb") as f_output:
                 + line[wine_uid_end:]
             )
 
+            print(f"Found '{plugin_name}' with class ID '{wine_uid.hex().upper()}'")
             while True:
-                answer = input(
-                    f"Found '{plugin_name}' with class ID '{wine_uid.hex().upper()}'\nShould this plugin be migrated? [yes/no] "
-                ).lower()
+                answer = input("Should this plugin be migrated? [yes/no] ").lower()
                 if answer == "yes":
                     migrated_file.append(migrated_line)
                     break
