@@ -11,4 +11,7 @@ before that commit will no longer be compatible. As a temporary migration path,
 there are a few scripts here that you can use to convert old project files to
 the new format.
 
-TODO: Document further once we add the actual scripts
+These scripts won't overwrite any existing files, but remember to always make
+more backups than you really need!
+
+TODO: Document further once we finish the Bitwig, Ardour and Renoise scripts
