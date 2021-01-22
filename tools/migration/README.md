@@ -53,3 +53,15 @@ chmod +x migrate-reaper.py
 # migration process
 ./migrate-reaper.py /path/to/some/project.RPP
 ```
+
+## Renoise
+
+```shell
+# First download the script
+curl -o migrate-renoise.py https://raw.githubusercontent.com/robbert-vdh/yabridge/master/tools/migration/migrate-renoise.py
+chmod +x migrate-renoise.py
+
+# And then run it on any old .xrns files, the script will guide you through the
+# migration process
+./migrate-renoise.py /path/to/some/project.xrns
+```
