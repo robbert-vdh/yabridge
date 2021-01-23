@@ -244,6 +244,8 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
         // to  from this thread
         std::promise<TResponse> response_promise{};
         std::jthread sending_thread([&]() {
+            set_realtime_priority(true);
+
             const TResponse response = bridge.send_message(object);
 
             // Stop accepting additional work to be run from the calling thread

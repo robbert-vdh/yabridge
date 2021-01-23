@@ -47,6 +47,8 @@ Vst3PluginBridge::Vst3PluginBridge()
     // first thing, the Wine VST host will ask us for a copy of the
     // configuration.
     host_callback_handler = std::jthread([&]() {
+        set_realtime_priority(true);
+
         sockets.vst_host_callback.receive_messages(
             std::pair<Vst3Logger&, bool>(logger, false),
             overload{

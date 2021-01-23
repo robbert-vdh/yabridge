@@ -57,13 +57,13 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
 - `libyabridge.so` is now called `libyabridge-vst2.so`. If you're using
   yabridgectl then nothing changes here. **To avoid any confusion in the future,
   please remove the old `libyabridge.so` file before upgrading.**
-- Slightly increased responsiveness when resizing plugin GUIs by preventing
-  unnecessary blitting. This also reduces flickering with plugins that don't do
-  double buffering.
 - Window closing is now deferred. This means that when closing the editor
   window, the host no longer has to wait for Wine to fully close the window.
   Most hosts already do something similar themselves, so this may not make any
   difference in responsiveness.
+- Slightly increased responsiveness when resizing plugin GUIs by preventing
+  unnecessary blitting. This also reduces flickering with plugins that don't do
+  double buffering.
 - VST2 editor idle events are now handled slightly differently. This should
   result in even more responsive GUIs for VST2 plugins.
 - Win32 and X11 events in the Wine plugin host are now handled with lower
@@ -71,6 +71,15 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   drawing should not affect DSP load at all, but this should help with less than
   optimal setups where some people were getting DSP latency spikes while having
   plugin editor open.
+- Yabridge handles realtime priority now slightly differently:
+
+  - Realtime priority on the plugin side is now a more granular. Instead of
+    setting everything to use `SCHED_FIFO`, only the spawned threads will be set
+    to realtime priority. This prevents changing the scheduling policy of your
+    host's GUI thread if your host instantiates plugins from its GUI thread like
+    REAPER does.
+  - TODO: Next up is periodically synchronizing audio thread priorities.
+
 - Opening and closing plugin editors is now also no longer done with realtime
   priority. This should get rid of any latency spikes during those operations,
   as this could otherwise steal resources away from the threads that are

@@ -21,6 +21,8 @@
 #include <boost/process/io.hpp>
 #include <boost/process/start_dir.hpp>
 
+#include "src/common/utils.h"
+
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
@@ -191,6 +193,8 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
         const pid_t group_host_pid = group_host.id();
         group_host_connect_handler =
             std::jthread([this, connect, group_host_pid]() {
+                set_realtime_priority(true);
+
                 using namespace std::literals::chrono_literals;
 
                 // We'll first try to connect to the group host we just spawned

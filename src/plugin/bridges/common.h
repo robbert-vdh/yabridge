@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <future>
 #include <iomanip>
 
 // Generated inside of the build directory
@@ -88,8 +89,12 @@ class PluginBridge {
                                             info.windows_plugin_path.string(),
                                         .endpoint_base_dir =
                                             sockets.base_dir.string()}))),
-          has_realtime_priority(set_realtime_priority(true)),
-          wine_io_handler([&]() { io_context.run(); }) {}
+          has_realtime_priority(has_realtime_priority_promise.get_future()),
+          wine_io_handler([&]() {
+              has_realtime_priority_promise.set_value(
+                  set_realtime_priority(true));
+              io_context.run();
+          }) {}
 
     virtual ~PluginBridge(){};
 
@@ -108,8 +113,9 @@ class PluginBridge {
                  << "'" << std::endl;
         init_msg << "plugin type:  '" << plugin_type_to_string(info.plugin_type)
                  << "'" << std::endl;
-        init_msg << "realtime:     '" << (has_realtime_priority ? "yes" : "no")
-                 << "'" << std::endl;
+        init_msg << "realtime:     '"
+                 << (has_realtime_priority.get() ? "yes" : "no") << "'"
+                 << std::endl;
         init_msg << "sockets:      '" << sockets.base_dir.string() << "'"
                  << std::endl;
         init_msg << "wine prefix:  '";
@@ -300,12 +306,19 @@ class PluginBridge {
      */
     std::unique_ptr<HostProcess> plugin_host;
 
+   private:
     /**
-     * Whether this process runs with realtime priority. We'll set this _after_
-     * spawning the Wine process because from my testing running wineserver with
-     * realtime priority can actually increase latency.
+     * The promise belonging to `has_realtime_priority` below.
      */
-    bool has_realtime_priority;
+    std::promise<bool> has_realtime_priority_promise;
+
+   public:
+    /**
+     * Whether this process runs with realtime priority. This is set on the
+     * thread that's relaying STDOUT and STDERR output from Wine, hence the need
+     * for a future.
+     */
+    std::future<bool> has_realtime_priority;
 
     /**
      * Runs the Boost.Asio `io_context` thread for logging the Wine process
