@@ -426,6 +426,10 @@ tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask in the
   to upgrade your Wine version. Instructions for how to do this on Ubuntu can be
   found on the [WineHQ website](https://wiki.winehq.org/Ubuntu).
 
+  If you're getting a `0024:err:process:exec_process` error, then your Wine
+  prefix is set to 32-bit only and it won't be possible to run 64-bit
+  applications like `yabridge-host.exe`.
+
 - Timeout errors during plugin scanning are caused by the Wine process not being
   able to start. There should be plugin output messages in your DAW or terminal
   that with more information on what went wrong.
