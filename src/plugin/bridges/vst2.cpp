@@ -19,6 +19,14 @@
 #include "../../common/communication/vst2.h"
 #include "../utils.h"
 
+/**
+ * The interval in seconds between synchronizing the Wine plugin host's audio
+ * thread scheduling priority with the host's audio thread.
+ *
+ * @relates Vst2Bridge::last_audio_thread_priority_synchronization
+ */
+constexpr time_t audio_thread_priority_synchronization_interval = 10;
+
 intptr_t dispatch_proxy(AEffect*, int, int, intptr_t, void*, float);
 void process_proxy(AEffect*, float**, float**, int);
 void process_replacing_proxy(AEffect*, float**, float**, int);
@@ -497,7 +505,19 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
                     input_buffers[channel].begin());
     }
 
-    const AudioBuffers request{input_buffers, sample_frames};
+    // We'll synchronize the scheduling priority of the audio thread on the Wine
+    // plugin host with that of the host's audio thread every once in a while
+    std::optional<int> new_realtime_priority = std::nullopt;
+    time_t now = std::time(nullptr);
+    if (now > last_audio_thread_priority_synchronization +
+                  audio_thread_priority_synchronization_interval) {
+        new_realtime_priority = get_realtime_priority();
+        last_audio_thread_priority_synchronization = now;
+    }
+
+    const AudioBuffers request{.buffers = input_buffers,
+                               .sample_frames = sample_frames,
+                               .new_realtime_priority = new_realtime_priority};
     sockets.host_vst_process_replacing.send(request, process_buffer);
 
     // Write the results back to the `outputs` arrays

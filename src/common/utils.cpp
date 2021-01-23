@@ -31,7 +31,7 @@ fs::path get_temporary_directory() {
     }
 }
 
-std::optional<int> get_scheduling_priority() {
+std::optional<int> get_realtime_priority() {
     sched_param current_params{};
     if (sched_getparam(0, &current_params) == 0 &&
         current_params.sched_priority > 0) {

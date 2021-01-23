@@ -160,6 +160,13 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
     std::vector<uint8_t> process_buffer;
 
     /**
+     * We'll periodically synchronize the Wine host's audio thread priority with
+     * that of the host. Since the overhead from doing so does add up, we'll
+     * only do this every once in a while.
+     */
+    time_t last_audio_thread_priority_synchronization = 0;
+
+    /**
      * The VST host can query a plugin for arbitrary binary data such as
      * presets. It will expect the plugin to write back a pointer that points to
      * that data. This vector is where we store the chunk data for the last

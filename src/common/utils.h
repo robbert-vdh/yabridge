@@ -41,7 +41,7 @@ boost::filesystem::path get_temporary_directory();
  * `SCHED_FIFO`. Returns a nullopt of the calling thread is not under realtime
  * scheduling.
  */
-std::optional<int> get_scheduling_priority();
+std::optional<int> get_realtime_priority();
 
 /**
  * Set the scheduling policy to `SCHED_FIFO` with priority 5 for this process.

@@ -168,6 +168,13 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
 
         sockets.host_vst_process_replacing.receive_multi<AudioBuffers>(
             [&](AudioBuffers request, std::vector<uint8_t>& buffer) {
+                // As suggested by Jack Winter, we'll synchronize this thread's
+                // audio processing priority with that of the host's audio
+                // thread every once in a while
+                if (request.new_realtime_priority) {
+                    set_realtime_priority(true, *request.new_realtime_priority);
+                }
+
                 // Let the plugin process the MIDI events that were received
                 // since the last buffer, and then clean up those events. This
                 // approach should not be needed but Kontakt only stores
@@ -237,8 +244,9 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                             }
 
                             AudioBuffers response{
-                                output_buffers_single_precision,
-                                request.sample_frames};
+                                .buffers = output_buffers_single_precision,
+                                .sample_frames = request.sample_frames,
+                                .new_realtime_priority = std::nullopt};
                             sockets.host_vst_process_replacing.send(response,
                                                                     buffer);
                         },
@@ -264,8 +272,9 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                                 request.sample_frames);
 
                             AudioBuffers response{
-                                output_buffers_double_precision,
-                                request.sample_frames};
+                                .buffers = output_buffers_double_precision,
+                                .sample_frames = request.sample_frames,
+                                .new_realtime_priority = std::nullopt};
                             sockets.host_vst_process_replacing.send(response,
                                                                     buffer);
                         }},

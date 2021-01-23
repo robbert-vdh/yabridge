@@ -78,7 +78,9 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
     to realtime priority. This prevents changing the scheduling policy of your
     host's GUI thread if your host instantiates plugins from its GUI thread like
     REAPER does.
-  - TODO: Next up is periodically synchronizing audio thread priorities.
+  - The realtime scheduling priorities of all audio threads on the Wine plugin
+    host are now periodically synchronized with those of the host's audio
+    threads.
 
 - Opening and closing plugin editors is now also no longer done with realtime
   priority. This should get rid of any latency spikes during those operations,
