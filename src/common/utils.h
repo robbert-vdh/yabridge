@@ -44,14 +44,18 @@ boost::filesystem::path get_temporary_directory();
 std::optional<int> get_scheduling_priority();
 
 /**
- * Set the scheduling policy to `SCHED_FIFO` with priority 10 for this process.
+ * Set the scheduling policy to `SCHED_FIFO` with priority 5 for this process.
  * We explicitly don't do this for wineserver itself since from my testing that
  * can actually increase latencies.
  *
  * @param sched_fifo If true, set the current process/thread's scheudling policy
  *   to `SCHED_FIFO`. Otherwise reset it back to `SCHWED_OTHER`.
+ * @param priority The scheduling priority to use. The exact value usually
+ *   doesn't really matter unless there are a lot of other active `SCHED_FIFO`
+ *   background tasks. We'll use 5 as a default, but we'll periodically copy the
+ *   priority set by the host on the audio threads.
  *
  * @return Whether the operation was successful or not. This will fail if the
  *   user does not have the privileges to set realtime priorities.
  */
-bool set_realtime_priority(bool sched_fifo);
+bool set_realtime_priority(bool sched_fifo, int priority = 5);
