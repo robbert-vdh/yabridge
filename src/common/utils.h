@@ -21,6 +21,14 @@
 #endif
 #include <boost/filesystem.hpp>
 
+/**
+ * The interval in seconds between synchronizing the Wine plugin host's audio
+ * thread scheduling priority with the host's audio thread.
+ *
+ * @relates Vst2Bridge::last_audio_thread_priority_synchronization
+ */
+constexpr time_t audio_thread_priority_synchronization_interval = 10;
+
 // The cannonical overloading template for `std::visitor`, not sure why this
 // isn't part of the standard library
 template <class... Ts>

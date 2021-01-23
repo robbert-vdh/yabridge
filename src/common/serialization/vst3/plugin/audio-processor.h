@@ -250,10 +250,22 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
 
         YaProcessData data;
 
+        /**
+         * We'll periodically synchronize the realtime priority setting of the
+         * host's audio thread with the Wine plugin host. We'll do this
+         * approximately every ten seconds, as doing this getting and setting
+         * scheduler information has a non trivial amount of overhead (even if
+         * it's only a single microsoecond).
+         */
+        std::optional<int> new_realtime_priority;
+
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
             s.object(data);
+
+            s.ext(new_realtime_priority, bitsery::ext::StdOptional{},
+                  [](S& s, int& priority) { s.value4b(priority); });
         }
     };
 

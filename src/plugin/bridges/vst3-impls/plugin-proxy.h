@@ -376,6 +376,13 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     Steinberg::IPtr<Steinberg::FUnknown> host_context;
 
     /**
+     * We'll periodically synchronize the Wine host's audio thread priority with
+     * that of the host. Since the overhead from doing so does add up, we'll
+     * only do this every once in a while.
+     */
+    time_t last_audio_thread_priority_synchronization = 0;
+
+    /**
      * Used to assign unique identifiers to context menus created by
      * `IComponentHandler3::CreateContextMenu`.
      *

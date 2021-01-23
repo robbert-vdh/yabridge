@@ -1129,6 +1129,14 @@ size_t Vst3Bridge::register_object_instance(
                     },
                     [&](YaAudioProcessor::Process& request)
                         -> YaAudioProcessor::Process::Response {
+                        // As suggested by Jack Winter, we'll synchronize this
+                        // thread's audio processing priority with that of the
+                        // host's audio thread every once in a while
+                        if (request.new_realtime_priority) {
+                            set_realtime_priority(
+                                true, *request.new_realtime_priority);
+                        }
+
                         const tresult result =
                             object_instances[request.instance_id]
                                 .audio_processor->process(request.data.get());

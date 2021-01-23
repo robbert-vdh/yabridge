@@ -19,14 +19,6 @@
 #include "../../common/communication/vst2.h"
 #include "../utils.h"
 
-/**
- * The interval in seconds between synchronizing the Wine plugin host's audio
- * thread scheduling priority with the host's audio thread.
- *
- * @relates Vst2Bridge::last_audio_thread_priority_synchronization
- */
-constexpr time_t audio_thread_priority_synchronization_interval = 10;
-
 intptr_t dispatch_proxy(AEffect*, int, int, intptr_t, void*, float);
 void process_proxy(AEffect*, float**, float**, int);
 void process_replacing_proxy(AEffect*, float**, float**, int);

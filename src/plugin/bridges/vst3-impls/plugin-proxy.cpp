@@ -141,10 +141,23 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
+    // We'll synchronize the scheduling priority of the audio thread on the Wine
+    // plugin host with that of the host's audio thread every once in a while
+    std::optional<int> new_realtime_priority = std::nullopt;
+    time_t now = std::time(nullptr);
+    if (now > last_audio_thread_priority_synchronization +
+                  audio_thread_priority_synchronization_interval) {
+        new_realtime_priority = get_realtime_priority();
+        last_audio_thread_priority_synchronization = now;
+    }
+
     // TODO: Check whether reusing a `YaProcessData` object make a difference in
     //       terms of performance
-    ProcessResponse response = bridge.send_audio_processor_message(
-        YaAudioProcessor::Process{.instance_id = instance_id(), .data = data});
+    ProcessResponse response =
+        bridge.send_audio_processor_message(YaAudioProcessor::Process{
+            .instance_id = instance_id(),
+            .data = data,
+            .new_realtime_priority = new_realtime_priority});
 
     response.output_data.write_back_outputs(data);
 
