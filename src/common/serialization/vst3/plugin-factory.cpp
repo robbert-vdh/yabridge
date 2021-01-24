@@ -145,13 +145,8 @@ tresult PLUGIN_API YaPluginFactory::getClassInfo(Steinberg::int32 index,
         return Steinberg::kInvalidArgument;
     }
 
-    // FIXME: The class IDs are incorrect! See the `INLINE_UID` macro. We need
-    //        to shuffle the byte orders around for plugins to be compatible
-    //        with projects saved under Windows and with native Linux versions
-    //        of the same plugin. We need to do this transformation for all of
-    //        these functions
-    // FIXME: We need to do similar translations everywhere where we encounter
-    //        `ArrayUID`, such as `IComponent::getControllerClassId()`
+    // We will have already converted these class IDs to the native
+    // representation in `YaPluginFactory::ConstructArgs`
     if (arguments.class_infos_1[index]) {
         *info = *arguments.class_infos_1[index];
         return Steinberg::kResultOk;
@@ -166,6 +161,8 @@ YaPluginFactory::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
         return Steinberg::kInvalidArgument;
     }
 
+    // We will have already converted these class IDs to the native
+    // representation in `YaPluginFactory::ConstructArgs`
     if (arguments.class_infos_2[index]) {
         *info = *arguments.class_infos_2[index];
         return Steinberg::kResultOk;
@@ -181,6 +178,8 @@ YaPluginFactory::getClassInfoUnicode(int32 index,
         return Steinberg::kInvalidArgument;
     }
 
+    // We will have already converted these class IDs to the native
+    // representation in `YaPluginFactory::ConstructArgs`
     if (arguments.class_infos_unicode[index]) {
         *info = *arguments.class_infos_unicode[index];
         return Steinberg::kResultOk;

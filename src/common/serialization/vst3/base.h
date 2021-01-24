@@ -82,9 +82,6 @@ struct Ack {
  * Both `TUID` (`int8_t[16]`) and `FIDString` (`char*`) are hard to work with
  * because you can't just copy them. So when serializing/deserializing them
  * we'll use `std::array`.
- *
- * FIXME: Replace usages of ArrayUID everywhere with either `WineUID` or
- *        `NativeUID`
  */
 using ArrayUID = std::array<
     std::remove_reference_t<decltype(std::declval<Steinberg::TUID>()[0])>,
