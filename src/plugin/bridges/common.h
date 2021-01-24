@@ -91,8 +91,14 @@ class PluginBridge {
                                             sockets.base_dir.string()}))),
           has_realtime_priority(has_realtime_priority_promise.get_future()),
           wine_io_handler([&]() {
+              // We no longer run this thread with realtime scheduling because
+              // plugins that produce a lot of FIXMEs could in theory cause
+              // dropouts that way, but we still need to run this from a thread
+              // to check whether we support it
               has_realtime_priority_promise.set_value(
                   set_realtime_priority(true));
+              set_realtime_priority(false);
+
               io_context.run();
           }) {}
 
