@@ -200,7 +200,8 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::onFocus(TBool state) {
 
 tresult PLUGIN_API
 Vst3PlugViewProxyImpl::setFrame(Steinberg::IPlugFrame* frame) {
-    // TODO: Null pointers are valid here, should we pass them through?
+    // Null pointers are valid here going from the reference implementations in
+    // the SDK
     if (frame) {
         // We'll store the pointer for when the plugin later makes a callback to
         // this component handler
@@ -229,9 +230,12 @@ Vst3PlugViewProxyImpl::setFrame(Steinberg::IPlugFrame* frame) {
             .plug_frame_args = Vst3PlugFrameProxy::ConstructArgs(
                 plug_frame, owner_instance_id())});
     } else {
-        bridge.logger.log(
-            "WARNING: Null pointer passed to 'IPlugView::setFrame()'");
-        return Steinberg::kInvalidArgument;
+        plug_frame.reset();
+        run_loop_tasks.reset();
+
+        return send_mutually_recursive_message(
+            YaPlugView::SetFrame{.owner_instance_id = owner_instance_id(),
+                                 .plug_frame_args = std::nullopt});
     }
 }
 

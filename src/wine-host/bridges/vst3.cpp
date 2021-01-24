@@ -737,13 +737,18 @@ void Vst3Bridge::run() {
             },
             [&](YaPlugView::SetFrame& request)
                 -> YaPlugView::SetFrame::Response {
-                // We'll create a proxy object for the `IPlugFrame` object and
-                // pass that to the `setFrame()` function. The lifetime of this
-                // object is tied to that of the actual `IPlugFrame` object
-                // we're passing this proxy to.
+                // If the host passed a valid `IPlugFrame*`, then We'll create a
+                // proxy object for the `IPlugFrame` object and pass that to the
+                // `setFrame()` function. The lifetime of this object is tied to
+                // that of the actual `IPlugFrame` object we're passing this
+                // proxy to. IF the host passed a null pointer (which seems to
+                // be common when terminating plugins) we'll do the same thing
+                // here.
                 object_instances[request.owner_instance_id].plug_frame_proxy =
-                    Steinberg::owned(new Vst3PlugFrameProxyImpl(
-                        *this, std::move(request.plug_frame_args)));
+                    request.plug_frame_args
+                        ? Steinberg::owned(new Vst3PlugFrameProxyImpl(
+                              *this, std::move(*request.plug_frame_args)))
+                        : nullptr;
 
                 // This likely doesn't have to be run from the GUI thread, but
                 // since 80% of the `IPlugView` functions have to be we'll do it

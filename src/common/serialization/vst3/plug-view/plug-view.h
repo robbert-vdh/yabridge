@@ -17,6 +17,7 @@
 #pragma once
 
 #include <pluginterfaces/gui/iplugview.h>
+#include "bitsery/ext/std_optional.h"
 
 #include "../../common.h"
 #include "../base.h"
@@ -291,12 +292,18 @@ class YaPlugView : public Steinberg::IPlugView {
 
         native_size_t owner_instance_id;
 
-        Vst3PlugFrameProxy::ConstructArgs plug_frame_args;
+        /**
+         * Some hosts will pass a null pointer to explicitly destroy the
+         * `IPlugFrame` instance before freeing the plugin's `IPlugView`
+         * instance. This also happens in the SDK, so this seems like valid
+         * behaviour we should support.
+         */
+        std::optional<Vst3PlugFrameProxy::ConstructArgs> plug_frame_args;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
-            s.object(plug_frame_args);
+            s.ext(plug_frame_args, bitsery::ext::StdOptional{});
         }
     };
 
