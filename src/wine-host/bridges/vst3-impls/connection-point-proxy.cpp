@@ -52,7 +52,11 @@ Vst3ConnectionPointProxyImpl::disconnect(IConnectionPoint* /*other*/) {
 tresult PLUGIN_API
 Vst3ConnectionPointProxyImpl::notify(Steinberg::Vst::IMessage* message) {
     if (message) {
-        return bridge.send_message(
+        // FabFilter plugins require this to be done from the GUI thread so we
+        // need to use our mutual recursion mechanism. Luckily only Ardour uses
+        // connection proxies, so if this ends up breaking something it will
+        // only affect Ardour.
+        return bridge.send_mutually_recursive_message(
             YaConnectionPoint::Notify{.instance_id = owner_instance_id(),
                                       .message_ptr = YaMessagePtr(*message)});
     } else {

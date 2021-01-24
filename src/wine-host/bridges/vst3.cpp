@@ -280,9 +280,17 @@ void Vst3Bridge::run() {
                 //       We should thus be passing a (raw) pointer to the
                 //       original object so we can pretend none of this wrapping
                 //       and serializing has ever happened.
-                return object_instances[request.instance_id]
-                    .connection_point->notify(
-                        request.message_ptr.get_original());
+                // NOTE: FabFilter plugins require some of their messages to be
+                //       handled from the GUI thread. This could make the GUI
+                //       much slower in Ardour, but there's no other non-hacky
+                //       solution for this (and bypassing Ardour's connection
+                //       proxies sort of goes against the idea behind yabridge)
+                return do_mutual_recursion_or_handle_in_main_context<tresult>(
+                    [&]() {
+                        return object_instances[request.instance_id]
+                            .connection_point->notify(
+                                request.message_ptr.get_original());
+                    });
             },
             [&](YaContextMenuTarget::ExecuteMenuItem& request)
                 -> YaContextMenuTarget::ExecuteMenuItem::Response {
