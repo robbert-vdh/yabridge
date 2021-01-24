@@ -306,8 +306,13 @@ bool Vst3Logger::log_request(
     const YaEditController::SetComponentHandler& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
-                << ": IEditController::setComponentHandler(handler = "
-                   "<IComponentHandler*>)";
+                << ": IEditController::setComponentHandler(handler = ";
+        if (request.component_handler_proxy_args) {
+            message << "<IComponentHandler*>";
+        } else {
+            message << "<nullptr>";
+        }
+        message << ")";
     });
 }
 

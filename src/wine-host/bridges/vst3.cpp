@@ -364,14 +364,18 @@ void Vst3Bridge::run() {
             },
             [&](YaEditController::SetComponentHandler& request)
                 -> YaEditController::SetComponentHandler::Response {
-                // We'll create a proxy object for the component handler and
-                // pass that to the initialize function. The lifetime of this
-                // object is tied to that of the actual plugin object we're
-                // proxying for.
+                // If the host passed a valid component handler, then we'll
+                // create a proxy object for the component handler and pass that
+                // to the initialize function. The lifetime of this object is
+                // tied to that of the actual plugin object we're proxying for.
+                // Otherwise we'll also pass a null pointer. This often happens
+                // just before the host terminates the plugin.
                 object_instances[request.instance_id].component_handler_proxy =
-                    Steinberg::owned(new Vst3ComponentHandlerProxyImpl(
-                        *this,
-                        std::move(request.component_handler_proxy_args)));
+                    request.component_handler_proxy_args
+                        ? Steinberg::owned(new Vst3ComponentHandlerProxyImpl(
+                              *this,
+                              std::move(*request.component_handler_proxy_args)))
+                        : nullptr;
 
                 return object_instances[request.instance_id]
                     .edit_controller->setComponentHandler(

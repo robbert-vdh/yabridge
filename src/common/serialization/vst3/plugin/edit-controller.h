@@ -344,12 +344,19 @@ class YaEditController : public Steinberg::Vst::IEditController {
 
         native_size_t instance_id;
 
-        Vst3ComponentHandlerProxy::ConstructArgs component_handler_proxy_args;
+        /**
+         * Some hosts will pass a null pointer to explicitly free the component
+         * handler passed before releasing the object instance. This also
+         * happens in the SDK, so this seems like valid behaviour we should
+         * support.
+         */
+        std::optional<Vst3ComponentHandlerProxy::ConstructArgs>
+            component_handler_proxy_args;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
-            s.object(component_handler_proxy_args);
+            s.ext(component_handler_proxy_args, bitsery::ext::StdOptional{});
         }
     };
 
