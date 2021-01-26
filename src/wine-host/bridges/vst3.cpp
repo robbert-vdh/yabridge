@@ -807,7 +807,7 @@ void Vst3Bridge::run() {
                                       << ", but the 'vst3_no_scale' option is "
                                          "enabled. Ignoring the request."
                                       << std::endl;
-                            return Steinberg::kResultFalse;
+                            return Steinberg::kNotImplemented;
                         } else {
                             return main_context
                                 .run_in_context<tresult>([&]() {
