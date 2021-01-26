@@ -41,6 +41,20 @@
  * which can be required because in the Win32 model all GUI related operations
  * have to be handled from the same thread. This will be run from the
  * application's main thread.
+ *
+ * TODO: Add some point we might have to add some way to inhibit the event loop
+ *       from running when a plugin is in a partially initialized state. So far
+ *       only the VST2 versions of the T-RackS 5 plugins have this issue (and
+ *       only when running them in a plugin group because with individually
+ *       hosted plugins the event loop and the plugin's initialization will
+ *       align). This will require a fairly significant architectural change to
+ *       do this in a clean way (`HostBridge` would need some function that
+ *       returns a boolean to indicate whether the event loop should be
+ *       inhibited, and then we would need to pass a function object or lambda
+ *       to `MainContext` that checks this for all currently hosted plugins so
+ *       we can integrate that into `async_handle_events()`). Now that I've
+ *       written this out, it's not actually as bad as I thought it would be, so
+ *       we'll probably add this sooner rather than later.
  */
 class MainContext {
    public:
