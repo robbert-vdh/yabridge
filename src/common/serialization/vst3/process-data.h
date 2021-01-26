@@ -69,6 +69,9 @@ class YaAudioBusBuffers {
      * constructor and return it. This is used as part of
      * `YaProcessData::get()`. The object contains pointers to `buffers`, so it
      * may not outlive this object.
+     *
+     * NOTE: The `silenceFlags` field is of course not a reference, so writing
+     *       to that will not modify `silence_flags`.
      */
     Steinberg::Vst::AudioBusBuffers get();
 
@@ -103,13 +106,6 @@ class YaAudioBusBuffers {
                        });
     }
 
-   private:
-    /**
-     * We need these during the reconstruction process to provide a pointer to
-     * an array of pointers to the actual buffers.
-     */
-    std::vector<void*> buffer_pointers;
-
     /**
      * A bitfield for silent channels copied directly from the input struct.
      *
@@ -117,7 +113,14 @@ class YaAudioBusBuffers {
      * these silence flags are set, but since it's an optional feature we
      * shouldn't risk it.
      */
-    uint64 silence_flags;
+    uint64 silence_flags = 0;
+
+   private:
+    /**
+     * We need these during the reconstruction process to provide a pointer to
+     * an array of pointers to the actual buffers.
+     */
+    std::vector<void*> buffer_pointers;
 
     /**
      * The original implementation uses heap arrays and it stores a

@@ -233,6 +233,15 @@ Steinberg::Vst::ProcessData& YaProcessData::get() {
 }
 
 YaProcessDataResponse YaProcessData::move_outputs_to_response() {
+    // NOTE: We _have_ to manually copy over the silence flags from the
+    //       `ProcessData` object generated in `get()` here sicne these of
+    //       course are not references or pointers like all other fields, so
+    //       they're not implicitly copied like all of our other fields
+    for (int i = 0; i < reconstructed_process_data.numOutputs; i++) {
+        outputs[i].silence_flags =
+            reconstructed_process_data.outputs[i].silenceFlags;
+    }
+
     return YaProcessDataResponse{
         .outputs = std::move(outputs),
         .output_parameter_changes = std::move(output_parameter_changes),
