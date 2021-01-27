@@ -59,6 +59,8 @@ class Vst2Bridge : public HostBridge {
                std::string plugin_dll_path,
                std::string endpoint_base_dir);
 
+    bool inhibits_event_loop() override;
+
     /**
      * Here we'll handle incoming `dispatch()` messages until the sockets get
      * closed during `effClose()`.
@@ -126,6 +128,12 @@ class Vst2Bridge : public HostBridge {
      * handle.
      */
     AEffect* plugin;
+
+    /**
+     * Whether `effOpen()` has already been called. Used in
+     * `HostBridge::inhibits_event_loop` to work around a bug in T-RackS 5.
+     */
+    bool is_initialized = false;
 
     /**
      * The thread that responds to `getParameter` and `setParameter` requests.

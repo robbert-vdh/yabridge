@@ -285,6 +285,10 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     });
 }
 
+bool Vst2Bridge::inhibits_event_loop() {
+    return !is_initialized;
+}
+
 void Vst2Bridge::run() {
     sockets.host_vst_dispatch.receive_events(
         std::nullopt, [&](Event& event, bool /*on_main_thread*/) {
@@ -352,9 +356,19 @@ void Vst2Bridge::run() {
                         if (unsafe_opcodes.contains(opcode)) {
                             return main_context
                                 .run_in_context<intptr_t>([&]() {
-                                    return dispatch_wrapper(plugin, opcode,
-                                                            index, value, data,
-                                                            option);
+                                    const intptr_t result =
+                                        dispatch_wrapper(plugin, opcode, index,
+                                                         value, data, option);
+
+                                    // The Win32 message loop will not be run up
+                                    // to this point to prevent plugins with
+                                    // partially initialized states from
+                                    // misbehaving
+                                    if (opcode == effOpen) {
+                                        is_initialized = true;
+                                    }
+
+                                    return result;
                                 })
                                 .get();
                         } else {

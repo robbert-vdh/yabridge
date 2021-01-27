@@ -60,7 +60,11 @@ InstanceInterfaces::InstanceInterfaces(
       process_context_requirements(object),
       program_list_data(object),
       unit_info(object),
-      xml_representation_controller(object) {}
+      xml_representation_controller(object),
+      // If the object doesn't support `IPlugBase` then the object cannot be
+      // uninitialized (this isn't possible right now, but, who knows what the
+      // future might bring)
+      is_initialized(!plugin_base) {}
 
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
@@ -86,6 +90,18 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
 
     // Allow this plugin to configure the main context's tick rate
     main_context.update_timer_interval(config.event_loop_interval());
+}
+
+bool Vst3Bridge::inhibits_event_loop() {
+    std::lock_guard lock(object_instances_mutex);
+
+    for (const auto& [instance_id, object] : object_instances) {
+        if (!object.is_initialized) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void Vst3Bridge::run() {
@@ -837,11 +853,20 @@ void Vst3Bridge::run() {
                 return main_context
                     .run_in_context<tresult>([&]() {
                         // This static cast is required to upcast to `FUnknown*`
-                        return object_instances[request.instance_id]
-                            .plugin_base->initialize(
-                                static_cast<YaHostApplication*>(
-                                    object_instances[request.instance_id]
-                                        .host_context_proxy));
+                        const tresult result =
+                            object_instances[request.instance_id]
+                                .plugin_base->initialize(
+                                    static_cast<YaHostApplication*>(
+                                        object_instances[request.instance_id]
+                                            .host_context_proxy));
+
+                        // The Win32 message loop will not be run up to this
+                        // point to prevent plugins with partially initialized
+                        // states from misbehaving
+                        object_instances[request.instance_id].is_initialized =
+                            true;
+
+                        return result;
                     })
                     .get();
             },

@@ -179,6 +179,15 @@ struct InstanceInterfaces {
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitInfo> unit_info;
     Steinberg::FUnknownPtr<Steinberg::Vst::IXmlRepresentationController>
         xml_representation_controller;
+
+    /**
+     * Whether `IPluginBase:initialize()` has already been called for this
+     * object instance. If the object doesn't implement `IPluginBase` then this
+     * will always be true. I haven't run into any VST3 plugins that have issues
+     * with partially initialized states like the VST2 versions of T-RackS 5
+     * have, but we'll just do this out of precaution.
+     */
+    bool is_initialized = false;
 };
 
 /**
@@ -208,6 +217,13 @@ class Vst3Bridge : public HostBridge {
     Vst3Bridge(MainContext& main_context,
                std::string plugin_dll_path,
                std::string endpoint_base_dir);
+
+    /**
+     * For VST3 plugins we'll have to check for every object in
+     * `object_instances` that supports `IPluginBase` whether
+     * `IPluginBase::iniitalize()` has been called.
+     */
+    bool inhibits_event_loop() override;
 
     /**
      * Here we'll listen for and handle incoming control messages until the
