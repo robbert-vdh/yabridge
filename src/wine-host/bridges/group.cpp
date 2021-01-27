@@ -117,6 +117,19 @@ GroupBridge::~GroupBridge() {
     stdio_context.stop();
 }
 
+bool GroupBridge::is_event_loop_inhibited() {
+    std::lock_guard lock(active_plugins_mutex);
+
+    for (auto& [parameters, value] : active_plugins) {
+        auto& [thread, bridge] = value;
+        if (bridge->inhibits_event_loop()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void GroupBridge::handle_plugin_run(size_t plugin_id, HostBridge* bridge) {
     // Blocks this thread until the plugin shuts down
     bridge->run();
@@ -256,33 +269,35 @@ void GroupBridge::accept_requests() {
 }
 
 void GroupBridge::async_handle_events() {
-    main_context.async_handle_events([&]() {
-        {
-            // Always handle X11 events
-            std::lock_guard lock(active_plugins_mutex);
-            for (auto& [parameters, value] : active_plugins) {
-                auto& [thread, bridge] = value;
-                bridge->handle_x11_events();
+    main_context.async_handle_events(
+        [&]() {
+            {
+                // Always handle X11 events
+                std::lock_guard lock(active_plugins_mutex);
+                for (auto& [parameters, value] : active_plugins) {
+                    auto& [thread, bridge] = value;
+                    bridge->handle_x11_events();
+                }
             }
-        }
 
-        std::lock_guard lock(active_plugins_mutex);
+            std::lock_guard lock(active_plugins_mutex);
 
-        MSG msg;
+            MSG msg;
 
-        // Keep the loop responsive by not handling too many events at once
-        //
-        // For some reason the Melda plugins run into a seemingly infinite timer
-        // loop for a little while after opening a second editor.  Without this
-        // limit everything will get blocked indefinitely. How could this be
-        // fixed?
-        for (int i = 0; i < max_win32_messages &&
-                        PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-             i++) {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-    });
+            // Keep the loop responsive by not handling too many events at once
+            //
+            // For some reason the Melda plugins run into a seemingly infinite
+            // timer loop for a little while after opening a second editor.
+            // Without this limit everything will get blocked indefinitely. How
+            // could this be fixed?
+            for (int i = 0; i < max_win32_messages &&
+                            PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
+                 i++) {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+        },
+        [&]() { return !is_event_loop_inhibited(); });
 }
 
 void GroupBridge::async_log_pipe_lines(

@@ -107,6 +107,11 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   always executed from the GUI thread. This fixes **EZdrummer** not producing
   any sound because the plugin makes the incorrect assumption that
   `effMainsChanged()` is always called from the GUI thread.
+- Event handling is now temporarily disabled while plugins are in a partially
+  initialized state. The VST2 versions of **T-RackS 5** would have a chance to
+  hang indefinitely if the event loop was being run before those plugins were
+  fully initialized because of a race condition within those plugins. This was
+  issue only noticeable when using plugin groups.
 - Fixed a potential issue where an interaction between _Bitwig Studio_ and
   yabridge's input focus grabbing method could cause delayed mouse events when
   clicking on a plugin's GUI in Bitwig. This issue has not been reported for

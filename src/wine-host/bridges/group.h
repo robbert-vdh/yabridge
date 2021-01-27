@@ -131,6 +131,14 @@ class GroupBridge {
     GroupBridge& operator=(const GroupBridge&) = delete;
 
     /**
+     * If this returns `true`, then the group host's event loop should
+     * temporarily be disabled. This simply calls
+     * `HostBridge::inhibits_event_loop()` for all plugins hosted in this group
+     * process.
+     */
+    bool is_event_loop_inhibited();
+
+    /**
      * Run a plugin's dispatcher and message loop, processing all events on the
      * main IO context. The plugin will have already been created in
      * `accept_requests` since it has to be initiated inside of the IO context's
