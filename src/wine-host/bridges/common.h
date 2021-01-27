@@ -38,9 +38,9 @@ class HostBridge {
      * up a Win32 timer in their constructor, but since the plugins are left in
      * a partially initialized state until `effOpen()` has been called running
      * the Win32 message loop before that time will trigger a race condition
-     * within those plugins. This is very much an issue with those plugins, but
-     * since this situation wouldn't occur on Windows we'll just have to work
-     * around it.
+     * within those plugins. This is very much an issue with those particular
+     * plugins, but since this situation wouldn't occur on Windows we'll just
+     * have to work around it.
      *
      * @relates MainContext::async_handle_events
      */
