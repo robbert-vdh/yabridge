@@ -31,11 +31,6 @@ using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
  * from an `AEffect` when it performs a host callback during its initialization.
  */
 Vst2Bridge* current_bridge_instance = nullptr;
-/**
- * Needed for the rare event that two plugins are getting initialized at the
- * same time.
- */
-std::mutex current_bridge_instance_mutex;
 
 /**
  * Opcodes that should always be handled on the main thread because they may
@@ -101,23 +96,20 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
 
     sockets.connect();
 
-    // Initialize after communication has been set up
-    // We'll try to do the same `get_bridge_instance` trick as in
-    // `plugin/plugin.cpp`, but since the plugin will probably call the host
-    // callback while it's initializing we sadly have to use a global here.
-    {
-        std::lock_guard lock(current_bridge_instance_mutex);
-        current_bridge_instance = this;
-        plugin = vst_entry_point(host_callback_proxy);
-        if (!plugin) {
-            throw std::runtime_error("VST plugin at '" + plugin_dll_path +
-                                     "' failed to initialize.");
-        }
-
-        // We only needed this little hack during initialization
-        current_bridge_instance = nullptr;
-        plugin->ptr1 = this;
+    // Initialize after communication has been set up We'll try to do the same
+    // `get_bridge_instance` trick as in `plugin/bridges/vst2.cpp`, but since
+    // the plugin will probably call the host callback while it's initializing
+    // we sadly have to use a global here.
+    current_bridge_instance = this;
+    plugin = vst_entry_point(host_callback_proxy);
+    if (!plugin) {
+        throw std::runtime_error("VST plugin at '" + plugin_dll_path +
+                                 "' failed to initialize.");
     }
+
+    // We only needed this little hack during initialization
+    current_bridge_instance = nullptr;
+    plugin->ptr1 = this;
 
     // Send the plugin's information to the Linux VST plugin. Any other updates
     // of this object will be sent over the `dispatcher()` socket. This would be
