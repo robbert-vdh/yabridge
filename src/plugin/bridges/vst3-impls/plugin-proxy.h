@@ -389,4 +389,38 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * @related Vst3PluginProxyImpl::register_context_menu
      */
     std::atomic_size_t current_context_menu_id;
+
+    /**
+     * A cache for `IAudioProcessor::getBusCount()` and
+     * `IAudioProcessor::getBusInfo()` to work around an implementation issue in
+     * REAPER. If during processing a plugin returns a value for one of these
+     * function calls, we'll memoize the function call using the maps defined
+     * below.
+     *
+     * @see processing_bus_cache
+     */
+    struct BusInfoCache {
+        std::map<
+            std::tuple<Steinberg::Vst::MediaType, Steinberg::Vst::BusDirection>,
+            int32>
+            bus_count;
+        std::map<std::tuple<Steinberg::Vst::MediaType,
+                            Steinberg::Vst::BusDirection,
+                            int32>,
+                 Steinberg::Vst::BusInfo>
+            bus_info;
+    };
+
+    /**
+     * HACK: To work around some behaviour in REAPER where it will repeatedly
+     *       query the same bus information for bus during every processing
+     *       cycle, we'll cache this information during processing.  Otherwise
+     *       this will cause `input_busses + output_busses + 2` extra
+     *       unnecessary back and forths for every processing cycle. This can
+     *       really add up for plugins with 16, or even 32 outputs.
+     *
+     * Since this information cannot change during processing, this will not
+     * contain a value while the plugin is not processing audio.
+     */
+    std::optional<BusInfoCache> processing_bus_cache;
 };

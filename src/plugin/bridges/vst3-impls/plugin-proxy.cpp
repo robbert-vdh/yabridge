@@ -135,6 +135,15 @@ Vst3PluginProxyImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {
+    // REAPER will repeatedly query the plugin for its bus information on every
+    // processing cycle. Because this really adds up in terms of latency we
+    // sadly have to deviate from yabridge's principles and implement a cache
+    if (state) {
+        processing_bus_cache.emplace();
+    } else {
+        processing_bus_cache.reset();
+    }
+
     return bridge.send_audio_processor_message(YaAudioProcessor::SetProcessing{
         .instance_id = instance_id(), .state = state});
 }
@@ -202,8 +211,31 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setIoMode(Steinberg::Vst::IoMode mode) {
 int32 PLUGIN_API
 Vst3PluginProxyImpl::getBusCount(Steinberg::Vst::MediaType type,
                                  Steinberg::Vst::BusDirection dir) {
-    return bridge.send_audio_processor_message(YaComponent::GetBusCount{
-        .instance_id = instance_id(), .type = type, .dir = dir});
+    const auto request = YaComponent::GetBusCount{
+        .instance_id = instance_id(), .type = type, .dir = dir};
+
+    // During processing we'll cache this info to work around an implementation
+    // issue in REAPER
+    std::tuple<Steinberg::Vst::MediaType, Steinberg::Vst::BusDirection> args{
+        type, dir};
+    if (processing_bus_cache) {
+        if (auto it = processing_bus_cache->bus_count.find(args);
+            it != processing_bus_cache->bus_count.end()) {
+            bridge.logger.log_request(true, request);
+            // TODO: Add to the log message that this information was cached
+            bridge.logger.log_response(true, PrimitiveWrapper(it->second));
+
+            return it->second;
+        }
+    }
+
+    const int32 result = bridge.send_audio_processor_message(request);
+
+    if (processing_bus_cache) {
+        processing_bus_cache->bus_count[args] = result;
+    }
+
+    return result;
 }
 
 tresult PLUGIN_API
@@ -211,14 +243,39 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
                                 Steinberg::Vst::BusDirection dir,
                                 int32 index,
                                 Steinberg::Vst::BusInfo& bus /*out*/) {
-    const GetBusInfoResponse response = bridge.send_audio_processor_message(
-        YaComponent::GetBusInfo{.instance_id = instance_id(),
-                                .type = type,
-                                .dir = dir,
-                                .index = index,
-                                .bus = bus});
+    const auto request = YaComponent::GetBusInfo{.instance_id = instance_id(),
+                                                 .type = type,
+                                                 .dir = dir,
+                                                 .index = index,
+                                                 .bus = bus};
+
+    // During processing we'll cache this info to work around an implementation
+    // issue in REAPER
+    std::tuple<Steinberg::Vst::MediaType, Steinberg::Vst::BusDirection, int32>
+        args{type, dir, index};
+    if (processing_bus_cache) {
+        if (auto it = processing_bus_cache->bus_info.find(args);
+            it != processing_bus_cache->bus_info.end()) {
+            bridge.logger.log_request(true, request);
+            // TODO: Add to the log message that this information was cached
+            bridge.logger.log_response(
+                true, GetBusInfoResponse{.result = Steinberg::kResultOk,
+                                         .updated_bus = it->second});
+
+            bus = it->second;
+
+            return Steinberg::kResultOk;
+        }
+    }
+
+    const GetBusInfoResponse response =
+        bridge.send_audio_processor_message(request);
 
     bus = response.updated_bus;
+    if (processing_bus_cache) {
+        processing_bus_cache->bus_info[args] = response.updated_bus;
+    }
+
     return response.result;
 }
 
