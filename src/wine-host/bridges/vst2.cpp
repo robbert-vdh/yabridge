@@ -178,9 +178,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                 //       value returned by this function during an audio
                 //       processing cycle will be reused for the rest of the
                 //       cycle.
-                if (config.cache_time_info) {
-                    time_info.reset();
-                }
+                cached_time_info.reset();
 
                 // Since the host should only be calling one of `process()`,
                 // processReplacing()` or `processDoubleReplacing()`, we can all
@@ -548,15 +546,14 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
                                    void* data,
                                    float option) {
     // HACK: Workaround for a bug in SWAM Cello where it would call
-    //       `audioMasterGetTime()` once for every sample. When this option is
-    //       enabled `time_info` should be reset in the process function. The
-    //       `time_info` value is assigned inside of
-    //       `HostCallbackDataConverter::write()`.
-    if (config.cache_time_info && time_info) {
-        return reinterpret_cast<intptr_t>(&*time_info);
+    //       `audioMasterGetTime()` once for every sample. The `time_info` value
+    //       is assigned inside of `HostCallbackDataConverter::write()`. At the
+    //       beginning of the processing cycle this value will be reset.
+    if (cached_time_info) {
+        return reinterpret_cast<intptr_t>(&*cached_time_info);
     }
 
-    HostCallbackDataConverter converter(effect, time_info);
+    HostCallbackDataConverter converter(effect, cached_time_info);
     return sockets.vst_host_callback.send_event(converter, std::nullopt, opcode,
                                                 index, value, data, option);
 }

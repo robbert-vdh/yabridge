@@ -78,13 +78,7 @@ Configuration::Configuration(const fs::path& config_path,
         // their defaults. At this point I'd really wish C++ could do pattern
         // matching.
         for (const auto& [key, value] : table) {
-            if (key == "cache_time_info") {
-                if (const auto parsed_value = value.as_boolean()) {
-                    cache_time_info = parsed_value->get();
-                } else {
-                    invalid_options.push_back(key);
-                }
-            } else if (key == "editor_double_embed") {
+            if (key == "editor_double_embed") {
                 if (const auto parsed_value = value.as_boolean()) {
                     editor_double_embed = parsed_value->get();
                 } else {

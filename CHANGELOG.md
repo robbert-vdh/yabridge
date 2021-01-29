@@ -99,6 +99,13 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   with, and it then applies the change conditionally to be able to support
   building with both older and newer versions of Wine.
 
+### Removed
+
+- The `cache_time_info` option for VST2 plugins has been removed and this
+  behaviour is now always enabled. This option would cache VST2 time information
+  during a single processing cycle in case the plugin asks for this information
+  more than once.
+
 ### Fixed
 
 - VST2 plugin editor resizing in **REAPER** would not cause the FX window to be
