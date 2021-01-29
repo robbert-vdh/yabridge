@@ -221,9 +221,11 @@ Vst3PluginProxyImpl::getBusCount(Steinberg::Vst::MediaType type,
     if (processing_bus_cache) {
         if (auto it = processing_bus_cache->bus_count.find(args);
             it != processing_bus_cache->bus_count.end()) {
-            bridge.logger.log_request(true, request);
-            // TODO: Add to the log message that this information was cached
-            bridge.logger.log_response(true, PrimitiveWrapper(it->second));
+            const bool log_response = bridge.logger.log_request(true, request);
+            if (log_response) {
+                // TODO: Add to the log message that this information was cached
+                bridge.logger.log_response(true, PrimitiveWrapper(it->second));
+            }
 
             return it->second;
         }
@@ -256,11 +258,13 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
     if (processing_bus_cache) {
         if (auto it = processing_bus_cache->bus_info.find(args);
             it != processing_bus_cache->bus_info.end()) {
-            bridge.logger.log_request(true, request);
-            // TODO: Add to the log message that this information was cached
-            bridge.logger.log_response(
-                true, GetBusInfoResponse{.result = Steinberg::kResultOk,
-                                         .updated_bus = it->second});
+            const bool log_response = bridge.logger.log_request(true, request);
+            if (log_response) {
+                // TODO: Add to the log message that this information was cached
+                bridge.logger.log_response(
+                    true, GetBusInfoResponse{.result = Steinberg::kResultOk,
+                                             .updated_bus = it->second});
+            }
 
             bus = it->second;
 
