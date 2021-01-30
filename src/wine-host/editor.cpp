@@ -321,12 +321,6 @@ HWND Editor::get_win32_handle() const {
 }
 
 void Editor::handle_x11_events() const {
-    // Calling `set_input_focus(true)` can trigger another `FocusIn` event,
-    // which will then once again call `set_input_focus(true)`. To work around
-    // this we prevent successive keyboard focus grabs within a single call of
-    // this function.
-    bool have_requested_input_focus = false;
-
     xcb_generic_event_t* generic_event;
     while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
            nullptr) {
@@ -370,10 +364,8 @@ void Editor::handle_x11_events() const {
                 // In case the WM somehow does not support `_NET_ACTIVE_WINDOW`,
                 // a more naive focus grabbing method implemented in the
                 // `WM_PARENTNOTIFY` handler will be used.
-                if (!have_requested_input_focus &&
-                    supports_ewmh_active_window() && is_wine_window_active()) {
+                if (supports_ewmh_active_window() && is_wine_window_active()) {
                     set_input_focus(true);
-                    have_requested_input_focus = true;
                 }
                 break;
             // When the user moves their mouse away from the Wine window _while
@@ -399,7 +391,6 @@ void Editor::handle_x11_events() const {
                 if (event->detail != XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL &&
                     supports_ewmh_active_window() && is_wine_window_active()) {
                     set_input_focus(false);
-                    have_requested_input_focus = false;
                 }
             } break;
         }
@@ -459,6 +450,33 @@ void Editor::fix_local_coordinates() const {
 }
 
 void Editor::set_input_focus(bool grab) const {
+    const xcb_window_t focus_target = grab ? parent_window : topmost_window;
+
+    xcb_generic_error_t* err;
+    const xcb_get_input_focus_cookie_t focus_cookie =
+        xcb_get_input_focus(x11_connection.get());
+    xcb_get_input_focus_reply_t* focus_reply =
+        xcb_get_input_focus_reply(x11_connection.get(), focus_cookie, &err);
+    assert(!err);
+
+    const xcb_window_t current_focus = focus_reply->focus;
+    free(focus_reply);
+
+    // Calling `set_input_focus(true)` can trigger another `FocusIn` event,
+    // which will then once again call `set_input_focus(true)`. To work around
+    // this we prevent unnecessary repeat keyboard focus grabs.
+    // One thing that slightly complicates this is the use of unmapped input
+    // proxy windows. When `topmost_window` gets foccused, some hosts will
+    // reassign input focus to such a proxy window. To avoid fighting over
+    // focus, when grabbing focus we don't just check whether `current_focus`
+    // and `focus_target` are the same window but we'll also allow
+    // `current_focus` to be a child of `focus_target`.
+    if (current_focus == focus_target ||
+        (grab && is_child_window_or_same(*x11_connection, current_focus,
+                                         focus_target))) {
+        return;
+    }
+
     // Explicitly request input focus when the user interacts with the window.
     // Without this `topmost_window` will capture all keyboard events in most
     // hosts. Ideally we would just do this whenever the child window calls
@@ -474,8 +492,7 @@ void Editor::set_input_focus(bool grab) const {
     //      in practice a lot of hosts don't use that, so we still need to grab
     //      focus ourselves.
     xcb_set_input_focus(x11_connection.get(), XCB_INPUT_FOCUS_PARENT,
-                        grab ? parent_window : topmost_window,
-                        XCB_CURRENT_TIME);
+                        focus_target, XCB_CURRENT_TIME);
     xcb_flush(x11_connection.get());
 }
 
