@@ -85,9 +85,15 @@ Vst3PluginBridge::Vst3PluginBridge()
                 },
                 [&](const YaComponentHandler::RestartComponent& request)
                     -> YaComponentHandler::RestartComponent::Response {
-                    return plugin_proxies.at(request.owner_instance_id)
-                        .get()
-                        .component_handler->restartComponent(request.flags);
+                    Vst3PluginProxyImpl& proxy_object =
+                        plugin_proxies.at(request.owner_instance_id).get();
+
+                    // To err on the safe side, we'll just always clear out bus
+                    // info cache whenever a plugin requests a restart
+                    proxy_object.clear_bus_cache();
+
+                    return proxy_object.component_handler->restartComponent(
+                        request.flags);
                 },
                 [&](const YaComponentHandler2::SetDirty& request)
                     -> YaComponentHandler2::SetDirty::Response {

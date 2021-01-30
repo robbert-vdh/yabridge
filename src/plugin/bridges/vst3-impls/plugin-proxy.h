@@ -54,6 +54,25 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      */
     bool unregister_context_menu(size_t context_menu_id);
 
+    /**
+     * Clear the bus count and information cache. We need this cache for REAPER
+     * as it makes `num_inputs + num_outputs + 2` function calls to retrieve
+     * this information every single processing cycle. For plugins with a lot of
+     * outputs this really adds up. According to the VST3 workflow diagrams bus
+     * information cannot change anymore once `IAudioProcessor::setProcessing()`
+     * has been called, but REAPER doesn't quite follow the spec here and it
+     * will set bus arrangements and activate the plugin only after it's called
+     * `IAudioProcessor::setProcessing()`. Because of that we'll have to
+     * manually flush this cache when the stores information potentially becomes
+     * invalid.
+     *
+     * HACK: Once REAPER stops calling these functions, we should remove this
+     *       caching layer ASAP as it can only cause issues
+     *
+     * @see processing_bus_cache
+     */
+    void clear_bus_cache();
+
     // From `IAudioPresentationLatency`
     tresult PLUGIN_API
     setAudioPresentationLatencySamples(Steinberg::Vst::BusDirection dir,

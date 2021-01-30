@@ -63,6 +63,12 @@ bool Vst3PluginProxyImpl::unregister_context_menu(size_t context_menu_id) {
     return context_menus.erase(context_menu_id);
 }
 
+void Vst3PluginProxyImpl::clear_bus_cache() {
+    if (processing_bus_cache) {
+        processing_bus_cache.emplace();
+    }
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::setAudioPresentationLatencySamples(
     Steinberg::Vst::BusDirection dir,
     int32 busIndex,
@@ -80,6 +86,8 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setBusArrangements(
     int32 numIns,
     Steinberg::Vst::SpeakerArrangement* outputs,
     int32 numOuts) {
+    clear_bus_cache();
+
     // NOTE: Ardour passes a null pointer when `numIns` or `numOuts` is 0, so we
     //       need to work around that
     return bridge.send_audio_processor_message(
@@ -311,20 +319,11 @@ Vst3PluginProxyImpl::activateBus(Steinberg::Vst::MediaType type,
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setActive(TBool state) {
     // HACK: Even though we have implemented this cache specifically for REAPER,
-    //       REAPER mixes up `IComponent::setActive` and
-    //       `IAudioProcessor::setProcessing`. `IAudioProcessor::setProcessing`
-    //       is called before setting up bus arrangements, so without this the
-    //       cache would be filled with default data rather than the bus
-    //       arrangement chosen by REAPER. So now our workaround to get
-    //       acceptable performance in REAPER needs a workaround of its ownn.
-    //       Great!
-    // TODO: We probably also need a reset on
-    //       `IComponentHandler::restartComponent()`
-    if (state) {
-        processing_bus_cache.emplace();
-    } else {
-        processing_bus_cache.reset();
-    }
+    //       REAPER doesn't use `IComponent::setProcessing` properly and calls
+    //       it before doing setting up input and output busses. So now our
+    //       workaround to get acceptable performance in REAPER needs a
+    //       workaround of its ownn.  Great!
+    clear_bus_cache();
 
     return bridge.send_audio_processor_message(
         YaComponent::SetActive{.instance_id = instance_id(), .state = state});
