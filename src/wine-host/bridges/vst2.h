@@ -77,20 +77,12 @@ class Vst2Bridge : public HostBridge {
     intptr_t host_callback(AEffect*, int, int, intptr_t, void*, float);
 
     /**
-     * The time information returned by the host after the plugin calls
-     * `audioMasterGetTime()`. We'll have to return a pointer to this, so we'll
-     * store it here. If the host returned a null pointer, then we'll just store
-     * a nullopt.
-     *
-     * We'll keep this information around for the entire processing cycle, in
-     * case a plugin somehow calls this function more than once, like the SWAM
-     * Cello plugin does.
-     *
-     * XXX: We don't have any logging for when the plugin calls
-     *      `audioMasterGetTime()` more than once, but printing some message
-     *      44100 times per second also doesn't sound great
+     * With the `audioMasterGetTime` host callback the plugin expects the return
+     * value from the calblack to be a pointer to a VstTimeInfo struct. If the
+     * host did not support a certain time info query, than we'll store the
+     * returned null pointer as a nullopt.
      */
-    std::optional<VstTimeInfo> cached_time_info;
+    std::optional<VstTimeInfo> time_info;
 
    private:
     /**

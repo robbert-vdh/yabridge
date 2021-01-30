@@ -168,6 +168,9 @@ class PluginBridge {
 
         init_msg << "other options: ";
         std::vector<std::string> other_options;
+        if (config.cache_time_info) {
+            other_options.push_back("hack: time info cache");
+        }
         if (config.editor_double_embed) {
             other_options.push_back("editor: double embed");
         }
