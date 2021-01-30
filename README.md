@@ -543,6 +543,11 @@ include:
   section for instructions on how to set this up. This is not necessary for VST3
   plugins, as multiple instances of those plugins will always be hosted in a
   single process by design.
+- When using **REAPER**, make sure that REAPER's plugin bridges are disabled.
+  When this option is enabled REAPER will constantly query all of a plugin's
+  parameters four times per second. This can amount to multiple tens of
+  thousands of extra, unnecessary function calls per second, which increases
+  yabridge's CPU usage considerably.
 - **Drag-and-drop** from applications running under Wine to X11 does not yet
   work, so you won't be able to drag samples and MIDI files from a plugin to the
   host. At least, not directly. Because Windows applications have to create
