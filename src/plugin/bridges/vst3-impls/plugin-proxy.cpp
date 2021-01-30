@@ -145,10 +145,13 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {
     // REAPER will repeatedly query the plugin for its bus information on every
     // processing cycle. Because this really adds up in terms of latency we
     // sadly have to deviate from yabridge's principles and implement a cache
-    if (state) {
-        processing_bus_cache.emplace();
-    } else {
-        processing_bus_cache.reset();
+    {
+        std::lock_guard lock(processing_bus_cache_mutex);
+        if (state) {
+            processing_bus_cache.emplace();
+        } else {
+            processing_bus_cache.reset();
+        }
     }
 
     return bridge.send_audio_processor_message(YaAudioProcessor::SetProcessing{
@@ -225,23 +228,31 @@ Vst3PluginProxyImpl::getBusCount(Steinberg::Vst::MediaType type,
     // issue in REAPER
     std::tuple<Steinberg::Vst::MediaType, Steinberg::Vst::BusDirection> args{
         type, dir};
-    if (processing_bus_cache) {
-        if (auto it = processing_bus_cache->bus_count.find(args);
-            it != processing_bus_cache->bus_count.end()) {
-            const bool log_response = bridge.logger.log_request(true, request);
-            if (log_response) {
-                bridge.logger.log_response(
-                    true, YaComponent::GetBusCount::Response(it->second), true);
-            }
+    {
+        std::lock_guard lock(processing_bus_cache_mutex);
+        if (processing_bus_cache) {
+            if (auto it = processing_bus_cache->bus_count.find(args);
+                it != processing_bus_cache->bus_count.end()) {
+                const bool log_response =
+                    bridge.logger.log_request(true, request);
+                if (log_response) {
+                    bridge.logger.log_response(
+                        true, YaComponent::GetBusCount::Response(it->second),
+                        true);
+                }
 
-            return it->second;
+                return it->second;
+            }
         }
     }
 
     const int32 result = bridge.send_audio_processor_message(request);
 
-    if (processing_bus_cache) {
-        processing_bus_cache->bus_count[args] = result;
+    {
+        std::lock_guard lock(processing_bus_cache_mutex);
+        if (processing_bus_cache) {
+            processing_bus_cache->bus_count[args] = result;
+        }
     }
 
     return result;
@@ -262,21 +273,26 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
     // issue in REAPER
     std::tuple<Steinberg::Vst::MediaType, Steinberg::Vst::BusDirection, int32>
         args{type, dir, index};
-    if (processing_bus_cache) {
-        if (auto it = processing_bus_cache->bus_info.find(args);
-            it != processing_bus_cache->bus_info.end()) {
-            const bool log_response = bridge.logger.log_request(true, request);
-            if (log_response) {
-                bridge.logger.log_response(true,
-                                           YaComponent::GetBusInfo::Response{
-                                               .result = Steinberg::kResultOk,
-                                               .updated_bus = it->second},
-                                           true);
+    {
+        std::lock_guard lock(processing_bus_cache_mutex);
+        if (processing_bus_cache) {
+            if (auto it = processing_bus_cache->bus_info.find(args);
+                it != processing_bus_cache->bus_info.end()) {
+                const bool log_response =
+                    bridge.logger.log_request(true, request);
+                if (log_response) {
+                    bridge.logger.log_response(
+                        true,
+                        YaComponent::GetBusInfo::Response{
+                            .result = Steinberg::kResultOk,
+                            .updated_bus = it->second},
+                        true);
+                }
+
+                bus = it->second;
+
+                return Steinberg::kResultOk;
             }
-
-            bus = it->second;
-
-            return Steinberg::kResultOk;
         }
     }
 
@@ -284,8 +300,12 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
         bridge.send_audio_processor_message(request);
 
     bus = response.updated_bus;
-    if (processing_bus_cache) {
-        processing_bus_cache->bus_info[args] = response.updated_bus;
+
+    {
+        std::lock_guard lock(processing_bus_cache_mutex);
+        if (processing_bus_cache) {
+            processing_bus_cache->bus_info[args] = response.updated_bus;
+        }
     }
 
     return response.result;
@@ -440,22 +460,28 @@ int32 PLUGIN_API Vst3PluginProxyImpl::getParameterCount() {
 
     // We'll cache this information to work around an issue in REAPER, see
     // `parameter_info_cache`
-    if (parameter_info_cache.parameter_count) {
-        const bool log_response = bridge.logger.log_request(true, request);
-        if (log_response) {
-            bridge.logger.log_response(
-                true,
-                YaEditController::GetParameterCount::Response(
-                    *parameter_info_cache.parameter_count),
-                true);
-        }
+    {
+        std::lock_guard lock(parameter_info_cache_mutex);
+        if (parameter_info_cache.parameter_count) {
+            const bool log_response = bridge.logger.log_request(true, request);
+            if (log_response) {
+                bridge.logger.log_response(
+                    true,
+                    YaEditController::GetParameterCount::Response(
+                        *parameter_info_cache.parameter_count),
+                    true);
+            }
 
-        return *parameter_info_cache.parameter_count;
+            return *parameter_info_cache.parameter_count;
+        }
     }
 
     const int32 result = bridge.send_message(request);
 
-    parameter_info_cache.parameter_count = result;
+    {
+        std::lock_guard lock(parameter_info_cache_mutex);
+        parameter_info_cache.parameter_count = result;
+    }
 
     return result;
 }
@@ -468,26 +494,34 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
 
     // We'll cache this information to work around an issue in REAPER, see
     // `parameter_info_cache`
-    if (auto it = parameter_info_cache.parameter_info.find(paramIndex);
-        it != parameter_info_cache.parameter_info.end()) {
-        const bool log_response = bridge.logger.log_request(true, request);
-        if (log_response) {
-            bridge.logger.log_response(
-                true,
-                YaEditController::GetParameterInfo::Response{
-                    .result = Steinberg::kResultOk, .updated_info = it->second},
-                true);
+    {
+        std::lock_guard lock(parameter_info_cache_mutex);
+        if (auto it = parameter_info_cache.parameter_info.find(paramIndex);
+            it != parameter_info_cache.parameter_info.end()) {
+            const bool log_response = bridge.logger.log_request(true, request);
+            if (log_response) {
+                bridge.logger.log_response(
+                    true,
+                    YaEditController::GetParameterInfo::Response{
+                        .result = Steinberg::kResultOk,
+                        .updated_info = it->second},
+                    true);
+            }
+
+            info = it->second;
+
+            return Steinberg::kResultOk;
         }
-
-        info = it->second;
-
-        return Steinberg::kResultOk;
     }
 
     const GetParameterInfoResponse response = bridge.send_message(request);
 
     info = response.updated_info;
-    parameter_info_cache.parameter_info[paramIndex] = response.updated_info;
+
+    {
+        std::lock_guard lock(parameter_info_cache_mutex);
+        parameter_info_cache.parameter_info[paramIndex] = response.updated_info;
+    }
 
     return response.result;
 }
@@ -1158,11 +1192,13 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getXmlRepresentationStream(
 }
 
 void Vst3PluginProxyImpl::clear_bus_cache() {
+    std::lock_guard lock(processing_bus_cache_mutex);
     if (processing_bus_cache) {
         processing_bus_cache.emplace();
     }
 }
 
 void Vst3PluginProxyImpl::clear_parameter_cache() {
+    std::lock_guard lock(parameter_info_cache_mutex);
     parameter_info_cache = ParameterInfoCache{};
 }

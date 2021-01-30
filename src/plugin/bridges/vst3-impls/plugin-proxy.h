@@ -487,6 +487,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      *       does that.
      */
     std::optional<BusInfoCache> processing_bus_cache;
+    std::mutex processing_bus_cache_mutex;
 
     /**
      * A cache for `IEditController::getParameterCount()` and
@@ -513,4 +514,5 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      *       information four times per second.
      */
     ParameterInfoCache parameter_info_cache;
+    std::mutex parameter_info_cache_mutex;
 };
