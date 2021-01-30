@@ -305,7 +305,9 @@ class Vst3Logger {
                       const YaAudioProcessor::ProcessResponse&);
     void log_response(bool is_host_vst,
                       const YaComponent::GetControllerClassIdResponse&);
-    void log_response(bool is_host_vst, const YaComponent::GetBusInfoResponse&);
+    void log_response(bool is_host_vst,
+                      const YaComponent::GetBusInfoResponse&,
+                      bool from_cache = false);
     void log_response(bool is_host_vst,
                       const YaComponent::GetRoutingInfoResponse&);
     void log_response(
@@ -319,10 +321,16 @@ class Vst3Logger {
     void log_response(bool is_host_vst, const YaProgress::StartResponse&);
 
     template <typename T>
-    void log_response(bool is_host_vst, const PrimitiveWrapper<T>& value) {
+    void log_response(bool is_host_vst,
+                      const PrimitiveWrapper<T>& value,
+                      bool from_cache = false) {
         // For logging all primitive return values other than `tresult`
-        log_response_base(is_host_vst,
-                          [&](auto& message) { message << value; });
+        log_response_base(is_host_vst, [&](auto& message) {
+            message << value;
+            if (from_cache) {
+                message << " (from cache)";
+            }
+        });
     }
 
     Logger& logger;

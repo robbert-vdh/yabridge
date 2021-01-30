@@ -1776,7 +1776,8 @@ void Vst3Logger::log_response(
 }
 
 void Vst3Logger::log_response(bool is_host_vst,
-                              const YaComponent::GetBusInfoResponse& response) {
+                              const YaComponent::GetBusInfoResponse& response,
+                              bool from_cache) {
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
@@ -1785,6 +1786,9 @@ void Vst3Logger::log_response(bool is_host_vst,
                     << "\" with " << response.updated_bus.channelCount
                     << " channels, type = " << response.updated_bus.busType
                     << ", flags = " << response.updated_bus.flags << ">";
+            if (from_cache) {
+                message << " (from cache)";
+            }
         }
     });
 }
