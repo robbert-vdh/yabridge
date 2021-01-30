@@ -63,10 +63,9 @@ bool Vst3PluginProxyImpl::unregister_context_menu(size_t context_menu_id) {
     return context_menus.erase(context_menu_id);
 }
 
-void Vst3PluginProxyImpl::clear_bus_cache() {
-    if (processing_bus_cache) {
-        processing_bus_cache.emplace();
-    }
+void Vst3PluginProxyImpl::clear_caches() {
+    clear_bus_cache();
+    clear_parameter_cache();
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setAudioPresentationLatencySamples(
@@ -231,8 +230,8 @@ Vst3PluginProxyImpl::getBusCount(Steinberg::Vst::MediaType type,
             it != processing_bus_cache->bus_count.end()) {
             const bool log_response = bridge.logger.log_request(true, request);
             if (log_response) {
-                bridge.logger.log_response(true, PrimitiveWrapper(it->second),
-                                           true);
+                bridge.logger.log_response(
+                    true, YaComponent::GetBusCount::Response(it->second), true);
             }
 
             return it->second;
@@ -268,11 +267,11 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
             it != processing_bus_cache->bus_info.end()) {
             const bool log_response = bridge.logger.log_request(true, request);
             if (log_response) {
-                bridge.logger.log_response(
-                    true,
-                    GetBusInfoResponse{.result = Steinberg::kResultOk,
-                                       .updated_bus = it->second},
-                    true);
+                bridge.logger.log_response(true,
+                                           YaComponent::GetBusInfo::Response{
+                                               .result = Steinberg::kResultOk,
+                                               .updated_bus = it->second},
+                                           true);
             }
 
             bus = it->second;
@@ -436,19 +435,59 @@ Vst3PluginProxyImpl::setComponentState(Steinberg::IBStream* state) {
 }
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getParameterCount() {
-    return bridge.send_message(
-        YaEditController::GetParameterCount{.instance_id = instance_id()});
+    const auto request =
+        YaEditController::GetParameterCount{.instance_id = instance_id()};
+
+    // We'll cache this information to work around an issue in REAPER, see
+    // `parameter_info_cache`
+    if (parameter_info_cache.parameter_count) {
+        const bool log_response = bridge.logger.log_request(true, request);
+        if (log_response) {
+            bridge.logger.log_response(
+                true,
+                YaEditController::GetParameterCount::Response(
+                    *parameter_info_cache.parameter_count),
+                true);
+        }
+
+        return *parameter_info_cache.parameter_count;
+    }
+
+    const int32 result = bridge.send_message(request);
+
+    parameter_info_cache.parameter_count = result;
+
+    return result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
     int32 paramIndex,
     Steinberg::Vst::ParameterInfo& info /*out*/) {
-    const GetParameterInfoResponse response = bridge.send_message(
-        YaEditController::GetParameterInfo{.instance_id = instance_id(),
-                                           .param_index = paramIndex,
-                                           .info = info});
+    const auto request = YaEditController::GetParameterInfo{
+        .instance_id = instance_id(), .param_index = paramIndex, .info = info};
+
+    // We'll cache this information to work around an issue in REAPER, see
+    // `parameter_info_cache`
+    if (auto it = parameter_info_cache.parameter_info.find(paramIndex);
+        it != parameter_info_cache.parameter_info.end()) {
+        const bool log_response = bridge.logger.log_request(true, request);
+        if (log_response) {
+            bridge.logger.log_response(
+                true,
+                YaEditController::GetParameterInfo::Response{
+                    .result = Steinberg::kResultOk, .updated_info = it->second},
+                true);
+        }
+
+        info = it->second;
+
+        return Steinberg::kResultOk;
+    }
+
+    const GetParameterInfoResponse response = bridge.send_message(request);
 
     info = response.updated_info;
+    parameter_info_cache.parameter_info[paramIndex] = response.updated_info;
 
     return response.result;
 }
@@ -1116,4 +1155,14 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getXmlRepresentationStream(
             "'IXmlRepresentationController::getXmlRepresentationStream()'");
         return Steinberg::kInvalidArgument;
     }
+}
+
+void Vst3PluginProxyImpl::clear_bus_cache() {
+    if (processing_bus_cache) {
+        processing_bus_cache.emplace();
+    }
+}
+
+void Vst3PluginProxyImpl::clear_parameter_cache() {
+    parameter_info_cache = ParameterInfoCache{};
 }

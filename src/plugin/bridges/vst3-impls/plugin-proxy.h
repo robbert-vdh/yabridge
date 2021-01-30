@@ -19,6 +19,24 @@
 #include "../vst3.h"
 #include "plug-view-proxy.h"
 
+/**
+ * Here we pass though all function calls made by the host to the Windows VST3
+ * plugin. We sadly had to deviate from yabridge's 'one-to-one passthrough'
+ * philosphy in two places:
+ *
+ * 1. REAPER requests the plugin's input and output bus count and information
+ *    every processing cycle, even though this information cannot change during
+ *    processing. With plugins with many outputs this can lead a lot of extra
+ *    back and forth before the plugin gets to process audio, which thus leads
+ *    to very inflated DSP usage.
+ * 2. REAPER in some situations (because it doesn't always seem to happen)
+ *    fetches the plugin's parameter information exactly four times per second.
+ *    When plugins have thousands of parameters, this unnecessarily uses up a
+ *    lot of CPU time.
+ *
+ * Both of these caches were necessary to get decent performance in REAPER, and
+ * they should be removed as soon as REAPER no longer needs this.
+ */
 class Vst3PluginProxyImpl : public Vst3PluginProxy {
    public:
     Vst3PluginProxyImpl(Vst3PluginBridge& bridge,
@@ -55,23 +73,19 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     bool unregister_context_menu(size_t context_menu_id);
 
     /**
-     * Clear the bus count and information cache. We need this cache for REAPER
-     * as it makes `num_inputs + num_outputs + 2` function calls to retrieve
-     * this information every single processing cycle. For plugins with a lot of
-     * outputs this really adds up. According to the VST3 workflow diagrams bus
-     * information cannot change anymore once `IAudioProcessor::setProcessing()`
-     * has been called, but REAPER doesn't quite follow the spec here and it
-     * will set bus arrangements and activate the plugin only after it's called
-     * `IAudioProcessor::setProcessing()`. Because of that we'll have to
-     * manually flush this cache when the stores information potentially becomes
-     * invalid.
+     * Clear the bus and parameter caches. We'll call this on
+     * `IComponentHandler::restartComponent`. These caching layers are necessary
+     * to get decent performance in REAPER as REAPER repeatedly calls these
+     * functions many times per second, even though their values will never
+     * change.
      *
      * HACK: Once REAPER stops calling these functions, we should remove this
      *       caching layer ASAP as it can only cause issues
      *
-     * @see processing_bus_cache
+     * @see clear_bus_cache
+     * @see clear_parameter_cache
      */
-    void clear_bus_cache();
+    void clear_caches();
 
     // From `IAudioPresentationLatency`
     tresult PLUGIN_API
@@ -383,6 +397,33 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler2> unit_handler_2;
 
    private:
+    /**
+     * Clear the bus count and information cache. We need this cache for REAPER
+     * as it makes `num_inputs + num_outputs + 2` function calls to retrieve
+     * this information every single processing cycle. For plugins with a lot of
+     * outputs this really adds up. According to the VST3 workflow diagrams bus
+     * information cannot change anymore once `IAudioProcessor::setProcessing()`
+     * has been called, but REAPER doesn't quite follow the spec here and it
+     * will set bus arrangements and activate the plugin only after it's called
+     * `IAudioProcessor::setProcessing()`. Because of that we'll have to
+     * manually flush this cache when the stores information potentially becomes
+     * invalid.
+     *
+     * @see processing_bus_cache
+     */
+    void clear_bus_cache();
+
+    /**
+     * Clears the parameter information cache. Normally hosts only have to
+     * request this once, since the information never changes. REAPER however in
+     * some situations asks for this information four times per second. This
+     * extra back and forth can really add up once plugins start having
+     * thousands of parameters.
+     *
+     * @see parameter_info_cache
+     */
+    void clear_parameter_cache();
+
     Vst3PluginBridge& bridge;
 
     /**
@@ -431,15 +472,45 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     };
 
     /**
-     * HACK: To work around some behaviour in REAPER where it will repeatedly
-     *       query the same bus information for bus during every processing
-     *       cycle, we'll cache this information during processing.  Otherwise
-     *       this will cause `input_busses + output_busses + 2` extra
-     *       unnecessary back and forths for every processing cycle. This can
-     *       really add up for plugins with 16, or even 32 outputs.
+     * To work around some behaviour in REAPER where it will repeatedly query
+     * the same bus information for bus during every processing cycle, we'll
+     * cache this information during processing. Otherwise this will cause
+     * `input_busses + output_busses + 2` extra unnecessary back and forths for
+     * every processing cycle. This can really add up for plugins with 16, or
+     * even 32 outputs.
      *
      * Since this information cannot change during processing, this will not
      * contain a value while the plugin is not processing audio.
+     *
+     * HACK: This is only necessary because REAPER requests this information
+     *       once per procession cycle. We can get rid of this once it no longer
+     *       does that.
      */
     std::optional<BusInfoCache> processing_bus_cache;
+
+    /**
+     * A cache for `IEditController::getParameterCount()` and
+     * `IEditController::getParameterInfo()` to work around an implementation
+     * issue in REAPER. In some situations REAPER will query this information
+     * four times a second, and all of this back and forth communication really
+     * adds up when a plugin starts having thousands of parameters.
+     *
+     * @see parameter_cache
+     */
+    struct ParameterInfoCache {
+        std::optional<int32> parameter_count;
+        std::map<int32, Steinberg::Vst::ParameterInfo> parameter_info;
+    };
+
+    /**
+     * A cache for the parameter count and infos. This is necessary because in
+     * some situations REAPER queries this information four times per second
+     * even though it cannot change. This happens when using the plugin bridges,
+     * but it can also happen in some other cases so I'm not quite sure what the
+     * trigger is.
+     *
+     * HACK: This is only necessary because REAPER sometimes requests this
+     *       information four times per second.
+     */
+    ParameterInfoCache parameter_info_cache;
 };

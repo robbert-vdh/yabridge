@@ -324,7 +324,9 @@ void Editor::handle_x11_events() const {
     xcb_generic_event_t* generic_event;
     while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
            nullptr) {
-        switch (generic_event->response_type & event_type_mask) {
+        const uint8_t event_type =
+            generic_event->response_type & event_type_mask;
+        switch (event_type) {
             // We're listening for `ConfigureNotify` events on the topmost
             // window before the root window, i.e. the window that's actually
             // going to get dragged around the by the user. In most cases this
@@ -334,6 +336,7 @@ void Editor::handle_x11_events() const {
             // check is sometimes necessary for using multiple editor windows
             // within a single plugin group.
             case XCB_CONFIGURE_NOTIFY:
+                std::cerr << "XCB_CONFIGURE_NOTIFY" << std::endl;
                 if (!use_xembed) {
                     fix_local_coordinates();
                 }
@@ -342,6 +345,7 @@ void Editor::handle_x11_events() const {
             // most hosts will only show the window after the plugin has
             // embedded itself into it.
             case XCB_VISIBILITY_NOTIFY:
+                std::cerr << "XCB_VISIBILITY_NOTIFY" << std::endl;
                 if (use_xembed) {
                     do_xembed();
                 }
@@ -357,6 +361,12 @@ void Editor::handle_x11_events() const {
             // `EnterNotify'.
             case XCB_ENTER_NOTIFY:
             case XCB_FOCUS_IN:
+                if (event_type == XCB_ENTER_NOTIFY) {
+                    std::cerr << "XCB_ENTER_NOTIFY" << std::endl;
+                } else {
+                    std::cerr << "XCB_FOCUS_IN" << std::endl;
+                }
+
                 if (!use_xembed) {
                     fix_local_coordinates();
                 }
@@ -376,6 +386,7 @@ void Editor::handle_x11_events() const {
             // to mess with keyboard focus when hovering over the window while
             // for instance a dialog is open.
             case XCB_LEAVE_NOTIFY: {
+                std::cerr << "XCB_LEAVE_NOTIFY" << std::endl;
                 const auto event =
                     reinterpret_cast<xcb_leave_notify_event_t*>(generic_event);
 
@@ -393,6 +404,10 @@ void Editor::handle_x11_events() const {
                     set_input_focus(false);
                 }
             } break;
+            default: {
+                std::cerr << "X11 event " << event_type << std::endl;
+                break;
+            }
         }
 
         free(generic_event);

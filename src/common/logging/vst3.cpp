@@ -1411,13 +1411,17 @@ void Vst3Logger::log_response(
 
 void Vst3Logger::log_response(
     bool is_host_vst,
-    const YaEditController::GetParameterInfoResponse& response) {
+    const YaEditController::GetParameterInfoResponse& response,
+    bool from_cache) {
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
             std::string param_title =
                 VST3::StringConvert::convert(response.updated_info.title);
             message << ", <ParameterInfo for '" << param_title << "'>";
+            if (from_cache) {
+                message << " (from cache)";
+            }
         }
     });
 }

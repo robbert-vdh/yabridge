@@ -88,9 +88,9 @@ Vst3PluginBridge::Vst3PluginBridge()
                     Vst3PluginProxyImpl& proxy_object =
                         plugin_proxies.at(request.owner_instance_id).get();
 
-                    // To err on the safe side, we'll just always clear out bus
-                    // info cache whenever a plugin requests a restart
-                    proxy_object.clear_bus_cache();
+                    // To err on the safe side, we'll just always clear out all
+                    // of our caches whenever a plugin requests a restart
+                    proxy_object.clear_caches();
 
                     return proxy_object.component_handler->restartComponent(
                         request.flags);

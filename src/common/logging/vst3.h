@@ -247,7 +247,8 @@ class Vst3Logger {
     void log_response(bool is_host_vst,
                       const Vst3PluginProxy::GetStateResponse&);
     void log_response(bool is_host_vst,
-                      const YaEditController::GetParameterInfoResponse&);
+                      const YaEditController::GetParameterInfoResponse&,
+                      bool from_cache = false);
     void log_response(bool is_host_vst,
                       const YaEditController::GetParamStringByValueResponse&);
     void log_response(bool is_host_vst,
