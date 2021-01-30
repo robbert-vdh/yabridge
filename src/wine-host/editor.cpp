@@ -33,7 +33,7 @@ constexpr size_t idle_timer_id = 1337;
  * The most significant bit in an X11 event's response type is used to indicate
  * the event source.
  */
-constexpr uint16_t event_type_mask = 0b0111'1111;
+constexpr uint8_t event_type_mask = 0b0111'1111;
 
 /**
  * The name of the X11 property on the root window used to denote the active
