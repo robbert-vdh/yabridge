@@ -310,6 +310,22 @@ Vst3PluginProxyImpl::activateBus(Steinberg::Vst::MediaType type,
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setActive(TBool state) {
+    // HACK: Even though we have implemented this cache specifically for REAPER,
+    //       REAPER mixes up `IComponent::setActive` and
+    //       `IAudioProcessor::setProcessing`. `IAudioProcessor::setProcessing`
+    //       is called before setting up bus arrangements, so without this the
+    //       cache would be filled with default data rather than the bus
+    //       arrangement chosen by REAPER. So now our workaround to get
+    //       acceptable performance in REAPER needs a workaround of its ownn.
+    //       Great!
+    // TODO: We probably also need a reset on
+    //       `IComponentHandler::restartComponent()`
+    if (state) {
+        processing_bus_cache.emplace();
+    } else {
+        processing_bus_cache.reset();
+    }
+
     return bridge.send_audio_processor_message(
         YaComponent::SetActive{.instance_id = instance_id(), .state = state});
 }
