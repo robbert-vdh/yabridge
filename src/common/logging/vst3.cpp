@@ -945,10 +945,11 @@ bool Vst3Logger::log_request(
 bool Vst3Logger::log_request(
     bool is_host_vst,
     const YaAudioProcessor::GetLatencySamples& request) {
-    return log_request_base(is_host_vst, [&](auto& message) {
-        message << request.instance_id
-                << ": IAudioProcessor::getLatencySamples()";
-    });
+    return log_request_base(
+        is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
+            message << request.instance_id
+                    << ": IAudioProcessor::getLatencySamples()";
+        });
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
