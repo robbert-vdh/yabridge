@@ -242,9 +242,9 @@ namespace Vst {
 template <typename S>
 void serialize(S& s, NoteExpressionTypeInfo& info) {
     s.value4b(info.typeId);
-    s.text2b(info.title);
-    s.text2b(info.shortTitle);
-    s.text2b(info.units);
+    s.container2b(info.title);
+    s.container2b(info.shortTitle);
+    s.container2b(info.units);
     s.value4b(info.unitId);
     s.object(info.valueDesc);
     s.value4b(info.associatedParameterId);

@@ -188,7 +188,7 @@ namespace Steinberg {
 namespace Vst {
 template <typename S>
 void serialize(S& s, IContextMenuItem& item) {
-    s.text2b(item.name);
+    s.container2b(item.name);
     s.value4b(item.tag);
     s.value4b(item.flags);
 }

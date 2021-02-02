@@ -449,14 +449,14 @@ template <typename S>
 void serialize(S& s, UnitInfo& info) {
     s.value4b(info.id);
     s.value4b(info.parentUnitId);
-    s.text2b(info.name);
+    s.container2b(info.name);
     s.value4b(info.programListId);
 }
 
 template <typename S>
 void serialize(S& s, ProgramListInfo& info) {
     s.value4b(info.id);
-    s.text2b(info.name);
+    s.container2b(info.name);
     s.value4b(info.programCount);
 }
 }  // namespace Vst

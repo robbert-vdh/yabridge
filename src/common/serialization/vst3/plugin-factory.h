@@ -213,12 +213,19 @@ void serialize(S& s, PClassInfoW& class_info) {
     s.container1b(class_info.cid);
     s.value4b(class_info.cardinality);
     s.text1b(class_info.category);
-    s.text2b(class_info.name);
+    // FIXME: Bitsery uses `std::char_traits<wchar_t>::length()` under the hood
+    //        for `text2b()` on the Wine side, and under winegcc this function
+    //        this length is incorrect. As a workaround we're just serializing
+    //        the entire container. This applies to every place where we use
+    //        `container2b()` to serialize a `String128`, so if we end up fixing
+    //        this we should replace all of the instances of `container2b()`
+    //        that serialize a `String128`.
+    s.container2b(class_info.name);
     s.value4b(class_info.classFlags);
     s.text1b(class_info.subCategories);
-    s.text2b(class_info.vendor);
-    s.text2b(class_info.version);
-    s.text2b(class_info.sdkVersion);
+    s.container2b(class_info.vendor);
+    s.container2b(class_info.version);
+    s.container2b(class_info.sdkVersion);
 }
 
 template <typename S>

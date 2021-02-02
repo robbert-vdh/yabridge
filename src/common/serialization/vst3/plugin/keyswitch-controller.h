@@ -141,8 +141,8 @@ namespace Vst {
 template <typename S>
 void serialize(S& s, Steinberg::Vst::KeyswitchInfo& info) {
     s.value4b(info.typeId);
-    s.text2b(info.title);
-    s.text2b(info.shortTitle);
+    s.container2b(info.title);
+    s.container2b(info.shortTitle);
     s.value4b(info.keyswitchMin);
     s.value4b(info.keyswitchMax);
     s.value4b(info.keyRemapped);
