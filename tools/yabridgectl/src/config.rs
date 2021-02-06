@@ -216,15 +216,24 @@ impl Config {
                 }
             }
             None => {
-                // Search in the two common installation locations if no path was set explicitely.
-                // We'll also search through `/usr/local/lib` just in case but since we advocate
-                // against isntalling yabridge there we won't list this path in the error message
-                // when `libyabridge-vst2.so` can't be found.
+                // Search in the system library locations and in `~/.local/share/yabridge` if no
+                // path was set explicitely. We'll also search through `/usr/local/lib` just in case
+                // but since we advocate against installing yabridge there we won't list this path
+                // in the error message when `libyabridge-vst2.so` can't be found.
                 let system_path = Path::new("/usr/lib");
-                let system_path_alt = Path::new("/usr/local/lib");
                 let user_path = xdg_dirs.get_data_home();
-                let directories = [system_path, system_path_alt, &user_path];
-                let mut candidates = directories
+                let lib_directories = [
+                    system_path,
+                    // Used on Debian based distros
+                    Path::new("/usr/lib/x86_64-linux-gnu"),
+                    // Used on Fedora
+                    Path::new("/usr/lib64"),
+                    Path::new("/usr/local/lib"),
+                    Path::new("/usr/local/lib/x86_64-linux-gnu"),
+                    Path::new("/usr/local/lib64"),
+                    &user_path,
+                ];
+                let mut candidates = lib_directories
                     .iter()
                     .map(|directory| directory.join(LIBYABRIDGE_VST2_NAME));
                 match candidates.find(|directory| directory.exists()) {
