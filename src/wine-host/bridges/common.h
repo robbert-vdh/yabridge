@@ -80,11 +80,8 @@ class HostBridge {
      * specific situation that can cause a race condition in some plugins
      * because of incorrect assumptions made by the plugin. See the dostring for
      * `Vst2Bridge::editor` for more information.
-     *
-     * TODO: We can get rid of this now, since we no longer have any special
-     *       handling here
      */
-    virtual void handle_win32_events() = 0;
+    void handle_win32_events();
 
     /**
      * The path to the .dll being loaded in the Wine plugin host.

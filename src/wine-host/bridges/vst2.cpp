@@ -379,17 +379,6 @@ void Vst2Bridge::handle_x11_events() {
     }
 }
 
-void Vst2Bridge::handle_win32_events() {
-    MSG msg;
-
-    for (int i = 0;
-         i < max_win32_messages && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-         i++) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-}
-
 intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
                                       int opcode,
                                       int index,

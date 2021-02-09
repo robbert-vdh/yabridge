@@ -16,5 +16,18 @@
 
 #include "common.h"
 
+#include "../editor.h"
+
 HostBridge::HostBridge(boost::filesystem::path plugin_path)
     : plugin_path(plugin_path) {}
+
+void HostBridge::handle_win32_events() {
+    MSG msg;
+
+    for (int i = 0;
+         i < max_win32_messages && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
+         i++) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+}

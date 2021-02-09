@@ -1077,17 +1077,6 @@ void Vst3Bridge::handle_x11_events() {
     }
 }
 
-void Vst3Bridge::handle_win32_events() {
-    MSG msg;
-
-    for (int i = 0;
-         i < max_win32_messages && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-         i++) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-}
-
 void Vst3Bridge::register_context_menu(Vst3ContextMenuProxyImpl& context_menu) {
     std::lock_guard lock(object_instances[context_menu.owner_instance_id()]
                              .registered_context_menus_mutex);
