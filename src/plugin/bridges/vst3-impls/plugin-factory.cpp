@@ -38,30 +38,23 @@ YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
     Steinberg::TUID cid_array;
     std::copy(cid, cid + std::extent_v<Steinberg::TUID>, cid_array);
 
-    // FIXME: `_iid` in Bitwig Studio 3.3.1 is not null terminated, and the
-    //        comparison below will thus fail since the strings have different
-    //        lengths. Since it looks like the module implementation that comes
-    //        with the SDK has this same issue I think it might just be a case
-    //        of Steinberg not following its own specifications.
-    std::string iid_string(_iid, uid_size);
+    // I don't think they include a safe way to convert a `FIDString/char*` into
+    // a `FUID`, so this will have to do
+    const Steinberg::FUID requested_iid = Steinberg::FUID::fromTUID(
+        *reinterpret_cast<const Steinberg::TUID*>(&*_iid));
 
     Vst3PluginProxy::Construct::Interface requested_interface;
-    if (Steinberg::FIDStringsEqual(iid_string.c_str(),
-                                   Steinberg::Vst::IComponent::iid)) {
+    if (requested_iid == Steinberg::Vst::IComponent::iid) {
         requested_interface = Vst3PluginProxy::Construct::Interface::IComponent;
-    } else if (Steinberg::FIDStringsEqual(
-                   iid_string.c_str(), Steinberg::Vst::IEditController::iid)) {
+    } else if (requested_iid == Steinberg::Vst::IEditController::iid) {
         requested_interface =
             Vst3PluginProxy::Construct::Interface::IEditController;
     } else {
         // When the host requests an interface we do not (yet) implement, we'll
-        // print a recognizable log message. I don't think they include a safe
-        // way to convert a `FIDString/char*` into a `FUID`, so this will have
-        // to do.
-        const Steinberg::FUID uid = Steinberg::FUID::fromTUID(
-            *reinterpret_cast<const Steinberg::TUID*>(&*_iid));
+        // print a recognizable log message
         bridge.logger.log_query_interface("In IPluginFactory::createInstance()",
-                                          Steinberg::kNotImplemented, uid);
+                                          Steinberg::kNotImplemented,
+                                          requested_iid);
 
         *obj = nullptr;
         return Steinberg::kNotImplemented;
