@@ -115,7 +115,6 @@ void Vst3Bridge::run() {
         overload{
             [&](const Vst3PlugViewProxy::Destruct& request)
                 -> Vst3PlugViewProxy::Destruct::Response {
-                // XXX: Not sure if his has to be run form the UI thread
                 main_context
                     .run_in_context<void>([&]() {
                         // When the pointer gets dropped by the host, we want to
@@ -847,9 +846,9 @@ void Vst3Bridge::run() {
                     Steinberg::owned(new Vst3HostContextProxyImpl(
                         *this, std::move(request.host_context_args)));
 
-                // XXX: Should `IPlugView::{initialize,terminate}` be run from
-                //      the main UI thread? I can see how plugins would want to
-                //      start timers from here.
+                // Since plugins might want to start timers in
+                // `IPlugView::{initialize,terminate}`, we'll run these
+                // functions from the main GUI thread
                 return main_context
                     .run_in_context<tresult>([&]() {
                         // This static cast is required to upcast to `FUnknown*`
