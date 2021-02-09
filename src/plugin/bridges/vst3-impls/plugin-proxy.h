@@ -24,18 +24,19 @@
  * plugin. We sadly had to deviate from yabridge's 'one-to-one passthrough'
  * philosphy in two places:
  *
- * 1. REAPER requests the plugin's input and output bus count and information
- *    every processing cycle, even though this information cannot change during
- *    processing. With plugins with many outputs this can lead a lot of extra
- *    back and forth before the plugin gets to process audio, which thus leads
- *    to very inflated DSP usage.
- * 2. REAPER in some situations (because it doesn't always seem to happen)
- *    fetches the plugin's parameter information exactly four times per second.
- *    When plugins have thousands of parameters, this unnecessarily uses up a
- *    lot of CPU time.
- *
- * Both of these caches were necessary to get decent performance in REAPER, and
- * they should be removed as soon as REAPER no longer needs this.
+ * 1. We cache parameter information, and these caches are flushed whenever the
+ *    plugin requests a restart. This is needed because REAPER repeatedly
+ *    queries this information four times per second for all of a plugin's
+ *    parameters while the editor is open. The issue has been reported and it's
+ *    been fixed in REAPER's current pre-release builds (as of February 2021).
+ *    Bitwig also seems to query this information twice on startup, so the cache
+ *    is likely also useful there.
+ * 2. We also cache input and output bus counts and information. REAPER would
+ *    query this information for every I/O bus before processing audio, which
+ *    ended up increasing audio processing latency considerably for no reason
+ *    (since this information cannot change during processing). REAPER has fixed
+ *    this issue as of a pre-release build in February 2021. JUCE based hosts
+ *    like Carla also seem to query the bus counts every processing cycle.
  */
 class Vst3PluginProxyImpl : public Vst3PluginProxy {
    public:
@@ -79,8 +80,8 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * functions many times per second, even though their values will never
      * change.
      *
-     * HACK: Once REAPER stops calling these functions, we should remove this
-     *       caching layer ASAP as it can only cause issues
+     * HACK: See the doc comment on this class for more information on these
+     *       caches
      *
      * @see clear_bus_cache
      * @see clear_parameter_cache
@@ -482,9 +483,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * Since this information cannot change during processing, this will not
      * contain a value while the plugin is not processing audio.
      *
-     * HACK: This is only necessary because REAPER requests this information
-     *       once per procession cycle. We can get rid of this once it no longer
-     *       does that.
+     * HACK: See the doc comment on this class
      */
     std::optional<BusInfoCache> processing_bus_cache;
     std::mutex processing_bus_cache_mutex;
@@ -510,8 +509,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * but it can also happen in some other cases so I'm not quite sure what the
      * trigger is.
      *
-     * HACK: This is only necessary because REAPER sometimes requests this
-     *       information four times per second.
+     * HACK: See the doc comment on this class
      */
     ParameterInfoCache parameter_info_cache;
     std::mutex parameter_info_cache_mutex;
