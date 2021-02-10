@@ -507,11 +507,16 @@ include:
   `gdiplus` through `winetricks`.
 - **Native Instruments** plugins work, but Native Access is unable to finish
   installing the plugins. To work around this you can open the .iso file
-  downloaded to your downloads directory and run the installer directly. When
-  activating the plugins you may have to cancel the self-updating in NI Service
-  Center. You may also have to manually terminate the ISO driver installation
-  process when installing Native Access for the first time to allow the
-  installation to proceed.
+  downloaded to your downloads directory and run the installer directly. You may
+  also have to manually terminate the ISO driver installation process when
+  installing Native Access for the first time to allow the installation to
+  proceed. Some Native Instruments .iso files contain hidden files, and
+  installer will fail unless you mount the .iso file with the correct mounting
+  options. To do this, first run
+  `udisksctl loop-setup -f ~/Downloads/<filename>.iso` to load the .iso file,
+  and then use `udisksctl mount -t udf -o unhide -b /dev/loopX` where
+  `/dev/loopX` corresponds to the loop device printed by the `loop-setup`
+  command to mount the .iso file to a directory in `/run/media`.
 - **MeldaProduction** plugins have minor rendering issues when GPU acceleration
   is enabled. This can be fixed by disabling GPU acceleration in the plugin
   settings. I'm not sure whether this is an issue with Wine or the plugins
