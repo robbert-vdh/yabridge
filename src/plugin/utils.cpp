@@ -155,7 +155,7 @@ fs::path find_plugin_library(const fs::path& this_plugin_path,
             if (!fs::exists(candidate_path)) {
                 // Try the 32-bit version no 64-bit version exists (although, is
                 // there a single VST3 plugin where this is the case?)
-                fs::path candidate_path =
+                candidate_path =
                     bundle_home / "Contents" / "x86-win" / win_module_name;
             }
 
