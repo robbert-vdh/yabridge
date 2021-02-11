@@ -54,7 +54,17 @@ PluginInfo::PluginInfo(PluginType plugin_type)
       plugin_arch(find_dll_architecture(windows_library_path)),
       windows_plugin_path(
           normalize_plugin_path(windows_library_path, plugin_type)),
-      wine_prefix(find_wine_prefix(windows_plugin_path)) {}
+      wine_prefix(find_wine_prefix(windows_plugin_path)) {
+    // FIXME: We're getting some weird memory corruption issues with 32-bit VST3
+    //        plugins. Until we figure out what's causing this, we should just
+    //        prevent these plugins from being loaded.
+    if (plugin_type == PluginType::vst3 &&
+        plugin_arch == LibArchitecture::dll_32) {
+        throw std::runtime_error(
+            "Support for 32-bit VST3 plugins has temporarily been disabled "
+            "because of memory corruption issues");
+    }
+}
 
 bp::environment PluginInfo::create_host_env() const {
     bp::environment env = boost::this_process::environment();
