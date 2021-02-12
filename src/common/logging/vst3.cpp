@@ -1417,7 +1417,7 @@ void Vst3Logger::log_response(
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
             std::string param_title =
-                VST3::StringConvert::convert(response.updated_info.title);
+                VST3::StringConvert::convert(response.info.title);
             message << ", <ParameterInfo for '" << param_title << "'>";
             if (from_cache) {
                 message << " (from cache)";

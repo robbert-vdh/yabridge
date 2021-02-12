@@ -327,13 +327,13 @@ void Vst3Bridge::run() {
             },
             [&](YaEditController::GetParameterInfo& request)
                 -> YaEditController::GetParameterInfo::Response {
-                const tresult result =
-                    object_instances[request.instance_id]
-                        .edit_controller->getParameterInfo(request.param_index,
-                                                           request.info);
+                Steinberg::Vst::ParameterInfo info{};
+                const tresult result = object_instances[request.instance_id]
+                                           .edit_controller->getParameterInfo(
+                                               request.param_index, info);
 
                 return YaEditController::GetParameterInfoResponse{
-                    .result = result, .updated_info = std::move(request.info)};
+                    .result = result, .info = std::move(info)};
             },
             [&](const YaEditController::GetParamStringByValue& request)
                 -> YaEditController::GetParamStringByValue::Response {

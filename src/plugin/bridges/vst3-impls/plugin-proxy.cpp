@@ -490,7 +490,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
     int32 paramIndex,
     Steinberg::Vst::ParameterInfo& info /*out*/) {
     const auto request = YaEditController::GetParameterInfo{
-        .instance_id = instance_id(), .param_index = paramIndex, .info = info};
+        .instance_id = instance_id(), .param_index = paramIndex};
 
     // We'll cache this information to work around an issue in REAPER, see
     // `parameter_info_cache`
@@ -503,8 +503,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
                 bridge.logger.log_response(
                     true,
                     YaEditController::GetParameterInfo::Response{
-                        .result = Steinberg::kResultOk,
-                        .updated_info = it->second},
+                        .result = Steinberg::kResultOk, .info = it->second},
                     true);
             }
 
@@ -516,11 +515,11 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
 
     const GetParameterInfoResponse response = bridge.send_message(request);
 
-    info = response.updated_info;
+    info = response.info;
 
     {
         std::lock_guard lock(parameter_info_cache_mutex);
-        parameter_info_cache.parameter_info[paramIndex] = response.updated_info;
+        parameter_info_cache.parameter_info[paramIndex] = response.info;
     }
 
     return response.result;

@@ -118,12 +118,12 @@ class YaEditController : public Steinberg::Vst::IEditController {
      */
     struct GetParameterInfoResponse {
         UniversalTResult result;
-        Steinberg::Vst::ParameterInfo updated_info;
+        Steinberg::Vst::ParameterInfo info;
 
         template <typename S>
         void serialize(S& s) {
             s.object(result);
-            s.object(updated_info);
+            s.object(info);
         }
     };
 
@@ -138,13 +138,11 @@ class YaEditController : public Steinberg::Vst::IEditController {
         native_size_t instance_id;
 
         int32 param_index;
-        Steinberg::Vst::ParameterInfo info;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
             s.value4b(param_index);
-            s.object(info);
         }
     };
 
