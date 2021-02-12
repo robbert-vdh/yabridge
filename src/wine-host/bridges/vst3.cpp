@@ -1128,13 +1128,14 @@ size_t Vst3Bridge::register_object_instance(
                     },
                     [&](YaAudioProcessor::GetBusArrangement& request)
                         -> YaAudioProcessor::GetBusArrangement::Response {
+                        Steinberg::Vst::SpeakerArrangement arr{};
                         const tresult result =
                             object_instances[request.instance_id]
                                 .audio_processor->getBusArrangement(
-                                    request.dir, request.index, request.arr);
+                                    request.dir, request.index, arr);
 
                         return YaAudioProcessor::GetBusArrangementResponse{
-                            .result = result, .updated_arr = request.arr};
+                            .result = result, .arr = arr};
                     },
                     [&](const YaAudioProcessor::CanProcessSampleSize& request)
                         -> YaAudioProcessor::CanProcessSampleSize::Response {

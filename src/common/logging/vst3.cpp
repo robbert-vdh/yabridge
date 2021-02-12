@@ -1720,7 +1720,7 @@ void Vst3Logger::log_response(
         if (response.result == Steinberg::kResultOk) {
             message << ", <SpeakerArrangement: 0b"
                     << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement)>(
-                           response.updated_arr)
+                           response.arr)
                     << ">";
         }
     });

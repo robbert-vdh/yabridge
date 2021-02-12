@@ -110,13 +110,10 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getBusArrangement(
     int32 index,
     Steinberg::Vst::SpeakerArrangement& arr) {
     const GetBusArrangementResponse response =
-        bridge.send_audio_processor_message(
-            YaAudioProcessor::GetBusArrangement{.instance_id = instance_id(),
-                                                .dir = dir,
-                                                .index = index,
-                                                .arr = arr});
+        bridge.send_audio_processor_message(YaAudioProcessor::GetBusArrangement{
+            .instance_id = instance_id(), .dir = dir, .index = index});
 
-    arr = response.updated_arr;
+    arr = response.arr;
 
     return response.result;
 }

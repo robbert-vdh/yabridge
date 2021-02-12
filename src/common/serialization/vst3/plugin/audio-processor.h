@@ -97,22 +97,22 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
 
     /**
      * The response code and written state for a call to
-     * `IAudioProcessor::getBusArrangement(dir, index, arr)`.
+     * `IAudioProcessor::getBusArrangement(dir, index, &arr)`.
      */
     struct GetBusArrangementResponse {
         UniversalTResult result;
-        Steinberg::Vst::SpeakerArrangement updated_arr;
+        Steinberg::Vst::SpeakerArrangement arr;
 
         template <typename S>
         void serialize(S& s) {
             s.object(result);
-            s.value8b(updated_arr);
+            s.value8b(arr);
         }
     };
 
     /**
      * Message to pass through a call to
-     * `IAudioProcessor::getBusArrangement(dir, index, arr)` to the Wine
+     * `IAudioProcessor::getBusArrangement(dir, index, &arr)` to the Wine
      * plugin host.
      */
     struct GetBusArrangement {
@@ -122,14 +122,12 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
 
         Steinberg::Vst::BusDirection dir;
         int32 index;
-        Steinberg::Vst::SpeakerArrangement arr;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
             s.value4b(dir);
             s.value4b(index);
-            s.value8b(arr);
         }
     };
 
