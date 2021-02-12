@@ -151,12 +151,12 @@ class YaComponent : public Steinberg::Vst::IComponent {
      */
     struct GetBusInfoResponse {
         UniversalTResult result;
-        Steinberg::Vst::BusInfo updated_bus;
+        Steinberg::Vst::BusInfo bus;
 
         template <typename S>
         void serialize(S& s) {
             s.object(result);
-            s.object(updated_bus);
+            s.object(bus);
         }
     };
 
@@ -172,14 +172,12 @@ class YaComponent : public Steinberg::Vst::IComponent {
         Steinberg::Vst::BusType type;
         Steinberg::Vst::BusDirection dir;
         int32 index;
-        Steinberg::Vst::BusInfo bus;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
             s.value4b(type);
             s.value4b(dir);
-            s.object(bus);
         }
     };
 

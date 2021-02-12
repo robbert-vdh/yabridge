@@ -1204,14 +1204,15 @@ size_t Vst3Bridge::register_object_instance(
                     },
                     [&](YaComponent::GetBusInfo& request)
                         -> YaComponent::GetBusInfo::Response {
+                        Steinberg::Vst::BusInfo bus{};
                         const tresult result =
                             object_instances[request.instance_id]
-                                .component->getBusInfo(
-                                    request.type, request.dir, request.index,
-                                    request.bus);
+                                .component->getBusInfo(request.type,
+                                                       request.dir,
+                                                       request.index, bus);
 
                         return YaComponent::GetBusInfoResponse{
-                            .result = result, .updated_bus = request.bus};
+                            .result = result, .bus = std::move(bus)};
                     },
                     [&](YaComponent::GetRoutingInfo& request)
                         -> YaComponent::GetRoutingInfo::Response {

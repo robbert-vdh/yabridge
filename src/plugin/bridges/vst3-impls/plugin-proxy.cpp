@@ -260,11 +260,8 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
                                 Steinberg::Vst::BusDirection dir,
                                 int32 index,
                                 Steinberg::Vst::BusInfo& bus /*out*/) {
-    const auto request = YaComponent::GetBusInfo{.instance_id = instance_id(),
-                                                 .type = type,
-                                                 .dir = dir,
-                                                 .index = index,
-                                                 .bus = bus};
+    const auto request = YaComponent::GetBusInfo{
+        .instance_id = instance_id(), .type = type, .dir = dir, .index = index};
 
     // During processing we'll cache this info to work around an implementation
     // issue in REAPER
@@ -281,8 +278,7 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
                     bridge.logger.log_response(
                         true,
                         YaComponent::GetBusInfo::Response{
-                            .result = Steinberg::kResultOk,
-                            .updated_bus = it->second},
+                            .result = Steinberg::kResultOk, .bus = it->second},
                         true);
                 }
 
@@ -296,12 +292,12 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
     const GetBusInfoResponse response =
         bridge.send_audio_processor_message(request);
 
-    bus = response.updated_bus;
+    bus = response.bus;
 
     {
         std::lock_guard lock(processing_bus_cache_mutex);
         if (processing_bus_cache) {
-            processing_bus_cache->bus_info[args] = response.updated_bus;
+            processing_bus_cache->bus_info[args] = response.bus;
         }
     }
 
