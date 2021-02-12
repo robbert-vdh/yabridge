@@ -82,18 +82,6 @@ class HostProcess {
 
    private:
     /**
-     * Write output from an async pipe to the log on a line by line basis.
-     * Useful for logging the Wine process's STDOUT and STDERR streams.
-     *
-     * @param pipe The pipe to read from.
-     * @param buffer The stream buffer to write to.
-     * @param prefix Text to prepend to the line before writing to the log.
-     */
-    void async_log_pipe_lines(patched_async_pipe& pipe,
-                              boost::asio::streambuf& buffer,
-                              std::string prefix = "");
-
-    /**
      * The logger the Wine output will be written to.
      */
     Logger& logger;

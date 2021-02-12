@@ -61,28 +61,8 @@ HostProcess::HostProcess(boost::asio::io_context& io_context, Logger& logger)
     // Print the Wine host's STDOUT and STDERR streams to the log file. This
     // should be done before trying to accept the sockets as otherwise we will
     // miss all output.
-    async_log_pipe_lines(stdout_pipe, stdout_buffer, "[Wine STDOUT] ");
-    async_log_pipe_lines(stderr_pipe, stderr_buffer, "[Wine STDERR] ");
-}
-
-void HostProcess::async_log_pipe_lines(patched_async_pipe& pipe,
-                                       boost::asio::streambuf& buffer,
-                                       std::string prefix) {
-    boost::asio::async_read_until(
-        pipe, buffer, '\n',
-        [&, prefix](const boost::system::error_code& error, size_t) {
-            // When we get an error code then that likely means that the pipe
-            // has been clsoed and we have reached the end of the file
-            if (error.failed()) {
-                return;
-            }
-
-            std::string line;
-            std::getline(std::istream(&buffer), line);
-            logger.log(prefix + line);
-
-            async_log_pipe_lines(pipe, buffer, prefix);
-        });
+    logger.async_log_pipe_lines(stdout_pipe, stdout_buffer, "[Wine STDOUT] ");
+    logger.async_log_pipe_lines(stderr_pipe, stderr_buffer, "[Wine STDERR] ");
 }
 
 IndividualHost::IndividualHost(boost::asio::io_context& io_context,

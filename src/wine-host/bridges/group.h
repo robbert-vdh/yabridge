@@ -16,15 +16,12 @@
 
 #pragma once
 
+#include <atomic>
+#include <thread>
+
 #include "../boost-fix.h"
 
 #include <boost/asio/local/stream_protocol.hpp>
-#include <boost/asio/posix/stream_descriptor.hpp>
-#include <boost/asio/streambuf.hpp>
-#include <boost/filesystem.hpp>
-
-#include <atomic>
-#include <thread>
 
 #include "../common/logging/common.h"
 #include "../utils.h"
@@ -189,20 +186,6 @@ class GroupBridge {
      * context for all plugins.
      */
     void async_handle_events();
-
-    /**
-     * Continuously read from a pipe and write the output to the log file. Used
-     * with the IO streams captured by `stdout_redirect` and `stderr_redirect`.
-     *
-     * TODO: Merge this with `HostProcess::async_log_pipe_lines`
-     *
-     * @param pipe The pipe to read from.
-     * @param buffer The stream buffer to write to.
-     * @param prefix Text to prepend to the line before writing to the log.
-     */
-    void async_log_pipe_lines(boost::asio::posix::stream_descriptor& pipe,
-                              boost::asio::streambuf& buffer,
-                              std::string prefix);
 
     /**
      * The logging facility used for this group host process. Since we can't

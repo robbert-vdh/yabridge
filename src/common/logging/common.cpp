@@ -16,10 +16,6 @@
 
 #include "common.h"
 
-#ifdef __WINE__
-#include "../wine-host/boost-fix.h"
-#endif
-
 #include <vestige/aeffectx.h>
 
 #include <boost/process/environment.hpp>

@@ -18,28 +18,10 @@
 
 #include <variant>
 
-#include <boost/process/async_pipe.hpp>
 #include <boost/process/environment.hpp>
 
 #include "../common/configuration.h"
 #include "../common/plugins.h"
-
-/**
- * Boost 1.72 was released with a known breaking bug caused by a missing
- * typedef: https://github.com/boostorg/process/issues/116.
- *
- * Luckily this is easy to fix since it's not really possible to downgrade Boost
- * as it would break other applications.
- *
- * Check if this is still needed for other distros after Arch starts packaging
- * Boost 1.73.
- */
-class patched_async_pipe : public boost::process::async_pipe {
-   public:
-    using boost::process::async_pipe::async_pipe;
-
-    typedef typename handle_type::executor_type executor_type;
-};
 
 /**
  * Marker struct for when we use the default Wine prefix.

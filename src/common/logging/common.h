@@ -20,6 +20,31 @@
 #include <optional>
 #include <ostream>
 
+#ifdef __WINE__
+#include "../wine-host/boost-fix.h"
+#endif
+
+#include <boost/asio/read_until.hpp>
+#include <boost/asio/streambuf.hpp>
+#include <boost/process/async_pipe.hpp>
+
+/**
+ * Boost 1.72 was released with a known breaking bug caused by a missing
+ * typedef: https://github.com/boostorg/process/issues/116.
+ *
+ * Luckily this is easy to fix since it's not really possible to downgrade Boost
+ * as it would break other applications.
+ *
+ * Check if this is still needed for other distros after Arch starts packaging
+ * Boost 1.73.
+ */
+class patched_async_pipe : public boost::process::async_pipe {
+   public:
+    using boost::process::async_pipe::async_pipe;
+
+    typedef typename handle_type::executor_type executor_type;
+};
+
 /**
  * Super basic logging facility meant for debugging malfunctioning VST
  * plugins. This is also used to redirect the output of the Wine process
@@ -111,6 +136,36 @@ class Logger {
      * @param message The message to write.
      */
     void log_trace(const std::string& message);
+
+    /**
+     * Write output from an async pipe to the log on a line by line basis.
+     * Useful for logging the Wine process's STDOUT and STDERR streams.
+     *
+     * @param pipe Some Boost.Asio stream that can be read from. Probably either
+     *   `patched_async_pipe` or a stream descriptor.
+     * @param buffer The buffer that will be used to read from `pipe`.
+     * @param prefix Text to prepend to the line before writing to the log.
+     */
+    template <typename T>
+    void async_log_pipe_lines(T& pipe,
+                              boost::asio::streambuf& buffer,
+                              std::string prefix = "") {
+        boost::asio::async_read_until(
+            pipe, buffer, '\n',
+            [&, prefix](const boost::system::error_code& error, size_t) {
+                // When we get an error code then that likely means that the
+                // pipe has been clsoed and we have reached the end of the file
+                if (error.failed()) {
+                    return;
+                }
+
+                std::string line;
+                std::getline(std::istream(&buffer), line);
+                log(prefix + line);
+
+                async_log_pipe_lines(pipe, buffer, prefix);
+            });
+    }
 
     /**
      * The verbosity level of this logger instance. Based on this certain
