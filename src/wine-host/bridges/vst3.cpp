@@ -724,16 +724,16 @@ void Vst3Bridge::run() {
             [&](YaPlugView::GetSize& request) -> YaPlugView::GetSize::Response {
                 // Melda plugins will refuse to open dialogs of this function is
                 // not run from the GUI thread
+                Steinberg::ViewRect size{};
                 const tresult result =
                     do_mutual_recursion_or_handle_in_main_context<tresult>(
                         [&]() {
                             return object_instances[request.owner_instance_id]
-                                .plug_view_instance->plug_view->getSize(
-                                    &request.size);
+                                .plug_view_instance->plug_view->getSize(&size);
                         });
 
-                return YaPlugView::GetSizeResponse{
-                    .result = result, .updated_size = std::move(request.size)};
+                return YaPlugView::GetSizeResponse{.result = result,
+                                                   .size = std::move(size)};
             },
             [&](YaPlugView::OnSize& request) -> YaPlugView::OnSize::Response {
                 // HACK: This function has to be run from the UI thread since

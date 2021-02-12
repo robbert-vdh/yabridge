@@ -1571,10 +1571,10 @@ void Vst3Logger::log_response(bool is_host_vst,
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            message << ", <ViewRect* with left = " << response.updated_size.left
-                    << ", top = " << response.updated_size.top
-                    << ", right = " << response.updated_size.right
-                    << ", bottom = " << response.updated_size.bottom << ">";
+            message << ", <ViewRect* with left = " << response.size.left
+                    << ", top = " << response.size.top
+                    << ", right = " << response.size.right
+                    << ", bottom = " << response.size.bottom << ">";
         }
     });
 }

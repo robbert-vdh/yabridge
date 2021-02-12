@@ -168,11 +168,10 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::onKeyUp(char16 key,
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::getSize(Steinberg::ViewRect* size) {
     if (size) {
-        const GetSizeResponse response =
-            send_mutually_recursive_message(YaPlugView::GetSize{
-                .owner_instance_id = owner_instance_id(), .size = *size});
+        const GetSizeResponse response = send_mutually_recursive_message(
+            YaPlugView::GetSize{.owner_instance_id = owner_instance_id()});
 
-        *size = response.updated_size;
+        *size = response.size;
 
         return response.result;
     } else {

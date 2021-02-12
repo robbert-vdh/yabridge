@@ -210,12 +210,12 @@ class YaPlugView : public Steinberg::IPlugView {
      */
     struct GetSizeResponse {
         UniversalTResult result;
-        Steinberg::ViewRect updated_size;
+        Steinberg::ViewRect size;
 
         template <typename S>
         void serialize(S& s) {
             s.object(result);
-            s.object(updated_size);
+            s.object(size);
         }
     };
 
@@ -227,12 +227,9 @@ class YaPlugView : public Steinberg::IPlugView {
 
         native_size_t owner_instance_id;
 
-        Steinberg::ViewRect size;
-
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
-            s.object(size);
         }
     };
 
