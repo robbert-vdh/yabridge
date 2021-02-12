@@ -30,9 +30,6 @@
  * part of `Vst3PluginProxy`. Event though `IComponent` inherits from
  * `IPlguinBase`, we'll implement that separately in `YaPluginBase` because
  * `IEditController` also inherits from `IPluginBase`.
- *
- * TODO: Remove the original fields for out parameters in the structs. They're
- *       really supposed to be empty.
  */
 class YaComponent : public Steinberg::Vst::IComponent {
    public:
@@ -147,7 +144,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
 
     /**
      * The response code and returned bus information for a call to
-     * `IComponent::getBusInfo(type, dir, index, bus <out>)`.
+     * `IComponent::getBusInfo(type, dir, index, &bus)`.
      */
     struct GetBusInfoResponse {
         UniversalTResult result;
@@ -162,7 +159,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
 
     /**
      * Message to pass through a call to `IComponent::getBusInfo(type, dir,
-     * index, bus <out>)` to the Wine plugin host.
+     * index, &bus)` to the Wine plugin host.
      */
     struct GetBusInfo {
         using Response = GetBusInfoResponse;
@@ -189,24 +186,22 @@ class YaComponent : public Steinberg::Vst::IComponent {
 
     /**
      * The response code and returned routing information for a call to
-     * `IComponent::getRoutingInfo(in_info, out_info <out>)`.
+     * `IComponent::getRoutingInfo(in_info, &out_info)`.
      */
     struct GetRoutingInfoResponse {
         UniversalTResult result;
-        Steinberg::Vst::RoutingInfo updated_in_info;
-        Steinberg::Vst::RoutingInfo updated_out_info;
+        Steinberg::Vst::RoutingInfo out_info;
 
         template <typename S>
         void serialize(S& s) {
             s.object(result);
-            s.object(updated_in_info);
-            s.object(updated_out_info);
+            s.object(out_info);
         }
     };
 
     /**
      * Message to pass through a call to `IComponent::getRoutingInfo(in_info,
-     * out_info <out>)` to the Wine plugin host.
+     * &out_info)` to the Wine plugin host.
      */
     struct GetRoutingInfo {
         using Response = GetRoutingInfoResponse;
@@ -214,13 +209,11 @@ class YaComponent : public Steinberg::Vst::IComponent {
         native_size_t instance_id;
 
         Steinberg::Vst::RoutingInfo in_info;
-        Steinberg::Vst::RoutingInfo out_info;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
             s.object(in_info);
-            s.object(out_info);
         }
     };
 

@@ -307,13 +307,12 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
 tresult PLUGIN_API Vst3PluginProxyImpl::getRoutingInfo(
     Steinberg::Vst::RoutingInfo& inInfo,
     Steinberg::Vst::RoutingInfo& outInfo /*out*/) {
-    const GetRoutingInfoResponse response = bridge.send_audio_processor_message(
-        YaComponent::GetRoutingInfo{.instance_id = instance_id(),
-                                    .in_info = inInfo,
-                                    .out_info = outInfo});
+    const GetRoutingInfoResponse response =
+        bridge.send_audio_processor_message(YaComponent::GetRoutingInfo{
+            .instance_id = instance_id(), .in_info = inInfo});
 
-    inInfo = response.updated_in_info;
-    outInfo = response.updated_out_info;
+    outInfo = response.out_info;
+
     return response.result;
 }
 

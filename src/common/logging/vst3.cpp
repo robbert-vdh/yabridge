@@ -1086,9 +1086,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
             << request.instance_id
             << ": IComponent::getRoutingInfo(inInfo = <RoutingInfo& for bus "
             << request.in_info.busIndex << " and channel "
-            << request.in_info.channel << ">, outInfo = <RoutingInfo& for bus "
-            << request.out_info.busIndex << " and channel "
-            << request.out_info.channel << ">)";
+            << request.in_info.channel << ">, &outInfo)";
     });
 }
 
@@ -1804,12 +1802,8 @@ void Vst3Logger::log_response(
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            message << ", <RoutingInfo& for bus "
-                    << response.updated_in_info.busIndex << " and channel "
-                    << response.updated_in_info.channel
-                    << ", <RoutingInfo& for bus "
-                    << response.updated_out_info.busIndex << " and channel "
-                    << response.updated_out_info.channel << ">";
+            message << ", <RoutingInfo& for bus " << response.out_info.busIndex
+                    << " and channel " << response.out_info.channel << ">";
         }
     });
 }

@@ -1216,15 +1216,14 @@ size_t Vst3Bridge::register_object_instance(
                     },
                     [&](YaComponent::GetRoutingInfo& request)
                         -> YaComponent::GetRoutingInfo::Response {
+                        Steinberg::Vst::RoutingInfo out_info{};
                         const tresult result =
                             object_instances[request.instance_id]
                                 .component->getRoutingInfo(request.in_info,
-                                                           request.out_info);
+                                                           out_info);
 
                         return YaComponent::GetRoutingInfoResponse{
-                            .result = result,
-                            .updated_in_info = request.in_info,
-                            .updated_out_info = request.out_info};
+                            .result = result, .out_info = std::move(out_info)};
                     },
                     [&](const YaComponent::ActivateBus& request)
                         -> YaComponent::ActivateBus::Response {
