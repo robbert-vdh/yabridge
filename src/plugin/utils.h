@@ -184,8 +184,6 @@ std::string create_logger_prefix(
  *
  * @return The a path to the VST host, if found.
  * @throw std::runtime_error If the Wine VST host could not be found.
- *
- * TODO: Perhaps also move this somewhere else
  */
 boost::filesystem::path find_vst_host(
     const boost::filesystem::path& this_plugin_path,
