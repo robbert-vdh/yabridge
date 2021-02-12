@@ -327,6 +327,10 @@ class YaPlugView : public Steinberg::IPlugView {
     /**
      * The result and updated `ViewRect` from a call to
      * `IPlugView::checkSizeConstraint(rect)`.
+     *
+     * In this case the plugin is allowed to update the view rect with something
+     * that the plugin does support. I don't know if any hosts that use this
+     * information though.
      */
     struct CheckSizeConstraintResponse {
         UniversalTResult result;
