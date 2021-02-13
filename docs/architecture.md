@@ -1,11 +1,10 @@
 # Architecture
 
-- [Architecture](#architecture)
-  - [General architecture](#general-architecture)
-    - [Communication](#communication)
-    - [Editor embedding](#editor-embedding)
-  - [VST2 plugins](#vst2-plugins)
-  - [VST3 plugins](#vst3-plugins)
+- [General architecture](#general-architecture)
+  - [Communication](#communication)
+  - [Editor embedding](#editor-embedding)
+- [VST2 plugins](#vst2-plugins)
+- [VST3 plugins](#vst3-plugins)
 
 ## General architecture
 

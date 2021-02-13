@@ -1,7 +1,7 @@
 # VST3 interfaces
 
 See
-[docs/architecture.md#vst3-plugins](https://github.com/robbert-vdh/yabridge/blob/master/docs/architecture.md)
+[docs/architecture.md](https://github.com/robbert-vdh/yabridge/blob/master/docs/architecture.md)
 for more information on how the serialization works.
 
 We currently support all official VST 3.7.1 interfaces.
