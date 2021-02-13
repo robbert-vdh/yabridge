@@ -82,7 +82,7 @@ class RunLoopTasks : public Steinberg::Linux::IEventHandler {
      *
      * @relates Vst3PlugViewProxyImpl::run_gui_task
      *
-     * @see RunLoopTasks::schedule_task
+     * @see RunLoopTasks::schedule
      */
     std::vector<fu2::unique_function<void()>> tasks;
     std::mutex tasks_mutex;

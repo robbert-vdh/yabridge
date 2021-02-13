@@ -102,6 +102,9 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   outside of a temporary directory. This could otherwise cause a very unpleasant
   surprise if someone was passing random arguments to it when for instancing
   trying to write a wrapper around `yabridge-host.exe`.
+- The architecture document has been updated for the VST3 support and it has
+  been rewritten to talk more about the more interesting bits of yabridge's
+  implementation.
 
 ### Fixed
 

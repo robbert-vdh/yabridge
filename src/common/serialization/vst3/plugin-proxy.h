@@ -48,8 +48,8 @@
 /**
  * An abstract class that optionally implements all VST3 interfaces a plugin
  * object could implement. A more in depth explanation can be found in
- * `docs/vst3.md`, but the way this works is that we begin with an `FUnknown`
- * pointer from the Windows VST3 plugin obtained by a call to
+ * `docs/architecture.md`, but the way this works is that we begin with an
+ * `FUnknown` pointer from the Windows VST3 plugin obtained by a call to
  * `IPluginFactory::createInstance()` (with an interface decided by the host).
  * We then go through all the plugin interfaces and check whether that object
  * supports them one by one. For each supported interface we remember that the
