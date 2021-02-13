@@ -154,7 +154,10 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
                 return "effSetSpeakerArrangement";
                 break;
             case effGetSpeakerArrangement:
-                return "effGetSpeakerArrangement ";
+                return "effGetSpeakerArrangement";
+                break;
+            case effGetTailSize:
+                return "effGetTailSize";
                 break;
             default:
                 return std::nullopt;
@@ -521,9 +524,8 @@ bool Vst2Logger::should_filter_event(bool is_dispatch, int opcode) const {
 
     // Filter out log messages related to these events by default since they are
     // called tens of times per second
-    // TODO: Figure out what opcode 52 is
-    if ((is_dispatch &&
-         (opcode == effEditIdle || opcode == 52 || opcode == effIdle)) ||
+    if ((is_dispatch && (opcode == effEditIdle || opcode == effGetTailSize ||
+                         opcode == effIdle)) ||
         (!is_dispatch && (opcode == audioMasterGetTime ||
                           opcode == audioMasterGetCurrentProcessLevel))) {
         return true;

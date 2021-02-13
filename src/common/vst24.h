@@ -48,6 +48,12 @@
 [[maybe_unused]] constexpr int effGetSpeakerArrangement = 69;
 
 /**
+ * Used by hosts to query the length of reverb tails (equivalent to
+ * `IAudioProcessor::getTailSamples`). Found on the same list as above.
+ */
+[[maybe_unused]] constexpr int effGetTailSize = 52;
+
+/**
  * The struct that's being passed through the data parameter during the
  * `effGetInputProperties` and `effGetOutputProperties` opcodes. Reverse
  * engineered by attaching gdb to Bitwig. The actual fields are missing but for
