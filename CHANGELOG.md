@@ -98,6 +98,10 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   and up. The build process now detect which version of Wine is used to build
   with, and it then applies the change conditionally to be able to support
   building with both older and newer versions of Wine.
+- `yabridge-host.exe` will no longer remove the socket directories if they're
+  outside of a temporary directory. This could otherwise cause a very unpleasant
+  surprise if someone was passing random arguments to it when for instancing
+  trying to write a wrapper around `yabridge-host.exe`.
 
 ### Fixed
 

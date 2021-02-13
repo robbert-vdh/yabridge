@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <mutex>
 
 #include <bitsery/adapter/buffer.h>
@@ -32,6 +33,7 @@
 #include <boost/filesystem.hpp>
 
 #include "../logging/common.h"
+#include "../utils.h"
 
 template <typename B>
 using OutputAdapter = bitsery::OutputBufferAdapter<B>;
@@ -217,12 +219,22 @@ class Sockets {
      */
     virtual ~Sockets() {
         try {
-            // TODO: Check whether `base_dir` is actually in `/tmp` or
-            //       `$XDG_RUNTIME_DIR`, don't do anything if it's not. Someone
-            //       has deleted their entire home directory while messing with
-            //       `yabridge-host.exe`'s arguments, and that sounds like
-            //       something that would be easy to prevent.
-            boost::filesystem::remove_all(base_dir);
+            // NOTE: Because someone has wiped their home directory in the past
+            //       by manually modifying the socket base directory argument
+            //       for `yabridge-host.exe` to point to their home directory
+            //       there's now a safeguard against that very thing. Hopefully
+            //       this should never be needed, but if it is, then I'm glad
+            //       we'll have it!
+            const boost::filesystem::path temp_dir = get_temporary_directory();
+            if (base_dir.string().starts_with(temp_dir.string())) {
+                boost::filesystem::remove_all(base_dir);
+            } else {
+                std::cerr << std::endl;
+                std::cerr << "WARNING: Unexpected socket base directory found, "
+                             "not removing '"
+                          << base_dir.string() << "'" << std::endl;
+                std::cerr << std::endl;
+            }
         } catch (const boost::filesystem::filesystem_error&) {
             // There should not be any filesystem errors since only one side
             // removes the files, but if we somehow can't delete the file
