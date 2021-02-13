@@ -41,8 +41,12 @@ constexpr char logging_verbosity_environment_variable[] =
 
 Logger::Logger(std::shared_ptr<std::ostream> stream,
                Verbosity verbosity_level,
-               std::string prefix)
-    : verbosity(verbosity_level), stream(stream), prefix(prefix) {}
+               std::string prefix,
+               bool prefix_timestamp)
+    : verbosity(verbosity_level),
+      stream(stream),
+      prefix(prefix),
+      prefix_timestamp(prefix_timestamp) {}
 
 Logger Logger::create_from_environment(std::string prefix) {
     auto env = boost::this_process::environment();
@@ -92,22 +96,26 @@ Logger Logger::create_wine_stderr() {
     // we want the STDERR redirection from the group host processes to still
     // function here
     return Logger(std::shared_ptr<std::ostream>(&std::cerr, [](auto*) {}),
-                  verbosity_level, "");
+                  verbosity_level, "", false);
 }
 
 void Logger::log(const std::string& message) {
-    const auto current_time = std::chrono::system_clock::now();
-    const std::time_t timestamp =
-        std::chrono::system_clock::to_time_t(current_time);
-
-    // How did C++ manage to get time formatting libraries without a way to
-    // actually get a timestamp in a threadsafe way? `localtime_r` in C++ is not
-    // portable but luckily we only have to support GCC anyway.
-    std::tm tm;
-    localtime_r(&timestamp, &tm);
-
     std::ostringstream formatted_message;
-    formatted_message << std::put_time(&tm, "%T") << " ";
+
+    if (prefix_timestamp) {
+        const auto current_time = std::chrono::system_clock::now();
+        const std::time_t timestamp =
+            std::chrono::system_clock::to_time_t(current_time);
+
+        // How did C++ manage to get time formatting libraries without a way to
+        // actually get a timestamp in a threadsafe way? `localtime_r` in C++ is
+        // not portable but luckily we only have to support GCC anyway.
+        std::tm tm;
+        localtime_r(&timestamp, &tm);
+
+        formatted_message << std::put_time(&tm, "%T") << " ";
+    }
+
     formatted_message << prefix;
     formatted_message << message;
     // Flushing a stringstream doesn't do anything, but we need to put a

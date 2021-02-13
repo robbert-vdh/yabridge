@@ -95,11 +95,18 @@ class Logger {
      *   `Logger::Verbosity` constants above for a description of the verbosity
      *   levels.
      * @param prefix An optional prefix for the logger. Useful for differentiate
-     *   messages coming from the Wine VST host.
+     *   messages coming from the Wine VST host. Should end with a single space
+     *   character.
+     * @param prefix_timestamp Whether the log messages should be prefixed with
+     *   a timestamp. The timestamp is added before `prefix`. This is set to
+     *   `false` in `create_wine_stderr()` because otherwise you would end up
+     *   with a second timestamp in the middle of the message (since all Wine
+     *   output gets relayed through the logger using `async_log_pipe_lines()`).
      */
     Logger(std::shared_ptr<std::ostream> stream,
            Verbosity verbosity_level,
-           std::string prefix = "");
+           std::string prefix = "",
+           bool prefix_timestamp = false);
 
     /**
      * Create a logger instance based on the set environment variables. See the
@@ -114,8 +121,6 @@ class Logger {
      * Create a special logger instance that outputs directly to STDERR without
      * any prefixes. This is used to be able to log filterable messages from the
      * Wine side of things.
-     *
-     * TODO: Don't prefix this with a timestamp
      */
     static Logger create_wine_stderr();
 
@@ -179,8 +184,14 @@ class Logger {
      * or a file stream.
      */
     std::shared_ptr<std::ostream> stream;
+
     /**
      * A prefix that gets prepended before every message.
      */
-    std::string prefix;
+    const std::string prefix;
+
+    /**
+     * Whether the log messages should be prefixed with a time stamp.
+     */
+    const bool prefix_timestamp;
 };
