@@ -112,15 +112,15 @@ class YaBStream : public Steinberg::IBStream,
      */
     std::optional<std::u16string> file_name;
 
-   private:
-    std::vector<uint8_t> buffer;
-    size_t seek_position = 0;
-
     /**
      * The stream's meta data if we've copied from a stream that supports meta
      * data.
      */
     std::optional<YaAttributeList> attributes;
+
+   private:
+    std::vector<uint8_t> buffer;
+    size_t seek_position = 0;
 };
 
 #pragma GCC diagnostic pop

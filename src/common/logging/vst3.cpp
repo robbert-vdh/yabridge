@@ -29,9 +29,18 @@
 std::string format_bstream(const YaBStream& stream) {
     std::ostringstream formatted;
     formatted << "<IBStream* ";
-    if (stream.supports_stream_attributes) {
-        // TODO: Log the keys for the stored values
-        formatted << "with meta data ";
+    if (stream.supports_stream_attributes && stream.attributes) {
+        formatted << "with meta data [";
+        for (bool first = true;
+             const auto& key_type : stream.attributes->keys_and_types()) {
+            if (!first) {
+                formatted << ", ";
+            }
+
+            formatted << key_type;
+            first = false;
+        }
+        formatted << "] ";
     }
     if (stream.file_name) {
         formatted << "for \"" << VST3::StringConvert::convert(*stream.file_name)
