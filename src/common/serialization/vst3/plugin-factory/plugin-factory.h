@@ -20,40 +20,45 @@
 #include <bitsery/traits/string.h>
 #include <pluginterfaces/base/ipluginbase.h>
 
-#include "base.h"
-#include "host-context-proxy.h"
+#include "../base.h"
+#include "../host-context-proxy.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 
 /**
- * Wraps around `IPluginFactory{1,2,3}` for serialization purposes. See
- * `docs/vst3.md` for more information on how this works.
- *
- * TODO: Redo this in the new 'Vst3PluginFactoryProxy' style
+ * Wraps around `IPluginFactory{1,2,3}` for serialization purposes. This is
+ * instantiated as part of `Vst3PluginFactoryProxy`.
  */
-class YaPluginFactory : public Steinberg::IPluginFactory3 {
+class YaPluginFactory3 : public Steinberg::IPluginFactory3 {
    public:
     /**
-     * These are the arguments for constructing a `YaPluginFactoryImpl`.
+     * These are the arguments for creating a `YaPluginFactory3`. All class
+     * infos in all available formats are read from the plugin so the host can
+     * query them.
      */
     struct ConstructArgs {
         ConstructArgs();
 
         /**
-         * Create a copy of an existing plugin factory. Depending on the
-         * supported interface function more or less of this struct will be left
-         * empty, and `known_iids` will be set accordingly.
+         * Check whether an existing implementation implements
+         * `IPluginFactory1`, `IPluginFactory2`, and ``IPluginFactory3`` and
+         * read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::IPluginFactory> factory);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
 
         /**
-         * Whether `factory` supported `IPluginFactory2`.
+         * Whether the object supported `IPluginFactory`.
+         */
+        bool supports_plugin_factory = false;
+
+        /**
+         * Whether the object supported `IPluginFactory2`.
          */
         bool supports_plugin_factory_2 = false;
 
         /**
-         * Whether `factory` supported `IPluginFactory3`.
+         * Whether the object supported `IPluginFactory3`.
          */
         bool supports_plugin_factory_3 = false;
 
@@ -93,6 +98,7 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
 
         template <typename S>
         void serialize(S& s) {
+            s.value1b(supports_plugin_factory);
             s.value1b(supports_plugin_factory_2);
             s.value1b(supports_plugin_factory_3);
             s.ext(factory_info, bitsery::ext::StdOptional{});
@@ -113,30 +119,26 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     };
 
     /**
-     * Message to request the `IPluginFactory{,2,3}`'s information from the Wine
-     * plugin host.
-     */
-    struct Construct {
-        using Response = ConstructArgs;
-
-        template <typename S>
-        void serialize(S&) {}
-    };
-
-    /**
      * Instantiate this instance with arguments read from the Windows VST3
      * plugin's plugin factory.
      */
-    YaPluginFactory(const ConstructArgs&& args);
+    YaPluginFactory3(const ConstructArgs&& args);
 
-    /**
-     * We do not need to implement the destructor in `YaPluginFactoryImpl`,
-     * since when the sockets are closed, RAII will clean up the Windows VST3
-     * module we loaded along with its factory for us.
-     */
-    virtual ~YaPluginFactory();
+    inline bool supports_plugin_factory() const {
+        return arguments.supports_plugin_factory;
+    }
 
-    DECLARE_FUNKNOWN_METHODS
+    inline bool supports_plugin_factory_2() const {
+        return arguments.supports_plugin_factory_2;
+    }
+
+    inline bool supports_plugin_factory_3() const {
+        return arguments.supports_plugin_factory_3;
+    }
+
+    // All of these functiosn returning class information are fetched once on
+    // the Wine side since they'll be static so we can just copy over the
+    // responses
 
     // From `IPluginFactory`
     tresult PLUGIN_API getFactoryInfo(Steinberg::PFactoryInfo* info) override;
@@ -144,7 +146,8 @@ class YaPluginFactory : public Steinberg::IPluginFactory3 {
     tresult PLUGIN_API getClassInfo(Steinberg::int32 index,
                                     Steinberg::PClassInfo* info) override;
     /**
-     * See the implementation in `YaPluginFactoryImpl` for how this is handled.
+     * See the implementation in `Vst3PluginFactoryProxyImpl` for how this is
+     * handled. We'll create new managed `Vst3PluginProxy` objects from here.
      */
     virtual tresult PLUGIN_API createInstance(Steinberg::FIDString cid,
                                               Steinberg::FIDString _iid,

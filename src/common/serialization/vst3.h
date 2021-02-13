@@ -30,7 +30,7 @@
 #include "vst3/host-context-proxy.h"
 #include "vst3/plug-frame-proxy.h"
 #include "vst3/plug-view-proxy.h"
-#include "vst3/plugin-factory.h"
+#include "vst3/plugin-factory-proxy.h"
 #include "vst3/plugin-proxy.h"
 
 // Event handling for our VST3 plugins works slightly different from how we
@@ -65,7 +65,8 @@ struct WantsConfiguration {
  * request of type `ControlRequest(T)` should send back a `T::Response`.
  */
 using ControlRequest =
-    std::variant<Vst3PlugViewProxy::Destruct,
+    std::variant<Vst3PluginFactoryProxy::Construct,
+                 Vst3PlugViewProxy::Destruct,
                  Vst3PluginProxy::Construct,
                  Vst3PluginProxy::Destruct,
                  Vst3PluginProxy::SetState,
@@ -119,8 +120,7 @@ using ControlRequest =
                  YaPlugViewContentScaleSupport::SetContentScaleFactor,
                  YaPluginBase::Initialize,
                  YaPluginBase::Terminate,
-                 YaPluginFactory::Construct,
-                 YaPluginFactory::SetHostContext,
+                 YaPluginFactory3::SetHostContext,
                  YaProcessContextRequirements::GetProcessContextRequirements,
                  YaProgramListData::ProgramDataSupported,
                  YaProgramListData::GetProgramData,

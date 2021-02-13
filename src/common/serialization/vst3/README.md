@@ -10,7 +10,8 @@ VST3 plugin interfaces are implemented as follows:
 
 | yabridge class                      | Included in         | Interfaces                                             |
 | ----------------------------------- | ------------------- | ------------------------------------------------------ |
-| `YaPluginFactory`                   |                     | `IPluginFactory`, `IPluginFactory2`, `IPluginFactory3` |
+| `Vst3PluginFactoryProxy`            |                     | All of the below:                                      |
+| `YaPluginFactory3`                  |                     | `IPluginFactory`, `IPluginFactory2`, `IPluginFactory3` |
 | `Vst3ConnectionPointProxy`          |                     | `IConnectionPoint` through `YaConnectionPoint`         |
 | `Vst3PlugViewProxy`                 |                     | All of the below:                                      |
 | `YaParameterFinder`                 | `Vst3PlugViewProxy` | `IParameterFinder`                                     |

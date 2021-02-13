@@ -14,21 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "plugin-factory.h"
+#include "plugin-factory-proxy.h"
 
 #include <pluginterfaces/vst/ivstcomponent.h>
 
 #include "../vst3.h"
 #include "plugin-proxy.h"
 
-YaPluginFactoryImpl::YaPluginFactoryImpl(Vst3PluginBridge& bridge,
-                                         YaPluginFactory::ConstructArgs&& args)
-    : YaPluginFactory(std::move(args)), bridge(bridge) {}
+Vst3PluginFactoryProxyImpl::Vst3PluginFactoryProxyImpl(
+    Vst3PluginBridge& bridge,
+    Vst3PluginFactoryProxy::ConstructArgs&& args)
+    : Vst3PluginFactoryProxy(std::move(args)), bridge(bridge) {}
 
 tresult PLUGIN_API
-YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
-                                    Steinberg::FIDString _iid,
-                                    void** obj) {
+Vst3PluginFactoryProxyImpl::queryInterface(const Steinberg::TUID _iid,
+                                           void** obj) {
+    const tresult result = Vst3PluginFactoryProxy::queryInterface(_iid, obj);
+    bridge.logger.log_query_interface("In IPluginFactory::queryInterface()",
+                                      result, Steinberg::FUID::fromTUID(_iid));
+
+    return result;
+}
+
+tresult PLUGIN_API
+Vst3PluginFactoryProxyImpl::createInstance(Steinberg::FIDString cid,
+                                           Steinberg::FIDString _iid,
+                                           void** obj) {
     // Class IDs may be padded with null bytes
     constexpr size_t uid_size = sizeof(Steinberg::TUID);
     if (!cid || !_iid || !obj || strnlen(_iid, uid_size) < uid_size) {
@@ -94,7 +105,7 @@ YaPluginFactoryImpl::createInstance(Steinberg::FIDString cid,
 }
 
 tresult PLUGIN_API
-YaPluginFactoryImpl::setHostContext(Steinberg::FUnknown* context) {
+Vst3PluginFactoryProxyImpl::setHostContext(Steinberg::FUnknown* context) {
     if (context) {
         // We will create a proxy object that that supports all the same
         // interfaces as `context`, and then we'll store `context` in this
@@ -107,7 +118,7 @@ YaPluginFactoryImpl::setHostContext(Steinberg::FUnknown* context) {
         host_application = host_context;
         plug_interface_support = host_context;
 
-        return bridge.send_message(YaPluginFactory::SetHostContext{
+        return bridge.send_message(YaPluginFactory3::SetHostContext{
             .host_context_args = Vst3HostContextProxy::ConstructArgs(
                 host_context, std::nullopt)});
     } else {

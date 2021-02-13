@@ -61,6 +61,8 @@ class Vst3Logger {
     // `log_request()` call returned `true`. This way we can filter out the
     // log message for the response together with the request.
 
+    bool log_request(bool is_host_vst,
+                     const Vst3PluginFactoryProxy::Construct&);
     bool log_request(bool is_host_vst, const Vst3PlugViewProxy::Destruct&);
     bool log_request(bool is_host_vst, const Vst3PluginProxy::Construct&);
     bool log_request(bool is_host_vst, const Vst3PluginProxy::Destruct&);
@@ -149,8 +151,7 @@ class Vst3Logger {
         const YaPlugViewContentScaleSupport::SetContentScaleFactor&);
     bool log_request(bool is_host_vst, const YaPluginBase::Initialize&);
     bool log_request(bool is_host_vst, const YaPluginBase::Terminate&);
-    bool log_request(bool is_host_vst, const YaPluginFactory::Construct&);
-    bool log_request(bool is_host_vst, const YaPluginFactory::SetHostContext&);
+    bool log_request(bool is_host_vst, const YaPluginFactory3::SetHostContext&);
     bool log_request(
         bool is_host_vst,
         const YaProcessContextRequirements::GetProcessContextRequirements&);
@@ -241,6 +242,8 @@ class Vst3Logger {
                      const YaUnitHandler2::NotifyUnitByBusChange&);
 
     void log_response(bool is_host_vst, const Ack&);
+    void log_response(bool is_host_vst,
+                      const Vst3PluginFactoryProxy::ConstructArgs&);
     void log_response(
         bool is_host_vst,
         const std::variant<Vst3PluginProxy::ConstructArgs, UniversalTResult>&);
@@ -280,7 +283,6 @@ class Vst3Logger {
     void log_response(bool is_host_vst, const YaPlugView::GetSizeResponse&);
     void log_response(bool is_host_vst,
                       const YaPlugView::CheckSizeConstraintResponse&);
-    void log_response(bool is_host_vst, const YaPluginFactory::ConstructArgs&);
     void log_response(bool is_host_vst, const Configuration&);
     void log_response(bool is_host_vst,
                       const YaProgramListData::GetProgramDataResponse&);

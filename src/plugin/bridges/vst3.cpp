@@ -18,7 +18,6 @@
 
 #include "src/common/serialization/vst3.h"
 #include "vst3-impls/context-menu-target.h"
-#include "vst3-impls/plugin-factory.h"
 #include "vst3-impls/plugin-proxy.h"
 
 using namespace std::literals::string_literals;
@@ -368,12 +367,12 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
         // will request after loading the module. Host callback handlers should
         // have started before this since the Wine plugin host will request a
         // copy of the configuration during its initialization.
-        YaPluginFactory::ConstructArgs factory_args =
+        Vst3PluginFactoryProxy::ConstructArgs factory_args =
             sockets.host_vst_control.send_message(
-                YaPluginFactory::Construct{},
+                Vst3PluginFactoryProxy::Construct{},
                 std::pair<Vst3Logger&, bool>(logger, true));
         plugin_factory = Steinberg::owned(
-            new YaPluginFactoryImpl(*this, std::move(factory_args)));
+            new Vst3PluginFactoryProxyImpl(*this, std::move(factory_args)));
     }
 
     // Because we're returning a raw pointer, we have to increase the reference

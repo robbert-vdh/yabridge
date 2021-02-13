@@ -16,16 +16,23 @@
 
 #pragma once
 
-#include "../../../common/serialization/vst3/plugin-factory.h"
+#include "../../../common/serialization/vst3/plugin-factory-proxy.h"
 
-// We need an `IPtr<YaPluginFactoryImpl>` in `Vst3PluginBridge`, so we need to
-// declare this slightly differently to avoid circular includes.
+// We need an `IPtr<Vst3PluginFactoryProxyImpl>` in `Vst3PluginBridge`, so we
+// need to declare this slightly differently to avoid circular includes.
 class Vst3PluginBridge;
 
-class YaPluginFactoryImpl : public YaPluginFactory {
+class Vst3PluginFactoryProxyImpl : public Vst3PluginFactoryProxy {
    public:
-    YaPluginFactoryImpl(Vst3PluginBridge& bridge,
-                        YaPluginFactory::ConstructArgs&& args);
+    Vst3PluginFactoryProxyImpl(Vst3PluginBridge& bridge,
+                               Vst3PluginFactoryProxy::ConstructArgs&& args);
+
+    /**
+     * We'll override the query interface to log queries for interfaces we do
+     * not (yet) support.
+     */
+    tresult PLUGIN_API queryInterface(const Steinberg::TUID _iid,
+                                      void** obj) override;
 
     tresult PLUGIN_API createInstance(Steinberg::FIDString cid,
                                       Steinberg::FIDString _iid,

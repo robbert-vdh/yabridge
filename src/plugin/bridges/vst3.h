@@ -18,11 +18,10 @@
 
 #include <thread>
 
-#include "../..//common/serialization/vst3/plugin-factory.h"
 #include "../../common/communication/vst3.h"
 #include "../../common/logging/vst3.h"
 #include "common.h"
-#include "vst3-impls/plugin-factory.h"
+#include "vst3-impls/plugin-factory-proxy.h"
 
 // Forward declarations
 class Vst3PluginProxyImpl;
@@ -143,7 +142,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      *
      * @related get_plugin_factory
      */
-    Steinberg::IPtr<YaPluginFactoryImpl> plugin_factory = nullptr;
+    Steinberg::IPtr<Vst3PluginFactoryProxyImpl> plugin_factory = nullptr;
 
    private:
     /**

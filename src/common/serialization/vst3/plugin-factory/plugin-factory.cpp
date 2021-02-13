@@ -21,10 +21,16 @@
 
 #include <public.sdk/source/vst/utility/stringconvert.h>
 
-YaPluginFactory::ConstructArgs::ConstructArgs() {}
+YaPluginFactory3::ConstructArgs::ConstructArgs() {}
 
-YaPluginFactory::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::IPluginFactory> factory) {
+YaPluginFactory3::ConstructArgs::ConstructArgs(
+    Steinberg::IPtr<Steinberg::FUnknown> object) {
+    Steinberg::FUnknownPtr<Steinberg::IPluginFactory> factory(object);
+    if (!factory) {
+        return;
+    }
+
+    supports_plugin_factory = true;
     // `IPluginFactory::getFactoryInfo`
     if (Steinberg::PFactoryInfo info;
         factory->getFactoryInfo(&info) == Steinberg::kResultOk) {
@@ -93,40 +99,11 @@ YaPluginFactory::ConstructArgs::ConstructArgs(
     }
 }
 
-YaPluginFactory::YaPluginFactory(const ConstructArgs&& args)
-    : arguments(std::move(args)){FUNKNOWN_CTOR}
-
-      // clang-format just doesn't understand these macros, I guess
-      YaPluginFactory::~YaPluginFactory() {
-    FUNKNOWN_DTOR
-}
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_REFCOUNT(YaPluginFactory)
-#pragma GCC diagnostic pop
-
-tresult PLUGIN_API YaPluginFactory::queryInterface(Steinberg::FIDString _iid,
-                                                   void** obj) {
-    QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
-                    Steinberg::IPluginFactory)
-    QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory::iid,
-                    Steinberg::IPluginFactory)
-    if (arguments.supports_plugin_factory_2) {
-        QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory2::iid,
-                        Steinberg::IPluginFactory2)
-    }
-    if (arguments.supports_plugin_factory_3) {
-        QUERY_INTERFACE(_iid, obj, Steinberg::IPluginFactory3::iid,
-                        Steinberg::IPluginFactory3)
-    }
-
-    *obj = nullptr;
-    return Steinberg::kNoInterface;
-}
+YaPluginFactory3::YaPluginFactory3(const ConstructArgs&& args)
+    : arguments(std::move(args)) {}
 
 tresult PLUGIN_API
-YaPluginFactory::getFactoryInfo(Steinberg::PFactoryInfo* info) {
+YaPluginFactory3::getFactoryInfo(Steinberg::PFactoryInfo* info) {
     if (info && arguments.factory_info) {
         *info = *arguments.factory_info;
         return Steinberg::kResultOk;
@@ -135,18 +112,18 @@ YaPluginFactory::getFactoryInfo(Steinberg::PFactoryInfo* info) {
     }
 }
 
-int32 PLUGIN_API YaPluginFactory::countClasses() {
+int32 PLUGIN_API YaPluginFactory3::countClasses() {
     return arguments.num_classes;
 }
 
-tresult PLUGIN_API YaPluginFactory::getClassInfo(Steinberg::int32 index,
-                                                 Steinberg::PClassInfo* info) {
+tresult PLUGIN_API YaPluginFactory3::getClassInfo(Steinberg::int32 index,
+                                                  Steinberg::PClassInfo* info) {
     if (index >= static_cast<int32>(arguments.class_infos_1.size())) {
         return Steinberg::kInvalidArgument;
     }
 
     // We will have already converted these class IDs to the native
-    // representation in `YaPluginFactory::ConstructArgs`
+    // representation in `YaPluginFactory3::ConstructArgs`
     if (arguments.class_infos_1[index]) {
         *info = *arguments.class_infos_1[index];
         return Steinberg::kResultOk;
@@ -156,13 +133,13 @@ tresult PLUGIN_API YaPluginFactory::getClassInfo(Steinberg::int32 index,
 }
 
 tresult PLUGIN_API
-YaPluginFactory::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
+YaPluginFactory3::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
     if (index >= static_cast<int32>(arguments.class_infos_2.size())) {
         return Steinberg::kInvalidArgument;
     }
 
     // We will have already converted these class IDs to the native
-    // representation in `YaPluginFactory::ConstructArgs`
+    // representation in `YaPluginFactory3::ConstructArgs`
     if (arguments.class_infos_2[index]) {
         *info = *arguments.class_infos_2[index];
         return Steinberg::kResultOk;
@@ -172,14 +149,14 @@ YaPluginFactory::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
 }
 
 tresult PLUGIN_API
-YaPluginFactory::getClassInfoUnicode(int32 index,
-                                     Steinberg::PClassInfoW* info) {
+YaPluginFactory3::getClassInfoUnicode(int32 index,
+                                      Steinberg::PClassInfoW* info) {
     if (index >= static_cast<int32>(arguments.class_infos_unicode.size())) {
         return Steinberg::kInvalidArgument;
     }
 
     // We will have already converted these class IDs to the native
-    // representation in `YaPluginFactory::ConstructArgs`
+    // representation in `YaPluginFactory3::ConstructArgs`
     if (arguments.class_infos_unicode[index]) {
         *info = *arguments.class_infos_unicode[index];
         return Steinberg::kResultOk;

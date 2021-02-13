@@ -113,6 +113,11 @@ void Vst3Bridge::run() {
     sockets.host_vst_control.receive_messages(
         std::nullopt,
         overload{
+            [&](const Vst3PluginFactoryProxy::Construct&)
+                -> Vst3PluginFactoryProxy::Construct::Response {
+                return Vst3PluginFactoryProxy::ConstructArgs(
+                    module->getFactory().get());
+            },
             [&](const Vst3PlugViewProxy::Destruct& request)
                 -> Vst3PlugViewProxy::Destruct::Response {
                 main_context
@@ -927,13 +932,8 @@ void Vst3Bridge::run() {
                 return object_instances[request.instance_id]
                     .unit_data->setUnitData(request.unit_id, &request.data);
             },
-            [&](const YaPluginFactory::Construct&)
-                -> YaPluginFactory::Construct::Response {
-                return YaPluginFactory::ConstructArgs(
-                    module->getFactory().get());
-            },
-            [&](YaPluginFactory::SetHostContext& request)
-                -> YaPluginFactory::SetHostContext::Response {
+            [&](YaPluginFactory3::SetHostContext& request)
+                -> YaPluginFactory3::SetHostContext::Response {
                 plugin_factory_host_context =
                     Steinberg::owned(new Vst3HostContextProxyImpl(
                         *this, std::move(request.host_context_args)));

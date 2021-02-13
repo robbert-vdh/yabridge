@@ -67,6 +67,12 @@ void Vst3Logger::log_query_interface(
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
+                             const Vst3PluginFactoryProxy::Construct&) {
+    return log_request_base(
+        is_host_vst, [&](auto& message) { message << "GetPluginFactory()"; });
+}
+
+bool Vst3Logger::log_request(bool is_host_vst,
                              const Vst3PlugViewProxy::Destruct& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         // We don't know what class this instance was originally instantiated
@@ -690,13 +696,7 @@ bool Vst3Logger::log_request(bool is_host_vst,
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaPluginFactory::Construct&) {
-    return log_request_base(
-        is_host_vst, [&](auto& message) { message << "GetPluginFactory()"; });
-}
-
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaPluginFactory::SetHostContext&) {
+                             const YaPluginFactory3::SetHostContext&) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << "IPluginFactory3::setHostContext(context = <FUnknown*>)";
     });
@@ -1381,6 +1381,25 @@ void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
     log_response_base(is_host_vst, [&](auto& message) { message << "ACK"; });
 }
 
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const Vst3PluginFactoryProxy::ConstructArgs& args) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << "<";
+        if (args.plugin_factory_args.supports_plugin_factory_3) {
+            message << "IPluginFactory3*";
+        } else if (args.plugin_factory_args.supports_plugin_factory_2) {
+            message << "IPluginFactory2*";
+        } else if (args.plugin_factory_args.supports_plugin_factory) {
+            message << "IPluginFactory*";
+        } else {
+            message << "FUnknown*";
+        }
+        message << " with " << args.plugin_factory_args.num_classes
+                << " registered classes>";
+    });
+}
+
 void Vst3Logger::log_response(bool is_host_vst,
                               const std::variant<Vst3PluginProxy::ConstructArgs,
                                                  UniversalTResult>& result) {
@@ -1588,14 +1607,6 @@ void Vst3Logger::log_response(
                     << ", right = " << response.updated_rect.right
                     << ", bottom = " << response.updated_rect.bottom << ">";
         }
-    });
-}
-
-void Vst3Logger::log_response(bool is_host_vst,
-                              const YaPluginFactory::ConstructArgs& args) {
-    log_response_base(is_host_vst, [&](auto& message) {
-        message << "<IPluginFactory* with " << args.num_classes
-                << " registered classes>";
     });
 }
 
