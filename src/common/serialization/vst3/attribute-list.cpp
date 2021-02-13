@@ -89,6 +89,24 @@ IMPLEMENT_FUNKNOWN_METHODS(YaAttributeList,
                            Steinberg::Vst::IAttributeList::iid)
 #pragma GCC diagnostic pop
 
+std::vector<std::string> YaAttributeList::keys_and_types() const {
+    std::vector<std::string> result{};
+    for (const auto& [key, value] : attrs_int) {
+        result.push_back("\"" + key + "\" (int)");
+    }
+    for (const auto& [key, value] : attrs_float) {
+        result.push_back("\"" + key + "\" (float)");
+    }
+    for (const auto& [key, value] : attrs_string) {
+        result.push_back("\"" + key + "\" (string)");
+    }
+    for (const auto& [key, value] : attrs_binary) {
+        result.push_back("\"" + key + "\" (binary)");
+    }
+
+    return result;
+}
+
 tresult YaAttributeList::write_back(
     Steinberg::Vst::IAttributeList* stream) const {
     if (!stream) {

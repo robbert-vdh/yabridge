@@ -43,6 +43,12 @@ class YaAttributeList : public Steinberg::Vst::IAttributeList {
     DECLARE_FUNKNOWN_METHODS
 
     /**
+     * Get all of the keys stored in this attribute list along with their type
+     * in the `<key> (<type>)` format, used in the log messages.
+     */
+    std::vector<std::string> keys_and_types() const;
+
+    /**
      * Write the attribute list a host provided `IAttributeList`. This is used
      * in `YaBStream::write_back` to write any preset meta data back to the host
      * for hosts that support it.

@@ -382,10 +382,19 @@ bool Vst3Logger::log_request(
     bool is_host_vst,
     const YaInfoListener::SetChannelContextInfos& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
-        // TODO: Log the keys for the values provided by the host
         message << request.instance_id
                 << ": IInfoListener::setChannelContextInfos(list = "
-                   "<IAttributeList*>)";
+                   "<IAttributeList* containing [";
+        for (bool first = true;
+             const auto& key_type : request.list.keys_and_types()) {
+            if (!first) {
+                message << ", ";
+            }
+
+            message << key_type;
+            first = false;
+        }
+        message << "]>)";
     });
 }
 
