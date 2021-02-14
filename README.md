@@ -548,6 +548,12 @@ include:
   section for instructions on how to set this up. This is not necessary for VST3
   plugins, as multiple instances of those plugins will always be hosted in a
   single process by design.
+- Some hosts, particularly _Ardour_, _REAPER_, _Qtractor_, will by default not
+  unload VST3 modules after you close the last plugin. This means that the
+  associated `yabridge-host.exe` process will keep running until you close the
+  project. For REAPER there's an option called
+  `Allow complete unload of VST plug-ins` in the `VST` tab of the settings
+  dialog to disable this behaviour.
 - **Drag-and-drop** from applications running under Wine to X11 does not yet
   work, so you won't be able to drag samples and MIDI files from a plugin to the
   host. At least, not directly. Because Windows applications have to create
