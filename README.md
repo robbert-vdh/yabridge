@@ -11,9 +11,6 @@ for VST2 plugins and quick startup times. Its modern concurrent architecture and
 focus on transparency allows yabridge to be both fast and highly compatible,
 while also staying easy to debug and maintain.
 
-_VST3 support is currently experimental and only available on the master branch. Yabridge 3.0 will ship with full VST 3.7.1 support._
-_See [this document](https://github.com/robbert-vdh/yabridge/blob/master/src/common/serialization/vst3/README.md) for all currently implemented interfaces._
-
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
 ### Table of contents
@@ -106,17 +103,17 @@ search `PATH`, you may have to replace `yabridgectl` in any of the examples
 below with `~/.local/share/yabridge/yabridgectl`.
 
 Next, you'll want to tell yabridgectl where it can find your VST2 and VST3
-plugins. **Note that VST3 support is not yet available in yabridge 2.x.** For
-this you can use yabridgectl's `add`, `rm` and `list` commands. You can also use
-`yabridgectl status` to get an overview of the current settings and the
-installation status of all of your plugins. To add the most common VST2 plugin
-directory, use
+plugins. For this you can use yabridgectl's `add`, `rm` and `list` commands. You
+can also use `yabridgectl status` to get an overview of the current settings and
+the installation status of all of your plugins. To add the most common VST2
+plugin directory, use
 `yabridgectl add "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"`. The
-directory may be capitalized as `VSTPlugins` on your system, and some plugins
-may install themselves to a similar directory directly inside of Program Files.
-VST3 plugins under Windows are always installed to the same directory, and you
-can use `yabridgectl add "$HOME/.wine/drive_c/Program Files/Common Files/VST3"`
-to add that one.
+directory may be capitalized as `VSTPlugins`
+on your system, and some plugins may also install themselves to a similar
+directory directly inside of Program Files. VST3 plugins under Windows are
+always installed to the same directory, and you can use
+`yabridgectl add "$HOME/.wine/drive_c/Program Files/Common Files/VST3"` to add
+that one.
 
 Finally, you can run `yabridgectl sync` to finish setting up yabridge for all of
 your plugins. For VST2 plugins this will create `.so` files alongside the
@@ -139,7 +136,8 @@ yabridge for a VST2 plugin located at
 `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.dll`,
 then you'll have to copy `~/.local/share/yabridge/libyabridge-vst2.so` to
 `~/.wine/drive_c/Program Files/Steinberg/VstPlugins/plugin.so`. This process has
-to be repeated whenever you download a new version of yabridge.
+to be repeated for all of your installed plugins whenever you download a new
+version of yabridge.
 
 Doing the same thing for VST3 plugins involves creating a [merged VST3
 bundle](https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles)
@@ -148,16 +146,17 @@ yabridgectl is not supported since the process is very error prone.
 
 ### DAW setup
 
-After first setting up yabridge for VST2 plugins, open your DAW's plugin location
-configuration and tell it to search for VST2 plugins under
-`~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, or whichever directories
-you've added in yabridgectl. That way it will automatically pick up all of your
-Windows VST2 plugins. For VST3 plugins no additional DAW configuration is
-needed, as those plugins will be set up under `~/.vst3/yabridge`.
+After first setting up yabridge for VST2 plugins, open your DAW's plugin
+location configuration and tell it to search for VST2 plugins under
+`~/.wine/drive_c/Program Files/Steinberg/VstPlugins`, or whichever VST2 plugin
+directories you've added in yabridgectl. That way it will automatically pick up
+all of your Windows VST2 plugins. For VST3 plugins no additional DAW
+configuration is needed, as those plugins will be set up under
+`~/.vst3/yabridge`.
 
 If you're using a DAW that does not have an easy way to configure VST2 plugin
-paths, such as Renoise, then you may want to consider using the following to
-just symlink the plugin directories to their default search locations:
+paths, such as Renoise, then you may want to just symlink the plugin directories
+to your DAW's default search location, like this:
 
 ```shell
 ln -s "$HOME/.wine/drive_c/Program Files/Steinberg/" ~/.vst/yabridge-steinberg
@@ -167,14 +166,10 @@ ln -s "$HOME/.wine/drive_c/Program Files/Steinberg/" ~/.vst/yabridge-steinberg
 
 If you have downloaded the prebuilt version of yabridge or if have followed the
 instructions from the [bitbridge](#32-bit-bitbridge) section below, then
-yabridge is also able to load 32-bit VST plugins. The installation procedure for
-32-bit plugins is exactly the same as for 64-bit plugins. Yabridge will
+yabridge is also able to load 32-bit VST2 plugins. The installation procedure
+for 32-bit plugins is exactly the same as for 64-bit plugins. Yabridge will
 automatically detect whether a plugin is 32-bit or 64-bit on startup and it will
 handle it accordingly.
-
-_Because of the way VST3 bundles work, it's at the moment not possible to choose
-between the 32-bit and 64-bit versions of a VST3 plugin if you have both
-installed. We'll add a `yabridge.toml` option for this later._
 
 ### Wine prefixes
 
@@ -188,7 +183,8 @@ the Wine prefix for all instances of yabridge.
 This section is only relevant if you're using the _copy-based_ installation
 method and your yabridge files are located somewhere other than in
 `~/.local/share/yabridge`. You can likely skip this section. If you're using one
-of the AUR packages then you also don't have to worry about any of this.
+of the AUR packages or a distro package then you also won't have to worry about
+any of this.
 
 Yabridge needs to know where it can find `yabridge-host.exe`. By default
 yabridge will search your through search path as well as in
@@ -215,7 +211,7 @@ examples I'll assume you're using the default installation location at
   ```
 
 - If you are using the default **Bash** shell, then you will want to add the
-  following line to `~/.bash_profile` (or `~/.profile` if it does not exist):
+  following line to `~/.bash_profile` (or `~/.profile` if that does not exist):
 
   ```shell
   export PATH="$HOME/.local/share/yabridge:$PATH"
@@ -245,7 +241,7 @@ applications pick up the new changes._
 
 Yabridge can be configured on a per plugin basis to host multiple plugins within
 a single process using [plugin groups](#plugin-groups), and there are also a
-variety of [compatibility options](#compatibility-options) available to improve
+number of [compatibility options](#compatibility-options) available to improve
 compatibility with certain hosts and plugins.
 
 Configuring yabridge is done through a `yabridge.toml` file located in either
@@ -256,7 +252,9 @@ match paths to yabridge `.so` files relative to the `yabridge.toml` file. These
 patterns can also match an entire directory to apply settings to all plugins
 within that directory. To avoid confusion, only the first `yabridge.toml` file
 found and only the first matching glob pattern within that file will be
-considered. See below for an [example](#example) of a `yabridge.toml` file.
+considered. See below for an [example](#example) of a `yabridge.toml` file. On
+startup, yabridge will print used `yabridge.toml` file and the matched section
+within it, as well as all of the options that have been set.
 
 #### Plugin groups
 
@@ -282,20 +280,20 @@ other. See below for an [example](#example) of how these groups can be set up.
 
 _Note that because of the way VST3 works, multiple instances of a single VST3
 plugin will always be hosted in a single process regardless of whether you have
-enabled plugin groups or not. The only reason to use plugin groups with VST3
+enabled plugin groups or not._ _The only reason to use plugin groups with VST3
 plugins is to get slightly lower loading times the first time you load a new
 plugin._
 
 #### Compatibility options
 
-| Option                | Values         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| --------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cache_time_info`     | `{true,false}` | Compatibility option for plugins that call `audioMasterGetTime()` multiple times during a single processing cycle. With this option subsequent calls during a single audio processing cycle will reuse the value returned by the first call to this function. This is a bug in the plugin, and this option serves as a temporary workaround until the plugin fixes the issue.                                                                                                                                                            |
-| `editor_double_embed` | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`.                                                                               |
-| `editor_force_dnd`    | `{true,false}` | This option forcefully enables drag-and-drop support in _REAPER_. Because REAPER's FX window supports drag-and-drop itself, dragging a file onto a plugin editor will cause the drop to be intercepted by the FX window. This makes it impossible to drag files onto plugins in REAPER under normal circumstances. Setting this option to `true` will strip drag-and-drop support from the FX window, thus allowing files to be dragged onto the plugin again. Defaults to `false`. _This option is only availble on the master branch._ |
-| `editor_xembed`       | `{true,false}` | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't always work properly with it, but it could be useful in certain setups. You may need to use [this Wine patch](https://github.com/psycha0s/airwave/blob/master/fix-xembed-wine-windows.patch) if you're getting blank editor windows. Defaults to `false`. _This option is only availble on the master branch._                                                |
-| `frame_rate`          | `<number>`     | The rate at which Win32 events are being handled and usually also the refresh rate of a plugin's editor GUI. When using plugin groups all plugins share the same event handling loop, so in those the last loaded plugin will set the refresh rate. Defaults to `60`. _This option is only available on the master branch._                                                                                                                                                                                                              |
-| `vst3_no_scaling`     | `{true,false}` | Disable HiDPI scaling for VST3 plugins. Wine currently does not have proper fractional HiDPI support, so you might have to enable this option if you're using a HiDPI display. In most cases setting the font DPI in `winecfg`'s graphics tab to 192 will cause plugins to scale correctly at 200% size. Defaults to `false`. _This option is only available on the master branch._                                                                                                                                                      |
+| Option                | Values         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| --------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cache_time_info`     | `{true,false}` | Compatibility option for VST2 plugins that call `audioMasterGetTime()` multiple times during a single processing cycle. With this option subsequent calls during a single audio processing cycle will reuse the value returned by the first call to this function. This is a bug in the plugin, and this option serves as a temporary workaround until the plugin fixes the issue.                                                                                                  |
+| `editor_double_embed` | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`.                          |
+| `editor_force_dnd`    | `{true,false}` | This option forcefully enables drag-and-drop support in _REAPER_. Because REAPER's FX window supports drag-and-drop itself, dragging a file onto a plugin editor will cause the drop to be intercepted by the FX window. This makes it impossible to drag files onto plugins in REAPER under normal circumstances. Setting this option to `true` will strip drag-and-drop support from the FX window, thus allowing files to be dragged onto the plugin again. Defaults to `false`. |
+| `editor_xembed`       | `{true,false}` | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't always work properly with it, but it could be useful in certain setups. You may need to use [this Wine patch](https://github.com/psycha0s/airwave/blob/master/fix-xembed-wine-windows.patch) if you're getting blank editor windows. Defaults to `false`.                                                |
+| `frame_rate`          | `<number>`     | The rate at which Win32 events are being handled and usually also the refresh rate of a plugin's editor GUI. When using plugin groups all plugins share the same event handling loop, so in those the last loaded plugin will set the refresh rate. Defaults to `60`.                                                                                                                                                                                                               |
+| `vst3_no_scaling`     | `{true,false}` | Disable HiDPI scaling for VST3 plugins. Wine currently does not have proper fractional HiDPI support, so you might have to enable this option if you're using a HiDPI display. In most cases setting the font DPI in `winecfg`'s graphics tab to 192 will cause plugins to scale correctly at 200% size. Defaults to `false`.                                                                                                                                                       |
 
 These options are workarounds for issues mentioned in the [known
 issues](#runtime-dependencies-and-known-issues) section. Depending on the hosts
@@ -377,12 +375,44 @@ vst3_no_scaling = true
 ## Troubleshooting common issues
 
 If your problem is not listed here, then feel free to post on the [issue
-tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask in the
-[Discord](https://discord.gg/pyNeweqadf).
+tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask about it in
+the yabridge [Discord](https://discord.gg/pyNeweqadf).
 
 - If you have the `WINEPREFIX` environment variable set and you _don't_ want all
   of your plugins to use that specific Wine prefix then you should unset it to
   allow yabridge to automatically detect Wine prefixes for you.
+
+- If you're seeing errors related to Wine either when running `yabridgectl sync`
+  or when trying to load a plugin, then it can be that your installed version of
+  Wine is much older than the version that yabridge has been compiled for.
+  Yabridgectl will automatically check for this when you run `yabridgectl sync`
+  after updating Wine or yabridge. You can also manually verify that Wine is
+  working correctly by running one of the VST host applications. Assuming that
+  yabridge is installed under `~/.local/share/yabridge`, then running
+  `~/.local/share/yabridge/yabridge-host.exe` directly (so _not_
+  `wine ~/.local/share/yabridge/yabridge-host.exe`, that won't work) in a
+  terminal should print a few messages related to Wine's startup process
+  followed by the following line:
+
+  ```
+  Usage: yabridge-host.exe <plugin_type> <plugin_location> <endpoint_base_directory>
+  ```
+
+  If you're seeing a `002b:err:module:__wine_process_init` error instead, then
+  your version of Wine is too old for this version of yabridge and you'll have
+  to upgrade your Wine version. Instructions for how to do this on Ubuntu can be
+  found on the [WineHQ website](https://wiki.winehq.org/Ubuntu).
+
+  If you're getting a `0024:err:process:exec_process` error, then your Wine
+  prefix is set to 32-bit only and it won't be possible to run 64-bit
+  applications like `yabridge-host.exe`.
+
+- Timeout errors during plugin scanning are caused by the Wine process not being
+  able to start. There should be plugin output messages in your DAW or terminal
+  that with more information on what went wrong.
+
+- Sometimes left over Wine processes can cause problems. Run `wineserver -k` to
+  terminate Wine related in the current or default Wine prefix.
 
 - If you're using the copy-based installation method and plugins are getting
   skipped or blacklisted immediately when your VST host is scanning them, then
@@ -407,38 +437,6 @@ tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask in the
 
   The output should contain several lines related to yabridge.
 
-- If you're seeing errors related to Wine either when running `yabridgectl sync`
-  or when trying to load a plugin, then it can be that your installed version of
-  Wine is much older than the version that yabridge has been compiled for.
-  Yabridgectl will automatically check for this when you run `yabridgectl sync`
-  after updating Wine or yabridge. You can also manually verify that Wine is
-  working correctly by running one of the VST host applications. Assuming that
-  yabridge is installed under `~/.local/share/yabridge`, then running
-  `~/.local/share/yabridge/yabridge-host.exe` directly (so _not_
-  `wine ~/.local/share/yabridge/yabridge-host.exe`, that won't work) in a
-  terminal should print a few messages related to Wine's startup process
-  followed by the following line:
-
-  ```
-  Usage: yabridge-host.exe <vst_plugin_dll> <endpoint_base_directory>
-  ```
-
-  If you're seeing a `002b:err:module:__wine_process_init` error instead, then
-  your version of Wine is too old for this version of yabridge and you'll have
-  to upgrade your Wine version. Instructions for how to do this on Ubuntu can be
-  found on the [WineHQ website](https://wiki.winehq.org/Ubuntu).
-
-  If you're getting a `0024:err:process:exec_process` error, then your Wine
-  prefix is set to 32-bit only and it won't be possible to run 64-bit
-  applications like `yabridge-host.exe`.
-
-- Timeout errors during plugin scanning are caused by the Wine process not being
-  able to start. There should be plugin output messages in your DAW or terminal
-  that with more information on what went wrong.
-
-- Sometimes left over Wine processes can cause problems. Run `wineserver -k` to
-  terminate Wine related in the current or default Wine prefix.
-
 - If you're using a _lot_ of plugins and you're unable to load any new plugins,
   then you may be running into Xorg's client limit. The exact number of plugins
   it takes for this to happen will depend on your system and the other
@@ -459,35 +457,38 @@ these negative side effects:
 - First of all, you'll want to make sure that you can run programs with realtime
   priorities. Note that on Arch and Manjaro this does not necessarily require a
   realtime kernel as they include the `PREEMPT` patch set in their regular
-  kernels. You can verify that this is workign correctly by running
-  `chrt -f 10 date`, which should print the current date and time. You can also
-  try enabling the `threadirqs` kernel parameter which can in some situations
-  help with xruns.
+  kernels. You can verify that this is working correctly by running `chrt -f 10 date`,
+  which should print the current date and time, and running `uname -a` should
+  print something that contains `PREEMPT` in the output. You can also try
+  enabling the `threadirqs` kernel parameter which can in some situations help
+  with xruns.
 
 - Make sure you're using the performance frequency scaling governor, as changing
   clock speeds in the middle of a real time workload can cause latency spikes.
 
-- The last but probably even more important thing you can do is to use a build
-  of Wine with Proton's fsync patches. This can improve performance
-  significantly, especially when using a lot of plugins at the same time. If
-  you're running Arch or Manjaro, then you can use [Tk-Glitch's Wine
+- The last but perhaps the most important thing you can do is to use a build of
+  Wine with Proton's fsync patches. This can improve performance significantly,
+  with certain multithreading-heavy plugins. If you're running
+  Arch or Manjaro, then you can use [Tk-Glitch's Wine
   fork](https://github.com/Frogging-Family/wine-tkg-git) for a customizable
   version of Wine with the fsync patches included. Aside from a patched copy of
   Wine you'll also need a supported kernel for this to work. Manjaro's kernel
   supports fsync out of the box, and on Arch you can use the `linux-zen` kernel.
   Finally you'll have to set the `WINEFSYNC` environment variable to `1` to
   enable fsync. See the [search path setup](#search-path-setup) section for more
-  information on where to set this environment variable. You can use the
-  following command to check if this is set correctly:
+  information on where to set this environment variable so that it gets picked
+  up when you start your DAW. You can use the following command to check if this
+  is set correctly:
 
   ```shell
   env -i HOME="$HOME" $SHELL -l -c 'echo $WINEFSYNC'
   ```
 
-  If this prints `1` then everything is set up correctly. Running `wineboot`
-  from a terminal should now also print `fsync: up and running.`. You'll have to
-  log out and back in again for this to take effect on applications launched
-  from the GUI.
+  If this prints `1` then everything is set up correctly. If you're using GDM or
+  LightDM, then you should replace `$SHELL` in the command above with `sh`
+  before running it. Running `wineboot` from a terminal should now also print
+  `fsync: up and running.`. You'll have to log out and back in again for this to
+  take effect on applications launched from the GUI.
 
   If anyone knows a good way to install an fsync patched version of Wine on
   other distros, then please let me know!
@@ -534,7 +535,7 @@ include:
 - Plugins by **KiloHearts** have file descriptor leaks when _esync_ is enabled,
   causing Wine and yabridge to eventually stop working after the system hits the
   open file limit. To fix this, either unset `WINEESYNC` while using yabridge or
-  switch to using [_fsync_](#performance-tuning).
+  switch to using [_fsync_](#performance-tuning) instead.
 - **PSPaudioware** plugins with expandable GUIs, such as E27, may have their GUI
   appear in the wrong location after the GUI has been expanded. You can enable
   an alternative [editor hosting mode](#compatibility-options) to fix this.
@@ -560,7 +561,7 @@ include:
   work, so you won't be able to drag samples and MIDI files from a plugin to the
   host. At least, not directly. Because Windows applications have to create
   actual files on the disk for drag-and-drop to work, you can keep a file
-  explorer open and manually drag the generated files into your DAW as a
+  manager open and manually drag the generated files into your DAW as a
   workaround. To find out where in `~/.wine` the plugin is creating its files,
   you can use the following command to monitor the Wine prefix for any newly
   created files:
@@ -602,7 +603,7 @@ have permission to do so yet. Examples of this are:
 - VST3 plugin support for
   [ARA](https://www.celemony.com/en/service1/about-celemony/technologies). These
   interfaces are currently closed source so we cannot yet implement them, but
-  this may chance soon.
+  this may change soon.
 
 ## Building
 
