@@ -8,8 +8,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
-
 ### Added
 
 - Yabridge 3.0 introduces the first ever true Wine VST3 bridge, allowing you to
