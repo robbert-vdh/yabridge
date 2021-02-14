@@ -113,19 +113,19 @@ class PluginBridge {
 
         init_msg << "Initializing yabridge version " << yabridge_git_version
                  << std::endl;
-        init_msg << "host:         '" << plugin_host->path().string() << "'"
+        init_msg << "host:          '" << plugin_host->path().string() << "'"
                  << std::endl;
-        init_msg << "plugin:       '" << info.windows_plugin_path.string()
+        init_msg << "plugin:        '" << info.windows_plugin_path.string()
                  << "'" << std::endl;
-        init_msg << "plugin type:  '" << plugin_type_to_string(info.plugin_type)
-                 << "'" << std::endl;
-        init_msg << "realtime:     '"
+        init_msg << "plugin type:   '"
+                 << plugin_type_to_string(info.plugin_type) << "'" << std::endl;
+        init_msg << "realtime:      '"
                  << (has_realtime_priority.get() ? "yes" : "no") << "'"
                  << std::endl;
-        init_msg << "sockets:      '" << sockets.base_dir.string() << "'"
+        init_msg << "sockets:       '" << sockets.base_dir.string() << "'"
                  << std::endl;
-        init_msg << "wine prefix:  '";
 
+        init_msg << "wine prefix:   '";
         std::visit(
             overload{
                 [&](const OverridenWinePrefix& prefix) {
@@ -139,7 +139,8 @@ class PluginBridge {
             info.wine_prefix);
         init_msg << "'" << std::endl;
 
-        init_msg << "wine version: '" << get_wine_version() << "'" << std::endl;
+        init_msg << "wine version:  '" << get_wine_version() << "'"
+                 << std::endl;
         init_msg << std::endl;
 
         // Print the path to the currently loaded configuration file and all
