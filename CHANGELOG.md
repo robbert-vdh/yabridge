@@ -92,6 +92,9 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
     host are now periodically synchronized with those of the host's audio
     threads.
 
+- When using `yabridge.toml` config files, the matched section or glob pattern
+  is now also printed next to the path to the file to make it a bit easier to
+  see where settings are being set from.
 - The architecture document has been updated for the VST3 support and it has
   been rewritten to talk more about the more interesting bits of yabridge's
   implementation.

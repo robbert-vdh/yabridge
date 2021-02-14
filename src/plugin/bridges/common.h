@@ -146,9 +146,14 @@ class PluginBridge {
         // settings in use. Printing the matched glob pattern could also be
         // useful but it'll be very noisy and it's likely going to be clear from
         // the shown values anyways.
-        init_msg << "config from:   '"
-                 << config.matched_file.value_or("<defaults>").string() << "'"
-                 << std::endl;
+        init_msg << "config from:   '";
+        if (config.matched_file && config.matched_pattern) {
+            init_msg << config.matched_file->string() << ", section \""
+                     << *config.matched_pattern << "\"";
+        } else {
+            init_msg << "<defaults>";
+        }
+        init_msg << "'" << std::endl;
 
         init_msg << "hosting mode:  '";
         if (config.group) {
