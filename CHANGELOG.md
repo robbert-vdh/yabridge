@@ -22,7 +22,8 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   extensively with a variety of VST3 plugins and hosts, there's still a
   substantial part of the VST 3.7.1 specification that isn't used by any of the
   hosts or plugins we could get our hands on, so please let me know if you run
-  into any weird behaviour!
+  into any weird behaviour! There's a list in the readme with all of the tested
+  hosts and their current VST3 compatibility status.
 - Added the `with-vst3` compile time option to control whether yabridge should
   be built with VST3 support. This is enabled by default.
 - Added an
