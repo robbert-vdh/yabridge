@@ -24,14 +24,13 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   hosts or plugins we could get our hands on, so please let me know if you run
   into any weird behaviour! There's a list in the readme with all of the tested
   hosts and their current VST3 compatibility status.
-- Added the `with-vst3` compile time option to control whether yabridge should
-  be built with VST3 support. This is enabled by default.
 - Added an
   [option](https://github.com/robbert-vdh/yabridge#compatibility-options) to use
   Wine's XEmbed implementation instead of yabridge's normal window embedding
-  method. This can help reduce flickering with certain window managers. Some
-  plugins will have redrawing issues when using XEmbed or the editor might not
-  show up at all, so your mileage may very much vary.
+  method. This can help reduce flickering when dragging the window around with
+  certain window managers. Some plugins will have redrawing issues when using
+  XEmbed or the editor might not show up at all, so your mileage may very much
+  vary.
 - Added a [compatibilty
   option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
   forcefully enable drag-and-drop support under _REAPER_. REAPER's FX window
@@ -44,68 +43,73 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
   change the rate at which events are being handled. This usually also controls
   the refresh rate of a plugin's editor GUI. The default 60 updates per second
   may be too high if your computer's cannot keep up, or if you're using a host
-  that never closes the editor such as Ardour.
+  that never closes the editor such as _Ardour_.
 - Added a [compatibility
   option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
   disable HiDPI scaling for VST3 plugins. At the moment Wine does not have
   proper fractional HiDPI support, so some plugins may not scale their
   interfaces correctly when the host tells those plugins to scale their GUIs. In
-  most cases setting the font DPI in `winecfg`'s graphics tab to 192 will also
+  some cases setting the font DPI in `winecfg`'s graphics tab to 192 will also
   cause the GUIs to scale correctly at 200%.
+- Added the `with-vst3` compile time option to control whether yabridge should
+  be built with VST3 support. This is enabled by default.
 
 ### Changed
 
 - `libyabridge.so` is now called `libyabridge-vst2.so`. If you're using
-  yabridgectl then nothing changes here. **To avoid any confusion in the future,
-  please remove the old `libyabridge.so` file before upgrading.**
+  yabridgectl then nothing changes here. **To avoid any potential confusion in
+  the future, please remove the old `libyabridge.so` file before upgrading.**
 - Window closing is now deferred. This means that when closing the editor
   window, the host no longer has to wait for Wine to fully close the window.
-  Most hosts already do something similar themselves, so this may not make any
-  difference in responsiveness.
+  Most hosts already do something similar themselves, so this may not always
+  make a difference in responsiveness.
 - Slightly increased responsiveness when resizing plugin GUIs by preventing
   unnecessary blitting. This also reduces flickering with plugins that don't do
   double buffering.
 - VST2 editor idle events are now handled slightly differently. This should
   result in even more responsive GUIs for VST2 plugins.
 - Win32 and X11 events in the Wine plugin host are now handled with lower
-  scheduling priority than other tasks. With a properly configured system GUI
-  drawing should not affect DSP load at all, but this should help with less than
-  optimal setups where some people were getting DSP latency spikes while having
-  plugin editor open.
-- Yabridge handles realtime priority now slightly differently:
-
-  - Realtime priority on the plugin side is now a more granular. Instead of
-    setting everything to use `SCHED_FIFO`, only the spawned threads will be set
-    to realtime priority. This prevents changing the scheduling policy of your
-    host's GUI thread if your host instantiates plugins from its GUI thread like
-    REAPER does.
-  - Relaying messages printed by the plugin and Wine is now done without
-    realtime priority, as this could in theory cause issues with plugins that
-    produce a lot of fixmes.
-  - The realtime scheduling priorities of all audio threads on the Wine plugin
-    host are now periodically synchronized with those of the host's audio
-    threads.
-
+  scheduling priority than other tasks. This might help get rid of potential DSP
+  latency spikes when having the editor open while the plugin is doing expensive
+  GUI operations.
 - Opening and closing plugin editors is now also no longer done with realtime
   priority. This should get rid of any latency spikes during those operations,
   as this could otherwise steal resources away from the threads that are
   processing audio.
-- When `YABRIDGE_DEBUG_LEVEL` is set to 2 or higher and a plugin asks the host
-  for the current position in the song, yabridge will now also print the current
-  tempo to help debugging host bugs.
-- Changed part of the build process considering [this Wine
-  bug](https://bugs.winehq.org/show_bug.cgi?id=49138). Building with Wine 5.7
-  and 5.8 required a change, but that change now breaks builds using Wine 6.0
-  and up. The build process now detect which version of Wine is used to build
-  with, and it then applies the change conditionally to be able to support
-  building with both older and newer versions of Wine.
-- `yabridge-host.exe` will no longer remove the socket directories if they're
-  outside of a temporary directory. This could otherwise cause a very unpleasant
-  surprise if someone was passing random arguments to it when for instancing
-  trying to write a wrapper around `yabridge-host.exe`.
+- The way realtime priorities assigned has been overhauled:
+
+  - Realtime scheduling on the plugin side is now a more granular. Instead of
+    setting everything to use `SCHED_FIFO`, only the spawned threads will be
+    configured to use realtime scheduling. This prevents changing the scheduling
+    policy of your host's GUI thread if your host instantiates plugins from its
+    GUI thread like _REAPER_ does.
+  - Relaying messages printed by the plugin and Wine is now done without
+    realtime priority, as this could in theory cause issues with plugins that
+    produce a steady stream of fixmes or other output.
+  - The realtime scheduling priorities of all audio threads in the Wine plugin
+    host are now periodically synchronized with those of the host's audio
+    threads.
+
 - The architecture document has been updated for the VST3 support and it has
   been rewritten to talk more about the more interesting bits of yabridge's
   implementation.
+- Part of the build process has been changed to account for [this Wine
+  bug](https://bugs.winehq.org/show_bug.cgi?id=49138). Building with Wine 5.7
+  and 5.8 required a change for `yabridge-host.exe` to continue working, but
+  that change now also breaks builds using Wine 6.0 and up. The build process
+  now detects which version of Wine is used to build with, and it will then
+  apply the change conditionally based on that to be able to support building
+  with both older and newer versions of Wine. This does mean that when you
+  switch to an older Wine version, you might need to run
+  `meson setup build --reconfigure` before rebuilding to make sure that these
+  changes take effect.
+- `yabridge-host.exe` will no longer remove the socket directories if they're
+  outside of a temporary directory. This could otherwise cause a very unpleasant
+  surprise if someone were to pass random arguments to it when for instance
+  trying to write a wrapper around `yabridge-host.exe`.
+- When `YABRIDGE_DEBUG_LEVEL` is set to 2 or higher and a plugin asks the host
+  for the current position in the song, yabridge will now also print the current
+  tempo to help debugging host bugs.
 
 ### Fixed
 
@@ -118,12 +122,13 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
 - Event handling is now temporarily disabled while plugins are in a partially
   initialized state. The VST2 versions of **T-RackS 5** would have a chance to
   hang indefinitely if the event loop was being run before those plugins were
-  fully initialized because of a race condition within those plugins. This was
-  issue only noticeable when using plugin groups.
+  fully initialized because of a race condition within those plugins. This issue
+  was only noticeable when using plugin groups.
 - Fixed a potential issue where an interaction between _Bitwig Studio_ and
   yabridge's input focus grabbing method could cause delayed mouse events when
   clicking on a plugin's GUI in Bitwig. This issue has not been reported for
-  yabridge 2.2.1 and below, but it could in theory also affect those versions.
+  yabridge 2.2.1 and below, but it could in theory also affect older versions of
+  yabridge.
 
 ### yabridgectl
 
