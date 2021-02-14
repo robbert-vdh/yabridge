@@ -42,17 +42,17 @@ _See [this document](https://github.com/robbert-vdh/yabridge/blob/master/src/com
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging 6.0:
+Yabridge has been tested under the following hosts using Wine Staging 6.2:
 
-| Host              | VST2               | VST3                                                                                                                      |
-| ----------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| Bitwig Studio 3.3 | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
-| REAPER 6.19       | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
-| Carla 2.2         | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
-| Renoise 3.3.0     | :heavy_check_mark: | :warning: Editor resizing doesn't work properly because Renoise doesn't call `IPlugView::onSize()`                        |
-| Ardour 6.5        | :heavy_check_mark: | :warning: Plugins with multiple inputs or outputs might cause Ardour to crash because it does not yet support that        |
-| Qtractor 0.9.19   | :heavy_check_mark: | :x: See [rncbc/qtractor#298](https://github.com/rncbc/qtractor/pull/298), this will be fixed in the next Qtractor release |
-| Mixbus 6.0.702    | :heavy_check_mark: | Does not support VST3                                                                                                     |
+| Host                | VST2               | VST3                                                                                                                      |
+| ------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Bitwig Studio 3.3.3 | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
+| REAPER 6.23         | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
+| Carla 2.2           | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
+| Renoise 3.3.1       | :heavy_check_mark: | :warning: Editor resizing doesn't work properly because Renoise doesn't call `IPlugView::onSize()`                        |
+| Ardour 6.5          | :heavy_check_mark: | :warning: Plugins with multiple inputs or outputs might cause Ardour to crash because it does not yet support that        |
+| Qtractor 0.9.19     | :heavy_check_mark: | :x: See [rncbc/qtractor#298](https://github.com/rncbc/qtractor/pull/298), this will be fixed in the next Qtractor release |
+| Mixbus 6.0.702      | :heavy_check_mark: | Does not support VST3                                                                                                     |
 
 Please let me know if there are any issues with other hosts.
 
