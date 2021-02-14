@@ -61,9 +61,9 @@ Please let me know if there are any issues with other hosts.
 You can either download a prebuilt version of yabridge through GitHub's
 [releases](https://github.com/robbert-vdh/yabridge/releases) page, or you can
 compile it from source using the instructions in the [build](#Building) section
-below. If you're downloading the prebuilt version you're using a distro that's
-older than Ubuntu 20.04 such as Ubuntu 18.04, Debian 10, or Linux Mint 19, then
-you should download the version that ends with `-ubuntu-18.04.tar.gz`.
+below. If you're downloading the prebuilt version and you're using a distro
+that's older than Ubuntu 20.04 such as Ubuntu 18.04, Debian 10, or Linux Mint
+19, then you should download the version that ends with `-ubuntu-18.04.tar.gz`.
 Alternatively there are AUR packages available if you are running Arch or
 Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
 [yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/),
@@ -83,25 +83,27 @@ out Wine's [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
 
 The easiest way to get up and running is through
 [yabridgectl](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl).
-You can download yabridgectl from GitHub's [releases
-page](https://github.com/robbert-vdh/yabridge/releases). There are also AUR
-packages available if you're running Arch or Manjaro
+Yabridgectl is already included in the archives downloaded from GitHub's
+releases page. If you're u sing Arch or Manjaro, then you can install it using
+the AUR package corresponding to your installed version of yabridge
 ([yabridgectl](https://aur.archlinux.org/packages/yabridgectl/),
 [yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/), and it's
-also included in
+already included in
 [yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/)). More
 comprehensive documentation on yabridgectl can be found in its
 [readme](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl),
 or by running `yabridgectl --help`.
 
 First, yabridgectl needs to know where it can find yabridge's files. If you have
-downloaded the prebuilt binaries, then you can simply extract the archive to
-`~/.local/share` and both yabridge and yabridgectl will pick up the files in
-`~/.local/share/yabridge` automatically. You also won't have to do any
+downloaded the prebuilt binaries from GitHub, then you can simply extract the
+archive to `~/.local/share`. Both yabridge and yabridgectl will then pick up the
+files in `~/.local/share/yabridge` automatically. You also won't have to do any
 additional work if you're using one of the AUR packages. If you have compiled
 yabridge from source or if you installed the files to some other location, then
 you can use `yabridgectl set --path=<path>` to tell yabridgectl where it can
-find the files.
+find the files. Since `~/.local/share/yabridge` will likely not be in your
+search `PATH`, you may have to replace `yabridgectl` in any of the examples
+below with `~/.local/share/yabridge/yabridgectl`.
 
 Next, you'll want to tell yabridgectl where it can find your VST2 and VST3
 plugins. **Note that VST3 support is not yet available in yabridge 2.x.** For

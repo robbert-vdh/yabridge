@@ -59,6 +59,8 @@ TODO: Add an updated screenshot with some fancy VST3-only plugins to the readme
 - `libyabridge.so` is now called `libyabridge-vst2.so`. If you're using
   yabridgectl then nothing changes here. **To avoid any potential confusion in
   the future, please remove the old `libyabridge.so` file before upgrading.**
+- The release archives uploaded on GitHub are now repackaged to include
+  yabridgectl for your convenience.
 - Window closing is now deferred. This means that when closing the editor
   window, the host no longer has to wait for Wine to fully close the window.
   Most hosts already do something similar themselves, so this may not always
