@@ -19,9 +19,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Added a workaround for **REAPER** using a new vendor-specific VST2.4 extension
-  that passes a non-pointer value to a pointer parameter. This would cause
-  segfaults with some plugins.
+- Added support for a new vendor-specific VST2.4 extension **REAPER** started
+  using recently where it passes a non-pointer value to a pointer parameter.
+  This would cause segfaults with some plugins.
 
 ## [3.0.0] - 2021-02-14
 
