@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Wine 6.2 introduced a
+  [regression](https://bugs.winehq.org/show_bug.cgi?id=50670) that would cause
+  compile errors when building yabridge because some parts of Wine's headers are
+  no longer valid C++. Since we do not need the affecting functionality,
+  yabridge now includes a small workaround to make sure that the affected code
+  never gets compiled.
+
 ## [3.0.0] - 2021-02-14
 
 ### Added

@@ -18,13 +18,22 @@
 
 #include "../boost-fix.h"
 
-#include <public.sdk/source/vst/hosting/module_win32.cpp>
-
 #include "vst3-impls/component-handler-proxy.h"
 #include "vst3-impls/connection-point-proxy.h"
 #include "vst3-impls/context-menu-proxy.h"
 #include "vst3-impls/host-context-proxy.h"
 #include "vst3-impls/plug-frame-proxy.h"
+
+// HACK: As of Wine commit `0c19e2e487d36a89531daf4897c0b6390d82a843` (or Wine
+//       6.2), Wine's `shobjidl.h` cannot be compiled under C++ because one of
+//       the parameters in the file operations interface is now named
+//       `template`, which is a reserved keyword. Since we do not need this
+//       interface, we'll just hack around this by making sure it never gets
+//       defined.
+//
+//       https://bugs.winehq.org/show_bug.cgi?id=50670
+#define __IFileOperation_INTERFACE_DEFINED__
+#include <public.sdk/source/vst/hosting/module_win32.cpp>
 
 InstancePlugView::InstancePlugView() {}
 
