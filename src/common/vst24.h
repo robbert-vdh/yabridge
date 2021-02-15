@@ -48,6 +48,14 @@
 [[maybe_unused]] constexpr int effGetSpeakerArrangement = 69;
 
 /**
+ * Used by REAPER for some VST2.4 extensions. Most of the arguments passed to
+ * this will be able to be handled automatically by our `DefaultDataConverter`.
+ * We need one special case because for when they're now using the `data`
+ * argument with a non-pointer value. Found on the same list as above.
+ */
+[[maybe_unused]] constexpr int effVendorSpecific = 50;
+
+/**
  * Used by hosts to query the length of reverb tails (equivalent to
  * `IAudioProcessor::getTailSamples`). Found on the same list as above.
  */

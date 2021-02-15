@@ -16,21 +16,27 @@
 
 #include "vst2.h"
 
-EventPayload DefaultDataConverter::read(const int /*opcode*/,
-                                        const int /*index*/,
+EventPayload DefaultDataConverter::read(const int opcode,
+                                        const int index,
                                         const intptr_t /*value*/,
                                         const void* data) const {
+    // HACK: REAPER has recently started using `effVendorSpecific` with a
+    //       non-pointer `data` argument, so we need to explicitly handle this
+    if (opcode == effVendorSpecific && index == effSetSpeakerArrangement) {
+        return static_cast<native_size_t>(reinterpret_cast<size_t>(data));
+    }
+
     if (!data) {
         return nullptr;
     }
 
-    // This is a simple fallback that will work in almost every case.
-    // Because some plugins don't zero out their string buffers when sending
-    // host callbacks, we will explicitely list all callbacks that expect a
-    // string in `DispatchDataConverter` adn `HostCallbackDataConverter`.
-    const char* c_string = static_cast<const char*>(data);
-    if (c_string[0] != 0) {
-        return std::string(c_string);
+    // This is a simple fallback that will work in almost every case. Because
+    // some plugins don't zero out their string buffers when sending host
+    // callbacks, we will explicitely list all callbacks that expect a string in
+    // `DispatchDataConverter` and `HostCallbackDataConverter`.
+    const char* str = static_cast<const char*>(data);
+    if (str[0] != 0) {
+        return std::string(str);
     } else {
         return WantsString{};
     }

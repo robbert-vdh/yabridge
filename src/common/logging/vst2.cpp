@@ -156,6 +156,9 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
             case effGetSpeakerArrangement:
                 return "effGetSpeakerArrangement";
                 break;
+            case effVendorSpecific:
+                return "effVendorSpecific";
+                break;
             case effGetTailSize:
                 return "effGetTailSize";
                 break;

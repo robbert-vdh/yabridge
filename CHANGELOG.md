@@ -17,6 +17,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   yabridge now includes a small workaround to make sure that the affected code
   never gets compiled.
 
+### Fixed
+
+- Added a workaround for **REAPER** using a new vendor-specific VST2.4 extension
+  that passes a non-pointer value to a pointer parameter. This would cause
+  segfaults with some plugins.
+
 ## [3.0.0] - 2021-02-14
 
 ### Added
