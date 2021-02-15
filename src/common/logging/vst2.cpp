@@ -487,7 +487,7 @@ void Vst2Logger::log_event_response(
                     }
                 },
                 [&](const ChunkData& chunk) {
-                    message << "<" << chunk.buffer.size() << " byte chunk>";
+                    message << ", <" << chunk.buffer.size() << " byte chunk>";
                 },
                 [&](const AEffect&) { message << ", <AEffect_object>"; },
                 [&](const DynamicSpeakerArrangement& speaker_arrangement) {
