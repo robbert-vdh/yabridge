@@ -22,6 +22,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added support for a new vendor-specific VST2.4 extension **REAPER** started
   using recently where it passes a non-pointer value to a pointer parameter.
   This would cause segfaults with some plugins.
+- Fixed a regression from yabridge 3.0.0 where log output would no longer
+  include timestamps.
 
 ## [3.0.0] - 2021-02-14
 

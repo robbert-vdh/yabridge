@@ -106,7 +106,7 @@ class Logger {
     Logger(std::shared_ptr<std::ostream> stream,
            Verbosity verbosity_level,
            std::string prefix = "",
-           bool prefix_timestamp = false);
+           bool prefix_timestamp = true);
 
     /**
      * Create a logger instance based on the set environment variables. See the
