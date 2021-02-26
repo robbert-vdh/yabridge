@@ -12,29 +12,29 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Wine 6.2 introduced a
   [regression](https://bugs.winehq.org/show_bug.cgi?id=50670) that would cause
-  compile errors when building yabridge because some parts of Wine's headers are
-  no longer valid C++. Since we do not need the affecting functionality,
-  yabridge now includes a small workaround to make sure that the affected code
-  never gets compiled.
+  compile errors because some parts of Wine's headers were no longer valid C++.
+  Since we do not need the affecting functionality, yabridge now includes a
+  small workaround to make sure that the affected code never gets compiled. This
+  has been fixed for Wine 6.3.
 
 ### Fixed
 
-- Added support for a new vendor-specific VST2.4 extension **REAPER** started
-  using recently where it passes a non-pointer value to a pointer parameter.
-  This would cause segfaults with some plugins.
+- Added support for a new ReaSurround related VST2.4 extension that **REAPER**
+  recently started using. This would otherwise cause certain plugins to crash
+  under REAPER.
 - Fixed a regression from yabridge 3.0.0 where log output would no longer
   include timestamps.
 
 ### yabridgectl
 
-- Changed the wording in `yabridgectl status` for plugins that have not been
-  setup yet to look less dramatic and hopefully cause less confusion.
+- Changed the wording and colors in `yabridgectl status` for plugins that have
+  not yet been setup to look less dramatic and hopefully cause less confusion.
 - Aside from the installation status, `yabridgectl status` now also shows a
   plugin's type and architecture. This is color coded to make it easier to
   visually parse the output.
 - Plugin paths printed during `yabridgectl status` and
   `yabridgectl sync --verbose` are now always shown relative to the plugin
-  location instead of repeating the same path prefix for every plugin.
+  directory instead of the same path prefix being repeated for every plugin.
 
 ## [3.0.0] - 2021-02-14
 
