@@ -29,6 +29,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Changed the wording in `yabridgectl status` for plugins that have not been
   setup yet to look less dramatic and hopefully cause less confusion.
+- Aside from the installation status, `yabridgectl status` now also shows a
+  plugin's type and architecture. This is color coded to make it easier to
+  visually parse the output.
 - Plugin paths printed during `yabridgectl status` and
   `yabridgectl sync --verbose` are now always shown relative to the plugin
   location instead of repeating the same path prefix for every plugin.

@@ -121,7 +121,17 @@ pub fn show_status(config: &Config) -> Result<()> {
         // be added both with and without a trailing slash
         println!("\n{}", path.join("").display());
 
-        for (plugin, status) in search_results.installation_status() {
+        for (plugin, (status, vst3_module)) in search_results.installation_status() {
+            let plugin_type = match vst3_module {
+                Some(module) => format!(
+                    "{}, {}, {}",
+                    "VST3".magenta(),
+                    module.type_str(),
+                    module.architecture
+                ),
+                None => "VST2".cyan().to_string(),
+            };
+
             let status_str = match status {
                 Some(NativeFile::Regular(_)) => "copy".green(),
                 Some(NativeFile::Symlink(_)) => "symlink".green(),
@@ -130,8 +140,9 @@ pub fn show_status(config: &Config) -> Result<()> {
             };
 
             println!(
-                "  {} :: {}",
+                "  {} :: {}, {}",
                 plugin.strip_prefix(path).unwrap_or(&plugin).display(),
+                plugin_type,
                 status_str
             );
         }

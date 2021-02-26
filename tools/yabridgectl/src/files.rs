@@ -213,6 +213,14 @@ impl Vst3Module {
         path.push("Resources");
         path
     }
+
+    /// Get a textual representation of the module type. Used in `yabridgectl status`.
+    pub fn type_str(&self) -> &str {
+        match &self.module {
+            Vst3ModuleType::Legacy(_) => "legacy",
+            Vst3ModuleType::Bundle(_) => "bundle",
+        }
+    }
 }
 
 /// The architecture of a `.dll` file. Needed so we can create a merged bundle for VST3 plugins.
@@ -245,8 +253,12 @@ impl LibArchitecture {
 impl SearchResults {
     /// For every found VST2 plugin and VST3 module, find the associated copy or symlink of
     /// `libyabridge-{vst2,vst3}.so`. The returned hashmap will contain a `None` value for plugins
-    /// that have not yet been set up.
-    pub fn installation_status(&self) -> BTreeMap<PathBuf, Option<NativeFile>> {
+    /// that have not yet been set up. For VST3 modules we'll also return the actual module since
+    /// this contains a lot of additional information we might want to print during `yabridgectl
+    /// status`.
+    pub fn installation_status(
+        &self,
+    ) -> BTreeMap<PathBuf, (Option<NativeFile>, Option<&Vst3Module>)> {
         let so_files: HashMap<&Path, &NativeFile> = self
             .so_files
             .iter()
@@ -254,13 +266,13 @@ impl SearchResults {
             .collect();
 
         // Do this for the VST2 plugins
-        let mut installation_status: BTreeMap<PathBuf, Option<NativeFile>> = self
+        let mut installation_status: BTreeMap<PathBuf, (_, _)> = self
             .vst2_files
             .iter()
             .map(
                 |path| match so_files.get(path.with_extension("so").as_path()) {
-                    Some(&file_type) => (path.clone(), Some(file_type.clone())),
-                    None => (path.clone(), None),
+                    Some(&file_type) => (path.clone(), (Some(file_type.clone()), None)),
+                    None => (path.clone(), (None, None)),
                 },
             )
             .collect();
@@ -270,7 +282,10 @@ impl SearchResults {
         installation_status.extend(self.vst3_modules.iter().map(|module| {
             (
                 module.original_path().to_owned(),
-                get_file_type(module.target_native_module_path()),
+                (
+                    get_file_type(module.target_native_module_path()),
+                    Some(module),
+                ),
             )
         }));
 
