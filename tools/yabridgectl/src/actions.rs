@@ -114,8 +114,8 @@ pub fn show_status(config: &Config) -> Result<()> {
             println!("Could not find yabridge's files files: {}\n", err);
         }
     }
-
     println!("installation method: {}", config.method);
+
     for (path, search_results) in results {
         println!("\n{}:", path.display());
 
@@ -124,7 +124,7 @@ pub fn show_status(config: &Config) -> Result<()> {
                 Some(NativeFile::Regular(_)) => "copy".green(),
                 Some(NativeFile::Symlink(_)) => "symlink".green(),
                 Some(NativeFile::Directory(_)) => "invalid".red(),
-                None => "not installed".red(),
+                None => "not yet installed".into(),
             };
 
             println!("  {} :: {}", plugin.display(), status_str);

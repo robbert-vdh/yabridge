@@ -25,6 +25,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed a regression from yabridge 3.0.0 where log output would no longer
   include timestamps.
 
+### yabridgectl
+
+- Changed the wording in `yabridgectl status` for plugins that have not been
+  setup yet to look less dramatic and hopefully cause less confusion.
+
 ## [3.0.0] - 2021-02-14
 
 ### Added
