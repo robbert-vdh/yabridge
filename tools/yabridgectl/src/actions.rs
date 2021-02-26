@@ -123,7 +123,9 @@ pub fn show_status(config: &Config) -> Result<()> {
 
         for (plugin_path, (plugin, status)) in search_results.installation_status() {
             let plugin_type = match plugin {
-                Plugin::Vst2(_) => "VST2".cyan().to_string(),
+                Plugin::Vst2(Vst2Plugin { architecture, .. }) => {
+                    format!("{}, {}", "VST2".cyan(), architecture)
+                }
                 Plugin::Vst3(module) => format!(
                     "{}, {}, {}",
                     "VST3".magenta(),
