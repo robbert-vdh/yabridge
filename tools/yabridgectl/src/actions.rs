@@ -117,7 +117,9 @@ pub fn show_status(config: &Config) -> Result<()> {
     println!("installation method: {}", config.method);
 
     for (path, search_results) in results {
-        println!("\n{}:", path.display());
+        // Always print these paths with trailing slashes for consistency's sake because paths can
+        // be added both with and without a trailing slash
+        println!("\n{}", path.join("").display());
 
         for (plugin, status) in search_results.installation_status() {
             let status_str = match status {
@@ -127,7 +129,11 @@ pub fn show_status(config: &Config) -> Result<()> {
                 None => "not yet installed".into(),
             };
 
-            println!("  {} :: {}", plugin.display(), status_str);
+            println!(
+                "  {} :: {}",
+                plugin.strip_prefix(path).unwrap_or(&plugin).display(),
+                status_str
+            );
         }
     }
 
@@ -217,7 +223,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         skipped_dll_files.extend(search_results.skipped_files);
 
         if options.verbose {
-            println!("{}:", path.display());
+            // Always print these paths with trailing slashes for consistency's sake because paths
+            // can be added both with and without a trailing slash
+            println!("{}", path.join("").display());
         }
 
         // We'll set up the copies or symlinks for VST2 plugins
@@ -237,7 +245,10 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
             }
 
             if options.verbose {
-                println!("  {}", plugin.display());
+                println!(
+                    "  {}",
+                    plugin.strip_prefix(path).unwrap_or(&plugin).display()
+                );
             }
         }
 
