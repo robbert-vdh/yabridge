@@ -32,14 +32,12 @@ use crate::utils::get_file_type;
 /// Stores the results from searching through a directory. We'll search for Windows VST2 plugin
 /// `.dll` files, Windows VST3 plugin modules, and native Linux `.so` files inside of a directory.
 /// These `.so` files are kept track of so we can report the current installation status of VST2
-/// plugins and to be able to prune orphan files. Since VST3 plugins have to be instaleld in
+/// plugins and to be able to prune orphan files. Since VST3 plugins have to be installed in
 /// `~/.vst3`, these orphan files are only relevant for VST2 plugins.
 #[derive(Debug)]
 pub struct SearchResults {
-    /// Absolute paths to the found VST2 `.dll` files.
-    pub vst2_files: Vec<PathBuf>,
-    /// Absolute paths to found VST3 modules. Either legacy `.vst3` DLL files or VST 3.6.10 bundles.
-    pub vst3_modules: Vec<Vst3Module>,
+    /// The plugins found during the search. This contains both VST2 plugins and VST3 modules.
+    pub plugins: Vec<Plugin>,
     /// `.dll` files skipped over during the search. Used for printing statistics and shown when
     /// running `yabridgectl sync --verbose`.
     pub skipped_files: Vec<PathBuf>,
@@ -82,10 +80,26 @@ impl NativeFile {
     }
 }
 
-/// VST3 modules we found during a serach.
+/// A plugin as found during the search. This can be either a VST2 plugin or a VST3 module.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Plugin {
+    Vst2(Vst2Plugin),
+    Vst3(Vst3Module),
+}
+
+/// VST2 plugins we found during a search along with their architecture.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Vst2Plugin {
+    /// The absolute path to the VST2 plugin `.dll` file.
+    pub path: PathBuf,
+    /// The architecture of the VST2 plugin.
+    pub architecture: LibArchitecture,
+}
+
+/// VST3 modules we found during a search.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Vst3Module {
-    /// The actual VST3 module and its type.
+    /// The absolute path to the actual VST3 module and its type.
     pub module: Vst3ModuleType,
     /// The architecture of the VST3 module.
     pub architecture: LibArchitecture,
@@ -251,45 +265,38 @@ impl LibArchitecture {
 }
 
 impl SearchResults {
-    /// For every found VST2 plugin and VST3 module, find the associated copy or symlink of
-    /// `libyabridge-{vst2,vst3}.so`. The returned hashmap will contain a `None` value for plugins
-    /// that have not yet been set up. For VST3 modules we'll also return the actual module since
-    /// this contains a lot of additional information we might want to print during `yabridgectl
-    /// status`.
-    pub fn installation_status(
-        &self,
-    ) -> BTreeMap<PathBuf, (Option<NativeFile>, Option<&Vst3Module>)> {
+    /// Create a map out of all found plugins based on their file path that contains both a
+    /// reference to the plugin (so we can print information about it) and the current installation
+    /// status. The installation status will be `None` if the plugin has not yet been set up.
+    pub fn installation_status(&self) -> BTreeMap<PathBuf, (&Plugin, Option<NativeFile>)> {
         let so_files: HashMap<&Path, &NativeFile> = self
             .so_files
             .iter()
             .map(|file| (file.path(), file))
             .collect();
 
-        // Do this for the VST2 plugins
-        let mut installation_status: BTreeMap<PathBuf, (_, _)> = self
-            .vst2_files
+        self.plugins
             .iter()
-            .map(
-                |path| match so_files.get(path.with_extension("so").as_path()) {
-                    Some(&file_type) => (path.clone(), (Some(file_type.clone()), None)),
-                    None => (path.clone(), (None, None)),
-                },
-            )
-            .collect();
-
-        // And for VST3 modules. We have not stored the paths to the corresponding `.so` files yet
-        // because they are not in any of the directories we're indexing.
-        installation_status.extend(self.vst3_modules.iter().map(|module| {
-            (
-                module.original_path().to_owned(),
-                (
-                    get_file_type(module.target_native_module_path()),
-                    Some(module),
+            .map(|plugin| match plugin {
+                Plugin::Vst2(Vst2Plugin { path, .. }) => {
+                    // For VST2 plugins we'll just look at the similarly named `.so` file right next
+                    // to the plugin `.dll` file.
+                    match so_files.get(path.with_extension("so").as_path()) {
+                        Some(&file_type) => (path.clone(), (plugin, Some(file_type.clone()))),
+                        None => (path.clone(), (plugin, None)),
+                    }
+                }
+                // We have not stored the paths to the corresponding `.so` files yet for VST3
+                // modules because they are not in any of the directories we're indexing
+                Plugin::Vst3(vst3_module) => (
+                    vst3_module.original_path().to_owned(),
+                    (
+                        plugin,
+                        get_file_type(vst3_module.target_native_module_path()),
+                    ),
                 ),
-            )
-        }));
-
-        installation_status
+            })
+            .collect()
     }
 
     /// Find all `.so` files in the search results that do not belong to a VST2 plugin `.dll` file.
@@ -303,8 +310,10 @@ impl SearchResults {
             .map(|file_type| (file_type.path(), file_type))
             .collect();
 
-        for vst2_path in &self.vst2_files {
-            orphans.remove(vst2_path.with_extension("so").as_path());
+        for plugin in &self.plugins {
+            if let Plugin::Vst2(Vst2Plugin { path, .. }) = plugin {
+                orphans.remove(path.with_extension("so").as_path());
+            }
         }
 
         orphans.values().cloned().collect()
@@ -389,12 +398,18 @@ impl SearchIndex {
         // We'll have to figure out which `.dll` files are VST2 plugins and which should be skipped
         // by checking whether the file contains one of the VST2 entry point functions. This vector
         // will contain an `Err(path)` if `path` was not a valid VST2 plugin.
-        let is_vst2_plugin: Vec<Result<PathBuf, PathBuf>> = self
+        let is_vst2_plugin: Vec<Result<Vst2Plugin, PathBuf>> = self
             .dll_files
             .into_par_iter()
             .map(|path| {
+                let architecture = if DLL32_AUTOMATON.is_match(pe32_info(&path)?) {
+                    LibArchitecture::Dll32
+                } else {
+                    LibArchitecture::Dll64
+                };
+
                 if VST2_AUTOMATON.is_match(exported_functions(&path)?) {
-                    Ok(Ok(path))
+                    Ok(Ok(Vst2Plugin { path, architecture }))
                 } else {
                     Ok(Err(path))
                 }
@@ -481,27 +496,25 @@ impl SearchIndex {
             })
             .collect::<Result<_>>()?;
 
+        let mut plugins: Vec<Plugin> = Vec::new();
         let mut skipped_files: Vec<PathBuf> = Vec::new();
 
-        let mut vst2_files: Vec<PathBuf> = Vec::new();
         for dandidate in is_vst2_plugin {
             match dandidate {
-                Ok(path) => vst2_files.push(path),
+                Ok(plugin) => plugins.push(Plugin::Vst2(plugin)),
                 Err(path) => skipped_files.push(path),
             }
         }
 
-        let mut vst3_modules: Vec<Vst3Module> = Vec::new();
         for candidate in is_vst3_module {
             match candidate {
-                Ok(module) => vst3_modules.push(module),
+                Ok(module) => plugins.push(Plugin::Vst3(module)),
                 Err(path) => skipped_files.push(path),
             }
         }
 
         Ok(SearchResults {
-            vst2_files,
-            vst3_modules,
+            plugins,
             skipped_files,
             so_files: self.so_files,
         })

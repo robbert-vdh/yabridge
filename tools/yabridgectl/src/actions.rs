@@ -24,7 +24,7 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 use crate::config::{yabridge_vst3_home, Config, InstallationMethod, YabridgeFiles};
-use crate::files::{self, LibArchitecture, NativeFile};
+use crate::files::{self, LibArchitecture, NativeFile, Plugin, Vst2Plugin};
 use crate::utils;
 use crate::utils::{verify_path_setup, verify_wine_setup};
 
@@ -121,15 +121,15 @@ pub fn show_status(config: &Config) -> Result<()> {
         // be added both with and without a trailing slash
         println!("\n{}", path.join("").display());
 
-        for (plugin, (status, vst3_module)) in search_results.installation_status() {
-            let plugin_type = match vst3_module {
-                Some(module) => format!(
+        for (plugin_path, (plugin, status)) in search_results.installation_status() {
+            let plugin_type = match plugin {
+                Plugin::Vst2(_) => "VST2".cyan().to_string(),
+                Plugin::Vst3(module) => format!(
                     "{}, {}, {}",
                     "VST3".magenta(),
                     module.type_str(),
                     module.architecture
                 ),
-                None => "VST2".cyan().to_string(),
             };
 
             let status_str = match status {
@@ -141,7 +141,10 @@ pub fn show_status(config: &Config) -> Result<()> {
 
             println!(
                 "  {} :: {}, {}",
-                plugin.strip_prefix(path).unwrap_or(&plugin).display(),
+                plugin_path
+                    .strip_prefix(path)
+                    .unwrap_or(&plugin_path)
+                    .display(),
                 plugin_type,
                 status_str
             );
@@ -228,8 +231,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // modules in `~/.vst3/yabridge`.
     let mut yabridge_vst3_bundles: BTreeMap<PathBuf, BTreeSet<LibArchitecture>> = BTreeMap::new();
     for (path, search_results) in results {
-        num_installed += search_results.vst2_files.len();
-        num_installed += search_results.vst3_modules.len();
+        num_installed += search_results.plugins.len();
         orphan_files.extend(search_results.vst2_orphans().into_iter().cloned());
         skipped_dll_files.extend(search_results.skipped_files);
 
@@ -239,44 +241,46 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
             println!("{}", path.join("").display());
         }
 
-        // We'll set up the copies or symlinks for VST2 plugins
-        for plugin in search_results.vst2_files {
-            let target_path = plugin.with_extension("so");
+        for plugin in search_results.plugins {
+            // If verbose mode is enabled we'll print the path to the plugin after setting it up
+            let plugin_path: PathBuf = match plugin {
+                // We'll set up the copies or symlinks for VST2 plugins
+                Plugin::Vst2(Vst2Plugin {
+                    path: plugin_path, ..
+                }) => {
+                    let target_path = plugin_path.with_extension("so");
 
-            // Since we skip some files, we'll also keep track of how many new file we've actually
-            // set up
-            if install_file(
-                options.force,
-                config.method,
-                &files.libyabridge_vst2,
-                Some(libyabridge_vst2_hash),
-                &target_path,
-            )? {
-                num_new += 1;
-            }
+                    // Since we skip some files, we'll also keep track of how many new file we've
+                    // actually set up
+                    if install_file(
+                        options.force,
+                        config.method,
+                        &files.libyabridge_vst2,
+                        Some(libyabridge_vst2_hash),
+                        &target_path,
+                    )? {
+                        num_new += 1;
+                    }
 
-            if options.verbose {
-                println!(
-                    "  {}",
-                    plugin.strip_prefix(path).unwrap_or(&plugin).display()
-                );
-            }
-        }
+                    plugin_path.clone()
+                }
+                // And then create merged bundles for the VST3 plugins:
+                // https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles
+                Plugin::Vst3(module) => {
+                    // Only set up VST3 plugins when yabridge has been compiled with VST3 support
+                    if libyabridge_vst3_hash.is_none() {
+                        continue;
+                    }
 
-        // And then create merged bundles for the VST3 plugins:
-        // https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles
-        if let Some(libyabridge_vst3_hash) = libyabridge_vst3_hash {
-            for module in search_results.vst3_modules {
-                // Check if we already set up the same architecture version of the plugin (since
-                // 32-bit and 64-bit versions of the plugin cna live inside of the same bundle), and
-                // show a warning if we come across any duplicates.
-                let already_installed_architectures = yabridge_vst3_bundles
-                    .entry(module.target_bundle_home())
-                    .or_insert_with(BTreeSet::new);
-                if !already_installed_architectures.insert(module.architecture) {
-                    eprintln!(
-                        "{}",
-                        utils::wrap(&format!(
+                    // 32-bit and 64-bit versions of the plugin cna live inside of the same
+                    // bundle), and show a warning if we come across any duplicates.
+                    let already_installed_architectures = yabridge_vst3_bundles
+                        .entry(module.target_bundle_home())
+                        .or_insert_with(BTreeSet::new);
+                    if !already_installed_architectures.insert(module.architecture) {
+                        eprintln!(
+                            "{}",
+                            utils::wrap(&format!(
                             "{}: The {} version of '{}' has already been provided by another Wine \
                              prefix, skipping '{}'\n",
                             "WARNING".red(),
@@ -284,54 +288,63 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                             module.target_bundle_home().display(),
                             module.original_module_path().display(),
                         ))
-                    );
+                        );
 
-                    continue;
-                }
+                        continue;
+                    }
 
-                // We're building a merged VST3 bundle containing both a copy or symlink to
-                // `libyabridge-vst3.so` and the Windows VST3 plugin
-                let native_module_path = module.target_native_module_path();
-                utils::create_dir_all(native_module_path.parent().unwrap())?;
-                if install_file(
-                    options.force,
-                    config.method,
-                    files.libyabridge_vst3.as_ref().unwrap(),
-                    Some(libyabridge_vst3_hash),
-                    &native_module_path,
-                )? {
-                    num_new += 1;
-                }
+                    // We're building a merged VST3 bundle containing both a copy or symlink to
+                    // `libyabridge-vst3.so` and the Windows VST3 plugin
+                    let native_module_path = module.target_native_module_path();
+                    utils::create_dir_all(native_module_path.parent().unwrap())?;
+                    if install_file(
+                        options.force,
+                        config.method,
+                        files.libyabridge_vst3.as_ref().unwrap(),
+                        libyabridge_vst3_hash,
+                        &native_module_path,
+                    )? {
+                        num_new += 1;
+                    }
 
-                // We'll then symlink the Windows VST3 module to that bundle to create a merged
-                // bundle: https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles
-                let windows_module_path = module.target_windows_module_path();
-                utils::create_dir_all(windows_module_path.parent().unwrap())?;
-                install_file(
-                    true,
-                    InstallationMethod::Symlink,
-                    &module.original_module_path(),
-                    None,
-                    &windows_module_path,
-                )?;
-
-                // If `module` is a bundle, then it may contain a `Resources` directory with
-                // screenshots and documentation
-                // TODO: Also symlink presets, but this is a bit more involved. See
-                //       https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#win7preset
-                if let Some(original_resources_dir) = module.original_resources_dir() {
+                    // We'll then symlink the Windows VST3 module to that bundle to create a merged
+                    // bundle: https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles
+                    let windows_module_path = module.target_windows_module_path();
+                    utils::create_dir_all(windows_module_path.parent().unwrap())?;
                     install_file(
-                        false,
+                        true,
                         InstallationMethod::Symlink,
-                        &original_resources_dir,
+                        &module.original_module_path(),
                         None,
-                        &module.target_resources_dir(),
+                        &windows_module_path,
                     )?;
-                }
 
-                if options.verbose {
-                    println!("  {}", module.original_path().display());
+                    // If `module` is a bundle, then it may contain a `Resources` directory with
+                    // screenshots and documentation
+                    // TODO: Also symlink presets, but this is a bit more involved. See
+                    //       https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#win7preset
+                    if let Some(original_resources_dir) = module.original_resources_dir() {
+                        install_file(
+                            false,
+                            InstallationMethod::Symlink,
+                            &original_resources_dir,
+                            None,
+                            &module.target_resources_dir(),
+                        )?;
+                    }
+
+                    module.original_path().to_path_buf()
                 }
+            };
+
+            if options.verbose {
+                println!(
+                    "  {}",
+                    plugin_path
+                        .strip_prefix(path)
+                        .unwrap_or(&plugin_path)
+                        .display()
+                );
             }
         }
 
