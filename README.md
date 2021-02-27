@@ -39,6 +39,10 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
+**There is currently an issue with Wine 6.3 that prevents yabridge and similar
+applications from running.** **You'll have to temporarily downgrade to some Wine
+6.2 version until this is fixed.**
+
 Yabridge has been tested under the following hosts using Wine Staging 6.2:
 
 | Host                | VST2               | VST3                                                                                                                      |
@@ -72,6 +76,10 @@ Yabridge requires a recent version of Wine Staging. Users of Debian, Ubuntu,
 Linux Mint and Pop!\_OS should install Wine Staging from the [WineHQ
 repositories](https://wiki.winehq.org/Download) as the versions of Wine provided
 by those distro's repositories will be too old to be used with yabridge.
+
+**There's currently an issue with Wine 6.3 that prevents yabridge and similar
+applications from running.** **You'll have to temporarily downgrade to some Wine
+6.2 version until this is fixed.**
 
 For a general overview on how to use Wine to install Windows applications, check
 out Wine's [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
