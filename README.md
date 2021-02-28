@@ -501,6 +501,17 @@ these negative side effects:
   If anyone knows a good way to install an fsync patched version of Wine on
   other distros, then please let me know!
 
+- If you have the choice, the VST3 version of a plugin usually performs better
+  than the VST2 version. This is because with VST2 a typical audio processing
+  cycle requires _at least_ two function calls plus another function call for
+  every parameter change and MIDI event. With VST3 all of that gets wrapped up
+  in a single function call. That significantly reduces the amount of
+  back-and-forth communication needed, and thus the potential overhead of
+  bridging. VST3 plugins also allow the host do some optimizations for plugins
+  that are not actively processing sound, which potentially reduces the overall
+  DSP load even further in a large project where there may be many tracks that
+  are not actively being used during most of the project.
+
 - [Plugin groups](#plugin-groups) can also greatly improve performance when
   using many instances of the same VST2 plugin. _VST3 plugins have similar
   functionality built in by design_. Some plugins, like the BBC Spitfire
