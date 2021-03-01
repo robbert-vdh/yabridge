@@ -65,7 +65,7 @@ compile it from source using the instructions in the [build](#Building) section
 below. If you're downloading the prebuilt version and you're using a distro
 that's older than Ubuntu 20.04 such as Ubuntu 18.04, Debian 10, or Linux Mint
 19, then you should download the version that ends with `-ubuntu-18.04.tar.gz`.
-Alternatively there are AUR packages available if you are running Arch or
+Alternatively, there are AUR packages available if you are running Arch or
 Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
 [yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/),
 [yabridge-git](https://aur.archlinux.org/packages/yabridge-git/)).
@@ -89,7 +89,7 @@ out Wine's [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
 The easiest way to get up and running is through
 [yabridgectl](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl).
 Yabridgectl is already included in the archives downloaded from GitHub's
-releases page. If you're u sing Arch or Manjaro, then you can install it using
+releases page. If you're using Arch or Manjaro, then you can install it using
 the AUR package corresponding to your installed version of yabridge
 ([yabridgectl](https://aur.archlinux.org/packages/yabridgectl/),
 [yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/), and it's
@@ -183,7 +183,7 @@ handle it accordingly.
 
 It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
 automatically detect and use the Wine prefix the plugin's `.dll` file is located
-in. Alternatively you can set the `WINEPREFIX` environment variable to override
+in. Alternatively, you can set the `WINEPREFIX` environment variable to override
 the Wine prefix for all instances of yabridge.
 
 ### Search path setup
@@ -194,7 +194,7 @@ method and your yabridge files are located somewhere other than in
 of the AUR packages or a distro package then you also won't have to worry about
 any of this.
 
-Yabridge needs to know where it can find `yabridge-host.exe`. By default
+Yabridge needs to know where it can find `yabridge-host.exe`. By default,
 yabridge will search your through search path as well as in
 `~/.local/share/yabridge` if that exists. When loading yabridge from a
 non-standard location, such as when building from source, you may have to modify
@@ -209,7 +209,7 @@ then you can open a terminal and run `echo $SHELL` to find out. For the below
 examples I'll assume you're using the default installation location at
 `~/.local/share/yabridge`.
 
-- First if all, if you're using GDM, LightDM or LXDM as your display manager
+- First of all, if you're using GDM, LightDM or LXDM as your display manager
   (for instance if you're using GNOME, XFCE or LXDE), then your display manager
   won't respect your login shell and it will always use `/bin/sh` instead. In
   that case you will need to add the following line to `~/.profile`:
@@ -354,7 +354,7 @@ group = "izotope"
 
 # This would cause all plugins to be hosted within a single process. Doing so
 # greatly reduces the loading time of individual plugins, with the caveat being
-# that plugins are no longer sandboxed from eachother.
+# that plugins are no longer sandboxed from each other.
 #
 # ["*"]
 # group = "all"
@@ -457,7 +457,7 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
 
 ## Performance tuning
 
-Running Windows VST plugins under Wine should have minimal performance impact,
+Running Windows VST plugins under Wine should have a minimal performance impact,
 but you may still notice an increase in audio spikes and overall processing
 latency. Luckily there are a few things you can do to get rid of most or all of
 these negative side effects:
@@ -482,7 +482,7 @@ these negative side effects:
   version of Wine with the fsync patches included. Aside from a patched copy of
   Wine you'll also need a supported kernel for this to work. Manjaro's kernel
   supports fsync out of the box, and on Arch you can use the `linux-zen` kernel.
-  Finally you'll have to set the `WINEFSYNC` environment variable to `1` to
+  Finally, you'll have to set the `WINEFSYNC` environment variable to `1` to
   enable fsync. See the [search path setup](#search-path-setup) section for more
   information on where to set this environment variable so that it gets picked
   up when you start your DAW. You can use the following command to check if this
@@ -507,7 +507,7 @@ these negative side effects:
   every parameter change and MIDI event. With VST3 all of that gets wrapped up
   in a single function call. That significantly reduces the amount of
   back-and-forth communication needed, and thus the potential overhead of
-  bridging. VST3 plugins also allow the host do some optimizations for plugins
+  bridging. VST3 plugins also allow the host to do some optimizations for plugins
   that are not actively processing sound, which potentially reduces the overall
   DSP load even further in a large project where there may be many tracks that
   are not actively being used during most of the project.
@@ -532,7 +532,7 @@ include:
   downloaded to your downloads directory and run the installer directly. You may
   also have to manually terminate the ISO driver installation process when
   installing Native Access for the first time to allow the installation to
-  proceed. Some Native Instruments .iso files contain hidden files, and
+  proceed. Some Native Instruments .iso files contain hidden files, and the
   installer will fail unless you mount the .iso file with the correct mounting
   options. To do this, first run
   `udisksctl loop-setup -f ~/Downloads/<filename>.iso` to load the .iso file,
@@ -715,7 +715,7 @@ offers these two environment variables to control yabridge's logging facilities:
   information. Each level increases the amount of debug information printed:
 
   - A value of `0` (the default) means that yabridge will only log the output
-    from the Wine process the Wine process and some basic information about the
+    from the Wine process and some basic information about the
     environment, the configuration and the plugin being loaded.
   - A value of `1` will log detailed information about most events and function
     calls sent between the VST host and the plugin. This filters out some noisy
@@ -731,7 +731,7 @@ offers these two environment variables to control yabridge's logging facilities:
 Wine's own [logging facilities](https://wiki.winehq.org/Debug_Channels) can also
 be very helpful when diagnosing problems. In particular the `+message`,
 `+module` and `+relay` channels are very useful to trace the execution path
-within loaded VST plugin itself.
+within the loaded VST plugin itself.
 
 ### Attaching a debugger
 
@@ -751,4 +751,4 @@ Currently winedbg's normal GDB proxy is broken, so this option will start a
 remote GDB server that you have to connect to. You can use `gdb build/yabridge-host.exe.so` to start GDB, and then use the GDB `target` command
 printed to STDERR or `$YABRIDGE_DEBUG_FILE` to start the debugging session. Note
 that plugin names with spaces in the actual `.dll` or `.vst3` file name will
-have to be renamed first for this appraoch to work.
+have to be renamed first for this approach to work.
