@@ -622,7 +622,7 @@ have permission to do so yet. Examples of this are:
 - Vendor specific VST2.4 extensions (for instance, for
   [REAPER](https://www.reaper.fm/sdk/vst/vst_ext.php), though most of these
   extension functions will work out of the box without any modifications).
-- The [Presonus extensions](https://presonussoftware.com/en_US/developer) to teh
+- The [Presonus extensions](https://presonussoftware.com/en_US/developer) to the
   VST3 interfaces. All of these extensions have been superseded by official VST3
   interfaces in later versions of the VST3 SDK.
 - VST3 plugin support for
