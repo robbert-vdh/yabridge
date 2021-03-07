@@ -54,6 +54,7 @@ Yabridge has been tested under the following hosts using Wine Staging 6.2:
 | Ardour 6.5          | :heavy_check_mark: | :warning: Plugins with multiple inputs or outputs might cause Ardour to crash because it does not yet support that        |
 | Qtractor 0.9.19     | :heavy_check_mark: | :x: See [rncbc/qtractor#298](https://github.com/rncbc/qtractor/pull/298), this will be fixed in the next Qtractor release |
 | Mixbus 6.0.702      | :heavy_check_mark: | Does not support VST3                                                                                                     |
+| Mixbus 6.2.70       | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
 
 Please let me know if there are any issues with other hosts.
 
