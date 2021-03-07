@@ -175,6 +175,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
             s.value8b(instance_id);
             s.value4b(type);
             s.value4b(dir);
+            s.value4b(index);
         }
     };
 

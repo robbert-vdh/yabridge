@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fix bus information queries being performed for the wrong bus index. This
+  fixes VST3 sidechaining in _Renoise_, and prevents a number of VST3 plugins
+  with a sidechain input from causing _Ardour_ and _Mixbus_ to freeze.
+
 ## [3.0.1] - 2020-02-26
 
 ### Changed
