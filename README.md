@@ -49,7 +49,7 @@ Yabridge has been tested under the following hosts using Wine Staging 6.2:
 | ------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
 | Bitwig Studio 3.3.4 | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
 | REAPER 6.25         | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
-| Carla 2.2           | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
+| Carla 2.3           | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
 | Renoise 3.3.1       | :heavy_check_mark: | :warning: Editor resizing doesn't work properly because Renoise doesn't call `IPlugView::onSize()`                        |
 | Ardour 6.5          | :heavy_check_mark: | :warning: Plugins with multiple inputs or outputs might cause Ardour to crash because it does not yet support that        |
 | Qtractor 0.9.19     | :heavy_check_mark: | :x: See [rncbc/qtractor#298](https://github.com/rncbc/qtractor/pull/298), this will be fixed in the next Qtractor release |
