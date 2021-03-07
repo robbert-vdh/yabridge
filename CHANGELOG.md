@@ -12,7 +12,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fix bus information queries being performed for the wrong bus index. This
   fixes VST3 sidechaining in _Renoise_, and prevents a number of VST3 plugins
-  with a sidechain input from causing _Ardour_ and _Mixbus_ to freeze.
+  with a sidechain input from causing _Ardour_ and _Mixbus_ to freeze or crash.
 
 ## [3.0.1] - 2020-02-26
 
