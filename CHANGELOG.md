@@ -10,6 +10,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Packaging
 
+- The Meson wrap dependencies for `bitsery`, `function2` and `tomlplusplus` are
+  now defined using `dependency()` with a subproject fallback to ease distro
+  packaging.
 - The VST3 SDK Meson wrap now the `v3.7.1_build_50-patched` tag instead of a
   commit hash.
 

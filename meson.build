@@ -278,10 +278,12 @@ boost_filesystem_dep = dependency(
   modules : ['filesystem'],
   static : with_static_boost,
 )
-bitsery_dep = subproject('bitsery', version : '5.2.0').get_variable('bitsery_dep')
-function2_dep = subproject('function2', version : '4.1.0').get_variable('function2_dep')
+# TODO: Meson doesn't have a way to define version ranges, does it? Like
+#       `^>=5.2.0`, `>=5.2.0 && <6.0.0` or `5.2.*`.
+bitsery_dep = dependency('bitsery', version : '>=5.2.0', fallback : ['bitsery', 'bitsery_dep'])
+function2_dep = dependency('function2', version : '>=4.1.0', fallback : ['function2', 'function2_dep'])
 threads_dep = dependency('threads')
-tomlplusplus_dep = subproject('tomlplusplus', version : '2.1.0').get_variable('tomlplusplus_dep')
+tomlplusplus_dep = dependency('tomlplusplus', version : '>=2.1.0', fallback : ['tomlplusplus', 'tomlplusplus_dep'])
 # The built in threads dependency does not know how to handle winegcc
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
