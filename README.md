@@ -39,11 +39,12 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-**There is currently an issue with Wine 6.3 that prevents yabridge and similar
-applications from running.** **You'll have to temporarily downgrade to some Wine
-6.2 version until this is fixed.**
+**There was an issue with Wine 6.3 that prevented yabridge and similar
+applications from running.** **You'll have to upgrade to the recently released
+[Wine 6.4](https://www.winehq.org/announce/6.4) or downgrade to Wine 6.2 if
+you're currently using Wine 6.3.**
 
-Yabridge has been tested under the following hosts using Wine Staging 6.2:
+Yabridge has been tested under the following hosts using Wine Staging 6.4:
 
 | Host                | VST2               | VST3                                                                                                                      |
 | ------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
@@ -77,9 +78,10 @@ Linux Mint and Pop!\_OS should install Wine Staging from the [WineHQ
 repositories](https://wiki.winehq.org/Download) as the versions of Wine provided
 by those distro's repositories will be too old to be used with yabridge.
 
-**There's currently an issue with Wine 6.3 that prevents yabridge and similar
-applications from running.** **You'll have to temporarily downgrade to some Wine
-6.2 version until this is fixed.**
+**There was an issue with Wine 6.3 that prevented yabridge and similar
+applications from running.** **You'll have to upgrade to the recently released
+[Wine 6.4](https://www.winehq.org/announce/6.4) or downgrade to Wine 6.2 if
+you're currently using Wine 6.3.**
 
 For a general overview on how to use Wine to install Windows applications, check
 out Wine's [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
