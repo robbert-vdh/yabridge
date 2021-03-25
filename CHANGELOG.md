@@ -16,7 +16,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - The VST3 SDK Meson wrap now the `v3.7.1_build_50-patched` tag instead of a
   commit hash.
 
-## [3.0.2] - 2020-03-07
+## [3.0.2] - 2021-03-07
 
 ### Fixed
 
@@ -24,7 +24,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   fixes VST3 sidechaining in _Renoise_, and prevents a number of VST3 plugins
   with a sidechain input from causing _Ardour_ and _Mixbus_ to freeze or crash.
 
-## [3.0.1] - 2020-02-26
+## [3.0.1] - 2021-02-26
 
 ### Changed
 
