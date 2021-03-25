@@ -8,6 +8,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Yabridgectl
+
+- Minor spelling fixes.
+
 ### Packaging
 
 - The Meson wrap dependencies for `bitsery`, `function2` and `tomlplusplus` are

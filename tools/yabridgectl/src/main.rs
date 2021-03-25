@@ -74,7 +74,7 @@ fn main() -> Result<()> {
         .subcommand(App::new("status").about("Show the installation status for all plugins"))
         .subcommand(
             App::new("set")
-                .about("Change installation method or yabridge path")
+                .about("Change the installation method or yabridge path")
                 .setting(AppSettings::ArgRequiredElseHelp)
                 .arg(
                     Arg::with_name("method")
