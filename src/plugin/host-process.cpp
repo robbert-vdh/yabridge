@@ -56,8 +56,13 @@ bp::child launch_host(fs::path host_path, Args&&... args) {
         bp::posix::use_vfork, std::forward<Args>(args)...);
 }
 
-HostProcess::HostProcess(boost::asio::io_context& io_context, Logger& logger)
-    : stdout_pipe(io_context), stderr_pipe(io_context), logger(logger) {
+HostProcess::HostProcess(boost::asio::io_context& io_context,
+                         Logger& logger,
+                         Sockets& sockets)
+    : stdout_pipe(io_context),
+      stderr_pipe(io_context),
+      sockets(sockets),
+      logger(logger) {
     // Print the Wine host's STDOUT and STDERR streams to the log file. This
     // should be done before trying to accept the sockets as otherwise we will
     // miss all output.
@@ -68,8 +73,9 @@ HostProcess::HostProcess(boost::asio::io_context& io_context, Logger& logger)
 IndividualHost::IndividualHost(boost::asio::io_context& io_context,
                                Logger& logger,
                                const PluginInfo& plugin_info,
-                               const HostRequest& host_request)
-    : HostProcess(io_context, logger),
+                               const HostRequest& host_request,
+                               Sockets& sockets)
+    : HostProcess(io_context, logger, sockets),
       plugin_info(plugin_info),
       host_path(find_vst_host(plugin_info.native_library_path,
                               plugin_info.plugin_arch,
@@ -109,6 +115,13 @@ bool IndividualHost::running() {
 }
 
 void IndividualHost::terminate() {
+    // NOTE: This technically shouldn't be needed, but in Wine 6.5 sending
+    //       SIGKILL to a Wine process no longer terminates the threads spawned
+    //       by that process, so if we don't manually close the sockets there
+    //       will still be threads listening on those sockets which in turn also
+    //       prevents us from joining our `std::jthread`s on the plugin side.
+    sockets.close();
+
     host.terminate();
     // NOTE: This leaves a zombie, because Boost.Process will actually not call
     //       `wait()` after we have terminated the process.
@@ -121,12 +134,11 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
                      const HostRequest& host_request,
                      Sockets& sockets,
                      std::string group_name)
-    : HostProcess(io_context, logger),
+    : HostProcess(io_context, logger, sockets),
       plugin_info(plugin_info),
       host_path(find_vst_host(plugin_info.native_library_path,
                               plugin_info.plugin_arch,
-                              true)),
-      sockets(sockets) {
+                              true)) {
 #ifdef WITH_WINEDBG
     if (plugin_info.windows_plugin_path.string().find(' ') !=
         std::string::npos) {

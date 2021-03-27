@@ -68,8 +68,13 @@ class HostProcess {
      *   handled on.
      * @param logger The `Logger` instance the redirected STDIO streams will be
      *   written to.
+     * @param sockets The socket endpoints that will be used for communication
+     *   with the plugin. When the plugin shuts down, we'll close all of the
+     *   sockets used by the plugin.
      */
-    HostProcess(boost::asio::io_context& io_context, Logger& logger);
+    HostProcess(boost::asio::io_context& io_context,
+                Logger& logger,
+                Sockets& sockets);
 
     /**
      * The STDOUT stream of the Wine process we can forward to the logger.
@@ -79,6 +84,12 @@ class HostProcess {
      * The STDERR stream of the Wine process we can forward to the logger.
      */
     patched_async_pipe stderr_pipe;
+
+    /**
+     * The associated sockets for the plugin we're hosting. This is used to
+     * terminate the plugin.
+     */
+    Sockets& sockets;
 
    private:
     /**
@@ -108,6 +119,9 @@ class IndividualHost : public HostProcess {
      * @param host_request The information about the plugin we should launch a
      *   host process for. The values in the struct will be used as command line
      *   arguments.
+     * @param sockets The socket endpoints that will be used for communication
+     *   with the plugin. When the plugin shuts down, we'll close all of the
+     *   sockets used by the plugin.
      *
      * @throw std::runtime_error When `plugin_path` does not point to a valid
      *   32-bit or 64-bit .dll file.
@@ -115,7 +129,8 @@ class IndividualHost : public HostProcess {
     IndividualHost(boost::asio::io_context& io_context,
                    Logger& logger,
                    const PluginInfo& plugin_info,
-                   const HostRequest& host_request);
+                   const HostRequest& host_request,
+                   Sockets& sockets);
 
     boost::filesystem::path path() override;
     bool running() override;
@@ -153,15 +168,15 @@ class GroupHost : public HostProcess {
      * @param host_request The information about the plugin we should launch a
      *   host process for. This object will be sent to the group host process.
      * @param sockets The socket endpoints that will be used for communication
-     *   with the plugin. When the plugin shuts down, we'll terminate the
-     *   dispatch socket contained in this object.
+     *   with the plugin. When the plugin shuts down, we'll close all of the
+     *   sockets used by the plugin.
      * @param group_name The name of the plugin group.
      */
     GroupHost(boost::asio::io_context& io_context,
               Logger& logger,
               const PluginInfo& plugin_info,
               const HostRequest& host_request,
-              Sockets& socket_endpoint,
+              Sockets& sockets,
               std::string group_name);
 
     boost::filesystem::path path() override;
@@ -189,12 +204,6 @@ class GroupHost : public HostProcess {
      * and we will terminate the plugin initialization process.
      */
     std::atomic_bool startup_failed;
-
-    /**
-     * The associated sockets for the plugin we're hosting. This is used to
-     * terminate the plugin.
-     */
-    Sockets& sockets;
 
     /**
      * A thread that waits for the group host to have started and then ask it to

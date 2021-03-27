@@ -84,11 +84,12 @@ class PluginBridge {
                             io_context,
                             generic_logger,
                             info,
-                            HostRequest{.plugin_type = plugin_type,
-                                        .plugin_path =
-                                            info.windows_plugin_path.string(),
-                                        .endpoint_base_dir =
-                                            sockets.base_dir.string()}))),
+                            HostRequest{
+                                .plugin_type = plugin_type,
+                                .plugin_path =
+                                    info.windows_plugin_path.string(),
+                                .endpoint_base_dir = sockets.base_dir.string()},
+                            sockets))),
           has_realtime_priority(has_realtime_priority_promise.get_future()),
           wine_io_handler([&]() {
               // We no longer run this thread with realtime scheduling because

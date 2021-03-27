@@ -8,7 +8,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Yabridgectl
+### Fixed
+
+- Work around a regression in Wine 6.5 that would prevent yabridge from shutting
+  down. With Wine 6.5 terminating a Wine process no longer terminates its
+  threads, which would cause yabridge's plugin and host components to wait for
+  each other to shut down.
+
+### yabridgectl
 
 - Minor spelling fixes.
 
