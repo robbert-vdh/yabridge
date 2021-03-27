@@ -39,10 +39,12 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-**There was an issue with Wine 6.3 that prevented yabridge and similar
-applications from running.** **You'll have to upgrade to the recently released
-[Wine 6.4](https://www.winehq.org/announce/6.4) or downgrade to Wine 6.2 if
-you're currently using Wine 6.3.**
+**There's currently an [issue](https://bugs.winehq.org/show_bug.cgi?id=50869)
+with Wine 6.5 that will prevent yabridge from shutting down.** **There's a
+temporary workaround for this issue on yabridge's master branch (see the
+[automated
+builds](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)),
+and you can also just stay on Wine Staging 6.4 for the time being.**
 
 Yabridge has been tested under the following hosts using Wine Staging 6.4:
 
@@ -78,10 +80,12 @@ Linux Mint and Pop!\_OS should install Wine Staging from the [WineHQ
 repositories](https://wiki.winehq.org/Download) as the versions of Wine provided
 by those distro's repositories will be too old to be used with yabridge.
 
-**There was an issue with Wine 6.3 that prevented yabridge and similar
-applications from running.** **You'll have to upgrade to the recently released
-[Wine 6.4](https://www.winehq.org/announce/6.4) or downgrade to Wine 6.2 if
-you're currently using Wine 6.3.**
+**There's currently an [issue](https://bugs.winehq.org/show_bug.cgi?id=50869)
+with Wine 6.5 that will prevent yabridge from shutting down.** **There's a
+temporary workaround for this issue on yabridge's master branch (see the
+[automated
+builds](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)),
+and you can also just stay on Wine Staging 6.4 for the time being.**
 
 For a general overview on how to use Wine to install Windows applications, check
 out Wine's [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
