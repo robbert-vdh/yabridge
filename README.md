@@ -463,27 +463,28 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
 
 ## Performance tuning
 
-Running Windows VST plugins under Wine should have a minimal performance impact,
-but you may still notice an increase in audio spikes and overall processing
-latency. Luckily there are a few things you can do to get rid of most or all of
-these negative side effects:
+Running Windows plugins under Wine should have a minimal performance overhead,
+but you may still notice an increase in latency spikes and overall DSP load.
+Luckily there are a few things you can do to get rid of most or all of these
+negative side effects:
 
 - First of all, you'll want to make sure that you can run programs with realtime
-  priorities. Note that on Arch and Manjaro this does not necessarily require a
+  scheduling. Note that on Arch and Manjaro this does not necessarily require a
   realtime kernel as they include the `PREEMPT` patch set in their regular
-  kernels. You can verify that this is working correctly by running `chrt -f 10 date`,
-  which should print the current date and time, and running `uname -a` should
+  kernels. You can verify that this is working correctly by running
+  `chrt -f 10 whoami`, which should your username, and running `uname -a` should
   print something that contains `PREEMPT` in the output. You can also try
   enabling the `threadirqs` kernel parameter which can in some situations help
   with xruns.
 
-- Make sure you're using the performance frequency scaling governor, as changing
-  clock speeds in the middle of a real time workload can cause latency spikes.
+- Make sure that you're using the performance frequency scaling governor, as
+  changing clock speeds in the middle of a real time workload can cause latency
+  spikes.
 
 - The last but perhaps the most important thing you can do is to use a build of
-  Wine with Proton's fsync patches. This can improve performance significantly,
-  with certain multithreading-heavy plugins. If you're running
-  Arch or Manjaro, then you can use [Tk-Glitch's Wine
+  Wine compiled with Proton's fsync patches. This can improve performance
+  significantly when using certain plugins. If you're running Arch or Manjaro,
+  then you can use [Tk-Glitch's Wine
   fork](https://github.com/Frogging-Family/wine-tkg-git) for a customizable
   version of Wine with the fsync patches included. Aside from a patched copy of
   Wine you'll also need a supported kernel for this to work. Manjaro's kernel
@@ -498,16 +499,16 @@ these negative side effects:
   env -i HOME="$HOME" $SHELL -l -c 'echo $WINEFSYNC'
   ```
 
-  If this prints `1` then everything is set up correctly. If you're using GDM or
-  LightDM, then you should replace `$SHELL` in the command above with `sh`
-  before running it. Running `wineboot` from a terminal should now also print
-  `fsync: up and running.`. You'll have to log out and back in again for this to
-  take effect on applications launched from the GUI.
+  If this prints `1` then everything is set up correctly. If you're using GNOME,
+  XFCE, or any other desktop environment using GDM, LightDM or LXDM, then you
+  should replace `$SHELL` in the command above with `sh` before running it.
+  You'll have to log out and back in again for this to take effect on
+  applications launched from the GUI.
 
-  If anyone knows a good way to install an fsync patched version of Wine on
-  other distros, then please let me know!
+  You can find a guide to setting these things up on Ubuntu
+  [here](https://zezic.github.io/yabridge-benchmark/).
 
-- If you have the choice, the VST3 version of a plugin usually performs better
+- If you have the option, the VST3 version of a plugin usually performs better
   than the VST2 version. This is because with VST2 a typical audio processing
   cycle requires _at least_ two function calls plus another function call for
   every parameter change and MIDI event. With VST3 all of that gets wrapped up
