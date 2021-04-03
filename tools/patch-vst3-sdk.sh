@@ -19,9 +19,11 @@ if [[ -z $sdk_directory ]]; then
   exit 1
 fi
 
-# Make sure all imports use the correct casing
+# Make sure all imports use the correct casing. In version 3.7.2 they actually
+# fixed the casing for `windows.h`, but `shlobj.h` is still incorrect. We should
+# remove this once casing issues have been fixed everywhere.
 find "$sdk_directory" -type f \( -iname '*.h' -or -iname '*.cpp' \) -print0 |
-  xargs -0 sed -i -E 's/^#include <(Windows.h|ShlObj.h)>$/#include <\L\1\E>/'
+  xargs -0 sed -i -E 's/^#include <(ShlObj.h)>$/#include <\L\1\E>/'
 
 # Use the proper libc functions instead of the MSVC intrinsics. These are also
 # used in `fstring.cpp`, but there we will patch the entire file to use the
