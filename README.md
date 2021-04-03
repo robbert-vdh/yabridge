@@ -654,7 +654,7 @@ The following dependencies are included in the repository as a Meson wrap:
 - [bitsery](https://github.com/fraillt/bitsery)
 - [function2](https://github.com/Naios/function2)
 - [tomlplusplus](https://github.com/marzer/tomlplusplus)
-- Version 3.7.1 of the [VST3 SDK](https://github.com/robbert-vdh/vst3sdk) with
+- Version 3.7.2 of the [VST3 SDK](https://github.com/robbert-vdh/vst3sdk) with
   some [patches](https://github.com/robbert-vdh/yabridge/blob/master/tools/patch-vst3-sdk.sh)
   to allow Winelib compilation
 

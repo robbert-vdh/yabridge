@@ -299,7 +299,7 @@ if with_vst3
   # Meson does not allow mixing native and non native dependencies from
   # subprojects. The only workaround is to only define the necessary variables
   # there, and to then assemble the dependencies here ourselves.
-  vst3 = subproject('vst3', version : '3.7.1')
+  vst3 = subproject('vst3', version : '3.7.2')
   vst3_compiler_options = vst3.get_variable('compiler_options')
   vst3_include_dir = vst3.get_variable('include_dir')
 

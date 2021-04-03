@@ -24,8 +24,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - The Meson wrap dependencies for `bitsery`, `function2` and `tomlplusplus` are
   now defined using `dependency()` with a subproject fallback to ease distro
   packaging.
-- The VST3 SDK Meson wrap now the `v3.7.1_build_50-patched` tag instead of a
-  commit hash.
+- The VST3 SDK dependency and the patches in `tools/patch-vst3-sdk.sh` are now
+  based on version 3.7.2 of the SDK.
+- The VST3 SDK Meson wrap now uses the `v3.7.2_build_28-patched` tag instead of
+  a commit hash.
 
 ## [3.0.2] - 2021-03-07
 
