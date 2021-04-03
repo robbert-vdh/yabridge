@@ -16,6 +16,14 @@
 
 #include "bridges/vst3.h"
 
+// FIXME: The VST3 SDK as of version 3.7.2 now includes multiple local functions
+//        called `InitModule` and `DeinitModule`: one in the new
+//        `public.sdk/source/main/initmodule.cpp`, and the existing ones in the
+//        OS-specific `*main.cpp` files. These cause linking errors during unity
+//        builds, so we'll just rename the ones in this include so we can stay
+//        as close to the vanilla SDK as possible.
+#define InitModule init_module
+#define DeinitModule deinit_module
 #include <public.sdk/source/main/linuxmain.cpp>
 
 // Because VST3 plugins consist of completely independent components that have
