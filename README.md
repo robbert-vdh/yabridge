@@ -618,6 +618,13 @@ Aside from that, these are some known caveats:
   VST 2.4 has no way to let the host know that those labels have been updated.
   Deactivating and reactivating the plugin will cause these labels to be updated
   again for the current patch.
+- The Cinnamon desktop environment has some quirks with its window management
+  that affect yabridge's plugin editor embedding. Most notably some plugins may
+  flicker while dragging windows around, and there may be [rendering
+  issues](https://github.com/robbert-vdh/yabridge/issues/89) when using multiple
+  monitors depending on which screen has been set as primary. Enabling the
+  XEmbed [compatibility option](#compatibility-options) may help, but Wine's
+  XEmbed implementation also introduces other rendering issues.
 
 There are also some extension features for both VST2.4 and VST3 that have not
 been implemented yet because I either haven't seen them used or because we don't
