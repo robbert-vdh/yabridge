@@ -14,6 +14,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   shutting down. With Wine 6.5 terminating a Wine process no longer terminates
   its threads, which would cause yabridge's plugin and host components to wait
   for each other to shut down.
+- Fixed a multithreading related memory error in the VST3 audio processor socket
+  management.
 
 ### yabridgectl
 

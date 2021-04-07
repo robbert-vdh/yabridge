@@ -526,6 +526,12 @@ class AdHocSocketHandler {
         socket.shutdown(
             boost::asio::local::stream_protocol::socket::shutdown_both, err);
         socket.close();
+
+        while (currently_listening) {
+            // If another thread is currently calling `receive_multi()`, we'll
+            // spinlock until that function has exited. We would otherwise get a
+            // use-after-free when this object is destroyed from another thread.
+        }
     }
 
    protected:
@@ -621,6 +627,12 @@ class AdHocSocketHandler {
     void receive_multi(std::optional<std::reference_wrapper<Logger>> logger,
                        F primary_callback,
                        G secondary_callback) {
+        // We use this flag to have the `close()` function wait for the this
+        // function to exit, to prevent use-after-frees when destroying this
+        // object from another thread.
+        assert(!currently_listening);
+        currently_listening = true;
+
         // As described above we'll handle incoming requests for `socket` on
         // this thread. We'll also listen for incoming connections on `endpoint`
         // on another thread. For any incoming connection we'll spawn a new
@@ -686,6 +698,8 @@ class AdHocSocketHandler {
         std::lock_guard lock(active_secondary_requests_mutex);
         secondary_context.stop();
         acceptor.reset();
+
+        currently_listening = false;
     }
 
     /**
@@ -765,6 +779,16 @@ class AdHocSocketHandler {
      * on the plugin side.
      */
     std::optional<boost::asio::local::stream_protocol::acceptor> acceptor;
+
+    /**
+     * After the socket gets closed, we do some cleanup at the end of
+     * `receive_multi()`. To prevent use-after-frees, we should wait for this
+     * function to exit when `close()`-ing a socket that's currently being
+     * listened on. Since after closing the socket the thread should terminate
+     * near instantly, we'll just do a spinlock here instead of using condition
+     * variables.
+     */
+    std::atomic_bool currently_listening = false;
 
     /**
      * A mutex that locks the primary `socket`. If this is locked, then any new
