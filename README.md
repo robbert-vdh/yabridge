@@ -48,15 +48,15 @@ and you can also just stay on Wine Staging 6.4 for the time being.**
 
 Yabridge has been tested under the following hosts using Wine Staging 6.4:
 
-| Host                | VST2               | VST3                                                                                                                      |
-| ------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| Bitwig Studio 3.3.7 | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
-| REAPER 6.26         | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
-| Carla 2.3           | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
-| Renoise 3.3.2       | :heavy_check_mark: | :heavy_check_mark:                                                                                                        |
-| Ardour 6.6          | :heavy_check_mark: | :warning: Ardour does not support plugins with multiple inputs or outputs                                                 |
-| Mixbus 6.2.407      | :heavy_check_mark: | :warning: Mixbus does not support plugins with multiple inputs or outputs                                                 |
-| Qtractor 0.9.19     | :heavy_check_mark: | :x: See [rncbc/qtractor#298](https://github.com/rncbc/qtractor/pull/298), this will be fixed in the next Qtractor release |
+| Host                | VST2               | VST3                                                                      |
+| ------------------- | ------------------ | ------------------------------------------------------------------------- |
+| Bitwig Studio 3.3.7 | :heavy_check_mark: | :heavy_check_mark:                                                        |
+| REAPER 6.26         | :heavy_check_mark: | :heavy_check_mark:                                                        |
+| Carla 2.3           | :heavy_check_mark: | :heavy_check_mark:                                                        |
+| Qtractor 0.9.21     | :heavy_check_mark: | :heavy_check_mark:                                                        |
+| Renoise 3.3.2       | :heavy_check_mark: | :heavy_check_mark:                                                        |
+| Ardour 6.6          | :heavy_check_mark: | :warning: Ardour does not support plugins with multiple inputs or outputs |
+| Mixbus 6.2.407      | :heavy_check_mark: | :warning: Mixbus does not support plugins with multiple inputs or outputs |
 
 Please let me know if there are any issues with other hosts.
 
