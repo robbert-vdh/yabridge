@@ -40,9 +40,9 @@ while also staying easy to debug and maintain.
 ## Tested with
 
 **There's currently an [issue](https://bugs.winehq.org/show_bug.cgi?id=50869)
-with Wine 6.5 that will prevent yabridge from shutting down.** **There's a
-temporary workaround for this issue on yabridge's master branch (see the
-[automated
+with Wine 6.5 and Wine 6.6 that will prevent yabridge from shutting down.**
+**There's a temporary workaround for this issue on yabridge's master branch (see
+the [automated
 builds](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)),
 and you can also just stay on Wine Staging 6.4 for the time being.**
 
@@ -81,9 +81,9 @@ repositories](https://wiki.winehq.org/Download) as the versions of Wine provided
 by those distro's repositories will be too old to be used with yabridge.
 
 **There's currently an [issue](https://bugs.winehq.org/show_bug.cgi?id=50869)
-with Wine 6.5 that will prevent yabridge from shutting down.** **There's a
-temporary workaround for this issue on yabridge's master branch (see the
-[automated
+with Wine 6.5 and Wine 6.6 that will prevent yabridge from shutting down.**
+**There's a temporary workaround for this issue on yabridge's master branch (see
+the [automated
 builds](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)),
 and you can also just stay on Wine Staging 6.4 for the time being.**
 
