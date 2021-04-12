@@ -10,6 +10,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Added a workaround for a bug present in every Bluecat Audio VST3 plugin where
+  those plugins don't expose the `IPluginBase` interface through their query
+  interface.
 - Worked around a regression in Wine 6.5 that would prevent yabridge from
   shutting down. With Wine 6.5 terminating a Wine process no longer terminates
   its threads, which would cause yabridge's plugin and host components to wait

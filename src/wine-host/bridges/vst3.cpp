@@ -35,6 +35,19 @@
 #define __IFileOperation_INTERFACE_DEFINED__
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
+/**
+ * This is a workaround for Bluecat Audio plugins that don't expose their
+ * `IPluginBase` interface through the query interface. Even though every plugin
+ * object _must_ support `IPlugBase`, these plugins only expose those functions
+ * through `IComponent` (which derives from `IPluginBase`). So if we do
+ * encounter one of those plugins, then we'll just have to coerce an
+ * `IComponent` pointer into an `IPluginBase` smart pointer. This way we can
+ * keep the rest of yabridge's design in tact.
+ */
+Steinberg::FUnknownPtr<Steinberg::IPluginBase> hack_init_plugin_base(
+    Steinberg::IPtr<Steinberg::FUnknown> object,
+    Steinberg::IPtr<Steinberg::Vst::IComponent> component);
+
 InstancePlugView::InstancePlugView() {}
 
 InstancePlugView::InstancePlugView(
@@ -62,7 +75,7 @@ InstanceInterfaces::InstanceInterfaces(
       midi_mapping(object),
       note_expression_controller(object),
       note_expression_physical_ui_mapping(object),
-      plugin_base(object),
+      plugin_base(hack_init_plugin_base(object, component)),
       unit_data(object),
       parameter_function_name(object),
       prefetchable_support(object),
@@ -1296,4 +1309,43 @@ void Vst3Bridge::unregister_object_instance(size_t instance_id) {
             object_instances.erase(instance_id);
         })
         .wait();
+}
+
+Steinberg::FUnknownPtr<Steinberg::IPluginBase> hack_init_plugin_base(
+    Steinberg::IPtr<Steinberg::FUnknown> object,
+    Steinberg::IPtr<Steinberg::Vst::IComponent> component) {
+    // See the docstring for more information
+    Steinberg::FUnknownPtr<Steinberg::IPluginBase> plugin_base(object);
+    if (plugin_base) {
+        return plugin_base;
+    } else if (component) {
+        // HACK: So this should never be hit, because every object
+        //       initializeable from a plugin's factory must inherit from
+        //       `IPluginBase`. But, the Bluecat Audio plugins seem to have an
+        //       implementation issue where they don't expose this interface. So
+        //       instead we'll coerce from `IComponent` instead if this is the
+        //       case, since `IComponent` derives from `IPluginBase`. Doing
+        //       these manual pointer casts should be perfectly safe, even if
+        //       they go against the very idea of having a query interface.
+        static_assert(sizeof(Steinberg::FUnknownPtr<Steinberg::IPluginBase>) ==
+                      sizeof(Steinberg::IPtr<Steinberg::IPluginBase>));
+
+        std::cerr << "WARNING: This plugin doesn't expose the IPluginBase"
+                  << std::endl;
+        std::cerr << "         interface and is broken. We will attempt an"
+                  << std::endl;
+        std::cerr << "         unsafe coercion from IComponent instead."
+                  << std::endl;
+
+        Steinberg::IPtr<Steinberg::IPluginBase> coerced_plugin_base(
+            component.get());
+
+        return *static_cast<Steinberg::FUnknownPtr<Steinberg::IPluginBase>*>(
+            &coerced_plugin_base);
+    } else {
+        // This isn't really needed because the VST3 smart pointers can already
+        // deal with null pointers, but might as well drive the point of this
+        // hack home even further
+        return nullptr;
+    }
 }
