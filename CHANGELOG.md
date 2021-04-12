@@ -8,6 +8,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added support for using 32-bit Windows VST3 plugins in 64-bit Linux VST3
+  hosts.
+
 ### Fixed
 
 - Added a workaround for a bug present in every _Bluecat Audio_ VST3 plugin

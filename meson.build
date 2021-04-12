@@ -39,6 +39,11 @@ compiler_options = [
   # https://github.com/boostorg/asio/issues/312
   '-DBOOST_ASIO_DISABLE_CONCEPTS',
 ]
+# NOTE: GCC doesn't 8-byte align doubles in structs on x86 for ABI-compatibilty
+#       reasons, but MSVC++ does. We need to force this same alignment to be
+#       ABI-compatible with 32-bit binaries created with MSVC++ on Windows.
+wine_32bit_compiler_options = ['-m32', '-malign-double']
+wine_64bit_compiler_options = ['-m64']
 
 with_bitbridge = get_option('with-bitbridge')
 with_static_boost = get_option('with-static-boost')
@@ -356,7 +361,7 @@ if with_vst3
   vst3_base_wine_64bit = static_library(
     'vst3_base_wine_64bit',
     vst3.get_variable('base_sources'),
-    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-m64', '-Wno-cpp'],
+    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + wine_64bit_compiler_options + [ '-Wno-cpp'],
     include_directories : vst3_include_dir,
     override_options : ['warning_level=0'],
     native : false,
@@ -364,7 +369,7 @@ if with_vst3
   vst3_pluginterfaces_wine_64bit = static_library(
     'vst3_pluginterfaces_wine_64bit',
     vst3.get_variable('pluginterfaces_sources'),
-    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-m64'],
+    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + wine_64bit_compiler_options,
     include_directories : vst3_include_dir,
     override_options : ['warning_level=0'],
     native : false,
@@ -373,7 +378,7 @@ if with_vst3
     'vst3_sdk_hosting_wine_64bit',
     vst3.get_variable('sdk_common_sources') + vst3.get_variable('sdk_hosting_sources'),
     link_with : [vst3_base_wine_64bit, vst3_pluginterfaces_wine_64bit],
-    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-m64', '-Wno-multichar'],
+    cpp_args : vst3_compiler_options + vst3_wine_compiler_options + wine_64bit_compiler_options + ['-Wno-multichar'],
     include_directories : vst3_include_dir,
     override_options : ['warning_level=0'],
     native : false,
@@ -392,7 +397,7 @@ if with_vst3
     vst3_base_wine_32bit = static_library(
       'vst3_base_wine_32bit',
       vst3.get_variable('base_sources'),
-      cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-m32', '-Wno-cpp'],
+      cpp_args : vst3_compiler_options + vst3_wine_compiler_options + wine_32bit_compiler_options + ['-Wno-cpp'],
       include_directories : vst3_include_dir,
       override_options : ['warning_level=0'],
       native : false,
@@ -400,7 +405,7 @@ if with_vst3
     vst3_pluginterfaces_wine_32bit = static_library(
       'vst3_pluginterfaces_wine_32bit',
       vst3.get_variable('pluginterfaces_sources'),
-      cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-m32'],
+      cpp_args : vst3_compiler_options + vst3_wine_compiler_options + wine_32bit_compiler_options,
       include_directories : vst3_include_dir,
       override_options : ['warning_level=0'],
       native : false,
@@ -409,7 +414,7 @@ if with_vst3
       'vst3_sdk_hosting_wine_32bit',
       vst3.get_variable('sdk_common_sources') + vst3.get_variable('sdk_hosting_sources'),
       link_with : [vst3_base_wine_32bit, vst3_pluginterfaces_wine_32bit],
-      cpp_args : vst3_compiler_options + vst3_wine_compiler_options + ['-m32', '-Wno-multichar'],
+      cpp_args : vst3_compiler_options + vst3_wine_compiler_options + wine_32bit_compiler_options + ['-Wno-multichar'],
       include_directories : vst3_include_dir,
       override_options : ['warning_level=0'],
       native : false,
@@ -539,7 +544,7 @@ executable(
   native : false,
   include_directories : include_dir,
   dependencies : host_64bit_deps,
-  cpp_args : compiler_options + ['-m64'],
+  cpp_args : compiler_options + wine_64bit_compiler_options,
   link_args : ['-m64'],
 )
 
@@ -549,7 +554,7 @@ executable(
   native : false,
   include_directories : include_dir,
   dependencies : host_64bit_deps,
-  cpp_args : compiler_options + ['-m64'],
+  cpp_args : compiler_options + wine_64bit_compiler_options,
   link_args : ['-m64'],
 )
 
@@ -560,7 +565,7 @@ if with_bitbridge
     native : false,
     include_directories : include_dir,
     dependencies : host_32bit_deps,
-    cpp_args : compiler_options + ['-m32'],
+    cpp_args : compiler_options + wine_32bit_compiler_options,
     link_args : ['-m32'],
   )
 
@@ -570,7 +575,7 @@ if with_bitbridge
     native : false,
     include_directories : include_dir,
     dependencies : host_32bit_deps,
-    cpp_args : compiler_options + ['-m32'],
+    cpp_args : compiler_options + wine_32bit_compiler_options,
     link_args : ['-m32'],
   )
 endif

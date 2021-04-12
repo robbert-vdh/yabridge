@@ -180,10 +180,10 @@ ln -s "$HOME/.wine/drive_c/Program Files/Steinberg/" ~/.vst/yabridge-steinberg
 
 If you have downloaded the prebuilt version of yabridge or if have followed the
 instructions from the [bitbridge](#32-bit-bitbridge) section below, then
-yabridge is also able to load 32-bit VST2 plugins. The installation procedure
-for 32-bit plugins is exactly the same as for 64-bit plugins. Yabridge will
-automatically detect whether a plugin is 32-bit or 64-bit on startup and it will
-handle it accordingly.
+yabridge is also able to load 32-bit VST2 and VST3 plugins. The installation
+procedure for 32-bit plugins is exactly the same as for 64-bit plugins. Yabridge
+will automatically detect whether a plugin is 32-bit or 64-bit on startup and it
+will handle it accordingly.
 
 ### Wine prefixes
 
