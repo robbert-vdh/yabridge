@@ -203,11 +203,11 @@ Editor::Editor(MainContext& main_context,
     active_window_property = atom_reply->atom;
     free(atom_reply);
     if (!supports_ewmh_active_window()) {
-        std::cout << "WARNING: The current window manager does not support the"
+        std::cerr << "WARNING: The current window manager does not support the"
                   << std::endl;
-        std::cout << "         '" << active_window_property_name
+        std::cerr << "         '" << active_window_property_name
                   << "' property. Falling back to a" << std::endl;
-        std::cout << "         less reliable keyboard input grabbing method."
+        std::cerr << "         less reliable keyboard input grabbing method."
                   << std::endl;
     }
 
