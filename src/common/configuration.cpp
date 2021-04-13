@@ -125,6 +125,12 @@ Configuration::Configuration(const fs::path& config_path,
                 } else {
                     invalid_options.push_back(key);
                 }
+            } else if (key == "vst3_prefer_32bit") {
+                if (const auto parsed_value = value.as_boolean()) {
+                    vst3_prefer_32bit = parsed_value->get();
+                } else {
+                    invalid_options.push_back(key);
+                }
             } else {
                 unknown_options.push_back(key);
             }

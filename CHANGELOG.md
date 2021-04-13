@@ -12,6 +12,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added support for using 32-bit Windows VST3 plugins in 64-bit Linux VST3
   hosts.
+- Added an
+  [option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
+  prefer the 32-bit version of a VST3 plugin over the 64-bit version if both are
+  installed. This likely won't be necessary, but because of the way VST3 bundles
+  work there's no clean way to separate these, and when both are installed the
+  64-bit version gets used by default.
 
 ### Fixed
 

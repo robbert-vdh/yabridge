@@ -36,21 +36,23 @@ namespace fs = boost::filesystem;
 // docstrings for the corresponding fields for more information on what we're
 // actually doing here.
 fs::path find_plugin_library(const fs::path& this_plugin_path,
-                             PluginType plugin_type);
+                             PluginType plugin_type,
+                             bool prefer_32bit_vst3);
 fs::path normalize_plugin_path(const fs::path& windows_library_path,
                                PluginType plugin_type);
 std::variant<OverridenWinePrefix, fs::path, DefaultWinePrefix> find_wine_prefix(
     fs::path windows_plugin_path);
 
-PluginInfo::PluginInfo(PluginType plugin_type)
+PluginInfo::PluginInfo(PluginType plugin_type, bool prefer_32bit_vst3)
     : plugin_type(plugin_type),
       native_library_path(get_this_file_location()),
       // As explained in the docstring, this is the actual Windows library. For
       // VST3 plugins that come in a module we should be loading that module
       // instead of the `.vst3` file within in, which is where
       // `windows_plugin_path` comes in.
-      windows_library_path(
-          find_plugin_library(native_library_path, plugin_type)),
+      windows_library_path(find_plugin_library(native_library_path,
+                                               plugin_type,
+                                               prefer_32bit_vst3)),
       plugin_arch(find_dll_architecture(windows_library_path)),
       windows_plugin_path(
           normalize_plugin_path(windows_library_path, plugin_type)),
@@ -88,7 +90,8 @@ boost::filesystem::path PluginInfo::normalize_wine_prefix() const {
 }
 
 fs::path find_plugin_library(const fs::path& this_plugin_path,
-                             PluginType plugin_type) {
+                             PluginType plugin_type,
+                             bool prefer_32bit_vst3) {
     switch (plugin_type) {
         case PluginType::vst2: {
             fs::path plugin_path(this_plugin_path);
@@ -141,29 +144,31 @@ fs::path find_plugin_library(const fs::path& this_plugin_path,
             // Finding the Windows plugin consists of two steps because
             // Steinberg changed the format around:
             // - First we'll find the plugin in the VST3 bundle created by
-            //   yabridgectl in `~/.vst3`. The plugin can be either 32-bit or
-            //   64-bit.
-            //   TODO: Right now we can't select between the 64-bit and the
-            //         32-bit version and we'll just pick whichever one is
-            //         available
+            //   yabridgectl in `~/.vst3/yabridge`. The plugin can be either
+            //   32-bit or 64-bit. If both exist, then we'll take the 64-bit
+            //   version, unless the `vst3_prefer_32bit` yabridge.toml option
+            //   has been enabled for this plugin.
             // - After that we'll resolve the symlink to the module in the Wine
             //   prefix, and then we'll have to figure out if this module is an
             //   old style standalone module (< 3.6.10) or if it's inside of
             //   a bundle (>= 3.6.10)
-            fs::path candidate_path =
+            const fs::path candidate_path_64bit =
                 bundle_home / "Contents" / "x86_64-win" / win_module_name;
-            if (!fs::exists(candidate_path)) {
-                // Try the 32-bit version no 64-bit version exists (although, is
-                // there a single VST3 plugin where this is the case?)
-                candidate_path =
-                    bundle_home / "Contents" / "x86-win" / win_module_name;
-            }
+            const fs::path candidate_path_32bit =
+                bundle_home / "Contents" / "x86-win" / win_module_name;
 
             // After this we'll have to use `normalize_plugin_path()` to get the
             // actual module entry point in case the plugin is using a VST
-            // 3.6.10 style bundle
-            if (fs::exists(candidate_path)) {
-                return fs::canonical(candidate_path);
+            // 3.6.10 style bundle, because we need to inspect that for the
+            // _actual_ (with yabridgectl `x86_64-win` should only contain a
+            // 64-bit plugin and `x86-win` should only contain a 32-bit plugin,
+            // but you never know!)
+            if (prefer_32bit_vst3 && fs::exists(candidate_path_32bit)) {
+                return fs::canonical(candidate_path_32bit);
+            } else if (fs::exists(candidate_path_64bit)) {
+                return fs::canonical(candidate_path_64bit);
+            } else if (fs::exists(candidate_path_32bit)) {
+                return fs::canonical(candidate_path_32bit);
             }
 
             throw std::runtime_error(

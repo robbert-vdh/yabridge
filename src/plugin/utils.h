@@ -56,19 +56,17 @@ struct PluginInfo {
      * we'll have yabridgectl create a 'merged bundle' that also contains the
      * Windows VST3 plugin.
      *
-     * TODO: At the moment we can't choose to use the 32-bit VST3 if a 64-bit
-     *       plugin exists. Potential solutions are to add a config option to
-     *       use the 32-bit version, or we can add a filename suffix to all
-     *       32-bit versions so they can live alongside each other.
-     *
      * @param plugin_type The type of the plugin we're going to load. The
      *   detection works slightly differently depending on the plugin type.
+     * @param prefer_32bit_vst3 If there's both a 64-bit and a 32-bit Windows
+     *   VST3 module in the same bundle, then setting this to true will cause
+     *   the 32-bit version to be used instead of the 64-bit version.
      *
      * @throw std::runtime_error If we cannot find a corresponding Windows
      *   plugin. The error message contains a human readable description of what
      *   went wrong.
      */
-    PluginInfo(PluginType plugin_type);
+    PluginInfo(PluginType plugin_type, bool prefer_32bit_vst3 = false);
 
     /**
      * Create the environment for the plugin host based on `wine_prefix`. If

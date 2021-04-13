@@ -59,12 +59,12 @@ class PluginBridge {
      */
     template <typename F>
     PluginBridge(PluginType plugin_type, F create_socket_instance)
-        : info(plugin_type),
+        // This is still correct for VST3 plugins because we can configure an
+        // entire directory (the module's bundle) at once
+        : config(load_config_for(get_this_file_location())),
+          info(plugin_type, config.vst3_prefer_32bit),
           io_context(),
           sockets(create_socket_instance(io_context, info)),
-          // This is still correct for VST3 plugins because we can configure an
-          // entire directory (the module's bundle) at once
-          config(load_config_for(info.native_library_path)),
           generic_logger(Logger::create_from_environment(
               create_logger_prefix(sockets.base_dir))),
           plugin_host(
@@ -196,6 +196,9 @@ class PluginBridge {
         if (config.vst3_no_scaling) {
             other_options.push_back("vst3: no GUI scaling");
         }
+        if (config.vst3_prefer_32bit) {
+            other_options.push_back("vst3: prefer 32-bit");
+        }
         if (!other_options.empty()) {
             init_msg << join_quoted_strings(other_options) << std::endl;
         } else {
@@ -280,6 +283,14 @@ class PluginBridge {
     }
 
     /**
+     * The configuration for this instance of yabridge. Set based on the values
+     * from a `yabridge.toml`, if it exists.
+     *
+     * @see ../utils.h:load_config_for
+     */
+    Configuration config;
+
+    /**
      * Information about the plugin we're bridging.
      */
     const PluginInfo info;
@@ -295,14 +306,6 @@ class PluginBridge {
      * @see PluginBridge::connect_sockets_guarded
      */
     TSockets sockets;
-
-    /**
-     * The configuration for this instance of yabridge. Set based on the values
-     * from a `yabridge.toml`, if it exists.
-     *
-     * @see ../utils.h:load_config_for
-     */
-    Configuration config;
 
     /**
      * The logging facility used for this instance of yabridge. See

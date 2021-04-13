@@ -143,6 +143,15 @@ class Configuration {
     bool vst3_no_scaling = false;
 
     /**
+     * If a merged bundle contains both the 64-bit and the 32-bit versions of a
+     * Windows VST3 plugin (in the `x86_64-win` and the `x86-win` directories),
+     * then yabridge will use the 64-bit version by default. This option
+     * overrides that preference and thus allows you to use the 32-bit version
+     * if that's for whatever reason necessary.
+     */
+    bool vst3_prefer_32bit = false;
+
+    /**
      * The name of the plugin group that should be used for the plugin this
      * configuration object was created for. If not set, then the plugin should
      * be hosted individually instead.
@@ -187,6 +196,7 @@ class Configuration {
         s.ext(frame_rate, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.value4b(v); });
         s.value1b(vst3_no_scaling);
+        s.value1b(vst3_prefer_32bit);
         s.ext(group, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
 
