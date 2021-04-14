@@ -52,7 +52,7 @@ fn main() -> Result<()> {
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
             App::new("add").about("Add a plugin install location").arg(
-                Arg::with_name("path")
+                Arg::new("path")
                     .about("Path to a directory containing Windows VST plugins")
                     .validator(validate_path)
                     .takes_value(true)
@@ -63,7 +63,7 @@ fn main() -> Result<()> {
             App::new("rm")
                 .about("Remove a plugin install location")
                 .arg(
-                    Arg::with_name("path")
+                    Arg::new("path")
                         .about("Path to a previously added directory")
                         .possible_values(&plugin_directories)
                         .takes_value(true)
@@ -77,7 +77,7 @@ fn main() -> Result<()> {
                 .about("Change the installation method or yabridge path")
                 .setting(AppSettings::ArgRequiredElseHelp)
                 .arg(
-                    Arg::with_name("method")
+                    Arg::new("method")
                         .long("method")
                         .about("The installation method to use")
                         .long_about(&format!(
@@ -97,7 +97,7 @@ fn main() -> Result<()> {
                         .takes_value(true),
                 )
                 .arg(
-                    Arg::with_name("path")
+                    Arg::new("path")
                         .long("path")
                         .about("Path to the directory containing 'libyabridge-{vst2,vst3}.so'")
                         .long_about(
@@ -109,7 +109,7 @@ fn main() -> Result<()> {
                         .takes_value(true).conflicts_with("path_auto"),
                 )
                 .arg(
-                    Arg::with_name("path_auto")
+                    Arg::new("path_auto")
                         .long("path-auto")
                         .about("Automatically locate yabridge's files")
                         .long_about(
@@ -118,7 +118,7 @@ fn main() -> Result<()> {
                              auto detection behaviour.",
                         ),
                 ).arg(
-                    Arg::with_name("no_verify")
+                    Arg::new("no_verify")
                         .long("no-verify")
                         .about("Always skip post-installation setup checks")
                         .long_about(
@@ -133,25 +133,25 @@ fn main() -> Result<()> {
             App::new("sync")
                 .about("Set up or update yabridge for all plugins")
                 .arg(
-                    Arg::with_name("force")
+                    Arg::new("force")
                         .short('f')
                         .long("force")
                         .about("Always update files, even not necessary"),
                 )
                 .arg(
-                    Arg::with_name("no-verify")
+                    Arg::new("no-verify")
                         .short('n')
                         .long("no-verify")
                         .about("Skip post-installation setup checks"),
                 )
                 .arg(
-                    Arg::with_name("prune")
+                    Arg::new("prune")
                         .short('p')
                         .long("prune")
                         .about("Remove unrelated or leftover .so files"),
                 )
                 .arg(
-                    Arg::with_name("verbose")
+                    Arg::new("verbose")
                         .short('v')
                         .long("verbose")
                         .about("Print information about plugins being set up or skipped"),
@@ -165,18 +165,18 @@ fn main() -> Result<()> {
     //
     // https://github.com/rust-lang/rust/issues/59117
     match matches.subcommand() {
-        ("add", Some(options)) => actions::add_directory(
+        Some(("add", options)) => actions::add_directory(
             &mut config,
             options
                 .value_of_t_or_exit::<PathBuf>("path")
                 .canonicalize()?,
         ),
-        ("rm", Some(options)) => {
+        Some(("rm", options)) => {
             actions::remove_directory(&mut config, &options.value_of_t_or_exit::<PathBuf>("path"))
         }
-        ("list", _) => actions::list_directories(&config),
-        ("status", _) => actions::show_status(&config),
-        ("set", Some(options)) => actions::set_settings(
+        Some(("list", _)) => actions::list_directories(&config),
+        Some(("status", _)) => actions::show_status(&config),
+        Some(("set", options)) => actions::set_settings(
             &mut config,
             &actions::SetOptions {
                 method: options.value_of("method"),
@@ -190,7 +190,7 @@ fn main() -> Result<()> {
                 no_verify: options.value_of("no_verify").map(|value| value == "true"),
             },
         ),
-        ("sync", Some(options)) => actions::do_sync(
+        Some(("sync", options)) => actions::do_sync(
             &mut config,
             &actions::SyncOptions {
                 force: options.is_present("force"),
