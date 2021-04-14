@@ -28,6 +28,8 @@ use crate::files::{self, LibArchitecture, NativeFile, Plugin, Vst2Plugin};
 use crate::utils;
 use crate::utils::{verify_path_setup, verify_wine_setup};
 
+pub mod blacklist;
+
 /// Add a direcotry to the plugin locations. Duplicates get ignord because we're using ordered sets.
 pub fn add_directory(config: &mut Config, path: PathBuf) -> Result<()> {
     config.plugin_dirs.insert(path);

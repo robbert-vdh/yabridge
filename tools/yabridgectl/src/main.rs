@@ -47,17 +47,26 @@ fn main() -> Result<()> {
         .iter()
         .map(|path| path.to_str().expect("Path contains invalid unicode"))
         .collect();
+    // Used for validation in `yabridgectl blacklist rm <path>`
+    let blacklist_entries: Vec<&str> = config
+        .blacklist
+        .iter()
+        .map(|path| path.to_str().expect("Path contains invalid unicode"))
+        .collect();
 
     let matches = app_from_crate!()
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
-            App::new("add").about("Add a plugin install location").display_order(1).arg(
-                Arg::new("path")
-                    .about("Path to a directory containing Windows VST plugins")
-                    .validator(validate_path)
-                    .takes_value(true)
-                    .required(true),
-            ),
+            App::new("add")
+                .about("Add a plugin install location")
+                .display_order(1)
+                .arg(
+                    Arg::new("path")
+                        .about("Path to a directory containing Windows VST plugins")
+                        .validator(validate_path)
+                        .takes_value(true)
+                        .required(true),
+                ),
         )
         .subcommand(
             App::new("rm")
@@ -71,8 +80,16 @@ fn main() -> Result<()> {
                         .required(true),
                 ),
         )
-        .subcommand(App::new("list").about("List the plugin install locations").display_order(3))
-        .subcommand(App::new("status").about("Show the installation status for all plugins").display_order(4))
+        .subcommand(
+            App::new("list")
+                .about("List the plugin install locations")
+                .display_order(3),
+        )
+        .subcommand(
+            App::new("status")
+                .about("Show the installation status for all plugins")
+                .display_order(4),
+        )
         .subcommand(
             App::new("sync")
                 .about("Set up or update yabridge for all plugins")
@@ -160,6 +177,47 @@ fn main() -> Result<()> {
                         .takes_value(true),
                 ),
         )
+        .subcommand(
+            App::new("blacklist")
+                .about("Manage the indexing blacklist (advanced)")
+                .display_order(201)
+                .setting(AppSettings::SubcommandRequiredElseHelp)
+                .long_about(
+                    "Manage the indexing blacklist (advanced)\n\
+                     \n\
+                     This lets you skip over individual files and entire directories in the \
+                     indexing process. You most likely won't have to use this feature.",
+                )
+                .subcommand(
+                    App::new("add")
+                        .about("Add a path to the blacklist")
+                        .display_order(1)
+                        .arg(
+                            Arg::new("path")
+                                .about("Path to a file or a directory")
+                                .validator(validate_path)
+                                .takes_value(true)
+                                .required(true),
+                        ),
+                )
+                .subcommand(
+                    App::new("rm")
+                        .about("Remove a path from the blacklist")
+                        .display_order(2)
+                        .arg(
+                            Arg::new("path")
+                                .about("Path to a previously added file or directory")
+                                .possible_values(&blacklist_entries)
+                                .takes_value(true)
+                                .required(true),
+                        ),
+                )
+                .subcommand(
+                    App::new("list")
+                        .about("List the blacklisted paths")
+                        .display_order(3),
+                ),
+        )
         .get_matches();
 
     // We're calling canonicalize when adding and setting paths since relative paths would cause
@@ -202,6 +260,20 @@ fn main() -> Result<()> {
                 no_verify: options.value_of("no_verify").map(|value| value == "true"),
             },
         ),
+        Some(("blacklist", blacklist)) => match blacklist.subcommand() {
+            Some(("add", options)) => actions::blacklist::add_path(
+                &mut config,
+                options
+                    .value_of_t_or_exit::<PathBuf>("path")
+                    .canonicalize()?,
+            ),
+            Some(("rm", options)) => actions::blacklist::remove_path(
+                &mut config,
+                &options.value_of_t_or_exit::<PathBuf>("path"),
+            ),
+            Some(("list", _)) => actions::blacklist::list_paths(&config),
+            _ => unreachable!(),
+        },
         _ => unreachable!(),
     }
 }
