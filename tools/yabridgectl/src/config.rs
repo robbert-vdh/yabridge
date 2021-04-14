@@ -19,7 +19,7 @@
 use anyhow::{anyhow, Context, Result};
 use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::env;
 use std::fmt::Display;
 use std::fs;
@@ -70,6 +70,11 @@ pub struct Config {
     /// Always skip post-installation setup checks. This can be set temporarily by passing the
     /// `--no-verify` option to `yabridgectl sync`.
     pub no_verify: bool,
+    /// Files and directories that should be skipped during the indexing process. If this contains a
+    /// directory, then everything under that directory will also be skipped. Like with
+    /// `plugin_dirs`, we're using a `BTreeSet` here because it looks nicer in the config file, even
+    /// though a hash set would make much more sense.
+    pub blacklist: BTreeSet<PathBuf>,
     /// The last known combination of Wine and yabridge versions that would work together properly.
     /// This is mostly to diagnose issues with older Wine versions (such as those in Ubuntu's repos)
     /// early on.
@@ -155,6 +160,7 @@ impl Default for Config {
             yabridge_home: None,
             plugin_dirs: BTreeSet::new(),
             no_verify: false,
+            blacklist: BTreeSet::new(),
             last_known_config: None,
         }
     }
@@ -282,10 +288,12 @@ impl Config {
     /// Search for VST2 and VST3 plugins in all of the registered plugins directories. This will
     /// return an error if `winedump` could not be called.
     pub fn search_directories(&self) -> Result<BTreeMap<&Path, SearchResults>> {
+        let blacklist: HashSet<&Path> = self.blacklist.iter().map(|p| p.as_path()).collect();
+
         self.plugin_dirs
             .par_iter()
             .map(|path| {
-                files::index(path)
+                files::index(path, &blacklist)
                     .search()
                     .map(|search_results| (path.as_path(), search_results))
             })

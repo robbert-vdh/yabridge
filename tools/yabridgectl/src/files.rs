@@ -20,7 +20,7 @@ use aho_corasick::AhoCorasick;
 use anyhow::{Context, Result};
 use lazy_static::lazy_static;
 use rayon::prelude::*;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -321,8 +321,10 @@ impl SearchResults {
 }
 
 /// Find all `.dll`, `.vst3` and `.so` files under a directory. These results can be filtered down
-/// to actual VST2 plugins and VST3 modules using `search()`.
-pub fn index(directory: &Path) -> SearchIndex {
+/// to actual VST2 plugins and VST3 modules using `search()`. Any path found in the blacklist will
+/// be pruned immediately, so this can be used to both not index individual files and to skip an
+/// entire directory.
+pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
     let mut dll_files: Vec<PathBuf> = Vec::new();
     let mut vst3_files: Vec<PathBuf> = Vec::new();
     let mut so_files: Vec<NativeFile> = Vec::new();
@@ -331,6 +333,7 @@ pub fn index(directory: &Path) -> SearchIndex {
     for (file_idx, entry) in WalkDir::new(directory)
         .follow_links(true)
         .into_iter()
+        .filter_entry(|e| !blacklist.contains(e.path()))
         .filter_map(|e| e.ok())
         .filter(|e| !e.file_type().is_dir())
         .enumerate()

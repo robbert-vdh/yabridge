@@ -18,7 +18,7 @@
 
 use anyhow::{Context, Result};
 use colored::Colorize;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -43,7 +43,7 @@ pub fn remove_directory(config: &mut Config, path: &Path) -> Result<()> {
 
     // Ask the user to remove any leftover files to prevent possible future problems and out of date
     // copies
-    let orphan_files = files::index(path).so_files;
+    let orphan_files = files::index(path, &HashSet::new()).so_files;
     if !orphan_files.is_empty() {
         println!(
             "Warning: Found {} leftover .so files still in this directory:",
