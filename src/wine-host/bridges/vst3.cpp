@@ -219,29 +219,43 @@ void Vst3Bridge::run() {
             },
             [&](Vst3PluginProxy::SetState& request)
                 -> Vst3PluginProxy::SetState::Response {
-                // This same function is defined in both `IComponent` and
-                // `IEditController`, so the host is calling one or the other
-                if (object_instances[request.instance_id].component) {
-                    return object_instances[request.instance_id]
-                        .component->setState(&request.state);
-                } else {
-                    return object_instances[request.instance_id]
-                        .edit_controller->setState(&request.state);
-                }
+                // We need to run `getState()` from the main thread, so we might
+                // as well do the same thing with `setState()`. See below.
+                return main_context
+                    .run_in_context<tresult>([&]() {
+                        // This same function is defined in both `IComponent`
+                        // and `IEditController`, so the host is calling one or
+                        // the other
+                        if (object_instances[request.instance_id].component) {
+                            return object_instances[request.instance_id]
+                                .component->setState(&request.state);
+                        } else {
+                            return object_instances[request.instance_id]
+                                .edit_controller->setState(&request.state);
+                        }
+                    })
+                    .get();
             },
             [&](Vst3PluginProxy::GetState& request)
                 -> Vst3PluginProxy::GetState::Response {
-                tresult result;
-
-                // This same function is defined in both `IComponent` and
-                // `IEditController`, so the host is calling one or the other
-                if (object_instances[request.instance_id].component) {
-                    result = object_instances[request.instance_id]
-                                 .component->getState(&request.state);
-                } else {
-                    result = object_instances[request.instance_id]
-                                 .edit_controller->getState(&request.state);
-                }
+                // NOTE: The VST3 version of Algonaut Atlas doesn't restore
+                //       state unless this function is run from the GUI thread
+                tresult result =
+                    main_context
+                        .run_in_context<tresult>([&]() {
+                            // This same function is defined in both
+                            // `IComponent` and `IEditController`, so the host
+                            // is calling one or the other
+                            if (object_instances[request.instance_id]
+                                    .component) {
+                                return object_instances[request.instance_id]
+                                    .component->getState(&request.state);
+                            } else {
+                                return object_instances[request.instance_id]
+                                    .edit_controller->getState(&request.state);
+                            }
+                        })
+                        .get();
 
                 return Vst3PluginProxy::GetStateResponse{
                     .result = result, .state = std::move(request.state)};
