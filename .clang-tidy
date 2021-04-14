@@ -1,0 +1,6 @@
+# Use `tools/run-clang-tidy.sh` to run clang-tidy with the correct config
+Checks: 'bugprone-*,concurrency-*,clang-analyzer-*,-clang-diagnostic-missing-braces'
+InheritParentConfig: false
+FormatStyle: file
+HeaderFilterRegex: ''
+WarningsAsErrors: ''
