@@ -43,3 +43,9 @@ pub fn list_paths(config: &Config) -> Result<()> {
 
     Ok(())
 }
+
+/// Clear the entire blacklist.
+pub fn clear(config: &mut Config) -> Result<()> {
+    config.blacklist.clear();
+    config.write()
+}

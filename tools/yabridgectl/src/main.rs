@@ -216,6 +216,11 @@ fn main() -> Result<()> {
                     App::new("list")
                         .about("List the blacklisted paths")
                         .display_order(3),
+                )
+                .subcommand(
+                    App::new("clear")
+                        .about("Clear the entire blacklist")
+                        .display_order(4),
                 ),
         )
         .get_matches();
@@ -272,6 +277,7 @@ fn main() -> Result<()> {
                 &options.value_of_t_or_exit::<PathBuf>("path"),
             ),
             Some(("list", _)) => actions::blacklist::list_paths(&config),
+            Some(("clear", _)) => actions::blacklist::clear(&mut config),
             _ => unreachable!(),
         },
         _ => unreachable!(),
