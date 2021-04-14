@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #ifdef __WINE__
 #include "../wine-host/boost-fix.h"
 #endif
