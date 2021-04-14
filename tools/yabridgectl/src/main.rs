@@ -51,7 +51,7 @@ fn main() -> Result<()> {
     let matches = app_from_crate!()
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
-            App::new("add").about("Add a plugin install location").arg(
+            App::new("add").about("Add a plugin install location").display_order(1).arg(
                 Arg::new("path")
                     .about("Path to a directory containing Windows VST plugins")
                     .validator(validate_path)
@@ -62,6 +62,7 @@ fn main() -> Result<()> {
         .subcommand(
             App::new("rm")
                 .about("Remove a plugin install location")
+                .display_order(2)
                 .arg(
                     Arg::new("path")
                         .about("Path to a previously added directory")
@@ -70,11 +71,41 @@ fn main() -> Result<()> {
                         .required(true),
                 ),
         )
-        .subcommand(App::new("list").about("List the plugin install locations"))
-        .subcommand(App::new("status").about("Show the installation status for all plugins"))
+        .subcommand(App::new("list").about("List the plugin install locations").display_order(3))
+        .subcommand(App::new("status").about("Show the installation status for all plugins").display_order(4))
+        .subcommand(
+            App::new("sync")
+                .about("Set up or update yabridge for all plugins")
+                .display_order(100)
+                .arg(
+                    Arg::new("force")
+                        .short('f')
+                        .long("force")
+                        .about("Always update files, even not necessary"),
+                )
+                .arg(
+                    Arg::new("no-verify")
+                        .short('n')
+                        .long("no-verify")
+                        .about("Skip post-installation setup checks"),
+                )
+                .arg(
+                    Arg::new("prune")
+                        .short('p')
+                        .long("prune")
+                        .about("Remove unrelated or leftover .so files"),
+                )
+                .arg(
+                    Arg::new("verbose")
+                        .short('v')
+                        .long("verbose")
+                        .about("Print information about plugins being set up or skipped"),
+                ),
+        )
         .subcommand(
             App::new("set")
                 .about("Change the installation method or yabridge path")
+                .display_order(200)
                 .setting(AppSettings::ArgRequiredElseHelp)
                 .arg(
                     Arg::new("method")
@@ -129,34 +160,6 @@ fn main() -> Result<()> {
                         .takes_value(true),
                 ),
         )
-        .subcommand(
-            App::new("sync")
-                .about("Set up or update yabridge for all plugins")
-                .arg(
-                    Arg::new("force")
-                        .short('f')
-                        .long("force")
-                        .about("Always update files, even not necessary"),
-                )
-                .arg(
-                    Arg::new("no-verify")
-                        .short('n')
-                        .long("no-verify")
-                        .about("Skip post-installation setup checks"),
-                )
-                .arg(
-                    Arg::new("prune")
-                        .short('p')
-                        .long("prune")
-                        .about("Remove unrelated or leftover .so files"),
-                )
-                .arg(
-                    Arg::new("verbose")
-                        .short('v')
-                        .long("verbose")
-                        .about("Print information about plugins being set up or skipped"),
-                ),
-        )
         .get_matches();
 
     // We're calling canonicalize when adding and setting paths since relative paths would cause
@@ -176,6 +179,15 @@ fn main() -> Result<()> {
         }
         Some(("list", _)) => actions::list_directories(&config),
         Some(("status", _)) => actions::show_status(&config),
+        Some(("sync", options)) => actions::do_sync(
+            &mut config,
+            &actions::SyncOptions {
+                force: options.is_present("force"),
+                no_verify: options.is_present("no-verify"),
+                prune: options.is_present("prune"),
+                verbose: options.is_present("verbose"),
+            },
+        ),
         Some(("set", options)) => actions::set_settings(
             &mut config,
             &actions::SetOptions {
@@ -188,15 +200,6 @@ fn main() -> Result<()> {
                     .and_then(|path| path.canonicalize().ok()),
                 path_auto: options.is_present("path_auto"),
                 no_verify: options.value_of("no_verify").map(|value| value == "true"),
-            },
-        ),
-        Some(("sync", options)) => actions::do_sync(
-            &mut config,
-            &actions::SyncOptions {
-                force: options.is_present("force"),
-                no_verify: options.is_present("no-verify"),
-                prune: options.is_present("prune"),
-                verbose: options.is_present("verbose"),
             },
         ),
         _ => unreachable!(),
