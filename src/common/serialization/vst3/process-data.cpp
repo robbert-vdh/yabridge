@@ -72,7 +72,8 @@ Steinberg::Vst::AudioBusBuffers YaAudioBusBuffers::get() {
                            buffer_pointers.push_back(buffer.data());
                        }
 
-                       reconstructed_buffers.numChannels = buffers.size();
+                       reconstructed_buffers.numChannels =
+                           static_cast<int32>(buffers.size());
                        reconstructed_buffers.channelBuffers64 =
                            reinterpret_cast<double**>(buffer_pointers.data());
                    },
@@ -82,7 +83,8 @@ Steinberg::Vst::AudioBusBuffers YaAudioBusBuffers::get() {
                            buffer_pointers.push_back(buffer.data());
                        }
 
-                       reconstructed_buffers.numChannels = buffers.size();
+                       reconstructed_buffers.numChannels =
+                           static_cast<int32>(buffers.size());
                        reconstructed_buffers.channelBuffers32 =
                            reinterpret_cast<float**>(buffer_pointers.data());
                    },
@@ -194,8 +196,9 @@ Steinberg::Vst::ProcessData& YaProcessData::get() {
     reconstructed_process_data.processMode = process_mode;
     reconstructed_process_data.symbolicSampleSize = symbolic_sample_size;
     reconstructed_process_data.numSamples = num_samples;
-    reconstructed_process_data.numInputs = inputs.size();
-    reconstructed_process_data.numOutputs = outputs_num_channels.size();
+    reconstructed_process_data.numInputs = static_cast<int32>(inputs.size());
+    reconstructed_process_data.numOutputs =
+        static_cast<int32>(outputs_num_channels.size());
     reconstructed_process_data.inputs = inputs_audio_bus_buffers.data();
     reconstructed_process_data.outputs = outputs_audio_bus_buffers.data();
 

@@ -62,7 +62,7 @@ Steinberg::Vst::ParamID PLUGIN_API YaParamValueQueue::getParameterId() {
 }
 
 int32 PLUGIN_API YaParamValueQueue::getPointCount() {
-    return queue.size();
+    return static_cast<int32>(queue.size());
 }
 
 tresult PLUGIN_API
@@ -81,7 +81,7 @@ YaParamValueQueue::getPoint(int32 index,
 tresult PLUGIN_API YaParamValueQueue::addPoint(int32 sampleOffset,
                                                Steinberg::Vst::ParamValue value,
                                                int32& index /*out*/) {
-    index = queue.size();
+    index = static_cast<int32>(queue.size());
     queue.push_back({sampleOffset, value});
 
     return Steinberg::kResultOk;

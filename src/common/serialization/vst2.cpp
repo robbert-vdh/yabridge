@@ -36,14 +36,16 @@ VstEvents& DynamicVstEvents::as_c_events() {
     // number of events minus one pointers.
     static_assert(std::extent_v<decltype(VstEvents::events)> == 1);
     const size_t buffer_size =
-        sizeof(VstEvents) + ((events.size() - 1) * sizeof(VstEvent*));
+        sizeof(VstEvents) +
+        ((events.size() - 1) *
+         sizeof(VstEvent*));  // NOLINT(bugprone-sizeof-expression)
     vst_events_buffer.resize(buffer_size);
 
     // Now we can populate the VLA with pointers to the objects in the `events`
     // vector
     VstEvents* vst_events =
         reinterpret_cast<VstEvents*>(vst_events_buffer.data());
-    vst_events->numEvents = events.size();
+    vst_events->numEvents = static_cast<int>(events.size());
     std::transform(events.begin(), events.end(), vst_events->events,
                    [](VstEvent& event) -> VstEvent* { return &event; });
 
@@ -76,7 +78,7 @@ VstSpeakerArrangement& DynamicSpeakerArrangement::as_c_speaker_arrangement() {
         reinterpret_cast<VstSpeakerArrangement*>(
             speaker_arrangement_buffer.data());
     speaker_arrangement->flags = flags;
-    speaker_arrangement->num_speakers = speakers.size();
+    speaker_arrangement->num_speakers = static_cast<int>(speakers.size());
     std::copy(speakers.begin(), speakers.end(), speaker_arrangement->speakers);
 
     return *speaker_arrangement;

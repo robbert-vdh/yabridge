@@ -48,7 +48,7 @@ size_t Vst3PluginProxyImpl::register_context_menu(
     std::lock_guard lock(context_menus_mutex);
 
     const size_t context_menu_id = current_context_menu_id.fetch_add(1);
-    context_menus.emplace(context_menu_id, std::move(menu));
+    context_menus.emplace(context_menu_id, menu);
 
     return context_menu_id;
 }

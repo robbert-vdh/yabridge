@@ -100,8 +100,11 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     // `get_bridge_instance` trick as in `plugin/bridges/vst2.cpp`, but since
     // the plugin will probably call the host callback while it's initializing
     // we sadly have to use a global here.
+    // Note that this reinterpret cast is not needed at all since the function
+    // pointer types are exactly the same, but clangd will complain otherwise
     current_bridge_instance = this;
-    plugin = vst_entry_point(host_callback_proxy);
+    plugin = vst_entry_point(
+        reinterpret_cast<audioMasterCallback>(host_callback_proxy));
     if (!plugin) {
         throw std::runtime_error("VST plugin at '" + plugin_dll_path +
                                  "' failed to initialize.");

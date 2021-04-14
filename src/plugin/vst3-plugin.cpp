@@ -24,6 +24,7 @@
 //        as close to the vanilla SDK as possible.
 #define InitModule init_module
 #define DeinitModule deinit_module
+// NOLINTNEXTLINE(bugprone-suspicious-include)
 #include <public.sdk/source/main/linuxmain.cpp>
 
 // Because VST3 plugins consist of completely independent components that have

@@ -40,7 +40,8 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
             int32 num_bytes_read = 0;
             buffer.resize(size);
             stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekSet);
-            stream->read(buffer.data(), size, &num_bytes_read);
+            stream->read(buffer.data(), static_cast<int32>(size),
+                         &num_bytes_read);
             assert(num_bytes_read == 0 || num_bytes_read == size);
         }
     }
@@ -103,7 +104,8 @@ tresult YaBStream::write_back(Steinberg::IBStream* stream) const {
     // A `stream->seek(0, kIBSeekSet)` breaks restoring states in Bitwig. Not
     // sure if Bitwig is prepending a header or if this is expected behaviour.
     int32 num_bytes_written = 0;
-    if (stream->write(const_cast<uint8_t*>(buffer.data()), buffer.size(),
+    if (stream->write(const_cast<uint8_t*>(buffer.data()),
+                      static_cast<int32>(buffer.size()),
                       &num_bytes_written) == Steinberg::kResultOk) {
         // Some implementations will return `kResultFalse` when writing 0 bytes
         assert(num_bytes_written == 0 ||
@@ -145,7 +147,7 @@ tresult PLUGIN_API YaBStream::read(void* buffer,
 
     seek_position += bytes_to_read;
     if (numBytesRead) {
-        *numBytesRead = bytes_to_read;
+        *numBytesRead = static_cast<int32>(bytes_to_read);
     }
 
     return Steinberg::kResultOk;
@@ -163,7 +165,7 @@ tresult PLUGIN_API YaBStream::write(void* buffer,
     }
 
     std::copy_n(reinterpret_cast<uint8_t*>(buffer), numBytes,
-                this->buffer.begin() + seek_position);
+                this->buffer.begin() + static_cast<int>(seek_position));
 
     seek_position += numBytes;
     if (numBytesWritten) {
@@ -190,7 +192,7 @@ tresult PLUGIN_API YaBStream::seek(int64 pos, int32 mode, int64* result) {
     }
 
     if (result) {
-        *result = seek_position;
+        *result = static_cast<int64>(seek_position);
     }
 
     return Steinberg::kResultOk;
@@ -198,7 +200,7 @@ tresult PLUGIN_API YaBStream::seek(int64 pos, int32 mode, int64* result) {
 
 tresult PLUGIN_API YaBStream::tell(int64* pos) {
     if (pos) {
-        *pos = seek_position;
+        *pos = static_cast<int64>(seek_position);
         return Steinberg::kResultOk;
     } else {
         return Steinberg::kInvalidArgument;
@@ -206,7 +208,7 @@ tresult PLUGIN_API YaBStream::tell(int64* pos) {
 }
 
 tresult PLUGIN_API YaBStream::getStreamSize(int64& size) {
-    size = seek_position;
+    size = static_cast<int64>(seek_position);
     return Steinberg::kResultOk;
 }
 

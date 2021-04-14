@@ -215,7 +215,7 @@ IMPLEMENT_FUNKNOWN_METHODS(YaEventList,
 #pragma GCC diagnostic pop
 
 int32 PLUGIN_API YaEventList::getEventCount() {
-    return events.size();
+    return static_cast<int32>(events.size());
 }
 
 tresult PLUGIN_API YaEventList::getEvent(int32 index,
@@ -231,8 +231,10 @@ tresult PLUGIN_API YaEventList::getEvent(int32 index,
     if (index >= static_cast<int32>(num_already_reconstructed_events)) {
         reconstructed_events.resize(events.size());
         std::transform(
-            events.begin() + num_already_reconstructed_events, events.end(),
-            reconstructed_events.begin() + num_already_reconstructed_events,
+            events.begin() + static_cast<int>(num_already_reconstructed_events),
+            events.end(),
+            reconstructed_events.begin() +
+                static_cast<int>(num_already_reconstructed_events),
             [](const YaEvent& event) { return event.get(); });
     }
 

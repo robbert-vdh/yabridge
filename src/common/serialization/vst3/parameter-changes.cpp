@@ -59,7 +59,7 @@ void YaParameterChanges::write_back_outputs(
 }
 
 int32 PLUGIN_API YaParameterChanges::getParameterCount() {
-    return queues.size();
+    return static_cast<int32>(queues.size());
 }
 
 Steinberg::Vst::IParamValueQueue* PLUGIN_API
@@ -74,7 +74,7 @@ YaParameterChanges::getParameterData(int32 index) {
 Steinberg::Vst::IParamValueQueue* PLUGIN_API
 YaParameterChanges::addParameterData(const Steinberg::Vst::ParamID& id,
                                      int32& index /*out*/) {
-    index = queues.size();
+    index = static_cast<int32>(queues.size());
     queues.push_back(YaParamValueQueue(id));
 
     return &queues[index];

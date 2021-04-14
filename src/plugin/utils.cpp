@@ -163,6 +163,7 @@ fs::path find_plugin_library(const fs::path& this_plugin_path,
             // _actual_ (with yabridgectl `x86_64-win` should only contain a
             // 64-bit plugin and `x86-win` should only contain a 32-bit plugin,
             // but you never know!)
+            // NOLINTNEXTLINE(bugprone-branch-clone)
             if (prefer_32bit_vst3 && fs::exists(candidate_path_32bit)) {
                 return fs::canonical(candidate_path_32bit);
             } else if (fs::exists(candidate_path_64bit)) {

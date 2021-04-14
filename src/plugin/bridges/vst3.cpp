@@ -144,7 +144,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                         const size_t context_menu_id =
                             plugin_proxies.at(request.owner_instance_id)
                                 .get()
-                                .register_context_menu(std::move(context_menu));
+                                .register_context_menu(context_menu);
 
                         return YaComponentHandler3::CreateContextMenuResponse{
                             .context_menu_args =

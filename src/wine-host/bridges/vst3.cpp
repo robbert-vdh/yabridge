@@ -33,6 +33,7 @@
 //
 //       https://bugs.winehq.org/show_bug.cgi?id=50670
 #define __IFileOperation_INTERFACE_DEFINED__
+// NOLINTNEXTLINE(bugprone-suspicious-include)
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
 /**
