@@ -104,7 +104,7 @@ fn main() -> Result<()> {
         )
         .subcommand(
             App::new("set")
-                .about("Change the installation method or yabridge path")
+                .about("Change the installation method or yabridge path (advanced)")
                 .display_order(200)
                 .setting(AppSettings::ArgRequiredElseHelp)
                 .arg(
