@@ -39,10 +39,13 @@ Vst2Bridge* current_bridge_instance = nullptr;
  * NOTE: `effMainsChanged` is the odd one here. EZdrummer interacts with the
  *       Win32 message loop while handling this function. If we don't execute
  *       this from the main GUI thread, then EZdrummer won't produce any sound.
+ * NOTE: `effSetChunk` and `effGetChunk` should be callable from any thread, but
+ *       Algonaut Atlas doesn't restore chunk data unless `effSetChunk` is run
+ *       from the GUI thread
  */
-const std::set<int> unsafe_opcodes{effOpen,     effClose,       effEditGetRect,
-                                   effEditOpen, effEditClose,   effEditIdle,
-                                   effEditTop,  effMainsChanged};
+const std::set<int> unsafe_opcodes{
+    effOpen,     effClose,   effEditGetRect,  effEditOpen, effEditClose,
+    effEditIdle, effEditTop, effMainsChanged, effGetChunk, effSetChunk};
 
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);

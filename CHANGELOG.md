@@ -21,6 +21,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed preset/state loading in both the VST2 and VST3 versions of _Algonaut
+  Atlas_ by loading and saving plugin state from the main GUI thread.
 - Added a workaround for a bug present in every _Bluecat Audio_ VST3 plugin
   where those plugins don't expose the `IPluginBase` interface through their
   query interface.
