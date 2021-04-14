@@ -33,6 +33,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### yabridgectl
 
+- Added an indexing blacklist, accessible through `yabridgectl blacklist`. You
+  most likely won't have to use, but this lets you skip over files and
+  directories in yabridgectl's indexing process.
 - Minor spelling fixes.
 
 ### Packaging
