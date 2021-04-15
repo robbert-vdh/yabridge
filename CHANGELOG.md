@@ -11,43 +11,45 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Added support for using 32-bit Windows VST3 plugins in 64-bit Linux VST3
-  hosts.
+  hosts. This had previously been disabled because of a hard to track down
+  corruption issue.
 - Added an
   [option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
   prefer the 32-bit version of a VST3 plugin over the 64-bit version if both are
   installed. This likely won't be necessary, but because of the way VST3 bundles
-  work there's no clean way to separate these, and when both are installed the
+  work there's no clean way to separate these. So when both are installed, the
   64-bit version gets used by default.
 
 ### Fixed
 
-- Fixed preset/state loading in both the VST2 and VST3 versions of _Algonaut
-  Atlas_ by loading and saving plugin state from the main GUI thread.
-- Added a workaround for a bug present in every _Bluecat Audio_ VST3 plugin
-  where those plugins don't expose the `IPluginBase` interface through their
-  query interface.
 - Worked around a regression in Wine 6.5 that would prevent yabridge from
-  shutting down. With Wine 6.5 terminating a Wine process no longer terminates
-  its threads, which would cause yabridge's plugin and host components to wait
-  for each other to shut down.
+  shutting down ([wine bug
+  #50869](https://bugs.winehq.org/show_bug.cgi?id=50869)). With Wine 6.5
+  terminating a Wine process no longer terminates its threads, which would cause
+  yabridge's plugin and host components to wait for each other to shut down.
+- Fixed preset/state loading in both the VST2 and VST3 versions of _Algonaut
+  Atlas 2.0_ by loading and saving plugin state from the main GUI thread.
+- Added a workaround for a bug present in every current _Bluecat Audio_ VST3
+  plugin. Those plugins would otherwise crash yabridge because they didn't
+  directly expose a core VST3 interface through their query interface.
 - Fixed a multithreading related memory error in the VST3 audio processor socket
-  management.
+  management system.
 
 ### yabridgectl
 
 - Added an indexing blacklist, accessible through `yabridgectl blacklist`. You
-  most likely won't have to use, but this lets you skip over files and
+  most likely won't ever have to use this, but this lets you skip over files and
   directories in yabridgectl's indexing process.
 - Minor spelling fixes.
 
-### Packaging
+### Packaging notes
 
 - The Meson wrap dependencies for `bitsery`, `function2` and `tomlplusplus` are
-  now defined using `dependency()` with a subproject fallback to ease distro
-  packaging.
-- The VST3 SDK dependency and the patches in `tools/patch-vst3-sdk.sh` are now
-  based on version 3.7.2 of the SDK.
-- The VST3 SDK Meson wrap now uses the `v3.7.2_build_28-patched` tag instead of
+  now defined using `dependency()` with a subproject fallback instead of using
+  `subproject()` directly. This should make it easier to package.
+- The VST3 SDK Meson wrap dependency and the patches in
+  `tools/patch-vst3-sdk.sh` are now based on version 3.7.2 of the SDK.
+- The VST3 SDK Meson wrap now uses a tag (`v3.7.2_build_28-patched`) instead of
   a commit hash.
 
 ## [3.0.2] - 2021-03-07
