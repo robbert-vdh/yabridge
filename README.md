@@ -39,13 +39,6 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-**There's currently an [issue](https://bugs.winehq.org/show_bug.cgi?id=50869)
-with Wine 6.5 and Wine 6.6 that will prevent yabridge from shutting down.**
-**There's a temporary workaround for this issue on yabridge's master branch (see
-the [automated
-builds](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)),
-and you can also just stay on Wine Staging 6.4 for the time being.**
-
 Yabridge has been tested under the following hosts using Wine Staging 6.4:
 
 | Host                | VST2               | VST3                                                                      |
@@ -78,25 +71,17 @@ Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
 Yabridge requires a recent version of Wine Staging. Users of Debian, Ubuntu,
 Linux Mint and Pop!\_OS should install Wine Staging from the [WineHQ
 repositories](https://wiki.winehq.org/Download) as the versions of Wine provided
-by those distro's repositories will be too old to be used with yabridge.
-
-**There's currently an [issue](https://bugs.winehq.org/show_bug.cgi?id=50869)
-with Wine 6.5 and Wine 6.6 that will prevent yabridge from shutting down.**
-**There's a temporary workaround for this issue on yabridge's master branch (see
-the [automated
-builds](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)),
-and you can also just stay on Wine Staging 6.4 for the time being.**
+by those distro's repositories will likely be too old to be used with yabridge.
 
 For a general overview on how to use Wine to install Windows applications, check
 out Wine's [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
 
 ### Automatic setup (recommended)
 
-The easiest way to get up and running is through
-[yabridgectl](https://github.com/robbert-vdh/yabridge/tree/master/tools/yabridgectl).
-Yabridgectl is already included in the archives downloaded from GitHub's
-releases page. If you're using Arch or Manjaro, then you can install it using
-the AUR package corresponding to your installed version of yabridge
+The easiest way to get up and running is through _yabridgectl_. Yabridgectl is
+already included in the archives downloaded from GitHub's releases page. If
+you're using Arch or Manjaro, then you can install it using the AUR package
+corresponding to yabridge package you installed
 ([yabridgectl](https://aur.archlinux.org/packages/yabridgectl/),
 [yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/), and it's
 already included in
@@ -109,17 +94,15 @@ First, yabridgectl needs to know where it can find yabridge's files. If you have
 downloaded the prebuilt binaries from GitHub, then you can simply extract the
 archive to `~/.local/share`. Both yabridge and yabridgectl will then pick up the
 files in `~/.local/share/yabridge` automatically. You also won't have to do any
-additional work if you're using one of the AUR packages. If you have compiled
-yabridge from source or if you installed the files to some other location, then
-you can use `yabridgectl set --path=<path>` to tell yabridgectl where it can
-find the files. Since `~/.local/share/yabridge` will likely not be in your
-search `PATH`, you may have to replace `yabridgectl` in any of the examples
-below with `~/.local/share/yabridge/yabridgectl`.
+additional work if you're using one of the AUR packages. _Since
+`~/.local/share/yabridge` will likely not be in your search `PATH`,_ _you may
+have to replace `yabridgectl` in any of the commands below with_
+_`~/.local/share/yabridge/yabridgectl`._
 
 Next, you'll want to tell yabridgectl where it can find your VST2 and VST3
 plugins. For this you can use yabridgectl's `add`, `rm` and `list` commands. You
 can also use `yabridgectl status` to get an overview of the current settings and
-the installation status of all of your plugins. To add the most common VST2
+the installation status for all of your plugins. To add the most common VST2
 plugin directory, use
 `yabridgectl add "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"`. The
 directory may be capitalized as `VSTPlugins`
@@ -129,13 +112,14 @@ always installed to the same directory, and you can use
 `yabridgectl add "$HOME/.wine/drive_c/Program Files/Common Files/VST3"` to add
 that one.
 
-Finally, you can run `yabridgectl sync` to finish setting up yabridge for all of
-your plugins. For VST2 plugins this will create `.so` files alongside the
-Windows VST2 plugins, so if you tell your Linux VST host to search for VST2
-plugins there you'll be good to go. VST3 plugins are always set up in
-`~/.vst3/yabridge` as per the VST3 specification, and your VST3 host will pick
-those up automatically. _Don't forget to rerun `yabridgectl sync` whenever you
-update yabridge if you are using the default copy-based installation method._
+Finally, you'll have to run `yabridgectl sync` to finish setting up yabridge for
+all of your plugins. For VST2 plugins this will create `.so` files alongside the
+Windows VST2 plugins that your DAW will be able to read, so if you tell your
+Linux VST2 host to search for VST2 plugins in that same directory you'll be good
+to go. VST3 plugins are always set up in `~/.vst3/yabridge` as per the VST3
+specification, and your VST3 host will pick those up automatically without any
+additional setup. _Don't forget to rerun `yabridgectl sync` whenever you update
+yabridge if you are using the default copy-based installation method._
 
 ### Manual setup
 
@@ -169,7 +153,7 @@ configuration is needed, as those plugins will be set up under
 `~/.vst3/yabridge`.
 
 If you're using a DAW that does not have an easy way to configure VST2 plugin
-paths, such as Renoise, then you may want to just symlink the plugin directories
+paths such as Renoise, then you may want to just symlink the plugin directories
 to your DAW's default search location, like this:
 
 ```shell
@@ -185,12 +169,18 @@ procedure for 32-bit plugins is exactly the same as for 64-bit plugins. Yabridge
 will automatically detect whether a plugin is 32-bit or 64-bit on startup and it
 will handle it accordingly.
 
+If you want to use the 32-bit version of a VST3 plugin when you also have the
+64-bit version installed, then you may have to enable the `vst3_prefer_64bit`
+[compatibility
+option](https://github.com/robbert-vdh/yabridge#compatibility-options) if those
+two plugins are located in the same VST3 bundle in `~/.vst3/yabridge`.
+
 ### Wine prefixes
 
 It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
-automatically detect and use the Wine prefix the plugin's `.dll` file is located
-in. Alternatively, you can set the `WINEPREFIX` environment variable to override
-the Wine prefix for all instances of yabridge.
+automatically detect and use the Wine prefix the plugin's `.dll` or `.vst3` file
+is located in. Alternatively, you can set the `WINEPREFIX` environment variable
+to override the Wine prefix for _all instances_ of yabridge.
 
 ### Search path setup
 
@@ -379,6 +369,9 @@ vst3_no_scaling = true
 
 ["Misstortion2.vst3"]
 vst3_no_scaling = true
+
+["*/*Spectral*.vst3"]
+vst3_prefer_32bit = true
 
 # These options would be applied to all plugins that do not already have their
 # own configuration set
