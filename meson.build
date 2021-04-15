@@ -1,7 +1,7 @@
 project(
   'yabridge',
   'cpp',
-  version : '3.0.2',
+  version : '3.1.0',
   default_options : [
     'warning_level=3',
     'cpp_std=c++2a',
