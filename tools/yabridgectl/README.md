@@ -58,6 +58,9 @@ yabridgectl rm <path/to/plugins>
 yabridgectl list
 # Show the current settings and the installation status for all of your plugins
 yabridgectl status
+# Show the options for managing yabridge's indexing blacklist. It's highly
+# unlikely that you'll ever need to use this.
+yabridgectl blacklist
 ```
 
 ### Installing and updating
