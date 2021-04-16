@@ -240,7 +240,7 @@ void Vst3Bridge::run() {
                 -> Vst3PluginProxy::GetState::Response {
                 // NOTE: The VST3 version of Algonaut Atlas doesn't restore
                 //       state unless this function is run from the GUI thread
-                tresult result =
+                const tresult result =
                     main_context
                         .run_in_context<tresult>([&]() {
                             // This same function is defined in both
