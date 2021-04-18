@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- When building the package from source, the targetted Wine version gets printed
+  at configure-time. This can make it a bit easier to diagnose Wine-related
+  compilation issues.
+
 ## [3.1.0] - 2021-04-15
 
 ### Added
