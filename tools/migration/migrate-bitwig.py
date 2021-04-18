@@ -183,7 +183,7 @@ for preset_filename in glob.glob(
     with open(preset_filename, "r+b") as f:
         # Luckily this format is clearly defined, so this is much easier than
         # trying to parse the .bwproject files
-        # https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#presetformat
+        # https://developer.steinberg.help/display/VST/Preset+Format
         f.seek(8)
         uid_bytes = f.read(32)
         if uid_bytes in uid_bytes_replacements:

@@ -269,7 +269,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     plugin_path.clone()
                 }
                 // And then create merged bundles for the VST3 plugins:
-                // https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles
+                // https://developer.steinberg.help/display/VST/Plug-in+Format+Structure#PluginFormatStructure-MergedBundle
                 Plugin::Vst3(module) => {
                     // Only set up VST3 plugins when yabridge has been compiled with VST3 support
                     if libyabridge_vst3_hash.is_none() {
@@ -312,7 +312,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     }
 
                     // We'll then symlink the Windows VST3 module to that bundle to create a merged
-                    // bundle: https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles
+                    // bundle: https://developer.steinberg.help/display/VST/Plug-in+Format+Structure#PluginFormatStructure-MergedBundle
                     let windows_module_path = module.target_windows_module_path();
                     utils::create_dir_all(windows_module_path.parent().unwrap())?;
                     install_file(
@@ -326,7 +326,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     // If `module` is a bundle, then it may contain a `Resources` directory with
                     // screenshots and documentation
                     // TODO: Also symlink presets, but this is a bit more involved. See
-                    //       https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#win7preset
+                    //       https://developer.steinberg.help/display/VST/Preset+Locations
                     if let Some(original_resources_dir) = module.original_resources_dir() {
                         install_file(
                             false,

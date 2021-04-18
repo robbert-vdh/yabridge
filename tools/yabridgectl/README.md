@@ -91,7 +91,7 @@ yabridge for VST2 plugins. This approach is slightly less robust and does not
 perform any problem detection or status reporting, but it will get you started.
 Doing the same thing for VST3 plugins is much more complicated and it involves
 [merged
-bundle](https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles)
+bundle](https://developer.steinberg.help/display/VST/Plug-in+Format+Structure#PluginFormatStructure-MergedBundle)
 with the Windows VST3 module symlinked in, so it's recommended to have
 yabridgectl do that for you.
 

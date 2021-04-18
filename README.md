@@ -138,7 +138,7 @@ to be repeated for all of your installed plugins whenever you download a new
 version of yabridge.
 
 Doing the same thing for VST3 plugins involves creating a [merged VST3
-bundle](https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html#mergedbundles)
+bundle](https://developer.steinberg.help/display/VST/Plug-in+Format+Structure#PluginFormatStructure-MergedBundle)
 by hand with the Windows VST3 plugin symlinked in. Doing this without
 yabridgectl is not supported since the process is very error prone.
 

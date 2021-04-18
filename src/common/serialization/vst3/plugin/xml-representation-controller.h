@@ -33,7 +33,7 @@
  *      plugins actually use these representations, do they place them in the
  *      standard locations, and do hosts use them? If so we should be symlinking
  *      them in yabridgectl. See
- *      https://steinbergmedia.github.io/vst3_doc/vstinterfaces/representation.html
+ *      https://developer.steinberg.help/display/VST/%5B3.5.0%5D+Remote+Representation+of+Parameters+Support
  */
 class YaXmlRepresentationController
     : public Steinberg::Vst::IXmlRepresentationController {

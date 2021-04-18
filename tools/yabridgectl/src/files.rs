@@ -255,7 +255,7 @@ impl Display for LibArchitecture {
 
 impl LibArchitecture {
     /// Get the corresponding VST3 architecture directory name. See
-    /// https://steinbergmedia.github.io/vst3_doc/vstinterfaces/vst3loc.html.
+    /// https://developer.steinberg.help/display/VST/Plug-in+Format+Structure#PluginFormatStructure-FortheWindowsplatform.
     pub fn vst_arch(&self) -> &str {
         match &self {
             LibArchitecture::Dll32 => "x86-win",
