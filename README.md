@@ -386,8 +386,17 @@ If your problem is not listed here, then feel free to post on the [issue
 tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask about it in
 the yabridge [Discord](https://discord.gg/pyNeweqadf).
 
+- Using PipeWire's JACK implementation might cause certain plugins to crash.
+  PipeWire currently uses rtkit instead of the realtime priorities you would
+  normally set up using groups and `/etc/limits.d`, and it will impose a limit
+  on the maximum amount of CPU time a realtime process may use at a time. This
+  will cause plugins that take a long time to initialize, for instance because
+  they're loading a lot of resources, to crash. For the time being the best
+  solution for this problem would be to just use JACK2 until PipeWire doesn't
+  require rtkit anymore.
+
 - If you have the `WINEPREFIX` environment variable set and you _don't_ want all
-  of your plugins to use that specific Wine prefix then you should unset it to
+  of your plugins to use that specific Wine prefix, then you should unset it to
   allow yabridge to automatically detect Wine prefixes for you.
 
 - If you're seeing errors related to Wine either when running `yabridgectl sync`
