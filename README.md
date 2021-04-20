@@ -551,10 +551,9 @@ include:
   command to mount the .iso file to a directory in `/run/media`.
 - If **Spitfire Audio** plugins like **BBC Symphony Orchestra** and **LABS** are
   unable to load their sample libraries (_Error #X: Something went wrong_), then
-  you should try reinstalling those plugins to a new, clean Wine prefix. Make
-  sure to uninstall them along with their associated VST2 and VST3 plugins from
-  your main Wine prefix first before installing them to the new prefix to avoid
-  mixups.
+  you can try reinstalling those plugins to a new, clean Wine prefix. To avoid
+  potential confusion, make sure to uninstall the Spitfire software along with
+  the VST2 and VST3 plugins from your main Wine prefix first.
 - **MeldaProduction** plugins have minor rendering issues when GPU acceleration
   is enabled. This can be fixed by disabling GPU acceleration in the plugin
   settings. I'm not sure whether this is an issue with Wine or the plugins
