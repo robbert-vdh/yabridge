@@ -554,6 +554,11 @@ include:
   you can try reinstalling those plugins to a new, clean Wine prefix. To avoid
   potential confusion, make sure to uninstall the Spitfire software along with
   the VST2 and VST3 plugins from your main Wine prefix first.
+- The GUI in **Sforzando** may appear to not respond to mouse clicks depending
+  on your Wine and system configuration. This is actually a redrawing issue, and
+  the GUI will still be updated even if it doesn't look that way. Dragging the
+  window around or just clicking anywhere in the GUI will force a redraw and
+  make the GUI render correctly again.
 - **MeldaProduction** plugins have minor rendering issues when GPU acceleration
   is enabled. This can be fixed by disabling GPU acceleration in the plugin
   settings. I'm not sure whether this is an issue with Wine or the plugins
