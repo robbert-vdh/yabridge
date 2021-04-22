@@ -28,9 +28,9 @@ while also staying easy to debug and maintain.
     - [Plugin groups](#plugin-groups)
     - [Compatibility options](#compatibility-options)
     - [Example](#example)
+- [**Runtime dependencies and known issues**](#runtime-dependencies-and-known-issues)
 - [**Troubleshooting common issues**](#troubleshooting-common-issues)
 - [**Performance tuning**](#performance-tuning)
-- [**Runtime dependencies and known issues**](#runtime-dependencies-and-known-issues)
 - [Building](#building)
   - [Building without VST3 support](#building-without-vst3-support)
   - [32-bit bitbridge](#32-bit-bitbridge)
@@ -380,6 +380,128 @@ editor_force_dnd = true
 vst3_no_scaling = true
 ```
 
+## Runtime dependencies and known issues
+
+Any plugin should function out of the box, although some plugins will need some
+additional dependencies for their GUIs to work correctly. Notable examples
+include:
+
+- **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
+  `gdiplus` through `winetricks`.
+- **Native Instruments** plugins work, but Native Access is unable to finish
+  installing the plugins. To work around this you can open the .iso file
+  downloaded to your downloads directory and run the installer directly. You may
+  also have to manually terminate the ISO driver installation process when
+  installing Native Access for the first time to allow the installation to
+  proceed. Some Native Instruments .iso files contain hidden files, and the
+  installer will fail unless you mount the .iso file with the correct mounting
+  options. To do this, first run
+  `udisksctl loop-setup -f ~/Downloads/<filename>.iso` to load the .iso file,
+  and then use `udisksctl mount -t udf -o unhide -b /dev/loopX` where
+  `/dev/loopX` corresponds to the loop device printed by the `loop-setup`
+  command to mount the .iso file to a directory in `/run/media`.
+- If **Spitfire Audio** plugins like **BBC Symphony Orchestra** and **LABS** are
+  unable to load their sample libraries (_Error #X: Something went wrong_), then
+  you can try reinstalling those plugins to a new, clean Wine prefix. To avoid
+  potential confusion, make sure to uninstall the Spitfire software along with
+  the VST2 and VST3 plugins from your main Wine prefix first.
+- The GUI in **Sforzando** may appear to not respond to mouse clicks depending
+  on your Wine and system configuration. This is actually a redrawing issue, and
+  the GUI will still be updated even if it doesn't look that way. Dragging the
+  window around or just clicking anywhere in the GUI will force a redraw and
+  make the GUI render correctly again.
+- **MeldaProduction** plugins have minor rendering issues when GPU acceleration
+  is enabled. This can be fixed by disabling GPU acceleration in the plugin
+  settings. I'm not sure whether this is an issue with Wine or the plugins
+  themselves. Notable issues here are missing redraws and incorrect positioning
+  when the window gets dragged offscreen on the top and left dies of the screen.
+- Knobs in **Tokyo Dawn Records** plugins may not behave as expected when
+  dragging long distances. Setting the 'Continuous Drag' option in the plugin's
+  options to 'Linear' fixes the issue.
+- If **Scaler 2**'s interface lags, blacks out, or otherwise renders poorly,
+  then you can try enabling [software
+  rendering](https://forum.scalerplugin.com/t/scaler-2-black-empty-window/3540/8)
+  to fix these issues.
+- Plugins by **KiloHearts** have file descriptor leaks when _esync_ is enabled,
+  causing Wine and yabridge to eventually stop working after the system hits the
+  open file limit. To fix this, either unset `WINEESYNC` while using yabridge or
+  switch to using [_fsync_](#performance-tuning) instead.
+- **PSPaudioware** plugins with expandable GUIs, such as E27, may have their GUI
+  appear in the wrong location after the GUI has been expanded. You can enable
+  an alternative [editor hosting mode](#compatibility-options) to fix this.
+- The VST2 version of **SWAM Cello** has a bug where it asks the host for the
+  current buffer's time and tempo information for every sample it processes
+  instead of doing it only once per buffer, resulting in very bad performance.
+  You can enable the time info cache [compatibility
+  option](#compatibility-options) to work around this until this is fixed on the
+  plugin's side.
+- VST2 plugins like **FabFilter Pro-Q 3** that can share data between different
+  instances of the same plugin plugins have to be hosted within a single process
+  for that functionality to work. See the [plugin groups](#plugin-groups)
+  section for instructions on how to set this up. This is not necessary for VST3
+  plugins, as multiple instances of those plugins will always be hosted in a
+  single process by design.
+- Some hosts, particularly _Ardour_, _REAPER_, _Qtractor_, will by default not
+  unload VST3 modules after you close the last plugin. This means that the
+  associated `yabridge-host.exe` process will keep running until you close the
+  project. For REAPER there's an option called
+  `Allow complete unload of VST plug-ins` in the `VST` tab of the settings
+  dialog to disable this behaviour.
+- **Drag-and-drop** from applications running under Wine to X11 does not yet
+  work, so you won't be able to drag samples and MIDI files from a plugin to the
+  host. At least, not directly. Because Windows applications have to create
+  actual files on the disk for drag-and-drop to work, you can keep a file
+  manager open and manually drag the generated files into your DAW as a
+  workaround. To find out where in `~/.wine` the plugin is creating its files,
+  you can use the following command to monitor the Wine prefix for any newly
+  created files:
+
+  ```shell
+  inotifywait -mre CLOSE_WRITE --format '%w%f' ~/.wine/drive_c
+  ```
+
+- Aside from the above mentioned Wine issue, _drag-and-drop_ to the plugin
+  window under **REAPER** doesn't work because of a long standing issue in
+  REAPER's FX window implementation. You can use a compatibility option to
+  [force drag-and-drop]([editor hosting mode](#compatibility-options)) to work
+  around this limitation.
+
+Aside from that, these are some known caveats:
+
+- Most recent **iZotope** plugins don't have a functional GUI in a typical out
+  of the box Wine setup because of missing dependencies. Please let me know if
+  you know which dependencies are needed for these plugins to render correctly.
+- MIDI key labels for VST2 plugins (commonly used for drum machines and
+  multisamplers) will not be updated after the host first asks for them since
+  VST 2.4 has no way to let the host know that those labels have been updated.
+  Deactivating and reactivating the plugin will cause these labels to be updated
+  again for the current patch.
+- The Cinnamon desktop environment has some quirks with its window management
+  that affect yabridge's plugin editor embedding. Most notably some plugins may
+  flicker while dragging windows around, and there may be [rendering
+  issues](https://github.com/robbert-vdh/yabridge/issues/89) when using multiple
+  monitors depending on which screen has been set as primary. Enabling the
+  XEmbed [compatibility option](#compatibility-options) may help, but Wine's
+  XEmbed implementation also introduces other rendering issues.
+
+There are also some extension features for both VST2.4 and VST3 that have not
+been implemented yet because I either haven't seen them used or because we don't
+have permission to do so yet. Examples of this are:
+
+- SysEx messages for VST2 plugins. In addition to MIDI, VST 2.4 also supports
+  SysEx. I don't know of any hosts or plugins that use this, but please let me
+  know if this is needed for something.
+- Vendor specific VST2.4 extensions (for instance, for
+  [REAPER](https://www.reaper.fm/sdk/vst/vst_ext.php), though most of these
+  extension functions will work out of the box without any modifications).
+- The [Presonus extensions](https://presonussoftware.com/en_US/developer) to the
+  VST3 interfaces. All of these extensions have been superseded by official VST3
+  interfaces in later versions of the VST3 SDK.
+- VST3 plugin support for
+  [ARA](https://www.celemony.com/en/service1/about-celemony/technologies). These
+  interfaces are currently closed source so we cannot yet implement them, but
+  this may change soon.
+
 ## Troubleshooting common issues
 
 If your problem is not listed here, then feel free to post on the [issue
@@ -528,128 +650,6 @@ negative side effects:
   plugins, can share a lot of resources between different instances of the
   plugin. Hosting all instances of the same plugin in a single process can in
   those cases greatly reduce overall CPU usage and get rid of latency spikes.
-
-## Runtime dependencies and known issues
-
-Any plugin should function out of the box, although some plugins will need some
-additional dependencies for their GUIs to work correctly. Notable examples
-include:
-
-- **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
-  `gdiplus` through `winetricks`.
-- **Native Instruments** plugins work, but Native Access is unable to finish
-  installing the plugins. To work around this you can open the .iso file
-  downloaded to your downloads directory and run the installer directly. You may
-  also have to manually terminate the ISO driver installation process when
-  installing Native Access for the first time to allow the installation to
-  proceed. Some Native Instruments .iso files contain hidden files, and the
-  installer will fail unless you mount the .iso file with the correct mounting
-  options. To do this, first run
-  `udisksctl loop-setup -f ~/Downloads/<filename>.iso` to load the .iso file,
-  and then use `udisksctl mount -t udf -o unhide -b /dev/loopX` where
-  `/dev/loopX` corresponds to the loop device printed by the `loop-setup`
-  command to mount the .iso file to a directory in `/run/media`.
-- If **Spitfire Audio** plugins like **BBC Symphony Orchestra** and **LABS** are
-  unable to load their sample libraries (_Error #X: Something went wrong_), then
-  you can try reinstalling those plugins to a new, clean Wine prefix. To avoid
-  potential confusion, make sure to uninstall the Spitfire software along with
-  the VST2 and VST3 plugins from your main Wine prefix first.
-- The GUI in **Sforzando** may appear to not respond to mouse clicks depending
-  on your Wine and system configuration. This is actually a redrawing issue, and
-  the GUI will still be updated even if it doesn't look that way. Dragging the
-  window around or just clicking anywhere in the GUI will force a redraw and
-  make the GUI render correctly again.
-- **MeldaProduction** plugins have minor rendering issues when GPU acceleration
-  is enabled. This can be fixed by disabling GPU acceleration in the plugin
-  settings. I'm not sure whether this is an issue with Wine or the plugins
-  themselves. Notable issues here are missing redraws and incorrect positioning
-  when the window gets dragged offscreen on the top and left dies of the screen.
-- Knobs in **Tokyo Dawn Records** plugins may not behave as expected when
-  dragging long distances. Setting the 'Continuous Drag' option in the plugin's
-  options to 'Linear' fixes the issue.
-- If **Scaler 2**'s interface lags, blacks out, or otherwise renders poorly,
-  then you can try enabling [software
-  rendering](https://forum.scalerplugin.com/t/scaler-2-black-empty-window/3540/8)
-  to fix these issues.
-- Plugins by **KiloHearts** have file descriptor leaks when _esync_ is enabled,
-  causing Wine and yabridge to eventually stop working after the system hits the
-  open file limit. To fix this, either unset `WINEESYNC` while using yabridge or
-  switch to using [_fsync_](#performance-tuning) instead.
-- **PSPaudioware** plugins with expandable GUIs, such as E27, may have their GUI
-  appear in the wrong location after the GUI has been expanded. You can enable
-  an alternative [editor hosting mode](#compatibility-options) to fix this.
-- The VST2 version of **SWAM Cello** has a bug where it asks the host for the
-  current buffer's time and tempo information for every sample it processes
-  instead of doing it only once per buffer, resulting in very bad performance.
-  You can enable the time info cache [compatibility
-  option](#compatibility-options) to work around this until this is fixed on the
-  plugin's side.
-- VST2 plugins like **FabFilter Pro-Q 3** that can share data between different
-  instances of the same plugin plugins have to be hosted within a single process
-  for that functionality to work. See the [plugin groups](#plugin-groups)
-  section for instructions on how to set this up. This is not necessary for VST3
-  plugins, as multiple instances of those plugins will always be hosted in a
-  single process by design.
-- Some hosts, particularly _Ardour_, _REAPER_, _Qtractor_, will by default not
-  unload VST3 modules after you close the last plugin. This means that the
-  associated `yabridge-host.exe` process will keep running until you close the
-  project. For REAPER there's an option called
-  `Allow complete unload of VST plug-ins` in the `VST` tab of the settings
-  dialog to disable this behaviour.
-- **Drag-and-drop** from applications running under Wine to X11 does not yet
-  work, so you won't be able to drag samples and MIDI files from a plugin to the
-  host. At least, not directly. Because Windows applications have to create
-  actual files on the disk for drag-and-drop to work, you can keep a file
-  manager open and manually drag the generated files into your DAW as a
-  workaround. To find out where in `~/.wine` the plugin is creating its files,
-  you can use the following command to monitor the Wine prefix for any newly
-  created files:
-
-  ```shell
-  inotifywait -mre CLOSE_WRITE --format '%w%f' ~/.wine/drive_c
-  ```
-
-- Aside from the above mentioned Wine issue, _drag-and-drop_ to the plugin
-  window under **REAPER** doesn't work because of a long standing issue in
-  REAPER's FX window implementation. You can use a compatibility option to
-  [force drag-and-drop]([editor hosting mode](#compatibility-options)) to work
-  around this limitation.
-
-Aside from that, these are some known caveats:
-
-- Most recent **iZotope** plugins don't have a functional GUI in a typical out
-  of the box Wine setup because of missing dependencies. Please let me know if
-  you know which dependencies are needed for these plugins to render correctly.
-- MIDI key labels for VST2 plugins (commonly used for drum machines and
-  multisamplers) will not be updated after the host first asks for them since
-  VST 2.4 has no way to let the host know that those labels have been updated.
-  Deactivating and reactivating the plugin will cause these labels to be updated
-  again for the current patch.
-- The Cinnamon desktop environment has some quirks with its window management
-  that affect yabridge's plugin editor embedding. Most notably some plugins may
-  flicker while dragging windows around, and there may be [rendering
-  issues](https://github.com/robbert-vdh/yabridge/issues/89) when using multiple
-  monitors depending on which screen has been set as primary. Enabling the
-  XEmbed [compatibility option](#compatibility-options) may help, but Wine's
-  XEmbed implementation also introduces other rendering issues.
-
-There are also some extension features for both VST2.4 and VST3 that have not
-been implemented yet because I either haven't seen them used or because we don't
-have permission to do so yet. Examples of this are:
-
-- SysEx messages for VST2 plugins. In addition to MIDI, VST 2.4 also supports
-  SysEx. I don't know of any hosts or plugins that use this, but please let me
-  know if this is needed for something.
-- Vendor specific VST2.4 extensions (for instance, for
-  [REAPER](https://www.reaper.fm/sdk/vst/vst_ext.php), though most of these
-  extension functions will work out of the box without any modifications).
-- The [Presonus extensions](https://presonussoftware.com/en_US/developer) to the
-  VST3 interfaces. All of these extensions have been superseded by official VST3
-  interfaces in later versions of the VST3 SDK.
-- VST3 plugin support for
-  [ARA](https://www.celemony.com/en/service1/about-celemony/technologies). These
-  interfaces are currently closed source so we cannot yet implement them, but
-  this may change soon.
 
 ## Building
 
