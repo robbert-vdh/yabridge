@@ -14,6 +14,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   at configure-time. This can make it a bit easier to diagnose Wine-related
   compilation issues.
 
+### Fixed
+
+- Prevent _Native Instruments' FM7_ from crashing when processing MIDI. As a
+  fix, MIDI events are now deallocated later then when they normally would have
+  to be.
+
 ## [3.1.0] - 2021-04-15
 
 ### Added

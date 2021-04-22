@@ -278,7 +278,9 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                         }},
                     request.buffers);
 
-                next_audio_buffer_midi_events.clear();
+                // See the docstrong on `should_clear_midi_events` for why we
+                // don't just clear `next_buffer_midi_events` here
+                should_clear_midi_events = true;
             });
     });
 }
@@ -302,6 +304,14 @@ void Vst2Bridge::run() {
                 // before passing the generated `VstEvents` object to the
                 // plugin.
                 std::lock_guard lock(next_buffer_midi_events_mutex);
+
+                // See the docstring on `should_clear_midi_events` for why we
+                // only deallocate old MIDI events here instead of a at the end
+                // of every processing cycle
+                if (should_clear_midi_events) {
+                    next_audio_buffer_midi_events.clear();
+                    should_clear_midi_events = false;
+                }
 
                 next_audio_buffer_midi_events.push_back(
                     std::get<DynamicVstEvents>(event.payload));

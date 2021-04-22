@@ -169,6 +169,16 @@ class Vst2Bridge : public HostBridge {
      */
     std::vector<DynamicVstEvents> next_audio_buffer_midi_events;
     /**
+     * Whether `next_audio_buffer_midi_events` should be cleared before
+     * inserting new events.
+     *
+     * HACK: Normally we should be able to clear these immediately after the
+     *       processing call, but Native Instruments' FM7 requires the last MIDI
+     *       event to stay alive if there have not been any new MIDI events
+     *       during the current processing cycle.
+     */
+    bool should_clear_midi_events = false;
+    /**
      * Mutex for locking the above event queue, since recieving and processing
      * now happens in two different threads.
      */
