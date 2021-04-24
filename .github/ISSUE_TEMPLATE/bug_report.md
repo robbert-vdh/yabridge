@@ -23,6 +23,7 @@ A short description of what the issue is, and possibly some steps to reproduce i
 - Host: [e.g. Bitwig Studio, REAPER or Ardour]
 - Operating system: [e.g. Manjaro, or Ubuntu 20.04]
 - Wine version: [e.g. Wine Staging 5.13]
+- Audio: [e.g. JACK2, ALSA, PipeWire]
 - Installation method: [symlinks/copies], [manual/yabridgectl]
 - yabridge version: [e.g. 1.3.0 or commit a29f43a]
 - yabridgectl version: [e.g. 1.3.0 or commit a29f43a, if using]
