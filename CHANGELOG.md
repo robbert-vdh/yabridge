@@ -19,6 +19,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Prevent _Native Instruments' FM7_ from crashing when processing MIDI. As a
   fix, MIDI events are now deallocated later then when they normally would have
   to be.
+- Prevent _Plugsound Free_ by UVI from crashing during initialization.
 
 ## [3.1.0] - 2021-04-15
 

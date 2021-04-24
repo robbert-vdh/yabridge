@@ -482,6 +482,15 @@ class HostCallbackDataConverter : DefaultDataConverter {
             case audioMasterGetProductString:
                 return WantsString{};
                 break;
+            // HACK: DefaultDataConverter::read() should be able to handle all
+            //       of these 'simple' opcodes, but Plugsound Free by UVI passes
+            //       random garbage for their data argument, which we would then
+            //       try to read as a string resulting in a memory error.
+            case audioMasterGetSampleRate:
+            case audioMasterGetBlockSize:
+            case audioMasterWantMidi:
+                return nullptr;
+                break;
             default:
                 return DefaultDataConverter::read(opcode, index, value, data);
                 break;
