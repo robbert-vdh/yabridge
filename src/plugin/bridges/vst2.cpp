@@ -196,6 +196,18 @@ class DispatchDataConverter : DefaultDataConverter {
                 // data (or at least Bitwig does this)
                 return *static_cast<const VstIOProperties*>(data);
                 break;
+            // HACK: REAPER has recently started using `effVendorSpecific` with
+            //       a non-pointer `data` argument, so we need to explicitly
+            //       handle this
+            case effVendorSpecific:
+                if (index == effSetSpeakerArrangement) {
+                    return static_cast<native_size_t>(
+                        reinterpret_cast<size_t>(data));
+                } else {
+                    return DefaultDataConverter::read(opcode, index, value,
+                                                      data);
+                }
+                break;
             case effGetParameterProperties:
                 return *static_cast<const VstParameterProperties*>(data);
                 break;

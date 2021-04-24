@@ -16,16 +16,10 @@
 
 #include "vst2.h"
 
-EventPayload DefaultDataConverter::read(const int opcode,
-                                        const int index,
+EventPayload DefaultDataConverter::read(const int /*opcode*/,
+                                        const int /*index*/,
                                         const intptr_t /*value*/,
                                         const void* data) const {
-    // HACK: REAPER has recently started using `effVendorSpecific` with a
-    //       non-pointer `data` argument, so we need to explicitly handle this
-    if (opcode == effVendorSpecific && index == effSetSpeakerArrangement) {
-        return static_cast<native_size_t>(reinterpret_cast<size_t>(data));
-    }
-
     if (!data) {
         return nullptr;
     }
