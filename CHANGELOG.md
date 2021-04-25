@@ -16,6 +16,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- _PSPaudioware InifniStrip_ would fail to initialize because the plugin expects
+  the host to always be using Microsoft COM and it won't initialize it by
+  itself. InfiniStrip loads as expected now.
 - Prevent _Native Instruments' FM7_ from crashing when processing MIDI. As a
   fix, MIDI events are now deallocated later then when they normally would have
   to be.

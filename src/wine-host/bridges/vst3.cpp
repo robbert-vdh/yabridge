@@ -99,6 +99,16 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
       sockets(main_context.context, endpoint_base_dir, false) {
     std::string error;
     module = VST3::Hosting::Win32Module::create(plugin_dll_path, error);
+
+    // HACK: If the plugin library was unable to load, then there's a tiny
+    //       chance that the plugin expected the COM library to already be
+    //       initialized. I've only seen PSPaudioware's InfiniStrip do this. In
+    //       that case, we'll initialize the COM library for them and try again.
+    if (!module) {
+        OleInitialize(nullptr);
+        module = VST3::Hosting::Win32Module::create(plugin_dll_path, error);
+    }
+
     if (!module) {
         throw std::runtime_error("Could not load the VST3 module for '" +
                                  plugin_dll_path + "': " + error);
