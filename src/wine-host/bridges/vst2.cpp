@@ -80,6 +80,12 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     if (!plugin_handle) {
         OleInitialize(nullptr);
         plugin_handle.reset(LoadLibrary(plugin_dll_path.c_str()));
+        if (plugin_handle) {
+            std::cerr << "WARNING: '" << plugin_dll_path << "'" << std::endl;
+            std::cerr << "         could only load after we manually"
+                      << std::endl;
+            std::cerr << "         initialized the COM library." << std::endl;
+        }
     }
 
     if (!plugin_handle) {

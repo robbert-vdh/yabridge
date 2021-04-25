@@ -107,6 +107,12 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
     if (!module) {
         OleInitialize(nullptr);
         module = VST3::Hosting::Win32Module::create(plugin_dll_path, error);
+        if (module) {
+            std::cerr << "WARNING: '" << plugin_dll_path << "'" << std::endl;
+            std::cerr << "         could only load after we manually"
+                      << std::endl;
+            std::cerr << "         initialized the COM library." << std::endl;
+        }
     }
 
     if (!module) {
