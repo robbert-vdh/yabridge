@@ -490,13 +490,33 @@ class HostCallbackDataConverter : DefaultDataConverter {
             case audioMasterGetProductString:
                 return WantsString{};
                 break;
-            // HACK: DefaultDataConverter::read() should be able to handle all
+            // NOTE: DefaultDataConverter::read() should be able to handle all
             //       of these 'simple' opcodes, but Plugsound Free by UVI passes
-            //       random garbage for their data argument, which we would then
-            //       try to read as a string resulting in a memory error.
+            //       random garbage for their data argument. Because of that
+            //       `audioMasterWantMidi()` will segfault because when we'll
+            //       try to read that data as a string we'll start reading
+            //       unallocated memory. Even though no other plugins seem to do
+            //       this< we'll list all of these data-less opcodes just to be
+            //       sure. We're leaving out a few opcodes here, because I have
+            //       no clue whether some of the more obscure ones are supposed
+            //       to have an data argument or not.
+            case audioMasterAutomate:
+            case audioMasterVersion:
+            case audioMasterCurrentId:
+            case audioMasterIdle:
+            case audioMasterWantMidi:
+            case audioMasterSizeWindow:
             case audioMasterGetSampleRate:
             case audioMasterGetBlockSize:
-            case audioMasterWantMidi:
+            case audioMasterGetInputLatency:
+            case audioMasterGetOutputLatency:
+            case audioMasterGetCurrentProcessLevel:
+            case audioMasterGetAutomationState:
+            case audioMasterGetVendorVersion:
+            case audioMasterGetLanguage:
+            case audioMasterUpdateDisplay:
+            case audioMasterBeginEdit:
+            case audioMasterEndEdit:
                 return nullptr;
                 break;
             default:

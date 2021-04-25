@@ -13,6 +13,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - When building the package from source, the targetted Wine version gets printed
   at configure-time. This can make it a bit easier to diagnose Wine-related
   compilation issues.
+- Yabridge automatically handles most common VST2 functions by simply inspecting
+  the argument types. This works practically everywhere, but Plugsound Free by
+  UVI would pass unreadable function arguments to functions that are not
+  supposed to have any arguments, causing yabridge to crash. To prevent similar
+  situations from happening in the future, yabridge now specifically handles
+  most common VST2 functions that don't have a data argument.
 
 ### Fixed
 
@@ -22,7 +28,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Prevent _Native Instruments' FM7_ from crashing when processing MIDI. As a
   fix, MIDI events are now deallocated later then when they normally would have
   to be.
-- Prevent _Plugsound Free_ by UVI from crashing during initialization.
+- Fixed _UVI Plugsound Free_ crashing during initialization.
 
 ## [3.1.0] - 2021-04-15
 
