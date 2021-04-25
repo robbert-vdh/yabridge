@@ -236,6 +236,31 @@ class DispatchDataConverter : DefaultDataConverter {
             case effShellGetNextPlugin:
                 return WantsString{};
                 break;
+            // NOTE: We needed to explicitly handle `audioMasterWantMidi()` on
+            //       the Wine side because UVI Plugsound Free would pass garbage
+            //       data to `data`, which would of course trigger a segfault
+            //       when yabridge would try to read from it. Even though no
+            //       Linux hosts do such a thing, we'll do something similar
+            //       here just to be consistent.
+            case effClose:
+            case effSetProgram:
+            case effGetProgram:
+            case effSetSampleRate:
+            case effSetBlockSize:
+            case effMainsChanged:
+            case effEditClose:
+            case effEditIdle:
+            case effCanBeAutomated:
+            case effGetPlugCategory:
+            case effGetVendorVersion:
+            case effGetTailSize:
+            case effIdle:
+            case effGetVstVersion:
+            case effBeginSetProgram:
+            case effEndSetProgram:
+            case effStartProcess:
+            case effStopProcess:
+                return nullptr;
             default:
                 return DefaultDataConverter::read(opcode, index, value, data);
                 break;
