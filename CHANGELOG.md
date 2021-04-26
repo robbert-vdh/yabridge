@@ -37,6 +37,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   fix, MIDI events are now deallocated later then when they normally would have
   to be.
 - Fixed _UVI Plugsound Free_ crashing during initialization.
+- Fixed the Wine version detection with using a custom `WINELOADER`.
 
 ## [3.1.0] - 2021-04-15
 
