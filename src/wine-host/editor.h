@@ -222,10 +222,6 @@ class Editor {
      */
     void do_xembed() const;
 
-    /**
-     * A pointer to the currently active window. Will be a null pointer if no
-     * window is active.
-     */
     std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
 
     /**
