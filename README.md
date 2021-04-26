@@ -386,6 +386,8 @@ Any plugin should function out of the box, although some plugins will need some
 additional dependencies for their GUIs to work correctly. Notable examples
 include:
 
+- If plugins have missing or invisible text, then installing `corefonts` through
+  `winetricks` may help.
 - **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
   `gdiplus` through `winetricks`. You may also want to disable the tooltips by
   going to the global settings tab, unchecking 'Show help tooltips', and
