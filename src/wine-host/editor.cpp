@@ -627,8 +627,9 @@ LRESULT CALLBACK window_proc(HWND handle,
             // contains the last argument of `CreateWindowEx`, which was a
             // pointer to the `Editor` object. We need to attach this to the
             // window handle so we can access our VST plugin instance later.
-            SetWindowLongPtr(handle, GWLP_USERDATA,
-                             reinterpret_cast<size_t>(editor));
+            SetWindowLongPtr(
+                handle, GWLP_USERDATA,
+                static_cast<LONG_PTR>(reinterpret_cast<size_t>(editor)));
         } break;
         // Setting `SWP_NOCOPYBITS` somewhat reduces flickering on
         // `fix_local_coordinates()` calls with plugins that don't do double
