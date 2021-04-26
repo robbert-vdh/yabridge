@@ -387,7 +387,9 @@ additional dependencies for their GUIs to work correctly. Notable examples
 include:
 
 - **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
-  `gdiplus` through `winetricks`.
+  `gdiplus` through `winetricks`. You may also want to disable the tooltips by
+  going to the global settings tab, unchecking 'Show help tooltips', and
+  clicking on the save icon next to 'Preferences'.
 - **Native Instruments** plugins work, but Native Access is unable to finish
   installing the plugins. To work around this you can open the .iso file
   downloaded to your downloads directory and run the installer directly. You may
