@@ -30,6 +30,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   plugins. We now explicitly reparent the window to back the root window first
   before deferring the window closing. This should work around the issue, while
   still keeping editor closing nice and snappy.
+- Fixed the Wine version detection when using a custom `WINELOADER`.
 - _PSPaudioware InifniStrip_ would fail to initialize because the plugin expects
   the host to always be using Microsoft COM and it won't initialize it by
   itself. InfiniStrip loads as expected now.
@@ -37,7 +38,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   fix, MIDI events are now deallocated later then when they normally would have
   to be.
 - Fixed _UVI Plugsound Free_ crashing during initialization.
-- Fixed the Wine version detection with using a custom `WINELOADER`.
 
 ## [3.1.0] - 2021-04-15
 
