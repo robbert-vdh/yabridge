@@ -22,6 +22,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- In certain rare circumstances, closing a plugin editor would trigger an X11
+  error and crash the Wine plugin host, and with that likely the entire DAW.
+  This happened because Wine would try to destroy a window that had already been
+  destroyed. I've seen this happen in Renoise and to a lesser degree in REAPER
+  with plugins that take a while to close their editors, such as the iZotope Rx
+  plugins. We now explicitly reparent the window to back the root window first
+  before deferring the window closing. This should work around the issue, while
+  still keeping editor closing nice and snappy.
 - _PSPaudioware InifniStrip_ would fail to initialize because the plugin expects
   the host to always be using Microsoft COM and it won't initialize it by
   itself. InfiniStrip loads as expected now.

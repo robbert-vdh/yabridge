@@ -114,10 +114,25 @@ xcb_window_t get_x11_handle(HWND win32_handle);
  */
 ATOM get_window_class();
 
-DeferredWindow::DeferredWindow(MainContext& main_context, HWND window)
-    : handle(window), main_context(main_context) {}
+DeferredWindow::DeferredWindow(MainContext& main_context,
+                               std::shared_ptr<xcb_connection_t> x11_connection,
+                               HWND window)
+    : handle(window),
+      main_context(main_context),
+      x11_connection(x11_connection) {}
 
 DeferredWindow::~DeferredWindow() {
+    // NOTE: For some rason, Wine will sometimes try to delete a window twice if
+    //       the parent window no longer exists. I've only seen this cause
+    //       issues with plugins that hang when their window is hidden, like the
+    //       iZotope Rx plugins. In Renoise this would otherwise trigger an X11
+    //       error every time you close such a plugin's editor, and in other
+    //       DAWs I've also seen it happen from time to time.
+    const xcb_window_t wine_window = get_x11_handle(handle);
+    const xcb_window_t root_window =
+        get_root_window(*x11_connection, wine_window);
+    xcb_reparent_window(x11_connection.get(), wine_window, root_window, 0, 0);
+
     // XXX: We are already deferring this closing by posting `WM_CLOSE` to the
     //      message loop instead of calling `DestroyWindow()` ourselves, but we
     //      can take it one step further. If we post this message directly then
@@ -156,6 +171,7 @@ Editor::Editor(MainContext& main_context,
       // expect) and also causes mouse coordinates to be relative to the window
       // itself.
       win32_window(main_context,
+                   x11_connection,
                    CreateWindowEx(WS_EX_TOOLWINDOW,
                                   reinterpret_cast<LPCSTR>(get_window_class()),
                                   "yabridge plugin",
@@ -288,7 +304,7 @@ Editor::Editor(MainContext& main_context,
             // As explained above, we can't do this directly in the initializer
             // list
             win32_child_window.emplace(
-                main_context,
+                main_context, x11_connection,
                 CreateWindowEx(WS_EX_TOOLWINDOW,
                                reinterpret_cast<LPCSTR>(get_window_class()),
                                "yabridge plugin child", WS_CHILD, CW_USEDEFAULT,

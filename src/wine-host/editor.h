@@ -78,9 +78,13 @@ class DeferredWindow {
      *
      * @param main_context This application's main IO context running on the GUI
      *   thread.
+     * @param x11_connection The X11 connection handle we're using for this
+     *   editor.
      * @param window A `HWND` obtained through a call to `CreateWindowEx`
      */
-    DeferredWindow(MainContext& main_context, HWND window);
+    DeferredWindow(MainContext& main_context,
+                   std::shared_ptr<xcb_connection_t> x11_connection,
+                   HWND window);
 
     /**
      * Post a `WM_CLOSE` message to the `handle`'s message queue as described
@@ -92,6 +96,7 @@ class DeferredWindow {
 
    private:
     MainContext& main_context;
+    std::shared_ptr<xcb_connection_t> x11_connection;
 };
 
 /**
@@ -222,7 +227,7 @@ class Editor {
      */
     void do_xembed() const;
 
-    std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
+    std::shared_ptr<xcb_connection_t> x11_connection;
 
     /**
      * The Wine window's client area, or the maximum size of that window. This
