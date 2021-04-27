@@ -17,6 +17,7 @@
 #include "utils.h"
 
 #include <sched.h>
+#include <xmmintrin.h>
 #include <boost/process/environment.hpp>
 
 namespace bp = boost::process;
@@ -45,4 +46,13 @@ bool set_realtime_priority(bool sched_fifo, int priority) {
     sched_param params{.sched_priority = (sched_fifo ? priority : 0)};
     return sched_setscheduler(0, sched_fifo ? SCHED_FIFO : SCHED_OTHER,
                               &params) == 0;
+}
+
+ScopedFlushToZero::ScopedFlushToZero() {
+    old_ftz_mode = _MM_GET_FLUSH_ZERO_MODE();
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+}
+
+ScopedFlushToZero::~ScopedFlushToZero() {
+    _MM_SET_FLUSH_ZERO_MODE(old_ftz_mode);
 }

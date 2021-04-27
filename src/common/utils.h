@@ -83,3 +83,28 @@ std::optional<int> get_realtime_priority();
  *   user does not have the privileges to set realtime priorities.
  */
 bool set_realtime_priority(bool sched_fifo, int priority = 5);
+
+/**
+ * A RAII wrapper that will temporarily enable the FTZ flag so that denormals
+ * are automatically flushed to zero, returning to whatever the flag was
+ * previously when it drops out of scope.
+ */
+class ScopedFlushToZero {
+    ScopedFlushToZero();
+    ~ScopedFlushToZero();
+
+    ScopedFlushToZero(const ScopedFlushToZero&) = delete;
+    ScopedFlushToZero& operator=(const ScopedFlushToZero&) = delete;
+
+    ScopedFlushToZero(ScopedFlushToZero&&) = delete;
+    ScopedFlushToZero& operator=(ScopedFlushToZero&&) = delete;
+
+   private:
+    /**
+     * The previous FTZ mode. When we use this on the Wine side, this should
+     * always be disabled. But, we'll make sure to do it correctly anyhow so we
+     * don't accidentally end up disabling FTZ somewhere where it should be
+     * enabled.
+     */
+    unsigned int old_ftz_mode;
+};
