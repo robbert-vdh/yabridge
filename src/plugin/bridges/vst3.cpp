@@ -16,6 +16,8 @@
 
 #include "vst3.h"
 
+#include <pluginterfaces/base/ustring.h>
+
 #include "src/common/serialization/vst3.h"
 #include "vst3-impls/context-menu-target.h"
 #include "vst3-impls/plugin-proxy.h"
@@ -234,13 +236,34 @@ Vst3PluginBridge::Vst3PluginBridge()
                     -> YaHostApplication::GetName::Response {
                     tresult result;
                     Steinberg::Vst::String128 name{0};
-                    if (request.owner_instance_id) {
-                        result = plugin_proxies.at(*request.owner_instance_id)
-                                     .get()
-                                     .host_application->getName(name);
+
+                    // HACK: Certain plugins may have undesirable DAW-specific
+                    //       behaviour. Chromaphone 3 for instance has broken
+                    //       text input dialogs when using Bitwig. We can work
+                    //       around these issues by reporting we're running
+                    //       under some other host. We do this here to stay
+                    //       consistent with the VST2 version, where it has to
+                    //       be done on the plugin's side.
+                    if (config.hide_daw) {
+                        // This is the only sane-ish way to copy a c-style
+                        // string to an UTF-16 string buffer
+                        Steinberg::UString128(product_name_override)
+                            .copyTo(name, 128);
+
+                        result = Steinberg::kResultOk;
                     } else {
-                        result =
-                            plugin_factory->host_application->getName(name);
+                        // There can be a global host context in addition to
+                        // plugin-specific host contexts, so we need to call the
+                        // function on correct context
+                        if (request.owner_instance_id) {
+                            result =
+                                plugin_proxies.at(*request.owner_instance_id)
+                                    .get()
+                                    .host_application->getName(name);
+                        } else {
+                            result =
+                                plugin_factory->host_application->getName(name);
+                        }
                     }
 
                     // TODO: Remove this warning once Ardour supports multiple
