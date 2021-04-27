@@ -139,6 +139,15 @@ class Configuration {
     std::optional<float> frame_rate;
 
     /**
+     * When this option is enabled, we'll report some random other string
+     * instead of the actual name of the host when the plugin queries it. This
+     * can sometimes be useful when a plugin has undesirable host-specific
+     * behaviour. See the readme for some examples of where this might be
+     * useful.
+     */
+    bool hide_daw = false;
+
+    /**
      * Disable `IPlugViewContentScaleSupport::setContentScaleFactor()`. Wine
      * does not properly implement fractional DPI scaling, so without this
      * option plugins using GDI+ would draw their editor GUIs at the normal size
@@ -198,6 +207,7 @@ class Configuration {
         s.value1b(editor_xembed);
         s.ext(frame_rate, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.value4b(v); });
+        s.value1b(hide_daw);
         s.value1b(vst3_no_scaling);
         s.value1b(vst3_prefer_32bit);
 

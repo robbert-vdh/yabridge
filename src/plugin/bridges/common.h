@@ -193,6 +193,9 @@ class PluginBridge {
                    << *config.frame_rate << " fps";
             other_options.push_back(option.str());
         }
+        if (config.hide_daw) {
+            other_options.push_back("hack: hide DAW name");
+        }
         if (config.vst3_no_scaling) {
             other_options.push_back("vst3: no GUI scaling");
         }

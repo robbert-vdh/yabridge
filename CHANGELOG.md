@@ -8,6 +8,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added a new [compatibility
+  option](https://github.com/robbert-vdh/yabridge#compatibility-options) to hide
+  the name of the DAW you're using for a plugin. This can be useful with plugins
+  that have undesirable or broken DAW-specific behaviour. See the [known
+  issues](https://github.com/robbert-vdh/yabridge#runtime-dependencies-and-known-issues)
+  section of the readme for more information on when this may be useful.
+
 ### Changed
 
 - When building the package from source, the targetted Wine version gets printed

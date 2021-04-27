@@ -90,11 +90,10 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
 
                         incoming_midi_events.push_back(
                             std::get<DynamicVstEvents>(event.payload));
-                        EventResult response{.return_value = 1,
-                                             .payload = nullptr,
-                                             .value_payload = std::nullopt};
 
-                        return response;
+                        return EventResult{.return_value = 1,
+                                           .payload = nullptr,
+                                           .value_payload = std::nullopt};
                     } break;
                     // REAPER requires that `audioMasterSizeWindow()` calls are
                     // handled from the GUI thread, which is the thread that
@@ -105,16 +104,50 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                         std::lock_guard lock(incoming_resize_mutex);
 
                         incoming_resize = std::pair(event.index, event.value);
-                        EventResult response{.return_value = 1,
-                                             .payload = nullptr,
-                                             .value_payload = std::nullopt};
 
-                        return response;
+                        return EventResult{.return_value = 1,
+                                           .payload = nullptr,
+                                           .value_payload = std::nullopt};
                     } break;
-                    default:
-                        return passthrough_event(&plugin,
-                                                 host_callback_function, event);
+                    // HACK: Certain plugins may have undesirable DAW-specific
+                    //       behaviour.  Chromaphone 3 for instance has broken
+                    //       text input dialogs when using Bitwig. We can work
+                    //       around these issues by reporting we're running
+                    //       under some other host. We need to do this on the
+                    //       plugin side instead of one the Wine side because
+                    //       the plugin will likely do this callback during
+                    //       initialization, and at that point we will not yet
+                    //       have sent the configuration to the plugin.
+                    case audioMasterGetProductString: {
+                        if (config.hide_daw) {
+                            logger.log("The plugin asked for the host's name.");
+                            logger.log("Reporting \"" +
+                                       std::string(product_name_override) +
+                                       "\" instead of the actual host's name.");
+
+                            return EventResult{.return_value = 1,
+                                               .payload = product_name_override,
+                                               .value_payload = std::nullopt};
+                        }
+                    } break;
+                    case audioMasterGetVendorString: {
+                        if (config.hide_daw) {
+                            logger.log(
+                                "The plugin asked for the host's vendor.");
+                            logger.log(
+                                "Reporting \"" +
+                                std::string(vendor_name_override) +
+                                "\" instead of the actual host's vendor.");
+
+                            return EventResult{.return_value = 1,
+                                               .payload = vendor_name_override,
+                                               .value_payload = std::nullopt};
+                        }
+                    } break;
                 }
+
+                return passthrough_event(&plugin, host_callback_function,
+                                         event);
             });
     });
 

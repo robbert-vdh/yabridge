@@ -119,6 +119,12 @@ Configuration::Configuration(const fs::path& config_path,
                 } else {
                     invalid_options.push_back(key);
                 }
+            } else if (key == "hide_daw") {
+                if (const auto parsed_value = value.as_boolean()) {
+                    hide_daw = parsed_value->get();
+                } else {
+                    invalid_options.push_back(key);
+                }
             } else if (key == "vst3_no_scaling") {
                 if (const auto parsed_value = value.as_boolean()) {
                     vst3_no_scaling = parsed_value->get();

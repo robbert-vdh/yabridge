@@ -31,6 +31,20 @@
  */
 constexpr time_t audio_thread_priority_synchronization_interval = 10;
 
+/**
+ * When the `hide_daw` compatibility option is enabled, we'll report this
+ * instead of the actual DAW's name. This can be useful when plugins are
+ * hardcoded to behave differently in certain DAWs, and when that different
+ * behaviour causes issues under Wine. Examples of this are Melodyne 5 under
+ * REAPER, and AAS Chromaphone 3 under Bitwig.
+ */
+constexpr char product_name_override[] = "Get yabridge'd";
+/**
+ * When the `hide_daw` compatibility option is enabled, we'll report this
+ * instead of the actual vendor's name in a VST2 plugin.
+ */
+constexpr char vendor_name_override[] = "yabridge";
+
 // The cannonical overloading template for `std::visitor`, not sure why this
 // isn't part of the standard library
 template <class... Ts>

@@ -297,6 +297,7 @@ plugin._
 | `editor_force_dnd`    | `{true,false}` | This option forcefully enables drag-and-drop support in _REAPER_. Because REAPER's FX window supports drag-and-drop itself, dragging a file onto a plugin editor will cause the drop to be intercepted by the FX window. This makes it impossible to drag files onto plugins in REAPER under normal circumstances. Setting this option to `true` will strip drag-and-drop support from the FX window, thus allowing files to be dragged onto the plugin again. Defaults to `false`. |
 | `editor_xembed`       | `{true,false}` | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't always work properly with it, but it could be useful in certain setups. You may need to use [this Wine patch](https://github.com/psycha0s/airwave/blob/master/fix-xembed-wine-windows.patch) if you're getting blank editor windows. Defaults to `false`.                                                |
 | `frame_rate`          | `<number>`     | The rate at which Win32 events are being handled and usually also the refresh rate of a plugin's editor GUI. When using plugin groups all plugins share the same event handling loop, so in those the last loaded plugin will set the refresh rate. Defaults to `60`.                                                                                                                                                                                                               |
+| `hide_daw`            | `{true,false}` | Don't report the name of the actual DAW to the plugin. See the [known issues](#runtime-dependencies-and-known-issues) section for a list of situations where this may be useful. This affects both VST2 and VST3 plugins. Defaults to `false`.                                                                                                                                                                                                                                      |
 | `vst3_no_scaling`     | `{true,false}` | Disable HiDPI scaling for VST3 plugins. Wine currently does not have proper fractional HiDPI support, so you might have to enable this option if you're using a HiDPI display. In most cases setting the font DPI in `winecfg`'s graphics tab to 192 will cause plugins to scale correctly at 200% size. Defaults to `false`.                                                                                                                                                       |
 | `vst3_prefer_32bit`   | `{true,false}` | Use the 32-bit version of a VST3 plugin instead the 64-bit version if both are installed and they're in the same VST3 bundle inside of `~/.vst3/yabridge`. You likely won't need this.                                                                                                                                                                                                                                                                                              |
 
@@ -328,6 +329,9 @@ editor_double_embed = true
 
 ["Analog Lab 3.so"]
 editor_xembed = true
+
+["Chromaphone 3.so"]
+hide_daw = true
 
 ["SWAM Cello 64bit.so"]
 cache_time_info = true
@@ -366,6 +370,9 @@ deep within in, like this:
 ["FabFilter*.vst3"]
 group = "fabfilter"
 vst3_no_scaling = true
+
+["Chromaphone 3.vst3"]
+hide_daw = true
 
 ["Misstortion2.vst3"]
 vst3_no_scaling = true
