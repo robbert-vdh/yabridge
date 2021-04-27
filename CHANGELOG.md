@@ -38,6 +38,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   fix, MIDI events are now deallocated later then when they normally would have
   to be.
 - Fixed _UVI Plugsound Free_ crashing during initialization.
+- Fixed the `cache_time_info` `yabridge.toml` option also affecting the results
+  of other host callbacks during audio processing.
 
 ## [3.1.0] - 2021-04-15
 

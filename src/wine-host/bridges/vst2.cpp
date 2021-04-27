@@ -595,13 +595,17 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
                                    intptr_t value,
                                    void* data,
                                    float option) {
-    // HACK: Workaround for a bug in SWAM Cello where it would call
-    //       `audioMasterGetTime()` once for every sample. When this option is
-    //       enabled `time_info` should be reset in the process function. The
-    //       `time_info` value is assigned inside of
-    //       `HostCallbackDataConverter::write()`.
-    if (config.cache_time_info && time_info) {
-        return reinterpret_cast<intptr_t>(&*time_info);
+    switch (opcode) {
+        case audioMasterGetTime: {
+            // HACK: Workaround for a bug in SWAM Cello where it would call
+            //       `audioMasterGetTime()` once for every sample. When this
+            //       option is enabled `time_info` should be reset in the
+            //       process function. The `time_info` value is assigned inside
+            //       of `HostCallbackDataConverter::write()`.
+            if (config.cache_time_info && time_info) {
+                return reinterpret_cast<intptr_t>(&*time_info);
+            }
+        } break;
     }
 
     HostCallbackDataConverter converter(effect, time_info);
