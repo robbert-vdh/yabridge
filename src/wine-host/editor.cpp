@@ -147,11 +147,17 @@ DeferredWindow::~DeferredWindow() {
     // Note that we capture a copy of `destroy_timer` here. This way we don't
     // have to manage the timer instance ourselves as it will just clean itself
     // up after this lambda gets called.
-    destroy_timer->async_wait([destroy_timer, handle = this->handle](
+    destroy_timer->async_wait([destroy_timer, handle = this->handle,
+                               x11_connection = this->x11_connection](
                                   const boost::system::error_code& error) {
         if (error.failed()) {
             return;
         }
+
+        // This is the flush for the reparent done above. We'll also do this as
+        // late as possible to prevent the window from being drawn in the
+        // meantime, as that would cause flickering.
+        xcb_flush(x11_connection.get());
 
         // The actual destroying will happen as part of the Win32 message loop
         PostMessage(handle, WM_CLOSE, 0, 0);
