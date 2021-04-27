@@ -187,6 +187,9 @@ class PluginBridge {
         if (config.editor_xembed) {
             other_options.push_back("editor: XEmbed");
         }
+        if (config.force_ftz) {
+            other_options.push_back("hack: force flush-to-zero");
+        }
         if (config.frame_rate) {
             std::ostringstream option;
             option << "frame rate: " << std::setprecision(2)

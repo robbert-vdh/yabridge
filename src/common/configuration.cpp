@@ -108,6 +108,12 @@ Configuration::Configuration(const fs::path& config_path,
                 } else {
                     invalid_options.push_back(key);
                 }
+            } else if (key == "force_ftz") {
+                if (const auto parsed_value = value.as_boolean()) {
+                    force_ftz = parsed_value->get();
+                } else {
+                    invalid_options.push_back(key);
+                }
             } else if (key == "frame_rate") {
                 if (const auto parsed_value = value.as_floating_point()) {
                     frame_rate = parsed_value->get();

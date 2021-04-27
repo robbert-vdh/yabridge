@@ -90,14 +90,12 @@ bool set_realtime_priority(bool sched_fifo, int priority = 5);
  * previously when it drops out of scope.
  */
 class ScopedFlushToZero {
+   public:
     ScopedFlushToZero();
     ~ScopedFlushToZero();
 
     ScopedFlushToZero(const ScopedFlushToZero&) = delete;
     ScopedFlushToZero& operator=(const ScopedFlushToZero&) = delete;
-
-    ScopedFlushToZero(ScopedFlushToZero&&) = delete;
-    ScopedFlushToZero& operator=(ScopedFlushToZero&&) = delete;
 
    private:
     /**

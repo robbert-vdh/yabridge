@@ -296,6 +296,7 @@ plugin._
 | `editor_double_embed` | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`.                          |
 | `editor_force_dnd`    | `{true,false}` | This option forcefully enables drag-and-drop support in _REAPER_. Because REAPER's FX window supports drag-and-drop itself, dragging a file onto a plugin editor will cause the drop to be intercepted by the FX window. This makes it impossible to drag files onto plugins in REAPER under normal circumstances. Setting this option to `true` will strip drag-and-drop support from the FX window, thus allowing files to be dragged onto the plugin again. Defaults to `false`. |
 | `editor_xembed`       | `{true,false}` | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't always work properly with it, but it could be useful in certain setups. You may need to use [this Wine patch](https://github.com/psycha0s/airwave/blob/master/fix-xembed-wine-windows.patch) if you're getting blank editor windows. Defaults to `false`.                                                |
+| `force_ftz`           | `{true,false}` | Enable the CPU's FTZ flag while processing audio, flushing denormals to zero. This can fix issues with plugins that start showing exponentially increasing DSP load when playback is stopped or when they start processing silence. Defaults to `false`.                                                                                                                                                                                                                            |
 | `frame_rate`          | `<number>`     | The rate at which Win32 events are being handled and usually also the refresh rate of a plugin's editor GUI. When using plugin groups all plugins share the same event handling loop, so in those the last loaded plugin will set the refresh rate. Defaults to `60`.                                                                                                                                                                                                               |
 | `hide_daw`            | `{true,false}` | Don't report the name of the actual DAW to the plugin. See the [known issues](#runtime-dependencies-and-known-issues) section for a list of situations where this may be useful. This affects both VST2 and VST3 plugins. Defaults to `false`.                                                                                                                                                                                                                                      |
 | `vst3_no_scaling`     | `{true,false}` | Disable HiDPI scaling for VST3 plugins. Wine currently does not have proper fractional HiDPI support, so you might have to enable this option if you're using a HiDPI display. In most cases setting the font DPI in `winecfg`'s graphics tab to 192 will cause plugins to scale correctly at 200% size. Defaults to `false`.                                                                                                                                                       |
@@ -332,6 +333,9 @@ editor_xembed = true
 
 ["Chromaphone 3.so"]
 hide_daw = true
+
+["Kush Audio/REDDI.so"]
+force_ftz = true
 
 ["SWAM Cello 64bit.so"]
 cache_time_info = true
@@ -444,6 +448,10 @@ include:
   _Bitwig Studio_, text entry will cause the plugin to crash because Chromaphone
   uses a different text entry method when it detects Bitwig. You can use the
   `hide_daw` [compatibility option](#compatibility-options) to work around this.
+- **Kush Audio REDDI** suffers from exponentially increasing DSP usage when the
+  plugin starts processing silence, halting playback and potentially crashing
+  the DAW. You can enable the `force_ftz` [compatibility
+  option](#compatibility-options) for the plugin to work around this bug.
 - The VST2 version of **SWAM Cello** has a bug where it asks the host for the
   current buffer's time and tempo information for every sample it processes
   instead of doing it only once per buffer, resulting in very bad performance.

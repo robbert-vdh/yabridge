@@ -16,6 +16,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   that have undesirable or broken DAW-specific behaviour. See the [known
   issues](https://github.com/robbert-vdh/yabridge#runtime-dependencies-and-known-issues)
   section of the readme for more information on when this may be useful.
+- Added another new [compatibility
+  option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
+  force flushing denormals to zero during audio processing. Some plugins, such
+  as _Kush Audio REDDI_, have significantly increased DSP usage when processing
+  audio that's almost but not quite silent. When this happens, you will notice
+  that a plugin's DSP usage increases exponentially after playback has stopped
+  or when the plugin starts processing silence. Enabling this new option will
+  force your CPU to flush this almost silent audio to silence, potentially
+  fixing the issue.
 
 ### Changed
 
