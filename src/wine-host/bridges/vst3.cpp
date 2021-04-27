@@ -16,8 +16,6 @@
 
 #include "vst3.h"
 
-#include "../boost-fix.h"
-
 #include "vst3-impls/component-handler-proxy.h"
 #include "vst3-impls/connection-point-proxy.h"
 #include "vst3-impls/context-menu-proxy.h"
