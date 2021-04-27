@@ -440,6 +440,10 @@ include:
 - **PSPaudioware** plugins with expandable GUIs, such as E27, may have their GUI
   appear in the wrong location after the GUI has been expanded. You can enable
   an alternative [editor hosting mode](#compatibility-options) to fix this.
+- When using recent _Applied Acoustics_ plugins like **Chromaphone 3** under
+  _Bitwig Studio_, text entry will cause the plugin to crash because Chromaphone
+  uses a different text entry method when it detects Bitwig. You can use the
+  `hide_daw` [compatibility option](#compatibility-options) to work around this.
 - The VST2 version of **SWAM Cello** has a bug where it asks the host for the
   current buffer's time and tempo information for every sample it processes
   instead of doing it only once per buffer, resulting in very bad performance.
