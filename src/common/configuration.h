@@ -75,6 +75,13 @@ class Configuration {
                   const boost::filesystem::path& yabridge_path);
 
     /**
+     * The name of the plugin group that should be used for the plugin this
+     * configuration object was created for. If not set, then the plugin should
+     * be hosted individually instead.
+     */
+    std::optional<std::string> group;
+
+    /**
      * If set to `true`, then after an `audioMasterGetTime()` call all
      * subsequent calls to that function during a single processing cycle will
      * reuse the results from the first call. In theory it would be a bug on the
@@ -152,13 +159,6 @@ class Configuration {
     bool vst3_prefer_32bit = false;
 
     /**
-     * The name of the plugin group that should be used for the plugin this
-     * configuration object was created for. If not set, then the plugin should
-     * be hosted individually instead.
-     */
-    std::optional<std::string> group;
-
-    /**
      * The path to the configuration file that was parsed.
      */
     std::optional<boost::filesystem::path> matched_file;
@@ -189,6 +189,9 @@ class Configuration {
 
     template <typename S>
     void serialize(S& s) {
+        s.ext(group, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.text1b(v, 4096); });
+
         s.value1b(cache_time_info);
         s.value1b(editor_double_embed);
         s.value1b(editor_force_dnd);
@@ -197,8 +200,6 @@ class Configuration {
               [](S& s, auto& v) { s.value4b(v); });
         s.value1b(vst3_no_scaling);
         s.value1b(vst3_prefer_32bit);
-        s.ext(group, bitsery::ext::StdOptional(),
-              [](S& s, auto& v) { s.text1b(v, 4096); });
 
         s.ext(matched_file, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath{}); });
