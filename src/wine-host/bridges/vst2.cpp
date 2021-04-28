@@ -70,6 +70,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
                        std::string endpoint_base_dir)
     : HostBridge(plugin_dll_path),
+      logger(generic_logger),
       main_context(main_context),
       plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
       sockets(main_context.context, endpoint_base_dir, false) {

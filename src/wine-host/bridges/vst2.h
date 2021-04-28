@@ -75,6 +75,16 @@ class Vst2Bridge : public HostBridge {
      */
     intptr_t host_callback(AEffect*, int, int, intptr_t, void*, float);
 
+   private:
+    /**
+     * A logger instance we'll use log cached `audioMasterGetTime()` calls, so
+     * they can be hidden on verbosity levels below 2.
+     *
+     * This only has to be used instead of directly writing to `std::cerr` when
+     * the message should be hidden on lower verbosity levels.
+     */
+    Vst2Logger logger;
+
     /**
      * With the `audioMasterGetTime` host callback the plugin expects the return
      * value from the calblack to be a pointer to a VstTimeInfo struct. If the
@@ -83,7 +93,6 @@ class Vst2Bridge : public HostBridge {
      */
     std::optional<VstTimeInfo> time_info;
 
-   private:
     /**
      * A wrapper around `plugin->dispatcher` that handles the opening and
      * closing of GUIs. Used inside of `handle_dispatch()`.
