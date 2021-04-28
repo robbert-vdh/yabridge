@@ -361,7 +361,6 @@ class Vst3Bridge : public HostBridge {
     void unregister_context_menu(size_t object_instance_id,
                                  size_t context_menu_id);
 
-   public:
     /**
      * A logger instance we'll use to log about failed
      * `FUnknown::queryInterface` calls, so they can be hidden on verbosity
