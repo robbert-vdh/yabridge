@@ -559,10 +559,15 @@ struct AudioBuffers {
      * We'll send the current transport information as part of an audio
      * processing call. This lets us a void an unnecessary callback (or in some
      * cases, more than one) during every processing cycle.
-     *
-     * TODO: Do the same thing for the current process level
      */
     std::optional<VstTimeInfo> current_time_info;
+
+    /**
+     * Some plugins will also ask for the current process level during audio
+     * processing. To prevent unnecessary expensive callbacks, we'll send this
+     * information along with the processing call.
+     */
+    int current_process_level;
 
     /**
      * We'll periodically synchronize the realtime priority setting of the
@@ -592,6 +597,8 @@ struct AudioBuffers {
         s.value4b(sample_frames);
 
         s.ext(current_time_info, bitsery::ext::StdOptional{});
+        s.value4b(current_process_level);
+
         s.ext(new_realtime_priority, bitsery::ext::StdOptional{},
               [](S& s, int& priority) { s.value4b(priority); });
     }

@@ -190,11 +190,17 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                 // we'll send the current transport information as part of the
                 // request so we cache it to avoid unnecessary callbacks from
                 // the audio thread
-                std::optional<decltype(time_info_cache)::Guard> cache_guard =
-                    request.current_time_info
-                        ? std::optional(
-                              time_info_cache.set(*request.current_time_info))
-                        : std::nullopt;
+                std::optional<decltype(time_info_cache)::Guard>
+                    time_info_cache_guard =
+                        request.current_time_info
+                            ? std::optional(time_info_cache.set(
+                                  *request.current_time_info))
+                            : std::nullopt;
+
+                // We'll also cache the process level, since some plugins will
+                // ask for this during every processing cycle
+                decltype(process_level_cache)::Guard process_level_cache_guard =
+                    process_level_cache.set(request.current_process_level);
 
                 // As suggested by Jack Winter, we'll synchronize this thread's
                 // audio processing priority with that of the host's audio
@@ -266,6 +272,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                                 .buffers = output_buffers_single_precision,
                                 .sample_frames = request.sample_frames,
                                 .current_time_info = std::nullopt,
+                                .current_process_level = 0,
                                 .new_realtime_priority = std::nullopt};
                             sockets.host_vst_process_replacing.send(response,
                                                                     buffer);
@@ -295,6 +302,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                                 .buffers = output_buffers_double_precision,
                                 .sample_frames = request.sample_frames,
                                 .current_time_info = std::nullopt,
+                                .current_process_level = 0,
                                 .new_realtime_priority = std::nullopt};
                             sockets.host_vst_process_replacing.send(response,
                                                                     buffer);
@@ -618,6 +626,18 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
                                           std::nullopt, true);
 
                 return result;
+            }
+        } break;
+        case audioMasterGetCurrentProcessLevel: {
+            // We also send the current process level for similar reasons
+            const int* current_process_level = process_level_cache.get();
+            if (current_process_level) {
+                logger.log_event(false, opcode, index, value, nullptr, option,
+                                 std::nullopt);
+                logger.log_event_response(false, opcode, *current_process_level,
+                                          nullptr, std::nullopt, true);
+
+                return *current_process_level;
             }
         } break;
     }

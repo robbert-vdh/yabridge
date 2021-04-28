@@ -129,6 +129,12 @@ class Vst2Bridge : public HostBridge {
      */
     ScopedValueCache<VstTimeInfo> time_info_cache;
 
+    /**
+     * Some plugins will also ask for the current process level during audio
+     * processing, so we'll also cache that to prevent expensive callbacks.
+     */
+    ScopedValueCache<int> process_level_cache;
+
     // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-attributes"

@@ -19,6 +19,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   information repeatedly for every sample they process. Previously yabridge had
   a `cache_time_info` compatibility option to mitigate the performance hit for
   those plugins, but this new caching behaviour supercedes that.
+- Similarly, yabridge will also cache the current process level during audio
+  processing to reduce bridging overhead for plugins that use this.
 - We now always force the CPU's flush-to-zero flag to be set when processing
   audio. Most plugins will already do this themselves, but plugins like _Kush
   Audio REDDI_ and _Expressive E Noisy_ that don't will otherwise suffer from

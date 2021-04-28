@@ -568,10 +568,18 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
         current_time_info = *returned_time_info;
     }
 
+    // Some plugisn also ask for the current process level, so we'll cache that
+    // information as well
+    const int current_process_level = static_cast<int>(host_callback_function(
+        &plugin, audioMasterGetCurrentProcessLevel, 0, 0, nullptr, 0.0));
+    if (returned_time_info) {
+        current_time_info = *returned_time_info;
+    }
+
     // We'll synchronize the scheduling priority of the audio thread on the Wine
     // plugin host with that of the host's audio thread every once in a while
     std::optional<int> new_realtime_priority;
-    time_t now = std::time(nullptr);
+    const time_t now = std::time(nullptr);
     if (now > last_audio_thread_priority_synchronization +
                   audio_thread_priority_synchronization_interval) {
         new_realtime_priority = get_realtime_priority();
@@ -590,6 +598,7 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     const AudioBuffers request{.buffers = input_buffers,
                                .sample_frames = sample_frames,
                                .current_time_info = current_time_info,
+                               .current_process_level = current_process_level,
                                .new_realtime_priority = new_realtime_priority};
     sockets.host_vst_process_replacing.send(request, process_buffer);
 
