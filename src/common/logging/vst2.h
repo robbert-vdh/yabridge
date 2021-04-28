@@ -74,7 +74,8 @@ class Vst2Logger {
         int opcode,
         intptr_t return_value,
         const EventResultPayload& payload,
-        const std::optional<EventResultPayload>& value_payload);
+        const std::optional<EventResultPayload>& value_payload,
+        bool from_cache = false);
 
     /**
      * The underlying logger instance we're wrapping.

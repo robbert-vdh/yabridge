@@ -607,10 +607,17 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
             if (cached_time_info) {
                 // This cached value is temporary, so we'll still use the
                 // regular time info storing mechanism
-                // TODO: Log when we hit this cache so it doesn't get hidden
                 last_time_info = *cached_time_info;
+                const intptr_t result =
+                    reinterpret_cast<intptr_t>(&last_time_info);
 
-                return reinterpret_cast<intptr_t>(&last_time_info);
+                // Make sure that these cached events don't get lost in the logs
+                logger.log_event(false, opcode, index, value,
+                                 WantsVstTimeInfo{}, option, std::nullopt);
+                logger.log_event_response(false, opcode, result, last_time_info,
+                                          std::nullopt, true);
+
+                return result;
             }
         } break;
     }

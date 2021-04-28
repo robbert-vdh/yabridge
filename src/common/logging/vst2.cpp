@@ -449,7 +449,8 @@ void Vst2Logger::log_event_response(
     int opcode,
     intptr_t return_value,
     const EventResultPayload& payload,
-    const std::optional<EventResultPayload>& value_payload) {
+    const std::optional<EventResultPayload>& value_payload,
+    bool from_cache) {
     if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         if (should_filter_event(is_dispatch, opcode)) {
             return;
@@ -515,6 +516,10 @@ void Vst2Logger::log_event_response(
                             << ", samples = " << info.samplePos << ">";
                 }},
             payload);
+
+        if (from_cache) {
+            message << " (from cache)";
+        }
 
         log(message.str());
     }
