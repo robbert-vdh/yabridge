@@ -559,6 +559,8 @@ struct AudioBuffers {
      * We'll send the current transport information as part of an audio
      * processing call. This lets us a void an unnecessary callback (or in some
      * cases, more than one) during every processing cycle.
+     *
+     * TODO: Do the same thing for the current process level
      */
     std::optional<VstTimeInfo> current_time_info;
 
