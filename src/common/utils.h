@@ -109,3 +109,83 @@ class ScopedFlushToZero {
      */
     std::optional<unsigned int> old_ftz_mode;
 };
+
+/**
+ * A helper to temporarily cache a value. Calling `ScopedValueCache::set(x)`
+ * will return a guard object. When `ScopedValueCache::get()` is called while
+ * this guard object is active, then `x` is returned. Otherwise a nullopt will
+ * be returned.
+ *
+ * @note This class provides no thread safety guarantees. If thread safety is
+ *   needed, then you should use mutexes around the getter and the setter.
+ */
+template <typename T>
+class ScopedValueCache {
+   public:
+    ScopedValueCache() {}
+
+    ScopedValueCache(const ScopedValueCache&) = delete;
+    ScopedValueCache& operator=(const ScopedValueCache&) = delete;
+
+    // Moving is impossible because of the guard
+    ScopedValueCache(ScopedValueCache&&) = delete;
+    ScopedValueCache& operator=(ScopedValueCache&&) = delete;
+
+    /**
+     * Return the cached value, if we're currently caching a value. Will return
+     * a null pointer when this is not the case.
+     */
+    const T* get() const { return value ? &*value : nullptr; }
+
+    /**
+     * A guard that will reset the cached value on the `ScopedValueCache` when
+     * it drops out of scope.
+     */
+    class Guard {
+       public:
+        Guard(std::optional<T>& cached_value) : cached_value(cached_value) {}
+
+        ~Guard() {
+            if (is_active) {
+                cached_value.reset();
+            }
+        }
+
+        Guard(const Guard&) = delete;
+        Guard& operator=(const Guard&) = delete;
+
+        Guard(Guard&& o) : cached_value(o.cached_value) { o.is_active = false; }
+        Guard& operator=(Guard&& o) {
+            cached_value = o.cache;
+            o.is_active = false;
+
+            return *this;
+        }
+
+       private:
+        bool is_active = true;
+        std::optional<T>& cached_value;
+    };
+
+    /**
+     * Temporarily cache `new_value`. This value will be cached as long as the
+     * returned guard is in scope. This guard should not outlive the
+     * `ScopedValueCache` object.
+     *
+     * @param new_value The cached value to store.
+     *
+     * @throw std::runtime_error When we are already caching a value.
+     */
+    Guard set(T new_value) {
+        value = new_value;
+
+        return Guard(value);
+    }
+
+   private:
+    /**
+     * The current value, if `set()` has been called and the guard is still
+     * active.
+     */
+    std::optional<T> value;
+};
