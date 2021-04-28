@@ -38,9 +38,9 @@ compiler_options = [
   # Disable the use of concepts in Boost.Asio until Boost 1.73 gets released
   # https://github.com/boostorg/asio/issues/312
   '-DBOOST_ASIO_DISABLE_CONCEPTS',
-  # When the `force_ftz` option is enabled, we use an intrinsic to force
-  # flush-to-zero. SSE2 is always enabled in x86_64 CPUs, but when we're
-  # compiling the 32-bit bitbridge we need to manually add this flag.
+  # We use an intrinsic to force flush-to-zero. SSE2 is always enabled in x86_64
+  # CPUs, but when we're compiling the 32-bit bitbridge we need to manually add
+  # this flag.
   '-msse2',
 ]
 # NOTE: GCC doesn't 8-byte align doubles in structs on x86 for ABI-compatibilty

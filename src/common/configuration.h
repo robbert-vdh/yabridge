@@ -127,15 +127,6 @@ class Configuration {
     bool editor_xembed = false;
 
     /**
-     * When using this option, we'll enable the flush-to-zero flag during audio
-     * processing. This can be useful when the host passes denormals to a plugin
-     * that doesn't handle those well. An example of such a plugin is REDDI by
-     * Kush Audio. Some hosts, like Bitwig, will already snap denormals to zero
-     * for us so this may not be necessary with every host.
-     */
-    bool force_ftz = false;
-
-    /**
      * The number of times per second we'll handle the event loop. In most
      * plugins this also controls the plugin editor GUI's refresh rate.
      *
@@ -214,7 +205,6 @@ class Configuration {
         s.value1b(editor_double_embed);
         s.value1b(editor_force_dnd);
         s.value1b(editor_xembed);
-        s.value1b(force_ftz);
         s.ext(frame_rate, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.value4b(v); });
         s.value1b(hide_daw);

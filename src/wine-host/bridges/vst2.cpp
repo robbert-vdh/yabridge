@@ -169,6 +169,11 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     });
 
     process_replacing_handler = Win32Thread([&]() {
+        // Most plugins will already enable FTZ, but there are a handful of
+        // plugins that don't that suffer from extreme DSP load increases when
+        // they start producing denormals
+        ScopedFlushToZero ftz_guard;
+
         // These are used as scratch buffers to prevent unnecessary allocations.
         // Since don't know in advance whether the host will call
         // `processReplacing` or `processDoubleReplacing` we'll just create
@@ -180,12 +185,6 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
 
         sockets.host_vst_process_replacing.receive_multi<AudioBuffers>(
             [&](AudioBuffers request, std::vector<uint8_t>& buffer) {
-                // HACK: When a plugin doesn't handle denormals properly, we can
-                //       force the FTZ flag to be set to work around this
-                std::optional<ScopedFlushToZero> ftz_guard =
-                    config.force_ftz ? std::make_optional<ScopedFlushToZero>()
-                                     : std::nullopt;
-
                 // As suggested by Jack Winter, we'll synchronize this thread's
                 // audio processing priority with that of the host's audio
                 // thread every once in a while

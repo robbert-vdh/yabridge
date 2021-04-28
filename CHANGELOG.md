@@ -10,6 +10,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- We now always force the CPU's flush-to-zero flag to be set when processing
+  audio. Most plugins will already do this themselves, but plugins like _Kush
+  Audio REDDI_ and _Expressive E Noisy_ that don't will otherwise suffer from
+  extreme DSP usage increases when processing almost silent audio.
 - Added a new [compatibility
   option](https://github.com/robbert-vdh/yabridge#compatibility-options) to hide
   the name of the DAW you're using for a plugin. This can be useful with plugins
@@ -48,7 +52,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   plugins. We now explicitly reparent the window to back the root window first
   before deferring the window closing. This should work around the issue, while
   still keeping editor closing nice and snappy.
-- Fixed the Wine version detection when using a custom `WINELOADER`.
 - _PSPaudioware InifniStrip_ would fail to initialize because the plugin expects
   the host to always be using Microsoft COM and it won't initialize it by
   itself. InfiniStrip loads as expected now.
@@ -56,6 +59,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   fix, MIDI events are now deallocated later then when they normally would have
   to be.
 - Fixed _UVI Plugsound Free_ crashing during initialization.
+- Fixed extreme DSP usage increases in _Kush Audio REDDI_ and _Expressive E
+  Noisy_ caused by denormals.
+- Fixed the Wine version detection when using a custom `WINELOADER`.
 - Fixed the `cache_time_info` `yabridge.toml` option also affecting the results
   of other host callbacks during audio processing.
 
