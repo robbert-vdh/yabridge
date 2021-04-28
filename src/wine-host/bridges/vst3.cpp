@@ -1172,10 +1172,20 @@ size_t Vst3Bridge::register_object_instance(
                 overload{
                     [&](YaAudioProcessor::SetBusArrangements& request)
                         -> YaAudioProcessor::SetBusArrangements::Response {
+                        // HACK: WA Production Imperfect VST3 somehow requires
+                        //       `inputs` to be a valid pointer, even if there
+                        //       are no inputs.
+                        Steinberg::Vst::SpeakerArrangement empty_arrangement =
+                            0;
+
                         return object_instances[request.instance_id]
                             .audio_processor->setBusArrangements(
-                                request.inputs.data(), request.num_ins,
-                                request.outputs.data(), request.num_outs);
+                                request.num_ins > 0 ? request.inputs.data()
+                                                    : &empty_arrangement,
+                                request.num_ins,
+                                request.num_outs > 0 ? request.outputs.data()
+                                                     : &empty_arrangement,
+                                request.num_outs);
                     },
                     [&](YaAudioProcessor::GetBusArrangement& request)
                         -> YaAudioProcessor::GetBusArrangement::Response {

@@ -58,6 +58,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Prevent _Native Instruments' FM7_ from crashing when processing MIDI. As a
   fix, MIDI events are now deallocated later then when they normally would have
   to be.
+- Fixed the VST3 version of _W. A. Production ImPerfect_ from crashing during
+  audio setup.
 - Fixed _UVI Plugsound Free_ crashing during initialization.
 - Fixed extreme DSP usage increases in _Kush Audio REDDI_ and _Expressive E
   Noisy_ caused by denormals.
