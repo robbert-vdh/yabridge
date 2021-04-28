@@ -77,6 +77,17 @@ class Vst2Bridge : public HostBridge {
 
    private:
     /**
+     * A wrapper around `plugin->dispatcher` that handles the opening and
+     * closing of GUIs. Used inside of `handle_dispatch()`.
+     */
+    intptr_t dispatch_wrapper(AEffect* plugin,
+                              int opcode,
+                              int index,
+                              intptr_t value,
+                              void* data,
+                              float option);
+
+    /**
      * A logger instance we'll use log cached `audioMasterGetTime()` calls, so
      * they can be hidden on verbosity levels below 2.
      *
@@ -92,17 +103,6 @@ class Vst2Bridge : public HostBridge {
      * returned null pointer as a nullopt.
      */
     std::optional<VstTimeInfo> time_info;
-
-    /**
-     * A wrapper around `plugin->dispatcher` that handles the opening and
-     * closing of GUIs. Used inside of `handle_dispatch()`.
-     */
-    intptr_t dispatch_wrapper(AEffect* plugin,
-                              int opcode,
-                              int index,
-                              intptr_t value,
-                              void* data,
-                              float option);
 
     /**
      * The IO context used for event handling so that all events and window
