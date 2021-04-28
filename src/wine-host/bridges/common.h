@@ -20,6 +20,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include "../../common/logging/common.h"
+
 /**
  * The base for the Wine plugin host bridge interface for all plugin types. This
  * only has to be able to handle Win32 and X11 events. Implementations of this
@@ -87,4 +89,14 @@ class HostBridge {
      * The path to the .dll being loaded in the Wine plugin host.
      */
     const boost::filesystem::path plugin_path;
+
+   protected:
+    /**
+     * A logger, just like we have on the plugin side. This is normally not
+     * needed because we can just print to STDERR, but this way we can
+     * conditionally hide output based on the verbosity level.
+     *
+     * @see Logger::create_wine_stderr
+     */
+    Logger generic_logger;
 };

@@ -91,7 +91,6 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
                        std::string endpoint_base_dir)
     : HostBridge(plugin_dll_path),
-      generic_logger(Logger::create_wine_stderr()),
       logger(generic_logger),
       main_context(main_context),
       sockets(main_context.context, endpoint_base_dir, false) {

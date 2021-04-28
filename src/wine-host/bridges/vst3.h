@@ -361,9 +361,6 @@ class Vst3Bridge : public HostBridge {
     void unregister_context_menu(size_t object_instance_id,
                                  size_t context_menu_id);
 
-   private:
-    Logger generic_logger;
-
    public:
     /**
      * A logger instance we'll use to log about failed
