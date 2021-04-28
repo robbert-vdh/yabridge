@@ -292,7 +292,6 @@ plugin._
 
 | Option                | Values         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | --------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cache_time_info`     | `{true,false}` | Compatibility option for VST2 plugins that call `audioMasterGetTime()` multiple times during a single processing cycle. With this option subsequent calls during a single audio processing cycle will reuse the value returned by the first call to this function. This is a bug in the plugin, and this option serves as a temporary workaround until the plugin fixes the issue.                                                                                                  |
 | `editor_double_embed` | `{true,false}` | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware_ plugins with expandable GUIs, such as E27. Defaults to `false`.                          |
 | `editor_force_dnd`    | `{true,false}` | This option forcefully enables drag-and-drop support in _REAPER_. Because REAPER's FX window supports drag-and-drop itself, dragging a file onto a plugin editor will cause the drop to be intercepted by the FX window. This makes it impossible to drag files onto plugins in REAPER under normal circumstances. Setting this option to `true` will strip drag-and-drop support from the FX window, thus allowing files to be dragged onto the plugin again. Defaults to `false`. |
 | `editor_xembed`       | `{true,false}` | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't always work properly with it, but it could be useful in certain setups. You may need to use [this Wine patch](https://github.com/psycha0s/airwave/blob/master/fix-xembed-wine-windows.patch) if you're getting blank editor windows. Defaults to `false`.                                                |
@@ -332,9 +331,6 @@ editor_xembed = true
 
 ["Chromaphone 3.so"]
 hide_daw = true
-
-["SWAM Cello 64bit.so"]
-cache_time_info = true
 
 ["sforzando VST_x64.so"]
 editor_force_dnd = true
@@ -444,12 +440,6 @@ include:
   _Bitwig Studio_, text entry will cause the plugin to crash because Chromaphone
   uses a different text entry method when it detects Bitwig. You can use the
   `hide_daw` [compatibility option](#compatibility-options) to work around this.
-- The VST2 version of **SWAM Cello** has a bug where it asks the host for the
-  current buffer's time and tempo information for every sample it processes
-  instead of doing it only once per buffer, resulting in very bad performance.
-  You can enable the time info cache [compatibility
-  option](#compatibility-options) to work around this until this is fixed on the
-  plugin's side.
 - VST2 plugins like **FabFilter Pro-Q 3** that can share data between different
   instances of the same plugin plugins have to be hosted within a single process
   for that functionality to work. See the [plugin groups](#plugin-groups)

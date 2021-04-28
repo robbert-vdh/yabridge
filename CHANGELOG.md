@@ -42,6 +42,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   situations from happening in the future, yabridge now specifically handles
   most common VST2 functions that don't have a data argument.
 
+### Removed
+
+- The `cache_time_info` compatibility option has been removed since it's now
+  obsolete.
+
 ### Fixed
 
 - In certain rare circumstances, closing a plugin editor would trigger an X11
