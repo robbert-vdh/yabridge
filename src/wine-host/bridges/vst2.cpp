@@ -186,6 +186,16 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
 
         sockets.host_vst_process_replacing.receive_multi<AudioBuffers>(
             [&](AudioBuffers request, std::vector<uint8_t>& buffer) {
+                // Since the value cannot change during this processing cycle,
+                // we'll send the current transport information as part of the
+                // request so we cache it to avoid unnecessary callbacks from
+                // the audio thread
+                std::optional<decltype(time_info_cache)::Guard> cache_guard =
+                    request.current_time_info
+                        ? std::optional(
+                              time_info_cache.set(*request.current_time_info))
+                        : std::nullopt;
+
                 // As suggested by Jack Winter, we'll synchronize this thread's
                 // audio processing priority with that of the host's audio
                 // thread every once in a while
@@ -198,15 +208,6 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                 // approach should not be needed but Kontakt only stores
                 // pointers to rather than copies of the events.
                 std::lock_guard lock(next_buffer_midi_events_mutex);
-
-                // HACK: Workaround for a bug in SWAM Cello where it would call
-                //       `audioMasterGetTime()` once for every sample. The first
-                //       value returned by this function during an audio
-                //       processing cycle will be reused for the rest of the
-                //       cycle.
-                if (config.cache_time_info) {
-                    time_info.reset();
-                }
 
                 // Since the host should only be calling one of `process()`,
                 // processReplacing()` or `processDoubleReplacing()`, we can all
@@ -264,6 +265,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                             AudioBuffers response{
                                 .buffers = output_buffers_single_precision,
                                 .sample_frames = request.sample_frames,
+                                .current_time_info = std::nullopt,
                                 .new_realtime_priority = std::nullopt};
                             sockets.host_vst_process_replacing.send(response,
                                                                     buffer);
@@ -292,6 +294,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                             AudioBuffers response{
                                 .buffers = output_buffers_double_precision,
                                 .sample_frames = request.sample_frames,
+                                .current_time_info = std::nullopt,
                                 .new_realtime_priority = std::nullopt};
                             sockets.host_vst_process_replacing.send(response,
                                                                     buffer);
@@ -473,9 +476,8 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
 
 class HostCallbackDataConverter : DefaultDataConverter {
    public:
-    HostCallbackDataConverter(AEffect* plugin,
-                              std::optional<VstTimeInfo>& time_info)
-        : plugin(plugin), time_info(time_info) {}
+    HostCallbackDataConverter(AEffect* plugin, VstTimeInfo& last_time_info)
+        : plugin(plugin), last_time_info(last_time_info) {}
 
     EventPayload read(const int opcode,
                       const int index,
@@ -548,15 +550,11 @@ class HostCallbackDataConverter : DefaultDataConverter {
                const EventResult& response) const override {
         switch (opcode) {
             case audioMasterGetTime:
-                // Write the returned `VstTimeInfo` struct into a field and
-                // make the function return a pointer to it in the function
-                // below. Depending on whether the host supported the
-                // requested time information this operations returns either
-                // a null pointer or a pointer to a `VstTimeInfo` object.
-                if (std::holds_alternative<std::nullptr_t>(response.payload)) {
-                    time_info = std::nullopt;
-                } else {
-                    time_info = std::get<VstTimeInfo>(response.payload);
+                // If the host returned a valid `VstTimeInfo` object, then we'll
+                // keep track of it so we can return a pointer to it in the
+                // function below
+                if (std::holds_alternative<VstTimeInfo>(response.payload)) {
+                    last_time_info = std::get<VstTimeInfo>(response.payload);
                 }
                 break;
             default:
@@ -569,14 +567,13 @@ class HostCallbackDataConverter : DefaultDataConverter {
                           const intptr_t original) const override {
         switch (opcode) {
             case audioMasterGetTime: {
-                // Return a pointer to the `VstTimeInfo` object written in
-                // the function above
-                VstTimeInfo* time_info_pointer = nullptr;
-                if (time_info) {
-                    time_info_pointer = &*time_info;
+                // If the host returned a null pointer, then we'll do the same
+                // thing here
+                if (original == 0) {
+                    return 0;
+                } else {
+                    return reinterpret_cast<intptr_t>(&last_time_info);
                 }
-
-                return reinterpret_cast<intptr_t>(time_info_pointer);
             } break;
             default:
                 return DefaultDataConverter::return_value(opcode, original);
@@ -592,7 +589,7 @@ class HostCallbackDataConverter : DefaultDataConverter {
 
    private:
     AEffect* plugin;
-    std::optional<VstTimeInfo>& time_info;
+    VstTimeInfo& last_time_info;
 };
 
 intptr_t Vst2Bridge::host_callback(AEffect* effect,
@@ -603,18 +600,22 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
                                    float option) {
     switch (opcode) {
         case audioMasterGetTime: {
-            // HACK: Workaround for a bug in SWAM Cello where it would call
-            //       `audioMasterGetTime()` once for every sample. When this
-            //       option is enabled `time_info` should be reset in the
-            //       process function. The `time_info` value is assigned inside
-            //       of `HostCallbackDataConverter::write()`.
-            if (config.cache_time_info && time_info) {
-                return reinterpret_cast<intptr_t>(&*time_info);
+            // During a processing call we'll have already sent the current
+            // transport information from the plugin side to avoid an
+            // unnecessary callback
+            const VstTimeInfo* cached_time_info = time_info_cache.get();
+            if (cached_time_info) {
+                // This cached value is temporary, so we'll still use the
+                // regular time info storing mechanism
+                // TODO: Log when we hit this cache so it doesn't get hidden
+                last_time_info = *cached_time_info;
+
+                return reinterpret_cast<intptr_t>(&last_time_info);
             }
         } break;
     }
 
-    HostCallbackDataConverter converter(effect, time_info);
+    HostCallbackDataConverter converter(effect, last_time_info);
     return sockets.vst_host_callback.send_event(converter, std::nullopt, opcode,
                                                 index, value, data, option);
 }

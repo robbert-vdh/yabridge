@@ -97,14 +97,6 @@ class Vst2Bridge : public HostBridge {
     Vst2Logger logger;
 
     /**
-     * With the `audioMasterGetTime` host callback the plugin expects the return
-     * value from the calblack to be a pointer to a VstTimeInfo struct. If the
-     * host did not support a certain time info query, then we'll store the
-     * returned null pointer as a nullopt.
-     */
-    std::optional<VstTimeInfo> time_info;
-
-    /**
      * The IO context used for event handling so that all events and window
      * message handling can be performed from a single thread, even when hosting
      * multiple plugins.
@@ -117,6 +109,25 @@ class Vst2Bridge : public HostBridge {
      * side, and then sent over to the Wine host as part of the startup process.
      */
     Configuration config;
+
+    /**
+     * We'll store the last transport information obtained from the host as a
+     * result of `audioMasterGetTime()` here so we can return a pointer to it if
+     * the request was successful. To prevent unnecessary back and forth
+     * communication, we'll send a copy of the current transport information to
+     * the plugin as part of the audio processing call.
+     *
+     * @see cached_time_info
+     */
+    VstTimeInfo last_time_info;
+
+    /**
+     * This will temporarily cache the current time info during an audio
+     * processing call to avoid an additional callback every processing cycle.
+     * Some faulty plugins may even request this information for every sample,
+     * which would otherwise cause a very noticeable performance hit.
+     */
+    ScopedValueCache<VstTimeInfo> time_info_cache;
 
     // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
 #pragma GCC diagnostic push

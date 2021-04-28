@@ -558,6 +558,26 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
 
 template <typename T, bool replacing>
 void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
+    // To prevent unnecessary bridging overhead, we'll send the time information
+    // together with the buffers because basically every plugin needs this
+    std::optional<VstTimeInfo> current_time_info;
+    const VstTimeInfo* returned_time_info =
+        reinterpret_cast<const VstTimeInfo*>(host_callback_function(
+            &plugin, audioMasterGetTime, 0, 0, nullptr, 0.0));
+    if (returned_time_info) {
+        current_time_info = *returned_time_info;
+    }
+
+    // We'll synchronize the scheduling priority of the audio thread on the Wine
+    // plugin host with that of the host's audio thread every once in a while
+    std::optional<int> new_realtime_priority;
+    time_t now = std::time(nullptr);
+    if (now > last_audio_thread_priority_synchronization +
+                  audio_thread_priority_synchronization_interval) {
+        new_realtime_priority = get_realtime_priority();
+        last_audio_thread_priority_synchronization = now;
+    }
+
     // The inputs and outputs arrays should be `[num_inputs][sample_frames]` and
     // `[num_outputs][sample_frames]` floats large respectfully.
     std::vector<std::vector<T>> input_buffers(plugin.numInputs,
@@ -567,18 +587,9 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
                     input_buffers[channel].begin());
     }
 
-    // We'll synchronize the scheduling priority of the audio thread on the Wine
-    // plugin host with that of the host's audio thread every once in a while
-    std::optional<int> new_realtime_priority = std::nullopt;
-    time_t now = std::time(nullptr);
-    if (now > last_audio_thread_priority_synchronization +
-                  audio_thread_priority_synchronization_interval) {
-        new_realtime_priority = get_realtime_priority();
-        last_audio_thread_priority_synchronization = now;
-    }
-
     const AudioBuffers request{.buffers = input_buffers,
                                .sample_frames = sample_frames,
+                               .current_time_info = current_time_info,
                                .new_realtime_priority = new_realtime_priority};
     sockets.host_vst_process_replacing.send(request, process_buffer);
 

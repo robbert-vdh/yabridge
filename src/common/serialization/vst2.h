@@ -556,6 +556,13 @@ struct AudioBuffers {
     int sample_frames;
 
     /**
+     * We'll send the current transport information as part of an audio
+     * processing call. This lets us a void an unnecessary callback (or in some
+     * cases, more than one) during every processing cycle.
+     */
+    std::optional<VstTimeInfo> current_time_info;
+
+    /**
      * We'll periodically synchronize the realtime priority setting of the
      * host's audio thread with the Wine plugin host. We'll do this
      * approximately every ten seconds, as doing this getting and setting
@@ -582,6 +589,7 @@ struct AudioBuffers {
             });
         s.value4b(sample_frames);
 
+        s.ext(current_time_info, bitsery::ext::StdOptional{});
         s.ext(new_realtime_priority, bitsery::ext::StdOptional{},
               [](S& s, int& priority) { s.value4b(priority); });
     }
