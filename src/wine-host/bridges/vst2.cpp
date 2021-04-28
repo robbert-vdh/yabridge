@@ -188,7 +188,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
             [&](AudioBuffers request, std::vector<uint8_t>& buffer) {
                 // Since the value cannot change during this processing cycle,
                 // we'll send the current transport information as part of the
-                // request so we cache it to avoid unnecessary callbacks from
+                // request so we prefetch it to avoid unnecessary callbacks from
                 // the audio thread
                 std::optional<decltype(time_info_cache)::Guard>
                     time_info_cache_guard =
@@ -197,8 +197,8 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                                   *request.current_time_info))
                             : std::nullopt;
 
-                // We'll also cache the process level, since some plugins will
-                // ask for this during every processing cycle
+                // We'll also prefetch the process level, since some plugins
+                // will ask for this during every processing cycle
                 decltype(process_level_cache)::Guard process_level_cache_guard =
                     process_level_cache.set(request.current_process_level);
 

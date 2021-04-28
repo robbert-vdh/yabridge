@@ -556,16 +556,16 @@ struct AudioBuffers {
     int sample_frames;
 
     /**
-     * We'll send the current transport information as part of an audio
-     * processing call. This lets us a void an unnecessary callback (or in some
-     * cases, more than one) during every processing cycle.
+     * We'll prefetch the current transport information as part of handling an
+     * audio processing call. This lets us a void an unnecessary callback (or in
+     * some cases, more than one) during every processing cycle.
      */
     std::optional<VstTimeInfo> current_time_info;
 
     /**
      * Some plugins will also ask for the current process level during audio
-     * processing. To prevent unnecessary expensive callbacks, we'll send this
-     * information along with the processing call.
+     * processing. To prevent unnecessary expensive callbacks there, we'll
+     * prefetch this information as well.
      */
     int current_process_level;
 

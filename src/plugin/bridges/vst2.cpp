@@ -568,8 +568,8 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
         current_time_info = *returned_time_info;
     }
 
-    // Some plugisn also ask for the current process level, so we'll cache that
-    // information as well
+    // Some plugisn also ask for the current process level, so we'll prefetch
+    // that information as well
     const int current_process_level = static_cast<int>(host_callback_function(
         &plugin, audioMasterGetCurrentProcessLevel, 0, 0, nullptr, 0.0));
     if (returned_time_info) {

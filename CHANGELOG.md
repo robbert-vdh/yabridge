@@ -10,17 +10,19 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- During VST2 audio processing calls, yabridge will now immediately send the
-  current transport information along with the audio buffers. This lets us cache
-  this information during the processing call, which significantly reduce the
-  overhead of bridging VST2 plugins by avoiding one otherwise mandatory back and
-  forth function call between yabridge's plugin and the Wine plugin host. This
-  has an even greater impact on plugins like _SWAM Cello_ that request this
-  information repeatedly for every sample they process. Previously yabridge had
-  a `cache_time_info` compatibility option to mitigate the performance hit for
-  those plugins, but this new caching behaviour supercedes that.
-- Similarly, yabridge will also cache the current process level during audio
-  processing to reduce bridging overhead for plugins that use this.
+- During VST2 audio processing calls, yabridge will now prefetch the current
+  transport information and send that to the Wine plugin host along with the
+  audio buffers. This lets us cache this information during the processing call,
+  which significantly reduces the overhead of bridging VST2 plugins by avoiding
+  one otherwise mandatory back and forth function call between yabridge's plugin
+  and the Wine plugin host. This has an even greater impact on plugins like
+  _SWAM Cello_ that request this information repeatedly over the course of a
+  single audio processing cycle. Previously yabridge had a `cache_time_info`
+  compatibility option to mitigate the performance hit for those plugins, but
+  this new caching behaviour supercedes that.
+- Similarly, yabridge will also prefetch the current process level during audio
+  processing to reduce bridging overhead for plugins that use this, like the
+  _Meldaproduction_ plugins.
 - We now always force the CPU's flush-to-zero flag to be set when processing
   audio. Most plugins will already do this themselves, but plugins like _Kush
   Audio REDDI_ and _Expressive E Noisy_ that don't will otherwise suffer from

@@ -114,8 +114,8 @@ class Vst2Bridge : public HostBridge {
      * We'll store the last transport information obtained from the host as a
      * result of `audioMasterGetTime()` here so we can return a pointer to it if
      * the request was successful. To prevent unnecessary back and forth
-     * communication, we'll send a copy of the current transport information to
-     * the plugin as part of the audio processing call.
+     * communication, we'll prefetch the current transport information in the
+     * plugin as part of the audio processing call.
      *
      * @see cached_time_info
      */
@@ -131,7 +131,7 @@ class Vst2Bridge : public HostBridge {
 
     /**
      * Some plugins will also ask for the current process level during audio
-     * processing, so we'll also cache that to prevent expensive callbacks.
+     * processing, so we'll also prefetch that to prevent expensive callbacks.
      */
     ScopedValueCache<int> process_level_cache;
 
