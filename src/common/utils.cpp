@@ -54,5 +54,19 @@ ScopedFlushToZero::ScopedFlushToZero() {
 }
 
 ScopedFlushToZero::~ScopedFlushToZero() {
-    _MM_SET_FLUSH_ZERO_MODE(old_ftz_mode);
+    if (old_ftz_mode) {
+        _MM_SET_FLUSH_ZERO_MODE(*old_ftz_mode);
+    }
+}
+
+ScopedFlushToZero::ScopedFlushToZero(ScopedFlushToZero&& o)
+    : old_ftz_mode(std::move(o.old_ftz_mode)) {
+    o.old_ftz_mode.reset();
+}
+
+ScopedFlushToZero& ScopedFlushToZero::operator=(ScopedFlushToZero&& o) {
+    old_ftz_mode = std::move(o.old_ftz_mode);
+    o.old_ftz_mode.reset();
+
+    return *this;
 }

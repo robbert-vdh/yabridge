@@ -97,6 +97,9 @@ class ScopedFlushToZero {
     ScopedFlushToZero(const ScopedFlushToZero&) = delete;
     ScopedFlushToZero& operator=(const ScopedFlushToZero&) = delete;
 
+    ScopedFlushToZero(ScopedFlushToZero&&);
+    ScopedFlushToZero& operator=(ScopedFlushToZero&&);
+
    private:
     /**
      * The previous FTZ mode. When we use this on the Wine side, this should
@@ -104,5 +107,5 @@ class ScopedFlushToZero {
      * don't accidentally end up disabling FTZ somewhere where it should be
      * enabled.
      */
-    unsigned int old_ftz_mode;
+    std::optional<unsigned int> old_ftz_mode;
 };
