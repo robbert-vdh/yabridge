@@ -1176,7 +1176,7 @@ size_t Vst3Bridge::register_object_instance(
                         //       `inputs` to be a valid pointer, even if there
                         //       are no inputs.
                         Steinberg::Vst::SpeakerArrangement empty_arrangement =
-                            0;
+                            0b00000000;
 
                         return object_instances[request.instance_id]
                             .audio_processor->setBusArrangements(
