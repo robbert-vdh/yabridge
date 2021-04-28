@@ -39,10 +39,13 @@ win32_thread_trampoline(fu2::unique_function<void()>* entry_point) {
     return 0;
 }
 
-Win32Thread::Win32Thread(Win32Thread&& o) : handle(std::move(o.handle)) {}
+Win32Thread::Win32Thread(Win32Thread&& o) : handle(std::move(o.handle)) {
+    o.handle.reset();
+}
 
 Win32Thread& Win32Thread::operator=(Win32Thread&& o) {
     handle = std::move(o.handle);
+    o.handle.reset();
 
     return *this;
 }
@@ -71,11 +74,14 @@ Win32Timer::~Win32Timer() {
 }
 
 Win32Timer::Win32Timer(Win32Timer&& o)
-    : window_handle(o.window_handle), timer_id(std::move(o.timer_id)) {}
+    : window_handle(o.window_handle), timer_id(std::move(o.timer_id)) {
+    o.timer_id.reset();
+}
 
 Win32Timer& Win32Timer::operator=(Win32Timer&& o) {
     window_handle = o.window_handle;
     timer_id = std::move(o.timer_id);
+    o.timer_id.reset();
 
     return *this;
 }
