@@ -61,7 +61,7 @@ Vst3ComponentHandlerProxyImpl::endEdit(Steinberg::Vst::ParamID id) {
 
 tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::restartComponent(int32 flags) {
-    return bridge.send_mutually_recursive_message(
+    return bridge.send_mutually_recursive_message<false>(
         YaComponentHandler::RestartComponent{
             .owner_instance_id = owner_instance_id(), .flags = flags});
 }

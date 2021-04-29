@@ -46,8 +46,9 @@ Vst3PlugFrameProxyImpl::resizeView(Steinberg::IPlugView* /*view*/,
         // We have to use this special sending function here so we can handle
         // calls to `IPlugView::onSize()` from this same thread (the UI thread).
         // See the docstring for more information.
-        return bridge.send_mutually_recursive_message(YaPlugFrame::ResizeView{
-            .owner_instance_id = owner_instance_id(), .new_size = *newSize});
+        return bridge.send_mutually_recursive_message<true>(
+            YaPlugFrame::ResizeView{.owner_instance_id = owner_instance_id(),
+                                    .new_size = *newSize});
     } else {
         std::cerr
             << "WARNING: Null pointer passed to 'IPlugFrame::resizeView()'"
