@@ -44,6 +44,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   prevent similar situations from happening in the future, yabridge now
   specifically handles most common VST2 functions that don't have a data
   argument.
+- Instead of trying to proxy VST3 connection point proxies used by the host,
+  yabridge will now first try to bypass the proxy instead, only falling back to
+  proxying the proxy when that's not possible. This only affects Ardour and
+  Mixbus. This greatly improves compatibility with _FabFilter_ plugins in those
+  DAWs.
 
 ### Removed
 
@@ -63,6 +68,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Prevented latency introducing plugins VST3 from causing **Ardour** and
   **Mixbus** to freeze when loading the plugin. This for example prevents
   _Neural DSP Darkglass_ from freezing when used under those DAWs.
+- Fixed _FabFilter_ VST3 plugins freezing in **Ardour** and **Mixbus** when
+  trying to duplicate existing instances of the plugin while the GUI editor is
+  open.
 - _PSPaudioware InifniStrip_ would fail to initialize because the plugin expects
   the host to always be using Microsoft COM and it won't initialize it by
   itself. InfiniStrip loads as expected now.

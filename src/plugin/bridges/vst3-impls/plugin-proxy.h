@@ -324,10 +324,21 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     Steinberg::IPtr<Steinberg::Vst::IComponentHandler> component_handler;
 
     /**
-     * If the host doesn't connect two objects directly in
-     * `IConnectionPoint::connect` but instead connects them through a proxy,
-     * we'll store that proxy here. This way we can then route messages sent by
-     * the plugin through this proxy. So far this is only needed for Ardour.
+     * If the host places a proxy between two objects in
+     * `IConnectionPoint::connect()`, we'll first try to bypass this proxy to
+     * avoid a lot of edge cases with plugins that use these notifications from
+     * the GUI thread. We'll do this by exchanging messages containing the
+     * connected object's instance ID. If we can successfully exchange instance
+     * IDs this way, we'll still connect the objects directly on the Wine plugin
+     * host side. So far this is only needed for Ardour.
+     */
+    std::optional<size_t> connected_instance_id;
+
+    /**
+     * If we cannot manage to bypass the connection proxy as mentioned in the
+     * docstring of `connected_instance_id`, then we'll store the host's
+     * connection point proxy here and we'll proxy that proxy, if that makes any
+     * sense.
      */
     Steinberg::IPtr<Steinberg::Vst::IConnectionPoint> connection_point_proxy;
 

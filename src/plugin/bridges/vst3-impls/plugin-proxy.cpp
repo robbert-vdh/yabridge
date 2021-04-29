@@ -18,6 +18,23 @@
 
 #include "plug-view-proxy.h"
 
+/**
+ * When the host tries to connect two plugin instances with connection proxies,
+ * we'll first try to bypass that proxy. This goes against the idea of yabridge,
+ * but these proxies can make things very difficult when plugins start sending
+ * messages from the GUI thread. If we cannot figure out what we're connected
+ * to, we'll still proxy the host's connection proxy.
+ */
+constexpr char other_instance_message_id[] = "yabridge_other_instance";
+/**
+ * In the message described above we'll use this attribute to pass through a
+ * pointer to the sender of the message. This will the other side set the
+ * `connected_instance_id` field on the other object to the instance ID of that
+ * connected object. This will let us bypass the connection proxy since we can
+ * then just connect the two objects directly.
+ */
+constexpr char other_instance_pointer_attribute[] = "other_proxy_ptr";
+
 Vst3PluginProxyImpl::ContextMenu::ContextMenu(
     Steinberg::IPtr<Steinberg::Vst::IContextMenu> menu)
     : menu(menu) {}
@@ -375,22 +392,65 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::connect(IConnectionPoint* other) {
+    if (!other) {
+        bridge.logger.log(
+            "WARNING: Null pointer passed to "
+            "'IConnectionPointProxy::connect()'");
+        return Steinberg::kInvalidArgument;
+    }
+
     // When the host is trying to connect two plugin proxy objects, we can just
     // identify the other object by its instance IDs and then connect the
-    // objects in the Wine plugin host directly. Otherwise we'll have to set up
-    // a proxy for the host's connection proxy so the messages can be routed
-    // through that.
-    if (auto other_proxy = dynamic_cast<Vst3PluginProxy*>(other)) {
-        return bridge.send_message(YaConnectionPoint::Connect{
-            .instance_id = instance_id(), .other = other_proxy->instance_id()});
-    } else {
-        connection_point_proxy = other;
-
-        return bridge.send_message(YaConnectionPoint::Connect{
-            .instance_id = instance_id(),
-            .other =
-                Vst3ConnectionPointProxy::ConstructArgs(other, instance_id())});
+    // objects in the Wine plugin host directly. If this is not possible, we'll
+    // still try to bypass the proxy and connect the object directly. That goes
+    // against the principles of yabridge, but the alternative is nearly
+    // impossible to pull off correctly because FabFilter VST3 plugins will call
+    // `IConnectionPoint::notify()` from the GUI thread to communicate between
+    // the processor and the edit controller. If we try to handle those mutually
+    // recursive function calls from the GUI thread, then we'll still run into
+    // issues when using multiple instances of the plugin. If we cannot figure
+    // out which object the plugins are connected to, we'll still proxy the
+    // host's connection proxy.
+    if (auto other_instance = dynamic_cast<Vst3PluginProxy*>(other)) {
+        return bridge.send_message(
+            YaConnectionPoint::Connect{.instance_id = instance_id(),
+                                       .other = other_instance->instance_id()});
     }
+
+    // As mentioned above, we'll first try to bypass the connection point proxy
+    // and connect the objects directly
+    if (host_application) {
+        Steinberg::IPtr<Steinberg::Vst::IMessage> message =
+            Steinberg::owned(Steinberg::Vst::allocateMessage(host_application));
+        if (message) {
+            message->setMessageID(other_instance_message_id);
+
+            Steinberg::IPtr<Steinberg::Vst::IAttributeList> attributes =
+                message->getAttributes();
+            if (attributes) {
+                attributes->setInt(
+                    other_instance_pointer_attribute,
+                    static_cast<int64>(reinterpret_cast<size_t>(this)));
+            }
+
+            // If we are connected with another object instance from this
+            // plugin, `connected_instance_id` should now be set
+            other->notify(message);
+            if (connected_instance_id) {
+                return bridge.send_message(YaConnectionPoint::Connect{
+                    .instance_id = instance_id(),
+                    .other = *connected_instance_id});
+            }
+        }
+    }
+
+    // If we cannot bypass the proxy, we'll just proxy the host's proxy
+    connection_point_proxy = other;
+
+    return bridge.send_message(YaConnectionPoint::Connect{
+        .instance_id = instance_id(),
+        .other =
+            Vst3ConnectionPointProxy::ConstructArgs(other, instance_id())});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::disconnect(IConnectionPoint* other) {
@@ -425,12 +485,37 @@ Vst3PluginProxyImpl::notify(Steinberg::Vst::IMessage* message) {
     if (auto message_ptr = dynamic_cast<YaMessagePtr*>(message)) {
         return bridge.send_message(YaConnectionPoint::Notify{
             .instance_id = instance_id(), .message_ptr = *message_ptr});
-    } else {
-        bridge.logger.log(
-            "WARNING: Unknown message type passed to "
-            "'IConnectionPoint::notify()', ignoring");
-        return Steinberg::kNotImplemented;
     }
+
+    // NOTE: As mentioned above, when the host (or specifically, Ardour or
+    //       Mixbus) calls `IConnectionPoint::connect()`, we'll try to bypass
+    //       the connection proxy since this creates some difficult situations
+    //       when plugins start calling `IConnectionPoint::notify()` from the
+    //       GUI thread
+    if (message &&
+        strcmp(message->getMessageID(), other_instance_message_id) == 0) {
+        Steinberg::IPtr<Steinberg::Vst::IAttributeList> attributes =
+            message->getAttributes();
+        if (attributes) {
+            int64 other_object_ptr;
+            if (attributes->getInt(other_instance_pointer_attribute,
+                                   other_object_ptr) == Steinberg::kResultOk &&
+                other_object_ptr != 0) {
+                Vst3PluginProxyImpl& other_object =
+                    *reinterpret_cast<Vst3PluginProxyImpl*>(
+                        static_cast<size_t>(other_object_ptr));
+
+                other_object.connected_instance_id = instance_id();
+
+                return Steinberg::kResultOk;
+            }
+        }
+    }
+
+    bridge.logger.log(
+        "WARNING: Unknown message type passed to "
+        "'IConnectionPoint::notify()', ignoring");
+    return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API

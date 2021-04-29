@@ -291,9 +291,15 @@ void Vst3Bridge::run() {
             [&](YaConnectionPoint::Connect& request)
                 -> YaConnectionPoint::Connect::Response {
                 // If the host directly connected the underlying objects then we
-                // can directly connect them as well. Otherwise we'll have to go
-                // through a connection proxy (to proxy the host's connection
-                // proxy).
+                // can directly connect them as well. Some hosts, like Ardour
+                // and Mixbus, will place a proxy between the two plugins This
+                // can make things very complicated with FabFilter plugins,
+                // which constantly communicate over this connection proxy from
+                // the GUI thread. Because of that, we'll try to bypass the
+                // connection proxy first, still connecting the objects directly
+                // on the Wine side. If we cannot do that, then we'll still go
+                // through the host's connection proxy connection proxy (and
+                // we'll end up proxying the host's connection proxy).
                 return std::visit(
                     overload{
                         [&](const native_size_t& other_instance_id) -> tresult {
