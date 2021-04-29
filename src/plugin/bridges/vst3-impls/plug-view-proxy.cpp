@@ -85,10 +85,15 @@ RunLoopTasks::onFDIsSet(Steinberg::Linux::FileDescriptor /*fd*/) {
 
 Vst3PlugViewProxyImpl::Vst3PlugViewProxyImpl(
     Vst3PluginBridge& bridge,
+    std::atomic_bool& is_active,
     Vst3PlugViewProxy::ConstructArgs&& args)
-    : Vst3PlugViewProxy(std::move(args)), bridge(bridge) {}
+    : Vst3PlugViewProxy(std::move(args)), bridge(bridge), is_active(is_active) {
+    is_active = true;
+}
 
 Vst3PlugViewProxyImpl::~Vst3PlugViewProxyImpl() {
+    is_active = false;
+
     // Also drop the plug view smart pointer on the Wine side when this gets
     // dropped
     send_mutually_recursive_message(

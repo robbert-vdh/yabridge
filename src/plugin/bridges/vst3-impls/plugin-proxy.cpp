@@ -362,8 +362,21 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setState(Steinberg::IBStream* state) {
     if (state) {
         // Since both interfaces contain this function, this is used for both
         // `IComponent::setState()` as well as `IEditController::setState()`
-        return bridge.send_message(Vst3PluginProxy::SetState{
-            .instance_id = instance_id(), .state = state});
+        const Vst3PluginProxy::SetState message{.instance_id = instance_id(),
+                                                .state = state};
+
+        // NOTE: This will likely be called from the GUI thread, and some
+        //       plugins will try to resize as part of setting their new state.
+        //       That `IPlugFrame::resizeView()` _also_ has to be handled on the
+        //       GUI thread. So if the GUI is active, we'll use the mutual
+        //       recursion mechanism to allow this resize call to also be
+        //       performed from the GUI thread.
+        if (last_created_plug_view_active) {
+            return last_created_plug_view->send_mutually_recursive_message(
+                std::move(message));
+        } else {
+            return bridge.send_message(std::move(message));
+        }
     } else {
         bridge.logger.log(
             "WARNING: Null pointer passed to "
@@ -724,8 +737,9 @@ Vst3PluginProxyImpl::createView(Steinberg::FIDString name) {
 
         if (response.plug_view_args) {
             // The host should manage this. Returning raw pointers feels scary.
-            auto plug_view_proxy = new Vst3PlugViewProxyImpl(
-                bridge, std::move(*response.plug_view_args));
+            auto plug_view_proxy =
+                new Vst3PlugViewProxyImpl(bridge, last_created_plug_view_active,
+                                          std::move(*response.plug_view_args));
 
             // We also need to store an (unmanaged, since we don't want to
             // affect the reference counting) pointer to this to be able to

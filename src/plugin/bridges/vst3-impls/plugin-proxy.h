@@ -355,6 +355,12 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     Vst3PlugViewProxyImpl* last_created_plug_view = nullptr;
 
     /**
+     * Whether `last_created_plug_view` is currently active. This field is
+     * written to from `Vst3PlugViewProxyImpl`'s constructor and destructor.
+     */
+    std::atomic_bool last_created_plug_view_active = false;
+
+    /**
      * A pointer to a context menu returned by the host as a response to a call
      * to `IComponentHandler3::createContextMenu`, as well as all targets we've
      * created for it. This way we can drop both all at once.

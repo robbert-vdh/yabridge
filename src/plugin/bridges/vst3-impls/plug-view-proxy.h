@@ -106,6 +106,7 @@ class RunLoopTasks : public Steinberg::Linux::IEventHandler {
 class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
    public:
     Vst3PlugViewProxyImpl(Vst3PluginBridge& bridge,
+                          std::atomic_bool& is_active,
                           Vst3PlugViewProxy::ConstructArgs&& args);
 
     /**
@@ -202,14 +203,6 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
     tresult PLUGIN_API setContentScaleFactor(ScaleFactor factor) override;
 
     /**
-     * The `IPlugFrame` object passed by the host passed to us in
-     * `IPlugView::setFrame()`. When the plugin makes a callback on the
-     * `IPlugFrame` proxy object, we'll pass the call through to this object.
-     */
-    Steinberg::IPtr<Steinberg::IPlugFrame> plug_frame;
-
-   private:
-    /**
      * Send a message from this `IPlugView` instance. This function will be
      * called by the host on its GUI thread, so until this function returns
      * we'll know that the no `IRunLoop` event handlers will be called. Because
@@ -268,7 +261,24 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
         return response_promise.get_future().get();
     }
 
+    /**
+     * The `IPlugFrame` object passed by the host passed to us in
+     * `IPlugView::setFrame()`. When the plugin makes a callback on the
+     * `IPlugFrame` proxy object, we'll pass the call through to this object.
+     */
+    Steinberg::IPtr<Steinberg::IPlugFrame> plug_frame;
+
+   private:
     Vst3PluginBridge& bridge;
+
+    /**
+     * We'll use this to signal to the `Vst3PluginProxyImpl` that this object
+     * has been destroyed. We use this to handle mutual recursion when
+     * `IEditController::setState()` calls end up calling
+     * `IPlugFrame::resizeView()`, which should also be handled from the GUI
+     * thread.
+     */
+    std::atomic_bool& is_active;
 
     /**
      * The IO contexts used in `send_mutually_recursive_message()` to be able to
