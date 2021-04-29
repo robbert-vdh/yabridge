@@ -81,6 +81,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed the VST3 version of _W. A. Production ImPerfect_ from crashing during
   audio setup.
 - Fixed _UVI Plugsound Free_ crashing during initialization.
+- Fixed a rare potential freeze when loading a VST3 plugin preset while the
+  plugin is being resized.
 - Because of the new transport information prefetching, the excessive DSP usage
   in _SWAM Cello_ is now been fixed without requiring any manual compatibility
   options.

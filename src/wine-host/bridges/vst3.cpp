@@ -234,20 +234,20 @@ void Vst3Bridge::run() {
                 -> Vst3PluginProxy::SetState::Response {
                 // We need to run `getState()` from the main thread, so we might
                 // as well do the same thing with `setState()`. See below.
-                return main_context
-                    .run_in_context<tresult>([&]() {
-                        // This same function is defined in both `IComponent`
-                        // and `IEditController`, so the host is calling one or
-                        // the other
-                        if (object_instances[request.instance_id].component) {
-                            return object_instances[request.instance_id]
-                                .component->setState(&request.state);
-                        } else {
-                            return object_instances[request.instance_id]
-                                .edit_controller->setState(&request.state);
-                        }
-                    })
-                    .get();
+                // NOTE: We also try to handle mutual recursion here, in case
+                //       this happens during a resize
+                return do_mutual_recursion_on_gui_thread<tresult>([&]() {
+                    // This same function is defined in both `IComponent` and
+                    // `IEditController`, so the host is calling one or the
+                    // other
+                    if (object_instances[request.instance_id].component) {
+                        return object_instances[request.instance_id]
+                            .component->setState(&request.state);
+                    } else {
+                        return object_instances[request.instance_id]
+                            .edit_controller->setState(&request.state);
+                    }
+                });
             },
             [&](Vst3PluginProxy::GetState& request)
                 -> Vst3PluginProxy::GetState::Response {
