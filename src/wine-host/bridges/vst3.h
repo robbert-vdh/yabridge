@@ -245,15 +245,15 @@ class Vst3Bridge : public HostBridge {
 
     /**
      * Spawn a new thread and call `send_message()` from there, and then handle
-     * functions passed by calls to
-     * `do_mutual_recursion_or_handle_in_main_context()` on this thread until
-     * the original message we're trying to send has succeeded. This is a very
-     * specific solution to a very specific problem. When a plugin wants to
-     * resize itself, it will call `IPlugFrame::resizeView()` from within the
-     * WIn32 message loop. The host will then call `IPlugView::onSize()` on the
-     * plugin's `IPlugView` to actually resize the plugin. The issue is that
-     * that call to `IPlugView::onSize()` has to be handled from the UI thread,
-     * but in this sequence that thread is being blocked by a call to
+     * functions passed by calls to `do_mutual_recursion_on_gui_thread()` on
+     * this thread until the original message we're trying to send has
+     * succeeded. This is a very specific solution to a very specific problem.
+     * When a plugin wants to resize itself, it will call
+     * `IPlugFrame::resizeView()` from within the WIn32 message loop. The host
+     * will then call `IPlugView::onSize()` on the plugin's `IPlugView` to
+     * actually resize the plugin. The issue is that that call to
+     * `IPlugView::onSize()` has to be handled from the UI thread, but in this
+     * sequence that thread is being blocked by a call to
      * `IPlugFrame::resizeView()`.
      *
      * We also need to use this for when a plugin calls
@@ -316,16 +316,16 @@ class Vst3Bridge : public HostBridge {
 
     /**
      * Crazy functions ask for crazy naming. This is the other part of
-     * `send_mutually_recursive_message()`. If another thread is currently
-     * calling that function (from the UI thread), then we'll execute `f` from
-     * the UI thread using the IO context started in the above function.
-     * Otherwise `f` will be run on the UI thread through `main_context` as
-     * usual.
+     * `send_mutually_recursive_message()`, for executing mutually recursive
+     * functions on the GUI thread. If another thread is currently calling that
+     * function (from the UI thread), then we'll execute `f` from the UI thread
+     * using the IO context started in the above function. Otherwise `f` will be
+     * run on the UI thread through `main_context` as usual.
      *
      * @see Vst3Bridge::send_mutually_recursive_message
      */
     template <typename T, typename F>
-    T do_mutual_recursion_or_handle_in_main_context(F f) {
+    T do_mutual_recursion_on_gui_thread(F f) {
         std::packaged_task<T()> do_call(std::move(f));
         std::future<T> do_call_response = do_call.get_future();
 
@@ -355,10 +355,10 @@ class Vst3Bridge : public HostBridge {
      * The same as the above function, but we'll just execute the function on
      * this thread when the mutual recursion context is not active.
      *
-     * @see Vst3Bridge::do_mutual_recursion_or_handle_in_main_context
+     * @see Vst3Bridge::do_mutual_recursion_on_gui_thread
      */
     template <typename T, typename F>
-    T do_mutual_recursion(F f) {
+    T do_mutual_recursion_on_off_thread(F f) {
         std::packaged_task<T()> do_call(std::move(f));
         std::future<T> do_call_response = do_call.get_future();
 
@@ -472,12 +472,12 @@ class Vst3Bridge : public HostBridge {
     std::mutex object_instances_mutex;
 
     /**
-     * The IO contexts used in `send_mutually_recursive_message()` to be able to
-     * execute functions from that same calling thread while we're waiting for a
-     * response. We need an entire stack of these to be able to handle nested
-     * mutually recursive function calls. See the docstring there for more
-     * information. When this doesn't contain an IO context, this function is
-     * not being called and `do_mutual_recursion_or_handle_in_main_context()`
+     * The IO contexts used in `Vst3Bridge::send_mutually_recursive_message()`
+     * to be able to execute functions from that same calling thread while we're
+     * waiting for a response. We need an entire stack of these to be able to
+     * handle nested mutually recursive function calls. See the docstring there
+     * for more information. When this doesn't contain an IO context, this
+     * function is not being called and `do_mutual_recursion_on_gui_thread()`
      * should post the task directly to the main IO context.
      */
     std::vector<std::shared_ptr<boost::asio::io_context>>
