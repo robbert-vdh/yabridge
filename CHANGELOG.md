@@ -61,6 +61,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   plugins. We now explicitly reparent the window to back the root window first
   before deferring the window closing. This should work around the issue, while
   still keeping editor closing nice and snappy.
+- Prevented latency introducing plugins from causing **Ardour** and **Mixbus**
+  to freeze. This for example prevents _Neural DSP Darkglass_ from freezing when
+  used under those DAWs.
 - _PSPaudioware InifniStrip_ would fail to initialize because the plugin expects
   the host to always be using Microsoft COM and it won't initialize it by
   itself. InfiniStrip loads as expected now.

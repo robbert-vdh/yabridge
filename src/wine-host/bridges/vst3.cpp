@@ -1300,8 +1300,22 @@ size_t Vst3Bridge::register_object_instance(
                     },
                     [&](const YaComponent::SetActive& request)
                         -> YaComponent::SetActive::Response {
-                        return object_instances[request.instance_id]
-                            .component->setActive(request.state);
+                        // NOTE: Ardour/Mixbus will immediately call this
+                        //       function in response to a latency change
+                        //       announced through
+                        //       `IComponentHandler::restartComponent()`. We
+                        //       need to make sure that these two functions are
+                        //       handled from the same thread to prevent
+                        //       deadlocks caused by mutually recursive function
+                        //       calls.
+                        // TODO: Check if this causes any issues when activating
+                        //       plugins while simultaneously resizing another
+                        //       instance of the same plugin
+                        return do_mutual_recursion_or_handle_in_main_context<
+                            tresult>([&]() {
+                            return object_instances[request.instance_id]
+                                .component->setActive(request.state);
+                        });
                     },
                     [&](const YaPrefetchableSupport::GetPrefetchableSupport&
                             request)

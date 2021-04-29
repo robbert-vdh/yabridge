@@ -256,6 +256,11 @@ class Vst3Bridge : public HostBridge {
      * but in this sequence that thread is being blocked by a call to
      * `IPlugFrame::resizeView()`.
      *
+     * We also need to use this for when a plugin calls
+     * `IComponentHandler::restartComponent()` to change the latency, and when
+     * the host then calls `IAudioProcessor::setActive()` in response to that to
+     * restart the plugin. Otherwise this will lead to an infinite loop.
+     *
      * The hacky solution here is to send the message from another thread, and
      * to then allow this thread to execute other functions submitted to an IO
      * context.
@@ -341,6 +346,28 @@ class Vst3Bridge : public HostBridge {
             } else {
                 main_context.schedule_task(std::move(do_call));
             }
+        }
+
+        return do_call_response.get();
+    }
+
+    /**
+     * The same as the above function, but we'll just execute the function on
+     * this thread when the mutual recursion context is not active.
+     *
+     * @see Vst3Bridge::do_mutual_recursion_or_handle_in_main_context
+     */
+    template <typename T, typename F>
+    T do_mutual_recursion(F f) {
+        std::packaged_task<T()> do_call(std::move(f));
+        std::future<T> do_call_response = do_call.get_future();
+
+        if (std::lock_guard lock(mutual_recursion_contexts_mutex);
+            !mutual_recursion_contexts.empty()) {
+            boost::asio::dispatch(*mutual_recursion_contexts.back(),
+                                  std::move(do_call));
+        } else {
+            do_call();
         }
 
         return do_call_response.get();
