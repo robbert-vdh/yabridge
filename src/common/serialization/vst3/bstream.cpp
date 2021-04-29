@@ -208,7 +208,7 @@ tresult PLUGIN_API YaBStream::tell(int64* pos) {
 }
 
 tresult PLUGIN_API YaBStream::getStreamSize(int64& size) {
-    size = static_cast<int64>(seek_position);
+    size = static_cast<int64>(buffer.size());
     return Steinberg::kResultOk;
 }
 
