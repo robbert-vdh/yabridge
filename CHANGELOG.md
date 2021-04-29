@@ -72,6 +72,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed _UVI Plugsound Free_ crashing during initialization.
 - Fixed extreme DSP usage increases in _Kush Audio REDDI_ and _Expressive E
   Noisy_ caused by denormals.
+- Because of the new transport information prefetching, the excessive DSP usage
+  in _SWAM Cello_ has now been fixed.
 - Fixed the Wine version detection when using a custom `WINELOADER`.
 - Fixed the `cache_time_info` `yabridge.toml` option also affecting the results
   of other host callbacks during audio processing.
