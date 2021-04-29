@@ -177,7 +177,7 @@ class ScopedValueCache {
      * @throw std::runtime_error When we are already caching a value.
      */
     Guard set(T new_value) {
-        value = new_value;
+        value = std::move(new_value);
 
         return Guard(value);
     }
