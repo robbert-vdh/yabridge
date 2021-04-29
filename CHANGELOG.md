@@ -34,15 +34,16 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- When building the package from source, the targetted Wine version gets printed
-  at configure-time. This can make it a bit easier to diagnose Wine-related
-  compilation issues.
-- Yabridge automatically handles most common VST2 functions by simply inspecting
-  the argument types. This works practically everywhere, but Plugsound Free by
-  UVI would pass unreadable function arguments to functions that are not
-  supposed to have any arguments, causing yabridge to crash. To prevent similar
-  situations from happening in the future, yabridge now specifically handles
-  most common VST2 functions that don't have a data argument.
+- When building the package from source, the targetted Wine version now gets
+  printed at configure-time. This can make it a bit easier to diagnose
+  Wine-related compilation issues.
+- Yabridge has always automatically handled most common VST2 functions by simply
+  inspecting the argument types. This works practically everywhere, but
+  _Plugsound Free_ by UVI would pass unreadable function arguments to functions
+  that weren't not supposed to have any arguments, causing yabridge to crash. To
+  prevent similar situations from happening in the future, yabridge now
+  specifically handles most common VST2 functions that don't have a data
+  argument.
 
 ### Removed
 
@@ -52,32 +53,30 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - In certain rare circumstances, closing a plugin editor would trigger an X11
-  error and crash the Wine plugin host, and with that likely the entire DAW.
-  This happened because Wine would try to destroy a window that had already been
-  destroyed. I've seen this happen in Renoise and to a lesser degree in REAPER
-  with plugins that take a while to close their editors, such as the iZotope Rx
+  error and crash the Wine plugin host and with that likely the entire DAW. This
+  happened because Wine would try to destroy a window that had already been
+  destroyed. This could happen in Renoise and to a lesser degree in REAPER with
+  plugins that take a while to close their editors, such as the iZotope Rx
   plugins. We now explicitly reparent the window to back the root window first
-  before deferring the window closing. This should work around the issue, while
-  still keeping editor closing nice and snappy.
-- Prevented latency introducing plugins from causing **Ardour** and **Mixbus**
-  to freeze. This for example prevents _Neural DSP Darkglass_ from freezing when
-  used under those DAWs.
+  before deferring the window closing. This should fix the issue, while still
+  keeping editor closing nice and snappy.
+- Prevented latency introducing plugins VST3 from causing **Ardour** and
+  **Mixbus** to freeze when loading the plugin. This for example prevents
+  _Neural DSP Darkglass_ from freezing when used under those DAWs.
 - _PSPaudioware InifniStrip_ would fail to initialize because the plugin expects
   the host to always be using Microsoft COM and it won't initialize it by
   itself. InfiniStrip loads as expected now.
-- Prevent _Native Instruments' FM7_ from crashing when processing MIDI. As a
-  fix, MIDI events are now deallocated later then when they normally would have
-  to be.
+- _Native Instruments' FM7_ would crash when processing MIDI. As a fix, MIDI
+  events are now deallocated later then when they normally would have to be.
+- Fixed extreme DSP usage increases in _Kush Audio REDDI_ and _Expressive E
+  Noisy_ caused by denormals.
 - Fixed the VST3 version of _W. A. Production ImPerfect_ from crashing during
   audio setup.
 - Fixed _UVI Plugsound Free_ crashing during initialization.
-- Fixed extreme DSP usage increases in _Kush Audio REDDI_ and _Expressive E
-  Noisy_ caused by denormals.
 - Because of the new transport information prefetching, the excessive DSP usage
-  in _SWAM Cello_ has now been fixed.
+  in _SWAM Cello_ is now been fixed without requiring any manual compatibility
+  options.
 - Fixed the Wine version detection when using a custom `WINELOADER`.
-- Fixed the `cache_time_info` `yabridge.toml` option also affecting the results
-  of other host callbacks during audio processing.
 
 ## [3.1.0] - 2021-04-15
 
