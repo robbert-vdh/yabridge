@@ -355,11 +355,12 @@ void Vst3Bridge::run() {
                 //       much slower in Ardour, but there's no other non-hacky
                 //       solution for this (and bypassing Ardour's connection
                 //       proxies sort of goes against the idea behind yabridge)
-                return do_mutual_recursion_on_gui_thread<tresult>([&]() {
-                    return object_instances[request.instance_id]
-                        .connection_point->notify(
-                            request.message_ptr.get_original());
-                });
+                return do_mutual_recursion_or_handle_in_main_context<tresult>(
+                    [&]() {
+                        return object_instances[request.instance_id]
+                            .connection_point->notify(
+                                request.message_ptr.get_original());
+                    });
             },
             [&](YaContextMenuTarget::ExecuteMenuItem& request)
                 -> YaContextMenuTarget::ExecuteMenuItem::Response {
@@ -780,10 +781,11 @@ void Vst3Bridge::run() {
                 // not run from the GUI thread
                 Steinberg::ViewRect size{};
                 const tresult result =
-                    do_mutual_recursion_on_gui_thread<tresult>([&]() {
-                        return object_instances[request.owner_instance_id]
-                            .plug_view_instance->plug_view->getSize(&size);
-                    });
+                    do_mutual_recursion_or_handle_in_main_context<tresult>(
+                        [&]() {
+                            return object_instances[request.owner_instance_id]
+                                .plug_view_instance->plug_view->getSize(&size);
+                        });
 
                 return YaPlugView::GetSizeResponse{.result = result,
                                                    .size = std::move(size)};
@@ -798,11 +800,12 @@ void Vst3Bridge::run() {
                 //       code on the same thread that's currently waiting for a
                 //       response to the message it sent. See the docstring of
                 //       this function for more information on how this works.
-                return do_mutual_recursion_on_gui_thread<tresult>([&]() {
-                    return object_instances[request.owner_instance_id]
-                        .plug_view_instance->plug_view->onSize(
-                            &request.new_size);
-                });
+                return do_mutual_recursion_or_handle_in_main_context<tresult>(
+                    [&]() {
+                        return object_instances[request.owner_instance_id]
+                            .plug_view_instance->plug_view->onSize(
+                                &request.new_size);
+                    });
             },
             [&](const YaPlugView::OnFocus& request)
                 -> YaPlugView::OnFocus::Response {
@@ -845,19 +848,21 @@ void Vst3Bridge::run() {
                 -> YaPlugView::CanResize::Response {
                 // To prevent weird behaviour we'll perform all size related
                 // functions from the GUI thread, including this one
-                return do_mutual_recursion_on_gui_thread<tresult>([&]() {
-                    return object_instances[request.owner_instance_id]
-                        .plug_view_instance->plug_view->canResize();
-                });
+                return do_mutual_recursion_or_handle_in_main_context<tresult>(
+                    [&]() {
+                        return object_instances[request.owner_instance_id]
+                            .plug_view_instance->plug_view->canResize();
+                    });
             },
             [&](YaPlugView::CheckSizeConstraint& request)
                 -> YaPlugView::CheckSizeConstraint::Response {
                 const tresult result =
-                    do_mutual_recursion_on_gui_thread<tresult>([&]() {
-                        return object_instances[request.owner_instance_id]
-                            .plug_view_instance->plug_view->checkSizeConstraint(
-                                &request.rect);
-                    });
+                    do_mutual_recursion_or_handle_in_main_context<tresult>(
+                        [&]() {
+                            return object_instances[request.owner_instance_id]
+                                .plug_view_instance->plug_view
+                                ->checkSizeConstraint(&request.rect);
+                        });
 
                 return YaPlugView::CheckSizeConstraintResponse{
                     .result = result, .updated_rect = std::move(request.rect)};
@@ -1303,11 +1308,14 @@ size_t Vst3Bridge::register_object_instance(
                         //       handled from the same thread to prevent
                         //       deadlocks caused by mutually recursive function
                         //       calls.
-                        return do_mutual_recursion_on_off_thread<tresult>(
-                            [&]() {
-                                return object_instances[request.instance_id]
-                                    .component->setActive(request.state);
-                            });
+                        // TODO: Check if this causes any issues when activating
+                        //       plugins while simultaneously resizing another
+                        //       instance of the same plugin
+                        return do_mutual_recursion_or_handle_in_main_context<
+                            tresult>([&]() {
+                            return object_instances[request.instance_id]
+                                .component->setActive(request.state);
+                        });
                     },
                     [&](const YaPrefetchableSupport::GetPrefetchableSupport&
                             request)

@@ -245,19 +245,18 @@ class Vst3Bridge : public HostBridge {
 
     /**
      * Spawn a new thread and call `send_message()` from there, and then handle
-     * functions passed by calls to `do_mutual_recursion_on_gui_thread()` and
-     * `do_mutual_recursion_on_off_thread()` on this thread until the original
-     * message we're trying to send has successfully returned. This is a very
-     * specific solution to a very specific problem. We need the GUI version for
-     * when a plugin wants to resize itself, it will call
-     * `IPlugFrame::resizeView()` from within the WIn32 message loop. The host
-     * will then call `IPlugView::onSize()` on the plugin's `IPlugView` to
-     * actually resize the plugin. The issue is that that call to
-     * `IPlugView::onSize()` has to be handled from the UI thread, but in this
-     * sequence that thread is being blocked by a call to
+     * functions passed by calls to
+     * `do_mutual_recursion_or_handle_in_main_context()` on this thread until
+     * the original message we're trying to send has succeeded. This is a very
+     * specific solution to a very specific problem. When a plugin wants to
+     * resize itself, it will call `IPlugFrame::resizeView()` from within the
+     * WIn32 message loop. The host will then call `IPlugView::onSize()` on the
+     * plugin's `IPlugView` to actually resize the plugin. The issue is that
+     * that call to `IPlugView::onSize()` has to be handled from the UI thread,
+     * but in this sequence that thread is being blocked by a call to
      * `IPlugFrame::resizeView()`.
      *
-     * The off-thread non-GUI version is needed for when a plugin calls
+     * We also need to use this for when a plugin calls
      * `IComponentHandler::restartComponent()` to change the latency, and when
      * the host then calls `IAudioProcessor::setActive()` in response to that to
      * restart the plugin. Otherwise this will lead to an infinite loop.
@@ -267,30 +266,10 @@ class Vst3Bridge : public HostBridge {
      * context.
      *
      * We apply the same trick in `Vst3PlugViewProxyImpl`.
-     *
-     * @tparam on_gui_thread Whether we are currently on the GUI thread. This
-     *   determines which IO contexts we'll use. When this mutual recursion
-     *   sequence _has_ to be executed from the GUI thread, pass `true`, and use
-     *   `do_mutual_recursion_on_gui_thread()` to handle incoming requests that
-     *   should be handled from this same thread. Otherwise pass `false` and use
-     *   `do_mutual_recursion_on_off_thread()` to make sure that these messages
-     *   don't end up on the GUI thread.
      */
-    template <bool on_gui_thread, typename T>
+    template <typename T>
     typename T::Response send_mutually_recursive_message(const T& object) {
         using TResponse = typename T::Response;
-
-        // Keeping mutually recursive tasks that have to be run on the GUI
-        // threads and tasks that cna be run on any thread separate will avoid
-        // any potential clashes, even if I wasn't able to find any problematic
-        // situations when I tested this with only one stack of IO contexts
-        std::vector<std::shared_ptr<boost::asio::io_context>>&
-            mutual_recursion_contexts =
-                on_gui_thread ? gui_thread_mutual_recursion_contexts
-                              : off_thread_mutual_recursion_contexts;
-        std::mutex& mutual_recursion_contexts_mutex =
-            on_gui_thread ? gui_thread_mutual_recursion_contexts_mutex
-                          : off_thread_mutual_recursion_contexts_mutex;
 
         // This IO context will accept incoming calls from `run_gui_task()`
         // until we receive a response. We keep these on a stack as we need to
@@ -337,19 +316,16 @@ class Vst3Bridge : public HostBridge {
 
     /**
      * Crazy functions ask for crazy naming. This is the other part of
-     * `send_mutually_recursive_message()`, for executing mutually recursive
-     * functions on the GUI thread. If another thread is currently calling that
-     * function (from the UI thread), then we'll execute `f` from the UI thread
-     * using the IO context started in the above function. Otherwise `f` will be
-     * run on the UI thread through `main_context` as usual.
-     *
-     * You should pass `on_gui_thread = true` to
-     * `Vst3Bridge::send_mutually_recursive_message` when using this.
+     * `send_mutually_recursive_message()`. If another thread is currently
+     * calling that function (from the UI thread), then we'll execute `f` from
+     * the UI thread using the IO context started in the above function.
+     * Otherwise `f` will be run on the UI thread through `main_context` as
+     * usual.
      *
      * @see Vst3Bridge::send_mutually_recursive_message
      */
     template <typename T, typename F>
-    T do_mutual_recursion_on_gui_thread(F f) {
+    T do_mutual_recursion_or_handle_in_main_context(F f) {
         std::packaged_task<T()> do_call(std::move(f));
         std::future<T> do_call_response = do_call.get_future();
 
@@ -363,11 +339,10 @@ class Vst3Bridge : public HostBridge {
         // `mutual_recursion_contexts` will be blocked until the deeper calls
         // are finished.
         {
-            std::lock_guard lock(gui_thread_mutual_recursion_contexts_mutex);
-            if (!gui_thread_mutual_recursion_contexts.empty()) {
-                boost::asio::dispatch(
-                    *gui_thread_mutual_recursion_contexts.back(),
-                    std::move(do_call));
+            std::lock_guard lock(mutual_recursion_contexts_mutex);
+            if (!mutual_recursion_contexts.empty()) {
+                boost::asio::dispatch(*mutual_recursion_contexts.back(),
+                                      std::move(do_call));
             } else {
                 main_context.schedule_task(std::move(do_call));
             }
@@ -377,24 +352,19 @@ class Vst3Bridge : public HostBridge {
     }
 
     /**
-     * The same as the above function, but for executing a function on some
-     * off-thread, that doesn't necessarily have to be the GUI thread. We
-     * separate these to make it impossible for these two things to potentially
-     * block eachother.
-     *
-     * You should pass `on_gui_thread = false` to
-     * `Vst3Bridge::send_mutually_recursive_message` when using this.
+     * The same as the above function, but we'll just execute the function on
+     * this thread when the mutual recursion context is not active.
      *
      * @see Vst3Bridge::do_mutual_recursion_or_handle_in_main_context
      */
     template <typename T, typename F>
-    T do_mutual_recursion_on_off_thread(F f) {
+    T do_mutual_recursion(F f) {
         std::packaged_task<T()> do_call(std::move(f));
         std::future<T> do_call_response = do_call.get_future();
 
-        if (std::lock_guard lock(off_thread_mutual_recursion_contexts_mutex);
-            !off_thread_mutual_recursion_contexts.empty()) {
-            boost::asio::dispatch(*off_thread_mutual_recursion_contexts.back(),
+        if (std::lock_guard lock(mutual_recursion_contexts_mutex);
+            !mutual_recursion_contexts.empty()) {
+            boost::asio::dispatch(*mutual_recursion_contexts.back(),
                                   std::move(do_call));
         } else {
             do_call();
@@ -508,22 +478,9 @@ class Vst3Bridge : public HostBridge {
      * mutually recursive function calls. See the docstring there for more
      * information. When this doesn't contain an IO context, this function is
      * not being called and `do_mutual_recursion_or_handle_in_main_context()`
-     * should post the task directly to the main IO context, on the GUI thread.
+     * should post the task directly to the main IO context.
      */
     std::vector<std::shared_ptr<boost::asio::io_context>>
-        gui_thread_mutual_recursion_contexts;
-    std::mutex gui_thread_mutual_recursion_contexts_mutex;
-
-    /**
-     * The same as `gui_thread_mutual_recursion_contexts`, but for tasks that
-     * can be executed on any thread as long as they're executed on the same
-     * thread. This is for instance necessary when the plugin tells the host
-     * that its latency has changed, and when the plugin gets reactivates by the
-     * host it will tell the host once again that its latency has changed. This
-     * would otherwise result in deadlocks with latency introducing JUCE VST3
-     * plugins under Ardour and Mixbus.
-     */
-    std::vector<std::shared_ptr<boost::asio::io_context>>
-        off_thread_mutual_recursion_contexts;
-    std::mutex off_thread_mutual_recursion_contexts_mutex;
+        mutual_recursion_contexts;
+    std::mutex mutual_recursion_contexts_mutex;
 };

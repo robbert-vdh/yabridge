@@ -56,7 +56,7 @@ Vst3ConnectionPointProxyImpl::notify(Steinberg::Vst::IMessage* message) {
         // need to use our mutual recursion mechanism. Luckily only Ardour uses
         // connection proxies, so if this ends up breaking something it will
         // only affect Ardour.
-        return bridge.send_mutually_recursive_message<true>(
+        return bridge.send_mutually_recursive_message(
             YaConnectionPoint::Notify{.instance_id = owner_instance_id(),
                                       .message_ptr = YaMessagePtr(*message)});
     } else {
