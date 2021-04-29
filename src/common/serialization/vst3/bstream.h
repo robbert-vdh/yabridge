@@ -120,7 +120,7 @@ class YaBStream : public Steinberg::IBStream,
 
    private:
     std::vector<uint8_t> buffer;
-    size_t seek_position = 0;
+    int64_t seek_position = 0;
 };
 
 #pragma GCC diagnostic pop

@@ -139,8 +139,9 @@ tresult PLUGIN_API YaBStream::read(void* buffer,
         return Steinberg::kInvalidArgument;
     }
 
-    size_t bytes_to_read = std::min(static_cast<size_t>(numBytes),
-                                    this->buffer.size() - seek_position);
+    const int64_t bytes_to_read =
+        std::min(static_cast<int64_t>(numBytes),
+                 static_cast<int64_t>(this->buffer.size()) - seek_position);
 
     std::copy_n(&this->buffer[seek_position], bytes_to_read,
                 reinterpret_cast<uint8_t*>(buffer));
@@ -160,12 +161,12 @@ tresult PLUGIN_API YaBStream::write(void* buffer,
         return Steinberg::kInvalidArgument;
     }
 
-    if (seek_position + numBytes > this->buffer.size()) {
+    if (seek_position + numBytes > static_cast<int64_t>(this->buffer.size())) {
         this->buffer.resize(seek_position + numBytes);
     }
 
     std::copy_n(reinterpret_cast<uint8_t*>(buffer), numBytes,
-                this->buffer.begin() + static_cast<int>(seek_position));
+                &this->buffer[seek_position]);
 
     seek_position += numBytes;
     if (numBytesWritten) {
@@ -184,13 +185,15 @@ tresult PLUGIN_API YaBStream::seek(int64 pos, int32 mode, int64* result) {
             seek_position += pos;
             break;
         case kIBSeekEnd:
-            seek_position = this->buffer.size() + pos;
+            seek_position = static_cast<int64_t>(buffer.size()) + pos;
             break;
         default:
             return Steinberg::kInvalidArgument;
             break;
     }
 
+    seek_position = std::clamp(seek_position, static_cast<int64_t>(0),
+                               static_cast<int64_t>(buffer.size()));
     if (result) {
         *result = static_cast<int64>(seek_position);
     }
@@ -200,7 +203,7 @@ tresult PLUGIN_API YaBStream::seek(int64 pos, int32 mode, int64* result) {
 
 tresult PLUGIN_API YaBStream::tell(int64* pos) {
     if (pos) {
-        *pos = static_cast<int64>(seek_position);
+        *pos = seek_position;
         return Steinberg::kResultOk;
     } else {
         return Steinberg::kInvalidArgument;
