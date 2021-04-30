@@ -43,6 +43,12 @@ compiler_options = [
   # this flag.
   '-msse2',
 ]
+
+# Enable addition assertions on the STL containers during debug builds
+if get_option('buildtype') == 'debug'
+  compiler_options += ['-D_GLIBCXX_DEBUG']
+endif
+
 # NOTE: GCC doesn't 8-byte align doubles in structs on x86 for ABI-compatibilty
 #       reasons, but MSVC++ does. We need to force this same alignment to be
 #       ABI-compatible with 32-bit binaries created with MSVC++ on Windows.
