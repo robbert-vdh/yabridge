@@ -440,9 +440,16 @@ void Vst3Bridge::run() {
             },
             [&](const YaEditController::SetParamNormalized& request)
                 -> YaEditController::SetParamNormalized::Response {
-                return object_instances[request.instance_id]
-                    .edit_controller->setParamNormalized(request.id,
-                                                         request.value);
+                // HACK: Under Ardour/Mixbus, `IComponentHandler::performEdit()`
+                //       and `IEditController::setParamNormalized()` can be
+                //       mutually recursive because the host will immediately
+                //       relay the parameter change the plugin has just
+                //       announced.
+                return do_mutual_recursion_on_off_thread<tresult>([&]() {
+                    return object_instances[request.instance_id]
+                        .edit_controller->setParamNormalized(request.id,
+                                                             request.value);
+                });
             },
             [&](YaEditController::SetComponentHandler& request)
                 -> YaEditController::SetComponentHandler::Response {

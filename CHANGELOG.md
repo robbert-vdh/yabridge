@@ -71,6 +71,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed _FabFilter_ VST3 plugins freezing in **Ardour** and **Mixbus** when
   trying to duplicate existing instances of the plugin while the GUI editor is
   open.
+- Fixed VST3 plugins freezing in **Ardour** and **Mixbus** when the plugin tries
+  to automate a parameter while loading a preset.
 - Fixed a regression from yabridge 3.1.0 where REAPER would freeze when opening
   a VST3 plugin context menu.
 - Fixed a potential assertion failure when setting VST3 preset data. This would
