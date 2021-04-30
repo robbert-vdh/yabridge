@@ -114,7 +114,10 @@ tresult PLUGIN_API Vst3ContextMenuProxyImpl::removeItem(
 
 tresult PLUGIN_API Vst3ContextMenuProxyImpl::popup(Steinberg::UCoord x,
                                                    Steinberg::UCoord y) {
-    return bridge.send_message(
+    // NOTE: This requires mutual recursion, because REAPER will call
+    //       `getState()` whle the context menu is open, and `getState()` also
+    //       has to be handled from the GUi thread
+    return bridge.send_mutually_recursive_message(
         YaContextMenu::Popup{.owner_instance_id = owner_instance_id(),
                              .context_menu_id = context_menu_id(),
                              .x = x,

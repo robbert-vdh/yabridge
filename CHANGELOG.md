@@ -71,6 +71,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed _FabFilter_ VST3 plugins freezing in **Ardour** and **Mixbus** when
   trying to duplicate existing instances of the plugin while the GUI editor is
   open.
+- Fixed a regression where REAPER would freeze when opening a VST3 plugin
+  context menu.
 - _PSPaudioware InifniStrip_ would fail to initialize because the plugin expects
   the host to always be using Microsoft COM and it won't initialize it by
   itself. InfiniStrip loads as expected now.

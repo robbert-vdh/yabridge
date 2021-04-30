@@ -253,22 +253,21 @@ void Vst3Bridge::run() {
                 -> Vst3PluginProxy::GetState::Response {
                 // NOTE: The VST3 version of Algonaut Atlas doesn't restore
                 //       state unless this function is run from the GUI thread
+                // NOTE: This also requires mutual recursion because REAPER will
+                //       call `getState()` while opening a popup menu
                 const tresult result =
-                    main_context
-                        .run_in_context<tresult>([&]() {
-                            // This same function is defined in both
-                            // `IComponent` and `IEditController`, so the host
-                            // is calling one or the other
-                            if (object_instances[request.instance_id]
-                                    .component) {
-                                return object_instances[request.instance_id]
-                                    .component->getState(&request.state);
-                            } else {
-                                return object_instances[request.instance_id]
-                                    .edit_controller->getState(&request.state);
-                            }
-                        })
-                        .get();
+                    do_mutual_recursion_on_gui_thread<tresult>([&]() {
+                        // This same function is defined in both `IComponent`
+                        // and `IEditController`, so the host is calling one or
+                        // the other
+                        if (object_instances[request.instance_id].component) {
+                            return object_instances[request.instance_id]
+                                .component->getState(&request.state);
+                        } else {
+                            return object_instances[request.instance_id]
+                                .edit_controller->getState(&request.state);
+                        }
+                    });
 
                 return Vst3PluginProxy::GetStateResponse{
                     .result = result, .state = std::move(request.state)};
