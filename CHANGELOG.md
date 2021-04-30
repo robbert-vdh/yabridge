@@ -49,6 +49,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   proxying the proxy when that's not possible. This only affects Ardour and
   Mixbus. This greatly improves compatibility with _FabFilter_ plugins in those
   DAWs.
+- The build has been slightly slimmed down using static libraries.
 
 ### Removed
 
