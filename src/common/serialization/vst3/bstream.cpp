@@ -143,15 +143,17 @@ tresult PLUGIN_API YaBStream::read(void* buffer,
         std::min(static_cast<int64_t>(numBytes),
                  static_cast<int64_t>(this->buffer.size()) - seek_position);
 
-    std::copy_n(&this->buffer[seek_position], bytes_to_read,
-                reinterpret_cast<uint8_t*>(buffer));
+    if (bytes_to_read > 0) {
+        std::copy_n(&this->buffer[seek_position], bytes_to_read,
+                    reinterpret_cast<uint8_t*>(buffer));
+        seek_position += bytes_to_read;
+    }
 
-    seek_position += bytes_to_read;
     if (numBytesRead) {
         *numBytesRead = static_cast<int32>(bytes_to_read);
     }
 
-    return Steinberg::kResultOk;
+    return bytes_to_read > 0 ? Steinberg::kResultOk : Steinberg::kResultFalse;
 }
 
 tresult PLUGIN_API YaBStream::write(void* buffer,

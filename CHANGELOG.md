@@ -73,6 +73,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   open.
 - Fixed a regression from yabridge 3.1.0 where REAPER would freeze when opening
   a VST3 plugin context menu.
+- Fixed a potential assertion failure when setting VST3 preset data. This would
+  depend on the `libstdc++` version used to built yabridge with.
 - _PSPaudioware InifniStrip_ would fail to initialize because the plugin expects
   the host to always be using Microsoft COM and it won't initialize it by
   itself. InfiniStrip loads as expected now.
