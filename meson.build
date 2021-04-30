@@ -21,6 +21,10 @@ if not meson.get_compiler('cpp').compiles(winelib_check)
   error('You need to set up a cross compiler, check the README for compilation instructions.')
 endif
 
+#
+# Compiler flags
+#
+
 # Depending on the `with-bitbridge` flag we'll enable building secondary 32-bit
 # host applications that can act as a bit bridge for using 32-bit Windows
 # plugins in 64-bit Linux VST hosts. The plugin will determine which host
@@ -44,34 +48,15 @@ compiler_options = [
   '-msse2',
 ]
 
-# Enable addition assertions on the STL containers during debug builds
-if get_option('buildtype') == 'debug'
-  compiler_options += ['-D_GLIBCXX_DEBUG']
-endif
-
 # NOTE: GCC doesn't 8-byte align doubles in structs on x86 for ABI-compatibilty
 #       reasons, but MSVC++ does. We need to force this same alignment to be
 #       ABI-compatible with 32-bit binaries created with MSVC++ on Windows.
 wine_32bit_compiler_options = ['-m32', '-malign-double']
 wine_64bit_compiler_options = ['-m64']
 
-with_bitbridge = get_option('with-bitbridge')
-with_static_boost = get_option('with-static-boost')
-with_winedbg = get_option('with-winedbg')
-with_vst3 = get_option('with-vst3')
-
-if with_bitbridge
-  compiler_options += '-DWITH_BITBRIDGE'
-endif
-
-# This provides an easy way to start the Wine VST host using winedbg since it
-# can be quite a pain to set up
-if with_winedbg
-  compiler_options += '-DWITH_WINEDBG'
-endif
-
-if with_vst3
-  compiler_options += '-DWITH_VST3'
+# Enable addition assertions on the STL containers during debug builds
+if get_option('buildtype') == 'debug'
+  compiler_options += ['-D_GLIBCXX_DEBUG']
 endif
 
 # Wine versions after Wine 5.6 and before 6.0 require a `__cdecl` calling
@@ -97,6 +82,29 @@ else
   warning('Unable to determine the current Wine version')
 endif
 
+#
+# Build options
+#
+
+with_bitbridge = get_option('with-bitbridge')
+with_static_boost = get_option('with-static-boost')
+with_winedbg = get_option('with-winedbg')
+with_vst3 = get_option('with-vst3')
+
+if with_bitbridge
+  compiler_options += '-DWITH_BITBRIDGE'
+endif
+
+# This provides an easy way to start the Wine VST host using winedbg since it
+# can be quite a pain to set up
+if with_winedbg
+  compiler_options += '-DWITH_WINEDBG'
+endif
+
+if with_vst3
+  compiler_options += '-DWITH_VST3'
+endif
+
 # Wine versions below 5.7 will segfault in `CoCreateGuid` which gets called
 # during static initialization. I'm not exactly sure why this is happening, but
 # to prevent this from causing more headaches and confusion in the future we
@@ -110,6 +118,10 @@ if wine_version.returncode() == 0 and \
         'Use the \'-Dwith-vst3=false\' build option to disable VST3 support.\n\n' +
         'https://github.com/robbert-vdh/yabridge/issues/63#issuecomment-757369645')
 endif
+
+#
+# Source files
+#
 
 # Generate header files for configuration variables such as the current git tag
 # and the name of the host binary
@@ -293,6 +305,10 @@ group_host_sources = host_sources + [
   'src/wine-host/group-host.cpp',
 ]
 
+#
+# Dependencies
+#
+
 # Statically link against Boost.Filesystem, otherwise it would become impossible
 # to distribute a prebuilt version of yabridge
 boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
@@ -319,10 +335,15 @@ wine_uuid_dep = declare_dependency(link_args : '-luuid')
 
 include_dir = include_directories('src/include')
 
+#
+# VST3 SDK
+#
+# Meson does not allow mixing native and non native dependencies from
+# subprojects. The only workaround is to only define the necessary variables
+# there, and to then assemble the dependencies here ourselves.
+#
+
 if with_vst3
-  # Meson does not allow mixing native and non native dependencies from
-  # subprojects. The only workaround is to only define the necessary variables
-  # there, and to then assemble the dependencies here ourselves.
   vst3 = subproject('vst3', version : '3.7.2')
   vst3_compiler_options = vst3.get_variable('compiler_options')
   vst3_include_dir = vst3.get_variable('include_dir')
@@ -449,10 +470,14 @@ if with_vst3
   endif
 endif
 
+#
+# Targets
+#
 # The application consists of a plugin (`libyabridge-{vst2,vst3}.so`) that calls
 # a Winelib application (`yabridge-{host,group}{,-32}.exe`) that can host
 # Windows VST plugins. More information about the way these two components work
 # together can be found in `docs/architecture.md`.
+#
 
 shared_library(
   'yabridge-vst2',
