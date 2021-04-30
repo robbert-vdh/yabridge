@@ -374,9 +374,20 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setState(Steinberg::IBStream* state) {
         if (last_created_plug_view_active) {
             return last_created_plug_view->send_mutually_recursive_message(
                 std::move(message));
-        } else {
-            return bridge.send_message(std::move(message));
+        } else if (connected_instance_id) {
+            // We should also be able to handle the above situation when a
+            // `setState()` on a processor triggers a resize coming from the
+            // edit controller. To do that, we'll also check if the connected
+            // instance has an active plug view.
+            Vst3PluginProxyImpl& other_instance =
+                bridge.plugin_proxies.at(*connected_instance_id).get();
+            if (other_instance.last_created_plug_view_active) {
+                return other_instance.last_created_plug_view
+                    ->send_mutually_recursive_message(std::move(message));
+            }
         }
+
+        return bridge.send_message(std::move(message));
     } else {
         bridge.logger.log(
             "WARNING: Null pointer passed to "
@@ -425,6 +436,8 @@ tresult PLUGIN_API Vst3PluginProxyImpl::connect(IConnectionPoint* other) {
     // out which object the plugins are connected to, we'll still proxy the
     // host's connection proxy.
     if (auto other_instance = dynamic_cast<Vst3PluginProxy*>(other)) {
+        connected_instance_id = other_instance->instance_id();
+
         return bridge.send_message(
             YaConnectionPoint::Connect{.instance_id = instance_id(),
                                        .other = other_instance->instance_id()});

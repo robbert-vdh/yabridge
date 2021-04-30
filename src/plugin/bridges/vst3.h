@@ -144,7 +144,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      */
     Steinberg::IPtr<Vst3PluginFactoryProxyImpl> plugin_factory = nullptr;
 
-   private:
+   public:
     /**
      * All VST3 plugin objects we created from this plugin. We keep track of
      * these in case the plugin does a host callback, so we can associate that
@@ -156,5 +156,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      */
     std::map<size_t, std::reference_wrapper<Vst3PluginProxyImpl>>
         plugin_proxies;
+
+   private:
     std::mutex plugin_proxies_mutex;
 };
