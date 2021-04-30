@@ -339,8 +339,8 @@ class Vst3Bridge : public HostBridge {
         // `mutual_recursion_contexts` will be blocked until the deeper calls
         // are finished.
         {
-            std::lock_guard lock(mutual_recursion_contexts_mutex);
-            if (!mutual_recursion_contexts.empty()) {
+            if (std::lock_guard lock(mutual_recursion_contexts_mutex);
+                !mutual_recursion_contexts.empty()) {
                 boost::asio::dispatch(*mutual_recursion_contexts.back(),
                                       std::move(do_call));
             } else {
