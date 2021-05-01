@@ -125,4 +125,11 @@ class HostBridge {
      * @see Logger::create_wine_stderr
      */
     Logger generic_logger;
+
+   private:
+    /**
+     * A guard that, while in scope, will cause `shutdown_if_dangling()` to
+     * periodically be called.
+     */
+    MainContext::WatchdogGuard watchdog_guard;
 };

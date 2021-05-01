@@ -22,7 +22,8 @@ HostBridge::HostBridge(MainContext& main_context,
                        boost::filesystem::path plugin_path)
     : plugin_path(plugin_path),
       main_context(main_context),
-      generic_logger(Logger::create_wine_stderr()) {}
+      generic_logger(Logger::create_wine_stderr()),
+      watchdog_guard(main_context.register_watchdog(*this)) {}
 
 void HostBridge::handle_win32_events() {
     MSG msg;
