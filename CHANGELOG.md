@@ -81,6 +81,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   plugins. We now explicitly reparent the window to back the root window first
   before deferring the window closing. This should fix the issue, while still
   keeping editor closing nice and snappy.
+- Allow plugin group host processes to shut down by themselves if it doesn't get
+  a request to host any plugins. This can happen when the DAW gets killed after
+  starting the group host process but before the native yabridge plugins
+  requests the group host process to host a plugin.
 - Prevented latency introducing plugins VST3 from causing **Ardour** and
   **Mixbus** to freeze when loading the plugin. This for example prevents
   _Neural DSP Darkglass_ from freezing when used under those DAWs.

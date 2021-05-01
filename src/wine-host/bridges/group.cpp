@@ -150,30 +150,16 @@ void GroupBridge::handle_plugin_run(size_t plugin_id, HostBridge* bridge) {
 
     // Defer actually shutting down the process to allow for fast plugin
     // scanning by allowing plugins to reuse the same group host process
-    std::lock_guard lock(shutdown_timer_mutex);
-    shutdown_timer.expires_after(2s);
-    shutdown_timer.async_wait([this](const boost::system::error_code& error) {
-        // A previous timer gets canceled automatically when another plugin
-        // exits
-        if (error.failed()) {
-            return;
-        }
-
-        std::lock_guard lock(active_plugins_mutex);
-        if (active_plugins.size() == 0) {
-            logger.log(
-                "All plugins have exited, shutting down the group process");
-
-            // main_context.stop();
-            // FIXME: See the comment in `individual-host.cpp`
-            TerminateProcess(GetCurrentProcess(), 0);
-        }
-    });
+    maybe_schedule_shutdown(4s);
 }
 
 void GroupBridge::handle_incoming_connections() {
     accept_requests();
     async_handle_events();
+
+    // If we don't get a request to host a plugin within ten seconds, we'll shut
+    // the process down again.
+    maybe_schedule_shutdown(10s);
 
     logger.log(
         "Group host is up and running, now accepting incoming connections");
@@ -330,6 +316,30 @@ boost::asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
         return boost::asio::local::stream_protocol::acceptor(io_context,
                                                              endpoint);
     }
+}
+
+void GroupBridge::maybe_schedule_shutdown(
+    std::chrono::steady_clock::duration delay) {
+    std::lock_guard lock(shutdown_timer_mutex);
+
+    shutdown_timer.expires_after(delay);
+    shutdown_timer.async_wait([this](const boost::system::error_code& error) {
+        // A previous timer gets canceled automatically when another plugin
+        // exits
+        if (error.failed()) {
+            return;
+        }
+
+        std::lock_guard lock(active_plugins_mutex);
+        if (active_plugins.size() == 0) {
+            logger.log(
+                "All plugins have exited, shutting down the group process");
+
+            // main_context.stop();
+            // FIXME: See the comment in `individual-host.cpp`
+            TerminateProcess(GetCurrentProcess(), 0);
+        }
+    });
 }
 
 std::string create_logger_prefix(const fs::path& socket_path) {

@@ -188,6 +188,13 @@ class GroupBridge {
     void async_handle_events();
 
     /**
+     * After `delay` seconds, check if this group host process is (still)
+     * hosting any plugins. If not, then we'll terminate the process. When this
+     * function gets called multiple times later calls will reset the timer.
+     */
+    void maybe_schedule_shutdown(std::chrono::steady_clock::duration delay);
+
+    /**
      * The logging facility used for this group host process. Since we can't
      * identify which plugin is generating (debug) output, every line will only
      * be prefixed with the name of the group.
