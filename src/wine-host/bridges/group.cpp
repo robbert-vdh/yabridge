@@ -157,9 +157,9 @@ void GroupBridge::handle_incoming_connections() {
     accept_requests();
     async_handle_events();
 
-    // If we don't get a request to host a plugin within ten seconds, we'll shut
-    // the process down again.
-    maybe_schedule_shutdown(10s);
+    // If we don't get a request to host a plugin within five seconds, we'll
+    // shut the process down again.
+    maybe_schedule_shutdown(5s);
 
     logger.log(
         "Group host is up and running, now accepting incoming connections");
