@@ -27,12 +27,6 @@ namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
 /**
- * Check whether a process with the given PID is still active (and not a
- * zombie).
- */
-bool pid_running(pid_t pid);
-
-/**
  * Simple helper function around `boost::process::child` that launches the host
  * application (`*.exe`) wrapped in winedbg if compiling with
  * `-Dwith-winedbg=true`. Keep in mind that winedbg does not handle arguments
@@ -233,22 +227,4 @@ void GroupHost::terminate() {
     // shut down automatically after all plugins have exited. Manually closing
     // the sockets will cause the associated plugin to exit.
     sockets.close();
-}
-
-bool pid_running(pid_t pid) {
-    // With regular individually hosted plugins we can simply check whether the
-    // process is still running, however Boost.Process does not allow you to do
-    // the same thing for a process that's not a direct child if this process.
-    // When using plugin groups we'll have to manually check whether the PID
-    // returned by the group host process is still active. We sadly can't use
-    // `kill()` for this as that provides no way to distinguish between active
-    // processes and zombies, and a terminated group host process will always be
-    // left as a zombie process. If the process is active, then
-    // `/proc/<pid>/{cwd,exe,root}` will be valid symlinks.
-    try {
-        fs::canonical("/proc/" + std::to_string(pid) + "/exe");
-        return true;
-    } catch (const fs::filesystem_error&) {
-        return false;
-    }
 }

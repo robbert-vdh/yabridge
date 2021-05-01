@@ -48,6 +48,24 @@ bool set_realtime_priority(bool sched_fifo, int priority) {
                               &params) == 0;
 }
 
+bool pid_running(pid_t pid) {
+    // With regular individually hosted plugins we can simply check whether the
+    // process is still running, however Boost.Process does not allow you to do
+    // the same thing for a process that's not a direct child if this process.
+    // When using plugin groups we'll have to manually check whether the PID
+    // returned by the group host process is still active. We sadly can't use
+    // `kill()` for this as that provides no way to distinguish between active
+    // processes and zombies, and a terminated group host process will always be
+    // left as a zombie process. If the process is active, then
+    // `/proc/<pid>/{cwd,exe,root}` will be valid symlinks.
+    try {
+        fs::canonical("/proc/" + std::to_string(pid) + "/exe");
+        return true;
+    } catch (const fs::filesystem_error&) {
+        return false;
+    }
+}
+
 ScopedFlushToZero::ScopedFlushToZero() {
     old_ftz_mode = _MM_GET_FLUSH_ZERO_MODE();
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);

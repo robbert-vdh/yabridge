@@ -85,6 +85,12 @@ std::optional<int> get_realtime_priority();
 bool set_realtime_priority(bool sched_fifo, int priority = 5);
 
 /**
+ * Check whether a process with the given PID is still active (and not a
+ * zombie).
+ */
+bool pid_running(pid_t pid);
+
+/**
  * A RAII wrapper that will temporarily enable the FTZ flag so that denormals
  * are automatically flushed to zero, returning to whatever the flag was
  * previously when it drops out of scope.
