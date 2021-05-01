@@ -243,7 +243,7 @@ void GroupBridge::accept_requests() {
                         handle_plugin_run(plugin_id, plugin_ptr);
                     }),
                     std::move(bridge));
-            } catch (const std::runtime_error& error) {
+            } catch (const std::exception& error) {
                 logger.log("Error while initializing '" + request.plugin_path +
                            "':");
                 logger.log(error.what());

@@ -103,7 +103,7 @@ __cdecl
                 return 1;
                 break;
         };
-    } catch (const std::runtime_error& error) {
+    } catch (const std::exception& error) {
         std::cerr << "Error while initializing the Wine plugin host:"
                   << std::endl;
         std::cerr << error.what() << std::endl;
