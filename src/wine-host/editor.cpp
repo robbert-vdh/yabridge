@@ -343,9 +343,30 @@ HWND Editor::get_win32_handle() const {
 }
 
 void Editor::handle_x11_events() const {
+    // NOTE: Ardour will unmap the window instead of closing the editor. When
+    //       the window is unmapped, we don't need to handle any X11 events, and
+    //       doing so might even cause X11 errors so we'll abstain from doing
+    //       so. It would be nice if we could stop drawing the GUI when the
+    //       window is unmapped, but filtering Win32 paint messages is probably
+    //       not as easy as it sounds because there's no way to easily link a
+    //       Win32 event to a hidden X11 window.
+    xcb_generic_error_t* error;
+    const xcb_get_window_attributes_cookie_t map_state_cookie =
+        xcb_get_window_attributes(x11_connection.get(), parent_window);
+    xcb_get_window_attributes_reply_t* reply = xcb_get_window_attributes_reply(
+        x11_connection.get(), map_state_cookie, &error);
+    assert(!error);
+
+    const bool window_mapped = reply->map_state == XCB_MAP_STATE_VIEWABLE;
+    free(reply);
+
     xcb_generic_event_t* generic_event;
     while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
            nullptr) {
+        if (!window_mapped) {
+            continue;
+        }
+
         const uint8_t event_type =
             generic_event->response_type & event_type_mask;
         switch (event_type) {

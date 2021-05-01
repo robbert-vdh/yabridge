@@ -93,6 +93,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   open.
 - Fixed VST3 plugins freezing in **Ardour** and **Mixbus** when the plugin tries
   to automate a parameter while loading a preset.
+- Fixed potential X11 errors resulting in assertion failures and crashes in
+  **Ardour** and **Mixbus** by ignoring X11 events after those hosts hides the
+  editor window.
 - Fixed a regression from yabridge 3.1.0 where REAPER would freeze when opening
   a VST3 plugin context menu.
 - Fixed a potential assertion failure when setting VST3 preset data. This would
