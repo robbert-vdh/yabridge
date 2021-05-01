@@ -89,4 +89,8 @@ __cdecl
 
         return 0;
     }
+
+    // Like in `individual-host.cpp`, this shouldn't be needed, but sometimes
+    // with Wine background threads will be kept alive while this process exits
+    TerminateProcess(GetCurrentProcess(), 0);
 }
