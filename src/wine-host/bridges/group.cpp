@@ -198,6 +198,10 @@ void GroupBridge::accept_requests() {
                        "' using socket endpoint base directory '" +
                        request.endpoint_base_dir + "'");
             try {
+                // Cancel the (initial) shutdown timer, since the plugin may
+                // take longer to initialize if it is new
+                shutdown_timer.cancel();
+
                 std::unique_ptr<HostBridge> bridge = nullptr;
                 switch (request.plugin_type) {
                     case PluginType::vst2:
@@ -247,6 +251,8 @@ void GroupBridge::accept_requests() {
                 logger.log("Error while initializing '" + request.plugin_path +
                            "':");
                 logger.log(error.what());
+
+                maybe_schedule_shutdown(5s);
             }
 
             accept_requests();
