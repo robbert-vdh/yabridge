@@ -55,6 +55,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - The `cache_time_info` compatibility option has been removed since it's now
   obsolete.
+- Removed a message that would show up when loading a VST3 plugin in Ardour,
+  warning about potential crashes due to Ardour not supporting multiple input
+  and output busses. These crashes have been resolved since yabridge 3.1.0.
 
 ### Fixed
 

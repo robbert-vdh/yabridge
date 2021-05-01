@@ -266,16 +266,6 @@ Vst3PluginBridge::Vst3PluginBridge()
                         }
                     }
 
-                    // TODO: Remove this warning once Ardour supports multiple
-                    //       inputs and outputs
-                    if (result == Steinberg::kResultOk && name == u"Ardour"s) {
-                        logger.log(
-                            "WARNING: Ardour currently does not support "
-                            "plugins with multiple inputs or outputs. If you "
-                            "get a Wine crash dialog or a plugin causes Ardour "
-                            "to freeze, then this is likely the cause.");
-                    }
-
                     return YaHostApplication::GetNameResponse{
                         .result = result,
                         .name = tchar_pointer_to_u16string(name),
