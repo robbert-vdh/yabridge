@@ -657,13 +657,6 @@ intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,
                                            intptr_t value,
                                            void* data,
                                            float option) {
-    try {
-        return get_bridge_instance(effect).host_callback(effect, opcode, index,
-                                                         value, data, option);
-    } catch (const boost::system::system_error& error) {
-        std::cerr << "Error while handling callback:" << std::endl;
-        std::cerr << error.what() << std::endl;
-
-        return -1;
-    }
+    return get_bridge_instance(effect).host_callback(effect, opcode, index,
+                                                     value, data, option);
 }

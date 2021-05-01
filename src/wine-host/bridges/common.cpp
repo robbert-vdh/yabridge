@@ -52,6 +52,16 @@ void HostBridge::shutdown_if_dangling() {
                   << std::endl;
         std::cerr << "         This bridge will shut down now." << std::endl;
 
-        close_sockets();
+        // FIXME: Closing the sockets should work fine, but it still leaves some
+        //        background threads hanging around. For now we'll just
+        //        terminate the entire process instead since we'll probably be
+        //        left in a bad state anyways. The only thing this could
+        //        potentially break would be sharing a plugin group across two
+        //        different DAWs, but you really shouldn't be doing that. :D
+        //
+        //        Check this commit for another now-unnecessary change we
+        //        reverted here.
+        // close_sockets();
+        TerminateProcess(GetCurrentProcess(), 0);
     }
 }
