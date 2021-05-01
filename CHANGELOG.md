@@ -32,16 +32,17 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   issues](https://github.com/robbert-vdh/yabridge#runtime-dependencies-and-known-issues)
   section of the readme for more information on when this may be useful.
 - Yabridge would always try to gracefully shut down the Wine plugin host
-  processes when the native host crashes for whatever reason, but this did not
-  always happen if the crash occurred before the plugin has finished
-  initializing because of the way Unix Domain Sockets work. In that specific
-  situation a `yabridge-host.exe` process would be left running, and you might
-  not even be able to start your DAW anymore depending on the DAW. To prevent
-  any more dangling processes, yabridge's Wine plugin hosts now have a watchdog
-  that periodically checks whether the original process that spawned the bridges
-  is still running. If it detects that the process is no longer alive, yabridge
-  will close the sockets and shut down the bridged plugin to prevent any
-  dangling processes from staying around.
+  processes when the native host crashes or gets killed for whatever reason, but
+  this did not always happen if the crash occurred before the bridged plugin has
+  finished initializing because of the way Unix Domain Sockets work. In that
+  specific situation the `yabridge-host.exe` process would be left running
+  indefinitely, and that might have also prevented you from being able to start
+  your DAW depending on the DAW. To prevent any more dangling processes,
+  yabridge's Wine plugin hosts now have a watchdog that periodically checks
+  whether the original process that spawned the bridges is still running. If it
+  detects that the process is no longer alive, yabridge will close the sockets
+  and shut down the bridged plugin to prevent any dangling processes from
+  sticking around.
 
 ### Changed
 
