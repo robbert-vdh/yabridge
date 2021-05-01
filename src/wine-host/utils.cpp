@@ -16,21 +16,6 @@
 
 #include "utils.h"
 
-MainContext::MainContext() : context(), events_timer(context) {}
-
-void MainContext::run() {
-    context.run();
-}
-
-void MainContext::stop() {
-    context.stop();
-}
-
-void MainContext::update_timer_interval(
-    std::chrono::steady_clock::duration new_interval) {
-    timer_interval = new_interval;
-}
-
 uint32_t WINAPI
 win32_thread_trampoline(fu2::unique_function<void()>* entry_point) {
     (*entry_point)();
@@ -84,4 +69,19 @@ Win32Timer& Win32Timer::operator=(Win32Timer&& o) {
     o.timer_id.reset();
 
     return *this;
+}
+
+MainContext::MainContext() : context(), events_timer(context) {}
+
+void MainContext::run() {
+    context.run();
+}
+
+void MainContext::stop() {
+    context.stop();
+}
+
+void MainContext::update_timer_interval(
+    std::chrono::steady_clock::duration new_interval) {
+    timer_interval = new_interval;
 }
