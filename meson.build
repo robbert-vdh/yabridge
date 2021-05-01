@@ -380,7 +380,6 @@ vst3_plugin_sources = [
   'src/plugin/host-process.cpp',
   'src/plugin/utils.cpp',
   'src/plugin/vst3-plugin.cpp',
-  version_header,
 ]
 
 host_common_sources = [
@@ -396,7 +395,6 @@ host_common_sources = [
   'src/wine-host/editor.cpp',
   'src/wine-host/editor.cpp',
   'src/wine-host/utils.cpp',
-  version_header,
 ]
 
 if with_vst3
@@ -467,10 +465,14 @@ if with_vst3
 endif
 
 # We'll link these against a static library `host_common_sources`
-individual_host_sources = ['src/wine-host/individual-host.cpp']
+individual_host_sources = [
+  'src/wine-host/individual-host.cpp'
+  version_header,
+]
 group_host_sources = [
   'src/wine-host/bridges/group.cpp',
   'src/wine-host/group-host.cpp',
+  version_header,
 ]
 
 #
