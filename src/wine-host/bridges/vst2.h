@@ -28,7 +28,6 @@
 #include "../../common/communication/vst2.h"
 #include "../../common/configuration.h"
 #include "../editor.h"
-#include "../utils.h"
 #include "common.h"
 
 /**
@@ -95,13 +94,6 @@ class Vst2Bridge : public HostBridge {
      * the message should be hidden on lower verbosity levels.
      */
     Vst2Logger logger;
-
-    /**
-     * The IO context used for event handling so that all events and window
-     * message handling can be performed from a single thread, even when hosting
-     * multiple plugins.
-     */
-    MainContext& main_context;
 
     /**
      * The configuration for this instance of yabridge based on the `.so` file

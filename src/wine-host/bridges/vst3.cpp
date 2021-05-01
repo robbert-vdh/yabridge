@@ -90,9 +90,8 @@ InstanceInterfaces::InstanceInterfaces(
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
                        std::string endpoint_base_dir)
-    : HostBridge(plugin_dll_path),
+    : HostBridge(main_context, plugin_dll_path),
       logger(generic_logger),
-      main_context(main_context),
       sockets(main_context.context, endpoint_base_dir, false) {
     std::string error;
     module = VST3::Hosting::Win32Module::create(plugin_dll_path, error);

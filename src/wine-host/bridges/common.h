@@ -21,6 +21,7 @@
 #include <boost/filesystem.hpp>
 
 #include "../../common/logging/common.h"
+#include "../utils.h"
 
 /**
  * The base for the Wine plugin host bridge interface for all plugin types. This
@@ -29,7 +30,7 @@
  */
 class HostBridge {
    protected:
-    HostBridge(boost::filesystem::path plugin_path);
+    HostBridge(MainContext& main_context, boost::filesystem::path plugin_path);
 
    public:
     virtual ~HostBridge(){};
@@ -91,6 +92,13 @@ class HostBridge {
     const boost::filesystem::path plugin_path;
 
    protected:
+    /**
+     * The IO context used for event handling so that all events and window
+     * message handling can be performed from a single thread, even when hosting
+     * multiple plugins.
+     */
+    MainContext& main_context;
+
     /**
      * A logger, just like we have on the plugin side. This is normally not
      * needed because we can just print to STDERR, but this way we can

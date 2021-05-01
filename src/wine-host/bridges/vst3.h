@@ -421,13 +421,6 @@ class Vst3Bridge : public HostBridge {
     void unregister_object_instance(size_t instance_id);
 
     /**
-     * The IO context used for event handling so that all events and window
-     * message handling can be performed from a single thread, even when hosting
-     * multiple plugins.
-     */
-    MainContext& main_context;
-
-    /**
      * The configuration for this instance of yabridge based on the `.so` file
      * that got loaded by the host. This configuration gets loaded on the plugin
      * side, and then sent over to the Wine host as part of the startup process.

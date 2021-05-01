@@ -18,8 +18,11 @@
 
 #include "../editor.h"
 
-HostBridge::HostBridge(boost::filesystem::path plugin_path)
-    : plugin_path(plugin_path), generic_logger(Logger::create_wine_stderr()) {}
+HostBridge::HostBridge(MainContext& main_context,
+                       boost::filesystem::path plugin_path)
+    : plugin_path(plugin_path),
+      main_context(main_context),
+      generic_logger(Logger::create_wine_stderr()) {}
 
 void HostBridge::handle_win32_events() {
     MSG msg;
