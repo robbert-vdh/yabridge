@@ -325,7 +325,8 @@ class MainContext {
      * it's impossible to tell that the remote isn't alive anymore, and where
      * `recv()` will just hang indefinitely. We use this watchdog to avoid this.
      */
-    void async_handle_watchdog();
+    void async_handle_watchdog_timer(
+        std::chrono::steady_clock::duration interval);
 
     /**
      * The timer used to periodically handle X11 events and Win32 messages.

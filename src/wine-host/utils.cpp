@@ -80,7 +80,10 @@ MainContext::MainContext()
       events_timer(context),
       watchdog_context(),
       watchdog_timer(watchdog_context) {
-    async_handle_watchdog();
+    // To account for hosts terminating before the bridged plugin has
+    // initialized, we'll do the first watchdog check five seconds. After this
+    // we'll run the timer on a 30 second interval.
+    async_handle_watchdog_timer(5s);
 
     watchdog_handler = Win32Thread([&]() {
         set_realtime_priority(false);
@@ -142,10 +145,11 @@ MainContext::WatchdogGuard MainContext::register_watchdog(HostBridge& bridge) {
     return WatchdogGuard(bridge, watched_bridges, watched_bridges_mutex);
 }
 
-void MainContext::async_handle_watchdog() {
+void MainContext::async_handle_watchdog_timer(
+    std::chrono::steady_clock::duration interval) {
     // Try to keep a steady framerate, but add in delays to let other events
     // get handled if the GUI message handling somehow takes very long.
-    watchdog_timer.expires_at(std::chrono::steady_clock::now() + 20s);
+    watchdog_timer.expires_at(std::chrono::steady_clock::now() + interval);
     watchdog_timer.async_wait([&](const boost::system::error_code& error) {
         if (error.failed()) {
             return;
@@ -160,6 +164,6 @@ void MainContext::async_handle_watchdog() {
             bridge->shutdown_if_dangling();
         }
 
-        async_handle_watchdog();
+        async_handle_watchdog_timer(30s);
     });
 }
