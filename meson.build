@@ -466,7 +466,7 @@ endif
 
 # We'll link these against a static library `host_common_sources`
 individual_host_sources = [
-  'src/wine-host/individual-host.cpp'
+  'src/wine-host/individual-host.cpp',
   version_header,
 ]
 group_host_sources = [
