@@ -83,6 +83,10 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
           host_request.plugin_path,
 #endif
           host_request.endpoint_base_dir,
+          // We pass this process' process ID as an argument so we can run a
+          // watchdog on the Wine plugin host process that shuts down the
+          // sockets after this process shuts down
+          std::to_string(getpid()),
           bp::env = plugin_info.create_host_env(),
           bp::std_out = stdout_pipe,
           bp::std_err = stderr_pipe

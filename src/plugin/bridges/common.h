@@ -76,7 +76,8 @@ class PluginBridge {
                         HostRequest{
                             .plugin_type = plugin_type,
                             .plugin_path = info.windows_plugin_path.string(),
-                            .endpoint_base_dir = sockets.base_dir.string()},
+                            .endpoint_base_dir = sockets.base_dir.string(),
+                            .parent_pid = getpid()},
                         sockets,
                         *config.group))
                   : std::unique_ptr<HostProcess>(
@@ -88,7 +89,8 @@ class PluginBridge {
                                 .plugin_type = plugin_type,
                                 .plugin_path =
                                     info.windows_plugin_path.string(),
-                                .endpoint_base_dir = sockets.base_dir.string()},
+                                .endpoint_base_dir = sockets.base_dir.string(),
+                                .parent_pid = getpid()},
                             sockets))),
           has_realtime_priority(has_realtime_priority_promise.get_future()),
           wine_io_handler([&]() {

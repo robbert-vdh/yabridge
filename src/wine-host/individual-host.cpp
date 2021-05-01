@@ -39,20 +39,20 @@ __cdecl
     main(int argc, char* argv[]) {
     set_realtime_priority(true);
 
-    // We pass plugin format, the name of the VST2 plugin .dll file or VST3
-    // bundle to load, and the base directory for the Unix domain socket
-    // endpoints to connect to as the first two arguments of this process in
-    // `src/plugin/host-process.cpp`
-    if (argc < 4) {
-        std::cerr
-            << "Usage: "
+    // We pass the plugin format, the name of the VST2 plugin .dll file or VST3
+    // bundle to load, the base directory for the Unix domain socket endpoints
+    // to connect to and the process ID of the process the native plugin is
+    // being hosted in as arguments for yabridge-host.exe
+    if (argc < 5) {
+        std::cerr << "Usage: "
 #ifdef __i386__
-            << yabridge_individual_host_name_32bit
+                  << yabridge_individual_host_name_32bit
 #else
-            << yabridge_individual_host_name
+                  << yabridge_individual_host_name
 #endif
-            << " <plugin_type> <plugin_location> <endpoint_base_directory>"
-            << std::endl;
+                  << " <plugin_type> <plugin_location> "
+                     "<endpoint_base_directory> <parent_pid>"
+                  << std::endl;
 
         return 1;
     }
@@ -61,6 +61,7 @@ __cdecl
     const PluginType plugin_type = plugin_type_from_string(plugin_type_str);
     const std::string plugin_location(argv[2]);
     const std::string socket_endpoint_path(argv[3]);
+    const pid_t parent_pid = std::stoi(argv[4]);
 
     std::cout << "Initializing yabridge host version " << yabridge_git_version
 #ifdef __i386__

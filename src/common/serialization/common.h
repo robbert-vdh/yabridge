@@ -50,12 +50,14 @@ struct HostRequest {
     PluginType plugin_type;
     std::string plugin_path;
     std::string endpoint_base_dir;
+    pid_t parent_pid;
 
     template <typename S>
     void serialize(S& s) {
         s.object(plugin_type);
         s.text1b(plugin_path, 4096);
         s.text1b(endpoint_base_dir, 4096);
+        s.value4b(parent_pid);
     }
 };
 
