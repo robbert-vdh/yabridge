@@ -217,13 +217,13 @@ void GroupBridge::accept_requests() {
                     case PluginType::vst2:
                         bridge = std::make_unique<Vst2Bridge>(
                             main_context, request.plugin_path,
-                            request.endpoint_base_dir);
+                            request.endpoint_base_dir, request.parent_pid);
                         break;
                     case PluginType::vst3:
 #ifdef WITH_VST3
                         bridge = std::make_unique<Vst3Bridge>(
                             main_context, request.plugin_path,
-                            request.endpoint_base_dir);
+                            request.endpoint_base_dir, request.parent_pid);
 #else
                         throw std::runtime_error(
                             "This version of yabridge has not been compiled "

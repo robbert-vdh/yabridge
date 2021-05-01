@@ -32,7 +32,9 @@
  */
 class HostBridge {
    protected:
-    HostBridge(MainContext& main_context, boost::filesystem::path plugin_path);
+    HostBridge(MainContext& main_context,
+               boost::filesystem::path plugin_path,
+               pid_t parent_pid);
 
    public:
     virtual ~HostBridge(){};
@@ -127,6 +129,15 @@ class HostBridge {
     Logger generic_logger;
 
    private:
+    /**
+     * The process ID of the native plugin host we are bridging for. This should
+     * be the parent, but it might not be because of Wine's startup script,
+     * `WINELOADER`s and Wine's `start.exe` behaviour. We'll periodically check
+     * if this process is still alive, and close the sockets if it is not to
+     * prevent dangling processes.
+     */
+    const pid_t parent_pid;
+
     /**
      * A guard that, while in scope, will cause `shutdown_if_dangling()` to
      * periodically be called.

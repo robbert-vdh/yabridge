@@ -68,8 +68,9 @@ Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
 
 Vst2Bridge::Vst2Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
-                       std::string endpoint_base_dir)
-    : HostBridge(main_context, plugin_dll_path),
+                       std::string endpoint_base_dir,
+                       pid_t parent_pid)
+    : HostBridge(main_context, plugin_dll_path, parent_pid),
       logger(generic_logger),
       plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
       sockets(main_context.context, endpoint_base_dir, false) {

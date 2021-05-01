@@ -82,12 +82,14 @@ __cdecl
         switch (plugin_type) {
             case PluginType::vst2:
                 bridge = std::make_unique<Vst2Bridge>(
-                    main_context, plugin_location, socket_endpoint_path);
+                    main_context, plugin_location, socket_endpoint_path,
+                    parent_pid);
                 break;
             case PluginType::vst3:
 #ifdef WITH_VST3
                 bridge = std::make_unique<Vst3Bridge>(
-                    main_context, plugin_location, socket_endpoint_path);
+                    main_context, plugin_location, socket_endpoint_path,
+                    parent_pid);
 #else
                 std::cerr << "This version of yabridge has not been compiled "
                              "with VST3 support"

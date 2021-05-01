@@ -89,8 +89,9 @@ InstanceInterfaces::InstanceInterfaces(
 
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
                        std::string plugin_dll_path,
-                       std::string endpoint_base_dir)
-    : HostBridge(main_context, plugin_dll_path),
+                       std::string endpoint_base_dir,
+                       pid_t parent_pid)
+    : HostBridge(main_context, plugin_dll_path, parent_pid),
       logger(generic_logger),
       sockets(main_context.context, endpoint_base_dir, false) {
     std::string error;

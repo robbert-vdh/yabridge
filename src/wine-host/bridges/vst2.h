@@ -47,6 +47,9 @@ class Vst2Bridge : public HostBridge {
      *   to load.
      * @param endpoint_base_dir The base directory used for the socket
      *   endpoints. See `Sockets` for more information.
+     * @param parent_pid The process ID of the native plugin host this bridge is
+     *   supposed to communicate with. Used as part of our watchdog to prevent
+     *   dangling Wine processes.
      *
      * @note The object has to be constructed from the same thread that calls
      *   `main_context.run()`.
@@ -56,7 +59,8 @@ class Vst2Bridge : public HostBridge {
      */
     Vst2Bridge(MainContext& main_context,
                std::string plugin_dll_path,
-               std::string endpoint_base_dir);
+               std::string endpoint_base_dir,
+               pid_t parent_pid);
 
     bool inhibits_event_loop() override;
 

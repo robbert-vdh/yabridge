@@ -16,13 +16,17 @@
 
 #include "common.h"
 
+#include <iostream>
+
 #include "../editor.h"
 
 HostBridge::HostBridge(MainContext& main_context,
-                       boost::filesystem::path plugin_path)
+                       boost::filesystem::path plugin_path,
+                       pid_t parent_pid)
     : plugin_path(plugin_path),
       main_context(main_context),
       generic_logger(Logger::create_wine_stderr()),
+      parent_pid(parent_pid),
       watchdog_guard(main_context.register_watchdog(*this)) {}
 
 void HostBridge::handle_win32_events() {
@@ -37,5 +41,17 @@ void HostBridge::handle_win32_events() {
 }
 
 void HostBridge::shutdown_if_dangling() {
-    // TODO: Implement
+    // If the parent process has exited and this plugin bridge instance is
+    // outliving the process it's supposed to be connected to (because in some
+    // situations sockets won't get closed when this happens so we'd hang on
+    // `recv()`), then we'll close the sockets here so that the plugin bridge
+    // exits gracefully. This will be periodically called from `MainContext`'s
+    // watchdog thread.
+    if (!pid_running(parent_pid)) {
+        std::cerr << "WARNING: The native plugin host seems to have died."
+                  << std::endl;
+        std::cerr << "         This bridge will shut down now." << std::endl;
+
+        close_sockets();
+    }
 }
