@@ -34,3 +34,7 @@ void HostBridge::handle_win32_events() {
         DispatchMessage(&msg);
     }
 }
+
+void HostBridge::shutdown_if_dangling() {
+    // TODO: Implement
+}

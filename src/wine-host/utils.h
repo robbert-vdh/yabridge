@@ -21,6 +21,7 @@
 #include <future>
 #include <memory>
 #include <optional>
+#include <set>
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -33,6 +34,9 @@
 #include <function2/function2.hpp>
 
 #include "../common/utils.h"
+
+// Forward declaration for use in our watchdog in `MainContext`
+class HostBridge;
 
 /**
  * A proxy function that calls `Win32Thread::entry_point` since `CreateThread()`
@@ -152,11 +156,16 @@ class Win32Timer {
 
 /**
  * A wrapper around `boost::asio::io_context()` to serve as the application's
- * main IO context. A single instance is shared for all plugins in a plugin
- * group so that several important events can be handled on the main thread,
- * which can be required because in the Win32 model all GUI related operations
- * have to be handled from the same thread. This will be run from the
- * application's main thread.
+ * main IO context, run from the GUI thread. A single instance is shared for all
+ * plugins in a plugin group so that several important events can be handled on
+ * the main thread, which can be required because in the Win32 model all GUI
+ * related operations have to be handled from the same thread.
+ *
+ * This also spawns a second IO context in its own thread, which will be used as
+ * a watchdog to shutdown a plugin instance's sockets when the process that
+ * spawned it is no longer active. This approach also works with plugin groups
+ * since closing a plugin's sockets will only cause that one plugin to
+ * terminate.
  */
 class MainContext {
    public:
@@ -181,6 +190,52 @@ class MainContext {
      */
     void update_timer_interval(
         std::chrono::steady_clock::duration new_interval);
+
+    /**
+     * The RAII guard used to register and unregister host bridge instances from
+     * our watchdog.
+     */
+    class WatchdogGuard {
+       public:
+        WatchdogGuard(HostBridge& bridge,
+                      std::set<HostBridge*>& watched_bridges,
+                      std::mutex& watched_bridges_mutex);
+        ~WatchdogGuard();
+
+        WatchdogGuard(const WatchdogGuard&) = delete;
+        WatchdogGuard& operator=(const WatchdogGuard&) = delete;
+
+        WatchdogGuard(WatchdogGuard&& o);
+        WatchdogGuard& operator=(WatchdogGuard&& o);
+
+       private:
+        /**
+         * Used to facilitate moves.
+         */
+        bool is_active = true;
+
+        /**
+         * The bridge that we will add to the watchdog list when this object
+         * gets created, and that we'll remove from the list again when this
+         * object gets destroyed.
+         */
+        HostBridge* bridge;
+
+        // References to the same two fields on `MainContext`, so we don't have
+        // to use `friend`
+        std::reference_wrapper<std::set<HostBridge*>> watched_bridges;
+        std::reference_wrapper<std::mutex> watched_bridges_mutex;
+    };
+
+    /**
+     * Register a bridge instance for our watchdog. We'll periodically check if
+     * the remote (native) host process that should be connected to the bridge
+     * instance is still alive, and we'll shut down the bridge if it is not to
+     * prevent dangling processes. The returned guard should be stored as a
+     * field in `HostBridge`, and the watchdog will automatically be
+     * unregistered once this guard drops from scope.
+     */
+    WatchdogGuard register_watchdog(HostBridge& bridge);
 
     /**
      * Asynchronously execute a function inside of this main IO context and
@@ -263,6 +318,16 @@ class MainContext {
 
    private:
     /**
+     * Start a timer to periodically check whether the host processes belong to
+     * all active plugin bridges are still alive. We will shut down the plugin
+     * instances where this is not the case, so that this process can gracefully
+     * terminate. In some cases Unix Domain Sockets are left in a state where
+     * it's impossible to tell that the remote isn't alive anymore, and where
+     * `recv()` will just hang indefinitely. We use this watchdog to avoid this.
+     */
+    void async_handle_watchdog();
+
+    /**
      * The timer used to periodically handle X11 events and Win32 messages.
      */
     boost::asio::steady_timer events_timer;
@@ -276,4 +341,32 @@ class MainContext {
      */
     std::chrono::steady_clock::duration timer_interval =
         std::chrono::milliseconds(1000) / 60;
+
+    /**
+     * The IO context used for the watchdog described below.
+     */
+    boost::asio::io_context watchdog_context;
+
+    /**
+     * The timer used to periodically check if the host processes are still
+     * active, so we can shut down a plugin's sockets (and with that the plugin
+     * itself) when the host has exited and the sockets are somehow not closed
+     * yet..
+     */
+    boost::asio::steady_timer watchdog_timer;
+
+    /**
+     * All of the bridges we're watching as part of our watchdog. We're storing
+     * pointers for efficiency's sake, since reference wrappers don't implement
+     * any comparison operators.
+     */
+    std::set<HostBridge*> watched_bridges;
+    std::mutex watched_bridges_mutex;
+
+    /**
+     * The thread where we run our watchdog timer, to shut down plugins after
+     * the native plugin host process they're supposed to be connected to has
+     * died.
+     */
+    Win32Thread watchdog_handler;
 };

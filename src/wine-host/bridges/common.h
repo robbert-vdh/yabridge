@@ -24,9 +24,11 @@
 #include "../utils.h"
 
 /**
- * The base for the Wine plugin host bridge interface for all plugin types. This
- * only has to be able to handle Win32 and X11 events. Implementations of this
- * will actually host a plugin and do all the function call forwarding.
+ * The base for the Wine plugin host bridge interfaces for all plugin types.
+ * This mostly concerns event handling, and some common setup like loggers and a
+ * watchdog timer to let us shut down the sockets when the native host has
+ * exited while the sockets are still alive. Implementations of this will
+ * actually host a plugin and do all the function call forwarding.
  */
 class HostBridge {
    protected:
@@ -85,6 +87,14 @@ class HostBridge {
      * `Vst2Bridge::editor` for more information.
      */
     void handle_win32_events();
+
+    /**
+     * Used as part of the watchdog. This will check whether the remote host
+     * process this bridge is connected with is still active. If it is not, then
+     * we'll close the sockets, which will cause this process to exit
+     * gracefully.
+     */
+    void shutdown_if_dangling();
 
     /**
      * The path to the .dll being loaded in the Wine plugin host.
