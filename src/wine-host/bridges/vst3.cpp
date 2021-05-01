@@ -1133,6 +1133,10 @@ void Vst3Bridge::handle_x11_events() {
     }
 }
 
+void Vst3Bridge::close_sockets() {
+    sockets.close();
+}
+
 void Vst3Bridge::register_context_menu(Vst3ContextMenuProxyImpl& context_menu) {
     std::lock_guard lock(object_instances[context_menu.owner_instance_id()]
                              .registered_context_menus_mutex);

@@ -68,6 +68,10 @@ class Vst2Bridge : public HostBridge {
 
     void handle_x11_events() override;
 
+   protected:
+    void close_sockets() override;
+
+   public:
     /**
      * Forward the host callback made by the plugin to the host and return the
      * results.

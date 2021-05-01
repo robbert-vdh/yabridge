@@ -233,6 +233,10 @@ class Vst3Bridge : public HostBridge {
 
     void handle_x11_events() override;
 
+   protected:
+    void close_sockets() override;
+
+   public:
     /**
      * Send a callback message to the host return the response. This is a
      * shorthand for `sockets.vst_host_callback.send_message` for use in VST3

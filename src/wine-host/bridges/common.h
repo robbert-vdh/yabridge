@@ -103,6 +103,14 @@ class HostBridge {
 
    protected:
     /**
+     * Used as part of the watchdog that shuts down a plugin when the remote
+     * native host process dies. This is used to prevent plugins from hanging
+     * indefinitely on a `recv()`. This function should just call
+     * `sockets.close()`.
+     */
+    virtual void close_sockets() = 0;
+
+    /**
      * The IO context used for event handling so that all events and window
      * message handling can be performed from a single thread, even when hosting
      * multiple plugins.

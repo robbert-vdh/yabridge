@@ -425,6 +425,10 @@ void Vst2Bridge::handle_x11_events() {
     }
 }
 
+void Vst2Bridge::close_sockets() {
+    sockets.close();
+}
+
 intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
                                       int opcode,
                                       int index,
