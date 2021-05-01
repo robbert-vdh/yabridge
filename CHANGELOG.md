@@ -93,6 +93,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   open.
 - Fixed VST3 plugins freezing in **Ardour** and **Mixbus** when the plugin tries
   to automate a parameter while loading a preset.
+- Fixed _Voxengo_ VST3 plugins freezing in **Ardour** and **Mixbus** when
+  loading a project or when duplicating the plugin instances.
 - Fixed potential X11 errors resulting in assertion failures and crashes in
   **Ardour** and **Mixbus** by ignoring X11 events after those hosts hides the
   editor window.

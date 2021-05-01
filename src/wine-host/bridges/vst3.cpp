@@ -1037,10 +1037,16 @@ void Vst3Bridge::run() {
             [&](const YaUnitInfo::GetProgramName& request)
                 -> YaUnitInfo::GetProgramName::Response {
                 Steinberg::Vst::String128 name{0};
+                // NOTE: This will likely be requested in response to
+                //       `IUnitHandler::notifyProgramListChange`, but some
+                //       plugins (like TEOTE) require this to be called from the
+                //       same thread when that happens.
                 const tresult result =
-                    object_instances[request.instance_id]
-                        .unit_info->getProgramName(request.list_id,
-                                                   request.program_index, name);
+                    do_mutual_recursion_on_off_thread<tresult>([&]() {
+                        return object_instances[request.instance_id]
+                            .unit_info->getProgramName(
+                                request.list_id, request.program_index, name);
+                    });
 
                 return YaUnitInfo::GetProgramNameResponse{
                     .result = result, .name = tchar_pointer_to_u16string(name)};

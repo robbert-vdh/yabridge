@@ -175,10 +175,14 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitSelection(
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyProgramListChange(
     Steinberg::Vst::ProgramListID listId,
     int32 programIndex) {
-    return bridge.send_message(YaUnitHandler::NotifyProgramListChange{
-        .owner_instance_id = owner_instance_id(),
-        .list_id = listId,
-        .program_index = programIndex});
+    // NOTE: When a plugin calls this, Ardour will fetch the new program names
+    //       with `IUnitInfo::getProgramName()`. TEOTE requires this to be
+    //       called from the same thread.
+    return bridge.send_mutually_recursive_message(
+        YaUnitHandler::NotifyProgramListChange{
+            .owner_instance_id = owner_instance_id(),
+            .list_id = listId,
+            .program_index = programIndex});
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitByBusChange() {
