@@ -347,8 +347,8 @@ class Vst3Bridge : public HostBridge {
         // `mutual_recursion_contexts` will be blocked until the deeper calls
         // are finished.
         {
-            if (std::lock_guard lock(mutual_recursion_contexts_mutex);
-                !mutual_recursion_contexts.empty()) {
+            std::lock_guard lock(mutual_recursion_contexts_mutex);
+            if (!mutual_recursion_contexts.empty()) {
                 boost::asio::dispatch(*mutual_recursion_contexts.back(),
                                       std::move(do_call));
             } else {
@@ -370,11 +370,15 @@ class Vst3Bridge : public HostBridge {
         std::packaged_task<T()> do_call(std::move(f));
         std::future<T> do_call_response = do_call.get_future();
 
-        if (std::lock_guard lock(mutual_recursion_contexts_mutex);
-            !mutual_recursion_contexts.empty()) {
+        std::unique_lock lock(mutual_recursion_contexts_mutex);
+        if (!mutual_recursion_contexts.empty()) {
             boost::asio::dispatch(*mutual_recursion_contexts.back(),
                                   std::move(do_call));
         } else {
+            // Unlike the other branches in the `do_mutual_recursion_*`
+            // functions, this one will block
+            lock.unlock();
+
             do_call();
         }
 
