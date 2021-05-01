@@ -144,19 +144,20 @@ class ScopedValueCache {
     class Guard {
        public:
         Guard(std::optional<T>& cached_value) : cached_value(cached_value) {}
-
         ~Guard() {
             if (is_active) {
-                cached_value.reset();
+                cached_value.get().reset();
             }
         }
 
         Guard(const Guard&) = delete;
         Guard& operator=(const Guard&) = delete;
 
-        Guard(Guard&& o) : cached_value(o.cached_value) { o.is_active = false; }
+        Guard(Guard&& o) : cached_value(std::move(o.cached_value)) {
+            o.is_active = false;
+        }
         Guard& operator=(Guard&& o) {
-            cached_value = o.cache;
+            cached_value = std::move(o.cached_value);
             o.is_active = false;
 
             return *this;
@@ -164,7 +165,7 @@ class ScopedValueCache {
 
        private:
         bool is_active = true;
-        std::optional<T>& cached_value;
+        std::reference_wrapper<std::optional<T>> cached_value;
     };
 
     /**
