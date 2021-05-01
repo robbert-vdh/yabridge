@@ -260,7 +260,7 @@ class PluginBridge {
         // and throw when it is not. The alternative would be to rewrite this to
         // using `async_accept`, Boost.Asio timers, and another IO context, but
         // I feel like this a much simpler solution.
-        host_guard_handler = std::jthread([&](std::stop_token st) {
+        host_watchdog_handler = std::jthread([&](std::stop_token st) {
             using namespace std::literals::chrono_literals;
 
             while (!st.stop_requested()) {
@@ -278,7 +278,7 @@ class PluginBridge {
 
         sockets.connect();
 #ifndef WITH_WINEDBG
-        host_guard_handler.request_stop();
+        host_watchdog_handler.request_stop();
 #endif
     }
 
@@ -350,5 +350,5 @@ class PluginBridge {
      * detach the thread as it has to check whether the VST host is still
      * running.
      */
-    std::jthread host_guard_handler;
+    std::jthread host_watchdog_handler;
 };
