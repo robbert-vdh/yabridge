@@ -108,6 +108,10 @@ __cdecl
                   << std::endl;
         std::cerr << error.what() << std::endl;
 
+        // See below, just returning from `main()` isn't enough to terminate the
+        // process
+        TerminateProcess(GetCurrentProcess(), 0);
+
         return 1;
     }
 
