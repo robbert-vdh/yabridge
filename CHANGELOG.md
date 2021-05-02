@@ -98,8 +98,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed potential X11 errors resulting in assertion failures and crashes in
   **Ardour** and **Mixbus** by ignoring X11 events after those hosts hides the
   editor window.
+- Fixed potential freezing when loading a VST3 preset that tries to resize an
+  open editor window.
 - Fixed a regression from yabridge 3.1.0 where REAPER would freeze when opening
   a VST3 plugin context menu.
+- Fixed another potential freezing issue in REAPER that could happen when the
+  when the plugin resizes itself while sending a parameter change to the host,
+  if REAPER's 'disable saving full plug-in state' is not disabled.
 - Fixed a potential assertion failure when setting VST3 preset data. This would
   depend on the `libstdc++` version used to built yabridge with.
 - _PSPaudioware InifniStrip_ would fail to initialize because the plugin expects
@@ -112,11 +117,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed the VST3 version of _W. A. Production ImPerfect_ from crashing during
   audio setup.
 - Fixed _UVI Plugsound Free_ crashing during initialization.
-- Fixed potential freezing when loading a VST3 preset that tries to resize an
-  open editor window.
-- Fixed another potential freezing issue in REAPER that could happen when the
-  when the plugin resizes itself while sending a parameter change to the host,
-  if REAPER's 'disable saving full plug-in state' is not disabled.
 - Because of the new transport information prefetching, the excessive DSP usage
   in _SWAM Cello_ is now been fixed without requiring any manual compatibility
   options.
