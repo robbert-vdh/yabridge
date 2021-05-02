@@ -105,6 +105,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed another potential freezing issue in **REAPER** that could happen when the
   when the plugin resizes itself while sending a parameter change to the host,
   if REAPER's 'disable saving full plug-in state' is not disabled.
+- Fixed saving and loading _iZotope Rx7_ plugin state in **Bitwig Studio**.
 - Fixed a potential assertion failure when setting VST3 preset data. This would
   depend on the `libstdc++` version used to built yabridge with.
 - _PSPaudioware InifniStrip_ would fail to initialize because the plugin expects

@@ -30,21 +30,31 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
 
     // Copy any existing contents, used for `IComponent::setState` and similar
     // methods
+    // NOTE: Bitwig Studio seems to prepend some default header on new presets
+    //       We _don't_ want to copy that, since some plugins may try to read
+    //       the entire preset and fail to load. Examples of such plugins are
+    //       the iZotope Rx7 plugins.
     int64 old_position;
     stream->tell(&old_position);
     if (stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekEnd) ==
         Steinberg::kResultOk) {
         int64 size = 0;
         stream->tell(&size);
+        size -= old_position;
+
         if (size > 0) {
             int32 num_bytes_read = 0;
             buffer.resize(size);
-            stream->seek(0, Steinberg::IBStream::IStreamSeekMode::kIBSeekSet);
+            stream->seek(old_position,
+                         Steinberg::IBStream::IStreamSeekMode::kIBSeekSet);
             stream->read(buffer.data(), static_cast<int32>(size),
                          &num_bytes_read);
             assert(num_bytes_read == 0 || num_bytes_read == size);
         }
     }
+
+    // If the host did prepend some header, we should leave it in place when
+    // writing
     stream->seek(old_position,
                  Steinberg::IBStream::IStreamSeekMode::kIBSeekSet);
 
