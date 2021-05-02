@@ -63,6 +63,20 @@ constexpr uint32_t xembed_focus_in_msg = 4;
 
 constexpr uint32_t xembed_focus_first = 1;
 
+// A catchable alternative to `assert()`. Normally all of our `assert(!error)`
+// should never fail, except for when Ardour hides the editor window without
+// closing the editor. In those case some of our X11 function calls may r turn
+// errors. When this happens we want to be able to catch them in
+// `handle_x11_events()`.
+#define THROW_X11_ERROR(error)                                          \
+    do {                                                                \
+        if (error) {                                                    \
+            free(error);                                                \
+            throw std::runtime_error("X111 error in " +                 \
+                                     std::string(__PRETTY_FUNCTION__)); \
+        }                                                               \
+    } while (0)
+
 /**
  * Find the the ancestors for the given window. This returns a list of window
  * IDs that starts wit h`starting_at`, and then iteratively contains the parent
@@ -128,10 +142,15 @@ DeferredWindow::~DeferredWindow() {
     //       iZotope Rx plugins. In Renoise this would otherwise trigger an X11
     //       error every time you close such a plugin's editor, and in other
     //       DAWs I've also seen it happen from time to time.
-    const xcb_window_t wine_window = get_x11_handle(handle);
-    const xcb_window_t root_window =
-        get_root_window(*x11_connection, wine_window);
-    xcb_reparent_window(x11_connection.get(), wine_window, root_window, 0, 0);
+    try {
+        const xcb_window_t wine_window = get_x11_handle(handle);
+        const xcb_window_t root_window =
+            get_root_window(*x11_connection, wine_window);
+        xcb_reparent_window(x11_connection.get(), wine_window, root_window, 0,
+                            0);
+    } catch (const std::runtime_error& error) {
+        std::cerr << error.what() << std::endl;
+    }
 
     // XXX: We are already deferring this closing by posting `WM_CLOSE` to the
     //      message loop instead of calling `DestroyWindow()` ourselves, but we
@@ -217,7 +236,7 @@ Editor::Editor(MainContext& main_context,
         active_window_property_name);
     xcb_intern_atom_reply_t* atom_reply =
         xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
-    assert(!error);
+    THROW_X11_ERROR(error);
 
     // In case the atom does not exist or the WM does not support this hint,
     // we'll print a warning and fall back to grabbing focus when the user
@@ -244,7 +263,7 @@ Editor::Editor(MainContext& main_context,
                                       x_dnd_aware_property_name);
         atom_reply =
             xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
-        assert(!error);
+        THROW_X11_ERROR(error);
 
         for (const xcb_window_t& window :
              find_ancestor_windows(*x11_connection, parent_window)) {
@@ -260,7 +279,7 @@ Editor::Editor(MainContext& main_context,
                         xembed_message_name);
     atom_reply =
         xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
-    assert(!error);
+    THROW_X11_ERROR(error);
 
     xcb_xembed_message = atom_reply->atom;
     free(atom_reply);
@@ -343,105 +362,95 @@ HWND Editor::get_win32_handle() const {
 }
 
 void Editor::handle_x11_events() const {
-    xcb_generic_event_t* generic_event;
-    while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
-           nullptr) {
-        // NOTE: Ardour will unmap the window instead of closing the editor.
-        //       When the window is unmapped, we don't need to handle any X11
-        //       events, and doing so might even cause X11 errors so we'll
-        //       abstain from doing so. It would be nice if we could stop
-        //       drawing the GUI when the window is unmapped, but filtering
-        //       Win32 paint messages is probably not as easy as it sounds
-        //       because there's no way to easily link a Win32 event to a hidden
-        //       X11 window.
-        xcb_generic_error_t* error;
-        const xcb_get_window_attributes_cookie_t map_state_cookie =
-            xcb_get_window_attributes(x11_connection.get(), parent_window);
-        xcb_get_window_attributes_reply_t* reply =
-            xcb_get_window_attributes_reply(x11_connection.get(),
-                                            map_state_cookie, &error);
-        assert(!error);
+    // NOTE: Ardour will unmap the window instead of closing the editor. When
+    //       the window is unmapped `wine_window` doesn't exist and any X11
+    //       function calls involving it will fail. All functions called from
+    //       here should be able to handle that cleanly.
+    try {
+        xcb_generic_event_t* generic_event;
+        while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
+               nullptr) {
+            const uint8_t event_type =
+                generic_event->response_type & event_type_mask;
+            switch (event_type) {
+                // We're listening for `ConfigureNotify` events on the topmost
+                // window before the root window, i.e. the window that's
+                // actually going to get dragged around the by the user. In most
+                // cases this is the same as `parent_window`. When either this
+                // window gets moved, or when the user moves his mouse over our
+                // window, the local coordinates should be updated. The
+                // additional `EnterWindow` check is sometimes necessary for
+                // using multiple editor windows within a single plugin group.
+                case XCB_CONFIGURE_NOTIFY:
+                    if (!use_xembed) {
+                        fix_local_coordinates();
+                    }
+                    break;
+                // Start the XEmbed procedure when the window becomes visible,
+                // since most hosts will only show the window after the plugin
+                // has embedded itself into it.
+                case XCB_VISIBILITY_NOTIFY:
+                    if (use_xembed) {
+                        do_xembed();
+                    }
+                    break;
+                // We want to grab keyboard input focus when the user hovers
+                // over our embedded Wine window AND that window is a child of
+                // the currently active window. This ensures that the behavior
+                // is similar to what you'd expect of a native application,
+                // without grabbing input focus when accidentally hovering over
+                // a yabridge window in the background. The `FocusIn` is needed
+                // for when returning to the main plugin window after closing a
+                // dialog, since that often won't trigger an `EnterNotify'.
+                case XCB_ENTER_NOTIFY:
+                case XCB_FOCUS_IN:
+                    if (!use_xembed) {
+                        fix_local_coordinates();
+                    }
 
-        const bool window_mapped = reply->map_state == XCB_MAP_STATE_VIEWABLE;
-        free(reply);
-        if (!window_mapped) {
-            continue;
+                    // In case the WM somehow does not support
+                    // `_NET_ACTIVE_WINDOW`, a more naive focus grabbing method
+                    // implemented in the `WM_PARENTNOTIFY` handler will be
+                    // used.
+                    if (supports_ewmh_active_window() &&
+                        is_wine_window_active()) {
+                        set_input_focus(true);
+                    }
+                    break;
+                // When the user moves their mouse away from the Wine window
+                // _while the window provided by the host it is contained in is
+                // still active_, we will give back keyboard focus to that
+                // window. This for instance allows you to still use the search
+                // bar in REAPER's FX window. This distinction is important,
+                // because we do not want to mess with keyboard focus when
+                // hovering over the window while for instance a dialog is open.
+                case XCB_LEAVE_NOTIFY: {
+                    const auto event =
+                        reinterpret_cast<xcb_leave_notify_event_t*>(
+                            generic_event);
+
+                    // This extra check for the `NonlinearVirtual` detail is
+                    // important (see
+                    // https://www.x.org/releases/X11R7.5/doc/x11proto/proto.html
+                    // for more information on what this actually means). I've
+                    // only seen this issue with the Tokyo Dawn Records plugins,
+                    // but a plugin may create a popup window that acts as a
+                    // dropdown without actually activating that window (unlike
+                    // with an actual Win32 dropdown menu). Without this check
+                    // these fake dropdowns would immediately close when
+                    // hovering over them.
+                    if (event->detail != XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL &&
+                        supports_ewmh_active_window() &&
+                        is_wine_window_active()) {
+                        set_input_focus(false);
+                    }
+                } break;
+            }
+
+            free(generic_event);
         }
-
-        const uint8_t event_type =
-            generic_event->response_type & event_type_mask;
-        switch (event_type) {
-            // We're listening for `ConfigureNotify` events on the topmost
-            // window before the root window, i.e. the window that's actually
-            // going to get dragged around the by the user. In most cases this
-            // is the same as `parent_window`. When either this window gets
-            // moved, or when the user moves his mouse over our window, the
-            // local coordinates should be updated. The additional `EnterWindow`
-            // check is sometimes necessary for using multiple editor windows
-            // within a single plugin group.
-            case XCB_CONFIGURE_NOTIFY:
-                if (!use_xembed) {
-                    fix_local_coordinates();
-                }
-                break;
-            // Start the XEmbed procedure when the window becomes visible, since
-            // most hosts will only show the window after the plugin has
-            // embedded itself into it.
-            case XCB_VISIBILITY_NOTIFY:
-                if (use_xembed) {
-                    do_xembed();
-                }
-                break;
-            // We want to grab keyboard input focus when the user hovers over
-            // our embedded Wine window AND that window is a child of the
-            // currently active window. This ensures that the behavior is
-            // similar to what you'd expect of a native application, without
-            // grabbing input focus when accidentally hovering over a yabridge
-            // window in the background.
-            // The `FocusIn` is needed for when returning to the main plugin
-            // window after closing a dialog, since that often won't trigger an
-            // `EnterNotify'.
-            case XCB_ENTER_NOTIFY:
-            case XCB_FOCUS_IN:
-                if (!use_xembed) {
-                    fix_local_coordinates();
-                }
-
-                // In case the WM somehow does not support `_NET_ACTIVE_WINDOW`,
-                // a more naive focus grabbing method implemented in the
-                // `WM_PARENTNOTIFY` handler will be used.
-                if (supports_ewmh_active_window() && is_wine_window_active()) {
-                    set_input_focus(true);
-                }
-                break;
-            // When the user moves their mouse away from the Wine window _while
-            // the window provided by the host it is contained in is still
-            // active_, we will give back keyboard focus to that window. This
-            // for instance allows you to still use the search bar in REAPER's
-            // FX window. This distinction is important, because we do not want
-            // to mess with keyboard focus when hovering over the window while
-            // for instance a dialog is open.
-            case XCB_LEAVE_NOTIFY: {
-                const auto event =
-                    reinterpret_cast<xcb_leave_notify_event_t*>(generic_event);
-
-                // This extra check for the `NonlinearVirtual` detail is
-                // important (see
-                // https://www.x.org/releases/X11R7.5/doc/x11proto/proto.html
-                // for more information on what this actually means). I've only
-                // seen this issue with the Tokyo Dawn Records plugins, but a
-                // plugin may create a popup window that acts as a dropdown
-                // without actually activating that window (unlike with an
-                // actual Win32 dropdown menu). Without this check these fake
-                // dropdowns would immediately close when hovering over them.
-                if (event->detail != XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL &&
-                    supports_ewmh_active_window() && is_wine_window_active()) {
-                    set_input_focus(false);
-                }
-            } break;
-        }
-
-        free(generic_event);
+    } catch (const std::runtime_error& error) {
+        std::cerr << error.what() << std::endl;
     }
 }
 
@@ -472,7 +481,7 @@ void Editor::fix_local_coordinates() const {
     xcb_translate_coordinates_reply_t* translated_coordinates =
         xcb_translate_coordinates_reply(x11_connection.get(), translate_cookie,
                                         &error);
-    assert(!error);
+    THROW_X11_ERROR(error);
 
     xcb_configure_notify_event_t translated_event{};
     translated_event.response_type = XCB_CONFIGURE_NOTIFY;
@@ -498,12 +507,12 @@ void Editor::fix_local_coordinates() const {
 void Editor::set_input_focus(bool grab) const {
     const xcb_window_t focus_target = grab ? parent_window : topmost_window;
 
-    xcb_generic_error_t* err;
+    xcb_generic_error_t* error;
     const xcb_get_input_focus_cookie_t focus_cookie =
         xcb_get_input_focus(x11_connection.get());
     xcb_get_input_focus_reply_t* focus_reply =
-        xcb_get_input_focus_reply(x11_connection.get(), focus_cookie, &err);
-    assert(!err);
+        xcb_get_input_focus_reply(x11_connection.get(), focus_cookie, &error);
+    THROW_X11_ERROR(error);
 
     const xcb_window_t current_focus = focus_reply->focus;
     free(focus_reply);
@@ -566,7 +575,8 @@ bool Editor::is_wine_window_active() const {
                          active_window_property, XCB_ATOM_WINDOW, 0, 1);
     xcb_get_property_reply_t* property_reply =
         xcb_get_property_reply(x11_connection.get(), property_cookie, &error);
-    assert(!error);
+    THROW_X11_ERROR(error);
+
     const xcb_window_t active_window =
         *static_cast<xcb_window_t*>(xcb_get_property_value(property_reply));
     free(property_reply);
@@ -599,7 +609,8 @@ bool Editor::supports_ewmh_active_window() const {
                          active_window_property, XCB_ATOM_WINDOW, 0, 1);
     xcb_get_property_reply_t* property_reply =
         xcb_get_property_reply(x11_connection.get(), property_cookie, &error);
-    assert(!error);
+    THROW_X11_ERROR(error);
+
     bool active_window_property_exists =
         property_reply->format != XCB_ATOM_NONE;
     free(property_reply);
@@ -733,7 +744,7 @@ std::vector<xcb_window_t> find_ancestor_windows(
         xcb_query_tree(&x11_connection, starting_at);
     xcb_query_tree_reply_t* query_reply =
         xcb_query_tree_reply(&x11_connection, query_cookie, &error);
-    assert(!error);
+    THROW_X11_ERROR(error);
 
     xcb_window_t root = query_reply->root;
     while (query_reply->parent != root) {
@@ -744,7 +755,7 @@ std::vector<xcb_window_t> find_ancestor_windows(
         query_cookie = xcb_query_tree(&x11_connection, current_window);
         query_reply =
             xcb_query_tree_reply(&x11_connection, query_cookie, &error);
-        assert(!error);
+        THROW_X11_ERROR(error);
     }
 
     free(query_reply);
@@ -761,7 +772,7 @@ bool is_child_window_or_same(xcb_connection_t& x11_connection,
         xcb_query_tree(&x11_connection, child);
     xcb_query_tree_reply_t* query_reply =
         xcb_query_tree_reply(&x11_connection, query_cookie, &error);
-    assert(!error);
+    THROW_X11_ERROR(error);
 
     while (query_reply->parent != XCB_NONE) {
         if (current_window == parent) {
@@ -775,7 +786,7 @@ bool is_child_window_or_same(xcb_connection_t& x11_connection,
         query_cookie = xcb_query_tree(&x11_connection, current_window);
         query_reply =
             xcb_query_tree_reply(&x11_connection, query_cookie, &error);
-        assert(!error);
+        THROW_X11_ERROR(error);
     }
 
     free(query_reply);
@@ -810,7 +821,7 @@ xcb_window_t get_root_window(xcb_connection_t& x11_connection,
         xcb_query_tree(&x11_connection, window);
     xcb_query_tree_reply_t* query_reply =
         xcb_query_tree_reply(&x11_connection, query_cookie, &error);
-    assert(!error);
+    THROW_X11_ERROR(error);
 
     const xcb_window_t root = query_reply->root;
     free(query_reply);
@@ -846,3 +857,5 @@ ATOM get_window_class() {
 
     return window_class_handle;
 }
+
+#undef THROW_X11_ERROR
