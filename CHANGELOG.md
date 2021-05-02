@@ -11,57 +11,65 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - During VST2 audio processing, yabridge will now prefetch the current transport
-  information and the process level before sending the audio buffers to the
-  Windows VST2 plugin. This lets us cache this information during the audio
-  processing call, which significantly reduces the overhead of bridging VST2
-  plugins by avoiding one or more otherwise mandatory back and forth function
-  call between yabridge's plugin and the Wine plugin host. This has an even
-  greater impact on plugins like _SWAM Cello_ that request this information
-  repeatedly over the course of a single audio processing cycle. Previously
-  yabridge had a `cache_time_info` compatibility option to mitigate the
-  performance hit for those plugins, but this new caching behaviour supercedes
-  that.
+  information and process level before sending the audio buffers over to the
+  Windows VST2 plugin. This lets us cache this information on the Wine side
+  during the audio processing call, which significantly reduces the overhead of
+  bridging VST2 plugins by avoiding one or more otherwise mandatory back and
+  forth function call between yabridge's native plugin and the Wine plugin host.
+  This considerably reduces the overhead of bridging _MeldaProduction_ VST2
+  plugins, and it has an even greater impact on plugins like _SWAM Cello_ that
+  request this information repeatedly over the course of a single audio
+  processing cycle. Previously yabridge had a `cache_time_info` compatibility
+  option to mitigate the performance hit for those plugins, but this new caching
+  behaviour supercedes that.
 - We now always force the CPU's flush-to-zero flag to be set when processing
-  audio. Most plugins will already do this themselves, but plugins like _Kush
+  audio. Most plugins will already do this by themselves, but plugins like _Kush
   Audio REDDI_ and _Expressive E Noisy_ that don't will otherwise suffer from
-  extreme DSP usage increases when processing almost silent audio.
+  extreme DSP usage when processing almost silent audio.
 - Added a new [compatibility
   option](https://github.com/robbert-vdh/yabridge#compatibility-options) to hide
-  the name of the DAW you're using for a plugin. This can be useful with plugins
-  that have undesirable or broken DAW-specific behaviour. See the [known
+  the name of the DAW you're using. This can be useful with plugins that have
+  undesirable or broken DAW-specific behaviour. See the [known
   issues](https://github.com/robbert-vdh/yabridge#runtime-dependencies-and-known-issues)
   section of the readme for more information on when this may be useful.
-- Yabridge would always try to gracefully shut down the Wine plugin host
-  processes when the native host crashes or gets killed for whatever reason, but
-  this did not always happen if the crash occurred before the bridged plugin has
-  finished initializing because of the way Unix Domain Sockets work. In that
-  specific situation the `yabridge-host.exe` process would be left running
-  indefinitely, and that might have also prevented you from being able to start
-  your DAW depending on the DAW. To prevent any more dangling processes,
-  yabridge's Wine plugin hosts now have a watchdog that periodically checks
-  whether the original process that spawned the bridges is still running. If it
-  detects that the process is no longer alive, yabridge will close the sockets
-  and shut down the bridged plugin to prevent any dangling processes from
-  sticking around.
+- Yabridge now uses a watchdog timer to prevent rare instances where Wine
+  processes would be left running after the native host has crashed or got
+  forcefully terminated. By design yabridge would always try to gracefully shut
+  down its Wine processes when native host has crashed and the sockets become
+  unavailable, but this did not always happen if the crash occurred before the
+  bridged plugin has finished initializing because of the way Unix Domain
+  Sockets work. In that specific situation the `yabridge-host.exe` process would
+  be left running indefinitely, and depending on your DAW that might have also
+  prevented you from restarting your DAW. To prevent any more dangling
+  processes, yabridge's Wine plugin hosts now have a watchdog timer that
+  periodically checks whether the original process that spawned the bridges is
+  still running. If it detects that the process is no longer alive, yabridge
+  will close the sockets and shut down the bridged plugin to prevent any more
+  dangling processes from sticking around.
 
 ### Changed
 
+- Most common VST2 functions that don't have any arguments are now handled
+  explicilty. Yabridge can automatically support most common VST2 functions by
+  simply inspecting the function arguments and handling those accordingly. This
+  works practically everywhere, but _Plugsound Free_ by UVI would sometimes pass
+  unreadable function arguments to functions that weren't supposed to have any
+  arguments, causing yabridge to crash. Explicitly handling those functions
+  should prevent similar situations from happening in the future.
+- Yabridge will now try to bypass VST3 connection proxies if possible. Instead
+  of connecting two VST3 plugin objects directly, **Ardour** and **Mixbus**
+  place a connection proxy between the two objects so they can only interact
+  through the DAW. In the past yabridge has always honored this by proxying the
+  host's connection proxy, but this causes difficult situations with plugins
+  that actively communicate over these proxies from the GUI thread, like the
+  _FabFilter_ plugins. Instead of trying to proxy these proxies, yabridge will
+  now try to bypass the proxies and connect the objects directly instead, only
+  falling back to proxying the proxy when that's not possible.
+- Compile times have been slightly lowered by compiling most of the Wine plugin
+  host into static libraries first.
 - When building the package from source, the targetted Wine version now gets
   printed at configure-time. This can make it a bit easier to diagnose
   Wine-related compilation issues.
-- Yabridge has always automatically handled most common VST2 functions by simply
-  inspecting the argument types. This works practically everywhere, but
-  _Plugsound Free_ by UVI would pass unreadable function arguments to functions
-  that weren't not supposed to have any arguments, causing yabridge to crash. To
-  prevent similar situations from happening in the future, yabridge now
-  specifically handles most common VST2 functions that don't have a data
-  argument.
-- Instead of trying to proxy VST3 connection point proxies used by the host,
-  yabridge will now first try to bypass the proxy instead, only falling back to
-  proxying the proxy when that's not possible. This only affects Ardour and
-  Mixbus. This greatly improves compatibility with _FabFilter_ plugins in those
-  DAWs.
-- The build has been slightly slimmed down using static libraries.
 
 ### Removed
 
@@ -73,56 +81,59 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- In certain rare circumstances, closing a plugin editor would trigger an X11
-  error and crash the Wine plugin host and with that likely the entire DAW. This
-  happened because Wine would try to destroy a window that had already been
-  destroyed. This could happen in Renoise and to a lesser degree in REAPER with
-  plugins that take a while to close their editors, such as the iZotope Rx
-  plugins. We now explicitly reparent the window to back the root window first
-  before deferring the window closing. This should fix the issue, while still
-  keeping editor closing nice and snappy.
-- Allow plugin group host processes to shut down by themselves if it doesn't get
-  a request to host any plugins. This can happen when the DAW gets killed after
+- Fixed rare X11 errors that could occur when closing a plugin's editor. In
+  certain rare circumstances, closing a plugin editor would trigger an X11 error
+  and crash the Wine plugin host, and with that likely the entire DAW. This
+  happened because Wine would try to destroy the window after it had already
+  been destroyed. This could happen in Renoise and to a lesser degree in REAPER
+  with plugins that take a while to close their editors, such as the _iZotope
+  Rx_ plugins. We now explicitly reparent the window to back the root window
+  first before deferring the window closing. This should fix the issue, while
+  still keeping editor closing nice and snappy.
+- Plugin group host processes now shut down by themselves if they don't get a
+  request to host any plugins. This can happen when the DAW gets killed after
   starting the group host process but before the native yabridge plugins
-  requests the group host process to host a plugin.
-- Prevented latency introducing plugins VST3 from causing **Ardour** and
-  **Mixbus** to freeze when loading the plugin. This for example prevents
-  _Neural DSP Darkglass_ from freezing when used under those DAWs.
+  requests the group host process to host a plugin. Otherwise this would result
+  in a `yabridge-group.exe` process hanging around indefinitely.
+- Fixed latency introducing plugins VST3 from causing **Ardour** and **Mixbus**
+  to freeze when loading the plugin. This stops _Neural DSP Darkglass_ from
+  freezing when used under those DAWs.
 - Fixed _FabFilter_ VST3 plugins freezing in **Ardour** and **Mixbus** when
-  trying to duplicate existing instances of the plugin while the GUI editor is
-  open.
+  trying to duplicate existing instances of the plugin after the editor GUI has
+  been opened.
 - Fixed VST3 plugins freezing in **Ardour** and **Mixbus** when the plugin tries
   to automate a parameter while loading a preset.
 - Fixed _Voxengo_ VST3 plugins freezing in **Ardour** and **Mixbus** when
   loading a project or when duplicating the plugin instances.
 - Fixed potential X11 errors resulting in assertion failures and crashes in
-  **Ardour** and **Mixbus** by ignoring X11 events after those hosts hides the
-  editor window.
-- Fixed potential freezing when loading a VST3 preset that tries to resize an
-  open editor window.
+  **Ardour** and **Mixbus** caused by those hosts hiding a plugin's editor
+  window.
+- Fixed saving and loading _iZotope Rx7_ plugin state in **Bitwig Studio**.
 - Fixed a regression from yabridge 3.1.0 where **REAPER** would freeze when opening
   a VST3 plugin context menu.
-- Fixed another potential freezing issue in **REAPER** that could happen when the
-  when the plugin resizes itself while sending a parameter change to the host,
-  if REAPER's 'disable saving full plug-in state' is not disabled.
-- Fixed saving and loading _iZotope Rx7_ plugin state in **Bitwig Studio**.
+- Fixed another potential freezing issue in **REAPER** that could happen when
+  the plugin resizes itself while sending a parameter change to the host and the
+  'disable saving full plug-in state' option has not been disabled.
+- Fixed potential freeze when loading a VST3 while the editor is open when the
+  plugin tries to resize the open editor window based on that preset.
 - Fixed a potential assertion failure when setting VST3 preset data. This would
   depend on the `libstdc++` version used to built yabridge with.
-- _PSPaudioware InifniStrip_ would fail to initialize because the plugin expects
-  the host to always be using Microsoft COM and it won't initialize it by
+- Fixed _PSPaudioware InifniStrip_ failing to initialize. The plugin expects the
+  host to always be using Microsoft COM, and it doesn't try to initialize it by
   itself. InfiniStrip loads as expected now.
-- _Native Instruments' FM7_ would crash when processing MIDI. As a fix, MIDI
-  events are now deallocated later then when they normally would have to be.
+- Fixed _Native Instruments' FM7_ crashing when processing MIDI. In order to fix
+  this, MIDI events are now deallocated later then when they normally would have
+  to be.
 - Fixed extreme DSP usage increases in _Kush Audio REDDI_ and _Expressive E
-  Noisy_ caused by denormals.
+  Noisy_ due to denormals.
 - Fixed the VST3 version of _W. A. Production ImPerfect_ from crashing during
   audio setup.
 - Fixed _UVI Plugsound Free_ crashing during initialization.
+- Fixed the Wine version detection when using a custom `WINELOADER`.
+- Fixed incorrect logging output for cached VST3 function calls.
 - Because of the new transport information prefetching, the excessive DSP usage
   in _SWAM Cello_ is now been fixed without requiring any manual compatibility
   options.
-- Fixed the Wine version detection when using a custom `WINELOADER`.
-- Fixed incorrect logging output for cached VST3 function calls.
 
 ## [3.1.0] - 2021-04-15
 
