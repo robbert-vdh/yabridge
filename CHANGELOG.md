@@ -100,9 +100,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   editor window.
 - Fixed potential freezing when loading a VST3 preset that tries to resize an
   open editor window.
-- Fixed a regression from yabridge 3.1.0 where REAPER would freeze when opening
+- Fixed a regression from yabridge 3.1.0 where **REAPER** would freeze when opening
   a VST3 plugin context menu.
-- Fixed another potential freezing issue in REAPER that could happen when the
+- Fixed another potential freezing issue in **REAPER** that could happen when the
   when the plugin resizes itself while sending a parameter change to the host,
   if REAPER's 'disable saving full plug-in state' is not disabled.
 - Fixed a potential assertion failure when setting VST3 preset data. This would
