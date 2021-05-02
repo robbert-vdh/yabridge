@@ -362,32 +362,14 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setState(Steinberg::IBStream* state) {
     if (state) {
         // Since both interfaces contain this function, this is used for both
         // `IComponent::setState()` as well as `IEditController::setState()`
-        const Vst3PluginProxy::SetState message{.instance_id = instance_id(),
-                                                .state = state};
-
         // NOTE: This will likely be called from the GUI thread, and some
         //       plugins will try to resize as part of setting their new state.
         //       That `IPlugFrame::resizeView()` _also_ has to be handled on the
         //       GUI thread. So if the GUI is active, we'll use the mutual
         //       recursion mechanism to allow this resize call to also be
         //       performed from the GUI thread.
-        if (last_created_plug_view_active) {
-            return last_created_plug_view->send_mutually_recursive_message(
-                std::move(message));
-        } else if (connected_instance_id) {
-            // We should also be able to handle the above situation when a
-            // `setState()` on a processor triggers a resize coming from the
-            // edit controller. To do that, we'll also check if the connected
-            // instance has an active plug view.
-            Vst3PluginProxyImpl& other_instance =
-                bridge.plugin_proxies.at(*connected_instance_id).get();
-            if (other_instance.last_created_plug_view_active) {
-                return other_instance.last_created_plug_view
-                    ->send_mutually_recursive_message(std::move(message));
-            }
-        }
-
-        return bridge.send_message(std::move(message));
+        return maybe_send_mutually_recursive_message(Vst3PluginProxy::SetState{
+            .instance_id = instance_id(), .state = state});
     } else {
         bridge.logger.log(
             "WARNING: Null pointer passed to "
@@ -400,8 +382,15 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
     if (state) {
         // Since both interfaces contain this function, this is used for both
         // `IComponent::getState()` as well as `IEditController::getState()`
+        // NOTE: This will likely be called from the GUI thread, if the plugin
+        //       somehow ends up sending a resize while this happens, we should
+        //       end up in a deadlock. Normally this wouldn't be an issue, but
+        //       REAPER will fetch the complete plugin state from time to time,
+        //       so when changing a parameter also resizes the GUI we can run
+        //       into a situation where we need mutually recursive function
+        //       calls.
         const GetStateResponse response =
-            bridge.send_message(Vst3PluginProxy::GetState{
+            maybe_send_mutually_recursive_message(Vst3PluginProxy::GetState{
                 .instance_id = instance_id(), .state = state});
 
         assert(response.state.write_back(state) == Steinberg::kResultOk);

@@ -114,6 +114,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed _UVI Plugsound Free_ crashing during initialization.
 - Fixed potential freezing when loading a VST3 preset that tries to resize an
   open editor window.
+- Fixed another potential freezing issue in REAPER that could happen when the
+  when the plugin resizes itself while sending a parameter change to the host,
+  if REAPER's 'disable saving full plug-in state' is not disabled.
 - Because of the new transport information prefetching, the excessive DSP usage
   in _SWAM Cello_ is now been fixed without requiring any manual compatibility
   options.
