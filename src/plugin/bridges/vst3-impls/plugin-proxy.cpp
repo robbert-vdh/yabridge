@@ -293,7 +293,7 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
                     bridge.logger.log_request(true, request);
                 if (log_response) {
                     bridge.logger.log_response(
-                        true,
+                        false,
                         YaComponent::GetBusInfo::Response{
                             .result = Steinberg::kResultOk, .bus = it->second},
                         true);

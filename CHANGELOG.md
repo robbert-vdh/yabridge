@@ -118,6 +118,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   in _SWAM Cello_ is now been fixed without requiring any manual compatibility
   options.
 - Fixed the Wine version detection when using a custom `WINELOADER`.
+- Fixed incorrect logging output for cached VST3 function calls.
 
 ## [3.1.0] - 2021-04-15
 
