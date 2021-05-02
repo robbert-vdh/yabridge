@@ -468,12 +468,14 @@ tresult PLUGIN_API Vst3PluginProxyImpl::connect(IConnectionPoint* other) {
             Vst3ConnectionPointProxy::ConstructArgs(other, instance_id())});
 }
 
-tresult PLUGIN_API Vst3PluginProxyImpl::disconnect(IConnectionPoint* other) {
-    // See `Vst3PluginProxyImpl::connect()`
-    if (auto other_proxy = dynamic_cast<Vst3PluginProxy*>(other)) {
+tresult PLUGIN_API
+Vst3PluginProxyImpl::disconnect(IConnectionPoint* /*other*/) {
+    // See `Vst3PluginProxyImpl::connect()`, if we directly connected two
+    // instances we'll also disconnect them again
+    if (connected_instance_id) {
         return bridge.send_message(YaConnectionPoint::Disconnect{
             .instance_id = instance_id(),
-            .other_instance_id = other_proxy->instance_id()});
+            .other_instance_id = *connected_instance_id});
     } else {
         const tresult result = bridge.send_message(
             YaConnectionPoint::Disconnect{.instance_id = instance_id(),
