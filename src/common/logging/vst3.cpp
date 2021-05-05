@@ -1399,6 +1399,12 @@ void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
     log_response_base(is_host_vst, [&](auto& message) { message << "ACK"; });
 }
 
+void Vst3Logger::log_response(bool is_host_vst,
+                              const UniversalTResult& result) {
+    log_response_base(is_host_vst,
+                      [&](auto& message) { message << result.string(); });
+}
+
 void Vst3Logger::log_response(
     bool is_host_vst,
     const Vst3PluginFactoryProxy::ConstructArgs& args) {
