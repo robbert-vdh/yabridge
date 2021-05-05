@@ -156,9 +156,11 @@ Vst3PluginProxyImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {
-    // REAPER will repeatedly query the plugin for its bus information on every
-    // processing cycle. Because this really adds up in terms of latency we
-    // sadly have to deviate from yabridge's principles and implement a cache
+    // REAPER used to repeatedly query the plugin for its bus information on
+    // every processing cycle. Because this really adds up in terms of latency
+    // we sadly have to deviate from yabridge's principles and implement a
+    // cache. We keep this in because it can still help performance a little in
+    // some DAWs.
     {
         std::lock_guard lock(processing_bus_cache_mutex);
         if (state) {
@@ -238,8 +240,6 @@ Vst3PluginProxyImpl::getBusCount(Steinberg::Vst::MediaType type,
     const auto request = YaComponent::GetBusCount{
         .instance_id = instance_id(), .type = type, .dir = dir};
 
-    // During processing we'll cache this info to work around an implementation
-    // issue in REAPER
     std::tuple<Steinberg::Vst::MediaType, Steinberg::Vst::BusDirection> args{
         type, dir};
     {
@@ -280,8 +280,6 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
     const auto request = YaComponent::GetBusInfo{
         .instance_id = instance_id(), .type = type, .dir = dir, .index = index};
 
-    // During processing we'll cache this info to work around an implementation
-    // issue in REAPER
     std::tuple<Steinberg::Vst::MediaType, Steinberg::Vst::BusDirection, int32>
         args{type, dir, index};
     {
@@ -347,10 +345,10 @@ Vst3PluginProxyImpl::activateBus(Steinberg::Vst::MediaType type,
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setActive(TBool state) {
-    // HACK: Even though we have implemented this cache specifically for REAPER,
-    //       REAPER doesn't use `IComponent::setProcessing` properly and calls
-    //       it before doing setting up input and output busses. So now our
-    //       workaround to get acceptable performance in REAPER needs a
+    // HACK: Even though we initially implemented this cache specifically for
+    //       REAPER, REAPER doesn't use `IComponent::setProcessing` properly and
+    //       calls it before doing setting up input and output busses. So now
+    //       our workaround to get acceptable performance in REAPER needs a
     //       workaround of its ownn.  Great!
     clear_bus_cache();
 
@@ -552,8 +550,6 @@ int32 PLUGIN_API Vst3PluginProxyImpl::getParameterCount() {
     const auto request =
         YaEditController::GetParameterCount{.instance_id = instance_id()};
 
-    // We'll cache this information to work around an issue in REAPER, see
-    // `parameter_info_cache`
     {
         std::lock_guard lock(parameter_info_cache_mutex);
         if (parameter_info_cache.parameter_count) {
@@ -586,8 +582,6 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
     const auto request = YaEditController::GetParameterInfo{
         .instance_id = instance_id(), .param_index = paramIndex};
 
-    // We'll cache this information to work around an issue in REAPER, see
-    // `parameter_info_cache`
     {
         std::lock_guard lock(parameter_info_cache_mutex);
         if (auto it = parameter_info_cache.parameter_info.find(paramIndex);

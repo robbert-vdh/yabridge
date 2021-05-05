@@ -21,22 +21,10 @@
 
 /**
  * Here we pass though all function calls made by the host to the Windows VST3
- * plugin. We sadly had to deviate from yabridge's 'one-to-one passthrough'
- * philosphy in two places:
- *
- * 1. We cache parameter information, and these caches are flushed whenever the
- *    plugin requests a restart. This is needed because REAPER repeatedly
- *    queries this information four times per second for all of a plugin's
- *    parameters while the editor is open. The issue has been reported and it's
- *    been fixed in REAPER's current pre-release builds (as of February 2021).
- *    Bitwig also seems to query this information twice on startup, so the cache
- *    is likely also useful there.
- * 2. We also cache input and output bus counts and information. REAPER would
- *    query this information for every I/O bus before processing audio, which
- *    ended up increasing audio processing latency considerably for no reason
- *    (since this information cannot change during processing). REAPER has fixed
- *    this issue as of a pre-release build in February 2021. JUCE based hosts
- *    like Carla also seem to query the bus counts every processing cycle.
+ * plugin. We had to deviate from yabridge's 'one-to-one passthrough' philosphy
+ * by implementing a few caches for easily memoizable functions that got called
+ * so many times by DAWs that it started to hurt performance. These are
+ * documented near the bottom of this class.
  */
 class Vst3PluginProxyImpl : public Vst3PluginProxy {
    public:
@@ -502,12 +490,14 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      */
     std::atomic_size_t current_context_menu_id;
 
+    // Caches
+
     /**
      * A cache for `IAudioProcessor::getBusCount()` and
-     * `IAudioProcessor::getBusInfo()` to work around an implementation issue in
-     * REAPER. If during processing a plugin returns a value for one of these
-     * function calls, we'll memoize the function call using the maps defined
-     * below.
+     * `IAudioProcessor::getBusInfo()`. We'll memoize the function calls for
+     * these two functions while processing audio (since at that time these
+     * values should be immutable until the plugin tells the host that this
+     * information has changed).
      *
      * @see processing_bus_cache
      */
@@ -524,27 +514,25 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     };
 
     /**
-     * To work around some behaviour in REAPER where it will repeatedly query
-     * the same bus information for bus during every processing cycle, we'll
-     * cache this information during processing. Otherwise this will cause
-     * `input_busses + output_busses + 2` extra unnecessary back and forths for
-     * every processing cycle. This can really add up for plugins with 16, or
-     * even 32 outputs.
+     * This cache originally intended because REAPER would query this
+     * information at the start of every audio processing cycle. This would hurt
+     * performance considerably if a plugin has many input or output busses.
+     * This issue has since been fixed, but some DAWs still query this
+     * information repeatedly so it seems like a good idea to keep the caches
+     * in.
      *
-     * Since this information cannot change during processing, this will not
-     * contain a value while the plugin is not processing audio.
+     * Since this information is immutable during audio processing, this cache
+     * will only be available at those times.
      *
-     * HACK: See the doc comment on this class
+     * @see clear_bus_cache
      */
     std::optional<BusInfoCache> processing_bus_cache;
     std::mutex processing_bus_cache_mutex;
 
     /**
      * A cache for `IEditController::getParameterCount()` and
-     * `IEditController::getParameterInfo()` to work around an implementation
-     * issue in REAPER. In some situations REAPER will query this information
-     * four times a second, and all of this back and forth communication really
-     * adds up when a plugin starts having thousands of parameters.
+     * `IEditController::getParameterInfo()`. We'll memoize these function calls
+     * until the plugin tells the host that parameter information has changed.
      *
      * @see parameter_cache
      */
@@ -554,13 +542,16 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     };
 
     /**
-     * A cache for the parameter count and infos. This is necessary because in
-     * some situations REAPER queries this information four times per second
-     * even though it cannot change. This happens when using the plugin bridges,
-     * but it can also happen in some other cases so I'm not quite sure what the
-     * trigger is.
+     * A cache for the parameter count and infos. This used to be necessary
+     * because in some situations REAPER would query this information many times
+     * times per second even though it cannot change unless the plugin tells the
+     * host that it has. This issue has since been fixed, but we'll keep it in
+     * because some other hosts also query this information more than once.
      *
-     * HACK: See the doc comment on this class
+     * The cache will be cleared when the plugin tells the host that some of its
+     * parameter values have changed.
+     *
+     * @see clear_parameter_cache
      */
     ParameterInfoCache parameter_info_cache;
     std::mutex parameter_info_cache_mutex;
