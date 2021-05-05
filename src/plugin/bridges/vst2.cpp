@@ -579,7 +579,7 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     // We'll synchronize the scheduling priority of the audio thread on the Wine
     // plugin host with that of the host's audio thread every once in a while
     std::optional<int> new_realtime_priority;
-    const time_t now = std::time(nullptr);
+    const time_t now = time(nullptr);
     if (now > last_audio_thread_priority_synchronization +
                   audio_thread_priority_synchronization_interval) {
         new_realtime_priority = get_realtime_priority();

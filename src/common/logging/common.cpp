@@ -104,7 +104,7 @@ void Logger::log(const std::string& message) {
 
     if (prefix_timestamp) {
         const auto current_time = std::chrono::system_clock::now();
-        const std::time_t timestamp =
+        const time_t timestamp =
             std::chrono::system_clock::to_time_t(current_time);
 
         // How did C++ manage to get time formatting libraries without a way to
