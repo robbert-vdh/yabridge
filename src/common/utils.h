@@ -196,3 +196,53 @@ class ScopedValueCache {
      */
     std::optional<T> value;
 };
+
+/**
+ * Temporarily cache a value for certain number of seconds.
+ *
+ * @note This uses `time()` for performance reasons, and the exact lifetime of
+ *   the cache will this be very imprecise.
+ *
+ * @note This class provides no thread safety guarantees. If thread safety is
+ *   needed, then you should use mutexes around the getter and the setter.
+ */
+template <typename T>
+class TimedValueCache {
+   public:
+    /**
+     * Return the cached value, if we're currently caching a value. Will return
+     * a null pointer when this is not the case.
+     */
+    const T* get() const {
+        const time_t now = time(nullptr);
+        return now <= valid_until ? &value : nullptr;
+    }
+
+    /**
+     * Return the cached value, if we're currently caching a value. Will return
+     * a null pointer when this is not the case. The lifetime for the value will
+     * be reset to `lifetime_seconds` seconds from now, if the value was still
+     * active.
+     */
+    const T* get_and_keep_alive(unsigned int lifetime_seconds) {
+        const time_t now = time(nullptr);
+        if (now <= valid_until) {
+            valid_until = now + lifetime_seconds;
+            return &value;
+        } else {
+            return nullptr;
+        }
+    }
+
+    /**
+     * Set the cached value for `lifetime_seconds` seconds.
+     */
+    void set(T value, unsigned int lifetime_seconds) {
+        this->value = value;
+        valid_until = time(nullptr) + lifetime_seconds;
+    }
+
+   private:
+    T value;
+    time_t valid_until;
+};
