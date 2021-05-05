@@ -244,8 +244,30 @@ Vst3PlugViewProxyImpl::setFrame(Steinberg::IPlugFrame* frame) {
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::canResize() {
-    return send_mutually_recursive_message(
-        YaPlugView::CanResize{.owner_instance_id = owner_instance_id()});
+    const auto request =
+        YaPlugView::CanResize{.owner_instance_id = owner_instance_id()};
+
+    {
+        std::lock_guard lock(can_resize_cache_mutex);
+        if (const tresult* result = can_resize_cache.get_and_keep_alive(5)) {
+            const bool log_response = bridge.logger.log_request(true, request);
+            if (log_response) {
+                bridge.logger.log_response(
+                    true, YaPlugView::CanResize::Response(*result));
+            }
+
+            return *result;
+        }
+    }
+
+    const UniversalTResult result = send_mutually_recursive_message(request);
+
+    {
+        std::lock_guard lock(can_resize_cache_mutex);
+        can_resize_cache.set(result, 5);
+    }
+
+    return result;
 }
 
 tresult PLUGIN_API

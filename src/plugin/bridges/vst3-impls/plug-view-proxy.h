@@ -301,4 +301,20 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
      * This will be an `std::nullopt` if the hostdoes not support `IRunLoop`.
      */
     std::optional<RunLoopTasks> run_loop_tasks;
+
+    // Caches
+
+    /**
+     * During resizing the host will likely constantly ask the plugin if it can
+     * be freely resized. Even if it is technically possible, I'm not aware of
+     * any plugins that change from not being able arbitrarily resizeable to
+     * being able to be resized like this. The reason why we might want to cache
+     * `IPlugView::canResize()` is because this function has to be run on the
+     * GUI thread, just like `IPlugView::onSize()` and
+     * `IPlugView::checkSizeConstraint`. Everything running in lockstep makes
+     * resizing a lot laggier than they would have to be, so as a compromise
+     * we'll remember this value for the duration of the resize.
+     */
+    TimedValueCache<tresult> can_resize_cache;
+    std::mutex can_resize_cache_mutex;
 };

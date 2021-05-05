@@ -1400,9 +1400,14 @@ void Vst3Logger::log_response(bool is_host_vst, const Ack&) {
 }
 
 void Vst3Logger::log_response(bool is_host_vst,
-                              const UniversalTResult& result) {
-    log_response_base(is_host_vst,
-                      [&](auto& message) { message << result.string(); });
+                              const UniversalTResult& result,
+                              bool from_cache) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << result.string();
+        if (from_cache) {
+            message << " (from cache)";
+        }
+    });
 }
 
 void Vst3Logger::log_response(

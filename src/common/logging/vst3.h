@@ -242,7 +242,9 @@ class Vst3Logger {
                      const YaUnitHandler2::NotifyUnitByBusChange&);
 
     void log_response(bool is_host_vst, const Ack&);
-    void log_response(bool is_host_vst, const UniversalTResult&);
+    void log_response(bool is_host_vst,
+                      const UniversalTResult&,
+                      bool from_cache = false);
     void log_response(bool is_host_vst,
                       const Vst3PluginFactoryProxy::ConstructArgs&);
     void log_response(
