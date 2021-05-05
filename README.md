@@ -503,9 +503,9 @@ have permission to do so yet. Examples of this are:
   VST3 interfaces. All of these extensions have been superseded by official VST3
   interfaces in later versions of the VST3 SDK.
 - VST3 plugin support for
-  [ARA](https://www.celemony.com/en/service1/about-celemony/technologies). These
-  interfaces are currently closed source so we cannot yet implement them, but
-  this may change soon.
+  [ARA](https://www.celemony.com/en/service1/about-celemony/technologies). The
+  ARA SDK has recently been [open source](https://github.com/Celemony/ARA_SDK),
+  so we can now finally start working on this.
 
 ## Troubleshooting common issues
 
