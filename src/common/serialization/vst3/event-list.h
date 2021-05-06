@@ -213,15 +213,23 @@ struct YaEvent {
 class YaEventList : public Steinberg::Vst::IEventList {
    public:
     /**
-     * Default constructor with an empty event list. The plugin can use this to
-     * output data.
+     * We only provide a default constructor here, because we need to fill the
+     * existing object with new events every processing cycle to avoid
+     * reallocating a new object every time.
      */
     YaEventList();
 
     /**
-     * Read data from an existing `IEventList` object.
+     * Remove all events. Used when a null pointer gets passed to the input
+     * events field, and so the plugin can output its own events if the host
+     * supports this.
      */
-    YaEventList(Steinberg::Vst::IEventList& event_list);
+    void clear();
+
+    /**
+     * Read data from an `IEventList` object into this existing object.
+     */
+    void repopulate(Steinberg::Vst::IEventList& event_list);
 
     ~YaEventList();
 

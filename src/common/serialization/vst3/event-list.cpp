@@ -174,19 +174,24 @@ Steinberg::Vst::Event YaEvent::get() const {
     return event;
 }
 
-YaEventList::YaEventList(){FUNKNOWN_CTOR}
-
-YaEventList::YaEventList(Steinberg::Vst::IEventList& event_list) {
+YaEventList::YaEventList() {
     FUNKNOWN_CTOR
+}
 
+void YaEventList::clear() {
+    events.clear();
+}
+
+void YaEventList::repopulate(Steinberg::Vst::IEventList& event_list) {
+    // Copy over all events. Everything gets converted to `YaEvent`s. We sadly
+    // can't construct these in place because we don't know the event type yet.
+    events.clear();
     events.reserve(event_list.getEventCount());
-
-    // Copy over all events. Everything gets converted to `YaEvent`s.
-    Steinberg::Vst::Event event;
     for (int i = 0; i < event_list.getEventCount(); i++) {
         // We're skipping the `kResultOk` assertions here
+        Steinberg::Vst::Event event;
         event_list.getEvent(i, event);
-        events.push_back(event);
+        events.emplace_back(event);
     }
 }
 

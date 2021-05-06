@@ -31,15 +31,23 @@
 class YaParameterChanges : public Steinberg::Vst::IParameterChanges {
    public:
     /**
-     * Default constructor with an empty parameter changes list. The plugin can
-     * use this to output data.
+     * We only provide a default constructor here, because we need to fill the
+     * existing object with new data every processing cycle to avoid
+     * reallocating a new object every time.
      */
     YaParameterChanges();
 
     /**
-     * Read data from an existing `IParameterChanges` object.
+     * Remove all parameter changes. Used when a null pointer gets passed to the
+     * input parameters field, and so the plugin can output its own parameter
+     * changes.
      */
-    YaParameterChanges(Steinberg::Vst::IParameterChanges& original_queues);
+    void clear();
+
+    /**
+     * Read data from an `IParameterChanges` object into this existing object.
+     */
+    void repopulate(Steinberg::Vst::IParameterChanges& original_queues);
 
     ~YaParameterChanges();
 

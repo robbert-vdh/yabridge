@@ -39,14 +39,18 @@
 class YaAudioBusBuffers {
    public:
     /**
-     * A default constructor does not make any sense here since the actual data
-     * is a union, but we need a default constructor for bitsery.
+     * We only provide a default constructor here, because we need to fill the
+     * existing object with new audio data every processing cycle to avoid
+     * reallocating a new object every time.
      */
     YaAudioBusBuffers();
 
     /**
      * Create a new, zero initialize audio bus buffers object. Used to
      * reconstruct the output buffers during `YaProcessData::get()`.
+     *
+     * TODO: Replace with a function similar to `repopulate` that just reassigns
+     *       the existing buffers for the outputs created on the Wine side.
      */
     YaAudioBusBuffers(int32 sample_size,
                       size_t num_samples,
@@ -54,15 +58,15 @@ class YaAudioBusBuffers {
 
     /**
      * Copy data from a host provided `AudioBusBuffers` object during a process
-     * call. Constructed as part of `YaProcessData`. Since `AudioBusBuffers`
+     * call. Used in `YaProcessData::repopulate()`. Since `AudioBusBuffers`
      * contains an untagged union for storing single and double precision
      * floating point values, the original `ProcessData`'s `symbolicSampleSize`
      * field determines which variant of that union to use. Similarly the
      * `ProcessData`' `numSamples` field determines the extent of these arrays.
      */
-    YaAudioBusBuffers(int32 sample_size,
-                      int32 num_samples,
-                      const Steinberg::Vst::AudioBusBuffers& data);
+    void repopulate(int32 sample_size,
+                    int32 num_samples,
+                    const Steinberg::Vst::AudioBusBuffers& data);
 
     /**
      * Reconstruct the original `AudioBusBuffers` object passed to the
@@ -170,14 +174,21 @@ struct YaProcessDataResponse {
  */
 class YaProcessData {
    public:
+    /**
+     * Initialize the process data. We only provide a default constructor here,
+     * because we need to fill the existing object with new data every
+     * processing cycle to avoid reallocating a new object every time.
+     */
     YaProcessData();
 
     /**
      * Copy data from a host provided `ProcessData` object during a process
      * call. This struct can then be serialized, and `YaProcessData::get()` can
-     * then be used again to recreate the original `ProcessData` object.
+     * then be used again to recreate the original `ProcessData` object. This
+     * will avoid allocating unless it's absolutely necessary (e.g. when we
+     * receive more parameter changes than we've received in previous calls).
      */
-    YaProcessData(const Steinberg::Vst::ProcessData& process_data);
+    void repopulate(const Steinberg::Vst::ProcessData& process_data);
 
     /**
      * Reconstruct the original `ProcessData` object passed to the constructor

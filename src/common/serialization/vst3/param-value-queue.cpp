@@ -16,19 +16,22 @@
 
 #include "param-value-queue.h"
 
-YaParamValueQueue::YaParamValueQueue(){FUNKNOWN_CTOR}
-
-YaParamValueQueue::YaParamValueQueue(Steinberg::Vst::ParamID parameter_id)
-    : parameter_id(parameter_id){FUNKNOWN_CTOR}
-
-      // clang-format /really/ doesn't like these macros
-      YaParamValueQueue::YaParamValueQueue(Steinberg::Vst::IParamValueQueue &
-                                           original_queue)
-    : parameter_id(original_queue.getParameterId()),
-      queue(original_queue.getPointCount()) {
+YaParamValueQueue::YaParamValueQueue() {
     FUNKNOWN_CTOR
+}
+
+void YaParamValueQueue::clear_for_parameter(
+    Steinberg::Vst::ParamID parameter_id) {
+    this->parameter_id = parameter_id;
+    queue.clear();
+}
+
+void YaParamValueQueue::repopulate(
+    Steinberg::Vst::IParamValueQueue& original_queue) {
+    parameter_id = original_queue.getParameterId();
 
     // Copy over all points to our vector
+    queue.resize(original_queue.getPointCount());
     for (int i = 0; i < original_queue.getPointCount(); i++) {
         // We're skipping the assertions here and just assume that the function
         // returns `kResultOk`

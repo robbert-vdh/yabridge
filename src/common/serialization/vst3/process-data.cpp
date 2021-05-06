@@ -31,33 +31,44 @@ YaAudioBusBuffers::YaAudioBusBuffers(int32 sample_size,
                         num_channels,
                         std::vector<float>(num_samples, 0.0)))) {}
 
-YaAudioBusBuffers::YaAudioBusBuffers(
+void YaAudioBusBuffers::repopulate(
     int32 sample_size,
     int32 num_samples,
-    const Steinberg::Vst::AudioBusBuffers& data)
-    : silence_flags(data.silenceFlags) {
+    const Steinberg::Vst::AudioBusBuffers& data) {
+    silence_flags = data.silenceFlags;
+
     switch (sample_size) {
         case Steinberg::Vst::kSample64: {
-            std::vector<std::vector<double>> vector_buffers(data.numChannels);
+            if (!std::holds_alternative<std::vector<std::vector<double>>>(
+                    buffers)) {
+                buffers.emplace<std::vector<std::vector<double>>>();
+            }
+
+            std::vector<std::vector<double>>& vector_buffers =
+                std::get<std::vector<std::vector<double>>>(buffers);
+            vector_buffers.resize(data.numChannels);
             for (int channel = 0; channel < data.numChannels; channel++) {
                 vector_buffers[channel].assign(
                     &data.channelBuffers64[channel][0],
                     &data.channelBuffers64[channel][num_samples]);
             }
-
-            buffers = std::move(vector_buffers);
         } break;
         case Steinberg::Vst::kSample32:
         // I don't think they'll add any other sample sizes any time soon
         default: {
-            std::vector<std::vector<float>> vector_buffers(data.numChannels);
+            if (!std::holds_alternative<std::vector<std::vector<float>>>(
+                    buffers)) {
+                buffers.emplace<std::vector<std::vector<float>>>();
+            }
+
+            std::vector<std::vector<float>>& vector_buffers =
+                std::get<std::vector<std::vector<float>>>(buffers);
+            vector_buffers.resize(data.numChannels);
             for (int channel = 0; channel < data.numChannels; channel++) {
                 vector_buffers[channel].assign(
                     &data.channelBuffers32[channel][0],
                     &data.channelBuffers32[channel][num_samples]);
             }
-
-            buffers = std::move(vector_buffers);
         } break;
     }
 }
@@ -140,39 +151,62 @@ void YaProcessDataResponse::write_back_outputs(
 
 YaProcessData::YaProcessData() {}
 
-YaProcessData::YaProcessData(const Steinberg::Vst::ProcessData& process_data)
-    : process_mode(process_data.processMode),
-      symbolic_sample_size(process_data.symbolicSampleSize),
-      num_samples(process_data.numSamples),
-      outputs_num_channels(process_data.numOutputs),
-      // Even though `ProcessData::inputParamterChanges` is mandatory, the VST3
-      // validator will pass a null pointer here
-      input_parameter_changes(
-          process_data.inputParameterChanges
-              ? YaParameterChanges(*process_data.inputParameterChanges)
-              : YaParameterChanges()),
-      output_parameter_changes_supported(process_data.outputParameterChanges),
-      input_events(process_data.inputEvents ? std::make_optional<YaEventList>(
-                                                  *process_data.inputEvents)
-                                            : std::nullopt),
-      output_events_supported(process_data.outputEvents),
-      process_context(process_data.processContext
-                          ? std::make_optional<Steinberg::Vst::ProcessContext>(
-                                *process_data.processContext)
-                          : std::nullopt) {
+void YaProcessData::repopulate(
+    const Steinberg::Vst::ProcessData& process_data) {
+    // In this function and in every function we call, we should be careful to
+    // not use `push_back`/`emplace_back` anywhere. Resizing vectors and
+    // modifying them in place performs much better because that avoids
+    // destroying and creating objects most of the time.
+    process_mode = process_data.processMode;
+    symbolic_sample_size = process_data.symbolicSampleSize;
+    num_samples = process_data.numSamples;
+
+    // We'll make sure to not do any allocations here after the first processing
+    // cycle
+    inputs.resize(process_data.numInputs);
     for (int i = 0; i < process_data.numInputs; i++) {
-        inputs.emplace_back(symbolic_sample_size, num_samples,
-                            process_data.inputs[i]);
+        inputs[i].repopulate(symbolic_sample_size, num_samples,
+                             process_data.inputs[i]);
     }
 
-    // Fetch the number of channels for each output so we can recreate these
-    // buffers in the Wine plugin host
+    // We only store how many channels ouch output has so we can recreate the
+    // objects on the Wine side
+    outputs_num_channels.resize(process_data.numOutputs);
     for (int i = 0; i < process_data.numOutputs; i++) {
         outputs_num_channels[i] = process_data.outputs[i].numChannels;
+    }
+
+    // Even though `ProcessData::inputParamterChanges` is mandatory, the VST3
+    // validator will pass a null pointer here
+    if (process_data.inputParameterChanges) {
+        input_parameter_changes.repopulate(*process_data.inputParameterChanges);
+    } else {
+        input_parameter_changes.clear();
+    }
+
+    output_parameter_changes_supported = process_data.outputParameterChanges;
+
+    if (process_data.inputEvents) {
+        if (!input_events) {
+            input_events.emplace();
+        }
+        input_events->repopulate(*process_data.inputEvents);
+    } else {
+        input_events.reset();
+    }
+
+    output_events_supported = process_data.outputEvents;
+
+    if (process_data.processContext) {
+        process_context.emplace(*process_data.processContext);
+    } else {
+        process_context.reset();
     }
 }
 
 Steinberg::Vst::ProcessData& YaProcessData::get() {
+    // TODO: Also optimize this to make use of the reused objects
+
     // We'll have to transform out `YaAudioBusBuffers` objects into an array of
     // `AudioBusBuffers` object so the plugin can deal with them. These objects
     // contain pointers to those original objects and thus don't store any
@@ -191,6 +225,13 @@ Steinberg::Vst::ProcessData& YaProcessData::get() {
         YaAudioBusBuffers& buffers = outputs.emplace_back(
             symbolic_sample_size, num_samples, num_channels);
         outputs_audio_bus_buffers.push_back(buffers.get());
+    }
+
+    if (output_parameter_changes) {
+        output_parameter_changes->clear();
+    }
+    if (output_events) {
+        output_events->clear();
     }
 
     reconstructed_process_data.processMode = process_mode;

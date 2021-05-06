@@ -186,10 +186,8 @@ Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
         last_audio_thread_priority_synchronization = now;
     }
 
-    // TODO: Document
-    // TODO: Actually repopulate `process_data` with new data, right now this
-    //       assignment just destroys the old object and creates a new object.
-    process_data = data;
+    // We reuse this existing object to avoid allocations
+    process_data.repopulate(data);
 
     ProcessResponse response =
         bridge.send_audio_processor_message(YaAudioProcessor::Process{

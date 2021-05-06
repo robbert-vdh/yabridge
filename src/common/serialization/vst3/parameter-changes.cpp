@@ -16,17 +16,20 @@
 
 #include "parameter-changes.h"
 
-YaParameterChanges::YaParameterChanges(){FUNKNOWN_CTOR}
-
-YaParameterChanges::YaParameterChanges(
-    Steinberg::Vst::IParameterChanges& original_queues) {
+YaParameterChanges::YaParameterChanges() {
     FUNKNOWN_CTOR
+}
 
-    // Copy over all parameter changne queues. Everything gets converted to
-    // `YaParamValueQueue`s.
-    queues.reserve(original_queues.getParameterCount());
+void YaParameterChanges::clear() {
+    queues.clear();
+}
+
+void YaParameterChanges::repopulate(
+    Steinberg::Vst::IParameterChanges& original_queues) {
+    // Copy over all parameter changne queues
+    queues.resize(original_queues.getParameterCount());
     for (int i = 0; i < original_queues.getParameterCount(); i++) {
-        queues.push_back(*original_queues.getParameterData(i));
+        queues[i].repopulate(*original_queues.getParameterData(i));
     }
 }
 
@@ -75,7 +78,11 @@ Steinberg::Vst::IParamValueQueue* PLUGIN_API
 YaParameterChanges::addParameterData(const Steinberg::Vst::ParamID& id,
                                      int32& index /*out*/) {
     index = static_cast<int32>(queues.size());
-    queues.push_back(YaParamValueQueue(id));
+
+    // Tiny hack, resizing avoids calling the constructor the second time we
+    // resize the vector to the same size
+    queues.resize(queues.size() + 1);
+    queues[index].clear_for_parameter(id);
 
     return &queues[index];
 }

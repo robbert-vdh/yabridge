@@ -32,20 +32,22 @@
 class YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
    public:
     /**
-     * Default constructor with an empty queue.
+     * We only provide a default constructor here, because we need to fill the
+     * existing object with new data every processing cycle to avoid
+     * reallocating a new object every time.
      */
     YaParamValueQueue();
 
     /**
-     * Create an empty queue for a specific parameter. Used in
-     * `YaParameterChanges::addParameterData`.
+     * Clear this queue in place so that it can be used to write parameter data
+     * to. Used in `YaParameterChanges::addParameterData`.
      */
-    YaParamValueQueue(Steinberg::Vst::ParamID parameter_id);
+    void clear_for_parameter(Steinberg::Vst::ParamID parameter_id);
 
     /**
-     * Read data from an existing `IParamValueQueue` object.
+     * Read data from an `IParamValueQueue` object into this existing object.
      */
-    YaParamValueQueue(Steinberg::Vst::IParamValueQueue& original_queue);
+    void repopulate(Steinberg::Vst::IParamValueQueue& original_queue);
 
     ~YaParamValueQueue();
 
