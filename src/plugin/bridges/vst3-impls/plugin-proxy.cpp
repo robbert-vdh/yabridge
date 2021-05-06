@@ -157,7 +157,7 @@ Vst3PluginProxyImpl::canProcessSampleSize(int32 symbolicSampleSize) {
                     true);
             }
 
-            return *function_result_cache.parameter_count;
+            return it->second;
         }
     }
 
