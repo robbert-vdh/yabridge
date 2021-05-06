@@ -191,11 +191,15 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
      * @tparam F A function type in the form of `T::Response(T)` for every `T`
      *   in `Request`. This way we can directly deserialize into a `T::Response`
      *   on the side that called `receive_into(T, T::Response&)`.
-     * @tparam persistent_buffers Whether processing buffers should be kept
-     *   around and reused. This is used to minimize allocations in the audio
-     *   processing loop. These buffers will also never shrink, but that should
-     *   not be an issue with the `IAudioProcessor` and `IComponent` functions.
-     *   Saving and loading state is handled on the main sockets.
+     * @tparam persistent_buffers If enabled, we'll reuse the buffers used for
+     *   sending and receiving serialized data as well as the objects we're
+     *   receiving into. This avoids allocations in the audio processing loop
+     *   (after the first allocation of course). This is mostly relevant for the
+     *   `YaProcessData` object stored inside of `YaAudioProcessor::Process`.
+     *   These buffers are thread local and will also never shrink, but that
+     *   should not be an issue with the `IAudioProcessor` and `IComponent`
+     *   functions.  Saving and loading state is handled on the main sockets,
+     *   which don't use these persistent buffers.
      *
      * @relates Vst3MessageHandler::send_event
      */
@@ -203,6 +207,13 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
     void receive_messages(std::optional<std::pair<Vst3Logger&, bool>> logging,
                           F callback) {
         thread_local std::vector<uint8_t> persistent_buffer{};
+        // This is an `std::variant<>`, so this will actually persistently store
+        // a copy of all possible requests even if we're only interested in the
+        // process data, since that's the only object where allocations can
+        // happen. The other objects we're storing here are very small, so the
+        // extra wasted memory shouldn't matter much.
+        thread_local std::optional<Request> persistent_object =
+            persistent_buffers ? std::make_optional<Request>() : std::nullopt;
 
         // Reading, processing, and writing back the response for the requests
         // we receive works in the same way regardless of which socket we're
@@ -211,7 +222,8 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
             [&](boost::asio::local::stream_protocol::socket& socket) {
                 auto request =
                     persistent_buffers
-                        ? read_object<Request>(socket, persistent_buffer)
+                        ? read_object<Request>(socket, *persistent_object,
+                                               persistent_buffer)
                         : read_object<Request>(socket);
 
                 // See the comment in `receive_into()` for more information
