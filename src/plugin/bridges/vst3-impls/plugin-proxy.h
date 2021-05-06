@@ -490,6 +490,12 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      */
     std::atomic_size_t current_context_menu_id;
 
+    /**
+     * We'll reuse this process data object and simply fill the objects
+     * contained with new data to avoid allocations during audio processing.
+     */
+    YaProcessData process_data;
+
     // Caches
 
     /**
