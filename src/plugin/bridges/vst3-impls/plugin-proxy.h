@@ -62,17 +62,15 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     bool unregister_context_menu(size_t context_menu_id);
 
     /**
-     * Clear the bus and parameter caches. We'll call this on
-     * `IComponentHandler::restartComponent`. These caching layers are necessary
-     * to get decent performance in REAPER as REAPER repeatedly calls these
-     * functions many times per second, even though their values will never
-     * change.
+     * Clear our function call caches. We'll do this when the plugin calls
+     * `IComponentHandler::restartComponent()`. These caching layers are
+     * necessary to get decent performance in certain hosts because they will
+     * call these functions repeatedly even when their values cannot change.
      *
-     * HACK: See the doc comment on this class for more information on these
-     *       caches
+     * See the bottom of this class for more information on what we're caching.
      *
      * @see clear_bus_cache
-     * @see clear_parameter_cache
+     * @see function_result_cache
      */
     void clear_caches();
 
@@ -301,7 +299,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     // From `IXmlRepresentationController`
     tresult PLUGIN_API
     getXmlRepresentationStream(Steinberg::Vst::RepresentationInfo& info /*in*/,
-                               Steinberg::IBStream* stream /*out*/);
+                               Steinberg::IBStream* stream /*out*/) override;
 
     /**
      * The component handler the host passed to us during
@@ -420,17 +418,6 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     void clear_bus_cache();
 
     /**
-     * Clears the parameter information cache. Normally hosts only have to
-     * request this once, since the information never changes. REAPER however in
-     * some situations asks for this information four times per second. This
-     * extra back and forth can really add up once plugins start having
-     * thousands of parameters.
-     *
-     * @see parameter_info_cache
-     */
-    void clear_parameter_cache();
-
-    /**
      * If we have an active `IPlugView` instance, try to use the mutual
      * recursion mechanism so that callbacks made by the plugin can be handled
      * on this same thread. In case this is an audio processor with a separate
@@ -536,29 +523,38 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     std::mutex processing_bus_cache_mutex;
 
     /**
-     * A cache for `IEditController::getParameterCount()` and
-     * `IEditController::getParameterInfo()`. We'll memoize these function calls
-     * until the plugin tells the host that parameter information has changed.
+     * A cache for several function calls that should be safe to cache since
+     * their values shouldn't change at run time. We'll memoize these function
+     * calls until the plugin tells the host that parameter information has
+     * changed.
      *
-     * @see parameter_cache
+     * @see function_result_cache
      */
-    struct ParameterInfoCache {
+    struct FunctionResultCache {
+        /**
+         * Memoizes `IEditController::getParameterCount()`.
+         */
         std::optional<int32> parameter_count;
+        /**
+         * Memoizes `IEditController::getParameterInfo()`.
+         */
         std::map<int32, Steinberg::Vst::ParameterInfo> parameter_info;
     };
 
     /**
-     * A cache for the parameter count and infos. This used to be necessary
-     * because in some situations REAPER would query this information many times
-     * times per second even though it cannot change unless the plugin tells the
-     * host that it has. This issue has since been fixed, but we'll keep it in
-     * because some other hosts also query this information more than once.
+     * A cache for several frequently called functions that should not change
+     * values unless the plugin calls `IComponentHandler::restartComponent()`.
+     * This used to be necessary because in some situations REAPER would query
+     * this information many times times per second even though it cannot change
+     * unless the plugin tells the host that it has. This issue has since been
+     * fixed, but we'll keep it in because some other hosts also query this
+     * information more than once.
      *
      * The cache will be cleared when the plugin tells the host that some of its
      * parameter values have changed.
      *
-     * @see clear_parameter_cache
+     * @see clear_caches
      */
-    ParameterInfoCache parameter_info_cache;
-    std::mutex parameter_info_cache_mutex;
+    FunctionResultCache function_result_cache;
+    std::mutex function_result_cache_mutex;
 };

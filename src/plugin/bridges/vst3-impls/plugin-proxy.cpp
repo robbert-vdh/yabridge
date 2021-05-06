@@ -82,7 +82,9 @@ bool Vst3PluginProxyImpl::unregister_context_menu(size_t context_menu_id) {
 
 void Vst3PluginProxyImpl::clear_caches() {
     clear_bus_cache();
-    clear_parameter_cache();
+
+    std::lock_guard lock(function_result_cache_mutex);
+    function_result_cache = FunctionResultCache{};
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setAudioPresentationLatencySamples(
@@ -552,26 +554,26 @@ int32 PLUGIN_API Vst3PluginProxyImpl::getParameterCount() {
         YaEditController::GetParameterCount{.instance_id = instance_id()};
 
     {
-        std::lock_guard lock(parameter_info_cache_mutex);
-        if (parameter_info_cache.parameter_count) {
+        std::lock_guard lock(function_result_cache_mutex);
+        if (function_result_cache.parameter_count) {
             const bool log_response = bridge.logger.log_request(true, request);
             if (log_response) {
                 bridge.logger.log_response(
                     true,
                     YaEditController::GetParameterCount::Response(
-                        *parameter_info_cache.parameter_count),
+                        *function_result_cache.parameter_count),
                     true);
             }
 
-            return *parameter_info_cache.parameter_count;
+            return *function_result_cache.parameter_count;
         }
     }
 
     const int32 result = bridge.send_message(request);
 
     {
-        std::lock_guard lock(parameter_info_cache_mutex);
-        parameter_info_cache.parameter_count = result;
+        std::lock_guard lock(function_result_cache_mutex);
+        function_result_cache.parameter_count = result;
     }
 
     return result;
@@ -584,9 +586,9 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
         .instance_id = instance_id(), .param_index = paramIndex};
 
     {
-        std::lock_guard lock(parameter_info_cache_mutex);
-        if (auto it = parameter_info_cache.parameter_info.find(paramIndex);
-            it != parameter_info_cache.parameter_info.end()) {
+        std::lock_guard lock(function_result_cache_mutex);
+        if (auto it = function_result_cache.parameter_info.find(paramIndex);
+            it != function_result_cache.parameter_info.end()) {
             const bool log_response = bridge.logger.log_request(true, request);
             if (log_response) {
                 bridge.logger.log_response(
@@ -607,8 +609,8 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
     info = response.info;
 
     {
-        std::lock_guard lock(parameter_info_cache_mutex);
-        parameter_info_cache.parameter_info[paramIndex] = response.info;
+        std::lock_guard lock(function_result_cache_mutex);
+        function_result_cache.parameter_info[paramIndex] = response.info;
     }
 
     return response.result;
@@ -1285,9 +1287,4 @@ void Vst3PluginProxyImpl::clear_bus_cache() {
     if (processing_bus_cache) {
         processing_bus_cache.emplace();
     }
-}
-
-void Vst3PluginProxyImpl::clear_parameter_cache() {
-    std::lock_guard lock(parameter_info_cache_mutex);
-    parameter_info_cache = ParameterInfoCache{};
 }
