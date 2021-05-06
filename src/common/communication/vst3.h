@@ -212,6 +212,9 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         // process data, since that's the only object where allocations can
         // happen. The other objects we're storing here are very small, so the
         // extra wasted memory shouldn't matter much.
+        // FIXME: This of course doesn't work. The variant will have been
+        //        reconstructed when the next process cycle hits, so we don't
+        //        gain anything from this.
         thread_local std::optional<Request> persistent_object =
             persistent_buffers ? std::make_optional<Request>() : std::nullopt;
 
