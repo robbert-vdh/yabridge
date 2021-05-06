@@ -39,7 +39,7 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging 6.4:
+Yabridge has been tested under the following hosts using Wine Staging 6.4[\*](#preliminaries):
 
 | Host                | VST2               | VST3                                                                           |
 | ------------------- | ------------------ | ------------------------------------------------------------------------------ |
@@ -68,10 +68,49 @@ Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
 
 ### Preliminaries
 
-Yabridge requires a recent version of Wine Staging. Users of Debian, Ubuntu,
+Yabridge requires a recent version of Wine (Staging). Users of Debian, Ubuntu,
 Linux Mint and Pop!\_OS should install Wine Staging from the [WineHQ
 repositories](https://wiki.winehq.org/Download) as the versions of Wine provided
 by those distro's repositories will likely be too old to be used with yabridge.
+
+At the moment it's recommended to stick with Wine Staging 6.4, since newer
+versions have regressions that among other thing break the Spitfire Audio
+plugins, downloads in Native Access, and Wine process shutdown. Downgrading to
+Wine Staging 6.4 can be done as follows:
+
+- On Debian, Ubuntu, Linux Mint and other apt-based distros, you can use the
+  command below to install Wine Staging 6.4 after you add the WineHQ
+  repositories linked above. This command is a bit complicated because on these
+  distros the Wine package is split up into multiple smaller packages, and the
+  package versions include the distros codename (e.g. `focal`, or `buster`).
+
+  ```shell
+  codename=$(awk -F= '/VERSION_CODENAME/ { print $2 }' /etc/os-release)
+  sudo apt install --install-recommends {winehq-staging,wine-staging,wine-staging-amd64,wine-staging-i386}=6.4~$codename-1
+  ```
+
+  If you want to prevent these packages from being updated automatically, you
+  can then also run:
+
+  ```shell
+  sudo apt-mark hold winehq-staging
+  ```
+
+  Running the same command with `unhold` instead of `hold` will enable updates
+  again.
+
+- On Arch and Manjaro, you can install the
+  [downgrade](https://aur.archlinux.org/packages/downgrade/) tool from the repos
+  or the AUR, then run:
+
+  ```shell
+  sudo env DOWNGRADE_FROM_ALA=1 downgrade wine-staging
+  ```
+
+  Then select the package for wine-staging version 6.4 from the list. After
+  installing downgrade will ask if you want to add the package to `IgnorePkg`.
+  If you select `yes`, the package will be added to the `IgnorePkg` field in
+  `/etc/pacman.conf` and it won't be updated again automatically.
 
 For a general overview on how to use Wine to install Windows applications, check
 out Wine's [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
