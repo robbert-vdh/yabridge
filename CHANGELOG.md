@@ -13,6 +13,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added a timed cache for the `IPluginView::canResize()` VST3 function, so value
   will be remembered during an active resize. This makes resizing VST3 plugin
   editor windows more responsive.
+- Add a cache for VST3 function calls where the host asks the plugin whether it
+  can process 32-bit or 64-bit floating point audio. Some hosts will call this
+  function every processing cycle even though the value doesn't change. Caching
+  this can significantly reduce the overhead of bridging VST3 plugins under
+  those hosts.
 
 ## [3.2.0] - 2021-05-03
 

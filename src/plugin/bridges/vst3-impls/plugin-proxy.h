@@ -532,6 +532,11 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      */
     struct FunctionResultCache {
         /**
+         * Memoizes `IAudioProcessor::canProcessSampleSize()`, since some hosts
+         * call this every processing cycle.
+         */
+        std::map<int32, tresult> can_process_sample_size;
+        /**
          * Memoizes `IEditController::getParameterCount()`.
          */
         std::optional<int32> parameter_count;

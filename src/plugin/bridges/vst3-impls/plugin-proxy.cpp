@@ -139,10 +139,37 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getBusArrangement(
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::canProcessSampleSize(int32 symbolicSampleSize) {
-    return bridge.send_audio_processor_message(
-        YaAudioProcessor::CanProcessSampleSize{
-            .instance_id = instance_id(),
-            .symbolic_sample_size = symbolicSampleSize});
+    const auto request = YaAudioProcessor::CanProcessSampleSize{
+        .instance_id = instance_id(),
+        .symbolic_sample_size = symbolicSampleSize};
+
+    {
+        std::lock_guard lock(function_result_cache_mutex);
+        if (auto it = function_result_cache.can_process_sample_size.find(
+                symbolicSampleSize);
+            it != function_result_cache.can_process_sample_size.end()) {
+            const bool log_response = bridge.logger.log_request(true, request);
+            if (log_response) {
+                bridge.logger.log_response(
+                    true,
+                    YaAudioProcessor::CanProcessSampleSize::Response(
+                        it->second),
+                    true);
+            }
+
+            return *function_result_cache.parameter_count;
+        }
+    }
+
+    const tresult result = bridge.send_audio_processor_message(request);
+
+    {
+        std::lock_guard lock(function_result_cache_mutex);
+        function_result_cache.can_process_sample_size[symbolicSampleSize] =
+            result;
+    }
+
+    return result;
 }
 
 uint32 PLUGIN_API Vst3PluginProxyImpl::getLatencySamples() {
