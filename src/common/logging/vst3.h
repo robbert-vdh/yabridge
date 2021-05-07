@@ -191,7 +191,8 @@ class Vst3Logger {
     bool log_request(bool is_host_vst,
                      const YaAudioProcessor::SetupProcessing&);
     bool log_request(bool is_host_vst, const YaAudioProcessor::SetProcessing&);
-    bool log_request(bool is_host_vst, const YaAudioProcessor::Process&);
+    bool log_request(bool is_host_vst,
+                     const MessageReference<YaAudioProcessor::Process>&);
     bool log_request(bool is_host_vst, const YaAudioProcessor::GetTailSamples&);
     bool log_request(bool is_host_vst,
                      const YaComponent::GetControllerClassId&);

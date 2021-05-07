@@ -19,6 +19,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   this can significantly reduce the overhead of bridging VST3 plugins under
   those hosts.
 
+### Changed
+
+- Redesigned the VST3 audio socket handling to be able to reuse the process data
+  objects on both sides. This greatly reduces the overhead of our VST3 bridging
+  by getting rid of all memory allocations during audio processing.
+
 ## [3.2.0] - 2021-05-03
 
 ### Added

@@ -992,13 +992,15 @@ bool Vst3Logger::log_request(bool is_host_vst,
     });
 }
 
-bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaAudioProcessor::Process& request) {
+bool Vst3Logger::log_request(
+    bool is_host_vst,
+    const MessageReference<YaAudioProcessor::Process>& request_wrapper) {
     return log_request_base(
         is_host_vst, Logger::Verbosity::all_events, [&](auto& message) {
             // This is incredibly verbose, but if you're really a plugin that
             // handles processing in a weird way you're going to need all of
             // this
+            const YaAudioProcessor::Process& request = request_wrapper.get();
 
             std::ostringstream num_input_channels;
             num_input_channels << "[";

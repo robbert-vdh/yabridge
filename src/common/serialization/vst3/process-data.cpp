@@ -281,6 +281,9 @@ YaProcessDataResponse YaProcessData::move_outputs_to_response() {
     //       `ProcessData` object generated in `get()` here sicne these of
     //       course are not references or pointers like all other fields, so
     //       they're not implicitly copied like all of our other fields
+    // FIXME: Instead of moving, the `YaProcessDataResponse` should be an
+    //        (optional) field. Moving defeats the point of us trying to reuse
+    //        these objects.
     for (int i = 0; i < reconstructed_process_data.numOutputs; i++) {
         outputs[i].silence_flags =
             reconstructed_process_data.outputs[i].silenceFlags;

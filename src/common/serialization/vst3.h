@@ -20,6 +20,7 @@
 
 #include <bitsery/ext/std_variant.h>
 
+#include "../bitsery/ext/message-reference.h"
 #include "../configuration.h"
 #include "../utils.h"
 #include "common.h"
@@ -153,31 +154,78 @@ void serialize(S& s, ControlRequest& payload) {
  * A subset of all functions a host can call on a plugin. These functions are
  * called from a hot loop every processing cycle, so we want a dedicated socket
  * for these for every plugin instance.
+ *
+ * We use a separate struct for this so we can keep the
+ * `YaAudioProcessor::Process` object, which also contains the entire audio
+ * processing data struct, alive as a thread local static object on the Wine
+ * side, and as a regular field in `Vst3PluginProxyImpl` on the plugin side. In
+ * our variant we then store a `MessageReference<T>` that points to this object,
+ * and we'll do some magic to be able to serialize and deserialize this object
+ * without needing to create copies. See `MessageReference<T>` and
+ * `bitsery::ext::MessageReference<T>` for more information.
  */
-using AudioProcessorRequest =
-    std::variant<YaAudioProcessor::SetBusArrangements,
-                 YaAudioProcessor::GetBusArrangement,
-                 YaAudioProcessor::CanProcessSampleSize,
-                 YaAudioProcessor::GetLatencySamples,
-                 YaAudioProcessor::SetupProcessing,
-                 YaAudioProcessor::SetProcessing,
-                 YaAudioProcessor::Process,
-                 YaAudioProcessor::GetTailSamples,
-                 YaComponent::GetControllerClassId,
-                 YaComponent::SetIoMode,
-                 YaComponent::GetBusCount,
-                 YaComponent::GetBusInfo,
-                 YaComponent::GetRoutingInfo,
-                 YaComponent::ActivateBus,
-                 YaComponent::SetActive,
-                 YaPrefetchableSupport::GetPrefetchableSupport>;
+struct AudioProcessorRequest {
+    AudioProcessorRequest() {}
 
-template <typename S>
-void serialize(S& s, AudioProcessorRequest& payload) {
-    // All of the objects in `AudioProcessorRequest` should have their own
-    // serialization function.
-    s.ext(payload, bitsery::ext::StdVariant{});
-}
+    /**
+     * Initialize the variant with an object. In `Vst3Sockets::send_message()`
+     * the object gets implicitly converted to the this variant.
+     */
+    template <typename T>
+    AudioProcessorRequest(T request) : payload(std::move(request)) {}
+
+    using Payload =
+        std::variant<YaAudioProcessor::SetBusArrangements,
+                     YaAudioProcessor::GetBusArrangement,
+                     YaAudioProcessor::CanProcessSampleSize,
+                     YaAudioProcessor::GetLatencySamples,
+                     YaAudioProcessor::SetupProcessing,
+                     YaAudioProcessor::SetProcessing,
+                     // The actual value for this will be stored in the
+                     // `process_request` field. That way we don't have to
+                     // destroy the object (and deallocate all vectors in it) on
+                     // the Wine side during every processing cycle.
+                     MessageReference<YaAudioProcessor::Process>,
+                     YaAudioProcessor::GetTailSamples,
+                     YaComponent::GetControllerClassId,
+                     YaComponent::SetIoMode,
+                     YaComponent::GetBusCount,
+                     YaComponent::GetBusInfo,
+                     YaComponent::GetRoutingInfo,
+                     YaComponent::ActivateBus,
+                     YaComponent::SetActive,
+                     YaPrefetchableSupport::GetPrefetchableSupport>;
+
+    Payload payload;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.ext(
+            payload,
+            bitsery::ext::StdVariant{
+                [&](S& s,
+                    MessageReference<YaAudioProcessor::Process>& request_ref) {
+                    // When serializing this reference we'll read the data
+                    // directly from the referred to object. During
+                    // deserializing we'll deserialize into the persistent and
+                    // thread local `process_request` object (see
+                    // `Vst3Sockets::add_audio_processor_and_listen`) and then
+                    // reassign the reference to point to that boject.
+                    s.ext(request_ref,
+                          bitsery::ext::MessageReference(process_request));
+                },
+                [](S& s, auto& request) { s.object(request); }});
+    }
+
+    /**
+     * Used for deserializing the `MessageReference<YaAudioProcessor::Process>`
+     * variant. When we encounter this variant, we'll actually deserialize the
+     * object into this object, and we'll then reassign the reference to point
+     * to this object. That way we can keep it around as a thread local object
+     * to prevent unnecessary allocations.
+     */
+    std::optional<YaAudioProcessor::Process> process_request;
+};
 
 /**
  * When we do a callback from the Wine VST host to the plugin, this encodes the
@@ -221,4 +269,27 @@ void serialize(S& s, CallbackRequest& payload) {
     // All of the objects in `CallbackRequest` should have their own
     // serialization function.
     s.ext(payload, bitsery::ext::StdVariant{});
+}
+
+/**
+ * Get the actual variant for a request. We need a function for this to be able
+ * to handle composite types, like `AudioProcessorRequest` that use
+ * `MesasgeReference` to be able to store persistent objects in the message
+ * variant.
+ */
+template <typename... Ts>
+std::variant<Ts...>& get_request_variant(std::variant<Ts...>& request) {
+    return request;
+}
+
+/**
+ * Fetch the `std::variant<>` from an audio processor request object. This will
+ * let us use our regular, simple function call dispatch code, but we can still
+ * store the process data in a separate field (to reduce allocations).
+ *
+ * @overload
+ */
+inline AudioProcessorRequest::Payload& get_request_variant(
+    AudioProcessorRequest& request) {
+    return request.payload;
 }

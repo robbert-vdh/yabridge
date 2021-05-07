@@ -237,7 +237,12 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                             auto [logger, is_host_vst] = *logging;
                             return logger.log_request(is_host_vst, object);
                         },
-                        request);
+                        // In the case of `AudioProcessorRequest`, we need to
+                        // actually fetch the variant field since our object
+                        // also contains a persistent object to store process
+                        // data into so we can prevent allocations during audio
+                        // processing
+                        get_request_variant(request));
                 }
 
                 // We do the visiting here using a templated lambda. This way we
@@ -258,7 +263,8 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                             write_object(socket, response);
                         }
                     },
-                    request);
+                    // See above
+                    get_request_variant(request));
             };
 
         this->receive_multi(logging
@@ -440,6 +446,20 @@ class Vst3Sockets : public Sockets {
         return audio_processor_sockets.at(object.instance_id)
             .send_message(object, logging,
                           audio_processor_buffers.at(object.instance_id));
+    }
+
+    /**
+     * Overload for use with `MessageReference<T>`, since we cannot
+     * directly get the instance ID there.
+     */
+    template <typename T>
+    typename T::Response send_audio_processor_message(
+        const MessageReference<T>& object_ref,
+        std::optional<std::pair<Vst3Logger&, bool>> logging) {
+        return audio_processor_sockets.at(object_ref.get().instance_id)
+            .send_message(
+                object_ref, logging,
+                audio_processor_buffers.at(object_ref.get().instance_id));
     }
 
     /**

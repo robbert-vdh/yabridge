@@ -216,13 +216,12 @@ Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
     }
 
     // We reuse this existing object to avoid allocations
-    process_data.repopulate(data);
+    process_request.instance_id = instance_id();
+    process_request.data.repopulate(data);
+    process_request.new_realtime_priority = new_realtime_priority;
 
-    ProcessResponse response =
-        bridge.send_audio_processor_message(YaAudioProcessor::Process{
-            .instance_id = instance_id(),
-            .data = process_data,
-            .new_realtime_priority = new_realtime_priority});
+    ProcessResponse response = bridge.send_audio_processor_message(
+        MessageReference<YaAudioProcessor::Process>(process_request));
 
     response.output_data.write_back_outputs(data);
 

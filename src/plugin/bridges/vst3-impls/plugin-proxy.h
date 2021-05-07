@@ -478,10 +478,16 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     std::atomic_size_t current_context_menu_id;
 
     /**
-     * We'll reuse this process data object and simply fill the objects
-     * contained with new data to avoid allocations during audio processing.
+     * NOTE: We'll reuse the request objects for the audio processor so we can
+     *       keep the process data object (which contains vectors and other heap
+     *       allocated data structure) alive. We'll then just fill this object
+     *       with new data every processing cycle to prevent allocations. Then,
+     *       we pass a `MessageReference<YaAudioProcessor::Process>` to our
+     *       sockets. This together with `bitisery::ext::MessageReference` will
+     *       let us serialize from and to existing objects without having to
+     *       copy or reallocate them.
      */
-    YaProcessData process_data;
+    YaAudioProcessor::Process process_request;
 
     // Caches
 

@@ -1235,8 +1235,18 @@ size_t Vst3Bridge::register_object_instance(
                         return object_instances[request.instance_id]
                             .audio_processor->setProcessing(request.state);
                     },
-                    [&](YaAudioProcessor::Process& request)
+                    [&](MessageReference<YaAudioProcessor::Process>&
+                            request_ref)
                         -> YaAudioProcessor::Process::Response {
+                        // NOTE: To prevent allocations we keep this actual
+                        //       `YaAudioProcessor::Process` object around as
+                        //       part of a static thread local
+                        //       `AudioProcessorRequest` object, and we only
+                        //       store a reference to it in our variant (this is
+                        //       done during the deserialization in
+                        //       `bitsery::ext::MessageReference`)
+                        YaAudioProcessor::Process& request = request_ref.get();
+
                         // Most plugins will already enable FTZ, but there are a
                         // handful of plugins that don't that suffer from
                         // extreme DSP load increases when they start producing
@@ -1251,6 +1261,9 @@ size_t Vst3Bridge::register_object_instance(
                                 true, *request.new_realtime_priority);
                         }
 
+                        // TODO: This `get()` now moves data. We should avoid
+                        //       that, since that would require reallocating the
+                        //       process data next iteration.
                         const tresult result =
                             object_instances[request.instance_id]
                                 .audio_processor->process(request.data.get());
