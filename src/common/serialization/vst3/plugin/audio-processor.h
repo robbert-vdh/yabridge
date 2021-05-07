@@ -236,7 +236,7 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
      * Wine plugin host. This `YaProcessData` object wraps around all input
      * audio buffers, parameter changes and events along with all context data
      * provided by the host so we can send it to the Wine plugin host. We can
-     * then use `YaProcessData::get()` on the Wine plugin host side to
+     * then use `YaProcessData::reconstruct()` on the Wine plugin host side to
      * reconstruct the original `ProcessData` object, and we then finally use
      * `YaProcessData::move_outputs_to_response()` to create a response object
      * that we can write back to the `ProcessData` object provided by the host.

@@ -47,14 +47,9 @@ class YaAudioBusBuffers {
 
     /**
      * Create a new, zero initialize audio bus buffers object. Used to
-     * reconstruct the output buffers during `YaProcessData::get()`.
-     *
-     * TODO: Replace with a function similar to `repopulate` that just reassigns
-     *       the existing buffers for the outputs created on the Wine side.
+     * reconstruct the output buffers during `YaProcessData::reconstruct()`.
      */
-    YaAudioBusBuffers(int32 sample_size,
-                      size_t num_samples,
-                      size_t num_channels);
+    void clear(int32 sample_size, size_t num_samples, size_t num_channels);
 
     /**
      * Copy data from a host provided `AudioBusBuffers` object during a process
@@ -71,13 +66,13 @@ class YaAudioBusBuffers {
     /**
      * Reconstruct the original `AudioBusBuffers` object passed to the
      * constructor and return it. This is used as part of
-     * `YaProcessData::get()`. The object contains pointers to `buffers`, so it
-     * may not outlive this object.
+     * `YaProcessData::reconstruct()`. The object contains pointers to
+     * `buffers`, so it may not outlive this object.
      *
      * NOTE: The `silenceFlags` field is of course not a reference, so writing
      *       to that will not modify `silence_flags`.
      */
-    Steinberg::Vst::AudioBusBuffers get();
+    void reconstruct(Steinberg::Vst::AudioBusBuffers& reconstructed_buffers);
 
     /**
      * Return the number of channels in `buffers`. Only used for debug logs.
@@ -183,10 +178,11 @@ class YaProcessData {
 
     /**
      * Copy data from a host provided `ProcessData` object during a process
-     * call. This struct can then be serialized, and `YaProcessData::get()` can
-     * then be used again to recreate the original `ProcessData` object. This
-     * will avoid allocating unless it's absolutely necessary (e.g. when we
-     * receive more parameter changes than we've received in previous calls).
+     * call. This struct can then be serialized, and
+     * `YaProcessData::reconstruct()` can then be used again to recreate the
+     * original `ProcessData` object. This will avoid allocating unless it's
+     * absolutely necessary (e.g. when we receive more parameter changes than
+     * we've received in previous calls).
      */
     void repopulate(const Steinberg::Vst::ProcessData& process_data);
 
@@ -195,7 +191,7 @@ class YaProcessData {
      * and return it. This is used in the Wine plugin host when processing an
      * `IAudioProcessor::process()` call.
      */
-    Steinberg::Vst::ProcessData& get();
+    Steinberg::Vst::ProcessData& reconstruct();
 
     /**
      * **Move** all output written by the Windows VST3 plugin to a response

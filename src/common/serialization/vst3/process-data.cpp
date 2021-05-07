@@ -20,16 +20,34 @@
 
 YaAudioBusBuffers::YaAudioBusBuffers() {}
 
-YaAudioBusBuffers::YaAudioBusBuffers(int32 sample_size,
-                                     size_t num_samples,
-                                     size_t num_channels)
-    : buffers(sample_size == Steinberg::Vst::SymbolicSampleSizes::kSample64
-                  ? decltype(buffers)(std::vector<std::vector<double>>(
-                        num_channels,
-                        std::vector<double>(num_samples, 0.0)))
-                  : decltype(buffers)(std::vector<std::vector<float>>(
-                        num_channels,
-                        std::vector<float>(num_samples, 0.0)))) {}
+void YaAudioBusBuffers::clear(int32 sample_size,
+                              size_t num_samples,
+                              size_t num_channels) {
+    if (sample_size == Steinberg::Vst::SymbolicSampleSizes::kSample64) {
+        if (!std::holds_alternative<std::vector<std::vector<double>>>(
+                buffers)) {
+            buffers.emplace<std::vector<std::vector<double>>>();
+        }
+
+        std::vector<std::vector<double>>& vector_buffers =
+            std::get<std::vector<std::vector<double>>>(buffers);
+        vector_buffers.resize(num_channels);
+        for (size_t i = 0; i < vector_buffers.size(); i++) {
+            vector_buffers[i].assign(num_samples, 0.0);
+        }
+    } else {
+        if (!std::holds_alternative<std::vector<std::vector<float>>>(buffers)) {
+            buffers.emplace<std::vector<std::vector<float>>>();
+        }
+
+        std::vector<std::vector<float>>& vector_buffers =
+            std::get<std::vector<std::vector<float>>>(buffers);
+        vector_buffers.resize(num_channels);
+        for (size_t i = 0; i < vector_buffers.size(); i++) {
+            vector_buffers[i].assign(num_samples, 0.0f);
+        }
+    }
+}
 
 void YaAudioBusBuffers::repopulate(
     int32 sample_size,
@@ -73,14 +91,16 @@ void YaAudioBusBuffers::repopulate(
     }
 }
 
-Steinberg::Vst::AudioBusBuffers YaAudioBusBuffers::get() {
-    Steinberg::Vst::AudioBusBuffers reconstructed_buffers;
+void YaAudioBusBuffers::reconstruct(
+    Steinberg::Vst::AudioBusBuffers& reconstructed_buffers) {
+    // We'll update the `AudioBusBuffers` object in place to point to our new
+    // data
     reconstructed_buffers.silenceFlags = silence_flags;
     std::visit(overload{
                    [&](std::vector<std::vector<double>>& buffers) {
-                       buffer_pointers.clear();
-                       for (auto& buffer : buffers) {
-                           buffer_pointers.push_back(buffer.data());
+                       buffer_pointers.resize(buffers.size());
+                       for (size_t i = 0; i < buffers.size(); i++) {
+                           buffer_pointers[i] = buffers[i].data();
                        }
 
                        reconstructed_buffers.numChannels =
@@ -89,9 +109,9 @@ Steinberg::Vst::AudioBusBuffers YaAudioBusBuffers::get() {
                            reinterpret_cast<double**>(buffer_pointers.data());
                    },
                    [&](std::vector<std::vector<float>>& buffers) {
-                       buffer_pointers.clear();
-                       for (auto& buffer : buffers) {
-                           buffer_pointers.push_back(buffer.data());
+                       buffer_pointers.resize(buffers.size());
+                       for (size_t i = 0; i < buffers.size(); i++) {
+                           buffer_pointers[i] = buffers[i].data();
                        }
 
                        reconstructed_buffers.numChannels =
@@ -101,8 +121,6 @@ Steinberg::Vst::AudioBusBuffers YaAudioBusBuffers::get() {
                    },
                },
                buffers);
-
-    return reconstructed_buffers;
 }
 
 size_t YaAudioBusBuffers::num_channels() const {
@@ -204,52 +222,47 @@ void YaProcessData::repopulate(
     }
 }
 
-Steinberg::Vst::ProcessData& YaProcessData::get() {
-    // TODO: Also optimize this to make use of the reused objects
-
-    // We'll have to transform out `YaAudioBusBuffers` objects into an array of
-    // `AudioBusBuffers` object so the plugin can deal with them. These objects
-    // contain pointers to those original objects and thus don't store any
-    // buffer data themselves.
-    inputs_audio_bus_buffers.clear();
-    for (auto& buffers : inputs) {
-        inputs_audio_bus_buffers.push_back(buffers.get());
-    }
-
-    // We'll do the same with with the outputs, but we'll first have to
-    // initialize zeroed out buffers for the plugin to work with since we didn't
-    // serialize those directly
-    outputs.clear();
-    outputs_audio_bus_buffers.clear();
-    for (auto& num_channels : outputs_num_channels) {
-        YaAudioBusBuffers& buffers = outputs.emplace_back(
-            symbolic_sample_size, num_samples, num_channels);
-        outputs_audio_bus_buffers.push_back(buffers.get());
-    }
-
-    if (output_parameter_changes) {
-        output_parameter_changes->clear();
-    }
-    if (output_events) {
-        output_events->clear();
-    }
-
+Steinberg::Vst::ProcessData& YaProcessData::reconstruct() {
     reconstructed_process_data.processMode = process_mode;
     reconstructed_process_data.symbolicSampleSize = symbolic_sample_size;
     reconstructed_process_data.numSamples = num_samples;
     reconstructed_process_data.numInputs = static_cast<int32>(inputs.size());
     reconstructed_process_data.numOutputs =
         static_cast<int32>(outputs_num_channels.size());
-    reconstructed_process_data.inputs = inputs_audio_bus_buffers.data();
-    reconstructed_process_data.outputs = outputs_audio_bus_buffers.data();
 
+    // We'll have to transform our `YaAudioBusBuffers` objects into an array of
+    // `AudioBusBuffers` object so the plugin can deal with them. These objects
+    // contain pointers to those original objects and thus don't store any
+    // buffer data themselves.
+    inputs_audio_bus_buffers.resize(inputs.size());
+    for (size_t i = 0; i < inputs.size(); i++) {
+        inputs[i].reconstruct(inputs_audio_bus_buffers[i]);
+    }
+
+    reconstructed_process_data.inputs = inputs_audio_bus_buffers.data();
+
+    // We'll do the same with with the outputs, but we'll first have to
+    // initialize zeroed out buffers for the plugin to work with since we didn't
+    // serialize those directly
+    outputs.resize(outputs_num_channels.size());
+    outputs_audio_bus_buffers.resize(outputs_num_channels.size());
+    for (size_t i = 0; i < outputs_num_channels.size(); i++) {
+        outputs[i].clear(symbolic_sample_size, num_samples,
+                         outputs_num_channels[i]);
+        outputs[i].reconstruct(outputs_audio_bus_buffers[i]);
+    }
+
+    reconstructed_process_data.outputs = outputs_audio_bus_buffers.data();
     reconstructed_process_data.inputParameterChanges = &input_parameter_changes;
+
     if (output_parameter_changes_supported) {
-        output_parameter_changes.emplace();
+        if (!output_parameter_changes) {
+            output_parameter_changes.emplace();
+        }
+        output_parameter_changes->clear();
         reconstructed_process_data.outputParameterChanges =
             &*output_parameter_changes;
     } else {
-        output_parameter_changes.reset();
         reconstructed_process_data.outputParameterChanges = nullptr;
     }
 
@@ -260,10 +273,12 @@ Steinberg::Vst::ProcessData& YaProcessData::get() {
     }
 
     if (output_events_supported) {
-        output_events.emplace();
+        if (!output_events) {
+            output_events.emplace();
+        }
+        output_events->clear();
         reconstructed_process_data.outputEvents = &*output_events;
     } else {
-        output_events.reset();
         reconstructed_process_data.outputEvents = nullptr;
     }
 

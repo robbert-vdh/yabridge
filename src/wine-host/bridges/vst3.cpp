@@ -1261,12 +1261,10 @@ size_t Vst3Bridge::register_object_instance(
                                 true, *request.new_realtime_priority);
                         }
 
-                        // TODO: This `get()` now moves data. We should avoid
-                        //       that, since that would require reallocating the
-                        //       process data next iteration.
                         const tresult result =
                             object_instances[request.instance_id]
-                                .audio_processor->process(request.data.get());
+                                .audio_processor->process(
+                                    request.data.reconstruct());
 
                         return YaAudioProcessor::ProcessResponse{
                             .result = result,
