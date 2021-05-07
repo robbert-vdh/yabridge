@@ -220,13 +220,27 @@ Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
     process_request.data.repopulate(data);
     process_request.new_realtime_priority = new_realtime_priority;
 
+    // HACK: This is a bit ugly. This `YaProcessData::Response` object actually
+    //       contains pointers to the corresponding `YaProcessData` fields in
+    //       this object, so we can only send back the fields that are actually
+    //       relevant. This is necessary to avoid allocating copies or moves on
+    //       the Wine side. This `create_response()` function creates a response
+    //       object that points to the fields in `process_request.data`, so when
+    //       we deserialize into `process_response` we end up actually writing
+    //       to the actual `process_request.data` object. Thus we can also call
+    //       `process_request.data.write_back_outputs()` later.
+    //
+    //       `YaProcessData::Response::serialize()` should make this a lot
+    //       clearer.
+    process_response.output_data = process_request.data.create_response();
+
     // We'll also receive the response into an existing object so we can also
     // avoid heap allocations there
     bridge.receive_audio_processor_message_into(
         MessageReference<YaAudioProcessor::Process>(process_request),
         process_response);
 
-    process_response.output_data.write_back_outputs(data);
+    process_request.data.write_back_outputs(data);
 
     return process_response.result;
 }

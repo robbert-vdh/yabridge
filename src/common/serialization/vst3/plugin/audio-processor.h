@@ -222,7 +222,7 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
      */
     struct ProcessResponse {
         UniversalTResult result;
-        YaProcessDataResponse output_data;
+        YaProcessData::Response output_data;
 
         template <typename S>
         void serialize(S& s) {
@@ -238,8 +238,9 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
      * provided by the host so we can send it to the Wine plugin host. We can
      * then use `YaProcessData::reconstruct()` on the Wine plugin host side to
      * reconstruct the original `ProcessData` object, and we then finally use
-     * `YaProcessData::move_outputs_to_response()` to create a response object
-     * that we can write back to the `ProcessData` object provided by the host.
+     * `YaProcessData::create_response()` to create a response object that we
+     * can write the plugin's changes back to the `ProcessData` object provided
+     * by the host.
      */
     struct Process {
         using Response = ProcessResponse;

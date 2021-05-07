@@ -1268,8 +1268,7 @@ size_t Vst3Bridge::register_object_instance(
 
                         return YaAudioProcessor::ProcessResponse{
                             .result = result,
-                            .output_data =
-                                request.data.move_outputs_to_response()};
+                            .output_data = request.data.create_response()};
                     },
                     [&](const YaAudioProcessor::GetTailSamples& request)
                         -> YaAudioProcessor::GetTailSamples::Response {

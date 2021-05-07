@@ -1774,11 +1774,11 @@ void Vst3Logger::log_response(
 
         // This is incredibly verbose, but if you're really a plugin that
         // handles processing in a weird way you're going to need all of this
-
         std::ostringstream num_output_channels;
         num_output_channels << "[";
+        assert(response.output_data.outputs);
         for (bool is_first = true;
-             const auto& buffers : response.output_data.outputs) {
+             const auto& buffers : *response.output_data.outputs) {
             num_output_channels << (is_first ? "" : ", ")
                                 << buffers.num_channels();
             is_first = false;
@@ -1788,18 +1788,23 @@ void Vst3Logger::log_response(
         message << ", <AudioBusBuffers array with " << num_output_channels.str()
                 << " channels>";
 
-        if (response.output_data.output_parameter_changes) {
+        // Our optimization strategy sadly meant that this had to become a
+        // pointer to an `std::optional<>`, so this becomes a bit ugly.
+        // TODO: Can we make this prettier again?
+        assert(response.output_data.output_parameter_changes);
+        if (*response.output_data.output_parameter_changes) {
             message << ", <IParameterChanges* for "
-                    << response.output_data.output_parameter_changes
+                    << (*response.output_data.output_parameter_changes)
                            ->num_parameters()
                     << " parameters>";
         } else {
             message << ", host does not support parameter outputs";
         }
 
-        if (response.output_data.output_events) {
+        assert(response.output_data.output_events);
+        if (*response.output_data.output_events) {
             message << ", <IEventList* with "
-                    << response.output_data.output_events->num_events()
+                    << (*response.output_data.output_events)->num_events()
                     << " events>";
         } else {
             message << ", host does not support event outputs";

@@ -132,40 +132,14 @@ class YaAudioBusBuffers {
 };
 
 /**
- * A serializable wrapper around the output fields of `ProcessData`. We send
- * this back as a response to a process call so we can write those fields back
- * to the host. It would be possible to just send `YaProcessData` back and have
- * everything be in a single structure, but that would involve a lot of
- * unnecessary copying (since, at least in theory, all the input audio buffers,
- * events and context data shouldn't have been changed by the plugin).
- *
- * @see YaProcessData
- */
-struct YaProcessDataResponse {
-    // These fields are directly moved from a `YaProcessData` object. See the
-    // docstrings there for more information
-    std::vector<YaAudioBusBuffers> outputs;
-    std::optional<YaParameterChanges> output_parameter_changes;
-    std::optional<YaEventList> output_events;
-
-    /**
-     * Write all of this output data back to the host's `ProcessData` object.
-     */
-    void write_back_outputs(Steinberg::Vst::ProcessData& process_data);
-
-    template <typename S>
-    void serialize(S& s) {
-        s.container(outputs, max_num_speakers);
-        s.ext(output_parameter_changes, bitsery::ext::StdOptional{});
-        s.ext(output_events, bitsery::ext::StdOptional{});
-    }
-};
-
-/**
  * A serializable wrapper around `ProcessData`. We'll read all information from
  * the host so we can serialize it and provide an equivalent `ProcessData`
- * struct to the plugin. Then we can create a `YaProcessDataResponse` object
+ * struct to the plugin. Then we can create a `YaProcessData::Response` object
  * that contains all output values so we can write those back to the host.
+ *
+ * Be sure to double check how `YaProcessData::Response` is used. We do some
+ * pointer tricks there to avoid copies and moves when serializing the results
+ * of our audio processing.
  */
 class YaProcessData {
    public:
@@ -194,12 +168,58 @@ class YaProcessData {
     Steinberg::Vst::ProcessData& reconstruct();
 
     /**
-     * **Move** all output written by the Windows VST3 plugin to a response
-     * object that can be used to write those results back to the host. This
-     * should of course be done after making a call to the `IAudioProcessor`'s
-     * `process()` function with the object obtained using `get()`.
+     * A serializable wrapper around the output fields of `ProcessData`, so we
+     * only have to copy the information back that's actually important. These
+     * fields are pointers to the corresponding fields in `YaProcessData`. On
+     * the plugin side this information can then be written back to the host.
+     *
+     * HACK: All of this is an optimization to avoid unnecessarily copying or
+     *       moving and reallocating. Directly serializing and deserializing
+     *       from and to pointers does make all of this very error prone, hence
+     *       all of the assertions.
+     *
+     * @see YaProcessData
      */
-    YaProcessDataResponse move_outputs_to_response();
+    struct Response {
+        // We store raw pointers instead of references so we can default
+        // initialize this object during deserialization
+        std::vector<YaAudioBusBuffers>* outputs = nullptr;
+        std::optional<YaParameterChanges>* output_parameter_changes = nullptr;
+        std::optional<YaEventList>* output_events = nullptr;
+
+        template <typename S>
+        void serialize(S& s) {
+            assert(outputs && output_parameter_changes && output_events);
+            // Since these fields are references to the corresponding fields on
+            // the surrounding object, we're actually serializing those fields.
+            // This means that on the plugin side we can _only_ deserialize into
+            // an existing object, since our serializing code doesn't touch the
+            // actual pointers.
+            s.container(*outputs, max_num_speakers);
+            s.ext(*output_parameter_changes, bitsery::ext::StdOptional{});
+            s.ext(*output_events, bitsery::ext::StdOptional{});
+        }
+    };
+
+    /**
+     * Create a `YaProcessData::Response` object that refers to the output
+     * fields in this object. The object doesn't store any actual data, and may
+     * not outlive this object. We use this so we only have to copy the relevant
+     * fields back to the host. On the Wine side this function should only be
+     * called after we call the plugin's `IAudioProcessor::process()` function
+     * with the reconstructed process data obtained from
+     * `YaProcessData::reconstruct()`.
+     *
+     * On the plugin side this should be used to create a response object that
+     * **must** be received into, since we're deserializing directly into some
+     * pointers.
+     */
+    Response& create_response();
+
+    /**
+     * Write all of this output data back to the host's `ProcessData` object.
+     */
+    void write_back_outputs(Steinberg::Vst::ProcessData& process_data);
 
     template <typename S>
     void serialize(S& s) {
@@ -281,9 +301,9 @@ class YaProcessData {
     std::optional<Steinberg::Vst::ProcessContext> process_context;
 
    private:
-    // These are the same fields as in `YaProcessDataResponse`. We'll generate
+    // These are the same fields as in `YaProcessData::Response`. We'll generate
     // these as part of creating `reconstructed_process_data`, and they will be
-    // moved into a response object during `move_outputs_to_response()`.
+    // referred to in the response object created in `create_response()`
 
     /**
      * The outputs. Will be created based on `outputs_num_channels` (which
@@ -308,9 +328,18 @@ class YaProcessData {
     // reconstruct the original `ProcessData` object. Here we also initialize
     // these `output*` fields so the Windows VST3 plugin can write to them
     // though a regular `ProcessData` object. Finally we can wrap these output
-    // fields back into a `YaProcessDataResponse` using
-    // `move_outputs_to_response()`. so they can be serialized and written back
+    // fields back into a `YaProcessData::Response` using
+    // `create_response()`. so they can be serialized and written back
     // to the host's `ProcessData` object.
+
+    /**
+     * This is a `Response` object that refers to the fields below.
+     *
+     * NOTE: We use this on the plugin side as an optimization to be able to
+     *       directly receive data into this object, avoiding the need for any
+     *       allocations.
+     */
+    Response response_object;
 
     /**
      * Obtained by calling `.get()` on every `YaAudioBusBuffers` object in

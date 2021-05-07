@@ -151,23 +151,22 @@ void YaAudioBusBuffers::write_back_outputs(
         buffers);
 }
 
-void YaProcessDataResponse::write_back_outputs(
-    Steinberg::Vst::ProcessData& process_data) {
-    for (int i = 0; i < process_data.numOutputs; i++) {
-        outputs[i].write_back_outputs(process_data.outputs[i]);
-    }
-
-    if (output_parameter_changes && process_data.outputParameterChanges) {
-        output_parameter_changes->write_back_outputs(
-            *process_data.outputParameterChanges);
-    }
-
-    if (output_events && process_data.outputEvents) {
-        output_events->write_back_outputs(*process_data.outputEvents);
-    }
-}
-
-YaProcessData::YaProcessData() {}
+YaProcessData::YaProcessData()
+    // This response object acts as an optimization. It stores pointers to the
+    // original fields in our objects, so we can both only serialize those
+    // fields when sending the response from the Wine side. This lets us avoid
+    // allocations by not having to copy or move the data. On the plugin side we
+    // need to be careful to deserialize into an existing
+    // `YaAudioProcessor::ProcessResponse` object with a response object that
+    // belongs to an actual process data object, because with these changes it's
+    // no longer possible to deserialize those results into a new ad-hoc created
+    // object.
+    : response_object{.outputs = &outputs,
+                      .output_parameter_changes = &output_parameter_changes,
+                      .output_events = &output_events},
+      // This needs to be zero initialized so we can safely call
+      // `create_response()` on the plugin side
+      reconstructed_process_data() {}
 
 void YaProcessData::repopulate(
     const Steinberg::Vst::ProcessData& process_data) {
@@ -291,21 +290,36 @@ Steinberg::Vst::ProcessData& YaProcessData::reconstruct() {
     return reconstructed_process_data;
 }
 
-YaProcessDataResponse YaProcessData::move_outputs_to_response() {
+YaProcessData::Response& YaProcessData::create_response() {
     // NOTE: We _have_ to manually copy over the silence flags from the
     //       `ProcessData` object generated in `get()` here sicne these of
     //       course are not references or pointers like all other fields, so
     //       they're not implicitly copied like all of our other fields
-    // FIXME: Instead of moving, the `YaProcessDataResponse` should be an
-    //        (optional) field. Moving defeats the point of us trying to reuse
-    //        these objects.
+    //
+    //       On the plugin side this is not necessary, but it also doesn't hurt
     for (int i = 0; i < reconstructed_process_data.numOutputs; i++) {
         outputs[i].silence_flags =
             reconstructed_process_data.outputs[i].silenceFlags;
     }
 
-    return YaProcessDataResponse{
-        .outputs = std::move(outputs),
-        .output_parameter_changes = std::move(output_parameter_changes),
-        .output_events = std::move(output_events)};
+    // NOTE: We return an object that only contains references to these original
+    //       fields to avoid any copies or moves
+    return response_object;
+}
+
+void YaProcessData::write_back_outputs(
+    Steinberg::Vst::ProcessData& process_data) {
+    assert(static_cast<int32>(outputs.size()) == process_data.numOutputs);
+    for (int i = 0; i < process_data.numOutputs; i++) {
+        outputs[i].write_back_outputs(process_data.outputs[i]);
+    }
+
+    if (output_parameter_changes && process_data.outputParameterChanges) {
+        output_parameter_changes->write_back_outputs(
+            *process_data.outputParameterChanges);
+    }
+
+    if (output_events && process_data.outputEvents) {
+        output_events->write_back_outputs(*process_data.outputEvents);
+    }
 }
