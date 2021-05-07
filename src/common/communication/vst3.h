@@ -361,7 +361,6 @@ class Vst3Sockets : public Sockets {
                          std::to_string(instance_id) + ".sock"))
                 .string(),
             false);
-        audio_processor_buffers.try_emplace(instance_id);
 
         audio_processor_sockets.at(instance_id).connect();
     }
@@ -393,7 +392,6 @@ class Vst3Sockets : public Sockets {
                              std::to_string(instance_id) + ".sock"))
                     .string(),
                 true);
-            audio_processor_buffers.try_emplace(instance_id);
         }
 
         socket_listening_latch.set_value();
@@ -422,7 +420,6 @@ class Vst3Sockets : public Sockets {
         if (audio_processor_sockets.contains(instance_id)) {
             audio_processor_sockets.at(instance_id).close();
             audio_processor_sockets.erase(instance_id);
-            audio_processor_buffers.erase(instance_id);
 
             return true;
         } else {
@@ -443,9 +440,9 @@ class Vst3Sockets : public Sockets {
     typename T::Response send_audio_processor_message(
         const T& object,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
-        return audio_processor_sockets.at(object.instance_id)
-            .send_message(object, logging,
-                          audio_processor_buffers.at(object.instance_id));
+        typename T::Response response_object;
+        return receive_audio_processor_message_into(
+            object, response_object, object.instance_id, logging);
     }
 
     /**
@@ -456,10 +453,9 @@ class Vst3Sockets : public Sockets {
     typename T::Response send_audio_processor_message(
         const MessageReference<T>& object_ref,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
-        return audio_processor_sockets.at(object_ref.get().instance_id)
-            .send_message(
-                object_ref, logging,
-                audio_processor_buffers.at(object_ref.get().instance_id));
+        typename T::Response response_object;
+        return receive_audio_processor_message_into(
+            object_ref, response_object, object_ref.get().instance_id, logging);
     }
 
     /**
@@ -474,10 +470,8 @@ class Vst3Sockets : public Sockets {
         const MessageReference<T>& request_ref,
         typename T::Response& response_ref,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
-        return audio_processor_sockets.at(request_ref.get().instance_id)
-            .receive_into(
-                request_ref, response_ref, logging,
-                audio_processor_buffers.at(request_ref.get().instance_id));
+        return receive_audio_processor_message_into(
+            request_ref, response_ref, request_ref.get().instance_id, logging);
     }
 
     /**
@@ -500,6 +494,24 @@ class Vst3Sockets : public Sockets {
     Vst3MessageHandler<Thread, CallbackRequest> vst_host_callback;
 
    private:
+    /**
+     * The actual implementation for `send_audio_processor_message` and
+     * `receive_audio_processor_message_into`. Here we keep a thread local
+     * static variable for our buffers sending.
+     */
+    template <typename T>
+    typename T::Response& receive_audio_processor_message_into(
+        const T& object,
+        typename T::Response& response_object,
+        size_t instance_id,
+        std::optional<std::pair<Vst3Logger&, bool>> logging) {
+        thread_local std::vector<uint8_t> audio_processor_buffer{};
+
+        return audio_processor_sockets.at(instance_id)
+            .receive_into(object, response_object, logging,
+                          audio_processor_buffer);
+    }
+
     boost::asio::io_context& io_context;
 
     /**
@@ -515,11 +527,5 @@ class Vst3Sockets : public Sockets {
      */
     std::map<size_t, Vst3MessageHandler<Thread, AudioProcessorRequest>>
         audio_processor_sockets;
-    /**
-     * Binary buffers used for serializing objects and receiving messages into
-     * during `send_audio_processor_message()`. This is used to minimize the
-     * amount of allocations in the audio processing loop.
-     */
-    std::map<size_t, std::vector<uint8_t>> audio_processor_buffers;
     std::mutex audio_processor_sockets_mutex;
 };
