@@ -85,3 +85,53 @@ struct HostResponse {
         s.value4b(pid);
     }
 };
+
+/**
+ * A reference wrapper similar `std::reference_wrapper<T>` that supports default
+ * initializing (which is of course UB, but we need this for serialization) and
+ * also forwards the `T::Response` type for use with `Vst3MessageHandler`.
+ *
+ * We use this during audio processing to avoid having to store the actual
+ * process data in a temporary object (when we copy it to an
+ * `std::variant<Ts...>`) during audio processing. The process data refers to
+ * heap data, so copying it would also require performing heap allocations.
+ *
+ * Since this object only stores a reference to the actual data, serialization
+ * must be done using our `bitsery::ext::MessageReference`. On serialization
+ * this extension simply reads from the referred object, and on deserialization
+ * (when we're actually deserializing into an empty object) we will read into an
+ * `std::optional<T>` and then reassign this reference to point to that data, so
+ * that the actual backing object can be reused.
+ */
+template <typename T>
+class MessageReference {
+   public:
+    /**
+     * The default constructor is required for our serialization, but it should
+     * never be used manually. Calling `.get()` on a default initialized
+     * `MessageReference()` results in UB. We'll set the default pointer to
+     * `0x1337420` so it's at least obvious where it's coming from if we get a
+     * segfault caused by a read to that address.
+     */
+    MessageReference() : object(reinterpret_cast<T*>(0x1337420)) {}
+
+    /**
+     * Store a reference in this object.
+     */
+    MessageReference(T& object) : object(&object) {}
+
+    using Response = typename T::Response;
+
+    /**
+     * Get the reference to the object. This is the same interface as
+     * `std::reference_wrapper<T>`.
+     */
+    T& get() const noexcept { return *object; }
+    constexpr operator T&() const noexcept { return *object; }
+
+    // You cannot serialize a reference directly, use the Bitsery extension
+    // mentioned above instead
+
+   private:
+    T* object;
+};
