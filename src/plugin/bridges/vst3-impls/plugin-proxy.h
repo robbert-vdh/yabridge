@@ -489,6 +489,13 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      */
     YaAudioProcessor::Process process_request;
 
+    /**
+     * The response object we'll get in return when we send the
+     * `process_request` object above to the Wine plugin host. This object also
+     * contains heap data, so we also want to reuse this.
+     */
+    YaAudioProcessor::ProcessResponse process_response;
+
     // Caches
 
     /**

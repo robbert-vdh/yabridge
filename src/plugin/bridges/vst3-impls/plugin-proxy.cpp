@@ -220,12 +220,15 @@ Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
     process_request.data.repopulate(data);
     process_request.new_realtime_priority = new_realtime_priority;
 
-    ProcessResponse response = bridge.send_audio_processor_message(
-        MessageReference<YaAudioProcessor::Process>(process_request));
+    // We'll also receive the response into an existing object so we can also
+    // avoid heap allocations there
+    bridge.receive_audio_processor_message_into(
+        MessageReference<YaAudioProcessor::Process>(process_request),
+        process_response);
 
-    response.output_data.write_back_outputs(data);
+    process_response.output_data.write_back_outputs(data);
 
-    return response.result;
+    return process_response.result;
 }
 
 uint32 PLUGIN_API Vst3PluginProxyImpl::getTailSamples() {

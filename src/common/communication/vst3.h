@@ -463,6 +463,24 @@ class Vst3Sockets : public Sockets {
     }
 
     /**
+     * Alternative to `send_audio_processor_message()` for use with
+     * `MessageReference<T>`, where we also want deserialize into an existing
+     * object to prevent allocations. Used during audio processing.q
+     *
+     * TODO: Think of a better name for this
+     */
+    template <typename T>
+    typename T::Response& receive_audio_processor_message_into(
+        const MessageReference<T>& request_ref,
+        typename T::Response& response_ref,
+        std::optional<std::pair<Vst3Logger&, bool>> logging) {
+        return audio_processor_sockets.at(request_ref.get().instance_id)
+            .receive_into(
+                request_ref, response_ref, logging,
+                audio_processor_buffers.at(request_ref.get().instance_id));
+    }
+
+    /**
      * For sending messages from the host to the plugin. After we have a better
      * idea of what our communication model looks like we'll probably want to
      * provide an abstraction similar to `EventHandler`. For optimization

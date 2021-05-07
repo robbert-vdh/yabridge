@@ -122,6 +122,21 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
     }
 
     /**
+     * Send an `IAudioProcessor` or `IComponent` control message to a specific
+     * plugin instance, receiving the results into an existing object. This is
+     * similar to the `send_audio_processor_message()` above, but this lets us
+     * avoid allocations in response objects that contain heap data.
+     */
+    template <typename T>
+    typename T::Response& receive_audio_processor_message_into(
+        const T& object,
+        typename T::Response& response_object) {
+        return sockets.receive_audio_processor_message_into(
+            object, response_object,
+            std::pair<Vst3Logger&, bool>(logger, true));
+    }
+
+    /**
      * The logging facility used for this instance of yabridge. Wraps around
      * `PluginBridge::generic_logger`.
      */

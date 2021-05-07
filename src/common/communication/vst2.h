@@ -50,14 +50,14 @@ class DefaultDataConverter {
                                                    const intptr_t value) const;
 
     /**
-     * Write the reponse back to the `data` pointer.
+     * Write the response back to the `data` pointer.
      */
     virtual void write(const int opcode,
                        void* data,
                        const EventResult& response) const;
 
     /**
-     * Write the reponse back to the `value` pointer. This is only used during
+     * Write the response back to the `value` pointer. This is only used during
      * the `effGetSpeakerArrangement` event.
      */
     virtual void write_value(const int opcode,
