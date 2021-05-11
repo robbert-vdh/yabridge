@@ -20,11 +20,6 @@
 #include <optional>
 #include <string>
 
-#ifndef NOMINMAX
-#define NOMINMAX
-#define __WINE_WINSOCKAPI_STDLIB_H
-#define _WINSOCKAPI_
-#endif
 #include <windows.h>
 #include <function2/function2.hpp>
 

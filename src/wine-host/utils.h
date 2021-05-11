@@ -23,13 +23,7 @@
 #include <optional>
 #include <set>
 
-#ifndef NOMINMAX
-#define NOMINMAX
-#define __WINE_WINSOCKAPI_STDLIB_H
-#define _WINSOCKAPI_
-#endif
 #include <windows.h>
-
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/io_context.hpp>
 #include <function2/function2.hpp>

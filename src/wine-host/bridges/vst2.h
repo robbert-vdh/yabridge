@@ -18,11 +18,6 @@
 
 #include "../boost-fix.h"
 
-#ifndef NOMINMAX
-#define NOMINMAX
-#define __WINE_WINSOCKAPI_STDLIB_H
-#define _WINSOCKAPI_
-#endif
 #include <vestige/aeffectx.h>
 #include <windows.h>
 
