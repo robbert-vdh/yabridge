@@ -25,7 +25,8 @@
 
 #ifndef NOMINMAX
 #define NOMINMAX
-#define WINE_NOWINSOCK
+#define __WINE_WINSOCKAPI_STDLIB_H
+#define _WINSOCKAPI_
 #endif
 #include <windows.h>
 

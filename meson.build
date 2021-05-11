@@ -212,7 +212,11 @@ if with_vst3
   vst3_wine_compiler_options = [
     # Some stuff from `windows.h` results in conflicting definitions
     '-DNOMINMAX',
-    '-DWINE_NOWINSOCK',
+    # Winsock conflicts with the Posix sockets API. Before Wine 6.8 there was a
+    # `WINE_NOWINSOCK` that would exclude just `winsock.h` from `windows.h`, but
+    # they got rid of that so we now need to explicitly define the ifdef guards
+    '-D__WINE_WINSOCKAPI_STDLIB_H',
+    '-D_WINSOCKAPI_',
   ]
   vst3_base_wine_64bit = static_library(
     'vst3_base_wine_64bit',

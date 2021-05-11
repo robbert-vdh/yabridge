@@ -25,6 +25,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   objects on both sides. This greatly reduces the overhead of our VST3 bridging
   by getting rid of all memory allocations during audio processing.
 
+### Fixed
+
+- Fixed builds on Wine 6.8 because of internal changes to Wine's `windows.h`
+  implementation.
+
 ## [3.2.0] - 2021-05-03
 
 ### Added
