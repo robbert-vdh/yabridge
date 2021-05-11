@@ -48,14 +48,21 @@ compiler_options = [
   '-msse2',
 ]
 
+# HACK: Some stuff from `windows.h` that we don't need results in conflicting
+#       definitions, so we'll try to exclude those bits
 wine_compiler_options = [
-  # Some stuff from `windows.h` results in conflicting definitions
   '-DNOMINMAX',
   # Winsock conflicts with the Posix sockets API. Before Wine 6.8 there was a
   # `WINE_NOWINSOCK` that would exclude just `winsock.h` from `windows.h`, but
   # they got rid of that so we now need to explicitly define the ifdef guards
   '-D__WINE_WINSOCKAPI_STDLIB_H',
   '-D_WINSOCKAPI_',
+  # This is only relevant for Wine 6.2, but commit
+  # `0c19e2e487d36a89531daf4897c0b6390d82a843`, broke compilation of
+  # `shobjidl.h` under C++.
+  #
+  # https://bugs.winehq.org/show_bug.cgi?id=50670
+  '-D__IFileOperation_INTERFACE_DEFINED__',
 ]
 
 # NOTE: GCC doesn't 8-byte align doubles in structs on x86 for ABI-compatibilty
