@@ -16,12 +16,12 @@
 
 #include "parameter-finder.h"
 
-YaParameterFinder::ConstructArgs::ConstructArgs() {}
+YaParameterFinder::ConstructArgs::ConstructArgs() noexcept {}
 
 YaParameterFinder::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IParameterFinder>(object)) {}
 
-YaParameterFinder::YaParameterFinder(const ConstructArgs&& args)
+YaParameterFinder::YaParameterFinder(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

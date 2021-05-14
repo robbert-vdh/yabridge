@@ -16,12 +16,14 @@
 
 #include "param-value-queue.h"
 
-YaParamValueQueue::YaParamValueQueue() {
-    FUNKNOWN_CTOR
+YaParamValueQueue::YaParamValueQueue() noexcept {FUNKNOWN_CTOR}
+
+YaParamValueQueue::~YaParamValueQueue() noexcept {
+    FUNKNOWN_DTOR
 }
 
 void YaParamValueQueue::clear_for_parameter(
-    Steinberg::Vst::ParamID parameter_id) {
+    Steinberg::Vst::ParamID parameter_id) noexcept {
     this->parameter_id = parameter_id;
     queue.clear();
 }
@@ -37,10 +39,6 @@ void YaParamValueQueue::repopulate(
         // returns `kResultOk`
         original_queue.getPoint(i, queue[i].first, queue[i].second);
     }
-}
-
-YaParamValueQueue::~YaParamValueQueue() {
-    FUNKNOWN_DTOR
 }
 
 #pragma GCC diagnostic push

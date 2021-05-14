@@ -16,14 +16,14 @@
 
 #include "audio-presentation-latency.h"
 
-YaAudioPresentationLatency::ConstructArgs::ConstructArgs() {}
+YaAudioPresentationLatency::ConstructArgs::ConstructArgs() noexcept {}
 
 YaAudioPresentationLatency::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IAudioPresentationLatency>(
               object)) {}
 
 YaAudioPresentationLatency::YaAudioPresentationLatency(
-    const ConstructArgs&& args)
+    const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

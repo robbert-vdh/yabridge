@@ -16,11 +16,11 @@
 
 #include "component.h"
 
-YaComponent::ConstructArgs::ConstructArgs() {}
+YaComponent::ConstructArgs::ConstructArgs() noexcept {}
 
 YaComponent::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IComponent>(object)) {}
 
-YaComponent::YaComponent(const ConstructArgs&& args)
+YaComponent::YaComponent(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

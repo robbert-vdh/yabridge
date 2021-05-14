@@ -16,21 +16,21 @@
 
 #include "context-menu-proxy.h"
 
-Vst3ContextMenuProxy::ConstructArgs::ConstructArgs() {}
+Vst3ContextMenuProxy::ConstructArgs::ConstructArgs() noexcept {}
 
 Vst3ContextMenuProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
     size_t owner_instance_id,
-    size_t context_menu_id)
+    size_t context_menu_id) noexcept
     : owner_instance_id(owner_instance_id),
       context_menu_id(context_menu_id),
       context_menu_args(object) {}
 
-Vst3ContextMenuProxy::Vst3ContextMenuProxy(const ConstructArgs&& args)
+Vst3ContextMenuProxy::Vst3ContextMenuProxy(const ConstructArgs&& args) noexcept
     : YaContextMenu(std::move(args.context_menu_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
-      Vst3ContextMenuProxy::~Vst3ContextMenuProxy() {
+      Vst3ContextMenuProxy::~Vst3ContextMenuProxy() noexcept {
     FUNKNOWN_DTOR
 }
 

@@ -37,13 +37,13 @@ class YaComponentHandlerBusActivation
      * These are the arguments for creating a `YaComponentHandlerBusActivation`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements
          * `IComponentHandlerBusActivation` and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -60,9 +60,9 @@ class YaComponentHandlerBusActivation
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaComponentHandlerBusActivation(const ConstructArgs&& args);
+    YaComponentHandlerBusActivation(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * Message to pass through a call to

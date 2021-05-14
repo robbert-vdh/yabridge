@@ -21,7 +21,7 @@
 
 #include <public.sdk/source/vst/utility/stringconvert.h>
 
-YaPluginFactory3::ConstructArgs::ConstructArgs() {}
+YaPluginFactory3::ConstructArgs::ConstructArgs() noexcept {}
 
 YaPluginFactory3::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object) {
@@ -99,7 +99,7 @@ YaPluginFactory3::ConstructArgs::ConstructArgs(
     }
 }
 
-YaPluginFactory3::YaPluginFactory3(const ConstructArgs&& args)
+YaPluginFactory3::YaPluginFactory3(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}
 
 tresult PLUGIN_API

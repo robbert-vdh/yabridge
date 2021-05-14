@@ -49,14 +49,14 @@ class Vst3ComponentHandlerProxy : public YaComponentHandler,
      * `Vst3ComponentHandlerProxyImpl`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Read from an existing object. We will try to mimic this object, so
          * we'll support any interfaces this object also supports.
          */
         ConstructArgs(Steinberg::IPtr<FUnknown> object,
-                      size_t owner_instance_id);
+                      size_t owner_instance_id) noexcept;
 
         /**
          * The unique instance identifier of the proxy object instance this
@@ -98,7 +98,7 @@ class Vst3ComponentHandlerProxy : public YaComponentHandler,
      *   that of the objects they are passed to. If those objects get dropped,
      *   then the host contexts should also be dropped.
      */
-    Vst3ComponentHandlerProxy(const ConstructArgs&& args);
+    Vst3ComponentHandlerProxy(const ConstructArgs&& args) noexcept;
 
     /**
      * The lifetime of this object should be bound to the object we created it
@@ -106,14 +106,14 @@ class Vst3ComponentHandlerProxy : public YaComponentHandler,
      * dropped a corresponding `Vst3ComponentHandlerProxyImpl` should also be
      * dropped.
      */
-    virtual ~Vst3ComponentHandlerProxy();
+    virtual ~Vst3ComponentHandlerProxy() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 
     /**
      * Get the instance ID of the owner of this object.
      */
-    inline size_t owner_instance_id() const {
+    inline size_t owner_instance_id() const noexcept {
         return arguments.owner_instance_id;
     }
 

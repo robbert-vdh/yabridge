@@ -16,14 +16,14 @@
 
 #include "note-expression-controller.h"
 
-YaNoteExpressionController::ConstructArgs::ConstructArgs() {}
+YaNoteExpressionController::ConstructArgs::ConstructArgs() noexcept {}
 
 YaNoteExpressionController::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::INoteExpressionController>(
               object)) {}
 
 YaNoteExpressionController::YaNoteExpressionController(
-    const ConstructArgs&& args)
+    const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

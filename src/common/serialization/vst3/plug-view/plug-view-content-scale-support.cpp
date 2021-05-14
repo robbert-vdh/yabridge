@@ -16,13 +16,13 @@
 
 #include "plug-view-content-scale-support.h"
 
-YaPlugViewContentScaleSupport::ConstructArgs::ConstructArgs() {}
+YaPlugViewContentScaleSupport::ConstructArgs::ConstructArgs() noexcept {}
 
 YaPlugViewContentScaleSupport::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::IPlugViewContentScaleSupport>(
           object)) {}
 
 YaPlugViewContentScaleSupport::YaPlugViewContentScaleSupport(
-    const ConstructArgs&& args)
+    const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

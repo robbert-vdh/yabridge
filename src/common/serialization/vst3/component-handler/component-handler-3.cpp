@@ -16,12 +16,12 @@
 
 #include "component-handler-3.h"
 
-YaComponentHandler3::ConstructArgs::ConstructArgs() {}
+YaComponentHandler3::ConstructArgs::ConstructArgs() noexcept {}
 
 YaComponentHandler3::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IComponentHandler3>(object)) {}
 
-YaComponentHandler3::YaComponentHandler3(const ConstructArgs&& args)
+YaComponentHandler3::YaComponentHandler3(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

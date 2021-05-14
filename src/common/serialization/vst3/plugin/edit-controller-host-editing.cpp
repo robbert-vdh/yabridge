@@ -16,14 +16,14 @@
 
 #include "edit-controller-host-editing.h"
 
-YaEditControllerHostEditing::ConstructArgs::ConstructArgs() {}
+YaEditControllerHostEditing::ConstructArgs::ConstructArgs() noexcept {}
 
 YaEditControllerHostEditing::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IEditControllerHostEditing>(
               object)) {}
 
 YaEditControllerHostEditing::YaEditControllerHostEditing(
-    const ConstructArgs&& args)
+    const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

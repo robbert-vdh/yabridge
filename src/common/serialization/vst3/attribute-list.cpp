@@ -76,9 +76,9 @@ const static char* stream_meta_data_string_keys[] = {
     Steinberg::Vst::PresetAttributes::kName,
     Steinberg::Vst::PresetAttributes::kFileName};
 
-YaAttributeList::YaAttributeList(){FUNKNOWN_CTOR}
+YaAttributeList::YaAttributeList() noexcept {FUNKNOWN_CTOR}
 
-YaAttributeList::~YaAttributeList() {
+YaAttributeList::~YaAttributeList() noexcept {
     FUNKNOWN_DTOR
 }
 

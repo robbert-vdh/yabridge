@@ -16,21 +16,21 @@
 
 #include "connection-point.h"
 
-YaConnectionPoint::ConstructArgs::ConstructArgs() {}
+YaConnectionPoint::ConstructArgs::ConstructArgs() noexcept {}
 
 YaConnectionPoint::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint>(object)) {}
 
 YaConnectionPoint::Vst3ConnectionPointProxyConstructArgs::
-    Vst3ConnectionPointProxyConstructArgs() {}
+    Vst3ConnectionPointProxyConstructArgs() noexcept {}
 
 YaConnectionPoint::Vst3ConnectionPointProxyConstructArgs::
     Vst3ConnectionPointProxyConstructArgs(
         Steinberg::IPtr<Steinberg::FUnknown> object,
-        size_t owner_instance_id)
+        size_t owner_instance_id) noexcept
     : owner_instance_id(owner_instance_id), connection_point_args(object) {}
 
-YaConnectionPoint::YaConnectionPoint(const ConstructArgs&& args)
+YaConnectionPoint::YaConnectionPoint(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

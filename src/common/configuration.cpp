@@ -26,7 +26,7 @@
 
 namespace fs = boost::filesystem;
 
-Configuration::Configuration() {}
+Configuration::Configuration() noexcept {}
 
 Configuration::Configuration(const fs::path& config_path,
                              const fs::path& yabridge_path)
@@ -140,7 +140,8 @@ Configuration::Configuration(const fs::path& config_path,
     }
 }
 
-std::chrono::steady_clock::duration Configuration::event_loop_interval() const {
+std::chrono::steady_clock::duration Configuration::event_loop_interval()
+    const noexcept {
     return std::chrono::duration_cast<std::chrono::steady_clock::duration>(
         std::chrono::milliseconds(1000) / frame_rate.value_or(60.0));
 }

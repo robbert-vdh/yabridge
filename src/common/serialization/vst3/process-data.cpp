@@ -18,7 +18,7 @@
 
 #include "src/common/utils.h"
 
-YaAudioBusBuffers::YaAudioBusBuffers() {}
+YaAudioBusBuffers::YaAudioBusBuffers() noexcept {}
 
 void YaAudioBusBuffers::clear(int32 sample_size,
                               size_t num_samples,
@@ -151,7 +151,7 @@ void YaAudioBusBuffers::write_back_outputs(
         buffers);
 }
 
-YaProcessData::YaProcessData()
+YaProcessData::YaProcessData() noexcept
     // This response object acts as an optimization. It stores pointers to the
     // original fields in our objects, so we can both only serialize those
     // fields when sending the response from the Wine side. This lets us avoid
@@ -290,7 +290,7 @@ Steinberg::Vst::ProcessData& YaProcessData::reconstruct() {
     return reconstructed_process_data;
 }
 
-YaProcessData::Response& YaProcessData::create_response() {
+YaProcessData::Response& YaProcessData::create_response() noexcept {
     // NOTE: We _have_ to manually copy over the silence flags from the
     //       `ProcessData` object generated in `get()` here sicne these of
     //       course are not references or pointers like all other fields, so

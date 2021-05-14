@@ -217,7 +217,7 @@ class Sockets {
      *
      * @note Classes overriding this should call `close()` in their destructor.
      */
-    virtual ~Sockets() {
+    virtual ~Sockets() noexcept {
         try {
             // NOTE: Because someone has wiped their home directory in the past
             //       by manually modifying the socket base directory argument
@@ -239,6 +239,9 @@ class Sockets {
             // There should not be any filesystem errors since only one side
             // removes the files, but if we somehow can't delete the file
             // then we can just silently ignore this
+        } catch (const std::bad_alloc&) {
+            // If we cannot clean up because we're out of memory, then that's
+            // fine
         }
     }
 

@@ -16,11 +16,11 @@
 
 #include "component-handler-proxy.h"
 
-Vst3ComponentHandlerProxy::ConstructArgs::ConstructArgs() {}
+Vst3ComponentHandlerProxy::ConstructArgs::ConstructArgs() noexcept {}
 
 Vst3ComponentHandlerProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
-    size_t owner_instance_id)
+    size_t owner_instance_id) noexcept
     : owner_instance_id(owner_instance_id),
       component_handler_args(object),
       component_handler_2_args(object),
@@ -30,7 +30,8 @@ Vst3ComponentHandlerProxy::ConstructArgs::ConstructArgs(
       unit_handler_args(object),
       unit_handler_2_args(object) {}
 
-Vst3ComponentHandlerProxy::Vst3ComponentHandlerProxy(const ConstructArgs&& args)
+Vst3ComponentHandlerProxy::Vst3ComponentHandlerProxy(
+    const ConstructArgs&& args) noexcept
     : YaComponentHandler(std::move(args.component_handler_args)),
       YaComponentHandler2(std::move(args.component_handler_2_args)),
       YaComponentHandler3(std::move(args.component_handler_3_args)),
@@ -41,7 +42,7 @@ Vst3ComponentHandlerProxy::Vst3ComponentHandlerProxy(const ConstructArgs&& args)
       YaUnitHandler2(std::move(args.unit_handler_2_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
-      Vst3ComponentHandlerProxy::~Vst3ComponentHandlerProxy() {
+      Vst3ComponentHandlerProxy::~Vst3ComponentHandlerProxy() noexcept {
     FUNKNOWN_DTOR
 }
 

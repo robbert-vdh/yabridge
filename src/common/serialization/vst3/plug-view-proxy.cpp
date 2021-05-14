@@ -16,24 +16,24 @@
 
 #include "plug-view-proxy.h"
 
-Vst3PlugViewProxy::ConstructArgs::ConstructArgs() {}
+Vst3PlugViewProxy::ConstructArgs::ConstructArgs() noexcept {}
 
 Vst3PlugViewProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
-    size_t owner_instance_id)
+    size_t owner_instance_id) noexcept
     : owner_instance_id(owner_instance_id),
       plug_view_args(object),
       parameter_finder_args(object),
       plug_view_content_scale_support_args(object) {}
 
-Vst3PlugViewProxy::Vst3PlugViewProxy(const ConstructArgs&& args)
+Vst3PlugViewProxy::Vst3PlugViewProxy(const ConstructArgs&& args) noexcept
     : YaPlugView(std::move(args.plug_view_args)),
       YaParameterFinder(std::move(args.parameter_finder_args)),
       YaPlugViewContentScaleSupport(
           std::move(args.plug_view_content_scale_support_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
-      Vst3PlugViewProxy::~Vst3PlugViewProxy() {
+      Vst3PlugViewProxy::~Vst3PlugViewProxy() noexcept {
     FUNKNOWN_DTOR
 }
 

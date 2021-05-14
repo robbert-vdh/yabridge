@@ -16,11 +16,11 @@
 
 #include "plug-frame.h"
 
-YaPlugFrame::ConstructArgs::ConstructArgs() {}
+YaPlugFrame::ConstructArgs::ConstructArgs() noexcept {}
 
 YaPlugFrame::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::IPlugFrame>(object)) {}
 
-YaPlugFrame::YaPlugFrame(const ConstructArgs&& args)
+YaPlugFrame::YaPlugFrame(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

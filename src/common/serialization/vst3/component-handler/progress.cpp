@@ -16,11 +16,11 @@
 
 #include "progress.h"
 
-YaProgress::ConstructArgs::ConstructArgs() {}
+YaProgress::ConstructArgs::ConstructArgs() noexcept {}
 
 YaProgress::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IProgress>(object)) {}
 
-YaProgress::YaProgress(const ConstructArgs&& args)
+YaProgress::YaProgress(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

@@ -278,7 +278,8 @@ void serialize(S& s, CallbackRequest& payload) {
  * variant.
  */
 template <typename... Ts>
-std::variant<Ts...>& get_request_variant(std::variant<Ts...>& request) {
+std::variant<Ts...>& get_request_variant(
+    std::variant<Ts...>& request) noexcept {
     return request;
 }
 
@@ -290,6 +291,6 @@ std::variant<Ts...>& get_request_variant(std::variant<Ts...>& request) {
  * @overload
  */
 inline AudioProcessorRequest::Payload& get_request_variant(
-    AudioProcessorRequest& request) {
+    AudioProcessorRequest& request) noexcept {
     return request.payload;
 }

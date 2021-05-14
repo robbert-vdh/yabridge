@@ -16,11 +16,12 @@
 
 #include "connection-point-proxy.h"
 
-Vst3ConnectionPointProxy::Vst3ConnectionPointProxy(const ConstructArgs&& args)
+Vst3ConnectionPointProxy::Vst3ConnectionPointProxy(
+    const ConstructArgs&& args) noexcept
     : YaConnectionPoint(std::move(args.connection_point_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
-      Vst3ConnectionPointProxy::~Vst3ConnectionPointProxy() {
+      Vst3ConnectionPointProxy::~Vst3ConnectionPointProxy() noexcept {
     FUNKNOWN_DTOR
 }
 

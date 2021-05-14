@@ -34,13 +34,13 @@ class YaParameterFinder : public Steinberg::Vst::IParameterFinder {
      * These are the arguments for creating a `YaParameterFinder`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements
          * `IParameterFinder` and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -57,9 +57,9 @@ class YaParameterFinder : public Steinberg::Vst::IParameterFinder {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaParameterFinder(const ConstructArgs&& args);
+    YaParameterFinder(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * The response code and editor size returned by a call to

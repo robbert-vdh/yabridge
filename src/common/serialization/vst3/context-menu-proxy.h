@@ -41,7 +41,7 @@ class Vst3ContextMenuProxy : public YaContextMenu {
      * These are the arguments for constructing a `Vst3ContextMenuProxyImpl`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Read from an existing object. We will try to mimic this object, so
@@ -49,7 +49,7 @@ class Vst3ContextMenuProxy : public YaContextMenu {
          */
         ConstructArgs(Steinberg::IPtr<FUnknown> object,
                       size_t owner_instance_id,
-                      size_t context_menu_id);
+                      size_t context_menu_id) noexcept;
 
         /**
          * The unique instance identifier of the proxy object instance this
@@ -90,7 +90,7 @@ class Vst3ContextMenuProxy : public YaContextMenu {
      *   struct. We need to use raw pointers or references here so we can refer
      *   to the object without interfering with the reference count.
      */
-    Vst3ContextMenuProxy(const ConstructArgs&& args);
+    Vst3ContextMenuProxy(const ConstructArgs&& args) noexcept;
 
     /**
      * Message to request the plugin to drop the the `IContextMenu*` returned by
@@ -115,21 +115,23 @@ class Vst3ContextMenuProxy : public YaContextMenu {
      * the pointer to the actual `IContextMenu*` returend by the host during
      * `IComponentHandler3::createContextMenu`.
      */
-    virtual ~Vst3ContextMenuProxy() = 0;
+    virtual ~Vst3ContextMenuProxy() noexcept = 0;
 
     DECLARE_FUNKNOWN_METHODS
 
     /**
      * Get the instance ID of the owner of this object.
      */
-    inline size_t owner_instance_id() const {
+    inline size_t owner_instance_id() const noexcept {
         return arguments.owner_instance_id;
     }
 
     /**
      * Get the unique ID for this context menu.
      */
-    inline size_t context_menu_id() const { return arguments.context_menu_id; }
+    inline size_t context_menu_id() const noexcept {
+        return arguments.context_menu_id;
+    }
 
    private:
     ConstructArgs arguments;

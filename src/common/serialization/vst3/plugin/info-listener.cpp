@@ -16,13 +16,13 @@
 
 #include "info-listener.h"
 
-YaInfoListener::ConstructArgs::ConstructArgs() {}
+YaInfoListener::ConstructArgs::ConstructArgs() noexcept {}
 
 YaInfoListener::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::ChannelContext::IInfoListener>(
               object)) {}
 
-YaInfoListener::YaInfoListener(const ConstructArgs&& args)
+YaInfoListener::YaInfoListener(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

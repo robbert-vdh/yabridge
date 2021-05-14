@@ -16,11 +16,11 @@
 
 #include "plug-view.h"
 
-YaPlugView::ConstructArgs::ConstructArgs() {}
+YaPlugView::ConstructArgs::ConstructArgs() noexcept {}
 
 YaPlugView::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::IPlugView>(object)) {}
 
-YaPlugView::YaPlugView(const ConstructArgs&& args)
+YaPlugView::YaPlugView(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

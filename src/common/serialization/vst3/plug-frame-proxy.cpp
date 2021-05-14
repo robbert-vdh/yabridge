@@ -16,18 +16,18 @@
 
 #include "plug-frame-proxy.h"
 
-Vst3PlugFrameProxy::ConstructArgs::ConstructArgs() {}
+Vst3PlugFrameProxy::ConstructArgs::ConstructArgs() noexcept {}
 
 Vst3PlugFrameProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
-    size_t owner_instance_id)
+    size_t owner_instance_id) noexcept
     : owner_instance_id(owner_instance_id), plug_frame_args(object) {}
 
-Vst3PlugFrameProxy::Vst3PlugFrameProxy(const ConstructArgs&& args)
+Vst3PlugFrameProxy::Vst3PlugFrameProxy(const ConstructArgs&& args) noexcept
     : YaPlugFrame(std::move(args.plug_frame_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
-      Vst3PlugFrameProxy::~Vst3PlugFrameProxy() {
+      Vst3PlugFrameProxy::~Vst3PlugFrameProxy() noexcept {
     FUNKNOWN_DTOR
 }
 

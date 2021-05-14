@@ -36,14 +36,14 @@ class Vst3PlugFrameProxy : public YaPlugFrame {
      * `Vst3PlugFrameProxyImpl`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Read from an existing object. We will try to mimic this object, so
          * we'll support any interfaces this object also supports.
          */
         ConstructArgs(Steinberg::IPtr<FUnknown> object,
-                      size_t owner_instance_id);
+                      size_t owner_instance_id) noexcept;
 
         /**
          * The unique instance identifier of the proxy object instance this
@@ -71,7 +71,7 @@ class Vst3PlugFrameProxy : public YaPlugFrame {
      *   lifetime is bound to that of the objects they are passed to. If the
      *   plug view instance gets dropped, this proxy should also be dropped.
      */
-    Vst3PlugFrameProxy(const ConstructArgs&& args);
+    Vst3PlugFrameProxy(const ConstructArgs&& args) noexcept;
 
     /**
      * The lifetime of this object should be bound to the object we created it
@@ -79,14 +79,14 @@ class Vst3PlugFrameProxy : public YaPlugFrame {
      * `n` gets dropped, the corresponding `Vst3PlugFrameProxy` should also be
      * dropped.
      */
-    virtual ~Vst3PlugFrameProxy();
+    virtual ~Vst3PlugFrameProxy() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 
     /**
      * Get the instance ID of the owner of this object.
      */
-    inline size_t owner_instance_id() const {
+    inline size_t owner_instance_id() const noexcept {
         return arguments.owner_instance_id;
     }
 

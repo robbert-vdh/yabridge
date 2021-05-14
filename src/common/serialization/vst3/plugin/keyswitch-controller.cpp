@@ -16,12 +16,12 @@
 
 #include "keyswitch-controller.h"
 
-YaKeyswitchController::ConstructArgs::ConstructArgs() {}
+YaKeyswitchController::ConstructArgs::ConstructArgs() noexcept {}
 
 YaKeyswitchController::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IKeyswitchController>(
           object)) {}
 
-YaKeyswitchController::YaKeyswitchController(const ConstructArgs&& args)
+YaKeyswitchController::YaKeyswitchController(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

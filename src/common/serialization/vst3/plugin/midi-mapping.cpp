@@ -16,11 +16,11 @@
 
 #include "midi-mapping.h"
 
-YaMidiMapping::ConstructArgs::ConstructArgs() {}
+YaMidiMapping::ConstructArgs::ConstructArgs() noexcept {}
 
 YaMidiMapping::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping>(object)) {}
 
-YaMidiMapping::YaMidiMapping(const ConstructArgs&& args)
+YaMidiMapping::YaMidiMapping(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

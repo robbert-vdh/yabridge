@@ -16,11 +16,13 @@
 
 #include "parameter-changes.h"
 
-YaParameterChanges::YaParameterChanges() {
-    FUNKNOWN_CTOR
+YaParameterChanges::YaParameterChanges() noexcept {FUNKNOWN_CTOR}
+
+YaParameterChanges::~YaParameterChanges() noexcept {
+    FUNKNOWN_DTOR
 }
 
-void YaParameterChanges::clear() {
+void YaParameterChanges::clear() noexcept {
     queues.clear();
 }
 
@@ -31,10 +33,6 @@ void YaParameterChanges::repopulate(
     for (int i = 0; i < original_queues.getParameterCount(); i++) {
         queues[i].repopulate(*original_queues.getParameterData(i));
     }
-}
-
-YaParameterChanges::~YaParameterChanges() {
-    FUNKNOWN_DTOR
 }
 
 #pragma GCC diagnostic push

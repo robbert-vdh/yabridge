@@ -50,20 +50,20 @@ class Vst3ConnectionPointProxy : public YaConnectionPoint {
      * @note This object will be created as part of handling
      *   `IConnectionPoint::connect()` if the connection is indirect.
      */
-    Vst3ConnectionPointProxy(const ConstructArgs&& args);
+    Vst3ConnectionPointProxy(const ConstructArgs&& args) noexcept;
 
     /**
      * This object will be destroyed again during
      * `IConnectionPoint::disconnect()`.
      */
-    virtual ~Vst3ConnectionPointProxy();
+    virtual ~Vst3ConnectionPointProxy() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 
     /**
      * Get the instance ID of the owner of this object.
      */
-    inline size_t owner_instance_id() const {
+    inline size_t owner_instance_id() const noexcept {
         return arguments.owner_instance_id;
     }
 

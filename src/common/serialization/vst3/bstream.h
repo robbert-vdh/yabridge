@@ -44,7 +44,7 @@ class YaBStream : public Steinberg::IBStream,
      * other constructor will check whether the `IBstream*` provided by the host
      * supports stream attributes and configures the object accordingly.
      */
-    YaBStream();
+    YaBStream() noexcept;
 
     /**
      * Read an existing stream.
@@ -53,7 +53,7 @@ class YaBStream : public Steinberg::IBStream,
      */
     YaBStream(Steinberg::IBStream* stream);
 
-    virtual ~YaBStream();
+    virtual ~YaBStream() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 
@@ -66,7 +66,7 @@ class YaBStream : public Steinberg::IBStream,
     /**
      * Return the buffer's, used in the logging messages.
      */
-    size_t size() const;
+    size_t size() const noexcept;
 
     // From `IBstream`
     tresult PLUGIN_API read(void* buffer,

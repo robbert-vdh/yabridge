@@ -16,14 +16,14 @@
 
 #include "xml-representation-controller.h"
 
-YaXmlRepresentationController::ConstructArgs::ConstructArgs() {}
+YaXmlRepresentationController::ConstructArgs::ConstructArgs() noexcept {}
 
 YaXmlRepresentationController::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IXmlRepresentationController>(
               object)) {}
 
 YaXmlRepresentationController::YaXmlRepresentationController(
-    const ConstructArgs&& args)
+    const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

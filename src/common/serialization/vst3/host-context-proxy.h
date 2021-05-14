@@ -41,14 +41,14 @@ class Vst3HostContextProxy : public YaHostApplication,
      * `Vst3HostContextProxyImpl`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Read from an existing object. We will try to mimic this object, so
          * we'll support any interfaces this object also supports.
          */
         ConstructArgs(Steinberg::IPtr<FUnknown> object,
-                      std::optional<size_t> owner_instance_id);
+                      std::optional<size_t> owner_instance_id) noexcept;
 
         /**
          * The unique instance identifier of the proxy object instance this host
@@ -81,7 +81,7 @@ class Vst3HostContextProxy : public YaHostApplication,
      *   objects they are passed to. If those objects get dropped, then the host
      *   contexts should also be dropped.
      */
-    Vst3HostContextProxy(const ConstructArgs&& args);
+    Vst3HostContextProxy(const ConstructArgs&& args) noexcept;
 
     /**
      * The lifetime of this object should be bound to the object we created it
@@ -89,7 +89,7 @@ class Vst3HostContextProxy : public YaHostApplication,
      * dropped a corresponding `Vst3HostContextProxyImpl` should also be
      * dropped.
      */
-    virtual ~Vst3HostContextProxy();
+    virtual ~Vst3HostContextProxy() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 
@@ -97,7 +97,7 @@ class Vst3HostContextProxy : public YaHostApplication,
      * Get the instance ID of the owner of this object, if this is not the
      * global host context passed to the module's plugin factory.
      */
-    inline std::optional<size_t> owner_instance_id() const {
+    inline std::optional<size_t> owner_instance_id() const noexcept {
         return arguments.owner_instance_id;
     }
 

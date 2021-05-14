@@ -67,7 +67,7 @@ std::u16string tchar_pointer_to_u16string(const Steinberg::Vst::TChar* string,
  * Convert an `std::u16string` back to a null terminated `TChar*` string.
  */
 const Steinberg::Vst::TChar* u16string_to_tchar_pointer(
-    const std::u16string& string);
+    const std::u16string& string) noexcept;
 
 /**
  * Empty struct for when we have send a response to some operation without any
@@ -100,10 +100,10 @@ using ArrayUID = std::array<
  */
 class WineUID {
    public:
-    WineUID();
-    WineUID(const Steinberg::TUID& tuid);
+    WineUID() noexcept;
+    WineUID(const Steinberg::TUID& tuid) noexcept;
 
-    ArrayUID get_native_uid() const;
+    ArrayUID get_native_uid() const noexcept;
 
     template <typename S>
     void serialize(S& s) {
@@ -129,18 +129,18 @@ class WineUID {
  */
 class NativeUID {
    public:
-    NativeUID();
-    NativeUID(const Steinberg::TUID& tuid);
+    NativeUID() noexcept;
+    NativeUID(const Steinberg::TUID& tuid) noexcept;
 
     /**
      * Convert to the garbled byte order used in the Wine plugin host.
      */
-    ArrayUID get_wine_uid() const;
+    ArrayUID get_wine_uid() const noexcept;
 
     /**
      * Get a reference to the proper native UID.
      */
-    inline const ArrayUID& native_uid() const { return uid; };
+    inline const ArrayUID& native_uid() const noexcept { return uid; };
 
     template <typename S>
     void serialize(S& s) {
@@ -159,10 +159,10 @@ class NativeUID {
 template <typename T>
 class PrimitiveWrapper {
    public:
-    PrimitiveWrapper() {}
-    PrimitiveWrapper(T value) : value(value) {}
+    PrimitiveWrapper() noexcept {}
+    PrimitiveWrapper(T value) noexcept : value(value) {}
 
-    operator T() const { return value; }
+    operator T() const noexcept { return value; }
 
     template <typename S>
     void serialize(S& s) {
@@ -185,17 +185,17 @@ class UniversalTResult {
      * The default constructor will initialize the value to `kResutlFalse` and
      * should only ever be used by bitsery in the serialization process.
      */
-    UniversalTResult();
+    UniversalTResult() noexcept;
 
     /**
      * Convert a native tresult into a univeral one.
      */
-    UniversalTResult(tresult native_result);
+    UniversalTResult(tresult native_result) noexcept;
 
     /**
      * Get the native equivalent for the wrapped `tresult` value.
      */
-    operator tresult() const;
+    operator tresult() const noexcept;
 
     /**
      * Get the original name for the result, e.g. `kResultOk`.
@@ -225,7 +225,7 @@ class UniversalTResult {
         kOutOfMemory
     };
 
-    static Value to_universal_result(tresult native_result);
+    static Value to_universal_result(tresult native_result) noexcept;
 
     Value universal_result;
 };

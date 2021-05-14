@@ -34,13 +34,13 @@ class YaEditController2 : public Steinberg::Vst::IEditController2 {
      * These are the arguments for creating a `YaEditController2`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements
          * `IEditController2` and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -57,9 +57,9 @@ class YaEditController2 : public Steinberg::Vst::IEditController2 {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaEditController2(const ConstructArgs&& args);
+    YaEditController2(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * Message to pass through a call to `IEditController2::setKnobMode(mode)`

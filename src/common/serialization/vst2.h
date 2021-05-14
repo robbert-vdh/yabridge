@@ -65,7 +65,8 @@ constexpr size_t binary_buffer_size = 50 << 20;
  * untouched. This should be updating the same values as the serialization
  * function right below this.
  */
-AEffect& update_aeffect(AEffect& plugin, const AEffect& updated_plugin);
+AEffect& update_aeffect(AEffect& plugin,
+                        const AEffect& updated_plugin) noexcept;
 
 /**
  * The serialization function for `AEffect` structs. This will s serialize all
@@ -164,7 +165,7 @@ struct ChunkData {
  */
 class alignas(16) DynamicVstEvents {
    public:
-    DynamicVstEvents(){};
+    DynamicVstEvents() noexcept;
 
     explicit DynamicVstEvents(const VstEvents& c_events);
 
@@ -216,7 +217,7 @@ class alignas(16) DynamicVstEvents {
  */
 class alignas(16) DynamicSpeakerArrangement {
    public:
-    DynamicSpeakerArrangement(){};
+    DynamicSpeakerArrangement() noexcept;
 
     explicit DynamicSpeakerArrangement(
         const VstSpeakerArrangement& speaker_arrangement);

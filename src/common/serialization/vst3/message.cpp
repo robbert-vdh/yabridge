@@ -16,7 +16,7 @@
 
 #include "message.h"
 
-YaMessagePtr::YaMessagePtr(){FUNKNOWN_CTOR}
+YaMessagePtr::YaMessagePtr() noexcept {FUNKNOWN_CTOR}
 
 YaMessagePtr::YaMessagePtr(IMessage& message)
     : message_id(message.getMessageID()
@@ -25,7 +25,7 @@ YaMessagePtr::YaMessagePtr(IMessage& message)
       original_message_ptr(static_cast<native_size_t>(
           reinterpret_cast<size_t>(&message))){FUNKNOWN_CTOR}
 
-      YaMessagePtr::~YaMessagePtr() {
+      YaMessagePtr::~YaMessagePtr() noexcept {
     FUNKNOWN_DTOR
 }
 
@@ -36,7 +36,7 @@ IMPLEMENT_FUNKNOWN_METHODS(YaMessagePtr,
                            Steinberg::Vst::IMessage::iid)
 #pragma GCC diagnostic pop
 
-Steinberg::Vst::IMessage* YaMessagePtr::get_original() const {
+Steinberg::Vst::IMessage* YaMessagePtr::get_original() const noexcept {
     // See the docstrings on `YaMessage` and `YaMessagePtr`
     return reinterpret_cast<IMessage*>(
         static_cast<size_t>(original_message_ptr));
@@ -62,9 +62,9 @@ Steinberg::Vst::IAttributeList* PLUGIN_API YaMessagePtr::getAttributes() {
     return &attribute_list;
 }
 
-YaMessage::YaMessage(){FUNKNOWN_CTOR}
+YaMessage::YaMessage() noexcept {FUNKNOWN_CTOR}
 
-YaMessage::~YaMessage() {
+YaMessage::~YaMessage() noexcept {
     FUNKNOWN_DTOR
 }
 

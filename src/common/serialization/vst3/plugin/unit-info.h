@@ -35,13 +35,13 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
      * These are the arguments for creating a `YaUnitInfo`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements `IUnitInfo` and
          * read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -58,9 +58,9 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaUnitInfo(const ConstructArgs&& args);
+    YaUnitInfo(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * Message to pass through a call to `IUnitInfo::getUnitCount()` to the Wine

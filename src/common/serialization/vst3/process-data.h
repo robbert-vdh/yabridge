@@ -43,7 +43,7 @@ class YaAudioBusBuffers {
      * existing object with new audio data every processing cycle to avoid
      * reallocating a new object every time.
      */
-    YaAudioBusBuffers();
+    YaAudioBusBuffers() noexcept;
 
     /**
      * Create a new, zero initialize audio bus buffers object. Used to
@@ -148,7 +148,7 @@ class YaProcessData {
      * because we need to fill the existing object with new data every
      * processing cycle to avoid reallocating a new object every time.
      */
-    YaProcessData();
+    YaProcessData() noexcept;
 
     /**
      * Copy data from a host provided `ProcessData` object during a process
@@ -214,7 +214,7 @@ class YaProcessData {
      * **must** be received into, since we're deserializing directly into some
      * pointers.
      */
-    Response& create_response();
+    Response& create_response() noexcept;
 
     /**
      * Write all of this output data back to the host's `ProcessData` object.

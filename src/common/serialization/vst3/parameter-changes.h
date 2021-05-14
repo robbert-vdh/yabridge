@@ -35,21 +35,21 @@ class YaParameterChanges : public Steinberg::Vst::IParameterChanges {
      * existing object with new data every processing cycle to avoid
      * reallocating a new object every time.
      */
-    YaParameterChanges();
+    YaParameterChanges() noexcept;
+
+    ~YaParameterChanges() noexcept;
 
     /**
      * Remove all parameter changes. Used when a null pointer gets passed to the
      * input parameters field, and so the plugin can output its own parameter
      * changes.
      */
-    void clear();
+    void clear() noexcept;
 
     /**
      * Read data from an `IParameterChanges` object into this existing object.
      */
     void repopulate(Steinberg::Vst::IParameterChanges& original_queues);
-
-    ~YaParameterChanges();
 
     DECLARE_FUNKNOWN_METHODS
 

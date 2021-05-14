@@ -52,7 +52,7 @@ LibArchitecture find_dll_architecture(const fs::path& plugin_path) {
     throw std::runtime_error(error_msg.str());
 }
 
-PluginType plugin_type_from_string(const std::string& plugin_type) {
+PluginType plugin_type_from_string(const std::string& plugin_type) noexcept {
     if (plugin_type == "VST2") {
         return PluginType::vst2;
     } else if (plugin_type == "VST3") {

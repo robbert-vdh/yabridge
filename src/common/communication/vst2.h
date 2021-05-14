@@ -30,7 +30,7 @@
  */
 class DefaultDataConverter {
    public:
-    virtual ~DefaultDataConverter(){};
+    virtual ~DefaultDataConverter() noexcept;
 
     /**
      * Read data from the `data` void pointer into a an `EventPayload` value
@@ -315,7 +315,7 @@ class Vst2Sockets : public Sockets {
                            (base_dir / "host_vst_control.sock").string(),
                            listen) {}
 
-    ~Vst2Sockets() { close(); }
+    ~Vst2Sockets() noexcept override { close(); }
 
     void connect() override {
         host_vst_dispatch.connect();

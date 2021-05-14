@@ -36,9 +36,9 @@ class YaAttributeList : public Steinberg::Vst::IAttributeList {
      * Default constructor with an empty attributeList. The plugin can use this
      * to write a attributeList.
      */
-    YaAttributeList();
+    YaAttributeList() noexcept;
 
-    ~YaAttributeList();
+    ~YaAttributeList() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 

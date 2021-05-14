@@ -95,13 +95,13 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
      * These are the arguments for constructing a `Vst3PluginProxyImpl`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Read from an existing object. We will try to mimic this object, so
          * we'll support any interfaces this object also supports.
          */
-        ConstructArgs(Steinberg::IPtr<FUnknown> object, size_t instance_id);
+        ConstructArgs(Steinberg::IPtr<FUnknown> object, size_t instance_id) noexcept;
 
         /**
          * The unique identifier for this specific object instance.
@@ -198,7 +198,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
      * Instantiate this object instance with arguments read from another
      * interface implementation.
      */
-    Vst3PluginProxy(const ConstructArgs&& args);
+    Vst3PluginProxy(const ConstructArgs&& args) noexcept;
 
     /**
      * Message to request the Wine plugin host to destroy this object instance
@@ -221,7 +221,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
      * @remark The plugin side implementation should send a control message to
      *   clean up the instance on the Wine side in its destructor.
      */
-    virtual ~Vst3PluginProxy() = 0;
+    virtual ~Vst3PluginProxy() noexcept = 0;
 
     DECLARE_FUNKNOWN_METHODS
 
@@ -229,7 +229,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
      * Get this object's instance ID. Used in `IConnectionPoint` to identify and
      * connect specific objects.
      */
-    inline size_t instance_id() const { return arguments.instance_id; }
+    inline size_t instance_id() const noexcept { return arguments.instance_id; }
 
     // We'll define messages for functions that have identical definitions in
     // multiple interfaces below. When the Wine plugin host process handles

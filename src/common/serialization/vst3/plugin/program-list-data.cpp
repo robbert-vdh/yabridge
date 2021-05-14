@@ -16,12 +16,12 @@
 
 #include "program-list-data.h"
 
-YaProgramListData::ConstructArgs::ConstructArgs() {}
+YaProgramListData::ConstructArgs::ConstructArgs() noexcept {}
 
 YaProgramListData::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IProgramListData>(object)) {}
 
-YaProgramListData::YaProgramListData(const ConstructArgs&& args)
+YaProgramListData::YaProgramListData(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

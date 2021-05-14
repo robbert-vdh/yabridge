@@ -113,12 +113,12 @@ class MessageReference {
      * `0x1337420` so it's at least obvious where it's coming from if we get a
      * segfault caused by a read to that address.
      */
-    MessageReference() : object(reinterpret_cast<T*>(0x1337420)) {}
+    MessageReference() noexcept : object(reinterpret_cast<T*>(0x1337420)) {}
 
     /**
      * Store a reference in this object.
      */
-    MessageReference(T& object) : object(&object) {}
+    MessageReference(T& object) noexcept : object(&object) {}
 
     using Response = typename T::Response;
 

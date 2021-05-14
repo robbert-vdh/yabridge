@@ -32,7 +32,7 @@ fs::path get_temporary_directory() {
     }
 }
 
-std::optional<int> get_realtime_priority() {
+std::optional<int> get_realtime_priority() noexcept {
     sched_param current_params{};
     if (sched_getparam(0, &current_params) == 0 &&
         current_params.sched_priority > 0) {
@@ -42,7 +42,7 @@ std::optional<int> get_realtime_priority() {
     }
 }
 
-bool set_realtime_priority(bool sched_fifo, int priority) {
+bool set_realtime_priority(bool sched_fifo, int priority) noexcept {
     sched_param params{.sched_priority = (sched_fifo ? priority : 0)};
     return sched_setscheduler(0, sched_fifo ? SCHED_FIFO : SCHED_OTHER,
                               &params) == 0;
@@ -66,23 +66,24 @@ bool pid_running(pid_t pid) {
     }
 }
 
-ScopedFlushToZero::ScopedFlushToZero() {
+ScopedFlushToZero::ScopedFlushToZero() noexcept {
     old_ftz_mode = _MM_GET_FLUSH_ZERO_MODE();
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 }
 
-ScopedFlushToZero::~ScopedFlushToZero() {
+ScopedFlushToZero::~ScopedFlushToZero() noexcept {
     if (old_ftz_mode) {
         _MM_SET_FLUSH_ZERO_MODE(*old_ftz_mode);
     }
 }
 
-ScopedFlushToZero::ScopedFlushToZero(ScopedFlushToZero&& o)
+ScopedFlushToZero::ScopedFlushToZero(ScopedFlushToZero&& o) noexcept
     : old_ftz_mode(std::move(o.old_ftz_mode)) {
     o.old_ftz_mode.reset();
 }
 
-ScopedFlushToZero& ScopedFlushToZero::operator=(ScopedFlushToZero&& o) {
+ScopedFlushToZero& ScopedFlushToZero::operator=(
+    ScopedFlushToZero&& o) noexcept {
     old_ftz_mode = std::move(o.old_ftz_mode);
     o.old_ftz_mode.reset();
 

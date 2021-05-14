@@ -35,13 +35,13 @@ class YaPrefetchableSupport : public Steinberg::Vst::IPrefetchableSupport {
      * These are the arguments for creating a `YaPrefetchableSupport`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements
          * `IPrefetchableSupport` and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -58,9 +58,9 @@ class YaPrefetchableSupport : public Steinberg::Vst::IPrefetchableSupport {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaPrefetchableSupport(const ConstructArgs&& args);
+    YaPrefetchableSupport(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * The response code and returned bus information for a call to

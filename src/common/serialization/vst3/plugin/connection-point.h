@@ -42,13 +42,13 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
      * These are the arguments for creating a `YaConnectionPoint`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements
          * `IConnectionPoint` and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -69,7 +69,7 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
      * It's defined here to work around circular includes.
      */
     struct Vst3ConnectionPointProxyConstructArgs {
-        Vst3ConnectionPointProxyConstructArgs();
+        Vst3ConnectionPointProxyConstructArgs() noexcept;
 
         /**
          * Read from an existing object. We will try to mimic this object, so
@@ -80,7 +80,7 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
          * here.
          */
         Vst3ConnectionPointProxyConstructArgs(Steinberg::IPtr<FUnknown> object,
-                                              size_t owner_instance_id);
+                                              size_t owner_instance_id) noexcept;
 
         /**
          * The unique instance identifier of the proxy object instance this
@@ -104,9 +104,9 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaConnectionPoint(const ConstructArgs&& args);
+    YaConnectionPoint(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * Message to pass through a call to `IConnectionPoint::connect(other)` to

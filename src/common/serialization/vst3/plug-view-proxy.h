@@ -40,14 +40,14 @@ class Vst3PlugViewProxy : public YaPlugView,
      * `Vst3PlugViewProxyImpl`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Read from an existing object. We will try to mimic this object, so
          * we'll support any interfaces this object also supports.
          */
         ConstructArgs(Steinberg::IPtr<FUnknown> object,
-                      size_t owner_instance_id);
+                      size_t owner_instance_id) noexcept;
 
         /**
          * The unique instance identifier of the proxy object that returned this
@@ -80,7 +80,7 @@ class Vst3PlugViewProxy : public YaPlugView,
      *   message. The destructor should still send a message to drop the
      *   original smart pointer.
      */
-    Vst3PlugViewProxy(const ConstructArgs&& args);
+    Vst3PlugViewProxy(const ConstructArgs&& args) noexcept;
 
     /**
      * Message to request the Wine plugin host to destroy the `IPlugView*`
@@ -102,14 +102,14 @@ class Vst3PlugViewProxy : public YaPlugView,
      * @remark The plugin side implementation should send a control message to
      *   clean up the instance on the Wine side in its destructor.
      */
-    virtual ~Vst3PlugViewProxy() = 0;
+    virtual ~Vst3PlugViewProxy() noexcept = 0;
 
     DECLARE_FUNKNOWN_METHODS
 
     /**
      * Get the instance ID of the owner of this object.
      */
-    inline size_t owner_instance_id() const {
+    inline size_t owner_instance_id() const noexcept {
         return arguments.owner_instance_id;
     }
 

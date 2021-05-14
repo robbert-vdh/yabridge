@@ -34,13 +34,13 @@ class YaKeyswitchController : public Steinberg::Vst::IKeyswitchController {
      * These are the arguments for creating a `YaKeyswitchController`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements
          * `IKeyswitchController` and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -57,9 +57,9 @@ class YaKeyswitchController : public Steinberg::Vst::IKeyswitchController {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaKeyswitchController(const ConstructArgs&& args);
+    YaKeyswitchController(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * Message to pass through a call to

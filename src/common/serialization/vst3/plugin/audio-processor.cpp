@@ -16,12 +16,12 @@
 
 #include "audio-processor.h"
 
-YaAudioProcessor::ConstructArgs::ConstructArgs() {}
+YaAudioProcessor::ConstructArgs::ConstructArgs() noexcept {}
 
 YaAudioProcessor::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor>(object)) {}
 
-YaAudioProcessor::YaAudioProcessor(const ConstructArgs&& args)
+YaAudioProcessor::YaAudioProcessor(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

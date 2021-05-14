@@ -36,20 +36,20 @@ class YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
      * existing object with new data every processing cycle to avoid
      * reallocating a new object every time.
      */
-    YaParamValueQueue();
+    YaParamValueQueue() noexcept;
 
     /**
      * Clear this queue in place so that it can be used to write parameter data
      * to. Used in `YaParameterChanges::addParameterData`.
      */
-    void clear_for_parameter(Steinberg::Vst::ParamID parameter_id);
+    void clear_for_parameter(Steinberg::Vst::ParamID parameter_id) noexcept;
 
     /**
      * Read data from an `IParamValueQueue` object into this existing object.
      */
     void repopulate(Steinberg::Vst::IParamValueQueue& original_queue);
 
-    ~YaParamValueQueue();
+    ~YaParamValueQueue() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 

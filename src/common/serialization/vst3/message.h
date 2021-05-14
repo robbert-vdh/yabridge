@@ -43,7 +43,7 @@
  */
 class YaMessagePtr : public Steinberg::Vst::IMessage {
    public:
-    YaMessagePtr();
+    YaMessagePtr() noexcept;
 
     /**
      * Create a proxy for this message. We'll store the message's ID for logging
@@ -54,7 +54,7 @@ class YaMessagePtr : public Steinberg::Vst::IMessage {
      */
     explicit YaMessagePtr(IMessage& message);
 
-    ~YaMessagePtr();
+    ~YaMessagePtr() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 
@@ -63,7 +63,7 @@ class YaMessagePtr : public Steinberg::Vst::IMessage {
      * constructor. This should be used on the Wine plugin host side when
      * handling `IConnectionPoint::notify`.
      */
-    Steinberg::Vst::IMessage* get_original() const;
+    Steinberg::Vst::IMessage* get_original() const noexcept;
 
     virtual Steinberg::FIDString PLUGIN_API getMessageID() override;
     virtual void PLUGIN_API
@@ -122,9 +122,9 @@ class YaMessage : public Steinberg::Vst::IMessage {
      * Default constructor with an empty message. The plugin can use this to
      * write a message.
      */
-    YaMessage();
+    YaMessage() noexcept;
 
-    ~YaMessage();
+    ~YaMessage() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 

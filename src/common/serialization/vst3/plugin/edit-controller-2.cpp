@@ -16,12 +16,12 @@
 
 #include "edit-controller-2.h"
 
-YaEditController2::ConstructArgs::ConstructArgs() {}
+YaEditController2::ConstructArgs::ConstructArgs() noexcept {}
 
 YaEditController2::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IEditController2>(object)) {}
 
-YaEditController2::YaEditController2(const ConstructArgs&& args)
+YaEditController2::YaEditController2(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

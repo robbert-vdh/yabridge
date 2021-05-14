@@ -16,20 +16,20 @@
 
 #include "context-menu-target.h"
 
-YaContextMenuTarget::ConstructArgs::ConstructArgs() {}
+YaContextMenuTarget::ConstructArgs::ConstructArgs() noexcept {}
 
 YaContextMenuTarget::ConstructArgs::ConstructArgs(
     native_size_t owner_instance_id,
     native_size_t context_menu_id,
-    int32 tag)
+    int32 tag) noexcept
     : owner_instance_id(owner_instance_id),
       context_menu_id(context_menu_id),
       tag(tag) {}
 
-YaContextMenuTarget::YaContextMenuTarget(const ConstructArgs&& args)
+YaContextMenuTarget::YaContextMenuTarget(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)){FUNKNOWN_CTOR}
 
-      YaContextMenuTarget::~YaContextMenuTarget() {
+      YaContextMenuTarget::~YaContextMenuTarget() noexcept {
     FUNKNOWN_DTOR
 }
 

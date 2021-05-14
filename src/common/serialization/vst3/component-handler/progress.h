@@ -35,13 +35,13 @@ class YaProgress : public Steinberg::Vst::IProgress {
      * These are the arguments for creating a `YaProgress`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements `IProgress`
          * and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -58,9 +58,9 @@ class YaProgress : public Steinberg::Vst::IProgress {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaProgress(const ConstructArgs&& args);
+    YaProgress(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * The response code and returned ID for a call to `IProgress::start(type,

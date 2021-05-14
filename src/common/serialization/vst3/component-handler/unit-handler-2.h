@@ -34,13 +34,13 @@ class YaUnitHandler2 : public Steinberg::Vst::IUnitHandler2 {
      * These are the arguments for creating a `YaUnitHandler2`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements `IUnitHandler2`
          * and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -57,9 +57,9 @@ class YaUnitHandler2 : public Steinberg::Vst::IUnitHandler2 {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaUnitHandler2(const ConstructArgs&& args);
+    YaUnitHandler2(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * Message to pass through a call to

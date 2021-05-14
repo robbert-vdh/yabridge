@@ -16,12 +16,12 @@
 
 #include "host-application.h"
 
-YaHostApplication::ConstructArgs::ConstructArgs() {}
+YaHostApplication::ConstructArgs::ConstructArgs() noexcept {}
 
 YaHostApplication::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication>(object)) {}
 
-YaHostApplication::YaHostApplication(const ConstructArgs&& args)
+YaHostApplication::YaHostApplication(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

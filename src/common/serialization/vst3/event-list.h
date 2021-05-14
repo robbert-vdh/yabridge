@@ -29,12 +29,12 @@
  * contains a heap array.
  */
 struct YaDataEvent {
-    YaDataEvent();
+    YaDataEvent() noexcept;
 
     /**
      * Copy data from an existing `DataEvent`.
      */
-    YaDataEvent(const Steinberg::Vst::DataEvent& event);
+    YaDataEvent(const Steinberg::Vst::DataEvent& event) noexcept;
 
     /**
      * Reconstruct a `DataEvent` from this object.
@@ -42,7 +42,7 @@ struct YaDataEvent {
      * @note This object may contain pointers to data stored in this object, and
      *   must thus not outlive it.
      */
-    Steinberg::Vst::DataEvent get() const;
+    Steinberg::Vst::DataEvent get() const noexcept;
 
     uint32 type;
     std::vector<uint8> buffer;
@@ -59,13 +59,13 @@ struct YaDataEvent {
  * this event contains a heap array.
  */
 struct YaNoteExpressionTextEvent {
-    YaNoteExpressionTextEvent();
+    YaNoteExpressionTextEvent() noexcept;
 
     /**
      * Copy data from an existing `NoteExpressionTextEvent`.
      */
     YaNoteExpressionTextEvent(
-        const Steinberg::Vst::NoteExpressionTextEvent& event);
+        const Steinberg::Vst::NoteExpressionTextEvent& event) noexcept;
 
     /**
      * Reconstruct a `NoteExpressionTextEvent` from this object.
@@ -73,7 +73,7 @@ struct YaNoteExpressionTextEvent {
      * @note This object may contain pointers to data stored in this object, and
      *   must thus not outlive it.
      */
-    Steinberg::Vst::NoteExpressionTextEvent get() const;
+    Steinberg::Vst::NoteExpressionTextEvent get() const noexcept;
 
     Steinberg::Vst::NoteExpressionTypeID type_id;
     int32 note_id;
@@ -93,12 +93,12 @@ struct YaNoteExpressionTextEvent {
  * contains a heap array.
  */
 struct YaChordEvent {
-    YaChordEvent();
+    YaChordEvent() noexcept;
 
     /**
      * Copy data from an existing `ChordEvent`.
      */
-    YaChordEvent(const Steinberg::Vst::ChordEvent& event);
+    YaChordEvent(const Steinberg::Vst::ChordEvent& event) noexcept;
 
     /**
      * Reconstruct a `ChordEvent` from this object.
@@ -106,7 +106,7 @@ struct YaChordEvent {
      * @note This object may contain pointers to data stored in this object, and
      *   must thus not outlive it.
      */
-    Steinberg::Vst::ChordEvent get() const;
+    Steinberg::Vst::ChordEvent get() const noexcept;
 
     int16 root;
     int16 bass_note;
@@ -128,12 +128,12 @@ struct YaChordEvent {
  * contains a heap array.
  */
 struct YaScaleEvent {
-    YaScaleEvent();
+    YaScaleEvent() noexcept;
 
     /**
      * Copy data from an existing `ScaleEvent`.
      */
-    YaScaleEvent(const Steinberg::Vst::ScaleEvent& event);
+    YaScaleEvent(const Steinberg::Vst::ScaleEvent& event) noexcept;
 
     /**
      * Reconstruct a `ScaleEvent` from this object.
@@ -141,7 +141,7 @@ struct YaScaleEvent {
      * @note This object may contain pointers to data stored in this object, and
      *   must thus not outlive it.
      */
-    Steinberg::Vst::ScaleEvent get() const;
+    Steinberg::Vst::ScaleEvent get() const noexcept;
 
     int16 root;
     int16 mask;
@@ -161,12 +161,12 @@ struct YaScaleEvent {
  * include heap pointers.
  */
 struct YaEvent {
-    YaEvent();
+    YaEvent() noexcept;
 
     /**
      * Copy data from an `Event`.
      */
-    YaEvent(const Steinberg::Vst::Event& event);
+    YaEvent(const Steinberg::Vst::Event& event) noexcept;
 
     /**
      * Reconstruct an `Event` from this object.
@@ -174,7 +174,7 @@ struct YaEvent {
      * @note This object may contain pointers to data stored in this object, and
      *   must thus not outlive it.
      */
-    Steinberg::Vst::Event get() const;
+    Steinberg::Vst::Event get() const noexcept;
 
     // These fields directly reflect those from `Event`
     int32 bus_index;
@@ -217,28 +217,28 @@ class YaEventList : public Steinberg::Vst::IEventList {
      * existing object with new events every processing cycle to avoid
      * reallocating a new object every time.
      */
-    YaEventList();
+    YaEventList() noexcept;
 
     /**
      * Remove all events. Used when a null pointer gets passed to the input
      * events field, and so the plugin can output its own events if the host
      * supports this.
      */
-    void clear();
+    void clear() noexcept;
 
     /**
      * Read data from an `IEventList` object into this existing object.
      */
     void repopulate(Steinberg::Vst::IEventList& event_list);
 
-    ~YaEventList();
+    ~YaEventList() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 
     /**
      * Return the number of events we store. Used in debug logs.
      */
-    size_t num_events() const;
+    size_t num_events() const noexcept;
 
     /**
      * Write these events an output events queue on the `ProcessData` object

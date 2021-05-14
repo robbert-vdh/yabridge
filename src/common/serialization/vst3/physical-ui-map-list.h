@@ -29,12 +29,12 @@
  */
 class YaPhysicalUIMapList {
    public:
-    YaPhysicalUIMapList();
+    YaPhysicalUIMapList() noexcept;
 
     /**
      * Copy the data from a `PhysicalUIMapList` so it can be serialized.
      */
-    YaPhysicalUIMapList(const Steinberg::Vst::PhysicalUIMapList& list);
+    YaPhysicalUIMapList(const Steinberg::Vst::PhysicalUIMapList& list) noexcept;
 
     /**
      * Reconstruct the original `PhysicalUIMapList` object passed to the
@@ -43,7 +43,7 @@ class YaPhysicalUIMapList {
      * plugin host side. The returned object is valid as long as this object is
      * alive.
      */
-    Steinberg::Vst::PhysicalUIMapList get();
+    Steinberg::Vst::PhysicalUIMapList get() noexcept;
 
     /**
      * Write the `noteExpressionTypeID` values stored in `maps` back to the

@@ -59,7 +59,7 @@ class Configuration {
     /**
      * Create an empty configuration object with default settings.
      */
-    Configuration();
+    Configuration() noexcept;
 
     /**
      * Load the configuration for an instance of yabridge from a configuration
@@ -180,7 +180,7 @@ class Configuration {
      * The delay in milliseconds between calls to the event loop and to
      * `effEditIdle` for VST2 plugins. This is based on `frame_rate`.
      */
-    std::chrono::steady_clock::duration event_loop_interval() const;
+    std::chrono::steady_clock::duration event_loop_interval() const noexcept;
 
     template <typename S>
     void serialize(S& s) {

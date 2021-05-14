@@ -38,13 +38,13 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
      * These are the arguments for creating a `YaHostApplication`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements
          * `IHostApplication` and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -61,9 +61,9 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaHostApplication(const ConstructArgs&& args);
+    YaHostApplication(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * The response code and resulting value for a call to

@@ -16,11 +16,11 @@
 
 #include "unit-handler.h"
 
-YaUnitHandler::ConstructArgs::ConstructArgs() {}
+YaUnitHandler::ConstructArgs::ConstructArgs() noexcept {}
 
 YaUnitHandler::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler>(object)) {}
 
-YaUnitHandler::YaUnitHandler(const ConstructArgs&& args)
+YaUnitHandler::YaUnitHandler(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

@@ -16,12 +16,12 @@
 
 #include "parameter-function-name.h"
 
-YaParameterFunctionName::ConstructArgs::ConstructArgs() {}
+YaParameterFunctionName::ConstructArgs::ConstructArgs() noexcept {}
 
 YaParameterFunctionName::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IParameterFunctionName>(
           object)) {}
 
-YaParameterFunctionName::YaParameterFunctionName(const ConstructArgs&& args)
+YaParameterFunctionName::YaParameterFunctionName(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

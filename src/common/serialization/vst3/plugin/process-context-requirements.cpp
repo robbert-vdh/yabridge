@@ -16,14 +16,14 @@
 
 #include "process-context-requirements.h"
 
-YaProcessContextRequirements::ConstructArgs::ConstructArgs() {}
+YaProcessContextRequirements::ConstructArgs::ConstructArgs() noexcept {}
 
 YaProcessContextRequirements::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IProcessContextRequirements>(
               object)) {}
 
 YaProcessContextRequirements::YaProcessContextRequirements(
-    const ConstructArgs&& args)
+    const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

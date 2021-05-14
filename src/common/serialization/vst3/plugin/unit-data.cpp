@@ -16,12 +16,12 @@
 
 #include "unit-data.h"
 
-YaUnitData::ConstructArgs::ConstructArgs() {}
+YaUnitData::ConstructArgs::ConstructArgs() noexcept {}
 
 YaUnitData::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IUnitData>(object)) {}
 
-YaUnitData::YaUnitData(const ConstructArgs&& args)
+YaUnitData::YaUnitData(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

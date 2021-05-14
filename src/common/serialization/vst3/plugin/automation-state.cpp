@@ -16,12 +16,12 @@
 
 #include "automation-state.h"
 
-YaAutomationState::ConstructArgs::ConstructArgs() {}
+YaAutomationState::ConstructArgs::ConstructArgs() noexcept {}
 
 YaAutomationState::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IAutomationState>(object)) {}
 
-YaAutomationState::YaAutomationState(const ConstructArgs&& args)
+YaAutomationState::YaAutomationState(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

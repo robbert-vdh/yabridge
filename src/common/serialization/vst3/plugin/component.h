@@ -37,13 +37,13 @@ class YaComponent : public Steinberg::Vst::IComponent {
      * These are the arguments for creating a `YaComponent`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements `IComponent` and
          * read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -60,9 +60,9 @@ class YaComponent : public Steinberg::Vst::IComponent {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaComponent(const ConstructArgs&& args);
+    YaComponent(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * The response code and returned CID for a call to

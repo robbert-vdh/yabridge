@@ -36,13 +36,13 @@ class YaParameterFunctionName : public Steinberg::Vst::IParameterFunctionName {
      * These are the arguments for creating a `YaParameterFunctionName`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements
          * `IParameterFunctionName` and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -59,9 +59,9 @@ class YaParameterFunctionName : public Steinberg::Vst::IParameterFunctionName {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaParameterFunctionName(const ConstructArgs&& args);
+    YaParameterFunctionName(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * The response code and returned parameter ID for a call to

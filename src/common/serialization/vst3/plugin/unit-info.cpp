@@ -16,11 +16,11 @@
 
 #include "unit-info.h"
 
-YaUnitInfo::ConstructArgs::ConstructArgs() {}
+YaUnitInfo::ConstructArgs::ConstructArgs() noexcept {}
 
 YaUnitInfo::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IUnitInfo>(object)) {}
 
-YaUnitInfo::YaUnitInfo(const ConstructArgs&& args)
+YaUnitInfo::YaUnitInfo(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

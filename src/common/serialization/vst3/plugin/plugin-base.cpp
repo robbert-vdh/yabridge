@@ -16,11 +16,11 @@
 
 #include "plugin-base.h"
 
-YaPluginBase::ConstructArgs::ConstructArgs() {}
+YaPluginBase::ConstructArgs::ConstructArgs() noexcept {}
 
 YaPluginBase::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::IPluginBase>(object)) {}
 
-YaPluginBase::YaPluginBase(const ConstructArgs&& args)
+YaPluginBase::YaPluginBase(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

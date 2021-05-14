@@ -16,13 +16,13 @@
 
 #include "note-expression-physical-ui-mapping.h"
 
-YaNoteExpressionPhysicalUIMapping::ConstructArgs::ConstructArgs() {}
+YaNoteExpressionPhysicalUIMapping::ConstructArgs::ConstructArgs() noexcept {}
 
 YaNoteExpressionPhysicalUIMapping::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<
                 Steinberg::Vst::INoteExpressionPhysicalUIMapping>(object)) {}
 
 YaNoteExpressionPhysicalUIMapping::YaNoteExpressionPhysicalUIMapping(
-    const ConstructArgs&& args)
+    const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

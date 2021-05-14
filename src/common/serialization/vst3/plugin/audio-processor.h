@@ -36,13 +36,13 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
      * These are the arguments for creating a `YaAudioProcessor`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements `IAudioProcessor`
          * and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -59,9 +59,9 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaAudioProcessor(const ConstructArgs&& args);
+    YaAudioProcessor(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * Message to pass through a call to

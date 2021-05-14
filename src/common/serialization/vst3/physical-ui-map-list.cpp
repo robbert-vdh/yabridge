@@ -18,13 +18,13 @@
 
 #include <cassert>
 
-YaPhysicalUIMapList::YaPhysicalUIMapList() {}
+YaPhysicalUIMapList::YaPhysicalUIMapList() noexcept {}
 
 YaPhysicalUIMapList::YaPhysicalUIMapList(
-    const Steinberg::Vst::PhysicalUIMapList& list)
+    const Steinberg::Vst::PhysicalUIMapList& list) noexcept
     : maps(list.map, list.map + list.count) {}
 
-Steinberg::Vst::PhysicalUIMapList YaPhysicalUIMapList::get() {
+Steinberg::Vst::PhysicalUIMapList YaPhysicalUIMapList::get() noexcept {
     return Steinberg::Vst::PhysicalUIMapList{
         .count = static_cast<Steinberg::uint32>(maps.size()),
         .map = maps.data()};

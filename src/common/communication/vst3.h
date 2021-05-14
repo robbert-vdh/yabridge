@@ -326,7 +326,7 @@ class Vst3Sockets : public Sockets {
           io_context(io_context) {}
 
     // NOLINTNEXTLINE(clang-analyzer-optin.cplusplus.VirtualCall)
-    ~Vst3Sockets() { close(); }
+    ~Vst3Sockets() noexcept override { close(); }
 
     void connect() override {
         host_vst_control.connect();

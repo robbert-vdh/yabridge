@@ -525,7 +525,8 @@ void Vst2Logger::log_event_response(
     }
 }
 
-bool Vst2Logger::should_filter_event(bool is_dispatch, int opcode) const {
+bool Vst2Logger::should_filter_event(bool is_dispatch,
+                                     int opcode) const noexcept {
     if (logger.verbosity >= Logger::Verbosity::all_events) {
         return false;
     }

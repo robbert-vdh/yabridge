@@ -36,13 +36,13 @@ class YaComponentHandler3 : public Steinberg::Vst::IComponentHandler3 {
      * These are the arguments for creating a `YaComponentHandler3`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements
          * `IComponentHandler3` and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -59,9 +59,9 @@ class YaComponentHandler3 : public Steinberg::Vst::IComponentHandler3 {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaComponentHandler3(const ConstructArgs&& args);
+    YaComponentHandler3(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * The arguments needed to create a proxy object for the context menu

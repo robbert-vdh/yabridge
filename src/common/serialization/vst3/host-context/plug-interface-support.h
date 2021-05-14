@@ -35,13 +35,13 @@ class YaPlugInterfaceSupport : public Steinberg::Vst::IPlugInterfaceSupport {
      * These are the arguments for creating a `YaPlugInterfaceSupport`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements
          * `IPlugInterfaceSupport` and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -58,9 +58,9 @@ class YaPlugInterfaceSupport : public Steinberg::Vst::IPlugInterfaceSupport {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaPlugInterfaceSupport(const ConstructArgs&& args);
+    YaPlugInterfaceSupport(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * Message to pass through a call to

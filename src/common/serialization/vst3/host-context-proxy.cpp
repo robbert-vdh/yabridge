@@ -16,21 +16,21 @@
 
 #include "host-context-proxy.h"
 
-Vst3HostContextProxy::ConstructArgs::ConstructArgs() {}
+Vst3HostContextProxy::ConstructArgs::ConstructArgs() noexcept {}
 
 Vst3HostContextProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
-    std::optional<size_t> owner_instance_id)
+    std::optional<size_t> owner_instance_id) noexcept
     : owner_instance_id(owner_instance_id),
       host_application_args(object),
       plug_interface_support_args(object) {}
 
-Vst3HostContextProxy::Vst3HostContextProxy(const ConstructArgs&& args)
+Vst3HostContextProxy::Vst3HostContextProxy(const ConstructArgs&& args) noexcept
     : YaHostApplication(std::move(args.host_application_args)),
       YaPlugInterfaceSupport(std::move(args.plug_interface_support_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
-      Vst3HostContextProxy::~Vst3HostContextProxy() {
+      Vst3HostContextProxy::~Vst3HostContextProxy() noexcept {
     FUNKNOWN_DTOR
 }
 

@@ -36,13 +36,13 @@ class Vst3PluginFactoryProxy : public YaPluginFactory3 {
      * These are the arguments for constructing a `Vst3PluginFactoryProxyImpl`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Read from an existing object. We will try to mimic this object, so
          * we'll support any interfaces this object also supports.
          */
-        ConstructArgs(Steinberg::IPtr<FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<FUnknown> object) noexcept;
 
         YaPluginFactory3::ConstructArgs plugin_factory_args;
 
@@ -68,14 +68,14 @@ class Vst3PluginFactoryProxy : public YaPluginFactory3 {
      * factory. The is done once during startup and the plugin factory gets
      * reused for the lifetime of the module.
      */
-    Vst3PluginFactoryProxy(const ConstructArgs&& args);
+    Vst3PluginFactoryProxy(const ConstructArgs&& args) noexcept;
 
     /**
      * We do not need special handling here since the Window VST3 plugin's
      * plugin factory will also be destroyed when we terminate the Wine plugin
      * host or unload the plugin there.
      */
-    virtual ~Vst3PluginFactoryProxy();
+    virtual ~Vst3PluginFactoryProxy() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 

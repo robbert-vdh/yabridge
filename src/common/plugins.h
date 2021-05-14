@@ -60,5 +60,5 @@ void serialize(S& s, PluginType& plugin_type) {
  */
 LibArchitecture find_dll_architecture(const boost::filesystem::path&);
 
-PluginType plugin_type_from_string(const std::string& plugin_type);
+PluginType plugin_type_from_string(const std::string& plugin_type) noexcept;
 std::string plugin_type_to_string(const PluginType& plugin_type);

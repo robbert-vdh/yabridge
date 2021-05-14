@@ -38,7 +38,7 @@ class YaPluginFactory3 : public Steinberg::IPluginFactory3 {
      * query them.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements
@@ -122,17 +122,17 @@ class YaPluginFactory3 : public Steinberg::IPluginFactory3 {
      * Instantiate this instance with arguments read from the Windows VST3
      * plugin's plugin factory.
      */
-    YaPluginFactory3(const ConstructArgs&& args);
+    YaPluginFactory3(const ConstructArgs&& args) noexcept;
 
-    inline bool supports_plugin_factory() const {
+    inline bool supports_plugin_factory() const noexcept {
         return arguments.supports_plugin_factory;
     }
 
-    inline bool supports_plugin_factory_2() const {
+    inline bool supports_plugin_factory_2() const noexcept {
         return arguments.supports_plugin_factory_2;
     }
 
-    inline bool supports_plugin_factory_3() const {
+    inline bool supports_plugin_factory_3() const noexcept {
         return arguments.supports_plugin_factory_3;
     }
 

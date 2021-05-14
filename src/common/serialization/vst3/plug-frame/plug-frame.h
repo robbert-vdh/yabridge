@@ -34,13 +34,13 @@ class YaPlugFrame : public Steinberg::IPlugFrame {
      * These are the arguments for creating a `YaPlugFrame`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements `IPlugFrame` and
          * read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -57,9 +57,9 @@ class YaPlugFrame : public Steinberg::IPlugFrame {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaPlugFrame(const ConstructArgs&& args);
+    YaPlugFrame(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * Message to pass through a call to `IPlugFrame::resizeView(<plug_view>,

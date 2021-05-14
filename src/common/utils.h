@@ -65,7 +65,7 @@ boost::filesystem::path get_temporary_directory();
  * `SCHED_FIFO`. Returns a nullopt of the calling thread is not under realtime
  * scheduling.
  */
-std::optional<int> get_realtime_priority();
+std::optional<int> get_realtime_priority() noexcept;
 
 /**
  * Set the scheduling policy to `SCHED_FIFO` with priority 5 for this process.
@@ -82,7 +82,7 @@ std::optional<int> get_realtime_priority();
  * @return Whether the operation was successful or not. This will fail if the
  *   user does not have the privileges to set realtime priorities.
  */
-bool set_realtime_priority(bool sched_fifo, int priority = 5);
+bool set_realtime_priority(bool sched_fifo, int priority = 5) noexcept;
 
 /**
  * Check whether a process with the given PID is still active (and not a
@@ -97,14 +97,14 @@ bool pid_running(pid_t pid);
  */
 class ScopedFlushToZero {
    public:
-    ScopedFlushToZero();
-    ~ScopedFlushToZero();
+    ScopedFlushToZero() noexcept;
+    ~ScopedFlushToZero() noexcept;
 
     ScopedFlushToZero(const ScopedFlushToZero&) = delete;
     ScopedFlushToZero& operator=(const ScopedFlushToZero&) = delete;
 
-    ScopedFlushToZero(ScopedFlushToZero&&);
-    ScopedFlushToZero& operator=(ScopedFlushToZero&&);
+    ScopedFlushToZero(ScopedFlushToZero&&) noexcept;
+    ScopedFlushToZero& operator=(ScopedFlushToZero&&) noexcept;
 
    private:
     /**
@@ -128,7 +128,7 @@ class ScopedFlushToZero {
 template <typename T>
 class ScopedValueCache {
    public:
-    ScopedValueCache() {}
+    ScopedValueCache() noexcept {}
 
     ScopedValueCache(const ScopedValueCache&) = delete;
     ScopedValueCache& operator=(const ScopedValueCache&) = delete;
@@ -141,7 +141,7 @@ class ScopedValueCache {
      * Return the cached value, if we're currently caching a value. Will return
      * a null pointer when this is not the case.
      */
-    const T* get() const { return value ? &*value : nullptr; }
+    const T* get() const noexcept { return value ? &*value : nullptr; }
 
     /**
      * A guard that will reset the cached value on the `ScopedValueCache` when
@@ -149,8 +149,9 @@ class ScopedValueCache {
      */
     class Guard {
        public:
-        Guard(std::optional<T>& cached_value) : cached_value(cached_value) {}
-        ~Guard() {
+        Guard(std::optional<T>& cached_value) noexcept
+            : cached_value(cached_value) {}
+        ~Guard() noexcept {
             if (is_active) {
                 cached_value.get().reset();
             }
@@ -159,10 +160,10 @@ class ScopedValueCache {
         Guard(const Guard&) = delete;
         Guard& operator=(const Guard&) = delete;
 
-        Guard(Guard&& o) : cached_value(std::move(o.cached_value)) {
+        Guard(Guard&& o) noexcept : cached_value(std::move(o.cached_value)) {
             o.is_active = false;
         }
-        Guard& operator=(Guard&& o) {
+        Guard& operator=(Guard&& o) noexcept {
             cached_value = std::move(o.cached_value);
             o.is_active = false;
 
@@ -183,7 +184,7 @@ class ScopedValueCache {
      *
      * @throw std::runtime_error When we are already caching a value.
      */
-    Guard set(T new_value) {
+    Guard set(T new_value) noexcept {
         value = std::move(new_value);
 
         return Guard(value);
@@ -213,7 +214,7 @@ class TimedValueCache {
      * Return the cached value, if we're currently caching a value. Will return
      * a null pointer when this is not the case.
      */
-    const T* get() const {
+    const T* get() const noexcept {
         const time_t now = time(nullptr);
         return now <= valid_until ? &value : nullptr;
     }
@@ -224,7 +225,7 @@ class TimedValueCache {
      * be reset to `lifetime_seconds` seconds from now, if the value was still
      * active.
      */
-    const T* get_and_keep_alive(unsigned int lifetime_seconds) {
+    const T* get_and_keep_alive(unsigned int lifetime_seconds) noexcept {
         const time_t now = time(nullptr);
         if (now <= valid_until) {
             valid_until = now + lifetime_seconds;
@@ -237,7 +238,7 @@ class TimedValueCache {
     /**
      * Set the cached value for `lifetime_seconds` seconds.
      */
-    void set(T value, unsigned int lifetime_seconds) {
+    void set(T value, unsigned int lifetime_seconds) noexcept {
         this->value = value;
         valid_until = time(nullptr) + lifetime_seconds;
     }

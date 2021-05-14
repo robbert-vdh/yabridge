@@ -87,5 +87,5 @@ class Vst2Logger {
      * Determine whether an event should be filtered based on the current
      * verbosity level.
      */
-    bool should_filter_event(bool is_dispatch, int opcode) const;
+    bool should_filter_event(bool is_dispatch, int opcode) const noexcept;
 };

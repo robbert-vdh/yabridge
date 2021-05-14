@@ -16,11 +16,11 @@
 
 #include "plugin-proxy.h"
 
-Vst3PluginProxy::ConstructArgs::ConstructArgs() {}
+Vst3PluginProxy::ConstructArgs::ConstructArgs() noexcept {}
 
 Vst3PluginProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
-    size_t instance_id)
+    size_t instance_id) noexcept
     : instance_id(instance_id),
       audio_presentation_latency_args(object),
       audio_processor_args(object),
@@ -44,7 +44,7 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
       unit_info_args(object),
       xml_representation_controller_args(object) {}
 
-Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
+Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args) noexcept
     : YaAudioPresentationLatency(
           std::move(args.audio_presentation_latency_args)),
       YaAudioProcessor(std::move(args.audio_processor_args)),
@@ -75,7 +75,7 @@ Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args)
           std::move(args.xml_representation_controller_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 
-      Vst3PluginProxy::~Vst3PluginProxy() {
+      Vst3PluginProxy::~Vst3PluginProxy() noexcept {
     FUNKNOWN_DTOR
 }
 

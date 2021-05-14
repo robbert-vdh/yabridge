@@ -37,7 +37,7 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
      * `YaContextMenuTargetImpl`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Read from an existing object. We will try to mimic this object, so
@@ -51,7 +51,7 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
          */
         ConstructArgs(native_size_t owner_instance_id,
                       native_size_t context_menu_id,
-                      int32 tag);
+                      int32 tag) noexcept;
 
         native_size_t owner_instance_id;
         native_size_t context_menu_id;
@@ -69,16 +69,16 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
      * Create context menu target that when called, calls the corresponding
      * context menu target provided by the object.
      */
-    YaContextMenuTarget(const ConstructArgs&& args);
+    YaContextMenuTarget(const ConstructArgs&& args) noexcept;
 
-    ~YaContextMenuTarget();
+    ~YaContextMenuTarget() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 
     /**
      * Get the instance ID of the owner of this object.
      */
-    inline size_t owner_instance_id() const {
+    inline size_t owner_instance_id() const noexcept {
         return arguments.owner_instance_id;
     }
 

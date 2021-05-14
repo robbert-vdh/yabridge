@@ -16,11 +16,11 @@
 
 #include "context-menu.h"
 
-YaContextMenu::ConstructArgs::ConstructArgs() {}
+YaContextMenu::ConstructArgs::ConstructArgs() noexcept {}
 
 YaContextMenu::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IContextMenu>(object)) {}
 
-YaContextMenu::YaContextMenu(const ConstructArgs&& args)
+YaContextMenu::YaContextMenu(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

@@ -16,12 +16,12 @@
 
 #include "plug-interface-support.h"
 
-YaPlugInterfaceSupport::ConstructArgs::ConstructArgs() {}
+YaPlugInterfaceSupport::ConstructArgs::ConstructArgs() noexcept {}
 
 YaPlugInterfaceSupport::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IPlugInterfaceSupport>(
           object)) {}
 
-YaPlugInterfaceSupport::YaPlugInterfaceSupport(const ConstructArgs&& args)
+YaPlugInterfaceSupport::YaPlugInterfaceSupport(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

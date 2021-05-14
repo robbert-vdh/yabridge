@@ -36,13 +36,13 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
      * These are the arguments for creating a `YaContextMenu`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements `IContextMenu`
          * and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -59,9 +59,9 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaContextMenu(const ConstructArgs&& args);
+    YaContextMenu(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * Message to pass through a call to `IContextMenu::getItemCount()` to the

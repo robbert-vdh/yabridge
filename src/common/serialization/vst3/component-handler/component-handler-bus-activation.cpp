@@ -16,13 +16,13 @@
 
 #include "component-handler-bus-activation.h"
 
-YaComponentHandlerBusActivation::ConstructArgs::ConstructArgs() {}
+YaComponentHandlerBusActivation::ConstructArgs::ConstructArgs() noexcept {}
 
 YaComponentHandlerBusActivation::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<
                 Steinberg::Vst::IComponentHandlerBusActivation>(object)) {}
 
 YaComponentHandlerBusActivation::YaComponentHandlerBusActivation(
-    const ConstructArgs&& args)
+    const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

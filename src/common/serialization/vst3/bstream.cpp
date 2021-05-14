@@ -19,7 +19,7 @@
 #include <cassert>
 #include <stdexcept>
 
-YaBStream::YaBStream(){FUNKNOWN_CTOR}
+YaBStream::YaBStream() noexcept {FUNKNOWN_CTOR}
 
 YaBStream::YaBStream(Steinberg::IBStream* stream) {
     FUNKNOWN_CTOR
@@ -80,7 +80,7 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
     }
 }
 
-YaBStream::~YaBStream() {
+YaBStream::~YaBStream() noexcept {
     FUNKNOWN_DTOR
 }
 
@@ -138,7 +138,7 @@ tresult YaBStream::write_back(Steinberg::IBStream* stream) const {
     return Steinberg::kResultOk;
 }
 
-size_t YaBStream::size() const {
+size_t YaBStream::size() const noexcept {
     return buffer.size();
 }
 

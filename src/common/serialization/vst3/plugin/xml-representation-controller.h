@@ -42,13 +42,13 @@ class YaXmlRepresentationController
      * These are the arguments for creating a `YaXmlRepresentationController`.
      */
     struct ConstructArgs {
-        ConstructArgs();
+        ConstructArgs() noexcept;
 
         /**
          * Check whether an existing implementation implements
          * `IXmlRepresentationController` and read arguments from it.
          */
-        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object);
+        ConstructArgs(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
         /**
          * Whether the object supported this interface.
@@ -65,9 +65,9 @@ class YaXmlRepresentationController
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaXmlRepresentationController(const ConstructArgs&& args);
+    YaXmlRepresentationController(const ConstructArgs&& args) noexcept;
 
-    inline bool supported() const { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments.supported; }
 
     /**
      * The response code and written state for a call to

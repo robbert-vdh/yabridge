@@ -16,12 +16,12 @@
 
 #include "prefetchable-support.h"
 
-YaPrefetchableSupport::ConstructArgs::ConstructArgs() {}
+YaPrefetchableSupport::ConstructArgs::ConstructArgs() noexcept {}
 
 YaPrefetchableSupport::ConstructArgs::ConstructArgs(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IPrefetchableSupport>(
           object)) {}
 
-YaPrefetchableSupport::YaPrefetchableSupport(const ConstructArgs&& args)
+YaPrefetchableSupport::YaPrefetchableSupport(const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}
