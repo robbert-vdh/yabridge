@@ -86,16 +86,19 @@ RunLoopTasks::onFDIsSet(Steinberg::Linux::FileDescriptor /*fd*/) {
 Vst3PlugViewProxyImpl::Vst3PlugViewProxyImpl(
     Vst3PluginBridge& bridge,
     std::atomic_bool& is_active,
-    Vst3PlugViewProxy::ConstructArgs&& args)
+    Vst3PlugViewProxy::ConstructArgs&& args) noexcept
     : Vst3PlugViewProxy(std::move(args)), bridge(bridge), is_active(is_active) {
     is_active = true;
 }
 
-Vst3PlugViewProxyImpl::~Vst3PlugViewProxyImpl() {
+Vst3PlugViewProxyImpl::~Vst3PlugViewProxyImpl() noexcept {
     is_active = false;
 
     // Also drop the plug view smart pointer on the Wine side when this gets
     // dropped
+    // NOTE: This can actually throw (e.g. out of memory or the socket got
+    //       closed). But if that were to happen, then we wouldn't be able to
+    //       recover from it anyways.
     send_mutually_recursive_message(
         Vst3PlugViewProxy::Destruct{.owner_instance_id = owner_instance_id()});
 }

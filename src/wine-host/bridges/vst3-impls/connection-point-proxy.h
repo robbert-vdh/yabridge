@@ -22,7 +22,7 @@ class Vst3ConnectionPointProxyImpl : public Vst3ConnectionPointProxy {
    public:
     Vst3ConnectionPointProxyImpl(
         Vst3Bridge& bridge,
-        Vst3ConnectionPointProxy::ConstructArgs&& args);
+        Vst3ConnectionPointProxy::ConstructArgs&& args) noexcept;
 
     /**
      * We'll override the query interface to log queries for interfaces we do

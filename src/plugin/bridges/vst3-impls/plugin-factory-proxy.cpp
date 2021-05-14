@@ -23,7 +23,7 @@
 
 Vst3PluginFactoryProxyImpl::Vst3PluginFactoryProxyImpl(
     Vst3PluginBridge& bridge,
-    Vst3PluginFactoryProxy::ConstructArgs&& args)
+    Vst3PluginFactoryProxy::ConstructArgs&& args) noexcept
     : Vst3PluginFactoryProxy(std::move(args)), bridge(bridge) {}
 
 tresult PLUGIN_API

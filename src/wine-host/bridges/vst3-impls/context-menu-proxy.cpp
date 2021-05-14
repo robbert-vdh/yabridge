@@ -20,14 +20,17 @@
 
 Vst3ContextMenuProxyImpl::Vst3ContextMenuProxyImpl(
     Vst3Bridge& bridge,
-    Vst3ContextMenuProxy::ConstructArgs&& args)
+    Vst3ContextMenuProxy::ConstructArgs&& args) noexcept
     : Vst3ContextMenuProxy(std::move(args)), bridge(bridge) {
     bridge.register_context_menu(*this);
 }
 
-Vst3ContextMenuProxyImpl::~Vst3ContextMenuProxyImpl() {
+Vst3ContextMenuProxyImpl::~Vst3ContextMenuProxyImpl() noexcept {
     // Also drop the context menu smart pointer on plugin side when this gets
     // dropped
+    // NOTE: This can actually throw (e.g. out of memory or the socket got
+    //       closed). But if that were to happen, then we wouldn't be able to
+    //       recover from it anyways.
     bridge.send_message(
         Vst3ContextMenuProxy::Destruct{.owner_instance_id = owner_instance_id(),
                                        .context_menu_id = context_menu_id()});

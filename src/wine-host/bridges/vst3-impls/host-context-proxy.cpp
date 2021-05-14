@@ -23,7 +23,7 @@
 
 Vst3HostContextProxyImpl::Vst3HostContextProxyImpl(
     Vst3Bridge& bridge,
-    Vst3HostContextProxy::ConstructArgs&& args)
+    Vst3HostContextProxy::ConstructArgs&& args) noexcept
     : Vst3HostContextProxy(std::move(args)), bridge(bridge) {
     // The lifecycle of this object is managed together with that of the plugin
     // object instance this host context got passed to

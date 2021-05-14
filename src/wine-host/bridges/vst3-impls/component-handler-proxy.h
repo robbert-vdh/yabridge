@@ -22,7 +22,7 @@ class Vst3ComponentHandlerProxyImpl : public Vst3ComponentHandlerProxy {
    public:
     Vst3ComponentHandlerProxyImpl(
         Vst3Bridge& bridge,
-        Vst3ComponentHandlerProxy::ConstructArgs&& args);
+        Vst3ComponentHandlerProxy::ConstructArgs&& args) noexcept;
 
     /**
      * We'll override the query interface to log queries for interfaces we do

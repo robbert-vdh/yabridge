@@ -21,7 +21,7 @@
 class Vst3PlugFrameProxyImpl : public Vst3PlugFrameProxy {
    public:
     Vst3PlugFrameProxyImpl(Vst3Bridge& bridge,
-                           Vst3PlugFrameProxy::ConstructArgs&& args);
+                           Vst3PlugFrameProxy::ConstructArgs&& args) noexcept;
 
     /**
      * We'll override the query interface to log queries for interfaces we do

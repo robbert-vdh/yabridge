@@ -20,7 +20,7 @@
 
 Vst3ConnectionPointProxyImpl::Vst3ConnectionPointProxyImpl(
     Vst3Bridge& bridge,
-    Vst3ConnectionPointProxy::ConstructArgs&& args)
+    Vst3ConnectionPointProxy::ConstructArgs&& args) noexcept
     : Vst3ConnectionPointProxy(std::move(args)), bridge(bridge) {}
 
 tresult PLUGIN_API

@@ -36,7 +36,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * we'll send a request to the Wine plugin host to destroy the corresponding
      * object.
      */
-    ~Vst3PluginProxyImpl();
+    ~Vst3PluginProxyImpl() noexcept override;
 
     /**
      * We'll override the query interface to log queries for interfaces we do
@@ -72,7 +72,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * @see clear_bus_cache
      * @see function_result_cache
      */
-    void clear_caches();
+    void clear_caches() noexcept;
 
     // From `IAudioPresentationLatency`
     tresult PLUGIN_API
@@ -415,7 +415,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      *
      * @see processing_bus_cache
      */
-    void clear_bus_cache();
+    void clear_bus_cache() noexcept;
 
     /**
      * If we have an active `IPlugView` instance, try to use the mutual

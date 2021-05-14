@@ -21,7 +21,7 @@
 class Vst3HostContextProxyImpl : public Vst3HostContextProxy {
    public:
     Vst3HostContextProxyImpl(Vst3Bridge& bridge,
-                             Vst3HostContextProxy::ConstructArgs&& args);
+                             Vst3HostContextProxy::ConstructArgs&& args) noexcept;
 
     /**
      * We'll override the query interface to log queries for interfaces we do

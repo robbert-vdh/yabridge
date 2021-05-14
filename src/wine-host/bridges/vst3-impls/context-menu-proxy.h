@@ -20,14 +20,15 @@
 
 class Vst3ContextMenuProxyImpl : public Vst3ContextMenuProxy {
    public:
-    Vst3ContextMenuProxyImpl(Vst3Bridge& bridge,
-                             Vst3ContextMenuProxy::ConstructArgs&& args);
+    Vst3ContextMenuProxyImpl(
+        Vst3Bridge& bridge,
+        Vst3ContextMenuProxy::ConstructArgs&& args) noexcept;
 
     /**
      * When the reference count reaches zero and this destructor is called,
      * we'll send a request to plugin to destroy the corresponding object.
      */
-    ~Vst3ContextMenuProxyImpl();
+    ~Vst3ContextMenuProxyImpl() noexcept override;
 
     /**
      * We'll override the query interface to log queries for interfaces we do

@@ -107,14 +107,14 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
    public:
     Vst3PlugViewProxyImpl(Vst3PluginBridge& bridge,
                           std::atomic_bool& is_active,
-                          Vst3PlugViewProxy::ConstructArgs&& args);
+                          Vst3PlugViewProxy::ConstructArgs&& args) noexcept;
 
     /**
      * When the reference count reaches zero and this destructor is called,
      * we'll send a request to the Wine plugin host to destroy the corresponding
      * object.
      */
-    ~Vst3PlugViewProxyImpl();
+    ~Vst3PlugViewProxyImpl() noexcept override;
 
     /**
      * We'll override the query interface to log queries for interfaces we do

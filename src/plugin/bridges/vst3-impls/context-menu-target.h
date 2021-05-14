@@ -21,7 +21,7 @@
 class YaContextMenuTargetImpl : public YaContextMenuTarget {
    public:
     YaContextMenuTargetImpl(Vst3PluginBridge& bridge,
-                            const ConstructArgs&& args);
+                            const ConstructArgs&& args) noexcept;
 
     /**
      * We'll override the query interface to log queries for interfaces we do

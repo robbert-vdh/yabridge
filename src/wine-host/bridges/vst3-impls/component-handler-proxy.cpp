@@ -22,7 +22,7 @@
 
 Vst3ComponentHandlerProxyImpl::Vst3ComponentHandlerProxyImpl(
     Vst3Bridge& bridge,
-    Vst3ComponentHandlerProxy::ConstructArgs&& args)
+    Vst3ComponentHandlerProxy::ConstructArgs&& args) noexcept
     : Vst3ComponentHandlerProxy(std::move(args)), bridge(bridge) {
     // The lifecycle of this object is managed together with that of the plugin
     // object instance this host context got passed to

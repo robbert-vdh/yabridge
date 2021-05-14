@@ -45,7 +45,10 @@ Vst3PluginProxyImpl::Vst3PluginProxyImpl(Vst3PluginBridge& bridge,
     bridge.register_plugin_proxy(*this);
 }
 
-Vst3PluginProxyImpl::~Vst3PluginProxyImpl() {
+Vst3PluginProxyImpl::~Vst3PluginProxyImpl() noexcept {
+    // NOTE: This can actually throw (e.g. out of memory or the socket got
+    //       closed). But if that were to happen, then we wouldn't be able to
+    //       recover from it anyways.
     bridge.send_message(
         Vst3PluginProxy::Destruct{.instance_id = instance_id()});
     bridge.unregister_plugin_proxy(*this);
@@ -80,7 +83,7 @@ bool Vst3PluginProxyImpl::unregister_context_menu(size_t context_menu_id) {
     return context_menus.erase(context_menu_id);
 }
 
-void Vst3PluginProxyImpl::clear_caches() {
+void Vst3PluginProxyImpl::clear_caches() noexcept {
     clear_bus_cache();
 
     std::lock_guard lock(function_result_cache_mutex);
@@ -1325,7 +1328,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getXmlRepresentationStream(
     }
 }
 
-void Vst3PluginProxyImpl::clear_bus_cache() {
+void Vst3PluginProxyImpl::clear_bus_cache() noexcept {
     std::lock_guard lock(processing_bus_cache_mutex);
     if (processing_bus_cache) {
         processing_bus_cache.emplace();
