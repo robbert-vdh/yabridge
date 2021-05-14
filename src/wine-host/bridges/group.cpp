@@ -78,7 +78,7 @@ StdIoCapture::StdIoCapture(boost::asio::io_context& io_context,
     pipe.assign(pipe_fd[0]);
 }
 
-StdIoCapture::~StdIoCapture() {
+StdIoCapture::~StdIoCapture() noexcept {
     // Restore the original file descriptor and close the pipe. The other wend
     // was already closed in the constructor.
     dup2(original_fd_copy, target_fd);
@@ -112,11 +112,11 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
     });
 }
 
-GroupBridge::~GroupBridge() {
+GroupBridge::~GroupBridge() noexcept {
     stdio_context.stop();
 }
 
-bool GroupBridge::is_event_loop_inhibited() {
+bool GroupBridge::is_event_loop_inhibited() noexcept {
     std::lock_guard lock(active_plugins_mutex);
 
     for (auto& [parameters, value] : active_plugins) {

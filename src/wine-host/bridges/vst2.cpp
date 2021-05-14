@@ -316,7 +316,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     });
 }
 
-bool Vst2Bridge::inhibits_event_loop() {
+bool Vst2Bridge::inhibits_event_loop() noexcept {
     return !is_initialized;
 }
 
@@ -420,7 +420,7 @@ void Vst2Bridge::run() {
         });
 }
 
-void Vst2Bridge::handle_x11_events() {
+void Vst2Bridge::handle_x11_events() noexcept {
     if (editor) {
         editor->handle_x11_events();
     }
@@ -488,7 +488,8 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
 
 class HostCallbackDataConverter : DefaultDataConverter {
    public:
-    HostCallbackDataConverter(AEffect* plugin, VstTimeInfo& last_time_info)
+    HostCallbackDataConverter(AEffect* plugin,
+                              VstTimeInfo& last_time_info) noexcept
         : plugin(plugin), last_time_info(last_time_info) {}
 
     EventPayload read(const int opcode,

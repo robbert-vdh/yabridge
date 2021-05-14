@@ -58,7 +58,7 @@ class Vst2Bridge : public HostBridge {
                std::string endpoint_base_dir,
                pid_t parent_pid);
 
-    bool inhibits_event_loop() override;
+    bool inhibits_event_loop() noexcept override;
 
     /**
      * Here we'll handle incoming `dispatch()` messages until the sockets get
@@ -66,7 +66,7 @@ class Vst2Bridge : public HostBridge {
      */
     void run() override;
 
-    void handle_x11_events() override;
+    void handle_x11_events() noexcept override;
 
    protected:
     void close_sockets() override;

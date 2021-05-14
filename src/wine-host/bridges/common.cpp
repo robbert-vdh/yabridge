@@ -29,7 +29,9 @@ HostBridge::HostBridge(MainContext& main_context,
       parent_pid(parent_pid),
       watchdog_guard(main_context.register_watchdog(*this)) {}
 
-void HostBridge::handle_win32_events() {
+HostBridge::~HostBridge() noexcept {}
+
+void HostBridge::handle_win32_events() noexcept {
     MSG msg;
 
     for (int i = 0;

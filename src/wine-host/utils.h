@@ -70,7 +70,7 @@ class Win32Thread {
     /**
      * Constructor that does not start any thread yet.
      */
-    Win32Thread();
+    Win32Thread() noexcept;
 
     /**
      * Constructor that immediately starts running the thread. This works
@@ -109,8 +109,8 @@ class Win32Thread {
     Win32Thread(const Win32Thread&) = delete;
     Win32Thread& operator=(const Win32Thread&) = delete;
 
-    Win32Thread(Win32Thread&&);
-    Win32Thread& operator=(Win32Thread&&);
+    Win32Thread(Win32Thread&&) noexcept;
+    Win32Thread& operator=(Win32Thread&&) noexcept;
 
    private:
     // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
@@ -133,16 +133,18 @@ class Win32Thread {
  */
 class Win32Timer {
    public:
-    Win32Timer();
-    Win32Timer(HWND window_handle, size_t timer_id, unsigned int interval_ms);
+    Win32Timer() noexcept;
+    Win32Timer(HWND window_handle,
+               size_t timer_id,
+               unsigned int interval_ms) noexcept;
 
-    ~Win32Timer();
+    ~Win32Timer() noexcept;
 
     Win32Timer(const Win32Timer&) = delete;
     Win32Timer& operator=(const Win32Timer&) = delete;
 
-    Win32Timer(Win32Timer&&);
-    Win32Timer& operator=(Win32Timer&&);
+    Win32Timer(Win32Timer&&) noexcept;
+    Win32Timer& operator=(Win32Timer&&) noexcept;
 
    private:
     HWND window_handle;
@@ -176,7 +178,7 @@ class MainContext {
      * Drop all future work from the IO context. This does not necessarily mean
      * that the thread that called `main_context.run()` immediatly returns.
      */
-    void stop();
+    void stop() noexcept;
 
     /**
      * Set a new timer interval. We'll do this whenever a new plugin loads,
@@ -184,7 +186,7 @@ class MainContext {
      * set to.
      */
     void update_timer_interval(
-        std::chrono::steady_clock::duration new_interval);
+        std::chrono::steady_clock::duration new_interval) noexcept;
 
     /**
      * The RAII guard used to register and unregister host bridge instances from
@@ -195,13 +197,13 @@ class MainContext {
         WatchdogGuard(HostBridge& bridge,
                       std::set<HostBridge*>& watched_bridges,
                       std::mutex& watched_bridges_mutex);
-        ~WatchdogGuard();
+        ~WatchdogGuard() noexcept;
 
         WatchdogGuard(const WatchdogGuard&) = delete;
         WatchdogGuard& operator=(const WatchdogGuard&) = delete;
 
-        WatchdogGuard(WatchdogGuard&& o);
-        WatchdogGuard& operator=(WatchdogGuard&& o);
+        WatchdogGuard(WatchdogGuard&& o) noexcept;
+        WatchdogGuard& operator=(WatchdogGuard&& o) noexcept;
 
        private:
         /**

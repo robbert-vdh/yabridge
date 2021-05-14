@@ -37,7 +37,7 @@ class HostBridge {
                pid_t parent_pid);
 
    public:
-    virtual ~HostBridge(){};
+    virtual ~HostBridge() noexcept;
 
     /**
      * If a plugin instance returns `true` here, then the event loop should not
@@ -51,7 +51,7 @@ class HostBridge {
      *
      * @relates MainContext::async_handle_events
      */
-    virtual bool inhibits_event_loop() = 0;
+    virtual bool inhibits_event_loop() noexcept = 0;
 
     /**
      * Handle events until the plugin exits. The actual events are posted to
@@ -88,7 +88,7 @@ class HostBridge {
      * because of incorrect assumptions made by the plugin. See the dostring for
      * `Vst2Bridge::editor` for more information.
      */
-    void handle_win32_events();
+    void handle_win32_events() noexcept;
 
     /**
      * Used as part of the watchdog. This will check whether the remote host

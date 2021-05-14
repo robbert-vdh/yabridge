@@ -51,14 +51,17 @@ class StdIoCapture {
      */
     StdIoCapture(boost::asio::io_context& io_context, int file_descriptor);
 
-    StdIoCapture(const StdIoCapture&) = delete;
-    StdIoCapture& operator=(const StdIoCapture&) = delete;
-
     /**
      * On cleanup, close the outgoing file descriptor from the pipe and restore
      * the original file descriptor for the captured stream.
      */
-    ~StdIoCapture();
+    ~StdIoCapture() noexcept;
+
+    StdIoCapture(const StdIoCapture&) = delete;
+    StdIoCapture& operator=(const StdIoCapture&) = delete;
+
+    StdIoCapture(StdIoCapture&&) = delete;
+    StdIoCapture& operator=(StdIoCapture&&) = delete;
 
     /**
      * The pipe endpoint where all output from the original file descriptor gets
@@ -122,10 +125,13 @@ class GroupBridge {
      */
     explicit GroupBridge(boost::filesystem::path group_socket_path);
 
-    ~GroupBridge();
+    ~GroupBridge() noexcept;
 
     GroupBridge(const GroupBridge&) = delete;
     GroupBridge& operator=(const GroupBridge&) = delete;
+
+    GroupBridge(const GroupBridge&&) = delete;
+    GroupBridge& operator=(GroupBridge&&) = delete;
 
     /**
      * If this returns `true`, then the group host's event loop should
@@ -133,7 +139,7 @@ class GroupBridge {
      * `HostBridge::inhibits_event_loop()` for all plugins hosted in this group
      * process.
      */
-    bool is_event_loop_inhibited();
+    bool is_event_loop_inhibited() noexcept;
 
     /**
      * Run a plugin's dispatcher and message loop, processing all events on the

@@ -36,9 +36,9 @@ class Vst3ContextMenuProxyImpl;
  * @relates InstanceInterfaces
  */
 struct InstancePlugView {
-    InstancePlugView();
+    InstancePlugView() noexcept;
 
-    InstancePlugView(Steinberg::IPtr<Steinberg::IPlugView> plug_View);
+    InstancePlugView(Steinberg::IPtr<Steinberg::IPlugView> plug_View) noexcept;
 
     Steinberg::IPtr<Steinberg::IPlugView> plug_view;
 
@@ -59,9 +59,9 @@ struct InstancePlugView {
  * `IPluginBase::initialize()`.
  */
 struct InstanceInterfaces {
-    InstanceInterfaces();
+    InstanceInterfaces() noexcept;
 
-    InstanceInterfaces(Steinberg::IPtr<Steinberg::FUnknown> object);
+    InstanceInterfaces(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
     /**
      * A dedicated thread for handling incoming `IAudioProcessor` and
@@ -227,7 +227,7 @@ class Vst3Bridge : public HostBridge {
      * `object_instances` that supports `IPluginBase` whether
      * `IPluginBase::iniitalize()` has been called.
      */
-    bool inhibits_event_loop() override;
+    bool inhibits_event_loop() noexcept override;
 
     /**
      * Here we'll listen for and handle incoming control messages until the
@@ -235,7 +235,7 @@ class Vst3Bridge : public HostBridge {
      */
     void run() override;
 
-    void handle_x11_events() override;
+    void handle_x11_events() noexcept override;
 
    protected:
     void close_sockets() override;
@@ -416,7 +416,7 @@ class Vst3Bridge : public HostBridge {
      * is used to be able to refer to specific instances created for
      * `IPluginFactory::createInstance()`.
      */
-    size_t generate_instance_id();
+    size_t generate_instance_id() noexcept;
 
     /**
      * Assign a unique identifier to an object and add it to `object_instances`.

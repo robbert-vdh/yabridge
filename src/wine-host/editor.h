@@ -80,13 +80,13 @@ class DeferredWindow {
      */
     DeferredWindow(MainContext& main_context,
                    std::shared_ptr<xcb_connection_t> x11_connection,
-                   HWND window);
+                   HWND window) noexcept;
 
     /**
      * Post a `WM_CLOSE` message to the `handle`'s message queue as described
      * above.
      */
-    ~DeferredWindow();
+    ~DeferredWindow() noexcept;
 
     const HWND handle;
 
@@ -145,7 +145,7 @@ class Editor {
      * call. This will return the child window's handle if double editor
      * embedding is enabled.
      */
-    HWND get_win32_handle() const;
+    HWND get_win32_handle() const noexcept;
 
     /**
      * Returns `true` if the window manager supports the EWMH active window
@@ -161,7 +161,7 @@ class Editor {
     /**
      * Handle X11 events sent to the window our editor is embedded in.
      */
-    void handle_x11_events() const;
+    void handle_x11_events() const noexcept;
 
     /**
      * Lie to the Wine window about its coordinates on the screen for
@@ -215,7 +215,7 @@ class Editor {
                              const uint32_t message,
                              const uint32_t detail,
                              const uint32_t data1,
-                             const uint32_t data2) const;
+                             const uint32_t data2) const noexcept;
 
     /**
      * Start the XEmbed procedure when `use_xembed` is enabled. This should be

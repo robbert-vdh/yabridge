@@ -110,7 +110,7 @@ bool is_child_window_or_same(xcb_connection_t& x11_connection,
  * Compute the size a window would have to be to be allowed to fullscreened on
  * any of the connected screens.
  */
-Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection);
+Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection) noexcept;
 /**
  * Get the root window for the specified window. The returned root window will
  * depend on the screen the window is on.
@@ -120,22 +120,22 @@ xcb_window_t get_root_window(xcb_connection_t& x11_connection,
 /**
  * Return the X11 window handle for the window if it's currently open.
  */
-xcb_window_t get_x11_handle(HWND win32_handle);
+xcb_window_t get_x11_handle(HWND win32_handle) noexcept;
 
 /**
  * Return a handle to the window class used for all Win32 windows created by
  * yabridge.
  */
-ATOM get_window_class();
+ATOM get_window_class() noexcept;
 
 DeferredWindow::DeferredWindow(MainContext& main_context,
                                std::shared_ptr<xcb_connection_t> x11_connection,
-                               HWND window)
+                               HWND window) noexcept
     : handle(window),
       main_context(main_context),
       x11_connection(x11_connection) {}
 
-DeferredWindow::~DeferredWindow() {
+DeferredWindow::~DeferredWindow() noexcept {
     // NOTE: For some rason, Wine will sometimes try to delete a window twice if
     //       the parent window no longer exists. I've only seen this cause
     //       issues with plugins that hang when their window is hidden, like the
@@ -159,28 +159,34 @@ DeferredWindow::~DeferredWindow() {
     //      would tick exactly between `IPlugView::removed()` and
     //      `IPlugView::~IPlugView`. Delaying this seems to be a best of both
     //      worlds solution that works as expected in every host I've tested.
-    std::shared_ptr<boost::asio::steady_timer> destroy_timer =
-        std::make_shared<boost::asio::steady_timer>(main_context.context);
-    destroy_timer->expires_after(1s);
+    try {
+        std::shared_ptr<boost::asio::steady_timer> destroy_timer =
+            std::make_shared<boost::asio::steady_timer>(main_context.context);
+        destroy_timer->expires_after(1s);
 
-    // Note that we capture a copy of `destroy_timer` here. This way we don't
-    // have to manage the timer instance ourselves as it will just clean itself
-    // up after this lambda gets called.
-    destroy_timer->async_wait([destroy_timer, handle = this->handle,
-                               x11_connection = this->x11_connection](
-                                  const boost::system::error_code& error) {
-        if (error.failed()) {
-            return;
-        }
+        // Note that we capture a copy of `destroy_timer` here. This way we
+        // don't have to manage the timer instance ourselves as it will just
+        // clean itself up after this lambda gets called.
+        destroy_timer->async_wait([destroy_timer, handle = this->handle,
+                                   x11_connection = this->x11_connection](
+                                      const boost::system::error_code& error) {
+            if (error.failed()) {
+                return;
+            }
 
-        // This is the flush for the reparent done above. We'll also do this as
-        // late as possible to prevent the window from being drawn in the
-        // meantime, as that would cause flickering.
-        xcb_flush(x11_connection.get());
+            // This is the flush for the reparent done above. We'll also do this
+            // as late as possible to prevent the window from being drawn in the
+            // meantime, as that would cause flickering.
+            xcb_flush(x11_connection.get());
 
-        // The actual destroying will happen as part of the Win32 message loop
-        PostMessage(handle, WM_CLOSE, 0, 0);
-    });
+            // The actual destroying will happen as part of the Win32 message
+            // loop
+            PostMessage(handle, WM_CLOSE, 0, 0);
+        });
+    } catch (const std::bad_alloc&) {
+        // If we can't allocate the timer, then we probably have bigger worries
+        // than not cleaning up a window
+    }
 }
 
 Editor::Editor(MainContext& main_context,
@@ -352,7 +358,7 @@ Editor::Editor(MainContext& main_context,
     }
 }
 
-HWND Editor::get_win32_handle() const {
+HWND Editor::get_win32_handle() const noexcept {
     // FIXME: The double embed and XEmbed options don't work together right now
     if (win32_child_window && !use_xembed) {
         return win32_child_window->handle;
@@ -361,7 +367,7 @@ HWND Editor::get_win32_handle() const {
     }
 }
 
-void Editor::handle_x11_events() const {
+void Editor::handle_x11_events() const noexcept {
     // NOTE: Ardour will unmap the window instead of closing the editor. When
     //       the window is unmapped `wine_window` doesn't exist and any X11
     //       function calls involving it will fail. All functions called from
@@ -623,7 +629,7 @@ void Editor::send_xembed_message(const xcb_window_t& window,
                                  const uint32_t message,
                                  const uint32_t detail,
                                  const uint32_t data1,
-                                 const uint32_t data2) const {
+                                 const uint32_t data2) const noexcept {
     xcb_client_message_event_t event;
     event.response_type = XCB_CLIENT_MESSAGE;
     event.type = xcb_xembed_message;
@@ -793,7 +799,7 @@ bool is_child_window_or_same(xcb_connection_t& x11_connection,
     return false;
 }
 
-Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection) {
+Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection) noexcept {
     xcb_screen_iterator_t iter =
         xcb_setup_roots_iterator(xcb_get_setup(&x11_connection));
 
@@ -829,12 +835,12 @@ xcb_window_t get_root_window(xcb_connection_t& x11_connection,
     return root;
 }
 
-xcb_window_t get_x11_handle(HWND win32_handle) {
+xcb_window_t get_x11_handle(HWND win32_handle) noexcept {
     return reinterpret_cast<size_t>(
         GetProp(win32_handle, "__wine_x11_whole_window"));
 }
 
-ATOM get_window_class() {
+ATOM get_window_class() noexcept {
     // Lazily iniitialize our window class
     static ATOM window_class_handle = 0;
     if (!window_class_handle) {

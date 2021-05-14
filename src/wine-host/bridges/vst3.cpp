@@ -38,18 +38,18 @@ Steinberg::FUnknownPtr<Steinberg::IPluginBase> hack_init_plugin_base(
     Steinberg::IPtr<Steinberg::FUnknown> object,
     Steinberg::IPtr<Steinberg::Vst::IComponent> component);
 
-InstancePlugView::InstancePlugView() {}
+InstancePlugView::InstancePlugView() noexcept {}
 
 InstancePlugView::InstancePlugView(
-    Steinberg::IPtr<Steinberg::IPlugView> plug_view)
+    Steinberg::IPtr<Steinberg::IPlugView> plug_view) noexcept
     : plug_view(plug_view),
       parameter_finder(plug_view),
       plug_view_content_scale_support(plug_view) {}
 
-InstanceInterfaces::InstanceInterfaces() {}
+InstanceInterfaces::InstanceInterfaces() noexcept {}
 
 InstanceInterfaces::InstanceInterfaces(
-    Steinberg::IPtr<Steinberg::FUnknown> object)
+    Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : object(object),
       audio_presentation_latency(object),
       audio_processor(object),
@@ -119,7 +119,7 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
     main_context.update_timer_interval(config.event_loop_interval());
 }
 
-bool Vst3Bridge::inhibits_event_loop() {
+bool Vst3Bridge::inhibits_event_loop() noexcept {
     std::lock_guard lock(object_instances_mutex);
 
     for (const auto& [instance_id, object] : object_instances) {
@@ -1121,7 +1121,7 @@ void Vst3Bridge::run() {
         });
 }
 
-void Vst3Bridge::handle_x11_events() {
+void Vst3Bridge::handle_x11_events() noexcept {
     std::lock_guard lock(object_instances_mutex);
 
     for (const auto& [instance_id, object] : object_instances) {
@@ -1154,7 +1154,7 @@ void Vst3Bridge::unregister_context_menu(size_t object_instance_id,
         context_menu_id);
 }
 
-size_t Vst3Bridge::generate_instance_id() {
+size_t Vst3Bridge::generate_instance_id() noexcept {
     return current_instance_id.fetch_add(1);
 }
 

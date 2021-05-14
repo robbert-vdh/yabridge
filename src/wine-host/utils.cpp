@@ -28,46 +28,47 @@ win32_thread_trampoline(fu2::unique_function<void()>* entry_point) {
     return 0;
 }
 
-Win32Thread::Win32Thread(Win32Thread&& o) : handle(std::move(o.handle)) {
+Win32Thread::Win32Thread() noexcept : handle(nullptr, nullptr) {}
+
+Win32Thread::~Win32Thread() noexcept {
+    if (handle) {
+        WaitForSingleObject(handle.get(), INFINITE);
+    }
+}
+
+Win32Thread::Win32Thread(Win32Thread&& o) noexcept
+    : handle(std::move(o.handle)) {
     o.handle.reset();
 }
 
-Win32Thread& Win32Thread::operator=(Win32Thread&& o) {
+Win32Thread& Win32Thread::operator=(Win32Thread&& o) noexcept {
     handle = std::move(o.handle);
     o.handle.reset();
 
     return *this;
 }
 
-Win32Thread::~Win32Thread() {
-    if (handle) {
-        WaitForSingleObject(handle.get(), INFINITE);
-    }
-}
-
-Win32Thread::Win32Thread() : handle(nullptr, nullptr) {}
-
-Win32Timer::Win32Timer() {}
+Win32Timer::Win32Timer() noexcept {}
 
 Win32Timer::Win32Timer(HWND window_handle,
                        size_t timer_id,
-                       unsigned int interval_ms)
+                       unsigned int interval_ms) noexcept
     : window_handle(window_handle), timer_id(timer_id) {
     SetTimer(window_handle, timer_id, interval_ms, nullptr);
 }
 
-Win32Timer::~Win32Timer() {
+Win32Timer::~Win32Timer() noexcept {
     if (timer_id) {
         KillTimer(window_handle, *timer_id);
     }
 }
 
-Win32Timer::Win32Timer(Win32Timer&& o)
+Win32Timer::Win32Timer(Win32Timer&& o) noexcept
     : window_handle(o.window_handle), timer_id(std::move(o.timer_id)) {
     o.timer_id.reset();
 }
 
-Win32Timer& Win32Timer::operator=(Win32Timer&& o) {
+Win32Timer& Win32Timer::operator=(Win32Timer&& o) noexcept {
     window_handle = o.window_handle;
     timer_id = std::move(o.timer_id);
     o.timer_id.reset();
@@ -95,12 +96,12 @@ void MainContext::run() {
     context.run();
 }
 
-void MainContext::stop() {
+void MainContext::stop() noexcept {
     context.stop();
 }
 
 void MainContext::update_timer_interval(
-    std::chrono::steady_clock::duration new_interval) {
+    std::chrono::steady_clock::duration new_interval) noexcept {
     timer_interval = new_interval;
 }
 
@@ -115,14 +116,14 @@ MainContext::WatchdogGuard::WatchdogGuard(
     watched_bridges.insert(&bridge);
 }
 
-MainContext::WatchdogGuard::~WatchdogGuard() {
+MainContext::WatchdogGuard::~WatchdogGuard() noexcept {
     if (is_active) {
         std::lock_guard lock(watched_bridges_mutex.get());
         watched_bridges.get().erase(bridge);
     }
 }
 
-MainContext::WatchdogGuard::WatchdogGuard(WatchdogGuard&& o)
+MainContext::WatchdogGuard::WatchdogGuard(WatchdogGuard&& o) noexcept
     : bridge(std::move(o.bridge)),
       watched_bridges(std::move(o.watched_bridges)),
       watched_bridges_mutex(std::move(o.watched_bridges_mutex)) {
@@ -130,7 +131,7 @@ MainContext::WatchdogGuard::WatchdogGuard(WatchdogGuard&& o)
 }
 
 MainContext::WatchdogGuard& MainContext::WatchdogGuard::operator=(
-    WatchdogGuard&& o) {
+    WatchdogGuard&& o) noexcept {
     bridge = std::move(o.bridge);
     watched_bridges = std::move(o.watched_bridges);
     watched_bridges_mutex = std::move(o.watched_bridges_mutex);
