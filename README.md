@@ -677,12 +677,16 @@ negative side effects:
   You can find a guide to setting these things up on Ubuntu
   [here](https://zezic.github.io/yabridge-benchmark/).
 
-- [Plugin groups](#plugin-groups) can also greatly improve performance when
-  using many instances of the same VST2 plugin. _VST3 plugins have similar
-  functionality built in by design_. Some plugins, like the BBC Spitfire
-  plugins, can share a lot of resources between different instances of the
-  plugin. Hosting all instances of the same plugin in a single process can in
-  those cases greatly reduce overall CPU usage and get rid of latency spikes.
+- If you have the choice, the VST3 version of a plugin will likely perform
+  better than the VST2 version.
+
+- If the plugin doesn't have a VST3 version, then [plugin
+  groups](#plugin-groups) can also greatly improve performance when many
+  instances of same VST2 plugin. _VST3 plugins have similar functionality built
+  in by design_. Some plugins, like the BBC Spitfire plugins, can share a lot of
+  resources between different instances of the plugin. Hosting all instances of
+  the same plugin in a single process can in those cases greatly reduce overall
+  CPU usage and get rid of latency spikes.
 
 ## Building
 
