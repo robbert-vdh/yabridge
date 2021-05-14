@@ -363,10 +363,16 @@ Vst3PluginBridge::Vst3PluginBridge()
     });
 }
 
-Vst3PluginBridge::~Vst3PluginBridge() {
-    // Drop all work make sure all sockets are closed
-    plugin_host->terminate();
-    io_context.stop();
+Vst3PluginBridge::~Vst3PluginBridge() noexcept {
+    try {
+        // Drop all work make sure all sockets are closed
+        plugin_host->terminate();
+        io_context.stop();
+    } catch (const boost::system::system_error&) {
+        // It could be that the sockets have already been closed or that the
+        // process has already exited (at which point we probably won't be
+        // executing this, but maybe if all the stars align)
+    }
 }
 
 Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {

@@ -64,6 +64,8 @@ HostProcess::HostProcess(boost::asio::io_context& io_context,
     logger.async_log_pipe_lines(stderr_pipe, stderr_buffer, "[Wine STDERR] ");
 }
 
+HostProcess::~HostProcess() noexcept {}
+
 IndividualHost::IndividualHost(boost::asio::io_context& io_context,
                                Logger& logger,
                                const PluginInfo& plugin_info,
@@ -108,7 +110,7 @@ fs::path IndividualHost::path() {
     return host_path;
 }
 
-bool IndividualHost::running() {
+bool IndividualHost::running() noexcept {
     return host.running();
 }
 
@@ -219,7 +221,7 @@ fs::path GroupHost::path() {
     return host_path;
 }
 
-bool GroupHost::running() {
+bool GroupHost::running() noexcept {
     // When we are unable to connect to a new or existing group host process,
     // then we'll consider the startup failed and we'll allow the initialization
     // process to terminate.

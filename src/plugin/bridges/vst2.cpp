@@ -31,7 +31,7 @@ float get_parameter_proxy(AEffect*, int);
  * is sadly needed as a workaround to avoid using globals since we need free
  * function pointers to interface with the VST C API.
  */
-Vst2PluginBridge& get_bridge_instance(const AEffect& plugin) {
+Vst2PluginBridge& get_bridge_instance(const AEffect& plugin) noexcept {
     return *static_cast<Vst2PluginBridge*>(plugin.ptr3);
 }
 
@@ -168,20 +168,26 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
     update_aeffect(plugin, initialized_plugin);
 }
 
-Vst2PluginBridge::~Vst2PluginBridge() {
-    // Drop all work make sure all sockets are closed
-    plugin_host->terminate();
+Vst2PluginBridge::~Vst2PluginBridge() noexcept {
+    try {
+        // Drop all work make sure all sockets are closed
+        plugin_host->terminate();
 
-    // The `stop()` method will cause the IO context to just drop all of its
-    // outstanding work immediately
-    io_context.stop();
+        // The `stop()` method will cause the IO context to just drop all of its
+        // outstanding work immediately
+        io_context.stop();
+    } catch (const boost::system::system_error&) {
+        // It could be that the sockets have already been closed or that the
+        // process has already exited (at which point we probably won't be
+        // executing this, but maybe if all the stars align)
+    }
 }
 
 class DispatchDataConverter : DefaultDataConverter {
    public:
     DispatchDataConverter(std::vector<uint8_t>& chunk_data,
                           AEffect& plugin,
-                          VstRect& editor_rectangle)
+                          VstRect& editor_rectangle) noexcept
         : chunk(chunk_data), plugin(plugin), rect(editor_rectangle) {}
 
     EventPayload read(const int opcode,

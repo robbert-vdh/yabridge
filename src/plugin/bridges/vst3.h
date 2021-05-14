@@ -53,13 +53,13 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * @throw std::runtime_error Thrown when the Wine plugin host could not be
      *   found, or if it could not locate and load a VST3 module.
      */
-    Vst3PluginBridge();
+    explicit Vst3PluginBridge();
 
     /**
      * Terminate the Wine plugin host process and drop all work when the module
      * gets unloaded.
      */
-    ~Vst3PluginBridge();
+    ~Vst3PluginBridge() noexcept;
 
     /**
      * When the host loads the module it will call `GetPluginFactory()` which

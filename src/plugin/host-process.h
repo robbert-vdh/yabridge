@@ -40,7 +40,7 @@
  */
 class HostProcess {
    public:
-    virtual ~HostProcess(){};
+    virtual ~HostProcess() noexcept;
 
     /**
      * Return the full path to the host application in use. The host application
@@ -53,7 +53,7 @@ class HostProcess {
      * Return true if the host process is still running. Used during startup to
      * abort connecting to sockets if the Wine process has crashed.
      */
-    virtual bool running() = 0;
+    virtual bool running() noexcept = 0;
 
     /**
      * Kill the process or cause the plugin that's being hosted to exit.
@@ -133,7 +133,7 @@ class IndividualHost : public HostProcess {
                    Sockets& sockets);
 
     boost::filesystem::path path() override;
-    bool running() override;
+    bool running() noexcept override;
     void terminate() override;
 
    private:
@@ -180,7 +180,7 @@ class GroupHost : public HostProcess {
               std::string group_name);
 
     boost::filesystem::path path() override;
-    bool running() override;
+    bool running() noexcept override;
     void terminate() override;
 
    private:
