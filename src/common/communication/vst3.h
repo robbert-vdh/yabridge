@@ -206,28 +206,22 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
     template <bool persistent_buffers = false, typename F>
     void receive_messages(std::optional<std::pair<Vst3Logger&, bool>> logging,
                           F callback) {
-        thread_local std::vector<uint8_t> persistent_buffer{};
-        // This is an `std::variant<>`, so this will actually persistently store
-        // a copy of all possible requests even if we're only interested in the
-        // process data, since that's the only object where allocations can
-        // happen. The other objects we're storing here are very small, so the
-        // extra wasted memory shouldn't matter much.
-        thread_local std::optional<Request> persistent_object(
-            persistent_buffers ? std::make_optional<Request>() : std::nullopt);
-
-        // FIXME: In some cases this didn't get initialized for some reason.
-        //        Figure out why.
-        if constexpr (persistent_buffers) {
-            if (!persistent_object) {
-                persistent_object.emplace();
-            }
-        }
-
         // Reading, processing, and writing back the response for the requests
         // we receive works in the same way regardless of which socket we're
         // using
         const auto process_message =
             [&](boost::asio::local::stream_protocol::socket& socket) {
+                thread_local std::vector<uint8_t> persistent_buffer{};
+                // This is an `std::variant<>`, so this will actually
+                // persistently store a copy of all possible requests even if
+                // we're only interested in the process data, since that's the
+                // only object where allocations can happen. The other objects
+                // we're storing here are very small, so the extra wasted memory
+                // shouldn't matter much.
+                thread_local std::optional<Request> persistent_object(
+                    persistent_buffers ? std::make_optional<Request>()
+                                       : std::nullopt);
+
                 auto request =
                     persistent_buffers
                         ? read_object<Request>(socket, *persistent_object,
