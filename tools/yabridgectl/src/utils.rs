@@ -27,7 +27,7 @@ use std::os::unix::fs as unix_fs;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use textwrap;
+use textwrap::Wrapper;
 
 use crate::config::{self, Config, KnownConfig, YABRIDGE_HOST_EXE_NAME};
 use crate::files::NativeFile;
@@ -341,10 +341,7 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
 /// Wrap a long paragraph of text to terminal width, or 80 characters if the width of the terminal
 /// can't be determined. Everything after the first line gets indented with four spaces.
 pub fn wrap(text: &str) -> String {
-    textwrap::fill(
-        text,
-        textwrap::Options::new(textwrap::termwidth())
-            .splitter(textwrap::NoHyphenation)
-            .subsequent_indent("    "),
-    )
+    let wrapper = Wrapper::with_termwidth().subsequent_indent("    ");
+
+    wrapper.fill(text)
 }

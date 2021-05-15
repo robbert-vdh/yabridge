@@ -30,6 +30,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed builds on Wine 6.8 because of internal changes to Wine's `windows.h`
   implementation.
 
+### yabridgectl
+
+- Fixed text wrapping being broken after a dependency update earlier this year.
+
 ## [3.2.0] - 2021-05-03
 
 ### Added
