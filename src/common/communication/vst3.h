@@ -215,6 +215,14 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         thread_local std::optional<Request> persistent_object(
             persistent_buffers ? std::make_optional<Request>() : std::nullopt);
 
+        // FIXME: In some cases this didn't get initialized for some reason.
+        //        Figure out why.
+        if constexpr (persistent_buffers) {
+            if (!persistent_object) {
+                persistent_object.emplace();
+            }
+        }
+
         // Reading, processing, and writing back the response for the requests
         // we receive works in the same way regardless of which socket we're
         // using
