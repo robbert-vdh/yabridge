@@ -32,6 +32,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### yabridgectl
 
+- Improved the warning yabridgectl shows when it cannot run `yabridge-host.exe`
+  as part of the post-installation checks.
 - Fixed text wrapping being broken after a dependency update earlier this year.
 
 ## [3.2.0] - 2021-05-03
