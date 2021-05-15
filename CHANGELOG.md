@@ -24,11 +24,16 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Redesigned the VST3 audio socket handling to be able to reuse the process data
   objects on both sides. This greatly reduces the overhead of our VST3 bridging
   by getting rid of all memory allocations during audio processing.
+- Changed the way mutual recursion in VST3 plugins on the plugin side works to
+  counter any potential GUI related timing issues with VST3 plugins.
 
 ### Fixed
 
-- Prevent _DMG_ VST3 plugins from freezing in **REAPER** under certain
-  circumstances.
+- Fixed _DMG_ VST3 plugins freezing in **REAPER** when the plugin resizes itself
+  while the host passes channel context information to the plugin.
+- Also fixed _DMG_ VST3 plugins freezing in **REAPER** when restoring multiple
+  instances of the plugin at once while the FX window is open and the GUI is
+  visible.
 - Fixed builds on Wine 6.8 because of internal changes to Wine's `windows.h`
   implementation.
 

@@ -85,21 +85,16 @@ RunLoopTasks::onFDIsSet(Steinberg::Linux::FileDescriptor /*fd*/) {
 
 Vst3PlugViewProxyImpl::Vst3PlugViewProxyImpl(
     Vst3PluginBridge& bridge,
-    std::atomic_bool& is_active,
     Vst3PlugViewProxy::ConstructArgs&& args) noexcept
-    : Vst3PlugViewProxy(std::move(args)), bridge(bridge), is_active(is_active) {
-    is_active = true;
-}
+    : Vst3PlugViewProxy(std::move(args)), bridge(bridge) {}
 
 Vst3PlugViewProxyImpl::~Vst3PlugViewProxyImpl() noexcept {
-    is_active = false;
-
     // Also drop the plug view smart pointer on the Wine side when this gets
     // dropped
     // NOTE: This can actually throw (e.g. out of memory or the socket got
     //       closed). But if that were to happen, then we wouldn't be able to
     //       recover from it anyways.
-    send_mutually_recursive_message(
+    bridge.send_mutually_recursive_message(
         Vst3PlugViewProxy::Destruct{.owner_instance_id = owner_instance_id()});
 }
 
@@ -117,7 +112,7 @@ Vst3PlugViewProxyImpl::isPlatformTypeSupported(Steinberg::FIDString type) {
     if (type) {
         // We'll swap the X11 window ID platform type string for the Win32 HWND
         // equivalent on the Wine side
-        return send_mutually_recursive_message(
+        return bridge.send_mutually_recursive_message(
             YaPlugView::IsPlatformTypeSupported{
                 .owner_instance_id = owner_instance_id(), .type = type});
     } else {
@@ -133,7 +128,7 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::attached(void* parent,
     if (parent && type) {
         // We will embed the Wine Win32 window into the X11 window provided by
         // the host
-        return send_mutually_recursive_message(YaPlugView::Attached{
+        return bridge.send_mutually_recursive_message(YaPlugView::Attached{
             .owner_instance_id = owner_instance_id(),
             .parent = reinterpret_cast<native_size_t>(parent),
             .type = type});
@@ -145,19 +140,19 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::attached(void* parent,
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::removed() {
-    return send_mutually_recursive_message(
+    return bridge.send_mutually_recursive_message(
         YaPlugView::Removed{.owner_instance_id = owner_instance_id()});
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onWheel(float distance) {
-    return send_mutually_recursive_message(YaPlugView::OnWheel{
+    return bridge.send_mutually_recursive_message(YaPlugView::OnWheel{
         .owner_instance_id = owner_instance_id(), .distance = distance});
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onKeyDown(char16 key,
                                                     int16 keyCode,
                                                     int16 modifiers) {
-    return send_mutually_recursive_message(
+    return bridge.send_mutually_recursive_message(
         YaPlugView::OnKeyDown{.owner_instance_id = owner_instance_id(),
                               .key = key,
                               .key_code = keyCode,
@@ -167,7 +162,7 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::onKeyDown(char16 key,
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onKeyUp(char16 key,
                                                   int16 keyCode,
                                                   int16 modifiers) {
-    return send_mutually_recursive_message(
+    return bridge.send_mutually_recursive_message(
         YaPlugView::OnKeyUp{.owner_instance_id = owner_instance_id(),
                             .key = key,
                             .key_code = keyCode,
@@ -176,7 +171,7 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::onKeyUp(char16 key,
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::getSize(Steinberg::ViewRect* size) {
     if (size) {
-        const GetSizeResponse response = send_mutually_recursive_message(
+        const GetSizeResponse response = bridge.send_mutually_recursive_message(
             YaPlugView::GetSize{.owner_instance_id = owner_instance_id()});
 
         *size = response.size;
@@ -191,7 +186,7 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::getSize(Steinberg::ViewRect* size) {
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onSize(Steinberg::ViewRect* newSize) {
     if (newSize) {
-        return send_mutually_recursive_message(YaPlugView::OnSize{
+        return bridge.send_mutually_recursive_message(YaPlugView::OnSize{
             .owner_instance_id = owner_instance_id(), .new_size = *newSize});
     } else {
         bridge.logger.log(
@@ -201,7 +196,7 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::onSize(Steinberg::ViewRect* newSize) {
 }
 
 tresult PLUGIN_API Vst3PlugViewProxyImpl::onFocus(TBool state) {
-    return send_mutually_recursive_message(YaPlugView::OnFocus{
+    return bridge.send_mutually_recursive_message(YaPlugView::OnFocus{
         .owner_instance_id = owner_instance_id(), .state = state});
 }
 
@@ -232,7 +227,7 @@ Vst3PlugViewProxyImpl::setFrame(Steinberg::IPlugFrame* frame) {
                 std::string(e.what()));
         }
 
-        return send_mutually_recursive_message(YaPlugView::SetFrame{
+        return bridge.send_mutually_recursive_message(YaPlugView::SetFrame{
             .owner_instance_id = owner_instance_id(),
             .plug_frame_args = Vst3PlugFrameProxy::ConstructArgs(
                 plug_frame, owner_instance_id())});
@@ -240,7 +235,7 @@ Vst3PlugViewProxyImpl::setFrame(Steinberg::IPlugFrame* frame) {
         plug_frame.reset();
         run_loop_tasks.reset();
 
-        return send_mutually_recursive_message(
+        return bridge.send_mutually_recursive_message(
             YaPlugView::SetFrame{.owner_instance_id = owner_instance_id(),
                                  .plug_frame_args = std::nullopt});
     }
@@ -263,7 +258,8 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::canResize() {
         }
     }
 
-    const UniversalTResult result = send_mutually_recursive_message(request);
+    const UniversalTResult result =
+        bridge.send_mutually_recursive_message(request);
 
     {
         std::lock_guard lock(can_resize_cache_mutex);
@@ -277,8 +273,9 @@ tresult PLUGIN_API
 Vst3PlugViewProxyImpl::checkSizeConstraint(Steinberg::ViewRect* rect) {
     if (rect) {
         const CheckSizeConstraintResponse response =
-            send_mutually_recursive_message(YaPlugView::CheckSizeConstraint{
-                .owner_instance_id = owner_instance_id(), .rect = *rect});
+            bridge.send_mutually_recursive_message(
+                YaPlugView::CheckSizeConstraint{
+                    .owner_instance_id = owner_instance_id(), .rect = *rect});
 
         *rect = response.updated_rect;
 
@@ -296,7 +293,7 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::findParameter(
     int32 yPos,
     Steinberg::Vst::ParamID& resultTag /*out*/) {
     const FindParameterResponse response =
-        send_mutually_recursive_message(YaParameterFinder::FindParameter{
+        bridge.send_mutually_recursive_message(YaParameterFinder::FindParameter{
             .owner_instance_id = owner_instance_id(),
             .x_pos = xPos,
             .y_pos = yPos});
@@ -308,7 +305,7 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::findParameter(
 
 tresult PLUGIN_API
 Vst3PlugViewProxyImpl::setContentScaleFactor(ScaleFactor factor) {
-    return send_mutually_recursive_message(
+    return bridge.send_mutually_recursive_message(
         YaPlugViewContentScaleSupport::SetContentScaleFactor{
             .owner_instance_id = owner_instance_id(), .factor = factor});
 }

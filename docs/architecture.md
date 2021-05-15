@@ -74,7 +74,7 @@ Lastly there are a few specific situations where the above two issues of mutual
 recursion and functions that can only be called from a single thread are
 combined. In those cases we need to the send over the socket on a new thread, so
 that the calling thread can handle other tasks through another IO context. See
-`Vst3PlugViewProxyImpl::send_mutually_recursive_message()` and
+`Vst3HostBridge::send_mutually_recursive_message()` and
 `Vst3Bridge::send_mutually_recursive_message()` for the actual implementation
 with more details. This applies to the functions related to resizing VST3
 editors on both the Linux and the Wine sides.

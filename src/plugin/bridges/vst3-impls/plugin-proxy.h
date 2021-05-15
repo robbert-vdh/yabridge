@@ -341,12 +341,6 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     Vst3PlugViewProxyImpl* last_created_plug_view = nullptr;
 
     /**
-     * Whether `last_created_plug_view` is currently active. This field is
-     * written to from `Vst3PlugViewProxyImpl`'s constructor and destructor.
-     */
-    std::atomic_bool last_created_plug_view_active = false;
-
-    /**
      * A pointer to a context menu returned by the host as a response to a call
      * to `IComponentHandler3::createContextMenu`, as well as all targets we've
      * created for it. This way we can drop both all at once.
@@ -416,40 +410,6 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * @see processing_bus_cache
      */
     void clear_bus_cache() noexcept;
-
-    /**
-     * If we have an active `IPlugView` instance, try to use the mutual
-     * recursion mechanism so that callbacks made by the plugin can be handled
-     * on this same thread. In case this is an audio processor with a separate
-     * edit controller, we'll also check if the object we're connected to has an
-     * active `IPlugView` instance. When there's no active `IPlugView` instance,
-     * we'll just send the event message like normal. This is needed to be able
-     * to handle function calls made by the host (which is mostly relevant for
-     * REAPER) on the GUI thread, when the plugin makes a callback to the host
-     * that should also be handled on that same thread (context menus and
-     * plugin-driven resizes).
-     */
-    template <typename T>
-    typename T::Response maybe_send_mutually_recursive_message(
-        const T& object) {
-        if (last_created_plug_view_active) {
-            return last_created_plug_view->send_mutually_recursive_message(
-                std::move(object));
-        } else if (connected_instance_id) {
-            // We should also be able to handle the above situation when a
-            // `setState()` on a processor triggers a resize coming from the
-            // edit controller. To do that, we'll also check if the connected
-            // instance has an active plug view.
-            Vst3PluginProxyImpl& other_instance =
-                bridge.plugin_proxies.at(*connected_instance_id).get();
-            if (other_instance.last_created_plug_view_active) {
-                return other_instance.last_created_plug_view
-                    ->send_mutually_recursive_message(std::move(object));
-            }
-        }
-
-        return bridge.send_message(std::move(object));
-    }
 
     Vst3PluginBridge& bridge;
 

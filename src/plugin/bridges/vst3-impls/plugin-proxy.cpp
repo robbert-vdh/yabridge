@@ -415,7 +415,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setState(Steinberg::IBStream* state) {
         //       GUI thread. So if the GUI is active, we'll use the mutual
         //       recursion mechanism to allow this resize call to also be
         //       performed from the GUI thread.
-        return maybe_send_mutually_recursive_message(Vst3PluginProxy::SetState{
+        return bridge.send_mutually_recursive_message(Vst3PluginProxy::SetState{
             .instance_id = instance_id(), .state = state});
     } else {
         bridge.logger.log(
@@ -437,7 +437,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getState(Steinberg::IBStream* state) {
         //       into a situation where we need mutually recursive function
         //       calls.
         const GetStateResponse response =
-            maybe_send_mutually_recursive_message(Vst3PluginProxy::GetState{
+            bridge.send_mutually_recursive_message(Vst3PluginProxy::GetState{
                 .instance_id = instance_id(), .state = state});
 
         assert(response.state.write_back(state) == Steinberg::kResultOk);
@@ -784,9 +784,8 @@ Vst3PluginProxyImpl::createView(Steinberg::FIDString name) {
 
         if (response.plug_view_args) {
             // The host should manage this. Returning raw pointers feels scary.
-            auto plug_view_proxy =
-                new Vst3PlugViewProxyImpl(bridge, last_created_plug_view_active,
-                                          std::move(*response.plug_view_args));
+            auto plug_view_proxy = new Vst3PlugViewProxyImpl(
+                bridge, std::move(*response.plug_view_args));
 
             // We also need to store an (unmanaged, since we don't want to
             // affect the reference counting) pointer to this to be able to
@@ -843,7 +842,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setChannelContextInfos(
         //       these things need to be handled on the GUI thread on their
         //       receiving sides, resulting in a deadlock without this mutual
         //       recursion.
-        return maybe_send_mutually_recursive_message(
+        return bridge.send_mutually_recursive_message(
             YaInfoListener::SetChannelContextInfos{
                 .instance_id = instance_id(),
                 .list = YaAttributeList::read_channel_context(list)});
