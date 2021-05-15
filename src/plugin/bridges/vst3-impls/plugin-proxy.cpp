@@ -836,9 +836,17 @@ Vst3PluginProxyImpl::endEditFromHost(Steinberg::Vst::ParamID paramID) {
 tresult PLUGIN_API Vst3PluginProxyImpl::setChannelContextInfos(
     Steinberg::Vst::IAttributeList* list) {
     if (list) {
-        return bridge.send_message(YaInfoListener::SetChannelContextInfos{
-            .instance_id = instance_id(),
-            .list = YaAttributeList::read_channel_context(list)});
+        // NOTE: After getting and setting state, the plugin may want to resize
+        //       to match its old size. The DMG plugins tend to delay this
+        //       request until after the state has been set, but at that point
+        //       in time REAPER will also send channel context info. Both of
+        //       these things need to be handled on the GUI thread on their
+        //       receiving sides, resulting in a deadlock without this mutual
+        //       recursion.
+        return maybe_send_mutually_recursive_message(
+            YaInfoListener::SetChannelContextInfos{
+                .instance_id = instance_id(),
+                .list = YaAttributeList::read_channel_context(list)});
     } else {
         bridge.logger.log(
             "WARNING: Null pointer passed to "

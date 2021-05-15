@@ -27,6 +27,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Prevent _DMG_ VST3 plugins from freezing in **REAPER** under certain
+  circumstances.
 - Fixed builds on Wine 6.8 because of internal changes to Wine's `windows.h`
   implementation.
 
