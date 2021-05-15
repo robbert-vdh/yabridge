@@ -72,7 +72,7 @@ Vst3PluginFactoryProxyImpl::createInstance(Steinberg::FIDString cid,
     }
 
     std::variant<Vst3PluginProxy::ConstructArgs, UniversalTResult> result =
-        bridge.send_message(Vst3PluginProxy::Construct{
+        bridge.send_mutually_recursive_message(Vst3PluginProxy::Construct{
             .cid = cid_array, .requested_interface = requested_interface});
 
     return std::visit(
