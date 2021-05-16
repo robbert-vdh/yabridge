@@ -31,6 +31,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed yabridge's Wine processes inheriting file descriptors in some
+  situations. This could cause **Ardour** and **Mixbus** to hang when trying to
+  reopen it after a crash. The watchdog timer added in yabridge 3.2.0 also
+  addressed this issue partially, but it should now be completely fixed. This
+  may also prevent rare issues where the **JACK** server would hang after the
+  host crashes.
 - Fixed _DMG_ VST3 plugins freezing in **REAPER** when the plugin resizes itself
   while the host passes channel context information to the plugin.
 - Also fixed _DMG_ VST3 plugins freezing in **REAPER** when restoring multiple

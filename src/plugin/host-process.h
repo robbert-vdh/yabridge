@@ -18,9 +18,6 @@
 
 #include <thread>
 
-// Boost.Process's auto detection for vfork() support doesn't seem to work
-#define BOOST_POSIX_HAS_VFORK 1
-
 #include <boost/asio/local/stream_protocol.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/filesystem.hpp>

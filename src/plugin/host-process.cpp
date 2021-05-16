@@ -18,6 +18,7 @@
 
 #include <boost/asio/read_until.hpp>
 #include <boost/process/env.hpp>
+#include <boost/process/extend.hpp>
 #include <boost/process/io.hpp>
 #include <boost/process/start_dir.hpp>
 
@@ -44,10 +45,20 @@ bp::child launch_host(fs::path host_path, Args&&... args) {
 #else
         host_path,
 #endif
-        // We'll use vfork() instead of fork to avoid potential issues with
-        // inheriting file descriptors
-        // https://github.com/robbert-vdh/yabridge/issues/45
-        bp::posix::use_vfork, std::forward<Args>(args)...);
+        // NOTE: If the Wine process outlives the host, then it may cause issues
+        //       if our process is still keeping the host's file descriptors
+        //       alive that. This can prevent Ardour from restarting after an
+        //       unexpected shutdown. Because of this we won't use `vfork()`,
+        //       but instead we'll just manually close all non-STDIO file
+        //       descriptors.
+        bp::extend::on_exec_setup =
+            [](auto& /*executor*/) {
+                const int max_fds = static_cast<int>(sysconf(_SC_OPEN_MAX));
+                for (int fd = STDERR_FILENO + 1; fd < max_fds; fd++) {
+                    close(fd);
+                }
+            },
+        std::forward<Args>(args)...);
 }
 
 HostProcess::HostProcess(boost::asio::io_context& io_context,
