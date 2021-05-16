@@ -80,25 +80,25 @@ class Win32Thread {
      * @param parameter The parameter passed to the entry point function.
      */
     template <typename Function, typename... Args>
-    Win32Thread(Function&& f, Args&&... args)
-        : handle(
-              CreateThread(
-                  nullptr,
-                  0,
-                  reinterpret_cast<LPTHREAD_START_ROUTINE>(
-                      win32_thread_trampoline),
-                  // `std::function` does not support functions with move
-                  // captures the function has to be copy-constructable.
-                  // Function2's unique_function lets us capture and move our
-                  // arguments to the lambda so we don't end up with dangling
-                  // references.
-                  new fu2::unique_function<void()>(
-                      [f = std::move(f), ... args = std::move(args)]() mutable {
-                          f(std::move(args)...);
-                      }),
-                  0,
-                  nullptr),
-              CloseHandle) {}
+    Win32Thread(Function&& fn, Args&&... args)
+        : handle(CreateThread(
+                     nullptr,
+                     0,
+                     reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                         win32_thread_trampoline),
+                     // `std::function` does not support functions with move
+                     // captures the function has to be copy-constructable.
+                     // Function2's unique_function lets us capture and move our
+                     // arguments to the lambda so we don't end up with dangling
+                     // references.
+                     new fu2::unique_function<void()>(
+                         [f = std::forward<Function>(fn),
+                          ... args = std::forward<Args>(args)]() mutable {
+                             f(std::forward<Args>(args)...);
+                         }),
+                     0,
+                     nullptr),
+                 CloseHandle) {}
 
     /**
      * Join (or wait on, since this is WIn32) the thread on shutdown, just like
@@ -254,8 +254,8 @@ class MainContext {
      * soon as possible, and thus we also won't return a future.
      */
     template <typename F>
-    void schedule_task(F fn) {
-        boost::asio::post(context, std::move(fn));
+    void schedule_task(F&& fn) {
+        boost::asio::post(context, std::forward<F>(fn));
     }
 
     /**

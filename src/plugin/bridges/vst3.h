@@ -210,13 +210,13 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * @see Vst3PlugViewProxyImpl::run_gui_task
      */
     template <typename F>
-    bool maybe_run_on_mutual_recursion_thread(F& cb) {
+    bool maybe_run_on_mutual_recursion_thread(F& fn) {
         // We're handling an `F&` here because we cannot copy a
         // `packged_task()`, and we need to be able to move that actual task
         std::unique_lock mutual_recursion_lock(mutual_recursion_contexts_mutex);
         if (!mutual_recursion_contexts.empty()) {
             boost::asio::dispatch(*mutual_recursion_contexts.back(),
-                                  std::move(cb));
+                                  std::move(fn));
             return true;
         } else {
             return false;

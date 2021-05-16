@@ -333,8 +333,8 @@ class Vst3Bridge : public HostBridge {
      * @see Vst3Bridge::send_mutually_recursive_message
      */
     template <typename T, typename F>
-    T do_mutual_recursion_on_gui_thread(F f) {
-        std::packaged_task<T()> do_call(std::move(f));
+    T do_mutual_recursion_on_gui_thread(F fn) {
+        std::packaged_task<T()> do_call(std::move(fn));
         std::future<T> do_call_response = do_call.get_future();
 
         // If the above function is currently being called from some thread,
@@ -366,8 +366,8 @@ class Vst3Bridge : public HostBridge {
      * @see Vst3Bridge::do_mutual_recursion_on_gui_thread
      */
     template <typename T, typename F>
-    T do_mutual_recursion_on_off_thread(F f) {
-        std::packaged_task<T()> do_call(std::move(f));
+    T do_mutual_recursion_on_off_thread(F fn) {
+        std::packaged_task<T()> do_call(std::move(fn));
         std::future<T> do_call_response = do_call.get_future();
 
         std::unique_lock lock(mutual_recursion_contexts_mutex);

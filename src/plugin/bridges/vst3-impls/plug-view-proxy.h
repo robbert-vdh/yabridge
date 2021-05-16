@@ -138,8 +138,8 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
      * @see Vst3HostBridge::send_mutually_recursive_message
      */
     template <typename T, typename F>
-    T run_gui_task(F f) {
-        std::packaged_task<T()> do_call(std::move(f));
+    T run_gui_task(F fn) {
+        std::packaged_task<T()> do_call(std::move(fn));
         std::future<T> do_call_response = do_call.get_future();
 
         // If `Vst3Bridge::send_mutually_recursive_message()` is currently being

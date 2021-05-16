@@ -382,7 +382,7 @@ class Vst3Sockets : public Sockets {
     void add_audio_processor_and_listen(
         size_t instance_id,
         std::promise<void>& socket_listening_latch,
-        F cb) {
+        F&& cb) {
         {
             std::lock_guard lock(audio_processor_sockets_mutex);
             audio_processor_sockets.try_emplace(
@@ -400,7 +400,7 @@ class Vst3Sockets : public Sockets {
         // receiving buffers for all calls. This slightly reduces the amount of
         // allocations in the audio processing loop.
         audio_processor_sockets.at(instance_id)
-            .template receive_messages<true>(std::nullopt, cb);
+            .template receive_messages<true>(std::nullopt, std::forward<F>(cb));
     }
 
     /**
