@@ -80,7 +80,7 @@ class Win32Thread {
      * @param parameter The parameter passed to the entry point function.
      */
     template <typename Function, typename... Args>
-    Win32Thread(Function&& fn, Args&&... args)
+    Win32Thread(Function fn, Args... args)
         : handle(CreateThread(
                      nullptr,
                      0,
@@ -92,9 +92,9 @@ class Win32Thread {
                      // arguments to the lambda so we don't end up with dangling
                      // references.
                      new fu2::unique_function<void()>(
-                         [f = std::forward<Function>(fn),
-                          ... args = std::forward<Args>(args)]() mutable {
-                             f(std::forward<Args>(args)...);
+                         [f = std::move(fn),
+                          ... args = std::move(args)]() mutable {
+                             f(std::move(args)...);
                          }),
                      0,
                      nullptr),
