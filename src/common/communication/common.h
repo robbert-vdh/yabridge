@@ -35,11 +35,26 @@
 #include "../logging/common.h"
 #include "../utils.h"
 
-template <typename B>
-using OutputAdapter = bitsery::OutputBufferAdapter<B>;
+namespace bitsery {
+struct LittleEndianConfig {
+    // In case we ever want to bridge from some big-endian architecture to
+    // x86_64 Windows, then we should make sure we always encode data using the
+    // same endianness
+    static constexpr EndiannessType Endianness = EndiannessType::LittleEndian;
+    // Since we provide the data on both sides, we can safely disable these
+    // checks
+    static constexpr bool CheckDataErrors = false;
+    static constexpr bool CheckAdapterErrors = false;
+};
+}  // namespace bitsery
 
 template <typename B>
-using InputAdapter = bitsery::InputBufferAdapter<B>;
+using OutputAdapter =
+    bitsery::OutputBufferAdapter<B, bitsery::LittleEndianConfig>;
+
+template <typename B>
+using InputAdapter =
+    bitsery::InputBufferAdapter<B, bitsery::LittleEndianConfig>;
 
 /**
  * Serialize an object using bitsery and write it to a socket. This will write

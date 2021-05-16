@@ -26,6 +26,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   by getting rid of all memory allocations during audio processing.
 - Changed the way mutual recursion in VST3 plugins on the plugin side works to
   counter any potential GUI related timing issues with VST3 plugins.
+- The deserialization part of yabridge's communication is now slightly faster by
+  skipping some unnecessary checks.
 
 ### Fixed
 
