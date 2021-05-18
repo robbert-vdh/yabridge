@@ -22,6 +22,8 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/process/child.hpp>
+#include <boost/process/extend.hpp>
+#include <boost/process/io.hpp>
 
 #include "../common/communication/common.h"
 #include "../common/logging/common.h"
@@ -56,6 +58,47 @@ class HostProcess {
      * Kill the process or cause the plugin that's being hosted to exit.
      */
     virtual void terminate() = 0;
+
+    /**
+     * Simple helper function around `boost::process::child` that launches the
+     * host application (`*.exe`) with some basic setup. This includes setting
+     * up the asynchronous pipes for STDIO redirection, closing file descriptors
+     * to prevent leaks, and wrapping everything in winedbg if we're compiling
+     * with `-Dwith-winedbg=true`. Keep in mind that winedbg does not handle
+     * arguments containing spaces, so most Windows paths will be split up into
+     * multiple arugments.
+     */
+    template <typename... Args>
+    boost::process::child launch_host(boost::filesystem::path host_path,
+                                      Args&&... args) {
+        return boost::process::child(
+#ifdef WITH_WINEDBG
+            // Use the terminal output or `$YABRIDGE_DEBUG_LOG` to get
+            // yabridge's output, and use the printed target command in a GDB
+            // session where you load the yabridge `.so` file you're trying to
+            // debug
+            "/usr/bin/winedbg", "--gdb", "--no-start",
+            host_path.string() + ".so",
+#else
+            host_path,
+#endif
+            boost::process::std_out = stdout_pipe,
+            boost::process::std_err = stderr_pipe,
+            // NOTE: If the Wine process outlives the host, then it may cause
+            //       issues if our process is still keeping the host's file
+            //       descriptors alive that. This can prevent Ardour from
+            //       restarting after an unexpected shutdown. Because of this we
+            //       won't use `vfork()`, but instead we'll just manually close
+            //       all non-STDIO file descriptors.
+            boost::process::extend::on_exec_setup =
+                [this](auto& /*executor*/) {
+                    const int max_fds = static_cast<int>(sysconf(_SC_OPEN_MAX));
+                    for (int fd = STDERR_FILENO + 1; fd < max_fds; fd++) {
+                        close(fd);
+                    }
+                },
+            std::forward<Args>(args)...);
+    }
 
    protected:
     /**

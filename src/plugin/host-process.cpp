@@ -18,48 +18,12 @@
 
 #include <boost/asio/read_until.hpp>
 #include <boost/process/env.hpp>
-#include <boost/process/extend.hpp>
-#include <boost/process/io.hpp>
 #include <boost/process/start_dir.hpp>
 
 #include "src/common/utils.h"
 
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
-
-/**
- * Simple helper function around `boost::process::child` that launches the host
- * application (`*.exe`) wrapped in winedbg if compiling with
- * `-Dwith-winedbg=true`. Keep in mind that winedbg does not handle arguments
- * containing spaces, so most Windows paths will be split up into multiple
- * arugments.
- */
-template <typename... Args>
-bp::child launch_host(fs::path host_path, Args&&... args) {
-    return bp::child(
-#ifdef WITH_WINEDBG
-        // Use the terminal output or `$YABRIDGE_DEBUG_LOG` to get yabridge's
-        // output, and use the printed target command in a GDB session where you
-        // load the yabridge `.so` file you're trying to debug
-        "/usr/bin/winedbg", "--gdb", "--no-start", host_path.string() + ".so",
-#else
-        host_path,
-#endif
-        // NOTE: If the Wine process outlives the host, then it may cause issues
-        //       if our process is still keeping the host's file descriptors
-        //       alive that. This can prevent Ardour from restarting after an
-        //       unexpected shutdown. Because of this we won't use `vfork()`,
-        //       but instead we'll just manually close all non-STDIO file
-        //       descriptors.
-        bp::extend::on_exec_setup =
-            [](auto& /*executor*/) {
-                const int max_fds = static_cast<int>(sysconf(_SC_OPEN_MAX));
-                for (int fd = STDERR_FILENO + 1; fd < max_fds; fd++) {
-                    close(fd);
-                }
-            },
-        std::forward<Args>(args)...);
-}
 
 HostProcess::HostProcess(boost::asio::io_context& io_context,
                          Logger& logger,
@@ -100,12 +64,10 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
           // watchdog on the Wine plugin host process that shuts down the
           // sockets after this process shuts down
           std::to_string(getpid()),
-          bp::env = plugin_info.create_host_env(),
-          bp::std_out = stdout_pipe,
-          bp::std_err = stderr_pipe
+          bp::env = plugin_info.create_host_env()
 #ifdef WITH_WINEDBG
-          ,  // winedbg has no reliable way to escape spaces, so
-             // we'll start the process in the plugin's directory
+              ,  // winedbg has no reliable way to escape spaces, so
+                 // we'll start the process in the plugin's directory
           bp::start_dir = plugin_info.windows_plugin_path.parent_path()
 #endif
               )) {
@@ -189,8 +151,7 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
         // it will likely outlive it.
         bp::child group_host =
             launch_host(host_path, group_socket_path,
-                        bp::env = plugin_info.create_host_env(),
-                        bp::std_out = stdout_pipe, bp::std_err = stderr_pipe);
+                        bp::env = plugin_info.create_host_env());
         group_host.detach();
 
         const pid_t group_host_pid = group_host.id();
