@@ -82,6 +82,19 @@ class Configuration {
     std::optional<std::string> group;
 
     /**
+     * If enabled, we'll redirect the plugin's STDOUT and STDERR streams to this
+     * file instead of using pipes to intersperse it with yabridge's other
+     * output. This is necessary for _ujam_ plugins to work since they for some
+     * reason will throw `JS_EXEC_FAILED` errors when either STDOUT or STDERR is
+     * a pipe.
+     *
+     * This option can be set to a boolean, in which case we'll set the path to
+     * `<temporary_directory>/yabridge-plugin-output.log`, or it can be set to
+     * an absolute path. (we don't try to expand tildes)
+     */
+    std::optional<boost::filesystem::path> disable_pipes;
+
+    /**
      * If this is set to `true`, then the plugin editor should be embedded in
      * yet another window. This would result in an embedding sequence of
      * `<window_provided_by_host> <-> <wine_parent_window> <->
@@ -187,6 +200,8 @@ class Configuration {
         s.ext(group, bitsery::ext::StdOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
 
+        s.ext(disable_pipes, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath{}); });
         s.value1b(editor_double_embed);
         s.value1b(editor_force_dnd);
         s.value1b(editor_xembed);

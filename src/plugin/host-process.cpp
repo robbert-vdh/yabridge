@@ -27,26 +27,39 @@ namespace fs = boost::filesystem;
 
 HostProcess::HostProcess(boost::asio::io_context& io_context,
                          Logger& logger,
+                         const Configuration& config,
                          Sockets& sockets)
     : stdout_pipe(io_context),
       stderr_pipe(io_context),
+      config(config),
       sockets(sockets),
       logger(logger) {
-    // Print the Wine host's STDOUT and STDERR streams to the log file. This
-    // should be done before trying to accept the sockets as otherwise we will
-    // miss all output.
-    logger.async_log_pipe_lines(stdout_pipe, stdout_buffer, "[Wine STDOUT] ");
-    logger.async_log_pipe_lines(stderr_pipe, stderr_buffer, "[Wine STDERR] ");
+    // See the comment above the `on_exec_setup` in `launch_host()`
+    if (config.disable_pipes) {
+        logger.log("");
+        logger.log("WARNING: All Wine output will be written to");
+        logger.log("         '" + config.disable_pipes->string() + "'.");
+        logger.log("");
+    } else {
+        // Print the Wine host's STDOUT and STDERR streams to the log file. This
+        // should be done before trying to accept the sockets as otherwise we
+        // will miss all output.
+        logger.async_log_pipe_lines(stdout_pipe, stdout_buffer,
+                                    "[Wine STDOUT] ");
+        logger.async_log_pipe_lines(stderr_pipe, stderr_buffer,
+                                    "[Wine STDERR] ");
+    }
 }
 
 HostProcess::~HostProcess() noexcept {}
 
 IndividualHost::IndividualHost(boost::asio::io_context& io_context,
                                Logger& logger,
+                               const Configuration& config,
+                               Sockets& sockets,
                                const PluginInfo& plugin_info,
-                               const HostRequest& host_request,
-                               Sockets& sockets)
-    : HostProcess(io_context, logger, sockets),
+                               const HostRequest& host_request)
+    : HostProcess(io_context, logger, config, sockets),
       plugin_info(plugin_info),
       host_path(find_vst_host(plugin_info.native_library_path,
                               plugin_info.plugin_arch,
@@ -103,11 +116,11 @@ void IndividualHost::terminate() {
 
 GroupHost::GroupHost(boost::asio::io_context& io_context,
                      Logger& logger,
-                     const PluginInfo& plugin_info,
-                     const HostRequest& host_request,
+                     const Configuration& config,
                      Sockets& sockets,
-                     std::string group_name)
-    : HostProcess(io_context, logger, sockets),
+                     const PluginInfo& plugin_info,
+                     const HostRequest& host_request)
+    : HostProcess(io_context, logger, config, sockets),
       plugin_info(plugin_info),
       host_path(find_vst_host(plugin_info.native_library_path,
                               plugin_info.plugin_arch,
@@ -128,9 +141,9 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
     // will try to connect to the socket once more in the case that another
     // process is now listening on it.
     const fs::path endpoint_base_dir = sockets.base_dir;
-    const fs::path group_socket_path =
-        generate_group_endpoint(group_name, plugin_info.normalize_wine_prefix(),
-                                plugin_info.plugin_arch);
+    const fs::path group_socket_path = generate_group_endpoint(
+        *config.group, plugin_info.normalize_wine_prefix(),
+        plugin_info.plugin_arch);
     const auto connect = [&io_context, host_request, endpoint_base_dir,
                           group_socket_path]() {
         boost::asio::local::stream_protocol::socket group_socket(io_context);

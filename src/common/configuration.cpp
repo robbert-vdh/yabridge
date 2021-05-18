@@ -24,6 +24,8 @@
 #include <toml++/toml.h>
 #include <fstream>
 
+#include "utils.h"
+
 namespace fs = boost::filesystem;
 
 Configuration::Configuration() noexcept {}
@@ -81,6 +83,21 @@ Configuration::Configuration(const fs::path& config_path,
             if (key == "group") {
                 if (const auto parsed_value = value.as_string()) {
                     group = parsed_value->get();
+                } else {
+                    invalid_options.push_back(key);
+                }
+            } else if (key == "disable_pipes") {
+                // This option can be either enabled or disable with a boolean,
+                // or it can be set to an absolute path
+                if (const auto parsed_value = value.as_boolean()) {
+                    if (*parsed_value) {
+                        disable_pipes = get_temporary_directory() /
+                                        "yabridge-plugin-output.log";
+                    } else {
+                        disable_pipes = std::nullopt;
+                    }
+                } else if (const auto parsed_value = value.as_string()) {
+                    disable_pipes = parsed_value->get();
                 } else {
                     invalid_options.push_back(key);
                 }

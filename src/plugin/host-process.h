@@ -90,11 +90,30 @@ class HostProcess {
             //       restarting after an unexpected shutdown. Because of this we
             //       won't use `vfork()`, but instead we'll just manually close
             //       all non-STDIO file descriptors.
+            // HACK: If the `disable_pipes` option is enabled, then we'll
+            //       redirect the plugin's output to a file instead of using
+            //       pipes to blend it in with the rest of yabridge's output.
+            //       This is for some reason necessary for ujam's plugins and
+            //       all other plugins made with Gorilla Engine to function.
+            //       Otherwise they'll print a nondescriptive `JS_EXEC_FAILED`
+            //       error message.
             boost::process::extend::on_exec_setup =
                 [this](auto& /*executor*/) {
                     const int max_fds = static_cast<int>(sysconf(_SC_OPEN_MAX));
                     for (int fd = STDERR_FILENO + 1; fd < max_fds; fd++) {
                         close(fd);
+                    }
+
+                    // See above
+                    if (config.disable_pipes) {
+                        const int redirect_fd =
+                            open(config.disable_pipes->c_str(),
+                                 O_CREAT | O_APPEND | O_WRONLY, 0640);
+
+                        assert(redirect_fd != -1);
+                        dup2(redirect_fd, STDOUT_FILENO);
+                        dup2(redirect_fd, STDERR_FILENO);
+                        close(redirect_fd);
                     }
                 },
             std::forward<Args>(args)...);
@@ -114,6 +133,7 @@ class HostProcess {
      */
     HostProcess(boost::asio::io_context& io_context,
                 Logger& logger,
+                const Configuration& config,
                 Sockets& sockets);
 
     /**
@@ -124,6 +144,11 @@ class HostProcess {
      * The STDERR stream of the Wine process we can forward to the logger.
      */
     patched_async_pipe stderr_pipe;
+
+    /**
+     * The current plugin instance's configuration.
+     */
+    const Configuration& config;
 
     /**
      * The associated sockets for the plugin we're hosting. This is used to
@@ -154,23 +179,25 @@ class IndividualHost : public HostProcess {
      *   handled on.
      * @param logger The `Logger` instance the redirected STDIO streams will be
      *   written to.
+     * @param config The configuration for this plugin instance.
+     * @param sockets The socket endpoints that will be used for communication
+     *   with the plugin. When the plugin shuts down, we'll close all of the
+     *   sockets used by the plugin.
      * @param plugin_info Information about the plugin we're going to use. Used
      *   to retrieve the Wine prefix and the plugin's architecture.
      * @param host_request The information about the plugin we should launch a
      *   host process for. The values in the struct will be used as command line
      *   arguments.
-     * @param sockets The socket endpoints that will be used for communication
-     *   with the plugin. When the plugin shuts down, we'll close all of the
-     *   sockets used by the plugin.
      *
      * @throw std::runtime_error When `plugin_path` does not point to a valid
      *   32-bit or 64-bit .dll file.
      */
     IndividualHost(boost::asio::io_context& io_context,
                    Logger& logger,
+                   const Configuration& config,
+                   Sockets& sockets,
                    const PluginInfo& plugin_info,
-                   const HostRequest& host_request,
-                   Sockets& sockets);
+                   const HostRequest& host_request);
 
     boost::filesystem::path path() override;
     bool running() noexcept override;
@@ -203,21 +230,22 @@ class GroupHost : public HostProcess {
      *   handled on.
      * @param logger The `Logger` instance the redirected STDIO streams will be
      *   written to.
+     * @param config The configuration for this plugin instance. The group name
+     *   will be retrieved from here.
+     * @param sockets The socket endpoints that will be used for communication
+     *   with the plugin. When the plugin shuts down, we'll close all of the
+     *   sockets used by the plugin.
      * @param plugin_info Information about the plugin we're going to use. Used
      *   to retrieve the Wine prefix and the plugin's architecture.
      * @param host_request The information about the plugin we should launch a
      *   host process for. This object will be sent to the group host process.
-     * @param sockets The socket endpoints that will be used for communication
-     *   with the plugin. When the plugin shuts down, we'll close all of the
-     *   sockets used by the plugin.
-     * @param group_name The name of the plugin group.
      */
     GroupHost(boost::asio::io_context& io_context,
               Logger& logger,
-              const PluginInfo& plugin_info,
-              const HostRequest& host_request,
+              const Configuration& config,
               Sockets& sockets,
-              std::string group_name);
+              const PluginInfo& plugin_info,
+              const HostRequest& host_request);
 
     boost::filesystem::path path() override;
     bool running() noexcept override;

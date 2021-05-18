@@ -72,26 +72,27 @@ class PluginBridge {
                   ? std::unique_ptr<HostProcess>(std::make_unique<GroupHost>(
                         io_context,
                         generic_logger,
+                        config,
+                        sockets,
                         info,
                         HostRequest{
                             .plugin_type = plugin_type,
                             .plugin_path = info.windows_plugin_path.string(),
                             .endpoint_base_dir = sockets.base_dir.string(),
-                            .parent_pid = getpid()},
-                        sockets,
-                        *config.group))
+                            .parent_pid = getpid()}))
                   : std::unique_ptr<HostProcess>(
                         std::make_unique<IndividualHost>(
                             io_context,
                             generic_logger,
+                            config,
+                            sockets,
                             info,
                             HostRequest{
                                 .plugin_type = plugin_type,
                                 .plugin_path =
                                     info.windows_plugin_path.string(),
                                 .endpoint_base_dir = sockets.base_dir.string(),
-                                .parent_pid = getpid()},
-                            sockets))),
+                                .parent_pid = getpid()}))),
           has_realtime_priority(has_realtime_priority_promise.get_future()),
           wine_io_handler([&]() {
               // We no longer run this thread with realtime scheduling because
@@ -177,6 +178,11 @@ class PluginBridge {
 
         init_msg << "other options: ";
         std::vector<std::string> other_options;
+        if (config.disable_pipes) {
+            other_options.push_back(
+                "hack: pipes disabled, plugin output will go to \"" +
+                config.disable_pipes->string() + "\"");
+        }
         if (config.editor_double_embed) {
             other_options.push_back("editor: double embed");
         }
