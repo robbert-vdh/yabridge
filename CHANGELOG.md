@@ -18,6 +18,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   function every processing cycle even though the value doesn't change. Caching
   this can significantly reduce the overhead of bridging VST3 plugins under
   those hosts.
+- Added a [compatibility
+  option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
+  redirect the Wine plugin host's output directly to a file. Enabling this
+  allows **ujam** plugins and other plugins made with the Gorilla Engine such as
+  the **LoopCloud** plugins to function correctly as those plugins will throw a
+  seemingly unrelated error when they output to a pipe.
 
 ### Changed
 
