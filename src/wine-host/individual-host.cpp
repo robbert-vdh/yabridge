@@ -63,12 +63,12 @@ __cdecl
     const std::string socket_endpoint_path(argv[3]);
     const pid_t parent_pid = std::stoi(argv[4]);
 
-    std::cout << "Initializing yabridge host version " << yabridge_git_version
+    std::cerr << "Initializing yabridge host version " << yabridge_git_version
 #ifdef __i386__
               << " (32-bit compatibility mode)"
 #endif
               << std::endl;
-    std::cout << "Preparing to load " << plugin_type_to_string(plugin_type)
+    std::cerr << "Preparing to load " << plugin_type_to_string(plugin_type)
               << " plugin at '" << plugin_location << "'" << std::endl;
 
     // As explained in `Vst2Bridge`, the plugin has to be initialized in the
@@ -134,7 +134,7 @@ __cdecl
         TerminateProcess(GetCurrentProcess(), 0);
     });
 
-    std::cout << "Finished initializing '" << plugin_location << "'"
+    std::cerr << "Finished initializing '" << plugin_location << "'"
               << std::endl;
 
     // Handle Win32 messages and X11 events on a timer, just like in
