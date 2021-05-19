@@ -46,6 +46,14 @@ constexpr char product_name_override[] = "Get yabridge'd";
 constexpr char vendor_name_override[] = "yabridge";
 
 /**
+ * The constraint is satisfied if the type is the same as `To`, or if it can be
+ * implicitly converted to it. The implementation of the constraint requires
+ * types to be copy constructable for them to be implicitly convertible. */
+template <typename From, typename To>
+concept same_or_convertible_to =
+    std::same_as<From, To> || std::convertible_to<From, To>;
+
+/**
  * The same as the `std::invocable` concept, but also specifying the result
  * type.
  */
@@ -53,7 +61,7 @@ template <typename F, typename Result, typename... Args>
 concept invocable_returning = requires(F&& f, Result&& result, Args&&... args) {
     {
         std::invoke(std::forward<F>(f), std::forward<Args>(args)...)
-        } -> std::convertible_to<Result>;
+        } -> same_or_convertible_to<Result>;
 };
 
 // The cannonical overloading template for `std::visitor`, not sure why this
