@@ -148,7 +148,7 @@ void Vst3Bridge::run() {
             [&](const Vst3PlugViewProxy::Destruct& request)
                 -> Vst3PlugViewProxy::Destruct::Response {
                 main_context
-                    .run_in_context<void>([&]() {
+                    .run_in_context([&]() -> void {
                         // When the pointer gets dropped by the host, we want to
                         // drop it here as well, along with the `IPlugFrame`
                         // proxy object it may have received in
@@ -179,29 +179,28 @@ void Vst3Bridge::run() {
                 // shouldn't)
                 Steinberg::IPtr<Steinberg::FUnknown> object =
                     main_context
-                        .run_in_context<Steinberg::IPtr<Steinberg::FUnknown>>(
-                            [&]() -> Steinberg::IPtr<Steinberg::FUnknown> {
-                                switch (request.requested_interface) {
-                                    case Vst3PluginProxy::Construct::Interface::
-                                        IComponent:
-                                        return module->getFactory()
-                                            .createInstance<
-                                                Steinberg::Vst::IComponent>(
-                                                cid);
-                                        break;
-                                    case Vst3PluginProxy::Construct::Interface::
-                                        IEditController:
-                                        return module->getFactory()
-                                            .createInstance<
-                                                Steinberg::Vst::
-                                                    IEditController>(cid);
-                                        break;
-                                    default:
-                                        // Unreachable
-                                        return nullptr;
-                                        break;
-                                }
-                            })
+                        .run_in_context([&]() -> Steinberg::IPtr<
+                                                  Steinberg::FUnknown> {
+                            switch (request.requested_interface) {
+                                case Vst3PluginProxy::Construct::Interface::
+                                    IComponent:
+                                    return module->getFactory()
+                                        .createInstance<
+                                            Steinberg::Vst::IComponent>(cid);
+                                    break;
+                                case Vst3PluginProxy::Construct::Interface::
+                                    IEditController:
+                                    return module->getFactory()
+                                        .createInstance<
+                                            Steinberg::Vst::IEditController>(
+                                            cid);
+                                    break;
+                                default:
+                                    // Unreachable
+                                    return nullptr;
+                                    break;
+                            }
+                        })
                         .get();
 
                 if (!object) {
@@ -466,7 +465,7 @@ void Vst3Bridge::run() {
                 -> YaEditController::CreateView::Response {
                 // Instantiate the object from the GUI thread
                 main_context
-                    .run_in_context<void>([&]() {
+                    .run_in_context([&]() -> void {
                         // NOTE: Just like in the event loop, we want to run
                         //       this with lower priority to prevent whatever
                         //       operation the plugin does while it's loading
@@ -527,7 +526,7 @@ void Vst3Bridge::run() {
                 // certain channel context data, so this has to be run from the
                 // main thread
                 return main_context
-                    .run_in_context<tresult>([&]() {
+                    .run_in_context([&]() -> tresult {
                         return object_instances[request.instance_id]
                             .info_listener->setChannelContextInfos(
                                 &request.list);
@@ -703,7 +702,7 @@ void Vst3Bridge::run() {
                 // Creating the window and having the plugin embed in it should
                 // be done in the main UI thread
                 return main_context
-                    .run_in_context<tresult>([&]() {
+                    .run_in_context([&]() -> tresult {
                         set_realtime_priority(false);
                         Editor& editor_instance =
                             object_instances[request.owner_instance_id]
@@ -730,7 +729,7 @@ void Vst3Bridge::run() {
             [&](const YaPlugView::Removed& request)
                 -> YaPlugView::Removed::Response {
                 return main_context
-                    .run_in_context<tresult>([&]() {
+                    .run_in_context([&]() -> tresult {
                         // Cleanup is handled through RAII
                         set_realtime_priority(false);
                         const tresult result =
@@ -749,7 +748,7 @@ void Vst3Bridge::run() {
                 // Since all of these `IPlugView::on*` functions can cause a
                 // redraw, they all have to be called from the UI thread
                 return main_context
-                    .run_in_context<tresult>([&]() {
+                    .run_in_context([&]() -> tresult {
                         return object_instances[request.owner_instance_id]
                             .plug_view_instance->plug_view->onWheel(
                                 request.distance);
@@ -759,7 +758,7 @@ void Vst3Bridge::run() {
             [&](const YaPlugView::OnKeyDown& request)
                 -> YaPlugView::OnKeyDown::Response {
                 return main_context
-                    .run_in_context<tresult>([&]() {
+                    .run_in_context([&]() -> tresult {
                         return object_instances[request.owner_instance_id]
                             .plug_view_instance->plug_view->onKeyDown(
                                 request.key, request.key_code,
@@ -770,7 +769,7 @@ void Vst3Bridge::run() {
             [&](const YaPlugView::OnKeyUp& request)
                 -> YaPlugView::OnKeyUp::Response {
                 return main_context
-                    .run_in_context<tresult>([&]() {
+                    .run_in_context([&]() -> tresult {
                         return object_instances[request.owner_instance_id]
                             .plug_view_instance->plug_view->onKeyUp(
                                 request.key, request.key_code,
@@ -810,7 +809,7 @@ void Vst3Bridge::run() {
             [&](const YaPlugView::OnFocus& request)
                 -> YaPlugView::OnFocus::Response {
                 return main_context
-                    .run_in_context<tresult>([&]() {
+                    .run_in_context([&]() -> tresult {
                         return object_instances[request.owner_instance_id]
                             .plug_view_instance->plug_view->onFocus(
                                 request.state);
@@ -836,7 +835,7 @@ void Vst3Bridge::run() {
                 // since 80% of the `IPlugView` functions have to be we'll do it
                 // here anyways
                 return main_context
-                    .run_in_context<tresult>([&]() {
+                    .run_in_context([&]() -> tresult {
                         return object_instances[request.owner_instance_id]
                             .plug_view_instance->plug_view->setFrame(
                                 object_instances[request.owner_instance_id]
@@ -878,7 +877,7 @@ void Vst3Bridge::run() {
                             return Steinberg::kNotImplemented;
                         } else {
                             return main_context
-                                .run_in_context<tresult>([&]() {
+                                .run_in_context([&]() -> tresult {
                                     return object_instances
                                         [request.owner_instance_id]
                                             .plug_view_instance
@@ -903,7 +902,7 @@ void Vst3Bridge::run() {
                 // `IPlugView::{initialize,terminate}`, we'll run these
                 // functions from the main GUI thread
                 return main_context
-                    .run_in_context<tresult>([&]() {
+                    .run_in_context([&]() -> tresult {
                         // This static cast is required to upcast to `FUnknown*`
                         const tresult result =
                             object_instances[request.instance_id]
@@ -925,7 +924,7 @@ void Vst3Bridge::run() {
             [&](const YaPluginBase::Terminate& request)
                 -> YaPluginBase::Terminate::Response {
                 return main_context
-                    .run_in_context<tresult>([&]() {
+                    .run_in_context([&]() -> tresult {
                         return object_instances[request.instance_id]
                             .plugin_base->terminate();
                     })
@@ -1377,7 +1376,7 @@ void Vst3Bridge::unregister_object_instance(size_t instance_id) {
     //      executed and when the actual host application context on
     //      the plugin side gets deallocated.
     main_context
-        .run_in_context<void>([&, instance_id]() {
+        .run_in_context([&, instance_id]() -> void {
             std::lock_guard lock(object_instances_mutex);
             object_instances.erase(instance_id);
         })

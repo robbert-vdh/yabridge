@@ -394,7 +394,7 @@ void Vst2Bridge::run() {
                         // handled.
                         if (unsafe_opcodes.contains(opcode)) {
                             return main_context
-                                .run_in_context<intptr_t>([&]() {
+                                .run_in_context([&]() -> intptr_t {
                                     const intptr_t result =
                                         dispatch_wrapper(plugin, opcode, index,
                                                          value, data, option);

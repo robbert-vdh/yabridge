@@ -307,7 +307,7 @@ class Vst3Bridge : public HostBridge {
                 mutual_recursion.maybe_handle(std::forward<F>(fn))) {
             return *result;
         } else {
-            return main_context.run_in_context<T>(std::forward<F>(fn)).get();
+            return main_context.run_in_context(std::forward<F>(fn)).get();
         }
     }
 

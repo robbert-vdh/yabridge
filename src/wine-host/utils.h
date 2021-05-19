@@ -239,13 +239,15 @@ class MainContext {
      * return the results as a future. This is used to make sure that operations
      * that may involve the Win32 message loop are all run from the same thread.
      */
-    template <typename T, typename F>
-    std::future<T> run_in_context(F fn) {
-        std::packaged_task<T()> call_fn(std::move(fn));
-        std::future<T> response = call_fn.get_future();
+    template <std::invocable F>
+    std::future<std::invoke_result_t<F>> run_in_context(F&& fn) {
+        using Result = std::invoke_result_t<F>;
+
+        std::packaged_task<Result()> call_fn(std::forward<F>(fn));
+        std::future<Result> result = call_fn.get_future();
         boost::asio::dispatch(context, std::move(call_fn));
 
-        return response;
+        return result;
     }
 
     /**
@@ -253,7 +255,7 @@ class MainContext {
      * is that this version does not guarantee that it's going to be executed as
      * soon as possible, and thus we also won't return a future.
      */
-    template <typename F>
+    template <std::invocable F>
     void schedule_task(F&& fn) {
         boost::asio::post(context, std::forward<F>(fn));
     }
