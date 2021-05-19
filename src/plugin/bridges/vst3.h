@@ -165,7 +165,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      *
      * @see Vst3PlugViewProxyImpl::run_gui_task
      */
-    template <typename F>
+    template <std::invocable F>
     std::optional<std::invoke_result_t<F>> maybe_run_on_mutual_recursion_thread(
         F&& fn) {
         return mutual_recursion.maybe_handle(std::forward<F>(fn));

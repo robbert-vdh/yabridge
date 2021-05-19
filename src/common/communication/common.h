@@ -435,8 +435,8 @@ class SocketHandler {
      * @see read_object
      * @see SocketHandler::receive_single
      */
-    template <typename T, typename F>
-    void receive_multi(F callback) {
+    template <typename T, std::invocable<T, std::vector<uint8_t>&> F>
+    void receive_multi(F&& callback) {
         std::vector<uint8_t> buffer{};
         while (true) {
             try {
@@ -566,13 +566,17 @@ class AdHocSocketHandler {
      * @param callback A function that will be called with a reference to a
      *   socket. This is either the primary `socket`, or a new ad hock socket if
      *   this function is currently being called from another thread.
-     *
-     * @tparam T The return value of F.
-     * @tparam F A function in the form of
-     *   `T(boost::asio::local::stream_protocol::socket&)`.
      */
-    template <typename T, typename F>
-    T send(F callback) {
+    template <std::invocable<boost::asio::local::stream_protocol::socket&> F>
+    std::invoke_result_t<F, boost::asio::local::stream_protocol::socket&> send(
+        F&& callback) {
+        // A bit of template and constexpr nastiness to allow us to either
+        // return a value from the callback (for when writing the response to a
+        // new object) or to return void (when we deserialize into an existing
+        // object)
+        constexpr bool returns_void = std::is_void_v<std::invoke_result_t<
+            F, boost::asio::local::stream_protocol::socket&>>;
+
         // XXX: Maybe at some point we should benchmark how often this
         //      ad hoc socket spawning mechanism gets used. If some hosts
         //      for instance consistently and repeatedly trigger this then
@@ -582,10 +586,15 @@ class AdHocSocketHandler {
             // This was used to always block when sending the first message,
             // because the other side may not be listening for additional
             // connections yet
-            auto result = callback(socket);
-            sent_first_event = true;
+            if constexpr (returns_void) {
+                callback(socket);
+                sent_first_event = true;
+            } else {
+                auto result = callback(socket);
+                sent_first_event = true;
 
-            return result;
+                return result;
+            }
         } else {
             try {
                 boost::asio::local::stream_protocol::socket secondary_socket(
@@ -609,10 +618,15 @@ class AdHocSocketHandler {
                 if (!sent_first_event) {
                     std::lock_guard lock(write_mutex);
 
-                    auto result = callback(socket);
-                    sent_first_event = true;
+                    if constexpr (returns_void) {
+                        callback(socket);
+                        sent_first_event = true;
+                    } else {
+                        auto result = callback(socket);
+                        sent_first_event = true;
 
-                    return result;
+                        return result;
+                    }
                 } else {
                     // Rethrow the exception if the sockets we're not
                     // handling the specific case described above
@@ -636,15 +650,12 @@ class AdHocSocketHandler {
      *   an incoming connection on a secondary socket. This would often do the
      *   same thing as `primary_callback`, but secondary sockets may need some
      *   different handling.
-     *
-     * @tparam F A function type in the form of
-     *   `void(boost::asio::local::stream_protocol::socket&)`.
-     * @tparam G The same as `F`.
      */
-    template <typename F, typename G>
+    template <std::invocable<boost::asio::local::stream_protocol::socket&> F,
+              std::invocable<boost::asio::local::stream_protocol::socket&> G>
     void receive_multi(std::optional<std::reference_wrapper<Logger>> logger,
-                       F primary_callback,
-                       G secondary_callback) {
+                       F&& primary_callback,
+                       G&& secondary_callback) {
         // We use this flag to have the `close()` function wait for the this
         // function to exit, to prevent use-after-frees when destroying this
         // object from another thread.
@@ -726,10 +737,10 @@ class AdHocSocketHandler {
      *
      * @overload
      */
-    template <typename F>
+    template <std::invocable<boost::asio::local::stream_protocol::socket&> F>
     void receive_multi(std::optional<std::reference_wrapper<Logger>> logger,
-                       F callback) {
-        receive_multi(logger, callback, callback);
+                       F&& callback) {
+        receive_multi(logger, callback, std::forward<F>(callback));
     }
 
    private:
@@ -742,16 +753,12 @@ class AdHocSocketHandler {
      * @param logger A logger instance for logging connection errors. This
      *   should only be passed on the plugin side.
      * @param callback A function that handles the new socket connection.
-     *
-     * @tparam F A function in the form
-     *   `void(boost::asio::local::stream_protocol::socket)` to handle a new
-     *   incoming connection.
      */
-    template <typename F>
+    template <std::invocable<boost::asio::local::stream_protocol::socket> F>
     void accept_requests(
         boost::asio::local::stream_protocol::acceptor& acceptor,
         std::optional<std::reference_wrapper<Logger>> logger,
-        F callback) {
+        F&& callback) {
         acceptor.async_accept(
             [&, logger, callback](
                 const boost::system::error_code& error,

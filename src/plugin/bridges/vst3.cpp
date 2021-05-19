@@ -219,7 +219,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                     // loop or else it will likely segfault at some point
                     return plugin_proxies.at(request.owner_instance_id)
                         .get()
-                        .last_created_plug_view->run_gui_task<tresult>([&]() {
+                        .last_created_plug_view->run_gui_task([&]() -> tresult {
                             return plugin_proxies.at(request.owner_instance_id)
                                 .get()
                                 .context_menus.at(request.context_menu_id)
@@ -285,7 +285,7 @@ Vst3PluginBridge::Vst3PluginBridge()
 
                     // REAPER requires this to be run from its provided event
                     // loop or else it will likely segfault at some point
-                    return plug_view->run_gui_task<tresult>([&]() {
+                    return plug_view->run_gui_task([&]() -> tresult {
                         return plug_view->plug_frame->resizeView(
                             plug_view, &request.new_size);
                     });

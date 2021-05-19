@@ -136,12 +136,11 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
      * right now.
      *
      * @see Vst3HostBridge::send_mutually_recursive_message
-     *
-     * TODO: As mentioned elsewhere, refactor these functions to use
-     *       `std::invoke_result_t`
      */
-    template <typename T, typename F>
-    T run_gui_task(F fn) {
+    template <std::invocable F>
+    std::invoke_result_t<F> run_gui_task(F&& fn) {
+        using Result = std::invoke_result_t<F>;
+
         // If `Vst3Bridge::send_mutually_recursive_message()` is currently being
         // called (because the host is calling one of `IPlugView`'s methods from
         // its UGI thread), then we'll call `fn` from that same thread.
@@ -154,8 +153,8 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
         }
 
         if (run_loop_tasks) {
-            std::packaged_task<T()> do_call(std::move(fn));
-            std::future<T> do_call_response = do_call.get_future();
+            std::packaged_task<Result()> do_call(std::forward<F>(fn));
+            std::future<Result> do_call_response = do_call.get_future();
 
             run_loop_tasks->schedule(std::move(do_call));
 

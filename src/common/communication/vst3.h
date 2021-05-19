@@ -138,15 +138,10 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         // messages from arriving out of order. `AdHocSocketHandler::send()`
         // will either use a long-living primary socket, or if that's currently
         // in use it will spawn a new socket for us.
-        this->template send<std::monostate>(
-            [&](boost::asio::local::stream_protocol::socket& socket) {
-                write_object(socket, Request(object), buffer);
-                read_object<TResponse>(socket, response_object, buffer);
-                // FIXME: We have to return something here, and ML was not yet
-                //        invented when they came up with C++ so void is not
-                //        valid here
-                return std::monostate{};
-            });
+        this->send([&](boost::asio::local::stream_protocol::socket& socket) {
+            write_object(socket, Request(object), buffer);
+            read_object<TResponse>(socket, response_object, buffer);
+        });
 
         if (should_log_response) {
             auto [logger, is_host_vst] = *logging;
@@ -205,7 +200,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
      */
     template <bool persistent_buffers = false, typename F>
     void receive_messages(std::optional<std::pair<Vst3Logger&, bool>> logging,
-                          F callback) {
+                          F&& callback) {
         // Reading, processing, and writing back the response for the requests
         // we receive works in the same way regardless of which socket we're
         // using
@@ -377,12 +372,15 @@ class Vst3Sockets : public Sockets {
      *   Wine plugin host is even listening on it.
      * @param cb An overloaded function that can take every type `T` in the
      *   `AudioProcessorRequest` variant and then returns `T::Response`.
+     *
+     * @tparam F A function type in the form of `T::Response(T)` for every `T`
+     *   in `AudioProcessorRequest::Payload`.
      */
     template <typename F>
     void add_audio_processor_and_listen(
         size_t instance_id,
         std::promise<void>& socket_listening_latch,
-        F&& cb) {
+        F&& callback) {
         {
             std::lock_guard lock(audio_processor_sockets_mutex);
             audio_processor_sockets.try_emplace(
@@ -400,7 +398,8 @@ class Vst3Sockets : public Sockets {
         // receiving buffers for all calls. This slightly reduces the amount of
         // allocations in the audio processing loop.
         audio_processor_sockets.at(instance_id)
-            .template receive_messages<true>(std::nullopt, std::forward<F>(cb));
+            .template receive_messages<true>(std::nullopt,
+                                             std::forward<F>(callback));
     }
 
     /**

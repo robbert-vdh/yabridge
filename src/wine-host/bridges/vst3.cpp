@@ -226,7 +226,7 @@ void Vst3Bridge::run() {
                 // as well do the same thing with `setState()`. See below.
                 // NOTE: We also try to handle mutual recursion here, in case
                 //       this happens during a resize
-                return do_mutual_recursion_on_gui_thread<tresult>([&]() {
+                return do_mutual_recursion_on_gui_thread([&]() -> tresult {
                     // This same function is defined in both `IComponent` and
                     // `IEditController`, so the host is calling one or the
                     // other
@@ -246,7 +246,7 @@ void Vst3Bridge::run() {
                 // NOTE: This also requires mutual recursion because REAPER will
                 //       call `getState()` while opening a popup menu
                 const tresult result =
-                    do_mutual_recursion_on_gui_thread<tresult>([&]() {
+                    do_mutual_recursion_on_gui_thread([&]() -> tresult {
                         // This same function is defined in both `IComponent`
                         // and `IEditController`, so the host is calling one or
                         // the other
@@ -350,7 +350,7 @@ void Vst3Bridge::run() {
                 //       much slower in Ardour, but there's no other non-hacky
                 //       solution for this (and bypassing Ardour's connection
                 //       proxies sort of goes against the idea behind yabridge)
-                return do_mutual_recursion_on_gui_thread<tresult>([&]() {
+                return do_mutual_recursion_on_gui_thread([&]() -> tresult {
                     return object_instances[request.instance_id]
                         .connection_point->notify(
                             request.message_ptr.get_original());
@@ -435,7 +435,7 @@ void Vst3Bridge::run() {
                 //       mutually recursive because the host will immediately
                 //       relay the parameter change the plugin has just
                 //       announced.
-                return do_mutual_recursion_on_off_thread<tresult>([&]() {
+                return do_mutual_recursion_on_off_thread([&]() -> tresult {
                     return object_instances[request.instance_id]
                         .edit_controller->setParamNormalized(request.id,
                                                              request.value);
@@ -782,7 +782,7 @@ void Vst3Bridge::run() {
                 // not run from the GUI thread
                 Steinberg::ViewRect size{};
                 const tresult result =
-                    do_mutual_recursion_on_gui_thread<tresult>([&]() {
+                    do_mutual_recursion_on_gui_thread([&]() -> tresult {
                         return object_instances[request.owner_instance_id]
                             .plug_view_instance->plug_view->getSize(&size);
                     });
@@ -800,7 +800,7 @@ void Vst3Bridge::run() {
                 //       code on the same thread that's currently waiting for a
                 //       response to the message it sent. See the docstring of
                 //       this function for more information on how this works.
-                return do_mutual_recursion_on_gui_thread<tresult>([&]() {
+                return do_mutual_recursion_on_gui_thread([&]() -> tresult {
                     return object_instances[request.owner_instance_id]
                         .plug_view_instance->plug_view->onSize(
                             &request.new_size);
@@ -847,7 +847,7 @@ void Vst3Bridge::run() {
                 -> YaPlugView::CanResize::Response {
                 // To prevent weird behaviour we'll perform all size related
                 // functions from the GUI thread, including this one
-                return do_mutual_recursion_on_gui_thread<tresult>([&]() {
+                return do_mutual_recursion_on_gui_thread([&]() -> tresult {
                     return object_instances[request.owner_instance_id]
                         .plug_view_instance->plug_view->canResize();
                 });
@@ -855,7 +855,7 @@ void Vst3Bridge::run() {
             [&](YaPlugView::CheckSizeConstraint& request)
                 -> YaPlugView::CheckSizeConstraint::Response {
                 const tresult result =
-                    do_mutual_recursion_on_gui_thread<tresult>([&]() {
+                    do_mutual_recursion_on_gui_thread([&]() -> tresult {
                         return object_instances[request.owner_instance_id]
                             .plug_view_instance->plug_view->checkSizeConstraint(
                                 &request.rect);
@@ -1032,7 +1032,7 @@ void Vst3Bridge::run() {
                 //       plugins (like TEOTE) require this to be called from the
                 //       same thread when that happens.
                 const tresult result =
-                    do_mutual_recursion_on_off_thread<tresult>([&]() {
+                    do_mutual_recursion_on_off_thread([&]() -> tresult {
                         return object_instances[request.instance_id]
                             .unit_info->getProgramName(
                                 request.list_id, request.program_index, name);
@@ -1325,8 +1325,8 @@ size_t Vst3Bridge::register_object_instance(
                         //       handled from the same thread to prevent
                         //       deadlocks caused by mutually recursive function
                         //       calls.
-                        return do_mutual_recursion_on_off_thread<tresult>(
-                            [&]() {
+                        return do_mutual_recursion_on_off_thread(
+                            [&]() -> tresult {
                                 return object_instances[request.instance_id]
                                     .component->setActive(request.state);
                             });

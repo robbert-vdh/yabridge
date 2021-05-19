@@ -20,6 +20,7 @@
 
 #include "../logging/vst2.h"
 #include "../serialization/vst2.h"
+#include "../utils.h"
 #include "common.h"
 
 /**
@@ -184,7 +185,7 @@ class EventHandler : public AdHocSocketHandler<Thread> {
         // messages from arriving out of order. `AdHocSocketHandler::send()`
         // will either use a long-living primary socket, or if that's currently
         // in use it will spawn a new socket for us.
-        EventResult response = this->template send<EventResult>(
+        const EventResult response = this->send(
             [&](boost::asio::local::stream_protocol::socket& socket) {
                 write_object(socket, event);
                 return read_object<EventResult>(socket);
@@ -219,16 +220,12 @@ class EventHandler : public AdHocSocketHandler<Thread> {
      * @param callback The function used to generate a response out of an event.
      *   See the definition of `F` for more information.
      *
-     * @tparam F A function type in the form of `EventResponse(Event, bool)`.
-     *   The boolean flag is `true` when this event was received on the main
-     *   socket, and `false` otherwise.
-     *
      * @relates EventHandler::send_event
      * @relates passthrough_event
      */
-    template <typename F>
+    template <invocable_returning<EventResult, Event&, bool> F>
     void receive_events(std::optional<std::pair<Vst2Logger&, bool>> logging,
-                        F callback) {
+                        F&& callback) {
         // Reading, processing, and writing back event data from the sockets
         // works in the same way regardless of which socket we're using
         const auto process_event =
@@ -384,16 +381,14 @@ class Vst2Sockets : public Sockets {
  * @param callback The function to call with the arguments received from the
  *   socket, either `AEffect::dispatcher()` or `audioMasterCallback()`.
  *
- * @tparam F A function with the same signature as `AEffect::dispatcher` or
- *   `audioMasterCallback`.
- *
  * @return The result of the operation. If necessary the `DataConverter` will
  *   unmarshall the payload again and write it back.
  *
  * @relates EventHandler::receive_events
  */
-template <typename F>
-EventResult passthrough_event(AEffect* plugin, F callback, Event& event) {
+template <
+    invocable_returning<intptr_t, AEffect*, int, int, intptr_t, void*, float> F>
+EventResult passthrough_event(AEffect* plugin, F&& callback, Event& event) {
     // This buffer is used to write strings and small objects to. We'll
     // initialize the beginning with null values to both prevent it from being
     // read as some arbitrary C-style string, and to make sure that

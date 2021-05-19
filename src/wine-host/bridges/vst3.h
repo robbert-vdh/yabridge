@@ -294,12 +294,9 @@ class Vst3Bridge : public HostBridge {
      * run on the UI thread through `main_context` as usual.
      *
      * @see Vst3Bridge::send_mutually_recursive_message
-     *
-     * TODO: Refactor these two functions, `run_gui_task()`, and
-     *       `main_context.run_in_context` to use `std::invocation_result_t`
      */
-    template <typename T, typename F>
-    T do_mutual_recursion_on_gui_thread(F&& fn) {
+    template <std::invocable F>
+    std::invoke_result_t<F> do_mutual_recursion_on_gui_thread(F&& fn) {
         // If the above function is currently being called from some thread,
         // then we'll call `fn` from that same thread. Otherwise we'll just
         // submit it to the main IO context.
@@ -317,8 +314,8 @@ class Vst3Bridge : public HostBridge {
      *
      * @see Vst3Bridge::do_mutual_recursion_on_gui_thread
      */
-    template <typename T, typename F>
-    T do_mutual_recursion_on_off_thread(F&& fn) {
+    template <std::invocable F>
+    std::invoke_result_t<F> do_mutual_recursion_on_off_thread(F&& fn) {
         return mutual_recursion.handle(std::forward<F>(fn));
     }
 

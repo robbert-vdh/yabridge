@@ -51,14 +51,13 @@ class PluginBridge {
      *   Using a lambda here feels wrong, but I can't think of a better
      *   solution right now.
      *
-     * @tparam F A `TSockets(boost::asio::io_context&, const PluginInfo&)`
-     *   function to create the `TSockets` instance.
-     *
      * @throw std::runtime_error Thrown when the Wine plugin host could not be
      *   found, or if it could not locate and load a VST3 module.
      */
-    template <typename F>
-    PluginBridge(PluginType plugin_type, F create_socket_instance)
+    template <invocable_returning<TSockets,
+                                  boost::asio::io_context&,
+                                  const PluginInfo&> F>
+    PluginBridge(PluginType plugin_type, F&& create_socket_instance)
         // This is still correct for VST3 plugins because we can configure an
         // entire directory (the module's bundle) at once
         : config(load_config_for(get_this_file_location())),

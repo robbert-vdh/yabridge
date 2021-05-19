@@ -74,8 +74,8 @@ class MutualRecursionHelper {
      *
      * @return The return value of `fn`.
      */
-    template <std::invocable<> F>
-    std::invoke_result_t<F> fork(F fn) {
+    template <std::invocable F>
+    std::invoke_result_t<F> fork(F&& fn) {
         using Result = std::invoke_result_t<F>;
 
         // This IO context will accept incoming calls from `handle()` and
@@ -135,7 +135,7 @@ class MutualRecursionHelper {
      *
      * @tparam F Some callable function that doesn't take any parameters.
      */
-    template <std::invocable<> F>
+    template <std::invocable F>
     std::invoke_result_t<F> handle(F&& fn) {
         // If we're not currently engaged in some mutually recursive calling
         // sequence, then we'll execute the function on this thread
@@ -154,7 +154,7 @@ class MutualRecursionHelper {
      *
      * @see handle
      */
-    template <std::invocable<> F>
+    template <std::invocable F>
     std::optional<std::invoke_result_t<F>> maybe_handle(F&& fn) {
         using Result = std::invoke_result_t<F>;
 

@@ -22,6 +22,7 @@
 
 #include "../common/configuration.h"
 #include "../common/plugins.h"
+#include "../common/utils.h"
 
 /**
  * Marker struct for when we use the default Wine prefix.
@@ -275,11 +276,12 @@ Configuration load_config_for(const boost::filesystem::path& yabridge_path);
  * @return The path to the *file* found, or `std::nullopt` if the file could not
  *   be found.
  */
-template <typename F = bool(const boost::filesystem::path&)>
+template <invocable_returning<bool, const boost::filesystem::path&> F =
+              bool(const boost::filesystem::path&)>
 std::optional<boost::filesystem::path> find_dominating_file(
     const std::string& filename,
     boost::filesystem::path starting_dir,
-    F predicate = boost::filesystem::exists) {
+    F&& predicate = boost::filesystem::exists) {
     while (starting_dir != "") {
         const boost::filesystem::path candidate = starting_dir / filename;
         if (predicate(candidate)) {
