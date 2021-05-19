@@ -277,7 +277,7 @@ class MainContext {
      *   that will cause them to stall indefinitely in this situation, but who
      *   knows which other plugins exert similar behaviour.
      */
-    template <typename F, typename P>
+    template <std::invocable F, invocable_returning<bool> P>
     void async_handle_events(F handler, P predicate) {
         // Try to keep a steady framerate, but add in delays to let other events
         // get handled if the GUI message handling somehow takes very long.

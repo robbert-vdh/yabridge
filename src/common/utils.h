@@ -45,6 +45,17 @@ constexpr char product_name_override[] = "Get yabridge'd";
  */
 constexpr char vendor_name_override[] = "yabridge";
 
+/**
+ * The same as the `std::invocable` concept, but also specifying the result
+ * type.
+ */
+template <typename F, typename Result, typename... Args>
+concept invocable_returning = requires(F&& f, Result&& result, Args&&... args) {
+    {
+        std::invoke(std::forward<F>(f), std::forward<Args>(args)...)
+        } -> std::convertible_to<Result>;
+};
+
 // The cannonical overloading template for `std::visitor`, not sure why this
 // isn't part of the standard library
 template <class... Ts>
