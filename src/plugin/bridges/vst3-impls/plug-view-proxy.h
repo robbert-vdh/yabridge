@@ -136,29 +136,33 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
      * right now.
      *
      * @see Vst3HostBridge::send_mutually_recursive_message
+     *
+     * TODO: As mentioned elsewhere, refactor these functions to use
+     *       `std::invoke_result_t`
      */
     template <typename T, typename F>
     T run_gui_task(F fn) {
-        std::packaged_task<T()> do_call(std::move(fn));
-        std::future<T> do_call_response = do_call.get_future();
-
         // If `Vst3Bridge::send_mutually_recursive_message()` is currently being
         // called (because the host is calling one of `IPlugView`'s methods from
-        // its UGI thread) then we'll post a message to an IO context that's
-        // currently accepting work on the that thread. Since in theory we could
-        // have nested mutual recursion, we need to keep track of a stack of IO
-        // contexts. Great. Otherwise we'll schedule the task to be run from an
-        // event handler registered to the host's run loop. If the host does not
-        // support `IRunLoop`, we'll just run `f` directly.
-        if (!bridge.maybe_run_on_mutual_recursion_thread(do_call)) {
-            if (run_loop_tasks) {
-                run_loop_tasks->schedule(std::move(do_call));
-            } else {
-                do_call();
-            }
+        // its UGI thread), then we'll call `fn` from that same thread.
+        // Otherwise we'll schedule the task to be run from an event handler
+        // registered to the host's run loop, if that exists. Finally if the
+        // host does not support `IRunLoop`, then we'll just run `fn` directly.
+        if (const auto result =
+                bridge.maybe_run_on_mutual_recursion_thread(fn)) {
+            return *result;
         }
 
-        return do_call_response.get();
+        if (run_loop_tasks) {
+            std::packaged_task<T()> do_call(std::move(fn));
+            std::future<T> do_call_response = do_call.get_future();
+
+            run_loop_tasks->schedule(std::move(do_call));
+
+            return do_call_response.get();
+        } else {
+            return fn();
+        }
     }
 
     // From `IPlugView`
