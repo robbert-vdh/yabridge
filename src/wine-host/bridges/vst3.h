@@ -23,6 +23,7 @@
 
 #include "../../common/communication/vst3.h"
 #include "../../common/configuration.h"
+#include "../../common/mutual-recursion.h"
 #include "../editor.h"
 #include "common.h"
 
@@ -273,90 +274,41 @@ class Vst3Bridge : public HostBridge {
      * to then allow this thread to execute other functions submitted to an IO
      * context.
      *
-     * We apply the same trick in `Vst3PlugViewProxyImpl`.
+     * We apply the same trick in `Vst3HostBridge`.
+     *
+     * TODO: Maybe trim down the documentation for all of these mutual recursion
+     *       functions now that we're handling the nasty bits in
+     *       `MutualRecursionHelper`.
      */
     template <typename T>
     typename T::Response send_mutually_recursive_message(const T& object) {
-        using TResponse = typename T::Response;
-
-        // This IO context will accept incoming calls from `run_gui_task()`
-        // until we receive a response. We keep these on a stack as we need to
-        // support multiple levels of mutual recursion. This could happen during
-        // `IPlugView::attached() -> IPlugFrame::resizeView() ->
-        // IPlugView::onSize()`.
-        std::shared_ptr<boost::asio::io_context> current_io_context =
-            std::make_shared<boost::asio::io_context>();
-        {
-            std::unique_lock lock(mutual_recursion_contexts_mutex);
-            mutual_recursion_contexts.push_back(current_io_context);
-        }
-
-        // Instead of directly stopping the IO context, we'll reset this work
-        // guard instead. This prevents us from accidentally cancelling any
-        // outstanding tasks.
-        auto work_guard = boost::asio::make_work_guard(*current_io_context);
-
-        // We will call the function from another thread so we can handle calls
-        // to  from this thread
-        std::promise<TResponse> response_promise{};
-        Win32Thread sending_thread([&]() {
-            const TResponse response = send_message(object);
-
-            // Stop accepting additional work to be run from the calling thread
-            // once we receive a response. By resetting the work guard we do not
-            // cancel any pending tasks, but `current_io_context->run()` will
-            // stop blocking eventually.
-            std::lock_guard lock(mutual_recursion_contexts_mutex);
-            work_guard.reset();
-            mutual_recursion_contexts.erase(
-                std::find(mutual_recursion_contexts.begin(),
-                          mutual_recursion_contexts.end(), current_io_context));
-
-            response_promise.set_value(response);
-        });
-
-        // Accept work from the other thread until we receive a response, at
-        // which point the context will be stopped
-        current_io_context->run();
-
-        return response_promise.get_future().get();
+        return mutual_recursion.fork([&]() { return send_message(object); });
     }
 
     /**
      * Crazy functions ask for crazy naming. This is the other part of
      * `send_mutually_recursive_message()`, for executing mutually recursive
      * functions on the GUI thread. If another thread is currently calling that
-     * function (from the UI thread), then we'll execute `f` from the UI thread
+     * function (from the UI thread), then we'll execute `fn` from the UI thread
      * using the IO context started in the above function. Otherwise `f` will be
      * run on the UI thread through `main_context` as usual.
      *
      * @see Vst3Bridge::send_mutually_recursive_message
+     *
+     * TODO: Refactor these two functions, `run_gui_task()`, and
+     *       `main_context.run_in_context` to use `std::invocation_result_t`
      */
     template <typename T, typename F>
-    T do_mutual_recursion_on_gui_thread(F fn) {
-        std::packaged_task<T()> do_call(std::move(fn));
-        std::future<T> do_call_response = do_call.get_future();
-
+    T do_mutual_recursion_on_gui_thread(F&& fn) {
         // If the above function is currently being called from some thread,
-        // then we'll submit the task to the IO context created there so it can
-        // be handled on that same thread. Otherwise we'll just submit it to the
-        // main IO context. Neither of these two functions block until `do_call`
-        // finish executing. It could in theory also happen that this mechanism
-        // is used for multiple levels of mutual recursion, which is why we need
-        // to keep track of an entire stack of IO contexts, since the init of
-        // `mutual_recursion_contexts` will be blocked until the deeper calls
-        // are finished.
-        {
-            std::lock_guard lock(mutual_recursion_contexts_mutex);
-            if (!mutual_recursion_contexts.empty()) {
-                boost::asio::dispatch(*mutual_recursion_contexts.back(),
-                                      std::move(do_call));
-            } else {
-                main_context.schedule_task(std::move(do_call));
-            }
+        // then we'll call `fn` from that same thread. Otherwise we'll just
+        // submit it to the main IO context.
+        if (const auto result =
+                mutual_recursion.maybe_handle(std::forward<F>(fn))) {
+            return *result;
+        } else {
+            return main_context.run_in_context<T>(std::forward<F>(fn)).get();
         }
-
-        return do_call_response.get();
     }
 
     /**
@@ -366,23 +318,8 @@ class Vst3Bridge : public HostBridge {
      * @see Vst3Bridge::do_mutual_recursion_on_gui_thread
      */
     template <typename T, typename F>
-    T do_mutual_recursion_on_off_thread(F fn) {
-        std::packaged_task<T()> do_call(std::move(fn));
-        std::future<T> do_call_response = do_call.get_future();
-
-        std::unique_lock lock(mutual_recursion_contexts_mutex);
-        if (!mutual_recursion_contexts.empty()) {
-            boost::asio::dispatch(*mutual_recursion_contexts.back(),
-                                  std::move(do_call));
-        } else {
-            // Unlike the other branches in the `do_mutual_recursion_*`
-            // functions, this one will block
-            lock.unlock();
-
-            do_call();
-        }
-
-        return do_call_response.get();
+    T do_mutual_recursion_on_off_thread(F&& fn) {
+        return mutual_recursion.handle(std::forward<F>(fn));
     }
 
     /**
@@ -477,15 +414,11 @@ class Vst3Bridge : public HostBridge {
     std::mutex object_instances_mutex;
 
     /**
-     * The IO contexts used in `Vst3Bridge::send_mutually_recursive_message()`
-     * to be able to execute functions from that same calling thread while we're
-     * waiting for a response. We need an entire stack of these to be able to
-     * handle nested mutually recursive function calls. See the docstring there
-     * for more information. When this doesn't contain an IO context, this
-     * function is not being called and `do_mutual_recursion_on_gui_thread()`
-     * should post the task directly to the main IO context.
+     * Used in `send_mutually_recursive_message()` to be able to execute
+     * functions from that same calling thread (through
+     * `do_mutual_recursion_on_gui_thread()` and
+     * `do_mutual_recursion_on_off_thread()`) while we're waiting for a
+     * response.
      */
-    std::vector<std::shared_ptr<boost::asio::io_context>>
-        mutual_recursion_contexts;
-    std::mutex mutual_recursion_contexts_mutex;
+    MutualRecursionHelper<Win32Thread> mutual_recursion;
 };
