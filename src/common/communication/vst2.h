@@ -210,10 +210,10 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
      * then start a blocking loop that handles events from the primary `socket`.
      *
      * The specified function will be used to create an `EventResult` from an
-     * `Event`. This is almost uses `passthrough_event()`, which converts a
-     * `EventPayload` into the format used by VST2, calls either `dispatch()` or
-     * `audioMaster()` depending on the context, and then serializes the result
-     * back into an `EventResultPayload`.
+     * `Event`. This is almost always uses `passthrough_event()`, which converts
+     * a `EventPayload` into the format used by VST2, calls either `dispatch()`
+     * or `audioMaster()` depending on the context, and then serializes the
+     * result back into an `EventResultPayload`.
      *
      * @param logging A pair containing a logger instance and whether or not
      *   this is for sending `dispatch()` events or host callbacks. Optional
@@ -386,6 +386,10 @@ class Vst2Sockets : public Sockets {
  *   unmarshall the payload again and write it back.
  *
  * @relates Vst2EventHandler::receive_events
+ *
+ * TODO: Maybe at some point rework this to use `T::Raw` and `T::Response`
+ *       associated types similar to how we handle things on the VST3 side to ad
+ *       least make it slightly more type safe.
  */
 template <
     invocable_returning<intptr_t, AEffect*, int, int, intptr_t, void*, float> F>
@@ -439,8 +443,8 @@ EventResult passthrough_event(AEffect* plugin, F&& callback, Event& event) {
         [&](WantsString&) -> void* { return string_buffer.data(); }};
 
     // Almost all events pass data through the `data` argument. There are two
-    // events, `effSetParameter` and `effGetParameter` that also pass data
-    // through the value argument.
+    // events, `effSetSpeakerArrangement()` and `effGetSpeakerArrangement()`
+    // that also use the value argument in the same way.
     void* data = std::visit(read_payload_fn, event.payload);
     intptr_t value = event.value;
     if (event.value_payload) {
@@ -448,10 +452,12 @@ EventResult passthrough_event(AEffect* plugin, F&& callback, Event& event) {
             std::visit(read_payload_fn, *event.value_payload));
     }
 
+    // The other arguments are simple value types that we can pass to the plugin
+    // directly
     const intptr_t return_value =
         callback(plugin, event.opcode, event.index, value, data, event.option);
 
-    // Only write back data when needed, this depends on the event payload type
+    // For some payload types we need to write back a value to the data pointer
     auto write_payload_fn = overload{
         [&](auto) -> EventResultPayload { return nullptr; },
         [&](const AEffect& updated_plugin) -> EventResultPayload {
@@ -512,11 +518,10 @@ EventResult passthrough_event(AEffect* plugin, F&& callback, Event& event) {
             return props;
         }};
 
-    // As mentioned about, the `effSetSpeakerArrangement` and
-    // `effGetSpeakerArrangement` events are the only two events that use the
-    // value argument as a pointer to write data to. Additionally, the
-    // `effGetSpeakerArrangement` expects the plugin to write its own data to
-    // this value. Hence why we need to encode the response here separately.
+    // We'll need to serialize the result back depending on the payload type.
+    // And as mentioned above, `effGetSpeakerArrangement()` wants the plugin's
+    // speaker arrangement to be the data pointer, so we need to do this same
+    // serialization step just for that function.
     const EventResultPayload response_data =
         std::visit(write_payload_fn, event.payload);
     std::optional<EventResultPayload> value_response_data = std::nullopt;
@@ -525,9 +530,7 @@ EventResult passthrough_event(AEffect* plugin, F&& callback, Event& event) {
             std::visit(write_payload_fn, *event.value_payload);
     }
 
-    EventResult response{.return_value = return_value,
-                         .payload = response_data,
-                         .value_payload = value_response_data};
-
-    return response;
+    return EventResult{.return_value = return_value,
+                       .payload = response_data,
+                       .value_payload = value_response_data};
 }
