@@ -76,6 +76,16 @@ class DefaultDataConverter {
      */
     virtual intptr_t return_value(const int opcode,
                                   const intptr_t original) const;
+
+    /**
+     * Send an event over the socket. The default implementation will just send
+     * the event over the socket, and then wait for the response to be sent
+     * back. This can be overridden to use `MutualRecursionHelper::fork()` for
+     * specific opcodes to allow mutually recursive calling sequences.
+     */
+    virtual EventResult send_event(
+        boost::asio::local::stream_protocol::socket& socket,
+        const Event& event) const;
 };
 
 /**
@@ -185,11 +195,14 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
         // A socket only handles a single request at a time as to prevent
         // messages from arriving out of order. `AdHocSocketHandler::send()`
         // will either use a long-living primary socket, or if that's currently
-        // in use it will spawn a new socket for us.
+        // in use it will spawn a new socket for us. We'll then use
+        // `DefaultDataConverter::send_event()` to actually write and read data
+        // from the socket, so we can override this for specific function calls
+        // that potentially need to have their responses handled on the same
+        // calling thread (i.e. mutual recursion).
         const EventResult response = this->send(
             [&](boost::asio::local::stream_protocol::socket& socket) {
-                write_object(socket, event);
-                return read_object<EventResult>(socket);
+                return data_converter.send_event(socket, event);
             });
 
         if (logging) {
