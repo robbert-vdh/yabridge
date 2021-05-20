@@ -427,33 +427,64 @@ void serialize(S& s, Vst2Event::Payload& payload) {
 }
 
 /**
- * The response for an event. This is usually either:
- *
- * - Nothing, on which case only the return value from the callback function
- *   gets passed along.
- * - A (short) string.
- * - Some binary blob stored as a byte vector. During `effGetChunk` this will
- *   contain some chunk data that should be written to
- *   `Vst2PluginBridge::chunk_data`.
- * - A specific struct in response to an event such as `audioMasterGetTime` or
- *   `audioMasterIOChanged`.
- * - An X11 window pointer for the editor window.
- *
- * @relates passthrough_event
+ * AN instance of this should be sent back as a response to an incoming event.
  */
-using EventResultPayload = std::variant<std::nullptr_t,
-                                        std::string,
-                                        AEffect,
-                                        ChunkData,
-                                        DynamicSpeakerArrangement,
-                                        VstIOProperties,
-                                        VstMidiKeyName,
-                                        VstParameterProperties,
-                                        VstRect,
-                                        VstTimeInfo>;
+struct Vst2EventResult {
+    /**
+     * The response for an event. This is usually either:
+     *
+     * - Nothing, on which case only the return value from the callback function
+     *   gets passed along.
+     * - A (short) string.
+     * - Some binary blob stored as a byte vector. During `effGetChunk` this
+     *   will contain some chunk data that should be written to
+     *   `Vst2PluginBridge::chunk_data`.
+     * - A specific struct in response to an event such as `audioMasterGetTime`
+     *   or `audioMasterIOChanged`.
+     * - An X11 window pointer for the editor window.
+     *
+     * @relates passthrough_event
+     */
+    using Payload = std::variant<std::nullptr_t,
+                                 std::string,
+                                 AEffect,
+                                 ChunkData,
+                                 DynamicSpeakerArrangement,
+                                 VstIOProperties,
+                                 VstMidiKeyName,
+                                 VstParameterProperties,
+                                 VstRect,
+                                 VstTimeInfo>;
+
+    /**
+     * The result that should be returned from the dispatch function.
+     */
+    native_intptr_t return_value;
+    /**
+     * Events typically either just return their return value or write a string
+     * into the void pointer, but sometimes an event response should forward
+     * some kind of special struct.
+     */
+    Payload payload;
+    /**
+     * The same as the above value, but for returning values written to the
+     * `intptr_t` value parameter. This is only used during
+     * `effGetSpeakerArrangement`.
+     */
+    std::optional<Payload> value_payload;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(return_value);
+
+        s.object(payload);
+        s.ext(value_payload, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.object(v); });
+    }
+};
 
 template <typename S>
-void serialize(S& s, EventResultPayload& payload) {
+void serialize(S& s, Vst2EventResult::Payload& payload) {
     s.ext(payload,
           bitsery::ext::StdVariant{
               [](S&, std::nullptr_t&) {},
@@ -473,37 +504,6 @@ void serialize(S& s, EventResultPayload& payload) {
               [](S& s, VstRect& rect) { s.object(rect); },
               [](S& s, VstTimeInfo& time_info) { s.object(time_info); }});
 }
-
-/**
- * AN instance of this should be sent back as a response to an incoming event.
- */
-struct Vst2EventResult {
-    /**
-     * The result that should be returned from the dispatch function.
-     */
-    native_intptr_t return_value;
-    /**
-     * Events typically either just return their return value or write a string
-     * into the void pointer, but sometimes an event response should forward
-     * some kind of special struct.
-     */
-    EventResultPayload payload;
-    /**
-     * The same as the above value, but for returning values written to the
-     * `intptr_t` value parameter. This is only used during
-     * `effGetSpeakerArrangement`.
-     */
-    std::optional<EventResultPayload> value_payload;
-
-    template <typename S>
-    void serialize(S& s) {
-        s.value8b(return_value);
-
-        s.object(payload);
-        s.ext(value_payload, bitsery::ext::StdOptional(),
-              [](S& s, auto& v) { s.object(v); });
-    }
-};
 
 /**
  * Represents a call to either `getParameter` or `setParameter`, depending on

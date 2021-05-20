@@ -73,8 +73,8 @@ class Vst2Logger {
         bool is_dispatch,
         int opcode,
         intptr_t return_value,
-        const EventResultPayload& payload,
-        const std::optional<EventResultPayload>& value_payload,
+        const Vst2EventResult::Payload& payload,
+        const std::optional<Vst2EventResult::Payload>& value_payload,
         bool from_cache = false);
 
     /**

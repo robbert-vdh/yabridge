@@ -230,7 +230,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
      * an `Vst2Event`. This is almost always uses `passthrough_event()`, which
      * converts a `Vst2Event::Payload` into the format used by VST2, calls
      * either `dispatch()` or `audioMaster()` depending on the context, and then
-     * serializes the result back into an `EventResultPayload`.
+     * serializes the result back into an `Vst2EventResult::Payload`.
      *
      * @param logging A pair containing a logger instance and whether or not
      *   this is for sending `dispatch()` events or host callbacks. Optional
@@ -478,8 +478,8 @@ Vst2EventResult passthrough_event(AEffect* plugin,
 
     // For some payload types we need to write back a value to the data pointer
     auto write_payload_fn = overload{
-        [&](auto) -> EventResultPayload { return nullptr; },
-        [&](const AEffect& updated_plugin) -> EventResultPayload {
+        [&](auto) -> Vst2EventResult::Payload { return nullptr; },
+        [&](const AEffect& updated_plugin) -> Vst2EventResult::Payload {
             // This is a bit of a special case! Instead of writing some return
             // value, we will update values on the native VST plugin's `AEffect`
             // object. This is triggered by the `audioMasterIOChanged` callback
@@ -489,9 +489,11 @@ Vst2EventResult passthrough_event(AEffect* plugin,
             return nullptr;
         },
         [&](DynamicSpeakerArrangement& speaker_arrangement)
-            -> EventResultPayload { return speaker_arrangement; },
-        [&](WantsAEffectUpdate&) -> EventResultPayload { return *plugin; },
-        [&](WantsChunkBuffer&) -> EventResultPayload {
+            -> Vst2EventResult::Payload { return speaker_arrangement; },
+        [&](WantsAEffectUpdate&) -> Vst2EventResult::Payload {
+            return *plugin;
+        },
+        [&](WantsChunkBuffer&) -> Vst2EventResult::Payload {
             // In this case the plugin will have written its data stored in an
             // array to which a pointer is stored in `data`, with the return
             // value from the event determines how much data the plugin has
@@ -500,7 +502,7 @@ Vst2EventResult passthrough_event(AEffect* plugin,
             return ChunkData{
                 std::vector<uint8_t>(chunk_data, chunk_data + return_value)};
         },
-        [&](WantsVstRect&) -> EventResultPayload {
+        [&](WantsVstRect&) -> Vst2EventResult::Payload {
             // The plugin should have written a pointer to a VstRect struct into
             // the data pointer. I haven't seen this fail yet, but since some
             // hosts will call `effEditGetRect()` before `effEditOpen()` I can
@@ -512,7 +514,7 @@ Vst2EventResult passthrough_event(AEffect* plugin,
 
             return *editor_rect;
         },
-        [&](WantsVstTimeInfo&) -> EventResultPayload {
+        [&](WantsVstTimeInfo&) -> Vst2EventResult::Payload {
             // Not sure why the VST API has twenty different ways of
             // returning structs, but in this case the value returned from
             // the callback function is actually a pointer to a
@@ -526,14 +528,16 @@ Vst2EventResult passthrough_event(AEffect* plugin,
                 return *time_info;
             }
         },
-        [&](WantsString&) -> EventResultPayload {
+        [&](WantsString&) -> Vst2EventResult::Payload {
             return std::string(static_cast<char*>(data));
         },
-        [&](VstIOProperties& props) -> EventResultPayload { return props; },
-        [&](VstMidiKeyName& key_name) -> EventResultPayload {
+        [&](VstIOProperties& props) -> Vst2EventResult::Payload {
+            return props;
+        },
+        [&](VstMidiKeyName& key_name) -> Vst2EventResult::Payload {
             return key_name;
         },
-        [&](VstParameterProperties& props) -> EventResultPayload {
+        [&](VstParameterProperties& props) -> Vst2EventResult::Payload {
             return props;
         }};
 
@@ -541,9 +545,9 @@ Vst2EventResult passthrough_event(AEffect* plugin,
     // And as mentioned above, `effGetSpeakerArrangement()` wants the plugin's
     // speaker arrangement to be the data pointer, so we need to do this same
     // serialization step just for that function.
-    const EventResultPayload response_data =
+    const Vst2EventResult::Payload response_data =
         std::visit(write_payload_fn, event.payload);
-    std::optional<EventResultPayload> value_response_data = std::nullopt;
+    std::optional<Vst2EventResult::Payload> value_response_data = std::nullopt;
     if (event.value_payload) {
         value_response_data =
             std::visit(write_payload_fn, *event.value_payload);

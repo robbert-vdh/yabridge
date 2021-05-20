@@ -448,8 +448,8 @@ void Vst2Logger::log_event_response(
     bool is_dispatch,
     int opcode,
     intptr_t return_value,
-    const EventResultPayload& payload,
-    const std::optional<EventResultPayload>& value_payload,
+    const Vst2EventResult::Payload& payload,
+    const std::optional<Vst2EventResult::Payload>& value_payload,
     bool from_cache) {
     if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         if (should_filter_event(is_dispatch, opcode)) {
