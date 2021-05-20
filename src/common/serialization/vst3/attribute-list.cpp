@@ -26,7 +26,7 @@
  * Keys for channel context attributes passed in
  * `IInfoListener::setChannelContextInfos` that contain a string value.
  */
-const static char* channel_context_string_keys[] = {
+static const char* channel_context_string_keys[] = {
     Steinberg::Vst::ChannelContext::kChannelUIDKey,
     Steinberg::Vst::ChannelContext::kChannelNameKey,
     Steinberg::Vst::ChannelContext::kChannelIndexNamespaceKey};
@@ -35,7 +35,7 @@ const static char* channel_context_string_keys[] = {
  * Keys for channel context attributes passed in
  * `IInfoListener::setChannelContextInfos` that contain an integer value.
  */
-const static char* channel_context_integer_keys[] = {
+static const char* channel_context_integer_keys[] = {
     Steinberg::Vst::ChannelContext::kChannelUIDLengthKey,
     Steinberg::Vst::ChannelContext::kChannelNameLengthKey,
     Steinberg::Vst::ChannelContext::kChannelColorKey,
@@ -48,7 +48,7 @@ const static char* channel_context_integer_keys[] = {
  * Keys for channel context attributes passed in
  * `IInfoListener::setChannelContextInfos` that contain a binary value.
  */
-const static char* channel_context_binary_keys[] = {
+static const char* channel_context_binary_keys[] = {
     Steinberg::Vst::ChannelContext::kChannelImageKey};
 
 /**
@@ -66,7 +66,7 @@ const static char* channel_context_binary_keys[] = {
  *       and `wine_get_unix_file_name` functions instead. Requesting this should
  *       also use a 1024 character buffer.
  */
-const static char* stream_meta_data_string_keys[] = {
+static const char* stream_meta_data_string_keys[] = {
     Steinberg::Vst::PresetAttributes::kPlugInName,
     Steinberg::Vst::PresetAttributes::kPlugInCategory,
     Steinberg::Vst::PresetAttributes::kInstrument,
