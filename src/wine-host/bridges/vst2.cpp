@@ -353,7 +353,7 @@ bool Vst2Bridge::inhibits_event_loop() noexcept {
 
 void Vst2Bridge::run() {
     sockets.host_vst_dispatch.receive_events(
-        std::nullopt, [&](Event& event, bool /*on_main_thread*/) {
+        std::nullopt, [&](Vst2Event& event, bool /*on_main_thread*/) {
             if (event.opcode == effProcessEvents) {
                 // For 99% of the plugins we can just call
                 // `effProcessReplacing()` and be done with it, but a select few
@@ -629,7 +629,7 @@ class HostCallbackDataConverter : public DefaultDataConverter {
     }
 
     EventResult send_event(boost::asio::local::stream_protocol::socket& socket,
-                           const Event& event) const override {
+                           const Vst2Event& event) const override {
         if (mutually_recursive_callbacks.contains(event.opcode)) {
             return mutual_recursion.fork([&]() {
                 return DefaultDataConverter::send_event(socket, event);

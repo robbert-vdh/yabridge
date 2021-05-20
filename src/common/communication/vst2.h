@@ -85,7 +85,7 @@ class DefaultDataConverter {
      */
     virtual EventResult send_event(
         boost::asio::local::stream_protocol::socket& socket,
-        const Event& event) const;
+        const Vst2Event& event) const;
 };
 
 /**
@@ -185,12 +185,12 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
                              value_payload);
         }
 
-        const Event event{.opcode = opcode,
-                          .index = index,
-                          .value = value,
-                          .option = option,
-                          .payload = payload,
-                          .value_payload = value_payload};
+        const Vst2Event event{.opcode = opcode,
+                              .index = index,
+                              .value = value,
+                              .option = option,
+                              .payload = payload,
+                              .value_payload = value_payload};
 
         // A socket only handles a single request at a time as to prevent
         // messages from arriving out of order. `AdHocSocketHandler::send()`
@@ -223,10 +223,10 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
      * then start a blocking loop that handles events from the primary `socket`.
      *
      * The specified function will be used to create an `EventResult` from an
-     * `Event`. This is almost always uses `passthrough_event()`, which converts
-     * a `EventPayload` into the format used by VST2, calls either `dispatch()`
-     * or `audioMaster()` depending on the context, and then serializes the
-     * result back into an `EventResultPayload`.
+     * `Vst2Event`. This is almost always uses `passthrough_event()`, which
+     * converts a `EventPayload` into the format used by VST2, calls either
+     * `dispatch()` or `audioMaster()` depending on the context, and then
+     * serializes the result back into an `EventResultPayload`.
      *
      * @param logging A pair containing a logger instance and whether or not
      *   this is for sending `dispatch()` events or host callbacks. Optional
@@ -237,7 +237,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
      * @relates Vst2EventHandler::send_event
      * @relates passthrough_event
      */
-    template <invocable_returning<EventResult, Event&, bool> F>
+    template <invocable_returning<EventResult, Vst2Event&, bool> F>
     void receive_events(std::optional<std::pair<Vst2Logger&, bool>> logging,
                         F&& callback) {
         // Reading, processing, and writing back event data from the sockets
@@ -245,7 +245,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
         const auto process_event =
             [&](boost::asio::local::stream_protocol::socket& socket,
                 bool on_main_thread) {
-                auto event = read_object<Event>(socket);
+                auto event = read_object<Vst2Event>(socket);
                 if (logging) {
                     auto [logger, is_dispatch] = *logging;
                     logger.log_event(is_dispatch, event.opcode, event.index,
@@ -406,7 +406,7 @@ class Vst2Sockets : public Sockets {
  */
 template <
     invocable_returning<intptr_t, AEffect*, int, int, intptr_t, void*, float> F>
-EventResult passthrough_event(AEffect* plugin, F&& callback, Event& event) {
+EventResult passthrough_event(AEffect* plugin, F&& callback, Vst2Event& event) {
     // This buffer is used to write strings and small objects to. We'll
     // initialize the beginning with null values to both prevent it from being
     // read as some arbitrary C-style string, and to make sure that

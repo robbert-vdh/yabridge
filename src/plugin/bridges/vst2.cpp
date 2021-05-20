@@ -76,7 +76,7 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
 
         sockets.vst_host_callback.receive_events(
             std::pair<Vst2Logger&, bool>(logger, false),
-            [&](Event& event, bool /*on_main_thread*/) {
+            [&](Vst2Event& event, bool /*on_main_thread*/) {
                 switch (event.opcode) {
                     // MIDI events sent from the plugin back to the host are
                     // a special case here. They have to sent during the

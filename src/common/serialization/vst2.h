@@ -388,7 +388,7 @@ void serialize(S& s, EventPayload& payload) {
  * the VST host process running under Wine. The fields here mirror those
  * arguments sent to the `AEffect::dispatch` function.
  */
-struct Event {
+struct Vst2Event {
     int opcode;
     int index;
     native_intptr_t value;
