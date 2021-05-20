@@ -138,7 +138,7 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      * A mutex to prevent multiple simultaneous calls to `getParameter()` and
      * `setParameter()`. This likely won't happen, but better safe than sorry.
      * For `dispatch()` and `audioMaster()` there's some more complex logic for
-     * this in `EventHandler`.
+     * this in `Vst2EventHandler`.
      */
     std::mutex parameters_mutex;
 

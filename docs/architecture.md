@@ -134,8 +134,8 @@ over:
   below) are already in fairly easily serializable format, we use the
   `*DataConverter` classes to read and write payload data depending on the
   opcode (or to make a best guess estimate if we're dealing with some unknown
-  undocumented function), and we then `EventHandler::send_event()`,
-  `EventHandler::receive_events()`, and `passthrough_event()` to pass through
+  undocumented function), and we then `Vst2EventHandler::send_event()`,
+  `Vst2EventHandler::receive_events()`, and `passthrough_event()` to pass through
   these function calls.
 - For callbacks made by the Windows plugin using the provided `audioMaster()`
   function we do exactly the same as the above, but the other way around.

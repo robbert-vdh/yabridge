@@ -29,7 +29,7 @@
  * request of type `T`, where `T` is in `{Control,Callback}Request`, should be
  * answered with an object of type `T::Response`.
  *
- * See the docstrings on `EventHandler` and `AdHocSocketHandler` for more
+ * See the docstrings on `Vst2EventHandler` and `AdHocSocketHandler` for more
  * information on how this works internally and why it works the way it does.
  *
  * @note The name of this class is not to be confused with VST3's `IMessage` as
@@ -475,7 +475,7 @@ class Vst3Sockets : public Sockets {
     /**
      * For sending messages from the host to the plugin. After we have a better
      * idea of what our communication model looks like we'll probably want to
-     * provide an abstraction similar to `EventHandler`. For optimization
+     * provide an abstraction similar to `Vst2EventHandler`. For optimization
      * reasons calls to `IAudioProcessor` or `IComponent` are handled using the
      * dedicated sockets in `audio_processor_sockets`.
      *
@@ -487,7 +487,7 @@ class Vst3Sockets : public Sockets {
     /**
      * For sending callbacks from the plugin back to the host. After we have a
      * better idea of what our communication model looks like we'll probably
-     * want to provide an abstraction similar to `EventHandler`.
+     * want to provide an abstraction similar to `Vst2EventHandler`.
      */
     Vst3MessageHandler<Thread, CallbackRequest> vst_host_callback;
 

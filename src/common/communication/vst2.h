@@ -97,17 +97,18 @@ class DefaultDataConverter {
  * - Aside from that the listening side will have a second thread asynchronously
  *   listening for new connections on the socket endpoint.
  *
- * The `EventHandler::send_event()` method is used to send events. If the socket
- * is currently being written to, we'll first create a new socket connection as
- * described above. Similarly, the `EventHandler::receive_events()` method first
- * sets up asynchronous listeners for the socket endpoint, and then block and
- * handle events until the main socket is closed.
+ * The `Vst2EventHandler::send_event()` method is used to send events. If the
+ * socket is currently being written to, we'll first create a new socket
+ * connection as described above. Similarly, the
+ * `Vst2EventHandler::receive_events()` method first sets up asynchronous
+ * listeners for the socket endpoint, and then block and handle events until the
+ * main socket is closed.
  *
  * @tparam Thread The thread implementation to use. On the Linux side this
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  */
 template <typename Thread>
-class EventHandler : public AdHocSocketHandler<Thread> {
+class Vst2EventHandler : public AdHocSocketHandler<Thread> {
    public:
     /**
      * Sets up a single main socket for this type of events. The sockets won't
@@ -123,9 +124,9 @@ class EventHandler : public AdHocSocketHandler<Thread> {
      *
      * @see Sockets::connect
      */
-    EventHandler(boost::asio::io_context& io_context,
-                 boost::asio::local::stream_protocol::endpoint endpoint,
-                 bool listen)
+    Vst2EventHandler(boost::asio::io_context& io_context,
+                     boost::asio::local::stream_protocol::endpoint endpoint,
+                     bool listen)
         : AdHocSocketHandler<Thread>(io_context, endpoint, listen) {}
 
     /**
@@ -148,7 +149,7 @@ class EventHandler : public AdHocSocketHandler<Thread> {
      *   this is for sending `dispatch()` events or host callbacks. Optional
      *   since it doesn't have to be done on both sides.
      *
-     * @relates EventHandler::receive_events
+     * @relates Vst2EventHandler::receive_events
      * @relates passthrough_event
      */
     template <typename D>
@@ -220,7 +221,7 @@ class EventHandler : public AdHocSocketHandler<Thread> {
      * @param callback The function used to generate a response out of an event.
      *   See the definition of `F` for more information.
      *
-     * @relates EventHandler::send_event
+     * @relates Vst2EventHandler::send_event
      * @relates passthrough_event
      */
     template <invocable_returning<EventResult, Event&, bool> F>
@@ -341,12 +342,12 @@ class Vst2Sockets : public Sockets {
      * The socket that forwards all `dispatcher()` calls from the VST host to
      * the plugin.
      */
-    EventHandler<Thread> host_vst_dispatch;
+    Vst2EventHandler<Thread> host_vst_dispatch;
     /**
      * The socket that forwards all `audioMaster()` calls from the Windows VST
      * plugin to the host.
      */
-    EventHandler<Thread> vst_host_callback;
+    Vst2EventHandler<Thread> vst_host_callback;
     /**
      * Used for both `getParameter` and `setParameter` since they mostly
      * overlap.
@@ -384,7 +385,7 @@ class Vst2Sockets : public Sockets {
  * @return The result of the operation. If necessary the `DataConverter` will
  *   unmarshall the payload again and write it back.
  *
- * @relates EventHandler::receive_events
+ * @relates Vst2EventHandler::receive_events
  */
 template <
     invocable_returning<intptr_t, AEffect*, int, int, intptr_t, void*, float> F>
