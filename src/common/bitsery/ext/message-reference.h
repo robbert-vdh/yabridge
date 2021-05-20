@@ -29,9 +29,9 @@ namespace ext {
  * An adapter for serializing zero-copy references to objects using
  * `MessageHandler<T>`. The idea is that when serializing, we just read data
  * from the object pointed at by the reference. Then when deserializing, we'll
- * write the data to some `std::option<T>` (so we don't have to initialize an
- * unused object on the serializing side), and we'll then change our reference
- * to point to the value contained within that option.
+ * write the data to some backing `std::option<T>` (so we don't have to
+ * initialize an unused object on the serializing side), and we'll then change
+ * our reference to point to the value contained within that option.
  *
  * This lets us serialize 'references' to objects that can be backed by actual
  * persistent objects. That way we can avoid allocations during the processing
@@ -41,12 +41,12 @@ template <typename T>
 class MessageReference {
    public:
     /**
-     * @param deseerialization_store The object we'll deserialize into, so we
-     *   can point the `MessageReference<T>` to this object. On the serializing
-     *   side this won't be touched.
+     * @param backing_object The object we'll deserialize into, so we can point
+     *   the `MessageReference<T>` to this object. On the serializing side this
+     *   won't be touched.
      */
-    MessageReference(std::optional<T>& deseerialization_store)
-        : deseerialization_store(deseerialization_store){};
+    MessageReference(std::optional<T>& backing_object)
+        : backing_object(backing_object){};
 
     template <typename Ser, typename Fnc>
     void serialize(Ser& ser,
@@ -57,23 +57,23 @@ class MessageReference {
 
     template <typename Des, typename Fnc>
     void deserialize(Des& des, ::MessageReference<T>& object_ref, Fnc&&) const {
-        if (!deseerialization_store) {
-            deseerialization_store.emplace();
+        if (!backing_object) {
+            backing_object.emplace();
         }
 
         // Since we cannot directly deserialize into a reference, we'll
         // deserialize into this (persistent) backing object and then point the
         // reference to this object.
-        des.object(*deseerialization_store);
-        object_ref = *deseerialization_store;
+        des.object(*backing_object);
+        object_ref = *backing_object;
     }
 
    private:
     /**
-     * The actual `T` we'll deserialize into so we can point the reference to
-     * that object after deserializing.
+     * This contains the actual `T` we'll deserialize into so we can point the
+     * reference to that object after deserializing.
      */
-    std::optional<T>& deseerialization_store;
+    std::optional<T>& backing_object;
 };
 
 }  // namespace ext
