@@ -91,9 +91,9 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                         incoming_midi_events.push_back(
                             std::get<DynamicVstEvents>(event.payload));
 
-                        return EventResult{.return_value = 1,
-                                           .payload = nullptr,
-                                           .value_payload = std::nullopt};
+                        return Vst2EventResult{.return_value = 1,
+                                               .payload = nullptr,
+                                               .value_payload = std::nullopt};
                     } break;
                     // REAPER requires that `audioMasterSizeWindow()` calls are
                     // handled from the GUI thread, which is the thread that
@@ -105,9 +105,9 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
 
                         incoming_resize = std::pair(event.index, event.value);
 
-                        return EventResult{.return_value = 1,
-                                           .payload = nullptr,
-                                           .value_payload = std::nullopt};
+                        return Vst2EventResult{.return_value = 1,
+                                               .payload = nullptr,
+                                               .value_payload = std::nullopt};
                     } break;
                     // HACK: Certain plugins may have undesirable DAW-specific
                     //       behaviour.  Chromaphone 3 for instance has broken
@@ -125,9 +125,10 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                                        std::string(product_name_override) +
                                        "\" instead of the actual host's name.");
 
-                            return EventResult{.return_value = 1,
-                                               .payload = product_name_override,
-                                               .value_payload = std::nullopt};
+                            return Vst2EventResult{
+                                .return_value = 1,
+                                .payload = product_name_override,
+                                .value_payload = std::nullopt};
                         }
                     } break;
                     case audioMasterGetVendorString: {
@@ -139,9 +140,10 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                                 std::string(vendor_name_override) +
                                 "\" instead of the actual host's vendor.");
 
-                            return EventResult{.return_value = 1,
-                                               .payload = vendor_name_override,
-                                               .value_payload = std::nullopt};
+                            return Vst2EventResult{
+                                .return_value = 1,
+                                .payload = vendor_name_override,
+                                .value_payload = std::nullopt};
                         }
                     } break;
                 }
@@ -157,7 +159,7 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
     // over the `dispatcher()` socket. This would happen whenever the plugin
     // calls `audioMasterIOChanged()` and after the host calls `effOpen()`.
     const auto initialization_data =
-        sockets.host_vst_control.receive_single<EventResult>();
+        sockets.host_vst_control.receive_single<Vst2EventResult>();
     const auto initialized_plugin =
         std::get<AEffect>(initialization_data.payload);
 
@@ -330,7 +332,7 @@ class DispatchDataConverter : public DefaultDataConverter {
 
     void write_data(const int opcode,
                     void* data,
-                    const EventResult& response) const override {
+                    const Vst2EventResult& response) const override {
         switch (opcode) {
             case effOpen: {
                 // Update our `AEffect` object one last time for improperly
@@ -418,7 +420,7 @@ class DispatchDataConverter : public DefaultDataConverter {
 
     void write_value(const int opcode,
                      intptr_t value,
-                     const EventResult& response) const override {
+                     const Vst2EventResult& response) const override {
         switch (opcode) {
             case effGetSpeakerArrangement: {
                 // Same as the above, but now for the input speaker

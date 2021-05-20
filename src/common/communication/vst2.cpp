@@ -46,7 +46,7 @@ std::optional<Vst2Event::Payload> DefaultDataConverter::read_value(
 
 void DefaultDataConverter::write_data(const int /*opcode*/,
                                       void* data,
-                                      const EventResult& response) const {
+                                      const Vst2EventResult& response) const {
     // The default behavior is to handle this as a null terminated C-style
     // string
     std::visit(overload{[&](const auto&) {},
@@ -62,18 +62,19 @@ void DefaultDataConverter::write_data(const int /*opcode*/,
                response.payload);
 }
 
-void DefaultDataConverter::write_value(const int /*opcode*/,
-                                       intptr_t /*value*/,
-                                       const EventResult& /*response*/) const {}
+void DefaultDataConverter::write_value(
+    const int /*opcode*/,
+    intptr_t /*value*/,
+    const Vst2EventResult& /*response*/) const {}
 
 intptr_t DefaultDataConverter::return_value(const int /*opcode*/,
                                             const intptr_t original) const {
     return original;
 }
 
-EventResult DefaultDataConverter::send_event(
+Vst2EventResult DefaultDataConverter::send_event(
     boost::asio::local::stream_protocol::socket& socket,
     const Vst2Event& event) const {
     write_object(socket, event);
-    return read_object<EventResult>(socket);
+    return read_object<Vst2EventResult>(socket);
 }

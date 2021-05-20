@@ -477,7 +477,7 @@ void serialize(S& s, EventResultPayload& payload) {
 /**
  * AN instance of this should be sent back as a response to an incoming event.
  */
-struct EventResult {
+struct Vst2EventResult {
     /**
      * The result that should be returned from the dispatch function.
      */

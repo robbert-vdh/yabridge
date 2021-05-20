@@ -167,7 +167,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     // of this object will be sent over the `dispatcher()` socket. This would be
     // done after the host calls `effOpen()`, and when the plugin calls
     // `audioMasterIOChanged()`.
-    sockets.host_vst_control.send(EventResult{
+    sockets.host_vst_control.send(Vst2EventResult{
         .return_value = 0, .payload = *plugin, .value_payload = std::nullopt});
 
     // After sending the AEffect struct we'll receive this instance's
@@ -385,9 +385,9 @@ void Vst2Bridge::run() {
                     plugin, event.opcode, event.index, event.value,
                     &events.as_c_events(), event.option);
 
-                EventResult response{.return_value = return_value,
-                                     .payload = nullptr,
-                                     .value_payload = std::nullopt};
+                Vst2EventResult response{.return_value = return_value,
+                                         .payload = nullptr,
+                                         .value_payload = std::nullopt};
 
                 return response;
             } else {
@@ -588,7 +588,7 @@ class HostCallbackDataConverter : public DefaultDataConverter {
 
     void write_data(const int opcode,
                     void* data,
-                    const EventResult& response) const override {
+                    const Vst2EventResult& response) const override {
         switch (opcode) {
             case audioMasterGetTime:
                 // If the host returned a valid `VstTimeInfo` object, then we'll
@@ -624,12 +624,13 @@ class HostCallbackDataConverter : public DefaultDataConverter {
 
     void write_value(const int opcode,
                      intptr_t value,
-                     const EventResult& response) const override {
+                     const Vst2EventResult& response) const override {
         return DefaultDataConverter::write_value(opcode, value, response);
     }
 
-    EventResult send_event(boost::asio::local::stream_protocol::socket& socket,
-                           const Vst2Event& event) const override {
+    Vst2EventResult send_event(
+        boost::asio::local::stream_protocol::socket& socket,
+        const Vst2Event& event) const override {
         if (mutually_recursive_callbacks.contains(event.opcode)) {
             return mutual_recursion.fork([&]() {
                 return DefaultDataConverter::send_event(socket, event);

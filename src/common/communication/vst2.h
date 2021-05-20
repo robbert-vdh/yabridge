@@ -57,7 +57,7 @@ class DefaultDataConverter {
      */
     virtual void write_data(const int opcode,
                             void* data,
-                            const EventResult& response) const;
+                            const Vst2EventResult& response) const;
 
     /**
      * Write the response back to the `value` pointer. This is only used during
@@ -65,7 +65,7 @@ class DefaultDataConverter {
      */
     virtual void write_value(const int opcode,
                              intptr_t value,
-                             const EventResult& response) const;
+                             const Vst2EventResult& response) const;
 
     /**
      * This function can override a callback's return value based on the opcode.
@@ -85,7 +85,7 @@ class DefaultDataConverter {
      * back. This can be overridden to use `MutualRecursionHelper::fork()` for
      * specific opcodes to allow mutually recursive calling sequences.
      */
-    virtual EventResult send_event(
+    virtual Vst2EventResult send_event(
         boost::asio::local::stream_protocol::socket& socket,
         const Vst2Event& event) const;
 };
@@ -204,7 +204,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
         // from the socket, so we can override this for specific function calls
         // that potentially need to have their responses handled on the same
         // calling thread (i.e. mutual recursion).
-        const EventResult response = this->send(
+        const Vst2EventResult response = this->send(
             [&](boost::asio::local::stream_protocol::socket& socket) {
                 return data_converter.send_event(socket, event);
             });
@@ -226,8 +226,8 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
      * Spawn a new thread to listen for extra connections to `endpoint`, and
      * then start a blocking loop that handles events from the primary `socket`.
      *
-     * The specified function will be used to create an `EventResult` from an
-     * `Vst2Event`. This is almost always uses `passthrough_event()`, which
+     * The specified function will be used to create an `Vst2EventResult` from
+     * an `Vst2Event`. This is almost always uses `passthrough_event()`, which
      * converts a `Vst2Event::Payload` into the format used by VST2, calls
      * either `dispatch()` or `audioMaster()` depending on the context, and then
      * serializes the result back into an `EventResultPayload`.
@@ -241,7 +241,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
      * @relates Vst2EventHandler::send_event
      * @relates passthrough_event
      */
-    template <invocable_returning<EventResult, Vst2Event&, bool> F>
+    template <invocable_returning<Vst2EventResult, Vst2Event&, bool> F>
     void receive_events(std::optional<std::pair<Vst2Logger&, bool>> logging,
                         F&& callback) {
         // Reading, processing, and writing back event data from the sockets
@@ -257,7 +257,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
                                      event.value_payload);
                 }
 
-                EventResult response = callback(event, on_main_thread);
+                Vst2EventResult response = callback(event, on_main_thread);
                 if (logging) {
                     auto [logger, is_dispatch] = *logging;
                     logger.log_event_response(
@@ -388,7 +388,7 @@ class Vst2Sockets : public Sockets {
  * Unmarshall an `Vst2Event::Payload` back to the representation used by VST2,
  * pass that value to a callback function (either `AEffect::dispatcher()` for
  * host -> plugin events or `audioMaster()` for plugin -> host events), and then
- * serialize the results back into an `EventResult`.
+ * serialize the results back into an `Vst2EventResult`.
  *
  * This is the receiving analogue of the `*DataCovnerter` objects.
  *
@@ -410,7 +410,9 @@ class Vst2Sockets : public Sockets {
  */
 template <
     invocable_returning<intptr_t, AEffect*, int, int, intptr_t, void*, float> F>
-EventResult passthrough_event(AEffect* plugin, F&& callback, Vst2Event& event) {
+Vst2EventResult passthrough_event(AEffect* plugin,
+                                  F&& callback,
+                                  Vst2Event& event) {
     // This buffer is used to write strings and small objects to. We'll
     // initialize the beginning with null values to both prevent it from being
     // read as some arbitrary C-style string, and to make sure that
@@ -547,7 +549,7 @@ EventResult passthrough_event(AEffect* plugin, F&& callback, Vst2Event& event) {
             std::visit(write_payload_fn, *event.value_payload);
     }
 
-    return EventResult{.return_value = return_value,
-                       .payload = response_data,
-                       .value_payload = value_response_data};
+    return Vst2EventResult{.return_value = return_value,
+                           .payload = response_data,
+                           .value_payload = value_response_data};
 }
