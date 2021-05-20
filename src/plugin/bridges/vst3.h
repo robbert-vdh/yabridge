@@ -156,10 +156,10 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
 
     /**
      * If `send_mutually_recursive_message()` is currently being called, then
-     * run `cb` on the thread that's currently calling that function and return
+     * run `fn` on the thread that's currently calling that function and return
      * the result of the call. If there's currently no mutually recursive
      * function call going on, this will return an `std::nullopt`, and the
-     * caller should call `cb` itself.
+     * caller should call `fn` itself.
      *
      * @return The result of calling `fn`, if `fn` was called.
      *

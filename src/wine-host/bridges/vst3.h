@@ -254,10 +254,10 @@ class Vst3Bridge : public HostBridge {
 
     /**
      * Spawn a new thread and call `send_message()` from there, and then handle
-     * functions passed by calls to `do_mutual_recursion_on_gui_thread()` on
-     * this thread until the original message we're trying to send has
-     * succeeded. This is a very specific solution to a very specific problem.
-     * When a plugin wants to resize itself, it will call
+     * functions passed by calls to `do_mutual_recursion_on_gui_thread()` and
+     * `do_mutual_recursion_on_off_thread()` on this thread until we get a
+     * response back. This is a very specific solution to a very specific
+     * problem. When a plugin wants to resize itself, it will call
      * `IPlugFrame::resizeView()` from within the WIn32 message loop. The host
      * will then call `IPlugView::onSize()` on the plugin's `IPlugView` to
      * actually resize the plugin. The issue is that that call to
@@ -275,10 +275,6 @@ class Vst3Bridge : public HostBridge {
      * context.
      *
      * We apply the same trick in `Vst3HostBridge`.
-     *
-     * TODO: Maybe trim down the documentation for all of these mutual recursion
-     *       functions now that we're handling the nasty bits in
-     *       `MutualRecursionHelper`.
      */
     template <typename T>
     typename T::Response send_mutually_recursive_message(const T& object) {
