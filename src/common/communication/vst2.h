@@ -37,10 +37,10 @@ class DefaultDataConverter {
      * Read data from the `data` void pointer into a an `EventPayload` value
      * that can be serialized and conveys the meaning of the event.
      */
-    virtual EventPayload read(const int opcode,
-                              const int index,
-                              const intptr_t value,
-                              const void* data) const;
+    virtual EventPayload read_data(const int opcode,
+                                   const int index,
+                                   const intptr_t value,
+                                   const void* data) const;
 
     /**
      * Read data from the `value` pointer into a an `EventPayload` value that
@@ -53,9 +53,9 @@ class DefaultDataConverter {
     /**
      * Write the response back to the `data` pointer.
      */
-    virtual void write(const int opcode,
-                       void* data,
-                       const EventResult& response) const;
+    virtual void write_data(const int opcode,
+                            void* data,
+                            const EventResult& response) const;
 
     /**
      * Write the response back to the `value` pointer. This is only used during
@@ -165,7 +165,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
         // are converted to C-style data structures in `passthrough_event()` so
         // they can be passed to a plugin or callback function.
         const EventPayload payload =
-            data_converter.read(opcode, index, value, data);
+            data_converter.read_data(opcode, index, value, data);
         const std::optional<EventPayload> value_payload =
             data_converter.read_value(opcode, value);
 
@@ -199,7 +199,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
                                       response.value_payload);
         }
 
-        data_converter.write(opcode, data, response);
+        data_converter.write_data(opcode, data, response);
         data_converter.write_value(opcode, value, response);
 
         return data_converter.return_value(opcode, response.return_value);

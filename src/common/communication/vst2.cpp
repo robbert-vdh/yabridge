@@ -18,10 +18,10 @@
 
 DefaultDataConverter::~DefaultDataConverter() noexcept {}
 
-EventPayload DefaultDataConverter::read(const int /*opcode*/,
-                                        const int /*index*/,
-                                        const intptr_t /*value*/,
-                                        const void* data) const {
+EventPayload DefaultDataConverter::read_data(const int /*opcode*/,
+                                             const int /*index*/,
+                                             const intptr_t /*value*/,
+                                             const void* data) const {
     if (!data) {
         return nullptr;
     }
@@ -44,9 +44,9 @@ std::optional<EventPayload> DefaultDataConverter::read_value(
     return std::nullopt;
 }
 
-void DefaultDataConverter::write(const int /*opcode*/,
-                                 void* data,
-                                 const EventResult& response) const {
+void DefaultDataConverter::write_data(const int /*opcode*/,
+                                      void* data,
+                                      const EventResult& response) const {
     // The default behavior is to handle this as a null terminated C-style
     // string
     std::visit(overload{[&](const auto&) {},

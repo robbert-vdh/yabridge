@@ -190,10 +190,10 @@ class DispatchDataConverter : public DefaultDataConverter {
                           VstRect& editor_rectangle) noexcept
         : chunk(chunk_data), plugin(plugin), rect(editor_rectangle) {}
 
-    EventPayload read(const int opcode,
-                      const int index,
-                      const intptr_t value,
-                      const void* data) const override {
+    EventPayload read_data(const int opcode,
+                           const int index,
+                           const intptr_t value,
+                           const void* data) const override {
         // There are some events that need specific structs that we can't simply
         // serialize as a string because they might contain null bytes
         switch (opcode) {
@@ -243,8 +243,8 @@ class DispatchDataConverter : public DefaultDataConverter {
                     return static_cast<native_size_t>(
                         reinterpret_cast<size_t>(data));
                 } else {
-                    return DefaultDataConverter::read(opcode, index, value,
-                                                      data);
+                    return DefaultDataConverter::read_data(opcode, index, value,
+                                                           data);
                 }
                 break;
             case effGetParameterProperties:
@@ -301,7 +301,8 @@ class DispatchDataConverter : public DefaultDataConverter {
             case effStopProcess:
                 return nullptr;
             default:
-                return DefaultDataConverter::read(opcode, index, value, data);
+                return DefaultDataConverter::read_data(opcode, index, value,
+                                                       data);
                 break;
         }
     }
@@ -327,9 +328,9 @@ class DispatchDataConverter : public DefaultDataConverter {
         }
     }
 
-    void write(const int opcode,
-               void* data,
-               const EventResult& response) const override {
+    void write_data(const int opcode,
+                    void* data,
+                    const EventResult& response) const override {
         switch (opcode) {
             case effOpen: {
                 // Update our `AEffect` object one last time for improperly
@@ -405,7 +406,7 @@ class DispatchDataConverter : public DefaultDataConverter {
                           reinterpret_cast<uint8_t*>(output));
             } break;
             default:
-                DefaultDataConverter::write(opcode, data, response);
+                DefaultDataConverter::write_data(opcode, data, response);
                 break;
         }
     }

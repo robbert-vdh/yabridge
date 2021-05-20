@@ -492,10 +492,10 @@ class HostCallbackDataConverter : public DefaultDataConverter {
                               VstTimeInfo& last_time_info) noexcept
         : plugin(plugin), last_time_info(last_time_info) {}
 
-    EventPayload read(const int opcode,
-                      const int index,
-                      const intptr_t value,
-                      const void* data) const override {
+    EventPayload read_data(const int opcode,
+                           const int index,
+                           const intptr_t value,
+                           const void* data) const override {
         switch (opcode) {
             case audioMasterGetTime:
                 return WantsVstTimeInfo{};
@@ -547,7 +547,8 @@ class HostCallbackDataConverter : public DefaultDataConverter {
                 return nullptr;
                 break;
             default:
-                return DefaultDataConverter::read(opcode, index, value, data);
+                return DefaultDataConverter::read_data(opcode, index, value,
+                                                       data);
                 break;
         }
     }
@@ -558,9 +559,9 @@ class HostCallbackDataConverter : public DefaultDataConverter {
         return DefaultDataConverter::read_value(opcode, value);
     }
 
-    void write(const int opcode,
-               void* data,
-               const EventResult& response) const override {
+    void write_data(const int opcode,
+                    void* data,
+                    const EventResult& response) const override {
         switch (opcode) {
             case audioMasterGetTime:
                 // If the host returned a valid `VstTimeInfo` object, then we'll
@@ -571,7 +572,7 @@ class HostCallbackDataConverter : public DefaultDataConverter {
                 }
                 break;
             default:
-                DefaultDataConverter::write(opcode, data, response);
+                DefaultDataConverter::write_data(opcode, data, response);
                 break;
         }
     }
