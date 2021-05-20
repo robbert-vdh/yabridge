@@ -18,10 +18,10 @@
 
 DefaultDataConverter::~DefaultDataConverter() noexcept {}
 
-EventPayload DefaultDataConverter::read_data(const int /*opcode*/,
-                                             const int /*index*/,
-                                             const intptr_t /*value*/,
-                                             const void* data) const {
+Vst2Event::Payload DefaultDataConverter::read_data(const int /*opcode*/,
+                                                   const int /*index*/,
+                                                   const intptr_t /*value*/,
+                                                   const void* data) const {
     if (!data) {
         return nullptr;
     }
@@ -38,7 +38,7 @@ EventPayload DefaultDataConverter::read_data(const int /*opcode*/,
     }
 }
 
-std::optional<EventPayload> DefaultDataConverter::read_value(
+std::optional<Vst2Event::Payload> DefaultDataConverter::read_value(
     const int /*opcode*/,
     const intptr_t /*value*/) const {
     return std::nullopt;

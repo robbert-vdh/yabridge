@@ -190,10 +190,10 @@ class DispatchDataConverter : public DefaultDataConverter {
                           VstRect& editor_rectangle) noexcept
         : chunk(chunk_data), plugin(plugin), rect(editor_rectangle) {}
 
-    EventPayload read_data(const int opcode,
-                           const int index,
-                           const intptr_t value,
-                           const void* data) const override {
+    Vst2Event::Payload read_data(const int opcode,
+                                 const int index,
+                                 const intptr_t value,
+                                 const void* data) const override {
         // There are some events that need specific structs that we can't simply
         // serialize as a string because they might contain null bytes
         switch (opcode) {
@@ -307,7 +307,7 @@ class DispatchDataConverter : public DefaultDataConverter {
         }
     }
 
-    std::optional<EventPayload> read_value(
+    std::optional<Vst2Event::Payload> read_value(
         const int opcode,
         const intptr_t value) const override {
         switch (opcode) {

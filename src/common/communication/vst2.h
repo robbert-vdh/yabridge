@@ -34,21 +34,23 @@ class DefaultDataConverter {
     virtual ~DefaultDataConverter() noexcept;
 
     /**
-     * Read data from the `data` void pointer into a an `EventPayload` value
-     * that can be serialized and conveys the meaning of the event.
+     * Read data from the `data` void pointer into a an `Vst2Event::Payload`
+     * value that can be serialized and conveys the meaning of the event.
      */
-    virtual EventPayload read_data(const int opcode,
-                                   const int index,
-                                   const intptr_t value,
-                                   const void* data) const;
+    virtual Vst2Event::Payload read_data(const int opcode,
+                                         const int index,
+                                         const intptr_t value,
+                                         const void* data) const;
 
     /**
-     * Read data from the `value` pointer into a an `EventPayload` value that
-     * can be serialized and conveys the meaning of the event. This is only used
-     * for the `effSetSpeakerArrangement` and `effGetSpeakerArrangement` events.
+     * Read data from the `value` pointer into a an `Vst2Event::Payload` value
+     * that can be serialized and conveys the meaning of the event. This is only
+     * used for the `effSetSpeakerArrangement` and `effGetSpeakerArrangement`
+     * events.
      */
-    virtual std::optional<EventPayload> read_value(const int opcode,
-                                                   const intptr_t value) const;
+    virtual std::optional<Vst2Event::Payload> read_value(
+        const int opcode,
+        const intptr_t value) const;
 
     /**
      * Write the response back to the `data` pointer.
@@ -153,8 +155,9 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
      *   write data back to the `data` void pointer. For host callbacks this
      *   parameter contains either a string or a null pointer while `dispatch()`
      *   calls might contain opcode specific structs. See the documentation for
-     *   `EventPayload` for more information. The `DefaultDataConverter` defined
-     *   above handles the basic behavior that's sufficient for host callbacks.
+     *   `Vst2Event::Payload` for more information. The `DefaultDataConverter`
+     *   defined above handles the basic behavior that's sufficient for host
+     *   callbacks.
      * @param logging A pair containing a logger instance and whether or not
      *   this is for sending `dispatch()` events or host callbacks. Optional
      *   since it doesn't have to be done on both sides.
@@ -171,12 +174,13 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
                         void* data,
                         float option) {
         // Encode the right payload types for this event. Check the
-        // documentation for `EventPayload` for more information. These types
-        // are converted to C-style data structures in `passthrough_event()` so
-        // they can be passed to a plugin or callback function.
-        const EventPayload payload =
+        // documentation for `Vst2Event::Payload` for more information. These
+        // types are converted to C-style data structures in
+        // `passthrough_event()` so they can be passed to a plugin or callback
+        // function.
+        const Vst2Event::Payload payload =
             data_converter.read_data(opcode, index, value, data);
-        const std::optional<EventPayload> value_payload =
+        const std::optional<Vst2Event::Payload> value_payload =
             data_converter.read_value(opcode, value);
 
         if (logging) {
@@ -224,8 +228,8 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
      *
      * The specified function will be used to create an `EventResult` from an
      * `Vst2Event`. This is almost always uses `passthrough_event()`, which
-     * converts a `EventPayload` into the format used by VST2, calls either
-     * `dispatch()` or `audioMaster()` depending on the context, and then
+     * converts a `Vst2Event::Payload` into the format used by VST2, calls
+     * either `dispatch()` or `audioMaster()` depending on the context, and then
      * serializes the result back into an `EventResultPayload`.
      *
      * @param logging A pair containing a logger instance and whether or not
@@ -381,9 +385,9 @@ class Vst2Sockets : public Sockets {
 };
 
 /**
- * Unmarshall an `EventPayload` back to the representation used by VST2, pass
- * that value to a callback function (either `AEffect::dispatcher()` for host ->
- * plugin events or `audioMaster()` for plugin -> host events), and then
+ * Unmarshall an `Vst2Event::Payload` back to the representation used by VST2,
+ * pass that value to a callback function (either `AEffect::dispatcher()` for
+ * host -> plugin events or `audioMaster()` for plugin -> host events), and then
  * serialize the results back into an `EventResult`.
  *
  * This is the receiving analogue of the `*DataCovnerter` objects.

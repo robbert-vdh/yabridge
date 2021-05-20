@@ -66,9 +66,9 @@ class Vst2Logger {
                    int opcode,
                    int index,
                    intptr_t value,
-                   const EventPayload& payload,
+                   const Vst2Event::Payload& payload,
                    float option,
-                   const std::optional<EventPayload>& value_payload);
+                   const std::optional<Vst2Event::Payload>& value_payload);
     void log_event_response(
         bool is_dispatch,
         int opcode,

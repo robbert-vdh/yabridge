@@ -360,9 +360,9 @@ void Vst2Logger::log_event(bool is_dispatch,
                            int opcode,
                            int index,
                            intptr_t value,
-                           const EventPayload& payload,
+                           const Vst2Event::Payload& payload,
                            float option,
-                           const std::optional<EventPayload>& value_payload) {
+                           const std::optional<Vst2Event::Payload>& value_payload) {
     if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         if (should_filter_event(is_dispatch, opcode)) {
             return;

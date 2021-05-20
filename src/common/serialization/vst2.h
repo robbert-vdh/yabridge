@@ -304,60 +304,103 @@ struct WantsVstTimeInfo {};
 struct WantsString {};
 
 /**
- * VST events are passed a void pointer that can contain a variety of different
- * data types depending on the event's opcode. This is typically either:
- *
- * - A null pointer, used for simple events.
- * - A char pointer to a null terminated string, used for passing strings to the
- *   plugin such as when renaming presets. Bitsery handles the serialization for
- *   us.
- *
- *   NOTE: Bitsery does not support null terminated C-strings without a known
- *         size. We can replace `std::string` with `char*` once it does for
- *         clarity's sake.
- *
- * - A byte vector for handling chunk data during `effSetChunk()`. We can't
- *   reuse the regular string handling here since the data may contain null
- *   bytes and `std::string::as_c_str()` might cut off everything after the
- *   first null byte.
- * - An X11 window handle.
- * - Specific data structures from `aeffextx.h`. For instance an event with the
- *   opcode `effProcessEvents` the hosts passes a `VstEvents` struct containing
- *   MIDI events, and `audioMasterIOChanged` lets the host know that the
- *   `AEffect` struct has changed.
- *
- * - Some empty buffer for the plugin to write its own data to, for instance for
- *   a plugin to report its name or the label for a certain parameter. There are
- *   two separate cases here. This is typically a short null terminated
- *   C-string. We'll assume this as the default case when none of the above
- *   options apply.
- *
- *   - Either the plugin writes arbitrary data and uses its return value to
- *     indicate how much data was written (i.e. for the `effGetChunk` opcode).
- *     For this we use a vector of bytes instead of a string since
- *   - Or the plugin will write a short null terminated C-string there. We'll
- *     assume that this is the default if none of the above options apply.
- *
- * @relates passthrough_event
+ * An event as dispatched by the VST host. These events will get forwarded to
+ * the VST host process running under Wine. The fields here mirror those
+ * arguments sent to the `AEffect::dispatch` function.
  */
-using EventPayload = std::variant<std::nullptr_t,
-                                  std::string,
-                                  native_size_t,
-                                  AEffect,
-                                  ChunkData,
-                                  DynamicVstEvents,
-                                  DynamicSpeakerArrangement,
-                                  WantsAEffectUpdate,
-                                  WantsChunkBuffer,
-                                  VstIOProperties,
-                                  VstMidiKeyName,
-                                  VstParameterProperties,
-                                  WantsVstRect,
-                                  WantsVstTimeInfo,
-                                  WantsString>;
+struct Vst2Event {
+    /**
+     * VST events are passed a void pointer that can contain a variety of
+     * different data types depending on the event's opcode. This is typically
+     * either:
+     *
+     * - A null pointer, used for simple events.
+     * - A char pointer to a null terminated string, used for passing strings to
+     *   the plugin such as when renaming presets. Bitsery handles the
+     *   serialization for us.
+     *
+     *   NOTE: Bitsery does not support null terminated C-strings without a
+     *         known size. We can replace `std::string` with `char*` once it
+     *         does for clarity's sake.
+     *
+     * - A byte vector for handling chunk data during `effSetChunk()`. We can't
+     *   reuse the regular string handling here since the data may contain null
+     *   bytes and `std::string::as_c_str()` might cut off everything after the
+     *   first null byte.
+     * - An X11 window handle.
+     * - Specific data structures from `aeffextx.h`. For instance an event with
+     *   the opcode `effProcessEvents` the hosts passes a `VstEvents` struct
+     *   containing MIDI events, and `audioMasterIOChanged` lets the host know
+     *   that the `AEffect` struct has changed.
+     *
+     * - Some empty buffer for the plugin to write its own data to, for instance
+     *   for a plugin to report its name or the label for a certain parameter.
+     *   There are two separate cases here. This is typically a short null
+     *   terminated C-string. We'll assume this as the default case when none of
+     *   the above options apply.
+     *
+     *   - Either the plugin writes arbitrary data and uses its return value to
+     *     indicate how much data was written (i.e. for the `effGetChunk`
+     *     opcode). For this we use a vector of bytes instead of a string since
+     *   - Or the plugin will write a short null terminated C-string there.
+     *     We'll assume that this is the default if none of the above options
+     *     apply.
+     *
+     * @relates passthrough_event
+     */
+    using Payload = std::variant<std::nullptr_t,
+                                 std::string,
+                                 native_size_t,
+                                 AEffect,
+                                 ChunkData,
+                                 DynamicVstEvents,
+                                 DynamicSpeakerArrangement,
+                                 WantsAEffectUpdate,
+                                 WantsChunkBuffer,
+                                 VstIOProperties,
+                                 VstMidiKeyName,
+                                 VstParameterProperties,
+                                 WantsVstRect,
+                                 WantsVstTimeInfo,
+                                 WantsString>;
+
+    int opcode;
+    int index;
+    native_intptr_t value;
+    float option;
+    /**
+     * The event dispatch function has a void pointer parameter that's often
+     * used to either pass additional data for the event or to provide a buffer
+     * for the plugin to write a string into.
+     *
+     * The `VstEvents` struct passed for the `effProcessEvents` event contains
+     * an array of pointers. This requires some special handling which is why we
+     * have to use an `std::variant` instead of a simple string buffer. Luckily
+     * Bitsery can do all the hard work for us.
+     */
+    Payload payload;
+    /**
+     * The same as the above value, but for values passed through the `intptr_t`
+     * value parameter. `effGetSpeakerArrangement` and
+     * `effSetSpeakerArrangement` are the only events that use this.
+     */
+    std::optional<Payload> value_payload;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value4b(opcode);
+        s.value4b(index);
+        s.value8b(value);
+        s.value4b(option);
+
+        s.object(payload);
+        s.ext(value_payload, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.object(v); });
+    }
+};
 
 template <typename S>
-void serialize(S& s, EventPayload& payload) {
+void serialize(S& s, Vst2Event::Payload& payload) {
     s.ext(payload,
           bitsery::ext::StdVariant{
               [](S&, std::nullptr_t&) {},
@@ -382,47 +425,6 @@ void serialize(S& s, EventPayload& payload) {
               [](S&, WantsVstRect&) {}, [](S&, WantsVstTimeInfo&) {},
               [](S&, WantsString&) {}});
 }
-
-/**
- * An event as dispatched by the VST host. These events will get forwarded to
- * the VST host process running under Wine. The fields here mirror those
- * arguments sent to the `AEffect::dispatch` function.
- */
-struct Vst2Event {
-    int opcode;
-    int index;
-    native_intptr_t value;
-    float option;
-    /**
-     * The event dispatch function has a void pointer parameter that's often
-     * used to either pass additional data for the event or to provide a buffer
-     * for the plugin to write a string into.
-     *
-     * The `VstEvents` struct passed for the `effProcessEvents` event contains
-     * an array of pointers. This requires some special handling which is why we
-     * have to use an `std::variant` instead of a simple string buffer. Luckily
-     * Bitsery can do all the hard work for us.
-     */
-    EventPayload payload;
-    /**
-     * The same as the above value, but for values passed through the `intptr_t`
-     * value parameter. `effGetSpeakerArrangement` and
-     * `effSetSpeakerArrangement` are the only events that use this.
-     */
-    std::optional<EventPayload> value_payload;
-
-    template <typename S>
-    void serialize(S& s) {
-        s.value4b(opcode);
-        s.value4b(index);
-        s.value8b(value);
-        s.value4b(option);
-
-        s.object(payload);
-        s.ext(value_payload, bitsery::ext::StdOptional(),
-              [](S& s, auto& v) { s.object(v); });
-    }
-};
 
 /**
  * The response for an event. This is usually either:

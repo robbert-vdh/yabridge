@@ -519,10 +519,10 @@ class HostCallbackDataConverter : public DefaultDataConverter {
           last_time_info(last_time_info),
           mutual_recursion(mutual_recursion) {}
 
-    EventPayload read_data(const int opcode,
-                           const int index,
-                           const intptr_t value,
-                           const void* data) const override {
+    Vst2Event::Payload read_data(const int opcode,
+                                 const int index,
+                                 const intptr_t value,
+                                 const void* data) const override {
         switch (opcode) {
             case audioMasterGetTime:
                 return WantsVstTimeInfo{};
@@ -580,7 +580,7 @@ class HostCallbackDataConverter : public DefaultDataConverter {
         }
     }
 
-    std::optional<EventPayload> read_value(
+    std::optional<Vst2Event::Payload> read_value(
         const int opcode,
         const intptr_t value) const override {
         return DefaultDataConverter::read_value(opcode, value);
