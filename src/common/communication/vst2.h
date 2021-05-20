@@ -152,8 +152,8 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
      * @relates Vst2EventHandler::receive_events
      * @relates passthrough_event
      */
-    template <typename D>
-    intptr_t send_event(D& data_converter,
+    template <std::derived_from<DefaultDataConverter> Converter>
+    intptr_t send_event(Converter& data_converter,
                         std::optional<std::pair<Vst2Logger&, bool>> logging,
                         int opcode,
                         int index,

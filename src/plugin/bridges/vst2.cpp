@@ -183,7 +183,7 @@ Vst2PluginBridge::~Vst2PluginBridge() noexcept {
     }
 }
 
-class DispatchDataConverter : DefaultDataConverter {
+class DispatchDataConverter : public DefaultDataConverter {
    public:
     DispatchDataConverter(std::vector<uint8_t>& chunk_data,
                           AEffect& plugin,

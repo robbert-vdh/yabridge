@@ -486,7 +486,7 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
     }
 }
 
-class HostCallbackDataConverter : DefaultDataConverter {
+class HostCallbackDataConverter : public DefaultDataConverter {
    public:
     HostCallbackDataConverter(AEffect* plugin,
                               VstTimeInfo& last_time_info) noexcept
