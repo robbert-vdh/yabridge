@@ -48,6 +48,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Also fixed _DMG_ VST3 plugins freezing in **REAPER** when restoring multiple
   instances of the plugin at once while the FX window is open and the GUI is
   visible.
+- Fixed _Voxengo_ VST2 plugins in **Renoise** freezing when loading a project or
+  when otherwise restoring plugin state.
 - Fixed builds on Wine 6.8 because of internal changes to Wine's `windows.h`
   implementation.
 

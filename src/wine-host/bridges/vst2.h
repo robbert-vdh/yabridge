@@ -23,6 +23,7 @@
 
 #include "../../common/communication/vst2.h"
 #include "../../common/configuration.h"
+#include "../../common/mutual-recursion.h"
 #include "../editor.h"
 #include "common.h"
 
@@ -205,4 +206,18 @@ class Vst2Bridge : public HostBridge {
      * now happens in two different threads.
      */
     std::mutex next_buffer_midi_events_mutex;
+
+    /**
+     * Used to allow the responses to host callbacks to be handled on the same
+     * thread that originally made the callback. Luckily this is much rarer with
+     * VST2 plugins than with VST3 plugins (presumably because plugins make
+     * fewer GUI-related-ish callbacks), but it does happen.
+     *
+     * See `mutually_recursive_callbacks` and
+     * `safe_mutually_recursive_requests` in the implementation file for more
+     * information on the callbacks where we want to use
+     * `mutual_recursion.fork()` to send them in a new thread, and the responses
+     * that have to be handled with `mutual_recursion.handle()`.
+     */
+    MutualRecursionHelper<Win32Thread> mutual_recursion;
 };

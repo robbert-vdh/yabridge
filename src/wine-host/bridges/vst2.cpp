@@ -33,6 +33,37 @@ using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
 Vst2Bridge* current_bridge_instance = nullptr;
 
 /**
+ * Callbacks (presumably made from the GUI thread) that may receive responses
+ * that have to be handled from the same thread. If we don't do this, then those
+ * respones might either cause a deadlock when the plugin uses recursive
+ * mutexes, or it may result in some other thread safety issues.
+ *
+ * NOTE: This is needed for Voxengo VST2 plugins in Renoise. When
+ *       `effSetChunk()` is called from the GUI thread, Voxengo VST2 plugins
+ *       will (wrongly) call `audioMasterUpdateDisplay()` while handling that
+ *       call. Renoise then calls `effGetProgram()` while handling that which
+ *       shouldn't cause any issues, but the Voxengo plugins try to lock
+ *       recursive mutexes on both functions so `effGetProgram()` _has_ to be
+ *       called on the same thread that is currently calling
+ *       `audioMasterUpdateDisplay()`.
+ */
+static const std::set<int> mutually_recursive_callbacks{
+    audioMasterUpdateDisplay};
+
+/**
+ * Opcodes that, when called on this plugin's dispatcher, have to be handled
+ * mutually recursively, if possible. This means that the plugin makes a
+ * callback using one of the functions defined in
+ * `mutually_recursive_callbacks`, and when the host responds by calling one of
+ * these functions, then that function should be handled on the same thread
+ * where the plugin originally called the request on. If no mutually recursive
+ * calling sequence is active while one of these functions is called, then we'll
+ * just execute the function directly on the calling thread. See above for a
+ * list of situations where this may be necessary.
+ */
+static const std::set<int> safe_mutually_recursive_requests{effGetProgram};
+
+/**
  * Opcodes that should always be handled on the main thread because they may
  * involve GUI operations.
  *
@@ -43,7 +74,7 @@ Vst2Bridge* current_bridge_instance = nullptr;
  *       Algonaut Atlas doesn't restore chunk data unless `effSetChunk` is run
  *       from the GUI thread
  */
-const std::set<int> unsafe_opcodes{
+static const std::set<int> unsafe_requests{
     effOpen,     effClose,   effEditGetRect,  effEditOpen, effEditClose,
     effEditIdle, effEditTop, effMainsChanged, effGetChunk, effSetChunk};
 
@@ -386,13 +417,13 @@ void Vst2Bridge::run() {
                             return 0;
                         }
 
-                        // Certain functions will most definitely involve the
-                        // GUI or the Win32 message loop. These functions have
-                        // to be performed on the thread that is running the IO
-                        // context, since this is also where the plugins were
-                        // instantiated and where the Win32 message loop is
-                        // handled.
-                        if (unsafe_opcodes.contains(opcode)) {
+                        // Certain functions will most definitely involve
+                        // the GUI or the Win32 message loop. These
+                        // functions have to be performed on the thread that
+                        // is running the IO context, since this is also
+                        // where the plugins were instantiated and where the
+                        // Win32 message loop is handled.
+                        if (unsafe_requests.contains(opcode)) {
                             return main_context
                                 .run_in_context([&]() -> intptr_t {
                                     const intptr_t result =
@@ -410,6 +441,20 @@ void Vst2Bridge::run() {
                                     return result;
                                 })
                                 .get();
+                        } else if (safe_mutually_recursive_requests.contains(
+                                       opcode)) {
+                            // If this function call is potentially in response
+                            // to a callback contained in
+                            // `mutually_recursive_callbacks`, then we should
+                            // call it on the same thread that called that
+                            // callback if possible. This may be needed when
+                            // plugins use recursive mutexes, thus causing
+                            // deadlocks when the function is called from any
+                            // other thread.
+                            return mutual_recursion.handle([&]() {
+                                return dispatch_wrapper(plugin, opcode, index,
+                                                        value, data, option);
+                            });
                         } else {
                             return dispatch_wrapper(plugin, opcode, index,
                                                     value, data, option);
@@ -488,9 +533,13 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
 
 class HostCallbackDataConverter : public DefaultDataConverter {
    public:
-    HostCallbackDataConverter(AEffect* plugin,
-                              VstTimeInfo& last_time_info) noexcept
-        : plugin(plugin), last_time_info(last_time_info) {}
+    HostCallbackDataConverter(
+        AEffect* plugin,
+        VstTimeInfo& last_time_info,
+        MutualRecursionHelper<Win32Thread>& mutual_recursion) noexcept
+        : plugin(plugin),
+          last_time_info(last_time_info),
+          mutual_recursion(mutual_recursion) {}
 
     EventPayload read_data(const int opcode,
                            const int index,
@@ -601,9 +650,21 @@ class HostCallbackDataConverter : public DefaultDataConverter {
         return DefaultDataConverter::write_value(opcode, value, response);
     }
 
+    EventResult send_event(boost::asio::local::stream_protocol::socket& socket,
+                           const Event& event) const override {
+        if (mutually_recursive_callbacks.contains(event.opcode)) {
+            return mutual_recursion.fork([&]() {
+                return DefaultDataConverter::send_event(socket, event);
+            });
+        } else {
+            return DefaultDataConverter::send_event(socket, event);
+        }
+    }
+
    private:
     AEffect* plugin;
     VstTimeInfo& last_time_info;
+    MutualRecursionHelper<Win32Thread>& mutual_recursion;
 };
 
 intptr_t Vst2Bridge::host_callback(AEffect* effect,
@@ -648,7 +709,8 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
         } break;
     }
 
-    HostCallbackDataConverter converter(effect, last_time_info);
+    HostCallbackDataConverter converter(effect, last_time_info,
+                                        mutual_recursion);
     return sockets.vst_host_callback.send_event(converter, std::nullopt, opcode,
                                                 index, value, data, option);
 }
