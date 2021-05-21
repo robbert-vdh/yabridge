@@ -156,6 +156,9 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
             case effGetSpeakerArrangement:
                 return "effGetSpeakerArrangement";
                 break;
+            case effString2Parameter:
+                return "effString2Parameter";
+                break;
             case effVendorSpecific:
                 return "effVendorSpecific";
                 break;
@@ -356,13 +359,14 @@ void Vst2Logger::log_set_parameter_response() {
     }
 }
 
-void Vst2Logger::log_event(bool is_dispatch,
-                           int opcode,
-                           int index,
-                           intptr_t value,
-                           const Vst2Event::Payload& payload,
-                           float option,
-                           const std::optional<Vst2Event::Payload>& value_payload) {
+void Vst2Logger::log_event(
+    bool is_dispatch,
+    int opcode,
+    int index,
+    intptr_t value,
+    const Vst2Event::Payload& payload,
+    float option,
+    const std::optional<Vst2Event::Payload>& value_payload) {
     if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
         if (should_filter_event(is_dispatch, opcode)) {
             return;

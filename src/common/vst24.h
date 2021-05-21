@@ -56,6 +56,14 @@
 [[maybe_unused]] constexpr int effVendorSpecific = 50;
 
 /**
+ * Set a parameter based on a string, kind of the inverse of the inverse of
+ * `effGetParamDisplay()` and an alternative to `setParameter()`. Also found in
+ * the list in Carla's repo. It's used in this way in JUCE here:
+ * https://github.com/juce-framework/JUCE/blob/b34e798f392179caf9c67dce273398fa03352067/modules/juce_audio_plugin_client/VST/juce_VST_Wrapper.cpp#L927
+ */
+[[maybe_unused]] constexpr int effString2Parameter = 27;
+
+/**
  * Used by hosts to query the length of reverb tails (equivalent to
  * `IAudioProcessor::getTailSamples`). Found on the same list as above.
  */
