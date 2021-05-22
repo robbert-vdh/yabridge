@@ -185,10 +185,10 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      * function. If they are sent during any other time or from another thread,
      * then the host will just discard them. Because we're receiving our host
      * callbacks on a separate thread, we have to temporarily store any events
-     * we receive so we can send them to the host at the end of
+     * we receive so we can send them to host on the audio thread at the end of
      * `process_replacing()`.
      */
-    std::vector<DynamicVstEvents> incoming_midi_events;
+    boost::container::small_vector<DynamicVstEvents, 4> incoming_midi_events;
     /**
      * Mutex for locking the above event queue, since recieving and processing
      * now happens in two different threads.

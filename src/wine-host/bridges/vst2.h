@@ -189,8 +189,13 @@ class Vst2Bridge : public HostBridge {
      * events they receive but some plugins such as Kontakt only store pointers
      * to these events, which means that the actual `VstEvent` objects must live
      * at least until the next audio buffer gets processed.
+     *
+     * Technically a host can send more than one of these at a time, but in
+     * practice every host will bundle all events in a single
+     * `effProcessEvents()` call.
      */
-    std::vector<DynamicVstEvents> next_audio_buffer_midi_events;
+    boost::container::small_vector<DynamicVstEvents, 4>
+        next_audio_buffer_midi_events;
     /**
      * Whether `next_audio_buffer_midi_events` should be cleared before
      * inserting new events.

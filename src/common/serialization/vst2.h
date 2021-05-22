@@ -19,11 +19,13 @@
 #include <variant>
 
 #include <bitsery/ext/std_optional.h>
-#include "../bitsery/ext/in-place-variant.h"
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/vector.h>
 #include <vestige/aeffectx.h>
+#include <boost/container/small_vector.hpp>
 
+#include "../bitsery/ext/in-place-variant.h"
+#include "../bitsery/traits/small-vector.h"
 #include "../utils.h"
 #include "../vst24.h"
 #include "common.h"
@@ -162,6 +164,9 @@ struct ChunkData {
  * Before serialization the events are read from a C-style array into a vector
  * using this class's constructor, and after deserializing the original struct
  * can be reconstructed using the `as_c_events()` method.
+ *
+ * Using preallocated small vectors here gets rid of all event related
+ * allocations in normal use cases.
  */
 class alignas(16) DynamicVstEvents {
    public:
@@ -177,9 +182,11 @@ class alignas(16) DynamicVstEvents {
     VstEvents& as_c_events();
 
     /**
-     * MIDI events are sent in batches.
+     * MIDI events are sent just before the audio processing call. Technically a
+     * host can call `effProcessEvents()` multiple times, but in practice this
+     * of course doesn't happen.
      */
-    std::vector<VstEvent> events;
+    boost::container::small_vector<VstEvent, 64> events;
 
     template <typename S>
     void serialize(S& s) {
@@ -194,14 +201,19 @@ class alignas(16) DynamicVstEvents {
      * `as_c_events()` method.
      *
      * The reason why this is necessary is because the `VstEvents` struct is
-     * actually a variable size object. In the definition in
+     * actuall variable size object. In the definition in
      * `vestige/aeffectx.h` the struct contains a single element `VstEvent`
      * pointer array, but the actual length of this array is
      * `VstEvents::numEvents`. Because there is no real limit on the number of
      * MIDI events the host can send at once we have to build this object on the
      * heap by hand.
      */
-    std::vector<uint8_t> vst_events_buffer;
+    boost::container::small_vector<
+        uint8_t,
+        sizeof(VstEvents) +
+            ((64 - 1) *
+             sizeof(VstEvent*))>  // NOLINT(bugprone-sizeof-expression)
+        vst_events_buffer;
 };
 
 /**
