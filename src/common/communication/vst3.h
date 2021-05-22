@@ -206,22 +206,25 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         // using
         const auto process_message =
             [&](boost::asio::local::stream_protocol::socket& socket) {
+                // The persistent buffer is only used when the
+                // `persistent_buffers` template value is enabled, but we'll
+                // always use the thread local persistent object. Because of
+                // loading and storing state the buffer can grow a lot in size
+                // which is why we might not want to reuse that for tasks that
+                // don't need to be realtime safe, but the object has a fixed
+                // size. Normally reusing this object doesn't make much sense
+                // since it's a variant and it will likely have to be recreated
+                // every time, but on the audio processor side we store the
+                // actual variant within an object and we then use some hackery
+                // to always keep the large process data object in memory.
                 thread_local std::vector<uint8_t> persistent_buffer{};
-                // This is an `std::variant<>`, so this will actually
-                // persistently store a copy of all possible requests even if
-                // we're only interested in the process data, since that's the
-                // only object where allocations can happen. The other objects
-                // we're storing here are very small, so the extra wasted memory
-                // shouldn't matter much.
-                thread_local std::optional<Request> persistent_object(
-                    persistent_buffers ? std::make_optional<Request>()
-                                       : std::nullopt);
+                thread_local Request persistent_object;
 
-                auto request =
+                auto& request =
                     persistent_buffers
-                        ? read_object<Request>(socket, *persistent_object,
+                        ? read_object<Request>(socket, persistent_object,
                                                persistent_buffer)
-                        : read_object<Request>(socket);
+                        : read_object<Request>(socket, persistent_object);
 
                 // See the comment in `receive_into()` for more information
                 bool should_log_response = false;
