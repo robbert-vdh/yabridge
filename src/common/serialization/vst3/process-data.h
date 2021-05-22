@@ -36,7 +36,7 @@
  *
  * @see YaProcessData
  */
-class YaAudioBusBuffers {
+class alignas(16) YaAudioBusBuffers {
    public:
     /**
      * We only provide a default constructor here, because we need to fill the

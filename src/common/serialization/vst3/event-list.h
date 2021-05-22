@@ -161,7 +161,7 @@ struct YaScaleEvent {
  * A wrapper around `Event` for serialization purposes, as some event types
  * include heap pointers.
  */
-struct YaEvent {
+struct alignas(16) YaEvent {
     YaEvent() noexcept;
 
     /**

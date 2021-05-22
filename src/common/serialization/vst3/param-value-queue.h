@@ -30,7 +30,7 @@
  * a single parameter during the current processing cycle. Used in
  * `YaParameterChanges`.
  */
-class YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
+class alignas(16) YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
    public:
     /**
      * We only provide a default constructor here, because we need to fill the
