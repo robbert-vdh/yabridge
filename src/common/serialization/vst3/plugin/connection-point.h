@@ -19,7 +19,7 @@
 #include <variant>
 
 #include <bitsery/ext/std_optional.h>
-#include <bitsery/ext/std_variant.h>
+#include "../../../bitsery/ext/in-place-variant.h"
 #include <pluginterfaces/vst/ivstmessage.h>
 
 #include "../../common.h"
@@ -133,7 +133,7 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
         void serialize(S& s) {
             s.value8b(instance_id);
             s.ext(other,
-                  bitsery::ext::StdVariant{
+                  bitsery::ext::InPlaceVariant{
                       [](S& s, native_size_t& other_instance_id) {
                           s.value8b(other_instance_id);
                       },

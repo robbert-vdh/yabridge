@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <bitsery/ext/std_variant.h>
+#include "../../bitsery/ext/in-place-variant.h"
 #include <pluginterfaces/vst/ivstevents.h>
 
 #include "base.h"
@@ -202,7 +202,7 @@ struct YaEvent {
         s.value4b(sample_offset);
         s.value8b(ppq_position);
         s.value2b(flags);
-        s.ext(payload, bitsery::ext::StdVariant{});
+        s.ext(payload, bitsery::ext::InPlaceVariant{});
     }
 };
 

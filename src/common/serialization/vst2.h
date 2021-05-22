@@ -19,7 +19,7 @@
 #include <variant>
 
 #include <bitsery/ext/std_optional.h>
-#include <bitsery/ext/std_variant.h>
+#include "../bitsery/ext/in-place-variant.h"
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/vector.h>
 #include <vestige/aeffectx.h>
@@ -402,7 +402,7 @@ struct Vst2Event {
 template <typename S>
 void serialize(S& s, Vst2Event::Payload& payload) {
     s.ext(payload,
-          bitsery::ext::StdVariant{
+          bitsery::ext::InPlaceVariant{
               [](S&, std::nullptr_t&) {},
               [](S& s, std::string& string) {
                   s.text1b(string, max_string_length);
@@ -486,7 +486,7 @@ struct Vst2EventResult {
 template <typename S>
 void serialize(S& s, Vst2EventResult::Payload& payload) {
     s.ext(payload,
-          bitsery::ext::StdVariant{
+          bitsery::ext::InPlaceVariant{
               [](S&, std::nullptr_t&) {},
               [](S& s, std::string& string) {
                   s.text1b(string, max_string_length);
@@ -585,7 +585,7 @@ struct AudioBuffers {
     void serialize(S& s) {
         s.ext(
             buffers,
-            bitsery::ext::StdVariant{
+            bitsery::ext::InPlaceVariant{
                 [](S& s, std::vector<std::vector<float>>& buffer) {
                     s.container(buffer, max_audio_channels, [](S& s, auto& v) {
                         s.container4b(v, max_buffer_size);

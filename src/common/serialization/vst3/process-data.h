@@ -19,8 +19,8 @@
 #include <variant>
 
 #include <bitsery/ext/std_optional.h>
-#include <bitsery/ext/std_variant.h>
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
+#include "../../bitsery/ext/in-place-variant.h"
 
 #include "base.h"
 #include "event-list.h"
@@ -89,7 +89,7 @@ class YaAudioBusBuffers {
     template <typename S>
     void serialize(S& s) {
         s.value8b(silence_flags);
-        s.ext(buffers, bitsery::ext::StdVariant{
+        s.ext(buffers, bitsery::ext::InPlaceVariant{
                            [](S& s, std::vector<std::vector<float>>& buffers) {
                                s.container(buffers, max_num_speakers,
                                            [](S& s, auto& channel) {

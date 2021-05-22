@@ -18,7 +18,7 @@
 
 #include <variant>
 
-#include <bitsery/ext/std_variant.h>
+#include "../bitsery/ext/in-place-variant.h"
 
 #include "../bitsery/ext/message-reference.h"
 #include "../configuration.h"
@@ -147,7 +147,7 @@ template <typename S>
 void serialize(S& s, ControlRequest& payload) {
     // All of the objects in `ControlRequest` should have their own
     // serialization function.
-    s.ext(payload, bitsery::ext::StdVariant{});
+    s.ext(payload, bitsery::ext::InPlaceVariant{});
 }
 
 /**
@@ -202,7 +202,7 @@ struct AudioProcessorRequest {
     void serialize(S& s) {
         s.ext(
             payload,
-            bitsery::ext::StdVariant{
+            bitsery::ext::InPlaceVariant{
                 [&](S& s,
                     MessageReference<YaAudioProcessor::Process>& request_ref) {
                     // When serializing this reference we'll read the data
@@ -268,7 +268,7 @@ template <typename S>
 void serialize(S& s, CallbackRequest& payload) {
     // All of the objects in `CallbackRequest` should have their own
     // serialization function.
-    s.ext(payload, bitsery::ext::StdVariant{});
+    s.ext(payload, bitsery::ext::InPlaceVariant{});
 }
 
 /**

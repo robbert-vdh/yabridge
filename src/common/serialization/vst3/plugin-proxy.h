@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <bitsery/ext/std_variant.h>
+#include "../../bitsery/ext/in-place-variant.h"
 
 #include "../common.h"
 #include "plugin/audio-presentation-latency.h"
@@ -101,7 +101,8 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
          * Read from an existing object. We will try to mimic this object, so
          * we'll support any interfaces this object also supports.
          */
-        ConstructArgs(Steinberg::IPtr<FUnknown> object, size_t instance_id) noexcept;
+        ConstructArgs(Steinberg::IPtr<FUnknown> object,
+                      size_t instance_id) noexcept;
 
         /**
          * The unique identifier for this specific object instance.
@@ -296,5 +297,5 @@ template <typename S>
 void serialize(
     S& s,
     std::variant<Vst3PluginProxy::ConstructArgs, UniversalTResult>& result) {
-    s.ext(result, bitsery::ext::StdVariant{});
+    s.ext(result, bitsery::ext::InPlaceVariant{});
 }

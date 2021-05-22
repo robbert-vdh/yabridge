@@ -30,6 +30,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Redesigned the VST3 audio socket handling to be able to reuse the process data
   objects on both sides. This greatly reduces the overhead of our VST3 bridging
   by getting rid of all memory allocations during audio processing.
+- Considerably optimized both VST2 and VST3 audio processing by preventing
+  unnecessary memory operations. As it turns out, the underlying binary
+  serialization library used by yabridge would always reinitialize the type-safe
+  unions yabridge uses to differentiate between single and double precision
+  floating point audio buffers, undoing all of our efforts at reusing objects
+  and preventing memory allocations in the process.
 - Changed the way mutual recursion in VST3 plugins on the plugin side works to
   counter any potential GUI related timing issues with VST3 plugins.
 - The deserialization part of yabridge's communication is now slightly faster by
