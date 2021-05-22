@@ -36,13 +36,6 @@ class Vst3Logger {
     inline void log(const std::string& message) { logger.log(message); }
 
     /**
-     * @see Logger::log_trace
-     */
-    inline void log_trace(const std::string& message) {
-        logger.log_trace(message);
-    }
-
-    /**
      * Log calls to `FUnknown::queryInterface`. This will separately log about
      * successful queries, queries for interfaces the object did not implement,
      * and queries for interfaces we do not implement depending on the verbosity
@@ -338,6 +331,14 @@ class Vst3Logger {
                 message << " (from cache)";
             }
         });
+    }
+
+    /**
+     * @see Logger::log_trace
+     */
+    template <invocable_returning<std::string> F>
+    inline void log_trace(F&& fn) {
+        logger.log_trace(std::forward<F>(fn));
     }
 
     Logger& logger;

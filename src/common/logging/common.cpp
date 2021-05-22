@@ -125,9 +125,3 @@ void Logger::log(const std::string& message) {
 
     *stream << formatted_message.str() << std::flush;
 }
-
-void Logger::log_trace(const std::string& message) {
-    if (verbosity >= Verbosity::all_events) {
-        log(message);
-    }
-}

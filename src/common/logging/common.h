@@ -28,6 +28,8 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/process/async_pipe.hpp>
 
+#include "../utils.h"
+
 /**
  * Boost 1.72 was released with a known breaking bug caused by a missing
  * typedef: https://github.com/boostorg/process/issues/116.
@@ -133,16 +135,6 @@ class Logger {
     void log(const std::string& message);
 
     /**
-     * Log a message that should only be printed when the `verbosity` is set to
-     * `all_events`. This should only be used for simple primitive messages
-     * without any formatting since the actual check happens within this
-     * function.
-     *
-     * @param message The message to write.
-     */
-    void log_trace(const std::string& message);
-
-    /**
      * Write output from an async pipe to the log on a line by line basis.
      * Useful for logging the Wine process's STDOUT and STDERR streams.
      *
@@ -170,6 +162,20 @@ class Logger {
 
                 async_log_pipe_lines(pipe, buffer, prefix);
             });
+    }
+
+    /**
+     * Log a message that should only be printed when the `verbosity` is set to
+     * `all_events`. This uses a lambda since producing a string always
+     * allocates.
+     *
+     * @param message A lambda producing a string that should be written.
+     */
+    template <invocable_returning<std::string> F>
+    void log_trace(F&& fn) {
+        if (verbosity >= Verbosity::all_events) {
+            log(fn());
+        }
     }
 
     /**

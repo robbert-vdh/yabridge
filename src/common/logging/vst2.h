@@ -46,13 +46,6 @@ class Vst2Logger {
      */
     inline void log(const std::string& message) { logger.log(message); }
 
-    /**
-     * @see Logger::log_trace
-     */
-    inline void log_trace(const std::string& message) {
-        logger.log_trace(message);
-    }
-
     // The following functions are for logging specific events, they are only
     // enabled for verbosity levels higher than 1 (i.e. `Verbosity::events`)
     void log_get_parameter(int index);
@@ -76,6 +69,14 @@ class Vst2Logger {
         const Vst2EventResult::Payload& payload,
         const std::optional<Vst2EventResult::Payload>& value_payload,
         bool from_cache = false);
+
+    /**
+     * @see Logger::log_trace
+     */
+    template <invocable_returning<std::string> F>
+    inline void log_trace(F&& fn) {
+        logger.log_trace(std::forward<F>(fn));
+    }
 
     /**
      * The underlying logger instance we're wrapping.
