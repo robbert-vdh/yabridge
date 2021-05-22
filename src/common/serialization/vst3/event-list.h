@@ -260,13 +260,13 @@ class YaEventList : public Steinberg::Vst::IEventList {
     }
 
    private:
-    boost::container::small_vector<YaEvent, 32> events;
+    boost::container::small_vector<YaEvent, 64> events;
 
     /**
      * On the first `getEvent()` call we'll reconstruct these from `events` all
      * at once. These event objects may not outlive this event list.
      */
-    boost::container::small_vector<Steinberg::Vst::Event, 32>
+    boost::container::small_vector<Steinberg::Vst::Event, 64>
         reconstructed_events;
 };
 
