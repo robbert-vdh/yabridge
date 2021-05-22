@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include <bitsery/traits/vector.h>
 #include <pluginterfaces/vst/ivstparameterchanges.h>
+#include <boost/container/small_vector.hpp>
 
+#include "../../bitsery/traits/small-vector.h"
 #include "base.h"
 
 #pragma GCC diagnostic push
@@ -95,7 +96,9 @@ class YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
      *
      * This contains pairs of `(sample_offset, value)`.
      */
-    std::vector<std::pair<int32, Steinberg::Vst::ParamValue>> queue;
+    boost::container::small_vector<std::pair<int32, Steinberg::Vst::ParamValue>,
+                                   16>
+        queue;
 };
 
 #pragma GCC diagnostic pop

@@ -36,6 +36,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   unions yabridge uses to differentiate between single and double precision
   floating point audio buffers, undoing all of our efforts at reusing objects
   and preventing memory allocations in the process.
+- Further optimized VST3 audio processing by preallocating small vectors for
+  event and parameter change queues.
 - Changed the way mutual recursion in VST3 plugins on the plugin side works to
   counter any potential GUI related timing issues with VST3 plugins.
 - The deserialization part of yabridge's communication is now slightly faster by

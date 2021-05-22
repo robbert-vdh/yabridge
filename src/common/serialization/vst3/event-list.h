@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include "../../bitsery/ext/in-place-variant.h"
 #include <pluginterfaces/vst/ivstevents.h>
+#include <boost/container/small_vector.hpp>
 
+#include "../../bitsery/ext/in-place-variant.h"
 #include "base.h"
 
 #pragma GCC diagnostic push
@@ -259,13 +260,14 @@ class YaEventList : public Steinberg::Vst::IEventList {
     }
 
    private:
-    std::vector<YaEvent> events;
+    boost::container::small_vector<YaEvent, 32> events;
 
     /**
      * On the first `getEvent()` call we'll reconstruct these from `events` all
      * at once. These event objects may not outlive this event list.
      */
-    std::vector<Steinberg::Vst::Event> reconstructed_events;
+    boost::container::small_vector<Steinberg::Vst::Event, 32>
+        reconstructed_events;
 };
 
 #pragma GCC diagnostic pop
