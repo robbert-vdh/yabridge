@@ -40,5 +40,21 @@ struct BufferAdapterTraits<boost::container::small_vector<T, N, Allocator>>
     : public StdContainerForBufferAdapter<
           boost::container::small_vector<T, N, Allocator>> {};
 
+// And the same extensions again for the type erased version
+
+template <typename T, typename Allocator>
+struct ContainerTraits<boost::container::small_vector_base<T, Allocator>>
+    : public StdContainer<boost::container::small_vector_base<T, Allocator>,
+                          true,
+                          true> {
+    static_assert(boost::container::dtl::is_contiguous_container<
+                  boost::container::small_vector_base<T, Allocator>>::value);
+};
+
+template <typename T, typename Allocator>
+struct BufferAdapterTraits<boost::container::small_vector_base<T, Allocator>>
+    : public StdContainerForBufferAdapter<
+          boost::container::small_vector_base<T, Allocator>> {};
+
 }  // namespace traits
 }  // namespace bitsery
