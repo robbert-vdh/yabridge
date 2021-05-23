@@ -30,11 +30,18 @@
 #include <boost/asio/local/stream_protocol.hpp>
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
+#include <boost/container/small_vector.hpp>
 #include <boost/filesystem.hpp>
 
+#include "../bitsery/traits/small-vector.h"
 #include "../logging/common.h"
 #include "../utils.h"
 
+// Our input and output adapters for binary serialization always expect the data
+// to be encoded in little endian format. This should not make any difference
+// currently, but this would make it possible (somewhat, it would probably still
+// be too slow) to have yabridge be usable with Wine run through Qemu on
+// big-endian architectures.
 namespace bitsery {
 struct LittleEndianConfig {
     // In case we ever want to bridge from some big-endian architecture to
@@ -57,6 +64,62 @@ using InputAdapter =
     bitsery::InputBufferAdapter<B, bitsery::LittleEndianConfig>;
 
 /**
+ * For binary serialization we use these small vectors that preallocate a small
+ * capacity on the stack as part of our binary serialization process. For most
+ * messages we don't need more than the default capacity (which would usually be
+ * 64 bytes), so we can avoid a lot of allocations in the serialization process
+ * this way.
+ */
+template <size_t N>
+using SerializationBuffer = boost::container::small_vector<uint8_t, N>;
+
+/**
+ * The class `SerializationBuffer<N>` is derived from, so we can erase the
+ * buffer's initial capacity from all functions that work with them.
+ */
+using SerializationBufferBase = boost::container::small_vector_base<uint8_t>;
+
+namespace boost {
+namespace asio {
+
+template <typename PodType, typename Allocator>
+inline BOOST_ASIO_MUTABLE_BUFFER buffer(
+    boost::container::small_vector_base<PodType, Allocator>& data)
+    BOOST_ASIO_NOEXCEPT {
+    return BOOST_ASIO_MUTABLE_BUFFER(
+        data.size() ? &data[0] : 0, data.size() * sizeof(PodType)
+#if defined(BOOST_ASIO_ENABLE_BUFFER_DEBUGGING)
+                                        ,
+        detail::buffer_debug_check<
+            typename std::vector<PodType, Allocator>::iterator>(data.begin())
+#endif  // BOOST_ASIO_ENABLE_BUFFER_DEBUGGING
+    );
+}
+
+// These are copied verbatim `boost::asio::buffer(std::vector<PodType,
+// Allocator>&, std::size_t)`, since `boost::container::small_vector` is
+// compatible with the STL vector.
+template <typename PodType, typename Allocator>
+inline BOOST_ASIO_MUTABLE_BUFFER buffer(
+    boost::container::small_vector_base<PodType, Allocator>& data,
+    std::size_t max_size_in_bytes) BOOST_ASIO_NOEXCEPT {
+    return BOOST_ASIO_MUTABLE_BUFFER(
+        data.size() ? &data[0] : 0,
+        data.size() * sizeof(PodType) < max_size_in_bytes
+            ? data.size() * sizeof(PodType)
+            : max_size_in_bytes
+#if defined(BOOST_ASIO_ENABLE_BUFFER_DEBUGGING)
+        ,
+        detail::buffer_debug_check<
+            typename std::vector<PodType, Allocator>::iterator>(data.begin())
+#endif  // BOOST_ASIO_ENABLE_BUFFER_DEBUGGING
+    );
+}
+
+}  // namespace asio
+}  // namespace boost
+
+/**
  * Serialize an object using bitsery and write it to a socket. This will write
  * both the size of the serialized object and the object itself over the socket.
  *
@@ -74,9 +137,9 @@ using InputAdapter =
 template <typename T, typename Socket>
 inline void write_object(Socket& socket,
                          const T& object,
-                         std::vector<uint8_t>& buffer) {
+                         SerializationBufferBase& buffer) {
     const size_t size =
-        bitsery::quickSerialization<OutputAdapter<std::vector<uint8_t>>>(
+        bitsery::quickSerialization<OutputAdapter<SerializationBufferBase>>(
             buffer, object);
 
     // Tell the other side how large the object is so it can prepare a buffer
@@ -100,7 +163,7 @@ inline void write_object(Socket& socket,
  */
 template <typename T, typename Socket>
 inline void write_object(Socket& socket, const T& object) {
-    std::vector<uint8_t> buffer(64);
+    SerializationBuffer<64> buffer{};
     write_object(socket, object, buffer);
 }
 
@@ -123,7 +186,9 @@ inline void write_object(Socket& socket, const T& object) {
  * @relates write_object
  */
 template <typename T, typename Socket>
-inline T& read_object(Socket& socket, T& object, std::vector<uint8_t>& buffer) {
+inline T& read_object(Socket& socket,
+                      T& object,
+                      SerializationBufferBase& buffer) {
     // See the note above on the use of `uint64_t` instead of `size_t`
     std::array<uint64_t, 1> message_length;
     boost::asio::read(socket, boost::asio::buffer(message_length),
@@ -140,7 +205,7 @@ inline T& read_object(Socket& socket, T& object, std::vector<uint8_t>& buffer) {
                       boost::asio::transfer_exactly(size));
 
     auto [_, success] =
-        bitsery::quickDeserialization<InputAdapter<std::vector<uint8_t>>>(
+        bitsery::quickDeserialization<InputAdapter<SerializationBufferBase>>(
             {buffer.begin(), size}, object);
 
     if (BOOST_UNLIKELY(!success)) {
@@ -158,7 +223,7 @@ inline T& read_object(Socket& socket, T& object, std::vector<uint8_t>& buffer) {
  * @overload
  */
 template <typename T, typename Socket>
-inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
+inline T read_object(Socket& socket, SerializationBufferBase& buffer) {
     T object;
     read_object<T>(socket, object, buffer);
 
@@ -173,7 +238,7 @@ inline T read_object(Socket& socket, std::vector<uint8_t>& buffer) {
  */
 template <typename T, typename Socket>
 inline T& read_object(Socket& socket, T& object) {
-    std::vector<uint8_t> buffer(64);
+    SerializationBuffer<64> buffer{};
     return read_object<T>(socket, object, buffer);
 }
 
@@ -186,7 +251,7 @@ inline T& read_object(Socket& socket, T& object) {
 template <typename T, typename Socket>
 inline T read_object(Socket& socket) {
     T object;
-    std::vector<uint8_t> buffer(64);
+    SerializationBuffer<64> buffer{};
     read_object<T>(socket, object, buffer);
 
     return object;
@@ -360,7 +425,7 @@ class SocketHandler {
      * @see SocketHandler::receive_multi
      */
     template <typename T>
-    inline void send(const T& object, std::vector<uint8_t>& buffer) {
+    inline void send(const T& object, SerializationBufferBase& buffer) {
         write_object(socket, object, buffer);
     }
 
@@ -402,7 +467,7 @@ class SocketHandler {
      * @see SocketHandler::receive_multi
      */
     template <typename T>
-    inline T receive_single(std::vector<uint8_t>& buffer) {
+    inline T receive_single(SerializationBufferBase& buffer) {
         return read_object<T>(socket, buffer);
     }
 
@@ -425,19 +490,19 @@ class SocketHandler {
      *   we'd probably want to do some more stuff after sending a reply, calling
      *   `send()` is the responsibility of this function.
      *
-     * @tparam F A function type in the form of `void(T, std::vector<uint8_t>&)`
-     *   that does something with the object, and then calls `send()`. The
-     *   reading/writing buffer is passed along so it can be reused for sending
-     *   large amounts of data.
+     * @tparam F A function type in the form of `void(T,
+     *   SerializationBufferBase&)` that does something with the object, and
+     *   then calls `send()`. The reading/writing buffer is passed along so it
+     *   can be reused for sending large amounts of data.
      *
      * @relates SocketHandler::send
      *
      * @see read_object
      * @see SocketHandler::receive_single
      */
-    template <typename T, std::invocable<T, std::vector<uint8_t>&> F>
+    template <typename T, std::invocable<T, SerializationBufferBase&> F>
     void receive_multi(F&& callback) {
-        std::vector<uint8_t> buffer{};
+        SerializationBuffer<64> buffer{};
         while (true) {
             try {
                 auto object = receive_single<T>(buffer);

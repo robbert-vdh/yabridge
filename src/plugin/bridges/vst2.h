@@ -154,10 +154,11 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
     Vst2Logger logger;
 
     /**
-     * A scratch buffer for sending and receiving data during `process`,
-     * `processReplacing` and `processDoubleReplacing` calls.
+     * A scratch buffer for sending and receiving binary data during the
+     * `process()`, `processReplacing()` and `processDoubleReplacing()` calls.
+     * This buffer also needs to stay alive.
      */
-    std::vector<uint8_t> process_buffer;
+    SerializationBuffer<0> process_buffer;
 
     /**
      * We'll periodically synchronize the Wine host's audio thread priority with

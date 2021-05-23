@@ -593,7 +593,7 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     }
 
     // The inputs and outputs arrays should be `[num_inputs][sample_frames]` and
-    // `[num_outputs][sample_frames]` floats large respectfully.
+    // `[num_outputs][sample_frames]` floats large respectfully
     std::vector<std::vector<T>> input_buffers(plugin.numInputs,
                                               std::vector<T>(sample_frames));
     for (int channel = 0; channel < plugin.numInputs; channel++) {
