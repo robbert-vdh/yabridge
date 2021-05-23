@@ -39,6 +39,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   unions yabridge uses to differentiate between single and double precision
   floating point audio buffers, undoing all of our efforts at reusing objects
   and preventing memory allocations in the process.
+- VST3 output audio buffers are no longer zeroed out for the plugin. We did this
+  for VST3 plugins, but not for VST2 plugins. Since not doing this never caused
+  any issues with VST2 plugins it should also be safe to do the same thing for
+  VST3 plugins. This further reduces the overhead of VST3 audio processing.
 - Further optimized VST3 audio processing by preallocating small vectors for
   event and parameter change queues.
 - VST2 audio processing also received the same small vector optimization to get

@@ -33,7 +33,7 @@ void YaAudioBusBuffers::clear(int32 sample_size,
             std::get<std::vector<std::vector<double>>>(buffers);
         vector_buffers.resize(num_channels);
         for (size_t i = 0; i < vector_buffers.size(); i++) {
-            vector_buffers[i].assign(num_samples, 0.0);
+            vector_buffers[i].resize(num_samples);
         }
     } else {
         if (!std::holds_alternative<std::vector<std::vector<float>>>(buffers)) {
@@ -44,7 +44,7 @@ void YaAudioBusBuffers::clear(int32 sample_size,
             std::get<std::vector<std::vector<float>>>(buffers);
         vector_buffers.resize(num_channels);
         for (size_t i = 0; i < vector_buffers.size(); i++) {
-            vector_buffers[i].assign(num_samples, 0.0f);
+            vector_buffers[i].resize(num_samples);
         }
     }
 }
