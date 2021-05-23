@@ -163,7 +163,7 @@ inline void write_object(Socket& socket,
  */
 template <typename T, typename Socket>
 inline void write_object(Socket& socket, const T& object) {
-    SerializationBuffer<64> buffer{};
+    SerializationBuffer<256> buffer{};
     write_object(socket, object, buffer);
 }
 
@@ -238,7 +238,7 @@ inline T read_object(Socket& socket, SerializationBufferBase& buffer) {
  */
 template <typename T, typename Socket>
 inline T& read_object(Socket& socket, T& object) {
-    SerializationBuffer<64> buffer{};
+    SerializationBuffer<256> buffer{};
     return read_object<T>(socket, object, buffer);
 }
 
@@ -251,7 +251,7 @@ inline T& read_object(Socket& socket, T& object) {
 template <typename T, typename Socket>
 inline T read_object(Socket& socket) {
     T object;
-    SerializationBuffer<64> buffer{};
+    SerializationBuffer<256> buffer{};
     read_object<T>(socket, object, buffer);
 
     return object;
@@ -504,7 +504,7 @@ class SocketHandler {
      */
     template <typename T, std::invocable<T&, SerializationBufferBase&> F>
     void receive_multi(F&& callback) {
-        SerializationBuffer<64> buffer{};
+        SerializationBuffer<256> buffer{};
         T object;
         while (true) {
             try {

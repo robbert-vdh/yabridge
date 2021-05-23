@@ -161,7 +161,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         const T& object,
         typename T::Response& response_object,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
-        SerializationBuffer<64> buffer{};
+        SerializationBuffer<256> buffer{};
         return receive_into(object, response_object, std::move(logging),
                             buffer);
     }
@@ -217,7 +217,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                 // every time, but on the audio processor side we store the
                 // actual variant within an object and we then use some hackery
                 // to always keep the large process data object in memory.
-                thread_local SerializationBuffer<64> persistent_buffer{};
+                thread_local SerializationBuffer<256> persistent_buffer{};
                 thread_local Request persistent_object;
 
                 auto& request =
@@ -506,7 +506,7 @@ class Vst3Sockets : public Sockets {
         typename T::Response& response_object,
         size_t instance_id,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
-        thread_local SerializationBuffer<64> audio_processor_buffer{};
+        thread_local SerializationBuffer<256> audio_processor_buffer{};
 
         return audio_processor_sockets.at(instance_id)
             .receive_into(object, response_object, logging,
