@@ -108,6 +108,13 @@ class Vst2Bridge : public HostBridge {
     Configuration config;
 
     /**
+     * The object we'll serialize the response into after the plugin has
+     * finished processing audio. We reuse this object to avoid reallocations
+     * since it contains pointers to heap data.
+     */
+    AudioBuffers process_response;
+
+    /**
      * We'll store the last transport information obtained from the host as a
      * result of `audioMasterGetTime()` here so we can return a pointer to it if
      * the request was successful. To prevent unnecessary back and forth

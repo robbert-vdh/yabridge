@@ -206,144 +206,135 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
         // they start producing denormals
         ScopedFlushToZero ftz_guard;
 
-        // These are used as scratch buffers to prevent unnecessary allocations.
-        // Since don't know in advance whether the host will call
-        // `processReplacing` or `processDoubleReplacing` we'll just create
-        // both.
-        std::vector<std::vector<float>> output_buffers_single_precision(
-            plugin->numOutputs);
-        std::vector<std::vector<double>> output_buffers_double_precision(
-            plugin->numOutputs);
+        sockets.host_vst_process_replacing.receive_multi<
+            AudioBuffers>([&](AudioBuffers& process_request,
+                              SerializationBufferBase& buffer) {
+            // Since the value cannot change during this processing cycle, we'll
+            // send the current transport information as part of the request so
+            // we prefetch it to avoid unnecessary callbacks from the audio
+            // thread
+            std::optional<decltype(time_info_cache)::Guard>
+                time_info_cache_guard =
+                    process_request.current_time_info
+                        ? std::optional(time_info_cache.set(
+                              *process_request.current_time_info))
+                        : std::nullopt;
 
-        sockets.host_vst_process_replacing.receive_multi<AudioBuffers>(
-            [&](AudioBuffers& request, SerializationBufferBase& buffer) {
-                // Since the value cannot change during this processing cycle,
-                // we'll send the current transport information as part of the
-                // request so we prefetch it to avoid unnecessary callbacks from
-                // the audio thread
-                std::optional<decltype(time_info_cache)::Guard>
-                    time_info_cache_guard =
-                        request.current_time_info
-                            ? std::optional(time_info_cache.set(
-                                  *request.current_time_info))
-                            : std::nullopt;
+            // We'll also prefetch the process level, since some plugins will
+            // ask for this during every processing cycle
+            decltype(process_level_cache)::Guard process_level_cache_guard =
+                process_level_cache.set(process_request.current_process_level);
 
-                // We'll also prefetch the process level, since some plugins
-                // will ask for this during every processing cycle
-                decltype(process_level_cache)::Guard process_level_cache_guard =
-                    process_level_cache.set(request.current_process_level);
+            // As suggested by Jack Winter, we'll synchronize this thread's
+            // audio processing priority with that of the host's audio thread
+            // every once in a while
+            if (process_request.new_realtime_priority) {
+                set_realtime_priority(true,
+                                      *process_request.new_realtime_priority);
+            }
 
-                // As suggested by Jack Winter, we'll synchronize this thread's
-                // audio processing priority with that of the host's audio
-                // thread every once in a while
-                if (request.new_realtime_priority) {
-                    set_realtime_priority(true, *request.new_realtime_priority);
-                }
+            // Let the plugin process the MIDI events that were received
+            // since the last buffer, and then clean up those events. This
+            // approach should not be needed but Kontakt only stores
+            // pointers to rather than copies of the events.
+            std::lock_guard lock(next_buffer_midi_events_mutex);
 
-                // Let the plugin process the MIDI events that were received
-                // since the last buffer, and then clean up those events. This
-                // approach should not be needed but Kontakt only stores
-                // pointers to rather than copies of the events.
-                std::lock_guard lock(next_buffer_midi_events_mutex);
+            // Since the host should only be calling one of `process()`,
+            // processReplacing()` or `processDoubleReplacing()`, we can all
+            // handle them over the same socket. We pick which one to call
+            // depending on the type of data we got sent and the plugin's
+            // reported support for these functions.
+            std::visit(
+                [&]<typename T>(
+                    std::vector<std::vector<T>>& input_audio_buffers) {
+                    // The process functions expect a `T**` for their inputs
+                    thread_local std::vector<T*> input_pointers{};
+                    if (input_pointers.size() != input_audio_buffers.size()) {
+                        input_pointers.resize(input_audio_buffers.size());
+                        for (size_t channel = 0;
+                             channel < input_audio_buffers.size(); channel++) {
+                            input_pointers[channel] =
+                                input_audio_buffers[channel].data();
+                        }
+                    }
 
-                // Since the host should only be calling one of `process()`,
-                // processReplacing()` or `processDoubleReplacing()`, we can all
-                // handle them over the same socket. We pick which one to call
-                // depending on the type of data we got sent and the plugin's
-                // reported support for these functions.
-                std::visit(
-                    overload{
-                        [&](std::vector<std::vector<float>>& input_buffers) {
-                            // The process functions expect a `float**` for
-                            // their inputs and their outputs
-                            std::vector<float*> inputs;
-                            for (auto& buffer : input_buffers) {
-                                inputs.push_back(buffer.data());
+                    // We also reuse the output buffers to avoid some
+                    // unnecessary heap allocations
+                    if (!std::holds_alternative<std::vector<std::vector<T>>>(
+                            process_response.buffers)) {
+                        process_response.buffers
+                            .emplace<std::vector<std::vector<T>>>();
+                    }
+
+                    std::vector<std::vector<T>>& output_audio_buffers =
+                        std::get<std::vector<std::vector<T>>>(
+                            process_response.buffers);
+                    output_audio_buffers.resize(plugin->numOutputs);
+                    for (size_t channel = 0;
+                         channel < output_audio_buffers.size(); channel++) {
+                        output_audio_buffers[channel].resize(
+                            process_request.sample_frames);
+                    }
+
+                    // And the process functions also expect a `T**` for their
+                    // outputs
+                    thread_local std::vector<T*> output_pointers{};
+                    if (output_pointers.size() != output_audio_buffers.size()) {
+                        output_pointers.resize(output_audio_buffers.size());
+                        for (size_t channel = 0;
+                             channel < output_audio_buffers.size(); channel++) {
+                            output_pointers[channel] =
+                                output_audio_buffers[channel].data();
+                        }
+                    }
+
+                    if constexpr (std::is_same_v<T, float>) {
+                        // Any plugin made in the last fifteen years or so
+                        // should support `processReplacing`. In the off chance
+                        // it does not we can just emulate this behavior
+                        // ourselves.
+                        if (plugin->processReplacing) {
+                            plugin->processReplacing(
+                                plugin, input_pointers.data(),
+                                output_pointers.data(),
+                                process_request.sample_frames);
+                        } else {
+                            // If we zero out this buffer then the behavior is
+                            // the same as `processReplacing`
+                            for (std::vector<T>& buffer :
+                                 output_audio_buffers) {
+                                std::fill(buffer.begin(), buffer.end(), (T)0.0);
                             }
 
-                            // We reuse the buffers to avoid some unnecessary
-                            // heap allocations, so we need to make sure the
-                            // buffers are large enough since plugins can change
-                            // their output configuration. The type we're using
-                            // here (single precision floats vs double
-                            // precisioon doubles) should be the same as the one
-                            // we're sending in our response.
-                            std::vector<float*> outputs;
-                            output_buffers_single_precision.resize(
-                                plugin->numOutputs);
-                            for (auto& buffer :
-                                 output_buffers_single_precision) {
-                                buffer.resize(request.sample_frames);
-                                outputs.push_back(buffer.data());
-                            }
+                            plugin->process(plugin, input_pointers.data(),
+                                            output_pointers.data(),
+                                            process_request.sample_frames);
+                        }
+                    } else if (std::is_same_v<T, double>) {
+                        plugin->processDoubleReplacing(
+                            plugin, input_pointers.data(),
+                            output_pointers.data(),
+                            process_request.sample_frames);
+                    } else {
+                        static_assert(
+                            std::is_same_v<T, float> ||
+                                std::is_same_v<T, double>,
+                            "Audio processing only works with single and "
+                            "double precision floating point numbers");
+                    }
+                },
+                process_request.buffers);
 
-                            // Any plugin made in the last fifteen years or so
-                            // should support `processReplacing`. In the off
-                            // chance it does not we can just emulate this
-                            // behavior ourselves.
-                            if (plugin->processReplacing) {
-                                plugin->processReplacing(plugin, inputs.data(),
-                                                         outputs.data(),
-                                                         request.sample_frames);
-                            } else {
-                                // If we zero out this buffer then the behavior
-                                // is the same as `processReplacing``
-                                for (std::vector<float>& buffer :
-                                     output_buffers_single_precision) {
-                                    std::fill(buffer.begin(), buffer.end(),
-                                              0.0);
-                                }
+            // We modified the buffers within the `process_response` object, so
+            // we can just send that object back. Like on the plugin side we
+            // cannot reuse the request object because a plugin may have a
+            // different number of input and output channels
+            sockets.host_vst_process_replacing.send(process_response, buffer);
 
-                                plugin->process(plugin, inputs.data(),
-                                                outputs.data(),
-                                                request.sample_frames);
-                            }
-
-                            AudioBuffers response{
-                                .buffers = output_buffers_single_precision,
-                                .sample_frames = request.sample_frames,
-                                .current_time_info = std::nullopt,
-                                .current_process_level = 0,
-                                .new_realtime_priority = std::nullopt};
-                            sockets.host_vst_process_replacing.send(response,
-                                                                    buffer);
-                        },
-                        [&](std::vector<std::vector<double>>& input_buffers) {
-                            // Exactly the same as the above, but for double
-                            // precision audio
-                            std::vector<double*> inputs;
-                            for (auto& buffer : input_buffers) {
-                                inputs.push_back(buffer.data());
-                            }
-
-                            std::vector<double*> outputs;
-                            output_buffers_double_precision.resize(
-                                plugin->numOutputs);
-                            for (auto& buffer :
-                                 output_buffers_double_precision) {
-                                buffer.resize(request.sample_frames);
-                                outputs.push_back(buffer.data());
-                            }
-
-                            plugin->processDoubleReplacing(
-                                plugin, inputs.data(), outputs.data(),
-                                request.sample_frames);
-
-                            AudioBuffers response{
-                                .buffers = output_buffers_double_precision,
-                                .sample_frames = request.sample_frames,
-                                .current_time_info = std::nullopt,
-                                .current_process_level = 0,
-                                .new_realtime_priority = std::nullopt};
-                            sockets.host_vst_process_replacing.send(response,
-                                                                    buffer);
-                        }},
-                    request.buffers);
-
-                // See the docstrong on `should_clear_midi_events` for why we
-                // don't just clear `next_buffer_midi_events` here
-                should_clear_midi_events = true;
-            });
+            // See the docstrong on `should_clear_midi_events` for why we
+            // don't just clear `next_buffer_midi_events` here
+            should_clear_midi_events = true;
+        });
     });
 }
 
