@@ -23,29 +23,25 @@ YaAudioBusBuffers::YaAudioBusBuffers() noexcept {}
 void YaAudioBusBuffers::clear(int32 sample_size,
                               size_t num_samples,
                               size_t num_channels) {
+    auto do_clear = [&]<typename T>(T) {
+        if (!std::holds_alternative<std::vector<std::vector<T>>>(buffers)) {
+            buffers.emplace<std::vector<std::vector<T>>>();
+        }
+
+        std::vector<std::vector<T>>& vector_buffers =
+            std::get<std::vector<std::vector<T>>>(buffers);
+        vector_buffers.resize(num_channels);
+        for (size_t i = 0; i < vector_buffers.size(); i++) {
+            vector_buffers[i].resize(num_samples);
+        }
+    };
+
     if (sample_size == Steinberg::Vst::SymbolicSampleSizes::kSample64) {
-        if (!std::holds_alternative<std::vector<std::vector<double>>>(
-                buffers)) {
-            buffers.emplace<std::vector<std::vector<double>>>();
-        }
-
-        std::vector<std::vector<double>>& vector_buffers =
-            std::get<std::vector<std::vector<double>>>(buffers);
-        vector_buffers.resize(num_channels);
-        for (size_t i = 0; i < vector_buffers.size(); i++) {
-            vector_buffers[i].resize(num_samples);
-        }
+        // XXX: Clangd doesn't let you specify template parameters for templated
+        //      lambdas. This argument should get optimized out
+        do_clear(double());
     } else {
-        if (!std::holds_alternative<std::vector<std::vector<float>>>(buffers)) {
-            buffers.emplace<std::vector<std::vector<float>>>();
-        }
-
-        std::vector<std::vector<float>>& vector_buffers =
-            std::get<std::vector<std::vector<float>>>(buffers);
-        vector_buffers.resize(num_channels);
-        for (size_t i = 0; i < vector_buffers.size(); i++) {
-            vector_buffers[i].resize(num_samples);
-        }
+        do_clear(float());
     }
 }
 
@@ -55,39 +51,26 @@ void YaAudioBusBuffers::repopulate(
     const Steinberg::Vst::AudioBusBuffers& data) {
     silence_flags = data.silenceFlags;
 
-    switch (sample_size) {
-        case Steinberg::Vst::kSample64: {
-            if (!std::holds_alternative<std::vector<std::vector<double>>>(
-                    buffers)) {
-                buffers.emplace<std::vector<std::vector<double>>>();
-            }
+    auto do_repopuldate = [&]<typename T>(T** original_buffer) {
+        if (!std::holds_alternative<std::vector<std::vector<T>>>(buffers)) {
+            buffers.emplace<std::vector<std::vector<T>>>();
+        }
 
-            std::vector<std::vector<double>>& vector_buffers =
-                std::get<std::vector<std::vector<double>>>(buffers);
-            vector_buffers.resize(data.numChannels);
-            for (int channel = 0; channel < data.numChannels; channel++) {
-                vector_buffers[channel].assign(
-                    &data.channelBuffers64[channel][0],
-                    &data.channelBuffers64[channel][num_samples]);
-            }
-        } break;
-        case Steinberg::Vst::kSample32:
+        std::vector<std::vector<T>>& vector_buffers =
+            std::get<std::vector<std::vector<T>>>(buffers);
+        vector_buffers.resize(data.numChannels);
+        for (int channel = 0; channel < data.numChannels; channel++) {
+            vector_buffers[channel].assign(
+                &original_buffer[channel][0],
+                &original_buffer[channel][num_samples]);
+        }
+    };
+
+    if (sample_size == Steinberg::Vst::kSample64) {
+        do_repopuldate(data.channelBuffers64);
+    } else {
         // I don't think they'll add any other sample sizes any time soon
-        default: {
-            if (!std::holds_alternative<std::vector<std::vector<float>>>(
-                    buffers)) {
-                buffers.emplace<std::vector<std::vector<float>>>();
-            }
-
-            std::vector<std::vector<float>>& vector_buffers =
-                std::get<std::vector<std::vector<float>>>(buffers);
-            vector_buffers.resize(data.numChannels);
-            for (int channel = 0; channel < data.numChannels; channel++) {
-                vector_buffers[channel].assign(
-                    &data.channelBuffers32[channel][0],
-                    &data.channelBuffers32[channel][num_samples]);
-            }
-        } break;
+        do_repopuldate(data.channelBuffers32);
     }
 }
 
@@ -96,31 +79,25 @@ void YaAudioBusBuffers::reconstruct(
     // We'll update the `AudioBusBuffers` object in place to point to our new
     // data
     reconstructed_buffers.silenceFlags = silence_flags;
-    std::visit(overload{
-                   [&](std::vector<std::vector<double>>& buffers) {
-                       buffer_pointers.resize(buffers.size());
-                       for (size_t i = 0; i < buffers.size(); i++) {
-                           buffer_pointers[i] = buffers[i].data();
-                       }
 
-                       reconstructed_buffers.numChannels =
-                           static_cast<int32>(buffers.size());
-                       reconstructed_buffers.channelBuffers64 =
-                           reinterpret_cast<double**>(buffer_pointers.data());
-                   },
-                   [&](std::vector<std::vector<float>>& buffers) {
-                       buffer_pointers.resize(buffers.size());
-                       for (size_t i = 0; i < buffers.size(); i++) {
-                           buffer_pointers[i] = buffers[i].data();
-                       }
+    std::visit(
+        [&]<typename T>(std::vector<std::vector<T>>& buffers) {
+            buffer_pointers.resize(buffers.size());
+            for (size_t i = 0; i < buffers.size(); i++) {
+                buffer_pointers[i] = buffers[i].data();
+            }
 
-                       reconstructed_buffers.numChannels =
-                           static_cast<int32>(buffers.size());
-                       reconstructed_buffers.channelBuffers32 =
-                           reinterpret_cast<float**>(buffer_pointers.data());
-                   },
-               },
-               buffers);
+            reconstructed_buffers.numChannels =
+                static_cast<int32>(buffers.size());
+            if constexpr (std::is_same_v<T, double>) {
+                reconstructed_buffers.channelBuffers64 =
+                    reinterpret_cast<T**>(buffer_pointers.data());
+            } else {
+                reconstructed_buffers.channelBuffers32 =
+                    reinterpret_cast<T**>(buffer_pointers.data());
+            }
+        },
+        buffers);
 }
 
 size_t YaAudioBusBuffers::num_channels() const {
@@ -131,22 +108,19 @@ size_t YaAudioBusBuffers::num_channels() const {
 void YaAudioBusBuffers::write_back_outputs(
     Steinberg::Vst::AudioBusBuffers& output_buffers) const {
     output_buffers.silenceFlags = silence_flags;
+
     std::visit(
-        overload{
-            [&](const std::vector<std::vector<double>>& buffers) {
-                for (int channel = 0; channel < output_buffers.numChannels;
-                     channel++) {
+        [&]<typename T>(const std::vector<std::vector<T>>& buffers) {
+            for (int channel = 0; channel < output_buffers.numChannels;
+                 channel++) {
+                if constexpr (std::is_same_v<T, double>) {
                     std::copy(buffers[channel].begin(), buffers[channel].end(),
                               output_buffers.channelBuffers64[channel]);
-                }
-            },
-            [&](const std::vector<std::vector<float>>& buffers) {
-                for (int channel = 0; channel < output_buffers.numChannels;
-                     channel++) {
+                } else {
                     std::copy(buffers[channel].begin(), buffers[channel].end(),
                               output_buffers.channelBuffers32[channel]);
                 }
-            },
+            }
         },
         buffers);
 }
