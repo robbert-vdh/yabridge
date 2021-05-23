@@ -162,7 +162,7 @@ class YaEditController : public Steinberg::Vst::IEditController {
         template <typename S>
         void serialize(S& s) {
             s.object(result);
-            s.container2b(string, std::extent_v<Steinberg::Vst::String128>);
+            s.text2b(string, std::extent_v<Steinberg::Vst::String128>);
         }
     };
 
@@ -225,7 +225,7 @@ class YaEditController : public Steinberg::Vst::IEditController {
         void serialize(S& s) {
             s.value8b(instance_id);
             s.value4b(id);
-            s.container2b(string, std::extent_v<Steinberg::Vst::String128>);
+            s.text2b(string, std::extent_v<Steinberg::Vst::String128>);
         }
     };
 

@@ -85,7 +85,7 @@ struct YaNoteExpressionTextEvent {
     void serialize(S& s) {
         s.value4b(type_id);
         s.value4b(note_id);
-        s.container2b(text, std::extent_v<Steinberg::Vst::String128>);
+        s.text2b(text, std::extent_v<Steinberg::Vst::String128>);
     }
 };
 
@@ -120,7 +120,7 @@ struct YaChordEvent {
         s.value2b(root);
         s.value2b(bass_note);
         s.value2b(mask);
-        s.container2b(text, std::extent_v<Steinberg::Vst::String128>);
+        s.text2b(text, std::extent_v<Steinberg::Vst::String128>);
     }
 };
 
@@ -153,7 +153,7 @@ struct YaScaleEvent {
     void serialize(S& s) {
         s.value2b(root);
         s.value2b(mask);
-        s.container2b(text, std::extent_v<Steinberg::Vst::String128>);
+        s.text2b(text, std::extent_v<Steinberg::Vst::String128>);
     }
 };
 
