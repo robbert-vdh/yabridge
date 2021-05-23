@@ -601,17 +601,17 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
                     input_buffers[channel].begin());
     }
 
-    const AudioBuffers request{.buffers = input_buffers,
-                               .sample_frames = sample_frames,
-                               .current_time_info = current_time_info,
-                               .current_process_level = current_process_level,
-                               .new_realtime_priority = new_realtime_priority};
+    AudioBuffers request{.buffers = input_buffers,
+                         .sample_frames = sample_frames,
+                         .current_time_info = current_time_info,
+                         .current_process_level = current_process_level,
+                         .new_realtime_priority = new_realtime_priority};
     sockets.host_vst_process_replacing.send(request, process_buffer);
 
     // Write the results back to the `outputs` arrays
-    const auto response =
+    const auto& response =
         sockets.host_vst_process_replacing.receive_single<AudioBuffers>(
-            process_buffer);
+            request, process_buffer);
     const auto& response_buffers =
         std::get<std::vector<std::vector<T>>>(response.buffers);
 

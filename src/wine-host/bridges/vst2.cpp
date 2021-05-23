@@ -179,7 +179,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
 
     parameters_handler = Win32Thread([&]() {
         sockets.host_vst_parameters.receive_multi<Parameter>(
-            [&](Parameter request, SerializationBufferBase& buffer) {
+            [&](Parameter& request, SerializationBufferBase& buffer) {
                 // Both `getParameter` and `setParameter` functions are passed
                 // through on this socket since they have a lot of overlap. The
                 // presence of the `value` field tells us which one we're
@@ -216,7 +216,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
             plugin->numOutputs);
 
         sockets.host_vst_process_replacing.receive_multi<AudioBuffers>(
-            [&](AudioBuffers request, SerializationBufferBase& buffer) {
+            [&](AudioBuffers& request, SerializationBufferBase& buffer) {
                 // Since the value cannot change during this processing cycle,
                 // we'll send the current transport information as part of the
                 // request so we prefetch it to avoid unnecessary callbacks from

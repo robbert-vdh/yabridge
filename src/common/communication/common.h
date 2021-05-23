@@ -443,8 +443,10 @@ class SocketHandler {
      * Read a serialized object from the socket sent using `send()`. This will
      * block until the object is available.
      *
-     * @param buffer The buffer to read into. This is used to prevent excess
-     *   allocations when sending audio.
+     * @param object The object to serialize into. There are also overrides that
+     *   create a new default initialized `T`
+     * @param buffer The buffer to read into. This is useful for sending audio
+     *   and chunk data since that can vary in size by a lot.
      *
      * @return The deserialized object.
      *
@@ -467,13 +469,13 @@ class SocketHandler {
      * @see SocketHandler::receive_multi
      */
     template <typename T>
-    inline T receive_single(SerializationBufferBase& buffer) {
-        return read_object<T>(socket, buffer);
+    inline T& receive_single(T& object, SerializationBufferBase& buffer) {
+        return read_object<T>(socket, object, buffer);
     }
 
     /**
-     * `SocketHandler::receive_single()` with a small default buffer for
-     * convenience.
+     * `SocketHandler::receive_single()` into a new default initialized object
+     * with a small default buffer for convenience.
      *
      * @overload
      */
@@ -500,14 +502,15 @@ class SocketHandler {
      * @see read_object
      * @see SocketHandler::receive_single
      */
-    template <typename T, std::invocable<T, SerializationBufferBase&> F>
+    template <typename T, std::invocable<T&, SerializationBufferBase&> F>
     void receive_multi(F&& callback) {
         SerializationBuffer<64> buffer{};
+        T object;
         while (true) {
             try {
-                auto object = receive_single<T>(buffer);
+                receive_single<T>(object, buffer);
 
-                callback(std::move(object), buffer);
+                callback(object, buffer);
             } catch (const boost::system::system_error&) {
                 // This happens when the sockets got closed because the plugin
                 // is being shut down
