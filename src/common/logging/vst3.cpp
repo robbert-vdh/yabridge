@@ -269,8 +269,8 @@ bool Vst3Logger::log_request(
         std::string param_title = VST3::StringConvert::convert(request.string);
         message << request.instance_id
                 << ": IEditController::getParamValueByString(id = "
-                << request.id << ", string = " << param_title
-                << ", &valueNormalized)";
+                << request.id << ", string = \"" << param_title
+                << "\", &valueNormalized)";
     });
 }
 
