@@ -41,7 +41,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - VST2 audio processing also received the same small vector optimization to get
   rid of any last potential allocations during audio processing.
 - Changed the way mutual recursion in VST3 plugins on the plugin side works to
-  counter any potential GUI related timing issues with VST3 plugins.
+  counter any potential GUI related timing issues with VST3 plugins when using
+  multiple instances of a plugin.
 - The deserialization part of yabridge's communication is now slightly faster by
   skipping some unnecessary checks.
 
