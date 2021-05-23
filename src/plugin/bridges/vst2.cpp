@@ -581,9 +581,6 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     // that information as well
     const int current_process_level = static_cast<int>(host_callback_function(
         &plugin, audioMasterGetCurrentProcessLevel, 0, 0, nullptr, 0.0));
-    if (returned_time_info) {
-        current_time_info = *returned_time_info;
-    }
 
     // We'll synchronize the scheduling priority of the audio thread on the Wine
     // plugin host with that of the host's audio thread every once in a while
