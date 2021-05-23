@@ -468,6 +468,8 @@ include:
 - Knobs in **Tokyo Dawn Records** plugins may not behave as expected when
   dragging long distances. Setting the 'Continuous Drag' option in the plugin's
   options to 'Linear' fixes the issue.
+- Similarly, the knobs in **Voxengo** plugins behave better when you enable the
+  'Radial knob mode' setting in the global settings.
 - If **Scaler 2**'s interface lags, blacks out, or otherwise renders poorly,
   then you can try enabling [software
   rendering](https://forum.scalerplugin.com/t/scaler-2-black-empty-window/3540/8)
