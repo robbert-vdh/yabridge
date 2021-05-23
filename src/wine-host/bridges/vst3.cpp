@@ -404,8 +404,7 @@ void Vst3Bridge::run() {
                         .edit_controller->getParamValueByString(
                             request.id,
                             const_cast<Steinberg::Vst::TChar*>(
-                                u16string_to_tchar_pointer(
-                                    request.string.c_str())),
+                                u16string_to_tchar_pointer(request.string)),
                             value_normalized);
 
                 return YaEditController::GetParamValueByStringResponse{
