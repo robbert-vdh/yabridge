@@ -617,14 +617,14 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     // After sending these buffers to the Wine plugin host, we'll receive the
     // results back in the same object so we can write back the outputs
     sockets.host_vst_process_replacing.send(process_input_buffers,
-                                            process_buffer);
+                                            process_scratch_buffer);
 
     // NOTE: We use a different object for this, because otherwise
     //       mono-to-stereo plugins or any other configuration where the number
     //       of input channels does not match the number of output channels
     //       would still result in constant reallocations
     sockets.host_vst_process_replacing.receive_single<AudioBuffers>(
-        process_output_buffers, process_buffer);
+        process_output_buffers, process_scratch_buffer);
 
     std::vector<std::vector<T>>& output_audio_buffers =
         std::get<std::vector<std::vector<T>>>(process_output_buffers.buffers);
