@@ -74,7 +74,8 @@ intptr_t DefaultDataConverter::return_value(const int /*opcode*/,
 
 Vst2EventResult DefaultDataConverter::send_event(
     boost::asio::local::stream_protocol::socket& socket,
-    const Vst2Event& event) const {
-    write_object(socket, event);
-    return read_object<Vst2EventResult>(socket);
+    const Vst2Event& event,
+    SerializationBufferBase& buffer) const {
+    write_object(socket, event, buffer);
+    return read_object<Vst2EventResult>(socket, buffer);
 }

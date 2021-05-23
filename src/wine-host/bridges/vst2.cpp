@@ -621,13 +621,14 @@ class HostCallbackDataConverter : public DefaultDataConverter {
 
     Vst2EventResult send_event(
         boost::asio::local::stream_protocol::socket& socket,
-        const Vst2Event& event) const override {
+        const Vst2Event& event,
+        SerializationBufferBase& buffer) const override {
         if (mutually_recursive_callbacks.contains(event.opcode)) {
             return mutual_recursion.fork([&]() {
-                return DefaultDataConverter::send_event(socket, event);
+                return DefaultDataConverter::send_event(socket, event, buffer);
             });
         } else {
-            return DefaultDataConverter::send_event(socket, event);
+            return DefaultDataConverter::send_event(socket, event, buffer);
         }
     }
 

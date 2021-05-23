@@ -87,7 +87,8 @@ class DefaultDataConverter {
      */
     virtual Vst2EventResult send_event(
         boost::asio::local::stream_protocol::socket& socket,
-        const Vst2Event& event) const;
+        const Vst2Event& event,
+        SerializationBufferBase& buffer) const;
 };
 
 /**
@@ -193,8 +194,8 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
                               .index = index,
                               .value = value,
                               .option = option,
-                              .payload = payload,
-                              .value_payload = value_payload};
+                              .payload = std::move(payload),
+                              .value_payload = std::move(value_payload)};
 
         // A socket only handles a single request at a time as to prevent
         // messages from arriving out of order. `AdHocSocketHandler::send()`
@@ -206,7 +207,8 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
         // calling thread (i.e. mutual recursion).
         const Vst2EventResult response = this->send(
             [&](boost::asio::local::stream_protocol::socket& socket) {
-                return data_converter.send_event(socket, event);
+                return data_converter.send_event(socket, event,
+                                                 serialization_buffer());
             });
 
         if (logging) {
@@ -249,7 +251,9 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
         const auto process_event =
             [&](boost::asio::local::stream_protocol::socket& socket,
                 bool on_main_thread) {
-                auto event = read_object<Vst2Event>(socket);
+                SerializationBufferBase& buffer = serialization_buffer();
+
+                auto event = read_object<Vst2Event>(socket, buffer);
                 if (logging) {
                     auto [logger, is_dispatch] = *logging;
                     logger.log_event(is_dispatch, event.opcode, event.index,
@@ -265,7 +269,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
                         response.payload, response.value_payload);
                 }
 
-                write_object(socket, response);
+                write_object(socket, response, buffer);
             };
 
         this->receive_multi(
@@ -277,6 +281,34 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
             [&](boost::asio::local::stream_protocol::socket& socket) {
                 process_event(socket, false);
             });
+    }
+
+   private:
+    /**
+     * Unlike our VST3 implementation, in the VST2 implementation there's no
+     * separation between potentially real time critical events that will be
+     * called on the audio thread an all other events. This is absolutely fine,
+     * except for sending and receiving MIDI events. Those objects can get
+     * rather large, and because we want to avoid allocations on the audio
+     * thread at all cost we'll just predefine a large buffer for every thread.
+     */
+    SerializationBufferBase& serialization_buffer() {
+        // This object also contains a `boost::container::small_vector` that has
+        // capacity for a large-ish number of events so we don't have to
+        // allocate under normal circumstances.
+        constexpr size_t initial_events_size = sizeof(DynamicVstEvents);
+        thread_local SerializationBuffer<initial_events_size> buffer{};
+
+        // This buffer is already pretty large, but it can still grow immensely
+        // when sending and receiving preset data. In such cases we do want to
+        // reallocate the buffer on the next event to free up memory again. This
+        // won't happen during audio processing.
+        if (buffer.size() > initial_events_size) {
+            buffer.resize(initial_events_size);
+            buffer.shrink_to_fit();
+        }
+
+        return buffer;
     }
 };
 
