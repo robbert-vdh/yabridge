@@ -46,6 +46,9 @@ Vst2Bridge* current_bridge_instance = nullptr;
  *       recursive mutexes on both functions so `effGetProgram()` _has_ to be
  *       called on the same thread that is currently calling
  *       `audioMasterUpdateDisplay()`.
+ * NOTE: Similarly, REAPER calls `effProgramName()` in response to
+ *       `audioMasterUpdateDisplay()`, and PG-8X also requires that to be called
+ *       from the same thread that called `audioMasterUpdateDisplay()`.
  */
 static const std::set<int> mutually_recursive_callbacks{
     audioMasterUpdateDisplay};
@@ -61,7 +64,8 @@ static const std::set<int> mutually_recursive_callbacks{
  * just execute the function directly on the calling thread. See above for a
  * list of situations where this may be necessary.
  */
-static const std::set<int> safe_mutually_recursive_requests{effGetProgram};
+static const std::set<int> safe_mutually_recursive_requests{effGetProgram,
+                                                            effGetProgramName};
 
 /**
  * Opcodes that should always be handled on the main thread because they may
