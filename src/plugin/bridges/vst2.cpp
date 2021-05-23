@@ -569,57 +569,71 @@ template <typename T, bool replacing>
 void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     // To prevent unnecessary bridging overhead, we'll send the time information
     // together with the buffers because basically every plugin needs this
-    std::optional<VstTimeInfo> current_time_info;
     const VstTimeInfo* returned_time_info =
         reinterpret_cast<const VstTimeInfo*>(host_callback_function(
             &plugin, audioMasterGetTime, 0, 0, nullptr, 0.0));
     if (returned_time_info) {
-        current_time_info = *returned_time_info;
+        process_input_buffers.current_time_info = *returned_time_info;
+    } else {
+        process_input_buffers.current_time_info.reset();
     }
 
     // Some plugisn also ask for the current process level, so we'll prefetch
     // that information as well
-    const int current_process_level = static_cast<int>(host_callback_function(
-        &plugin, audioMasterGetCurrentProcessLevel, 0, 0, nullptr, 0.0));
+    process_input_buffers.current_process_level =
+        static_cast<int>(host_callback_function(
+            &plugin, audioMasterGetCurrentProcessLevel, 0, 0, nullptr, 0.0));
 
     // We'll synchronize the scheduling priority of the audio thread on the Wine
     // plugin host with that of the host's audio thread every once in a while
-    std::optional<int> new_realtime_priority;
     const time_t now = time(nullptr);
     if (now > last_audio_thread_priority_synchronization +
                   audio_thread_priority_synchronization_interval) {
-        new_realtime_priority = get_realtime_priority();
+        process_input_buffers.new_realtime_priority = get_realtime_priority();
         last_audio_thread_priority_synchronization = now;
+    } else {
+        process_input_buffers.new_realtime_priority.reset();
     }
 
-    // The inputs and outputs arrays should be `[num_inputs][sample_frames]` and
-    // `[num_outputs][sample_frames]` floats large respectfully
-    std::vector<std::vector<T>> input_buffers(plugin.numInputs,
-                                              std::vector<T>(sample_frames));
+    // We reuse this audio buffers object both for the request and the response
+    // to avoid unnecessary allocations. The inputs and outputs arrays should be
+    // `[num_inputs][sample_frames]` and `[num_outputs][sample_frames]` floats
+    // large respectfully.
+    process_input_buffers.sample_frames = sample_frames;
+    if (!std::holds_alternative<std::vector<std::vector<T>>>(
+            process_input_buffers.buffers)) {
+        process_input_buffers.buffers.emplace<std::vector<std::vector<T>>>();
+    }
+
+    std::vector<std::vector<T>>& input_audio_buffers =
+        std::get<std::vector<std::vector<T>>>(process_input_buffers.buffers);
+    input_audio_buffers.resize(plugin.numInputs);
     for (int channel = 0; channel < plugin.numInputs; channel++) {
+        input_audio_buffers[channel].resize(sample_frames);
         std::copy_n(inputs[channel], sample_frames,
-                    input_buffers[channel].begin());
+                    input_audio_buffers[channel].begin());
     }
 
-    AudioBuffers request{.buffers = input_buffers,
-                         .sample_frames = sample_frames,
-                         .current_time_info = current_time_info,
-                         .current_process_level = current_process_level,
-                         .new_realtime_priority = new_realtime_priority};
-    sockets.host_vst_process_replacing.send(request, process_buffer);
+    // After sending these buffers to the Wine plugin host, we'll receive the
+    // results back in the same object so we can write back the outputs
+    sockets.host_vst_process_replacing.send(process_input_buffers,
+                                            process_buffer);
 
-    // Write the results back to the `outputs` arrays
-    const auto& response =
-        sockets.host_vst_process_replacing.receive_single<AudioBuffers>(
-            request, process_buffer);
-    const auto& response_buffers =
-        std::get<std::vector<std::vector<T>>>(response.buffers);
+    // NOTE: We use a different object for this, because otherwise
+    //       mono-to-stereo plugins or any other configuration where the number
+    //       of input channels does not match the number of output channels
+    //       would still result in constant reallocations
+    sockets.host_vst_process_replacing.receive_single<AudioBuffers>(
+        process_output_buffers, process_buffer);
 
-    assert(response_buffers.size() == static_cast<size_t>(plugin.numOutputs));
+    std::vector<std::vector<T>>& output_audio_buffers =
+        std::get<std::vector<std::vector<T>>>(process_output_buffers.buffers);
+    assert(output_audio_buffers.size() ==
+           static_cast<size_t>(plugin.numOutputs));
     for (int channel = 0; channel < plugin.numOutputs; channel++) {
         if constexpr (replacing) {
-            std::copy(response_buffers[channel].begin(),
-                      response_buffers[channel].end(), outputs[channel]);
+            std::copy(output_audio_buffers[channel].begin(),
+                      output_audio_buffers[channel].end(), outputs[channel]);
         } else {
             // The old `process()` function expects the plugin to add its output
             // to the accumulated values in `outputs`. Since no host is ever
@@ -629,9 +643,9 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
             // We could use `std::execution::unseq` here but that would require
             // linking to TBB and since this probably won't ever be used anyways
             // that's a bit of a waste.
-            std::transform(response_buffers[channel].begin(),
-                           response_buffers[channel].end(), outputs[channel],
-                           outputs[channel],
+            std::transform(output_audio_buffers[channel].begin(),
+                           output_audio_buffers[channel].end(),
+                           outputs[channel], outputs[channel],
                            [](const T& new_value, T& current_value) -> T {
                                return new_value + current_value;
                            });

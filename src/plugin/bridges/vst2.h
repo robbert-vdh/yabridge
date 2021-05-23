@@ -154,6 +154,22 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
     Vst2Logger logger;
 
     /**
+     * The object we'll serialize the audio buffers and any auxiliary
+     * information into when processing audio. We need to reuse this object to
+     * avoid reallocations since it contains pointers to heap data.
+     */
+    AudioBuffers process_input_buffers;
+
+    /**
+     * The object we'll serialize the response into after the plugin has
+     * finished processing audio. We cannot reuse `process_input_buffers`
+     * because for instance a mono-to-stereo plugin would cause us to constantly
+     * reallocate the sample buffer for the last channel. We need to reuse this
+     * object to avoid reallocations since it contains pointers to heap data.
+     */
+    AudioBuffers process_output_buffers;
+
+    /**
      * A scratch buffer for sending and receiving binary data during the
      * `process()`, `processReplacing()` and `processDoubleReplacing()` calls.
      * This buffer also needs to stay alive.
