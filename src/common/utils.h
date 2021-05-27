@@ -18,6 +18,8 @@
 
 #include <optional>
 
+#include <sys/resource.h>
+
 #ifdef __WINE__
 #include "../wine-host/boost-fix.h"
 #endif
@@ -85,6 +87,18 @@ boost::filesystem::path get_temporary_directory();
  * scheduling.
  */
 std::optional<int> get_realtime_priority() noexcept;
+
+/**
+ * Get the (soft) `RTTIME` resource limit, or the amount of time a `SCHED_FIFO`
+ * process may spend uninterrupted before being killed by the scheduler. A value
+ * of `-1`/`RLIM_INFINITY` means that there is no limit. If there was some error
+ * fetching this value, then a nullopt will be returned.
+ *
+ * This is useful to diagnose issues caused by PipeWire. They use rtkit at the
+ * moment, and both rtkit and PipeWire's rtkit module will enable a realtime CPU
+ * time limit with some low value.
+ */
+std::optional<rlim_t> get_rttime_limit() noexcept;
 
 /**
  * Set the scheduling policy to `SCHED_FIFO` with priority 5 for this process.
