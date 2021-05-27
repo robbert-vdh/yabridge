@@ -24,6 +24,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   allows **ujam** plugins and other plugins made with the Gorilla Engine such as
   the **LoopCloud** plugins to function correctly as those plugins will throw a
   seemingly unrelated error when they output to a pipe.
+- Added a small warning on initialization when `RLIMIT_RTTIME` is set to some
+  small value. This happens when using PipeWire, and it can cause crashes when
+  using loading plugins.
 
 ### Changed
 

@@ -22,10 +22,20 @@
 // Generated inside of the build directory
 #include <src/common/config/config.h>
 #include <src/common/config/version.h>
+#include <sys/resource.h>
 
 #include "../../common/configuration.h"
 #include "../../common/utils.h"
 #include "../host-process.h"
+
+/**
+ * PipeWire uses rtkit, and both set `RLIMIT_RTTIME` to some low value. Normally
+ * this is kept at unlimited, and low values can cause the host process to get
+ * terminated during initialization because some plugins may take longer than
+ * the default 200ms to load. We'll show a warning when the realtime CPU time
+ * limit is not unlimited (`-1`/`RLIM_INFINITY`) and below this value.
+ */
+constexpr int rttime_min_safe_threshold = 30'000'000;
 
 /**
  * Handles all common operations for hosting plugins such as initializing up the
@@ -122,9 +132,31 @@ class PluginBridge {
                  << "'" << std::endl;
         init_msg << "plugin type:   '"
                  << plugin_type_to_string(info.plugin_type) << "'" << std::endl;
-        init_msg << "realtime:      '"
-                 << (has_realtime_priority.get() ? "yes" : "no") << "'"
-                 << std::endl;
+        init_msg << "realtime:      ";
+        if (has_realtime_priority.get()) {
+            // Warn if `RLIMIT_RTTIME` is set to some low value. This can happen
+            // when using PipeWire.
+            if (auto rttime_limit = get_rttime_limit()) {
+                if (*rttime_limit != RLIM_INFINITY &&
+                    *rttime_limit < rttime_min_safe_threshold) {
+                    init_msg << "'yes-ish, see below'" << std::endl;
+                    init_msg << std::endl;
+                    init_msg << "   RLIMIT_RTTIME is set to " << *rttime_limit
+                             << " us. This can happen when" << std::endl;
+                    init_msg << "   using PipeWire. yabridge may crash when "
+                             << "loading plugins" << std::endl;
+                    init_msg << "   until you fix this." << std::endl;
+                    init_msg << std::endl;
+                } else {
+                    init_msg << "'yes'" << std::endl;
+                }
+            } else {
+                init_msg << "'WARNING: Could not fetch RLIMIT_RTTIME'"
+                         << std::endl;
+            }
+        } else {
+            init_msg << "'no'" << std::endl;
+        }
         init_msg << "sockets:       '" << sockets.base_dir.string() << "'"
                  << std::endl;
 
@@ -339,7 +371,9 @@ class PluginBridge {
     /**
      * Whether this process runs with realtime priority. This is set on the
      * thread that's relaying STDOUT and STDERR output from Wine, hence the need
-     * for a future.
+     * for a future. We won't change the scheduler properties on the thread
+     * that's initializing the plugin because some DAWs may do that from the UI
+     * thread.
      */
     std::future<bool> has_realtime_priority;
 
