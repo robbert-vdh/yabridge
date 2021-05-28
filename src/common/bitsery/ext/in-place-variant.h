@@ -40,24 +40,28 @@ class InPlaceVariant : public StdVariant<Overloads...> {
             des.adapter(), index, sizeof...(Ts),
             std::integral_constant<bool, Des::TConfig::CheckDataErrors>{});
 
+        // Most of this is copied directly from the original implementation.
+        // We just added the check here to reuse the existing object if
+        // possible.
         this->execIndex(index, obj, [this, &des](auto& data, auto index) {
             constexpr size_t Index = decltype(index)::value;
             using TElem =
                 typename std::variant_alternative<Index,
                                                   std::variant<Ts...>>::type;
-
-            // Most of this is copied directly from the original implementation.
-            // We just added the check here to reuse the existing object if
-            // possible.
-            if (std::holds_alternative<TElem>(data)) {
-                TElem& item = std::get<TElem>(data);
-                this->serializeType(des, item);
-            } else {
-                TElem item = ::bitsery::Access::create<TElem>();
-                this->serializeType(des, item);
-                data = std::variant<Ts...>(std::in_place_index_t<Index>{},
-                                           std::move(item));
+            // Reinitializing nontrivial types may be expensive especially when
+            // they reference heap data, so if `data` is already holding the
+            // requested variant then we'll deserialize into the existing object
+            if constexpr (std::is_trivial_v<TElem>) {
+                if (auto item = std::get_if<TElem>(&data)) {
+                    this->serializeType(des, *item);
+                    return;
+                }
             }
+
+            TElem item = ::bitsery::Access::create<TElem>();
+            this->serializeType(des, item);
+            data = std::variant<Ts...>(std::in_place_index_t<Index>{},
+                                       std::move(item));
         });
     }
 };
