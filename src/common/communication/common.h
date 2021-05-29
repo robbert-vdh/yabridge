@@ -90,8 +90,8 @@ inline BOOST_ASIO_MUTABLE_BUFFER buffer(
         data.size() ? &data[0] : 0, data.size() * sizeof(PodType)
 #if defined(BOOST_ASIO_ENABLE_BUFFER_DEBUGGING)
                                         ,
-        detail::buffer_debug_check<
-            typename std::vector<PodType, Allocator>::iterator>(data.begin())
+        detail::buffer_debug_check<typename boost::container::small_vector_base<
+            PodType, Allocator>::iterator>(data.begin())
 #endif  // BOOST_ASIO_ENABLE_BUFFER_DEBUGGING
     );
 }
@@ -110,8 +110,8 @@ inline BOOST_ASIO_MUTABLE_BUFFER buffer(
             : max_size_in_bytes
 #if defined(BOOST_ASIO_ENABLE_BUFFER_DEBUGGING)
         ,
-        detail::buffer_debug_check<
-            typename std::vector<PodType, Allocator>::iterator>(data.begin())
+        detail::buffer_debug_check<typename boost::container::small_vector_base<
+            PodType, Allocator>::iterator>(data.begin())
 #endif  // BOOST_ASIO_ENABLE_BUFFER_DEBUGGING
     );
 }
