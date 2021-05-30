@@ -62,10 +62,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed a longstanding thread safety issue when hosting multiple instances of a
-  VST2 plugin in a plugin group. This could cause plugins to crash or freeze
-  when initializing a new instance of a VST2 plugin in a plugin group while
-  another instance of the same plugin is processing audio.
+- Fixed a longstanding thread safety issue when hosting a lot of VST2 plugins in
+  a plugin group. This could cause plugins to crash or freeze when initializing
+  a new instance of a VST2 plugin in a plugin group while another VST2 plugin in
+  that same group is processing audio.
 - Fixed yabridge's Wine processes inheriting file descriptors in some
   situations. This could cause **Ardour** and **Mixbus** to hang when trying to
   reopen it after a crash. The watchdog timer added in yabridge 3.2.0 also
