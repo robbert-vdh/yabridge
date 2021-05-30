@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include <bitsery/details/serialization_common.h>
 #include <bitsery/traits/core/traits.h>
 
