@@ -27,8 +27,22 @@
 using VstEntryPoint = AEffect*(VST_CALL_CONV*)(audioMasterCallback);
 
 /**
+ * If `plugin->ptr2` is set to this value, then we'll know that `plugin->ptr1`
+ * is a valid pointer to a `Vst2Bridge` instance. This is needed for when one
+ * instance of a plugin in a plugin group processes audio while another instance
+ * of that plugin in the same plugin group is being initialized. In that
+ * situation we cannot rely on just `current_bridge_instance`, and some plugins
+ * don't zero initialize these pointers like they should so we also can't rely
+ * on that.
+ */
+constexpr size_t yabridge_ptr2_magic = 0xdeadbeef + 420;
+
+/**
  * This ugly global is needed so we can get the instance of a `Vst2Bridge` class
  * from an `AEffect` when it performs a host callback during its initialization.
+ *
+ * We don't need any locking here because we can only initialize `Vst2Bridge`
+ * from the main thread anyways.
  */
 Vst2Bridge* current_bridge_instance = nullptr;
 
@@ -92,13 +106,18 @@ host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);
  * the VST C API.
  */
 Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
-    // This is needed during the initialization of the plugin since we can only
-    // add our own pointer after it's done initializing
-    if (current_bridge_instance) {
-        return *current_bridge_instance;
+    if (plugin && reinterpret_cast<size_t>(plugin->ptr2) == yabridge_ptr2_magic)
+        [[likely]] {
+        return *static_cast<Vst2Bridge*>(plugin->ptr1);
     }
 
-    return *static_cast<Vst2Bridge*>(plugin->ptr1);
+    // We can only set this pointer after the plugin has initialized, so when
+    // the plugin performs a callback during its initialization we'll use the
+    // current bridge instance set during the Vst2Bridge constructor. This is
+    // thread safe because VST2 plugins have to be initialized on the main
+    // thread.
+    assert(current_bridge_instance);
+    return *current_bridge_instance;
 }
 
 Vst2Bridge::Vst2Bridge(MainContext& main_context,
@@ -149,10 +168,9 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
 
     sockets.connect();
 
-    // Initialize after communication has been set up We'll try to do the same
-    // `get_bridge_instance` trick as in `plugin/bridges/vst2.cpp`, but since
-    // the plugin will probably call the host callback while it's initializing
-    // we sadly have to use a global here.
+    // We'll try to do the same `get_bridge_instance()` trick as in
+    //`plugin/bridges/vst2.cpp`, but since the plugin will probably call the
+    // host callback while it's initializing we sadly have to use a global here.
     // Note that this reinterpret cast is not needed at all since the function
     // pointer types are exactly the same, but clangd will complain otherwise
     current_bridge_instance = this;
@@ -163,9 +181,12 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                                  "' failed to initialize.");
     }
 
-    // We only needed this little hack during initialization
+    // We use `plugin->ptr2` to identify plugins that have already been
+    // initialized. Otherwise we can run into thread safety issues when a plugin
+    // is processing audio while another plugin is being initialized.
     current_bridge_instance = nullptr;
     plugin->ptr1 = this;
+    plugin->ptr2 = reinterpret_cast<void*>(yabridge_ptr2_magic);
 
     // Send the plugin's information to the Linux VST plugin. Any other updates
     // of this object will be sent over the `dispatcher()` socket. This would be
