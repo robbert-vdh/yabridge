@@ -208,7 +208,7 @@ inline T& read_object(Socket& socket,
         bitsery::quickDeserialization<InputAdapter<SerializationBufferBase>>(
             {buffer.begin(), size}, object);
 
-    if (BOOST_UNLIKELY(!success)) {
+    if (!success) [[unlikely]] {
         throw std::runtime_error("Deserialization failure in call: " +
                                  std::string(__PRETTY_FUNCTION__));
     }

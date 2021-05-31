@@ -462,7 +462,7 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
     //       been a release that contains the fix yet. This should be removed
     //       once Ardour 6.0 gets released.
     //       https://tracker.ardour.org/view.php?id=7668
-    if (BOOST_UNLIKELY(plugin.magic == 0)) {
+    if (plugin.magic == 0) [[unlikely]] {
         logger.log_event(true, opcode, index, value, nullptr, option,
                          std::nullopt);
         logger.log(

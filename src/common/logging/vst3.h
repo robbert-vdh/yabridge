@@ -355,7 +355,7 @@ class Vst3Logger {
     bool log_request_base(bool is_host_vst,
                           Logger::Verbosity min_verbosity,
                           F callback) {
-        if (BOOST_UNLIKELY(logger.verbosity >= min_verbosity)) {
+        if (logger.verbosity >= min_verbosity) [[unlikely]] {
             std::ostringstream message;
             if (is_host_vst) {
                 message << "[host -> vst] >> ";
