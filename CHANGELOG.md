@@ -82,8 +82,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed the _PG-8X_ VST2 plugin freezing in **REAPER** when loading the plugin.
 - Fixed _Voxengo_ VST2 plugins in **Renoise** freezing when loading a project or
   when otherwise restoring plugin state.
-- Fixed logging traces in the VST2 audio processing functions causing
-  allocations even when `YABRIDGE_DEBUG_LEVEL` is not set to 2.
+- Fixed logging traces in the VST2 audio processing functions and VST3 query
+  interfaces causing allocations even when `YABRIDGE_DEBUG_LEVEL` is not set to 2.
 - Fixed builds on Wine 6.8 because of internal changes to Wine's `windows.h`
   implementation.
 

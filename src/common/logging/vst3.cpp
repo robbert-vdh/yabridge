@@ -54,7 +54,7 @@ std::string format_bstream(const YaBStream& stream) {
 Vst3Logger::Vst3Logger(Logger& generic_logger) : logger(generic_logger) {}
 
 void Vst3Logger::log_query_interface(
-    const std::string& where,
+    const char* where,
     tresult result,
     const std::optional<Steinberg::FUID>& uid) {
     if (logger.verbosity >= Logger::Verbosity::all_events) [[unlikely]] {

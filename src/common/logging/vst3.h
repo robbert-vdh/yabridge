@@ -18,6 +18,8 @@
 
 #include <sstream>
 
+#include <boost/container/string.hpp>
+
 #include "../serialization/vst3.h"
 #include "common.h"
 
@@ -41,8 +43,14 @@ class Vst3Logger {
      * and queries for interfaces we do not implement depending on the verbosity
      * level. In case we could not get a FUID (because of null pointers, for
      * instance), `std::nullopt` should be passed.
+     *
+     * NOTE: We're passing a `const char*` here instead of a `const
+     *       std::string&` because that will still allocate for longer strings
+     *       because `std::string` isn't constexpr yet.  Most calls to this
+     *       function won't print anything, so we should make sure that calling
+     *       it doesn't add unnecessary overhead.
      */
-    void log_query_interface(const std::string& where,
+    void log_query_interface(const char* where,
                              tresult result,
                              const std::optional<Steinberg::FUID>& uid);
 
