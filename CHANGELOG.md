@@ -59,6 +59,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   multiple instances of a plugin.
 - The deserialization part of yabridge's communication is now slightly faster by
   skipping some unnecessary checks.
+- Log messages about VST3 query interfaces are now only printed when
+  `YABRIDGE_DEBUG_LEVEL` is set to 2 or higher, up from 1.
 
 ### Fixed
 

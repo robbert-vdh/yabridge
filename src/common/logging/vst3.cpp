@@ -57,7 +57,7 @@ void Vst3Logger::log_query_interface(
     const std::string& where,
     tresult result,
     const std::optional<Steinberg::FUID>& uid) {
-    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::most_events)) {
+    if (BOOST_UNLIKELY(logger.verbosity >= Logger::Verbosity::all_events)) {
         std::ostringstream message;
         std::string uid_string = uid ? format_uid(*uid) : "<unknown_pointer>";
 
