@@ -89,6 +89,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Improved the warning yabridgectl shows when it cannot run `yabridge-host.exe`
   as part of the post-installation checks.
+- Fixed the reported number of new or updated plugins when yabridgectl manages
+  both a 32-bit and a 64-bit version of the same VST3 plugin.
 - Fixed text wrapping being broken after a dependency update earlier this year.
 
 ## [3.2.0] - 2021-05-03

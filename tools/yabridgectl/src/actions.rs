@@ -232,8 +232,11 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // copy or symlink of `libyabridge-vst2.so`
     let mut orphan_files: Vec<NativeFile> = Vec::new();
     // All the VST3 modules we have set up yabridge for. We need this to detect leftover VST3
-    // modules in `~/.vst3/yabridge`.
-    let mut yabridge_vst3_bundles: BTreeMap<PathBuf, BTreeSet<LibArchitecture>> = BTreeMap::new();
+    // modules in `~/.vst3/yabridge`. The value is a set of all Windows architectures supported by
+    // the plugin, and a boolean indicating whether we updated the copy of `libyabridge-vst3.so` or
+    // not. This is necessary for keepign track of how many plugins we installed.
+    let mut yabridge_vst3_bundles: BTreeMap<PathBuf, (bool, BTreeSet<LibArchitecture>)> =
+        BTreeMap::new();
     for (path, search_results) in results {
         num_installed += search_results.plugins.len();
         orphan_files.extend(search_results.vst2_orphans().into_iter().cloned());
@@ -278,9 +281,10 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
 
                     // 32-bit and 64-bit versions of the plugin cna live inside of the same
                     // bundle), and show a warning if we come across any duplicates.
-                    let already_installed_architectures = yabridge_vst3_bundles
-                        .entry(module.target_bundle_home())
-                        .or_insert_with(BTreeSet::new);
+                    let (updated_libyabridge, already_installed_architectures) =
+                        yabridge_vst3_bundles
+                            .entry(module.target_bundle_home())
+                            .or_insert_with(|| (false, BTreeSet::new()));
                     if !already_installed_architectures.insert(module.architecture) {
                         eprintln!(
                             "{}",
@@ -307,8 +311,14 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         files.libyabridge_vst3.as_ref().unwrap(),
                         libyabridge_vst3_hash,
                         &native_module_path,
-                    )? {
+                    )? || *updated_libyabridge
+                    {
+                        // This is sadly a bit more complicated than what I would like, but the 'new
+                        // or updated plugins' count should also be updated correctly when we're
+                        // setting up 32-bit and a 64-bit Windows VST3 plugin inside of a single
+                        // bundle. So if we're counting one, we should count the other as well.
                         num_new += 1;
+                        *updated_libyabridge = true;
                     }
 
                     // We'll then symlink the Windows VST3 module to that bundle to create a merged
