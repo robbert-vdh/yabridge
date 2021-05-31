@@ -440,16 +440,29 @@ include:
   clicking on the save icon next to 'Preferences'.
 - **Native Instruments** plugins work, but Native Access is unable to finish
   installing the plugins. To work around this you can open the .iso file
-  downloaded to your downloads directory and run the installer directly. You may
-  also have to manually terminate the ISO driver installation process when
-  installing Native Access for the first time to allow the installation to
-  proceed. Some Native Instruments .iso files contain hidden files, and the
-  installer will fail unless you mount the .iso file with the correct mounting
-  options. To do this, first run
+  downloaded to your downloads directory and run the installer directly. _With
+  Wine (Staging) 6.8 or later Native Access might also not be able to finish the
+  download, in which case you should downgrade Wine first using the
+  [instructions above](#preliminaries)._ You may also have to manually terminate
+  the ISO driver installation process when installing Native Access for the
+  first time to allow the installation to proceed. Some Native Instruments .iso
+  files contain hidden files, and the installer will fail unless you mount the
+  .iso file with the correct mounting options. To do this, first run
   `udisksctl loop-setup -f ~/Downloads/<filename>.iso` to load the .iso file,
   and then use `udisksctl mount -t udf -o unhide -b /dev/loopX` where
   `/dev/loopX` corresponds to the loop device printed by the `loop-setup`
   command to mount the .iso file to a directory in `/run/media`.
+
+  If you're using an older distro and you're getting a
+  `Mount option 'user' is not allowed` error when trying to mount the file, then
+  you may need to manually create or edit `/etc/udisks2/mount_options.conf`
+  first, adding the following to the file:
+
+  ```conf
+  [defaults]
+  udf_allow=uid=$UID,gid=$GID,iocharset,utf8,umask,mode,dmode,unhide,undelete
+  ```
+
 - If **Spitfire Audio** plugins like **BBC Symphony Orchestra** and **LABS** are
   unable to load their sample libraries (_Error #X: Something went wrong_), then
   you can try reinstalling those plugins to a new, clean Wine prefix. To avoid
