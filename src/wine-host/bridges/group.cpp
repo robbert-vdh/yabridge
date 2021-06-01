@@ -103,13 +103,7 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
     logger.async_log_pipe_lines(stderr_redirect.pipe, stderr_buffer,
                                 "[STDERR] ");
 
-    stdio_handler = Win32Thread([&]() {
-        // In case a plugin generates a lot of FIXMEs relaying this IO with
-        // realtime scheduling could in theory cause latency issues
-        set_realtime_priority(false);
-
-        stdio_context.run();
-    });
+    stdio_handler = Win32Thread([&]() { stdio_context.run(); });
 }
 
 GroupBridge::~GroupBridge() noexcept {

@@ -57,6 +57,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Changed the way mutual recursion in VST3 plugins on the plugin side works to
   counter any potential GUI related timing issues with VST3 plugins when using
   multiple instances of a plugin.
+- Changed the way realtime scheduling is used on the Wine side to be less
+  aggressive, potentially reducing CPU usage when plugins are idle.
 - The deserialization part of yabridge's communication is now slightly faster by
   skipping some unnecessary checks.
 - Log messages about VST3 query interfaces are now only printed when

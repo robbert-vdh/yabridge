@@ -96,6 +96,15 @@ static const std::set<int> unsafe_requests{
     effOpen,     effClose,   effEditGetRect,  effEditOpen, effEditClose,
     effEditIdle, effEditTop, effMainsChanged, effGetChunk, effSetChunk};
 
+/**
+ * These opcodes from `unsafe_requests` should be run under realtime scheduling
+ * so that if they spawn audio worker threads, those threads will also be run
+ * with `SCHED_FIFO`. This is needed because unpatched Wine still does not
+ * implement thread priorities. Normally these unsafe requests are run on the
+ * main thread, which doesn't use realtime scheduling.
+ */
+static const std::set<int> unsafe_requests_realtime{effOpen, effMainsChanged};
+
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);
 
@@ -174,9 +183,17 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     // Note that this reinterpret cast is not needed at all since the function
     // pointer types are exactly the same, but clangd will complain otherwise
     current_bridge_instance = this;
+
+    // We'll also need to make sure that any audio worker threads created by the
+    // plugin are running using realtime scheduling, since Wine doesn't fully
+    // implement the Win32 process priority API yet.
+    set_realtime_priority(true);
     plugin = vst_entry_point(
         reinterpret_cast<audioMasterCallback>(host_callback_proxy));
+    set_realtime_priority(false);
+
     if (!plugin) {
+        set_realtime_priority(false);
         throw std::runtime_error("VST plugin at '" + plugin_dll_path +
                                  "' failed to initialize.");
     }
@@ -203,6 +220,8 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     main_context.update_timer_interval(config.event_loop_interval());
 
     parameters_handler = Win32Thread([&]() {
+        set_realtime_priority(true);
+
         sockets.host_vst_parameters.receive_multi<Parameter>(
             [&](Parameter& request, SerializationBufferBase& buffer) {
                 // Both `getParameter` and `setParameter` functions are passed
@@ -226,6 +245,8 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     });
 
     process_replacing_handler = Win32Thread([&]() {
+        set_realtime_priority(true);
+
         // Most plugins will already enable FTZ, but there are a handful of
         // plugins that don't that suffer from extreme DSP load increases when
         // they start producing denormals
@@ -368,6 +389,8 @@ bool Vst2Bridge::inhibits_event_loop() noexcept {
 }
 
 void Vst2Bridge::run() {
+    set_realtime_priority(true);
+
     sockets.host_vst_dispatch.receive_events(
         std::nullopt, [&](Vst2Event& event, bool /*on_main_thread*/) {
             if (event.opcode == effProcessEvents) {
@@ -418,11 +441,25 @@ void Vst2Bridge::run() {
                         // where the plugins were instantiated and where the
                         // Win32 message loop is handled.
                         if (unsafe_requests.contains(opcode)) {
+                            // Requests that potentially spawn an audio worker
+                            // thread should be run with `SCHED_FIFO` until Wine
+                            // implements the corresponding Windows API
+                            const bool is_realtime_request =
+                                unsafe_requests_realtime.contains(opcode);
+
                             return main_context
                                 .run_in_context([&]() -> intptr_t {
+                                    if (is_realtime_request) {
+                                        set_realtime_priority(true);
+                                    }
+
                                     const intptr_t result =
                                         dispatch_wrapper(plugin, opcode, index,
                                                          value, data, option);
+
+                                    if (is_realtime_request) {
+                                        set_realtime_priority(false);
+                                    }
 
                                     // The Win32 message loop will not be run up
                                     // to this point to prevent plugins with
@@ -475,8 +512,12 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
                                       intptr_t value,
                                       void* data,
                                       float option) {
-    // We have to intercept GUI open calls since we can't use
-    // the X11 window handle passed by the host
+    // We have to intercept GUI open calls since we can't use the X11 window
+    // handle passed by the host. Keep in mind that in our `run()` function
+    // above some of these events will be called on some arbitrary thread (where
+    // we're running with realtime scheduling) and some might be called on the
+    // main thread using `main_context.run_in_context()` (where we don't use
+    // realtime scheduling).
     switch (opcode) {
         case effEditOpen: {
             // Create a Win32 window through Wine, embed it into the window
@@ -484,11 +525,6 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             // the Wine window
             const auto x11_handle = reinterpret_cast<size_t>(data);
 
-            // NOTE: Just like in the event loop, we want to run this with lower
-            //       priority to prevent whatever operation the plugin does
-            //       while it's loading its editor from preempting the audio
-            //       thread.
-            set_realtime_priority(false);
             Editor& editor_instance = editor.emplace(
                 main_context, config, x11_handle, [plugin = this->plugin]() {
                     plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0.0);
@@ -496,25 +532,14 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             const intptr_t result =
                 plugin->dispatcher(plugin, opcode, index, value,
                                    editor_instance.get_win32_handle(), option);
-            set_realtime_priority(true);
 
             return result;
         } break;
         case effEditClose: {
             // Cleanup is handled through RAII
-            set_realtime_priority(false);
             const intptr_t return_value =
                 plugin->dispatcher(plugin, opcode, index, value, data, option);
             editor.reset();
-            set_realtime_priority(true);
-
-            return return_value;
-        } break;
-        case effEditGetRect: {
-            set_realtime_priority(false);
-            const intptr_t return_value =
-                plugin->dispatcher(plugin, opcode, index, value, data, option);
-            set_realtime_priority(true);
 
             return return_value;
         } break;

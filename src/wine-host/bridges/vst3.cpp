@@ -132,6 +132,8 @@ bool Vst3Bridge::inhibits_event_loop() noexcept {
 }
 
 void Vst3Bridge::run() {
+    set_realtime_priority(true);
+
     // XXX: In theory all of thise should be safe assuming the host doesn't do
     //      anything weird. We're using mutexes when inserting and removing
     //      things, but for correctness we should have a multiple-readers
@@ -153,12 +155,10 @@ void Vst3Bridge::run() {
                         // drop it here as well, along with the `IPlugFrame`
                         // proxy object it may have received in
                         // `IPlugView::setFrame()`.
-                        set_realtime_priority(false);
                         object_instances[request.owner_instance_id]
                             .plug_view_instance.reset();
                         object_instances[request.owner_instance_id]
                             .plug_frame_proxy.reset();
-                        set_realtime_priority(true);
                     })
                     .wait();
 
@@ -179,28 +179,43 @@ void Vst3Bridge::run() {
                 // shouldn't)
                 Steinberg::IPtr<Steinberg::FUnknown> object =
                     main_context
-                        .run_in_context([&]() -> Steinberg::IPtr<
-                                                  Steinberg::FUnknown> {
-                            switch (request.requested_interface) {
-                                case Vst3PluginProxy::Construct::Interface::
-                                    IComponent:
-                                    return module->getFactory()
-                                        .createInstance<
-                                            Steinberg::Vst::IComponent>(cid);
-                                    break;
-                                case Vst3PluginProxy::Construct::Interface::
-                                    IEditController:
-                                    return module->getFactory()
-                                        .createInstance<
-                                            Steinberg::Vst::IEditController>(
-                                            cid);
-                                    break;
-                                default:
-                                    // Unreachable
-                                    return nullptr;
-                                    break;
-                            }
-                        })
+                        .run_in_context(
+                            [&]() -> Steinberg::IPtr<Steinberg::FUnknown> {
+                                Steinberg::IPtr<Steinberg::FUnknown> result;
+
+                                // The plugin may spawn audio worker threads
+                                // when constructing an object. Since Wine
+                                // doesn't implement Window's realtime process
+                                // priority yet we'll just have to make sure the
+                                // any spawned threads are running with
+                                // `SCHED_FIFO` ourselves.
+                                set_realtime_priority(true);
+                                switch (request.requested_interface) {
+                                    case Vst3PluginProxy::Construct::Interface::
+                                        IComponent:
+                                        result =
+                                            module->getFactory()
+                                                .createInstance<
+                                                    Steinberg::Vst::IComponent>(
+                                                    cid);
+                                        break;
+                                    case Vst3PluginProxy::Construct::Interface::
+                                        IEditController:
+                                        result =
+                                            module->getFactory()
+                                                .createInstance<
+                                                    Steinberg::Vst::
+                                                        IEditController>(cid);
+                                        break;
+                                    default:
+                                        // Unreachable
+                                        result = nullptr;
+                                        break;
+                                }
+                                set_realtime_priority(false);
+
+                                return result;
+                            })
                         .get();
 
                 if (!object) {
@@ -465,17 +480,11 @@ void Vst3Bridge::run() {
                 // Instantiate the object from the GUI thread
                 main_context
                     .run_in_context([&]() -> void {
-                        // NOTE: Just like in the event loop, we want to run
-                        //       this with lower priority to prevent whatever
-                        //       operation the plugin does while it's loading
-                        //       its editor from preempting the audio thread.
-                        set_realtime_priority(false);
                         object_instances[request.instance_id]
                             .plug_view_instance.emplace(Steinberg::owned(
                                 object_instances[request.instance_id]
                                     .edit_controller->createView(
                                         request.name.c_str())));
-                        set_realtime_priority(true);
                     })
                     .wait();
 
@@ -702,7 +711,6 @@ void Vst3Bridge::run() {
                 // be done in the main UI thread
                 return main_context
                     .run_in_context([&]() -> tresult {
-                        set_realtime_priority(false);
                         Editor& editor_instance =
                             object_instances[request.owner_instance_id]
                                 .editor.emplace(main_context, config,
@@ -712,7 +720,6 @@ void Vst3Bridge::run() {
                                 .plug_view_instance->plug_view->attached(
                                     editor_instance.get_win32_handle(),
                                     type.c_str());
-                        set_realtime_priority(true);
 
                         // Get rid of the editor again if the plugin didn't
                         // embed itself in it
@@ -730,13 +737,11 @@ void Vst3Bridge::run() {
                 return main_context
                     .run_in_context([&]() -> tresult {
                         // Cleanup is handled through RAII
-                        set_realtime_priority(false);
                         const tresult result =
                             object_instances[request.owner_instance_id]
                                 .plug_view_instance->plug_view->removed();
                         object_instances[request.owner_instance_id]
                             .editor.reset();
-                        set_realtime_priority(true);
 
                         return result;
                     })
@@ -902,6 +907,9 @@ void Vst3Bridge::run() {
                 // functions from the main GUI thread
                 return main_context
                     .run_in_context([&]() -> tresult {
+                        // The plugin may try to spawn audio worker threads
+                        // during its initialization
+                        set_realtime_priority(true);
                         // This static cast is required to upcast to `FUnknown*`
                         const tresult result =
                             object_instances[request.instance_id]
@@ -909,6 +917,7 @@ void Vst3Bridge::run() {
                                     static_cast<YaHostApplication*>(
                                         object_instances[request.instance_id]
                                             .host_context_proxy));
+                        set_realtime_priority(false);
 
                         // The Win32 message loop will not be run up to this
                         // point to prevent plugins with partially initialized
@@ -1172,6 +1181,8 @@ size_t Vst3Bridge::register_object_instance(
 
         object_instances[instance_id]
             .audio_processor_handler = Win32Thread([&, instance_id]() {
+            set_realtime_priority(true);
+
             sockets.add_audio_processor_and_listen(
                 instance_id, socket_listening_latch,
                 overload{
