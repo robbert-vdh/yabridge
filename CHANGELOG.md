@@ -10,14 +10,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added a timed cache for the `IPlugView::canResize()` VST3 function, so the
-  result will be remembered during an active resize. This makes resizing VST3
-  plugin editor windows more responsive.
-- Added another cache for when the host asks a VST3 plugin whether it supports
-  processing 32-bit or 64-bit floating point audio. Some hosts, like **Bitwig
-  Studio**, call this function at the start of every processing cycle even
-  though the value won't ever change. Caching this can significantly reduce the
-  overhead of bridging VST3 plugins under those hosts.
 - Added a [compatibility
   option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
   redirect the Wine plugin host's STDOUT and STDERR output streams directly to a
@@ -31,6 +23,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Added a timed cache for the `IPlugView::canResize()` VST3 function so the
+  result will be remembered during an active resize. This makes resizing VST3
+  plugin editor windows more responsive.
+- Added another cache for when the host asks a VST3 plugin whether it supports
+  processing 32-bit or 64-bit floating point audio. Some hosts, like **Bitwig
+  Studio**, call this function at the start of every processing cycle even
+  though the value won't ever change. Caching this can significantly reduce the
+  overhead of bridging VST3 plugins under those hosts.
 - Redesigned the VST3 audio socket handling to be able to reuse the process data
   objects on both sides. This greatly reduces the overhead of our VST3 bridging
   by getting rid of all potential memory allocations during audio processing.
@@ -46,11 +46,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   all of our efforts at reusing objects and preventing memory allocations in the
   process. A fix for this issue has also been upstreamed to the library.
 - VST3 output audio buffers are now no longer zeroed out at the start of every
-  audio processing cycle. We did this for VST3 plugins since the introduction of
-  VST3 bridging in yabridge 3.0.0, but we never did this for VST2 plugins. Since
-  not doing this has never caused any issues with VST2 plugins, it should also
-  be safe to also skip this for VST3 plugins. This further reduces the overhead
-  of VST3 audio processing.
+  audio processing cycle. We've been doing this for VST3 plugins since the
+  introduction of VST3 bridging in yabridge 3.0.0, but we never did this for
+  VST2 plugins. Since not doing this has never caused any issues with VST2
+  plugins, it should also be safe to also skip this for VST3 plugins. This
+  further reduces the overhead of VST3 audio processing.
 - Optimized VST3 audio processing for instruments by preallocating small vectors
   for event and parameter change queues.
 - VST2 MIDI event handling also received the same small vector optimization to
@@ -87,11 +87,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   instances of the plugin at once while the FX window is open and the GUI is
   visible.
 - Fixed the _PG-8X_ VST2 plugin freezing in **REAPER** when loading the plugin.
-- Fixed _Voxengo_ VST2 plugins in **Renoise** freezing when loading a project or
+- Fixed _Voxengo_ VST2 plugins freezing in **Renoise** when loading a project or
   when otherwise restoring plugin state.
 - Fixed logging traces in the VST2 audio processing functions and the VST3 query
   interfaces causing allocations even when `YABRIDGE_DEBUG_LEVEL` is not set to 2.
-- Fixed building on Wine 6.8 because of internal changes to Wine's `windows.h`
+- Fixed building on Wine 6.8 after some internal changes to Wine's `windows.h`
   implementation.
 
 ### yabridgectl
