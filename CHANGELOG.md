@@ -10,50 +10,55 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added a timed cache for the `IPluginView::canResize()` VST3 function, so value
-  will be remembered during an active resize. This makes resizing VST3 plugin
-  editor windows more responsive.
-- Add a cache for VST3 function calls where the host asks the plugin whether it
-  can process 32-bit or 64-bit floating point audio. Some hosts will call this
-  function every processing cycle even though the value doesn't change. Caching
-  this can significantly reduce the overhead of bridging VST3 plugins under
-  those hosts.
+- Added a timed cache for the `IPlugView::canResize()` VST3 function, so the
+  result will be remembered during an active resize. This makes resizing VST3
+  plugin editor windows more responsive.
+- Added another cache for when the host asks a VST3 plugin whether it supports
+  processing 32-bit or 64-bit floating point audio. Some hosts, like **Bitwig
+  Studio**, call this function at the start of every processing cycle even
+  though the value won't ever change. Caching this can significantly reduce the
+  overhead of bridging VST3 plugins under those hosts.
 - Added a [compatibility
   option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
-  redirect the Wine plugin host's output directly to a file. Enabling this
-  allows **ujam** plugins and other plugins made with the Gorilla Engine such as
-  the **LoopCloud** plugins to function correctly as those plugins will throw a
-  seemingly unrelated error when they output to a pipe.
-- Added a small warning on initialization when `RLIMIT_RTTIME` is set to some
-  small value. This happens when using PipeWire, and it can cause crashes when
-  using loading plugins.
+  redirect the Wine plugin host's STDOUT and STDERR output streams directly to a
+  file. Enabling this allows _ujam_ plugins and other plugins made with the
+  Gorilla Engine, such as the _LoopCloud_ plugins, to function correctly. Those
+  plugins crash with a seemingly unrelated error message when their output is
+  redirected to a pipe.
+- Added a small warning during initialization when `RLIMIT_RTTIME` is set to
+  some small value. This happens when using PipeWire with rtkit, and it can
+  cause crashes when loading plugins.
 
 ### Changed
 
 - Redesigned the VST3 audio socket handling to be able to reuse the process data
   objects on both sides. This greatly reduces the overhead of our VST3 bridging
-  by getting rid of all memory allocations during audio processing.
+  by getting rid of all potential memory allocations during audio processing.
 - VST2 audio processing also received the same optimizations. In a few places
   yabridge would still reallocate heap data during every audio processing cycle.
   We now make sure to always reuse all buffers and heap data used in the audio
   processing process.
-- Considerably optimized both VST2 and VST3 audio processing by preventing
-  unnecessary memory operations. As it turns out, the underlying binary
-  serialization library used by yabridge would always reinitialize the type-safe
-  unions yabridge uses to differentiate between single and double precision
-  floating point audio buffers, undoing all of our efforts at reusing objects
-  and preventing memory allocations in the process.
-- VST3 output audio buffers are no longer zeroed out for the plugin. We did this
-  for VST3 plugins, but not for VST2 plugins. Since not doing this never caused
-  any issues with VST2 plugins it should also be safe to do the same thing for
-  VST3 plugins. This further reduces the overhead of VST3 audio processing.
-- Further optimized VST3 audio processing by preallocating small vectors for
-  event and parameter change queues.
-- VST2 audio processing also received the same small vector optimization to get
-  rid of any last potential allocations during audio processing.
-- The same small vector optimization has been applied across yabridge's entire
-  communication and event handling architecture, meaning that most function
-  calls should no longer produce any allocations for both VST2 and VST3 plugins.
+- Considerably optimized parts of yabridge's communication infrastructure by
+  preventing unnecessary memory operations. As it turned out, the underlying
+  binary serialization library used by yabridge would always reinitialize the
+  type-safe unions yabridge uses to differentiate between single and double
+  precision floating point audio buffers in both VST2 and VST3 plugins, undoing
+  all of our efforts at reusing objects and preventing memory allocations in the
+  process. A fix for this issue has also been upstreamed to the library.
+- VST3 output audio buffers are now no longer zeroed out at the start of every
+  audio processing cycle. We did this for VST3 plugins since the introduction of
+  VST3 bridging in yabridge 3.0.0, but we never did this for VST2 plugins. Since
+  not doing this has never caused any issues with VST2 plugins, it should also
+  be safe to also skip this for VST3 plugins. This further reduces the overhead
+  of VST3 audio processing.
+- Optimized VST3 audio processing for instruments by preallocating small vectors
+  for event and parameter change queues.
+- VST2 MIDI event handling also received the same small vector optimization to
+  get rid of any last potential allocations during audio processing.
+- This small vector optimization has also been applied across yabridge's entire
+  communication and event handling architecture, meaning that most plugin
+  function calls and callbacks should no longer produce any allocations for both
+  VST2 and VST3 plugins.
 - Changed the way mutual recursion in VST3 plugins on the plugin side works to
   counter any potential GUI related timing issues with VST3 plugins when using
   multiple instances of a plugin.
@@ -69,13 +74,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed a longstanding thread safety issue when hosting a lot of VST2 plugins in
   a plugin group. This could cause plugins to crash or freeze when initializing
   a new instance of a VST2 plugin in a plugin group while another VST2 plugin in
-  that same group is processing audio.
+  that same group is currently processing audio.
 - Fixed yabridge's Wine processes inheriting file descriptors in some
-  situations. This could cause **Ardour** and **Mixbus** to hang when trying to
-  reopen it after a crash. The watchdog timer added in yabridge 3.2.0 also
-  addressed this issue partially, but it should now be completely fixed. This
-  may also prevent rare issues where the **JACK** server would hang after the
-  host crashes.
+  situations. This could cause **Ardour** and **Mixbus** to hang when reopening
+  the DAW after a crash. The watchdog timer added in yabridge 3.2.0 addressed
+  this issue partially, but it should now be completely fixed. This may also
+  prevent rare issues where the **JACK** server would hang after the host
+  crashes.
 - Fixed _DMG_ VST3 plugins freezing in **REAPER** when the plugin resizes itself
   while the host passes channel context information to the plugin.
 - Also fixed _DMG_ VST3 plugins freezing in **REAPER** when restoring multiple
@@ -84,15 +89,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed the _PG-8X_ VST2 plugin freezing in **REAPER** when loading the plugin.
 - Fixed _Voxengo_ VST2 plugins in **Renoise** freezing when loading a project or
   when otherwise restoring plugin state.
-- Fixed logging traces in the VST2 audio processing functions and VST3 query
+- Fixed logging traces in the VST2 audio processing functions and the VST3 query
   interfaces causing allocations even when `YABRIDGE_DEBUG_LEVEL` is not set to 2.
-- Fixed builds on Wine 6.8 because of internal changes to Wine's `windows.h`
+- Fixed building on Wine 6.8 because of internal changes to Wine's `windows.h`
   implementation.
 
 ### yabridgectl
 
 - Improved the warning yabridgectl shows when it cannot run `yabridge-host.exe`
-  as part of the post-installation checks.
+  as part of the post-installation setup checks.
 - Fixed the reported number of new or updated plugins when yabridgectl manages
   both a 32-bit and a 64-bit version of the same VST3 plugin.
 - Fixed text wrapping being broken after a dependency update earlier this year.
