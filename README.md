@@ -48,6 +48,7 @@ Yabridge has been tested under the following hosts using Wine Staging 6.4[\*](#p
 | Carla 2.3           | :heavy_check_mark: | :heavy_check_mark:                                                             |
 | Qtractor 0.9.21     | :heavy_check_mark: | :heavy_check_mark:                                                             |
 | Renoise 3.3.2       | :heavy_check_mark: | :heavy_check_mark:                                                             |
+| Waveform 11.5.17    | :heavy_check_mark: | :heavy_check_mark:                                                             |
 | Ardour 6.7          | :heavy_check_mark: | :warning: Ardour does not support plugins with multiple input or output busses |
 | Mixbus 7.0.140      | :heavy_check_mark: | :warning: Mixbus does not support plugins with multiple input or output busses |
 
