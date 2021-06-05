@@ -480,9 +480,15 @@ void Editor::fix_local_coordinates() const {
 
     // We can't directly use the `event.x` and `event.y` coordinates because the
     // parent window may also be embedded inside another window.
+    // HACK: Tracktion Waveform uses client side decorations, and for VST2
+    //       plugins they forgot to add a separate parent window that's already
+    //       offset correctly. Instead, they'll have the plugin embed itself
+    //       inside directly inside of the dialog, and Waveform then moves the
+    //       window 27 pixels down. That's why we cannot use `parent_window`
+    //       here.
     xcb_generic_error_t* error;
     const xcb_translate_coordinates_cookie_t translate_cookie =
-        xcb_translate_coordinates(x11_connection.get(), parent_window, root, 0,
+        xcb_translate_coordinates(x11_connection.get(), wine_window, root, 0,
                                   0);
     xcb_translate_coordinates_reply_t* translated_coordinates =
         xcb_translate_coordinates_reply(x11_connection.get(), translate_cookie,

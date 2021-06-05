@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed mouse clicks in VST2 editors in **Tracktion Waveform** being offset
+  vertically because of the way Waveform embeds VST2 editors.
+
 ## [3.3.0] - 2020-06-03
 
 ### Added
