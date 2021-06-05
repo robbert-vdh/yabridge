@@ -480,7 +480,7 @@ void Editor::fix_local_coordinates() const {
 
     // We can't directly use the `event.x` and `event.y` coordinates because the
     // parent window may also be embedded inside another window.
-    // HACK: Tracktion Waveform uses client side decorations, and for VST2
+    // NOTE: Tracktion Waveform uses client side decorations, and for VST2
     //       plugins they forgot to add a separate parent window that's already
     //       offset correctly. Instead, they'll have the plugin embed itself
     //       inside directly inside of the dialog, and Waveform then moves the
