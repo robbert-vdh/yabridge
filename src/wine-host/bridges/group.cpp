@@ -103,7 +103,11 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
     logger.async_log_pipe_lines(stderr_redirect.pipe, stderr_buffer,
                                 "[STDERR] ");
 
-    stdio_handler = Win32Thread([&]() { stdio_context.run(); });
+    stdio_handler = Win32Thread([&]() {
+        pthread_setname_np(pthread_self(), "group-stdio");
+
+        stdio_context.run();
+    });
 }
 
 GroupBridge::~GroupBridge() noexcept {
@@ -238,6 +242,10 @@ void GroupBridge::accept_requests() {
                 const size_t plugin_id = next_plugin_id.fetch_add(1);
                 active_plugins[plugin_id] = std::pair(
                     Win32Thread([this, plugin_id, plugin_ptr = bridge.get()]() {
+                        const std::string thread_name =
+                            "worker-" + std::to_string(plugin_id);
+                        pthread_setname_np(pthread_self(), thread_name.c_str());
+
                         handle_plugin_run(plugin_id, plugin_ptr);
                     }),
                     std::move(bridge));

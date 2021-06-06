@@ -8,6 +8,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added all thread names to all worker threads created by yabridge. This can
+  make it easier to debug and profile yabridge.
+
 ### Fixed
 
 - Fixed mouse clicks in VST2 editors in **Tracktion Waveform** being offset

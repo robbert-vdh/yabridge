@@ -86,7 +86,11 @@ MainContext::MainContext()
     // we'll run the timer on a 30 second interval.
     async_handle_watchdog_timer(5s);
 
-    watchdog_handler = Win32Thread([&]() { watchdog_context.run(); });
+    watchdog_handler = Win32Thread([&]() {
+        pthread_setname_np(pthread_self(), "watchdog");
+
+        watchdog_context.run();
+    });
 }
 
 void MainContext::run() {

@@ -775,7 +775,11 @@ class AdHocSocketHandler {
                     std::move(secondary_socket));
             });
 
-        Thread secondary_requests_handler([&]() { secondary_context.run(); });
+        Thread secondary_requests_handler([&]() {
+            pthread_setname_np(pthread_self(), "adhoc-acceptor");
+
+            secondary_context.run();
+        });
 
         // Now we'll handle reads on the primary socket in a loop until the
         // socket shuts down

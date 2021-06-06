@@ -73,6 +73,7 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
     // lockstep anyway
     host_callback_handler = std::jthread([&]() {
         set_realtime_priority(true);
+        pthread_setname_np(pthread_self(), "host-callbacks");
 
         sockets.vst_host_callback.receive_events(
             std::pair<Vst2Logger&, bool>(logger, false),

@@ -1183,6 +1183,13 @@ size_t Vst3Bridge::register_object_instance(
             .audio_processor_handler = Win32Thread([&, instance_id]() {
             set_realtime_priority(true);
 
+            // XXX: Like with VST2 worker threads, when using plugin groups the
+            //      thread names from different plugins will clash. Not a huge
+            //      deal probably, since duplicate thread names are still more
+            //      useful than no thread names.
+            const std::string thread_name = "audio-" + std::to_string(instance_id);
+            pthread_setname_np(pthread_self(), thread_name.c_str());
+
             sockets.add_audio_processor_and_listen(
                 instance_id, socket_listening_latch,
                 overload{

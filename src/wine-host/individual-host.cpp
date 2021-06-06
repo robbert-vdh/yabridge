@@ -117,6 +117,8 @@ __cdecl
     // potentially unsafe events that should always be run from the UI thread
     // will be posted to `main_context`.
     Win32Thread worker_thread([&]() {
+        pthread_setname_np(pthread_self(), "worker");
+
         bridge->run();
 
         // // When the sockets get closed, this application should

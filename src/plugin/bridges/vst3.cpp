@@ -49,6 +49,7 @@ Vst3PluginBridge::Vst3PluginBridge()
     // configuration.
     host_callback_handler = std::jthread([&]() {
         set_realtime_priority(true);
+        pthread_setname_np(pthread_self(), "host-callbacks");
 
         sockets.vst_host_callback.receive_messages(
             std::pair<Vst3Logger&, bool>(logger, false),

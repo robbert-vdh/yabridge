@@ -221,6 +221,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
 
     parameters_handler = Win32Thread([&]() {
         set_realtime_priority(true);
+        pthread_setname_np(pthread_self(), "parameters");
 
         sockets.host_vst_parameters.receive_multi<Parameter>(
             [&](Parameter& request, SerializationBufferBase& buffer) {
@@ -246,6 +247,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
 
     process_replacing_handler = Win32Thread([&]() {
         set_realtime_priority(true);
+        pthread_setname_np(pthread_self(), "audio");
 
         // Most plugins will already enable FTZ, but there are a handful of
         // plugins that don't that suffer from extreme DSP load increases when

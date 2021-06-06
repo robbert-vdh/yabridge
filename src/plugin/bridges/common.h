@@ -111,6 +111,7 @@ class PluginBridge {
               has_realtime_priority_promise.set_value(
                   set_realtime_priority(true));
               set_realtime_priority(false);
+              pthread_setname_np(pthread_self(), "wine-stdio");
 
               io_context.run();
           }) {}
@@ -301,6 +302,8 @@ class PluginBridge {
         // I feel like this a much simpler solution.
         host_watchdog_handler = std::jthread([&](std::stop_token st) {
             using namespace std::literals::chrono_literals;
+
+            pthread_setname_np(pthread_self(), "watchdog");
 
             while (!st.stop_requested()) {
                 if (!plugin_host->running()) {

@@ -171,6 +171,7 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
         group_host_connect_handler =
             std::jthread([this, connect, group_host_pid]() {
                 set_realtime_priority(true);
+                pthread_setname_np(pthread_self(), "group-connect");
 
                 using namespace std::literals::chrono_literals;
 
