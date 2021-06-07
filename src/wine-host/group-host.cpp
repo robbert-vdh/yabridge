@@ -65,6 +65,11 @@ __cdecl
 #endif
               << std::endl;
 
+    // NOTE: Some plugins use Microsoft COM, but don't initialize it first and
+    //       just pray the host does it for them. Examples of this are
+    //       PSPaudioware's InfiniStrip and Shattered Glass Audio Code Red Free.
+    OleInitialize(nullptr);
+
     try {
         GroupBridge bridge(group_socket_endpoint_path);
 

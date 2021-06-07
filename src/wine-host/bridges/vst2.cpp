@@ -137,21 +137,6 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
       logger(generic_logger),
       plugin_handle(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
       sockets(main_context.context, endpoint_base_dir, false) {
-    // HACK: If the plugin library was unable to load, then there's a tiny
-    //       chance that the plugin expected the COM library to already be
-    //       initialized. I've only seen PSPaudioware's InfiniStrip do this. In
-    //       that case, we'll initialize the COM library for them and try again.
-    if (!plugin_handle) {
-        OleInitialize(nullptr);
-        plugin_handle.reset(LoadLibrary(plugin_dll_path.c_str()));
-        if (plugin_handle) {
-            std::cerr << "WARNING: '" << plugin_dll_path << "'" << std::endl;
-            std::cerr << "         could only load after we manually"
-                      << std::endl;
-            std::cerr << "         initialized the COM library." << std::endl;
-        }
-    }
-
     if (!plugin_handle) {
         throw std::runtime_error("Could not load the Windows .dll file at '" +
                                  plugin_dll_path + "'");

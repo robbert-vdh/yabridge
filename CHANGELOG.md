@@ -15,6 +15,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed _Shattered Glass Audio Code Red (Free)_ crashing when opening the plugin
+  editor because the plugin doesn't initialize Microsoft COM before using it. We
+  now always initialize Microsoft COM unconditionally, instead of only doing it
+  when a plugin fails to initialize the first time without it.
 - Fixed mouse clicks in VST2 editors in **Tracktion Waveform** being offset
   vertically because of the way Waveform embeds VST2 editors.
 

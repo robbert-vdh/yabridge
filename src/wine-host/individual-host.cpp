@@ -69,6 +69,11 @@ __cdecl
     std::cerr << "Preparing to load " << plugin_type_to_string(plugin_type)
               << " plugin at '" << plugin_location << "'" << std::endl;
 
+    // NOTE: Some plugins use Microsoft COM, but don't initialize it first and
+    //       just pray the host does it for them. Examples of this are
+    //       PSPaudioware's InfiniStrip and Shattered Glass Audio Code Red Free.
+    OleInitialize(nullptr);
+
     // As explained in `Vst2Bridge`, the plugin has to be initialized in the
     // same thread as the one that calls `io_context.run()`. This setup is
     // slightly more convoluted than it has to be, but doing it this way we
