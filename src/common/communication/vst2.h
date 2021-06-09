@@ -325,7 +325,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  */
 template <typename Thread>
-class Vst2Sockets : public Sockets {
+class Vst2Sockets final : public Sockets {
    public:
     /**
      * Sets up the sockets using the specified base directory. The sockets won't

@@ -294,7 +294,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
  */
 template <typename Thread>
-class Vst3Sockets : public Sockets {
+class Vst3Sockets final : public Sockets {
    public:
     /**
      * Sets up the sockets using the specified base directory. The sockets won't
