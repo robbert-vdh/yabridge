@@ -97,7 +97,10 @@ fs::path IndividualHost::path() {
 }
 
 bool IndividualHost::running() noexcept {
-    return host.running();
+    std::error_code error{};
+    const bool running = host.running(error);
+
+    return running && !error;
 }
 
 void IndividualHost::terminate() {
