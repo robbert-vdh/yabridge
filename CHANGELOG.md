@@ -10,20 +10,20 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added all thread names to all worker threads created by yabridge. This can
-  make it easier to debug and profile yabridge.
+- Added thread names to all worker threads created by yabridge. This makes it
+  easier to debug and profile yabridge.
 
 ### Fixed
 
 - Fixed the `IPlugView::canResize()` cache added in yabridge 3.2.0 sometimes not
-  being initialized correctly, preventing host-driven resizes in certain
+  being initialized properly, preventing host-driven resizes in certain
   situations. This was mostly noticeable in **Ardour**.
 - Fixed mouse clicks in VST2 editors in **Tracktion Waveform** being offset
-  vertically because of the way Waveform embeds VST2 editors.
-- Fixed _Shattered Glass Audio Code Red (Free)_ crashing when opening the plugin
-  editor because the plugin doesn't initialize Microsoft COM before using it. We
-  now always initialize Microsoft COM unconditionally, instead of only doing it
-  when a plugin fails to initialize the first time without it.
+  vertically by a small amount because of the way Waveform embeds VST2 editors.
+- Fixed _Shattered Glass Audio_ plugins crashing when opening the plugin editor
+  because those plugins don't initialize Microsoft COM before trying to use it.
+  We now always initialize the Microsoft COM library unconditionally, instead of
+  doing it only when a plugin fails to initialize without it.
 - Fixed log message for the cached `IPlugView::canResize()` VST3 function calls
   implemented in yabridge 3.2.0.
 
