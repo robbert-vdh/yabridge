@@ -13,10 +13,16 @@ config_header = configure_file(
   )
 )
 
-# Generate a file containing the last annotated git tag and possibly also the
-# amount of commits since then and the hash of the last commit
+# Generate a file containing the last annotated git tag, the amount of commits
+# since then, and the hash of the last commit
+# NOTE: We explicitly specify the git directory to be relative to the main
+#       `meson.build` file. Otherwise git will search up the file tree, which
+#       might cause `git describe` to be run in an unrelated repository when
+#       building from a tarball that's been extracted inside of a  git
+#       directory, like when building the `yabridge` AUR package. In that case
+#       `vcs_tag()` should always fall back to the Meson project version.
 version_header = vcs_tag(
-  command : ['git', 'describe', '--always'],
+  command : ['git', '--git-dir=' + (meson.source_root() / '.git'), 'describe', '--always'],
   input : 'version.h.in',
   output : 'version.h',
   replace_string : '@VCS_VERSION@'

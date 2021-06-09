@@ -24,6 +24,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   because those plugins don't initialize Microsoft COM before trying to use it.
   We now always initialize the Microsoft COM library unconditionally, instead of
   doing it only when a plugin fails to initialize without it.
+- Fixed incorrect version strings reported by yabridge when building from a
+  tarball that has been extracted inside of a git repository. This could happen
+  when building the `yabridge` AUR package with certain AUR helpers.
 - Fixed log message for the cached `IPlugView::canResize()` VST3 function calls
   implemented in yabridge 3.2.0.
 
