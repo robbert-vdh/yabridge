@@ -278,5 +278,5 @@ class TimedValueCache {
 
    private:
     T value;
-    time_t valid_until;
+    time_t valid_until = 0;
 };

@@ -15,6 +15,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed the `IPlugView::canResize()` cache added in yabridge 3.2.0 sometimes not
+  being initialized correctly, preventing host-driven resizes in certain
+  situations. This was mostly noticeable in **Ardour**.
 - Fixed mouse clicks in VST2 editors in **Tracktion Waveform** being offset
   vertically because of the way Waveform embeds VST2 editors.
 - Fixed _Shattered Glass Audio Code Red (Free)_ crashing when opening the plugin
