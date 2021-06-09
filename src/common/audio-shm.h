@@ -125,7 +125,7 @@ class AudioShmBuffer {
 
     /**
      * Get a pointer to the part of the buffer where this input audio channel is
-     * stored in.
+     * stored in. Both the bus and the channel indices start at zero.
      */
     template <typename T>
     T* input_channel_ptr(const uint32_t bus, const uint32_t channel) {
@@ -135,7 +135,7 @@ class AudioShmBuffer {
 
     /**
      * Get a pointer to the part of the buffer where this output audio channel
-     * is stored in.
+     * is stored in. Both the bus and the channel indices start at zero.
      */
     template <typename T>
     T* output_channel_ptr(const uint32_t bus, const uint32_t channel) {
