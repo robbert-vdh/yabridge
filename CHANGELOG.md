@@ -21,6 +21,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   when a plugin fails to initialize the first time without it.
 - Fixed mouse clicks in VST2 editors in **Tracktion Waveform** being offset
   vertically because of the way Waveform embeds VST2 editors.
+- Fixed log message for the cached `IPlugView::canResize()` VST3 function calls
+  implemented in yabridge 3.2.0.
 
 ## [3.3.0] - 2020-06-03
 

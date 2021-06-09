@@ -251,7 +251,7 @@ tresult PLUGIN_API Vst3PlugViewProxyImpl::canResize() {
             const bool log_response = bridge.logger.log_request(true, request);
             if (log_response) {
                 bridge.logger.log_response(
-                    true, YaPlugView::CanResize::Response(*result));
+                    true, YaPlugView::CanResize::Response(*result), true);
             }
 
             return *result;
