@@ -18,6 +18,8 @@
 
 #include "plug-view-proxy.h"
 
+using namespace std::literals::chrono_literals;
+
 /**
  * When the host tries to connect two plugin instances with connection proxies,
  * we'll first try to bypass that proxy. This goes against the idea of yabridge,
@@ -35,13 +37,20 @@ constexpr char other_instance_message_id[] = "yabridge_other_instance";
  */
 constexpr char other_instance_pointer_attribute[] = "other_proxy_ptr";
 
+/**
+ * The time between reports for the mean processing time.
+ */
+constexpr std::chrono::high_resolution_clock::duration report_interval = 5s;
+
 Vst3PluginProxyImpl::ContextMenu::ContextMenu(
     Steinberg::IPtr<Steinberg::Vst::IContextMenu> menu)
     : menu(menu) {}
 
 Vst3PluginProxyImpl::Vst3PluginProxyImpl(Vst3PluginBridge& bridge,
                                          Vst3PluginProxy::ConstructArgs&& args)
-    : Vst3PluginProxy(std::move(args)), bridge(bridge) {
+    : Vst3PluginProxy(std::move(args)),
+      bridge(bridge),
+      last_report(std::chrono::high_resolution_clock::now()) {
     bridge.register_plugin_proxy(*this);
 }
 
@@ -218,6 +227,35 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
+    if (const auto& now = std::chrono::high_resolution_clock::now();
+        now - last_report >= report_interval) {
+        bridge.logger.log(
+            "Mean processing time: " +
+            std::to_string(
+                std::chrono::duration_cast<
+                    std::chrono::duration<float, std::micro>>(mean_process_time)
+                    .count()) +
+            " us");
+
+        // As mentioned below, we'll only record the maximum after the first
+        // report
+        bridge.logger.log(
+            "Max processing time:  " +
+            (have_reported
+                 ? std::to_string(std::chrono::duration_cast<
+                                      std::chrono::duration<float, std::micro>>(
+                                      max_process_time)
+                                      .count()) +
+                       " us"
+                 : "<still warming up>"));
+
+        last_report = now;
+        have_reported = true;
+    }
+
+    // Doing this twice is a bit of a waste, but we don't want to measure IO
+    const auto& process_start = std::chrono::high_resolution_clock::now();
+
     // We'll synchronize the scheduling priority of the audio thread on the Wine
     // plugin host with that of the host's audio thread every once in a while
     std::optional<int> new_realtime_priority = std::nullopt;
@@ -261,6 +299,19 @@ Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
     // practice are only the silence flags), as well as any output parameter
     // changes and events
     process_request.data.write_back_outputs(data, *process_buffers);
+
+    const auto& process_end = std::chrono::high_resolution_clock::now();
+    const auto& process_time = process_end - process_start;
+    mean_process_time = std::chrono::duration_cast<
+        std::chrono::high_resolution_clock::duration>(
+        (process_time * 0.05) + (mean_process_time * 0.95));
+
+    // With the current implementation we may need to resize our buffers in the
+    // first call, so we'll give ourselves a bit of a grace period to allow the
+    // buffers to warm up
+    if (have_reported) {
+        max_process_time = std::max(process_time, max_process_time);
+    }
 
     return process_response.result;
 }

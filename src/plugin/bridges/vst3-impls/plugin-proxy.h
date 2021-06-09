@@ -548,4 +548,26 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      */
     FunctionResultCache function_result_cache;
     std::mutex function_result_cache_mutex;
+
+    /**
+     * A moving average for the time it takes to call
+     * `YaAudioProcessor::process()`.
+     */
+    std::chrono::high_resolution_clock::duration mean_process_time =
+        std::chrono::high_resolution_clock::duration::zero();
+    /**
+     * The maximum time it took to handle `YaAudioProcessor::process()`.
+     */
+    std::chrono::high_resolution_clock::duration max_process_time =
+        std::chrono::high_resolution_clock::duration::zero();
+
+    /**
+     * The last time we reported the mean processing time.
+     */
+    std::chrono::high_resolution_clock::time_point last_report;
+    /**
+     * We'll wait with reporting the maximum processing time until the first
+     * report to allow buffers to warm up.
+     */
+    bool have_reported = false;
 };
