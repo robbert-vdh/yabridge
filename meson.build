@@ -160,6 +160,7 @@ wine_threads_dep = declare_dependency(link_args : '-lpthread')
 xcb_dep = dependency('xcb')
 
 dl_dep = declare_dependency(link_args : '-ldl')
+rt_dep = declare_dependency(link_args : '-lrt')
 
 wine_ole32_dep = declare_dependency(link_args : '-lole32')
 # The SDK includes a comment pragma that would link to this on MSVC
@@ -313,6 +314,7 @@ vst2_plugin_sources = [
   'src/common/configuration.cpp',
   'src/common/logging/common.cpp',
   'src/common/logging/vst2.cpp',
+  'src/common/audio-shm.cpp',
   'src/common/plugins.cpp',
   'src/common/utils.cpp',
   'src/plugin/bridges/vst2.cpp',
@@ -381,6 +383,7 @@ vst3_plugin_sources = [
   'src/common/serialization/vst3/plugin-proxy.cpp',
   'src/common/serialization/vst3/plugin-factory-proxy.cpp',
   'src/common/serialization/vst3/process-data.cpp',
+  'src/common/audio-shm.cpp',
   'src/common/configuration.cpp',
   'src/common/plugins.cpp',
   'src/common/utils.cpp',
@@ -400,6 +403,7 @@ host_common_sources = [
   'src/common/configuration.cpp',
   'src/common/logging/common.cpp',
   'src/common/logging/vst2.cpp',
+  'src/common/audio-shm.cpp',
   'src/common/plugins.cpp',
   'src/common/utils.cpp',
   'src/wine-host/bridges/common.cpp',
@@ -506,6 +510,7 @@ shared_library(
     boost_filesystem_dep,
     bitsery_dep,
     dl_dep,
+    rt_dep,
     threads_dep,
     tomlplusplus_dep,
   ],
@@ -526,6 +531,7 @@ if with_vst3
       bitsery_dep,
       dl_dep,
       function2_dep,
+      rt_dep,
       threads_dep,
       tomlplusplus_dep,
       vst3_sdk_native_dep,
@@ -543,6 +549,7 @@ host_64bit_deps = [
   boost_filesystem_dep,
   bitsery_dep,
   function2_dep,
+  rt_dep,
   tomlplusplus_dep,
   wine_threads_dep,
   xcb_dep,
@@ -605,6 +612,7 @@ if with_bitbridge
     boost_filesystem_32bit_dep,
     bitsery_dep,
     function2_dep,
+    rt_dep,
     tomlplusplus_dep,
     wine_threads_dep,
     xcb_32bit_dep,

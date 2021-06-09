@@ -34,13 +34,15 @@
 #undef _WIN64
 
 // This would be the minimal include needed to get Boost to work. The commented
-// out include below is the actual header that would cause compile errors if not
+// out includes are the actual header that would cause compile errors if not
 // included here, but including headers from the detail directory directly
 // didn't sound like a great idea.
 
 #include <boost/predef.h>
 #include <boost/asio/basic_socket_streambuf.hpp>
+#include <boost/interprocess/mapped_region.hpp>
 // #include <boost/asio/detail/timer_queue_ptime.hpp>
+// #include <boost/interprocess/detail/workaround.hpp>
 
 #pragma pop_macro("WIN32")
 #pragma pop_macro("_WIN32")
