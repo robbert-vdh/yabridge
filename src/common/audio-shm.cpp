@@ -22,8 +22,9 @@ AudioShmBuffer::AudioShmBuffer(const Config& config)
           config.name.c_str(),
           boost::interprocess::read_write) {
     shm.truncate(config.size);
-    buffer = boost::interprocess::mapped_region(
-        shm, boost::interprocess::read_write, 0, config.size);
+    buffer =
+        boost::interprocess::mapped_region(shm, boost::interprocess::read_write,
+                                           0, config.size, nullptr, MAP_LOCKED);
 }
 
 AudioShmBuffer::~AudioShmBuffer() noexcept {
