@@ -165,6 +165,9 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
             case effGetTailSize:
                 return "effGetTailSize";
                 break;
+            case effSetProcessPrecision:
+                return "effSetProcessPrecision";
+                break;
             default:
                 return std::nullopt;
                 break;

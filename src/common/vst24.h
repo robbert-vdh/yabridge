@@ -70,6 +70,26 @@
 [[maybe_unused]] constexpr int effGetTailSize = 52;
 
 /**
+ * Used to indicate that the plugin is going to receive double precision audio.
+ * The name was found on the JUCE VST2 implementation linked above. REAPER seems
+ * to call this function with value set to 1 when loading a plugin that supports
+ * 64-bit double precision audio.
+ */
+[[maybe_unused]] constexpr int effSetProcessPrecision = 77;
+
+/**
+ * When passed to `effSetProcessPrecision` as the value argument, indicates that
+ * the plugin gets to process 32-bit audio. Name glanced from
+ * https://github.com/juce-framework/JUCE/blob/c0f18670f45d268ad9557bd639f14b374ce38e65/modules/juce_audio_plugin_client/VST/juce_VST_Wrapper.cpp#L1983.
+ */
+[[maybe_unused]] constexpr int kVstProcessPrecision64 = 1;
+/**
+ * Logically if 64-bit audio gets a value of 1, regular old 32-bit audio will be
+ * 0.
+ */
+[[maybe_unused]] constexpr int kVstProcessPrecision32 = 0;
+
+/**
  * The struct that's being passed through the data parameter during the
  * `effGetInputProperties` and `effGetOutputProperties` opcodes. Reverse
  * engineered by attaching gdb to Bitwig. The actual fields are missing but for

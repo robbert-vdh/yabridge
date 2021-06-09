@@ -302,6 +302,7 @@ class DispatchDataConverter : public DefaultDataConverter {
             case effEndSetProgram:
             case effStartProcess:
             case effStopProcess:
+            case effSetProcessPrecision:
                 return nullptr;
             default:
                 return DefaultDataConverter::read_data(opcode, index, value,
