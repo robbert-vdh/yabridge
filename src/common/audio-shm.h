@@ -117,6 +117,12 @@ class AudioShmBuffer {
      */
     ~AudioShmBuffer() noexcept;
 
+    AudioShmBuffer(const AudioShmBuffer&) = delete;
+    AudioShmBuffer& operator=(const AudioShmBuffer&) = delete;
+
+    AudioShmBuffer(AudioShmBuffer&&) noexcept;
+    AudioShmBuffer& operator=(AudioShmBuffer&&) = delete;
+
     /**
      * Get a pointer to the part of the buffer where this input audio channel is
      * stored in.
@@ -142,4 +148,6 @@ class AudioShmBuffer {
    private:
     boost::interprocess::shared_memory_object shm;
     boost::interprocess::mapped_region buffer;
+
+    bool is_moved = false;
 };

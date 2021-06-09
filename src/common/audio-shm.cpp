@@ -30,5 +30,14 @@ AudioShmBuffer::~AudioShmBuffer() noexcept {
     // If either side drops this object then the buffer should always be
     // removed, so we'll do it on both sides to reduce the chance that we leak
     // shared memory
-    boost::interprocess::shared_memory_object::remove(config.name.c_str());
+    if (!is_moved) {
+        boost::interprocess::shared_memory_object::remove(config.name.c_str());
+    }
+}
+
+AudioShmBuffer::AudioShmBuffer(AudioShmBuffer&& o) noexcept
+    : config(std::move(o.config)),
+      shm(std::move(o.shm)),
+      buffer(std::move(o.buffer)) {
+    o.is_moved = true;
 }
