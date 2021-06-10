@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/vst/ivstcomponent.h>
 
+#include "../../../bitsery/ext/in-place-optional.h"
 #include "../../common.h"
 #include "../base.h"
 

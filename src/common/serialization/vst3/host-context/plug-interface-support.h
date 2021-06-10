@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/vst/ivstpluginterfacesupport.h>
 
+#include "../../../bitsery/ext/in-place-optional.h"
 #include "../../common.h"
 #include "../base.h"
 
@@ -84,7 +84,7 @@ class YaPlugInterfaceSupport : public Steinberg::Vst::IPlugInterfaceSupport {
 
         template <typename S>
         void serialize(S& s) {
-            s.ext(owner_instance_id, bitsery::ext::StdOptional{},
+            s.ext(owner_instance_id, bitsery::ext::InPlaceOptional{},
                   [](S& s, native_size_t& instance_id) {
                       s.value8b(instance_id);
                   });

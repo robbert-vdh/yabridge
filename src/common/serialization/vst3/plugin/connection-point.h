@@ -18,10 +18,10 @@
 
 #include <variant>
 
-#include <bitsery/ext/std_optional.h>
-#include "../../../bitsery/ext/in-place-variant.h"
 #include <pluginterfaces/vst/ivstmessage.h>
+#include "../../../bitsery/ext/in-place-variant.h"
 
+#include "../../../bitsery/ext/in-place-optional.h"
 #include "../../common.h"
 #include "../base.h"
 #include "../message.h"
@@ -79,8 +79,9 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
          * `IConnectionPoint`, but let's stay consistent with the overall style
          * here.
          */
-        Vst3ConnectionPointProxyConstructArgs(Steinberg::IPtr<FUnknown> object,
-                                              size_t owner_instance_id) noexcept;
+        Vst3ConnectionPointProxyConstructArgs(
+            Steinberg::IPtr<FUnknown> object,
+            size_t owner_instance_id) noexcept;
 
         /**
          * The unique instance identifier of the proxy object instance this
@@ -164,7 +165,7 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
-            s.ext(other_instance_id, bitsery::ext::StdOptional{},
+            s.ext(other_instance_id, bitsery::ext::InPlaceOptional{},
                   [](S& s, native_size_t& instance_id) {
                       s.value8b(instance_id);
                   });

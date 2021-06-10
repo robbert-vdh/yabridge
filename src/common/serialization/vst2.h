@@ -18,13 +18,13 @@
 
 #include <variant>
 
-#include <bitsery/ext/std_optional.h>
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/vector.h>
 #include <vestige/aeffectx.h>
 #include <boost/container/small_vector.hpp>
 
 #include "../audio-shm.h"
+#include "../bitsery/ext/in-place-optional.h"
 #include "../bitsery/ext/in-place-variant.h"
 #include "../bitsery/traits/small-vector.h"
 #include "../utils.h"
@@ -347,7 +347,7 @@ struct Vst2EventResult {
         s.value8b(return_value);
 
         s.object(payload);
-        s.ext(value_payload, bitsery::ext::StdOptional(),
+        s.ext(value_payload, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.object(v); });
     }
 };
@@ -456,7 +456,7 @@ struct Vst2Event {
         s.value4b(option);
 
         s.object(payload);
-        s.ext(value_payload, bitsery::ext::StdOptional(),
+        s.ext(value_payload, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.object(v); });
     }
 };
@@ -484,7 +484,7 @@ struct ParameterResult {
 
     template <typename S>
     void serialize(S& s) {
-        s.ext(value, bitsery::ext::StdOptional(),
+        s.ext(value, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.value4b(v); });
     }
 };
@@ -502,7 +502,7 @@ struct Parameter {
     template <typename S>
     void serialize(S& s) {
         s.value4b(index);
-        s.ext(value, bitsery::ext::StdOptional(),
+        s.ext(value, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.value4b(v); });
     }
 };
@@ -558,10 +558,10 @@ struct Vst2ProcessRequest {
         s.value4b(sample_frames);
         s.value1b(double_precision);
 
-        s.ext(current_time_info, bitsery::ext::StdOptional{});
+        s.ext(current_time_info, bitsery::ext::InPlaceOptional{});
         s.value4b(current_process_level);
 
-        s.ext(new_realtime_priority, bitsery::ext::StdOptional{},
+        s.ext(new_realtime_priority, bitsery::ext::InPlaceOptional{},
               [](S& s, int& priority) { s.value4b(priority); });
     }
 };

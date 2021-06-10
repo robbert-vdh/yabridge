@@ -17,8 +17,8 @@
 #pragma once
 
 #include <pluginterfaces/gui/iplugview.h>
-#include "bitsery/ext/std_optional.h"
 
+#include "../../../bitsery/ext/in-place-optional.h"
 #include "../../common.h"
 #include "../base.h"
 #include "../plug-frame-proxy.h"
@@ -300,7 +300,7 @@ class YaPlugView : public Steinberg::IPlugView {
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
-            s.ext(plug_frame_args, bitsery::ext::StdOptional{});
+            s.ext(plug_frame_args, bitsery::ext::InPlaceOptional{});
         }
     };
 

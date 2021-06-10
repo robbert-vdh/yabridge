@@ -18,9 +18,9 @@
 
 #include <pluginterfaces/vst/ivsteditcontroller.h>
 
+#include "../../../bitsery/ext/in-place-optional.h"
 #include "../../common.h"
 #include "../base.h"
-#include "bitsery/ext/std_optional.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -98,7 +98,7 @@ class YaProgress : public Steinberg::Vst::IProgress {
         void serialize(S& s) {
             s.value8b(owner_instance_id);
             s.value4b(type);
-            s.ext(optional_description, bitsery::ext::StdOptional{},
+            s.ext(optional_description, bitsery::ext::InPlaceOptional{},
                   [](S& s, std::u16string& description) {
                       s.text2b(description, 1024);
                   });

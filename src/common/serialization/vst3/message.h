@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/vst/ivstmessage.h>
 
+#include "../../bitsery/ext/in-place-optional.h"
 #include "../common.h"
 #include "attribute-list.h"
 #include "base.h"
@@ -72,7 +72,7 @@ class YaMessagePtr : public Steinberg::Vst::IMessage {
 
     template <typename S>
     void serialize(S& s) {
-        s.ext(message_id, bitsery::ext::StdOptional{},
+        s.ext(message_id, bitsery::ext::InPlaceOptional{},
               [](S& s, std::string& id) { s.text1b(id, 1024); });
         s.value8b(original_message_ptr);
     }

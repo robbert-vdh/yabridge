@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
 
 #include "../../../audio-shm.h"
+#include "../../../bitsery/ext/in-place-optional.h"
 #include "../../common.h"
 #include "../base.h"
 #include "../process-data.h"
@@ -279,7 +279,7 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
             s.value8b(instance_id);
             s.object(data);
 
-            s.ext(new_realtime_priority, bitsery::ext::StdOptional{},
+            s.ext(new_realtime_priority, bitsery::ext::InPlaceOptional{},
                   [](S& s, int& priority) { s.value4b(priority); });
         }
     };

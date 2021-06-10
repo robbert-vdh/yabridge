@@ -17,8 +17,8 @@
 #pragma once
 
 #include <pluginterfaces/vst/ivsteditcontroller.h>
-#include "bitsery/ext/std_optional.h"
 
+#include "../../../bitsery/ext/in-place-optional.h"
 #include "../../common.h"
 #include "../base.h"
 #include "../context-menu-proxy.h"

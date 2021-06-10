@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include <bitsery/ext/std_optional.h>
 #include <bitsery/traits/string.h>
 #include <pluginterfaces/base/ipluginbase.h>
 
+#include "../../../bitsery/ext/in-place-optional.h"
 #include "../base.h"
 #include "../host-context-proxy.h"
 
@@ -101,19 +101,19 @@ class YaPluginFactory3 : public Steinberg::IPluginFactory3 {
             s.value1b(supports_plugin_factory);
             s.value1b(supports_plugin_factory_2);
             s.value1b(supports_plugin_factory_3);
-            s.ext(factory_info, bitsery::ext::StdOptional{});
+            s.ext(factory_info, bitsery::ext::InPlaceOptional{});
             s.value4b(num_classes);
             s.container(class_infos_1, 2048,
                         [](S& s, std::optional<Steinberg::PClassInfo>& info) {
-                            s.ext(info, bitsery::ext::StdOptional{});
+                            s.ext(info, bitsery::ext::InPlaceOptional{});
                         });
             s.container(class_infos_2, 2048,
                         [](S& s, std::optional<Steinberg::PClassInfo2>& info) {
-                            s.ext(info, bitsery::ext::StdOptional{});
+                            s.ext(info, bitsery::ext::InPlaceOptional{});
                         });
             s.container(class_infos_unicode, 2048,
                         [](S& s, std::optional<Steinberg::PClassInfoW>& info) {
-                            s.ext(info, bitsery::ext::StdOptional{});
+                            s.ext(info, bitsery::ext::InPlaceOptional{});
                         });
         }
     };

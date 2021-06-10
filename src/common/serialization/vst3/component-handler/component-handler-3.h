@@ -17,8 +17,8 @@
 #pragma once
 
 #include <pluginterfaces/vst/ivstcontextmenu.h>
-#include "bitsery/ext/std_optional.h"
 
+#include "../../../bitsery/ext/in-place-optional.h"
 #include "../../common.h"
 #include "../base.h"
 #include "../context-menu-proxy.h"
@@ -74,7 +74,7 @@ class YaComponentHandler3 : public Steinberg::Vst::IComponentHandler3 {
 
         template <typename S>
         void serialize(S& s) {
-            s.ext(context_menu_args, bitsery::ext::StdOptional{});
+            s.ext(context_menu_args, bitsery::ext::InPlaceOptional{});
         }
     };
 
@@ -100,7 +100,7 @@ class YaComponentHandler3 : public Steinberg::Vst::IComponentHandler3 {
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
-            s.ext(param_id, bitsery::ext::StdOptional{},
+            s.ext(param_id, bitsery::ext::InPlaceOptional{},
                   [](S& s, Steinberg::Vst::ParamID& id) { s.value4b(id); });
         }
     };

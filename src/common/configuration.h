@@ -21,11 +21,11 @@
 #endif
 #include <boost/filesystem.hpp>
 
-#include <bitsery/ext/std_optional.h>
 #include <chrono>
 #include <optional>
 
 #include "bitsery/ext/boost-path.h"
+#include "bitsery/ext/in-place-optional.h"
 
 /**
  * An object that's used to provide plugin-specific configuration. Right now
@@ -197,23 +197,23 @@ class Configuration {
 
     template <typename S>
     void serialize(S& s) {
-        s.ext(group, bitsery::ext::StdOptional(),
+        s.ext(group, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
 
-        s.ext(disable_pipes, bitsery::ext::StdOptional(),
+        s.ext(disable_pipes, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath{}); });
         s.value1b(editor_double_embed);
         s.value1b(editor_force_dnd);
         s.value1b(editor_xembed);
-        s.ext(frame_rate, bitsery::ext::StdOptional(),
+        s.ext(frame_rate, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.value4b(v); });
         s.value1b(hide_daw);
         s.value1b(vst3_no_scaling);
         s.value1b(vst3_prefer_32bit);
 
-        s.ext(matched_file, bitsery::ext::StdOptional(),
+        s.ext(matched_file, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath{}); });
-        s.ext(matched_pattern, bitsery::ext::StdOptional(),
+        s.ext(matched_pattern, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
 
         s.container(invalid_options, 1024,

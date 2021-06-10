@@ -14,6 +14,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   has been rewritten using both shared memory and message passing to reduce
   memory copies to a minimum. With this change the DSP load overhead during
   audio processing should now be as low as it's going to get.
+- Prevented some more potential unnecessary memory operations during yabridge's
+  communication. The underlying serialization library was recreating some
+  objects even when that wasn't needed, which could in theory result in memory
+  allocations in certain situations. This is related to the similar issue that
+  got fixed with yabridge 3.3.0. A fix for this issue has also been upstreamed
+  to the library.
 
 ### Fixed
 

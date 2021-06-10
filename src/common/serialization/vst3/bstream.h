@@ -94,11 +94,11 @@ class YaBStream : public Steinberg::IBStream,
         // The seek position should always be initialized at 0
 
         s.value1b(supports_stream_attributes);
-        s.ext(file_name, bitsery::ext::StdOptional{},
+        s.ext(file_name, bitsery::ext::InPlaceOptional{},
               [](S& s, std::u16string& name) {
                   s.text2b(name, std::extent_v<Steinberg::Vst::String128>);
               });
-        s.ext(attributes, bitsery::ext::StdOptional{});
+        s.ext(attributes, bitsery::ext::InPlaceOptional{});
     }
 
     /**

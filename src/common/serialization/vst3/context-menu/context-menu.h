@@ -17,8 +17,8 @@
 #pragma once
 
 #include <pluginterfaces/vst/ivstcontextmenu.h>
-#include "bitsery/ext/std_optional.h"
 
+#include "../../../bitsery/ext/in-place-optional.h"
 #include "../../common.h"
 #include "../base.h"
 #include "../context-menu-target.h"
@@ -119,7 +119,7 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
             s.value8b(owner_instance_id);
             s.value8b(context_menu_id);
             s.object(item);
-            s.ext(target, bitsery::ext::StdOptional{});
+            s.ext(target, bitsery::ext::InPlaceOptional{});
         }
     };
 

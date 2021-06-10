@@ -18,10 +18,10 @@
 
 #include <variant>
 
-#include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
-#include "../../bitsery/ext/in-place-variant.h"
 
+#include "../../bitsery/ext/in-place-optional.h"
+#include "../../bitsery/ext/in-place-variant.h"
 #include "base.h"
 #include "event-list.h"
 #include "parameter-changes.h"
@@ -196,8 +196,8 @@ class YaProcessData {
             // an existing object, since our serializing code doesn't touch the
             // actual pointers.
             s.container(*outputs, max_num_speakers);
-            s.ext(*output_parameter_changes, bitsery::ext::StdOptional{});
-            s.ext(*output_events, bitsery::ext::StdOptional{});
+            s.ext(*output_parameter_changes, bitsery::ext::InPlaceOptional{});
+            s.ext(*output_events, bitsery::ext::InPlaceOptional{});
         }
     };
 
@@ -230,9 +230,9 @@ class YaProcessData {
         s.container4b(outputs_num_channels, max_num_speakers);
         s.object(input_parameter_changes);
         s.value1b(output_parameter_changes_supported);
-        s.ext(input_events, bitsery::ext::StdOptional{});
+        s.ext(input_events, bitsery::ext::InPlaceOptional{});
         s.value1b(output_events_supported);
-        s.ext(process_context, bitsery::ext::StdOptional{});
+        s.ext(process_context, bitsery::ext::InPlaceOptional{});
 
         // We of course won't serialize the `reconstructed_process_data` and all
         // of the `output*` fields defined below it

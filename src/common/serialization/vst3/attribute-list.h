@@ -19,9 +19,9 @@
 #include <unordered_map>
 
 #include <bitsery/ext/std_map.h>
-#include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/vst/ivstmessage.h>
 
+#include "../../bitsery/ext/in-place-optional.h"
 #include "base.h"
 
 #pragma GCC diagnostic push

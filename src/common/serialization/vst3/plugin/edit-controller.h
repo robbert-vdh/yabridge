@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/vst/ivsteditcontroller.h>
 
+#include "../../../bitsery/ext/in-place-optional.h"
 #include "../../common.h"
 #include "../base.h"
 #include "../bstream.h"
@@ -354,7 +354,8 @@ class YaEditController : public Steinberg::Vst::IEditController {
         template <typename S>
         void serialize(S& s) {
             s.value8b(instance_id);
-            s.ext(component_handler_proxy_args, bitsery::ext::StdOptional{});
+            s.ext(component_handler_proxy_args,
+                  bitsery::ext::InPlaceOptional{});
         }
     };
 
@@ -372,7 +373,7 @@ class YaEditController : public Steinberg::Vst::IEditController {
 
         template <typename S>
         void serialize(S& s) {
-            s.ext(plug_view_args, bitsery::ext::StdOptional{});
+            s.ext(plug_view_args, bitsery::ext::InPlaceOptional{});
         }
     };
 
