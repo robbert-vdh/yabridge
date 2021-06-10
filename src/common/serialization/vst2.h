@@ -71,88 +71,17 @@ AEffect& update_aeffect(AEffect& plugin,
                         const AEffect& updated_plugin) noexcept;
 
 /**
- * The serialization function for `AEffect` structs. This will s serialize all
- * of the values but it will not touch any of the pointer fields. That way you
- * can deserialize to an existing `AEffect` instance. Since we can't always
- * deserialize directly into an existing `AEffect`, there is also another
- * function called `update_aeffect()` that copies values from one `AEffect` to
- * another. Both of these functions should be updating the same values.
- */
-template <typename S>
-void serialize(S& s, AEffect& plugin) {
-    s.value4b(plugin.magic);
-    s.value4b(plugin.numPrograms);
-    s.value4b(plugin.numParams);
-    s.value4b(plugin.numInputs);
-    s.value4b(plugin.numOutputs);
-    s.value4b(plugin.flags);
-    s.value4b(plugin.initialDelay);
-    s.value4b(plugin.empty3a);
-    s.value4b(plugin.empty3b);
-    s.value4b(plugin.unkown_float);
-    s.value4b(plugin.uniqueID);
-    s.value4b(plugin.version);
-}
-
-template <typename S>
-void serialize(S& s, VstIOProperties& props) {
-    s.container1b(props.data);
-}
-
-template <typename S>
-void serialize(S& s, VstMidiKeyName& key_name) {
-    s.container1b(key_name.data);
-}
-
-template <typename S>
-void serialize(S& s, VstParameterProperties& props) {
-    s.value4b(props.stepFloat);
-    s.value4b(props.smallStepFloat);
-    s.value4b(props.largeStepFloat);
-    s.container1b(props.label);
-    s.value4b(props.flags);
-    s.value4b(props.minInteger);
-    s.value4b(props.maxInteger);
-    s.value4b(props.stepInteger);
-    s.value4b(props.largeStepInteger);
-    s.container1b(props.shortLabel);
-    s.value2b(props.displayIndex);
-    s.value2b(props.category);
-    s.value2b(props.numParametersInCategory);
-    s.value2b(props.reserved);
-    s.container1b(props.categoryLabel);
-    s.container1b(props.future);
-}
-
-template <typename S>
-void serialize(S& s, VstRect& rect) {
-    s.value2b(rect.top);
-    s.value2b(rect.left);
-    s.value2b(rect.right);
-    s.value2b(rect.bottom);
-}
-
-template <typename S>
-void serialize(S& s, VstTimeInfo& time_info) {
-    s.value8b(time_info.samplePos);
-    s.value8b(time_info.sampleRate);
-    s.value8b(time_info.nanoSeconds);
-    s.value8b(time_info.ppqPos);
-    s.value8b(time_info.tempo);
-    s.value8b(time_info.barStartPos);
-    s.value8b(time_info.cycleStartPos);
-    s.value8b(time_info.cycleEndPos);
-    s.value4b(time_info.timeSigNumerator);
-    s.value4b(time_info.timeSigDenominator);
-    s.container1b(time_info.empty3);
-    s.value4b(time_info.flags);
-}
-
-/**
  * Wrapper for chunk data.
  */
 struct ChunkData {
+    using Response = std::nullptr_t;
+
     std::vector<uint8_t> buffer;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.container1b(buffer, binary_buffer_size);
+    }
 };
 
 /**
@@ -170,6 +99,8 @@ struct ChunkData {
  */
 class alignas(16) DynamicVstEvents {
    public:
+    using Response = std::nullptr_t;
+
     DynamicVstEvents() noexcept;
 
     explicit DynamicVstEvents(const VstEvents& c_events);
@@ -229,6 +160,8 @@ class alignas(16) DynamicVstEvents {
  */
 class alignas(16) DynamicSpeakerArrangement {
    public:
+    using Response = DynamicSpeakerArrangement;
+
     DynamicSpeakerArrangement() noexcept;
 
     explicit DynamicSpeakerArrangement(
@@ -286,14 +219,24 @@ class alignas(16) DynamicSpeakerArrangement {
  * its object, but some improperly coded plugins will only initialize their
  * flags, IO properties and parameter counts after `effEditOpen()`.
  */
-struct WantsAEffectUpdate {};
+struct WantsAEffectUpdate {
+    using Response = AEffect;
+
+    template <typename S>
+    void serialize(S&) {}
+};
 
 /**
  * Marker struct to indicate that that the event writes arbitrary data into one
  * of its own buffers and uses the void pointer to store start of that data,
  * with the return value indicating the size of the array.
  */
-struct WantsChunkBuffer {};
+struct WantsChunkBuffer {
+    using Response = ChunkData;
+
+    template <typename S>
+    void serialize(S&) {}
+};
 
 /**
  * Marker struct to indicate that the event handler will write a pointer to a
@@ -301,19 +244,101 @@ struct WantsChunkBuffer {};
  * doesn't do anything. In that case we'll serialize the response as a null
  * pointer.
  */
-struct WantsVstRect {};
+struct WantsVstRect {
+    using Response = VstRect;
+
+    template <typename S>
+    void serialize(S&) {}
+};
 
 /**
  * Marker struct to indicate that the event handler will return a pointer to a
  * `VstTimeInfo` struct that should be returned transfered.
  */
-struct WantsVstTimeInfo {};
+struct WantsVstTimeInfo {
+    using Response = VstTimeInfo;
+
+    template <typename S>
+    void serialize(S&) {}
+};
 
 /**
  * Marker struct to indicate that that the event requires some buffer to write
  * a C-string into.
  */
-struct WantsString {};
+struct WantsString {
+    using Response = std::string;
+
+    template <typename S>
+    void serialize(S&) {}
+};
+
+/**
+ * AN instance of this should be sent back as a response to an incoming event.
+ */
+struct Vst2EventResult {
+    /**
+     * The response for an event. This is usually either:
+     *
+     * - Nothing, on which case only the return value from the callback function
+     *   gets passed along.
+     * - A (short) string.
+     * - Some binary blob stored as a byte vector. During `effGetChunk` this
+     *   will contain some chunk data that should be written to
+     *   `Vst2PluginBridge::chunk_data`.
+     * - A specific struct in response to an event such as `audioMasterGetTime`
+     *   or `audioMasterIOChanged`.
+     * - An X11 window pointer for the editor window.
+     *
+     * @relates passthrough_event
+     */
+    using Payload = std::variant<std::nullptr_t,
+                                 std::string,
+                                 AEffect,
+                                 ChunkData,
+                                 DynamicSpeakerArrangement,
+                                 VstIOProperties,
+                                 VstMidiKeyName,
+                                 VstParameterProperties,
+                                 VstRect,
+                                 VstTimeInfo>;
+
+    /**
+     * The result that should be returned from the dispatch function.
+     */
+    native_intptr_t return_value;
+    /**
+     * Events typically either just return their return value or write a string
+     * into the void pointer, but sometimes an event response should forward
+     * some kind of special struct.
+     */
+    Payload payload;
+    /**
+     * The same as the above value, but for returning values written to the
+     * `intptr_t` value parameter. This is only used during
+     * `effGetSpeakerArrangement`.
+     */
+    std::optional<Payload> value_payload;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(return_value);
+
+        s.object(payload);
+        s.ext(value_payload, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.object(v); });
+    }
+};
+
+template <typename S>
+void serialize(S& s, Vst2EventResult::Payload& payload) {
+    s.ext(payload,
+          bitsery::ext::InPlaceVariant{[](S&, std::nullptr_t&) {},
+                                       [](S& s, std::string& string) {
+                                           s.text1b(string, max_string_length);
+                                       },
+                                       [](S& s, auto& o) { s.object(o); }});
+}
 
 /**
  * An event as dispatched by the VST host. These events will get forwarded to
@@ -321,6 +346,8 @@ struct WantsString {};
  * arguments sent to the `AEffect::dispatch` function.
  */
 struct Vst2Event {
+    using Result = Vst2EventResult;
+
     /**
      * VST events are passed a void pointer that can contain a variety of
      * different data types depending on the event's opcode. This is typically
@@ -414,124 +441,15 @@ struct Vst2Event {
 template <typename S>
 void serialize(S& s, Vst2Event::Payload& payload) {
     s.ext(payload,
-          bitsery::ext::InPlaceVariant{
-              [](S&, std::nullptr_t&) {},
-              [](S& s, std::string& string) {
-                  s.text1b(string, max_string_length);
-              },
-              [](S& s, ChunkData& chunk) {
-                  s.container1b(chunk.buffer, binary_buffer_size);
-              },
-              [](S& s, native_size_t& window_handle) {
-                  s.value8b(window_handle);
-              },
-              [](S& s, AEffect& effect) { s.object(effect); },
-              [](S& s, DynamicVstEvents& events) { s.object(events); },
-              [](S& s, DynamicSpeakerArrangement& speaker_arrangement) {
-                  s.object(speaker_arrangement);
-              },
-              [](S& s, VstIOProperties& props) { s.object(props); },
-              [](S& s, VstMidiKeyName& key_name) { s.object(key_name); },
-              [](S& s, VstParameterProperties& props) { s.object(props); },
-              [](S&, WantsAEffectUpdate&) {}, [](S&, WantsChunkBuffer&) {},
-              [](S&, WantsVstRect&) {}, [](S&, WantsVstTimeInfo&) {},
-              [](S&, WantsString&) {}});
+          bitsery::ext::InPlaceVariant{[](S&, std::nullptr_t&) {},
+                                       [](S& s, std::string& string) {
+                                           s.text1b(string, max_string_length);
+                                       },
+                                       [](S& s, native_size_t& window_handle) {
+                                           s.value8b(window_handle);
+                                       },
+                                       [](S& s, auto& o) { s.object(o); }});
 }
-
-/**
- * AN instance of this should be sent back as a response to an incoming event.
- */
-struct Vst2EventResult {
-    /**
-     * The response for an event. This is usually either:
-     *
-     * - Nothing, on which case only the return value from the callback function
-     *   gets passed along.
-     * - A (short) string.
-     * - Some binary blob stored as a byte vector. During `effGetChunk` this
-     *   will contain some chunk data that should be written to
-     *   `Vst2PluginBridge::chunk_data`.
-     * - A specific struct in response to an event such as `audioMasterGetTime`
-     *   or `audioMasterIOChanged`.
-     * - An X11 window pointer for the editor window.
-     *
-     * @relates passthrough_event
-     */
-    using Payload = std::variant<std::nullptr_t,
-                                 std::string,
-                                 AEffect,
-                                 ChunkData,
-                                 DynamicSpeakerArrangement,
-                                 VstIOProperties,
-                                 VstMidiKeyName,
-                                 VstParameterProperties,
-                                 VstRect,
-                                 VstTimeInfo>;
-
-    /**
-     * The result that should be returned from the dispatch function.
-     */
-    native_intptr_t return_value;
-    /**
-     * Events typically either just return their return value or write a string
-     * into the void pointer, but sometimes an event response should forward
-     * some kind of special struct.
-     */
-    Payload payload;
-    /**
-     * The same as the above value, but for returning values written to the
-     * `intptr_t` value parameter. This is only used during
-     * `effGetSpeakerArrangement`.
-     */
-    std::optional<Payload> value_payload;
-
-    template <typename S>
-    void serialize(S& s) {
-        s.value8b(return_value);
-
-        s.object(payload);
-        s.ext(value_payload, bitsery::ext::StdOptional(),
-              [](S& s, auto& v) { s.object(v); });
-    }
-};
-
-template <typename S>
-void serialize(S& s, Vst2EventResult::Payload& payload) {
-    s.ext(payload,
-          bitsery::ext::InPlaceVariant{
-              [](S&, std::nullptr_t&) {},
-              [](S& s, std::string& string) {
-                  s.text1b(string, max_string_length);
-              },
-              [](S& s, ChunkData& chunk) {
-                  s.container1b(chunk.buffer, binary_buffer_size);
-              },
-              [](S& s, AEffect& effect) { s.object(effect); },
-              [](S& s, DynamicSpeakerArrangement& speaker_arrangement) {
-                  s.object(speaker_arrangement);
-              },
-              [](S& s, VstIOProperties& props) { s.object(props); },
-              [](S& s, VstMidiKeyName& key_name) { s.object(key_name); },
-              [](S& s, VstParameterProperties& props) { s.object(props); },
-              [](S& s, VstRect& rect) { s.object(rect); },
-              [](S& s, VstTimeInfo& time_info) { s.object(time_info); }});
-}
-
-/**
- * Represents a call to either `getParameter` or `setParameter`, depending on
- * whether `value` contains a value or not.
- */
-struct Parameter {
-    int index;
-    std::optional<float> value;
-
-    template <typename S>
-    void serialize(S& s) {
-        s.value4b(index);
-        s.ext(value, bitsery::ext::StdOptional(),
-              [](S& s, auto& v) { s.value4b(v); });
-    }
-};
 
 /**
  * The result of a `getParameter` or a `setParameter` call. For `setParameter`
@@ -549,12 +467,32 @@ struct ParameterResult {
 };
 
 /**
+ * Represents a call to either `getParameter` or `setParameter`, depending on
+ * whether `value` contains a value or not.
+ */
+struct Parameter {
+    using Response = ParameterResult;
+
+    int index;
+    std::optional<float> value;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value4b(index);
+        s.ext(value, bitsery::ext::StdOptional(),
+              [](S& s, auto& v) { s.value4b(v); });
+    }
+};
+
+/**
  * A buffer of audio for the plugin to process, or the response of that
  * processing. The number of samples is encoded in each audio buffer's length.
  * This is used for both `process()/processReplacing()` and
  * `processDoubleReplacing()`.
  */
 struct AudioBuffers {
+    using Response = AudioBuffers;
+
     /**
      * An audio buffer for each of the plugin's audio channels. This uses floats
      * or doubles depending on whether `process()/processReplacing()` or
@@ -618,3 +556,81 @@ struct AudioBuffers {
               [](S& s, int& priority) { s.value4b(priority); });
     }
 };
+
+/**
+ * The serialization function for `AEffect` structs. This will s serialize all
+ * of the values but it will not touch any of the pointer fields. That way you
+ * can deserialize to an existing `AEffect` instance. Since we can't always
+ * deserialize directly into an existing `AEffect`, there is also another
+ * function called `update_aeffect()` that copies values from one `AEffect` to
+ * another. Both of these functions should be updating the same values.
+ */
+template <typename S>
+void serialize(S& s, AEffect& plugin) {
+    s.value4b(plugin.magic);
+    s.value4b(plugin.numPrograms);
+    s.value4b(plugin.numParams);
+    s.value4b(plugin.numInputs);
+    s.value4b(plugin.numOutputs);
+    s.value4b(plugin.flags);
+    s.value4b(plugin.initialDelay);
+    s.value4b(plugin.empty3a);
+    s.value4b(plugin.empty3b);
+    s.value4b(plugin.unkown_float);
+    s.value4b(plugin.uniqueID);
+    s.value4b(plugin.version);
+}
+
+template <typename S>
+void serialize(S& s, VstIOProperties& props) {
+    s.container1b(props.data);
+}
+
+template <typename S>
+void serialize(S& s, VstMidiKeyName& key_name) {
+    s.container1b(key_name.data);
+}
+
+template <typename S>
+void serialize(S& s, VstParameterProperties& props) {
+    s.value4b(props.stepFloat);
+    s.value4b(props.smallStepFloat);
+    s.value4b(props.largeStepFloat);
+    s.container1b(props.label);
+    s.value4b(props.flags);
+    s.value4b(props.minInteger);
+    s.value4b(props.maxInteger);
+    s.value4b(props.stepInteger);
+    s.value4b(props.largeStepInteger);
+    s.container1b(props.shortLabel);
+    s.value2b(props.displayIndex);
+    s.value2b(props.category);
+    s.value2b(props.numParametersInCategory);
+    s.value2b(props.reserved);
+    s.container1b(props.categoryLabel);
+    s.container1b(props.future);
+}
+
+template <typename S>
+void serialize(S& s, VstRect& rect) {
+    s.value2b(rect.top);
+    s.value2b(rect.left);
+    s.value2b(rect.right);
+    s.value2b(rect.bottom);
+}
+
+template <typename S>
+void serialize(S& s, VstTimeInfo& time_info) {
+    s.value8b(time_info.samplePos);
+    s.value8b(time_info.sampleRate);
+    s.value8b(time_info.nanoSeconds);
+    s.value8b(time_info.ppqPos);
+    s.value8b(time_info.tempo);
+    s.value8b(time_info.barStartPos);
+    s.value8b(time_info.cycleStartPos);
+    s.value8b(time_info.cycleEndPos);
+    s.value4b(time_info.timeSigNumerator);
+    s.value4b(time_info.timeSigDenominator);
+    s.container1b(time_info.empty3);
+    s.value4b(time_info.flags);
+}
