@@ -92,6 +92,13 @@ class Vst2Bridge : public HostBridge {
                               float option);
 
     /**
+     * Sets up the shared memory audio buffers for this plugin instance and
+     * returns the configuration so the native plugin can connect to it as well.
+     * This should be called after `effMainsChanged()`.
+     */
+    AudioShmBuffer::Config setup_shared_audio_buffers();
+
+    /**
      * A logger instance we'll use log cached `audioMasterGetTime()` calls, so
      * they can be hidden on verbosity levels below 2.
      *
@@ -108,11 +115,46 @@ class Vst2Bridge : public HostBridge {
     Configuration config;
 
     /**
-     * The object we'll serialize the response into after the plugin has
-     * finished processing audio. We reuse this object to avoid reallocations
-     * since it contains pointers to heap data.
+     * A shared memory object we'll write the input audio buffers to on the
+     * native plugin side. We'll then let the plugin write its outputs here on
+     * the Wine side. The buffer will be configured during `effMainsChanged`. At
+     * that point we'll build the configuration for the object here, on the Wine
+     * side, and then we'll initialize the buffers using that configuration.
+     * This same configuration is then used on the native plugin side to connect
+     * to this same shared memory object. We keep track of the maximum block
+     * size and the processing precision indicated by the host so we know how
+     * large this buffer needs to be in advance.
      */
-    AudioBuffers process_response;
+    std::optional<AudioShmBuffer> process_buffers;
+
+    /**
+     * Pointers to the input channels in process_buffers so we can pass them to
+     * the plugin. These can be either `float*` or `double*`, so we sadly have
+     * to use void pointers here.
+     */
+    std::vector<void*> process_buffers_input_pointers;
+
+    /**
+     * Pointers to the output channels in process_buffers so we can pass them to
+     * the plugin. These can be either `float*` or `double*`, so we sadly have
+     * to use void pointers here.
+     */
+    std::vector<void*> process_buffers_output_pointers;
+
+    /**
+     * The maximum number of samples the host will pass to the plugin during
+     * `processReplacing()`/`processDoubleReplacing()`/`process()`. This is
+     * indicated using a call to `effSetBlockSize()` prior to
+     * `effMainsChanged()`.
+     */
+    uint32_t max_samples_per_block = 0;
+
+    /**
+     * Whether the host is going to send double precision audio or not. This
+     * will only be the case if the host has called `effSetProcessPrecision()`
+     * with `kVstProcessPrecision64` before the call to `effMainsChanged()`.
+     */
+    bool double_precision = false;
 
     /**
      * We'll store the last transport information obtained from the host as a

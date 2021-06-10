@@ -437,6 +437,9 @@ void Vst2Logger::log_event(
                     message << "<writable_buffer>";
                 },
                 [&](const WantsAEffectUpdate&) { message << "<nullptr>"; },
+                [&](const WantsAudioShmBufferConfig&) {
+                    message << "<nullptr>";
+                },
                 [&](const WantsChunkBuffer&) {
                     message << "<writable_buffer>";
                 },
@@ -500,7 +503,12 @@ void Vst2Logger::log_event_response(
                 [&](const ChunkData& chunk) {
                     message << ", <" << chunk.buffer.size() << " byte chunk>";
                 },
-                [&](const AEffect&) { message << ", <AEffect_object>"; },
+                [&](const AEffect&) { message << ", <AEffect object>"; },
+                [&](const AudioShmBuffer::Config& config) {
+                    message << ", <shared memory configuration for \""
+                            << config.name << "\", " << config.size
+                            << " bytes>";
+                },
                 [&](const DynamicSpeakerArrangement& speaker_arrangement) {
                     message << ", <" << speaker_arrangement.speakers.size()
                             << " output_speakers>";

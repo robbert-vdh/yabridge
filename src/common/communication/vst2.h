@@ -487,6 +487,13 @@ Vst2EventResult passthrough_event(AEffect* plugin,
             // after the plugin has already finished initializing.
             return nullptr;
         },
+        [](const WantsAudioShmBufferConfig&) -> void* {
+            // This is another magic value. We'll create the shared memory
+            // object after the plugin's dispatch function has returned and then
+            // return the configuration to the native plugin, in
+            // `Vst2Bridge::run`.
+            return nullptr;
+        },
         [&](const WantsChunkBuffer&) -> void* { return string_buffer.data(); },
         [](VstIOProperties& props) -> void* { return &props; },
         [](VstMidiKeyName& key_name) -> void* { return &key_name; },

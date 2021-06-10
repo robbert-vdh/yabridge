@@ -239,87 +239,61 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
         // they start producing denormals
         ScopedFlushToZero ftz_guard;
 
-        sockets.host_vst_process_replacing.receive_multi<
-            AudioBuffers>([&](AudioBuffers& process_request,
-                              SerializationBufferBase& buffer) {
-            // Since the value cannot change during this processing cycle, we'll
-            // send the current transport information as part of the request so
-            // we prefetch it to avoid unnecessary callbacks from the audio
-            // thread
-            std::optional<decltype(time_info_cache)::Guard>
-                time_info_cache_guard =
-                    process_request.current_time_info
-                        ? std::optional(time_info_cache.set(
-                              *process_request.current_time_info))
-                        : std::nullopt;
+        sockets.host_vst_process_replacing.receive_multi<Vst2ProcessRequest>(
+            [&](Vst2ProcessRequest& process_request,
+                SerializationBufferBase& buffer) {
+                // Since the value cannot change during this processing cycle,
+                // we'll send the current transport information as part of the
+                // request so we prefetch it to avoid unnecessary callbacks from
+                // the audio thread
+                std::optional<decltype(time_info_cache)::Guard>
+                    time_info_cache_guard =
+                        process_request.current_time_info
+                            ? std::optional(time_info_cache.set(
+                                  *process_request.current_time_info))
+                            : std::nullopt;
 
-            // We'll also prefetch the process level, since some plugins will
-            // ask for this during every processing cycle
-            decltype(process_level_cache)::Guard process_level_cache_guard =
-                process_level_cache.set(process_request.current_process_level);
+                // We'll also prefetch the process level, since some plugins
+                // will ask for this during every processing cycle
+                decltype(process_level_cache)::Guard process_level_cache_guard =
+                    process_level_cache.set(
+                        process_request.current_process_level);
 
-            // As suggested by Jack Winter, we'll synchronize this thread's
-            // audio processing priority with that of the host's audio thread
-            // every once in a while
-            if (process_request.new_realtime_priority) {
-                set_realtime_priority(true,
-                                      *process_request.new_realtime_priority);
-            }
+                // As suggested by Jack Winter, we'll synchronize this thread's
+                // audio processing priority with that of the host's audio
+                // thread every once in a while
+                if (process_request.new_realtime_priority) {
+                    set_realtime_priority(
+                        true, *process_request.new_realtime_priority);
+                }
 
-            // Let the plugin process the MIDI events that were received
-            // since the last buffer, and then clean up those events. This
-            // approach should not be needed but Kontakt only stores
-            // pointers to rather than copies of the events.
-            std::lock_guard lock(next_buffer_midi_events_mutex);
+                // Let the plugin process the MIDI events that were received
+                // since the last buffer, and then clean up those events. This
+                // approach should not be needed but Kontakt only stores
+                // pointers to rather than copies of the events.
+                std::lock_guard lock(next_buffer_midi_events_mutex);
 
-            // Since the host should only be calling one of `process()`,
-            // processReplacing()` or `processDoubleReplacing()`, we can all
-            // handle them over the same socket. We pick which one to call
-            // depending on the type of data we got sent and the plugin's
-            // reported support for these functions.
-            std::visit(
-                [&]<typename T>(
-                    std::vector<std::vector<T>>& input_audio_buffers) {
-                    // The process functions expect a `T**` for their inputs
-                    thread_local std::vector<T*> input_pointers{};
-                    if (input_pointers.size() != input_audio_buffers.size()) {
-                        input_pointers.resize(input_audio_buffers.size());
-                        for (size_t channel = 0;
-                             channel < input_audio_buffers.size(); channel++) {
-                            input_pointers[channel] =
-                                input_audio_buffers[channel].data();
-                        }
-                    }
-
-                    // We also reuse the output buffers to avoid some
-                    // unnecessary heap allocations
-                    if (!std::holds_alternative<std::vector<std::vector<T>>>(
-                            process_response.buffers)) {
-                        process_response.buffers
-                            .emplace<std::vector<std::vector<T>>>();
-                    }
-
-                    std::vector<std::vector<T>>& output_audio_buffers =
-                        std::get<std::vector<std::vector<T>>>(
-                            process_response.buffers);
-                    output_audio_buffers.resize(plugin->numOutputs);
-                    for (size_t channel = 0;
-                         channel < output_audio_buffers.size(); channel++) {
-                        output_audio_buffers[channel].resize(
-                            process_request.sample_frames);
-                    }
-
-                    // And the process functions also expect a `T**` for their
-                    // outputs
-                    thread_local std::vector<T*> output_pointers{};
-                    if (output_pointers.size() != output_audio_buffers.size()) {
-                        output_pointers.resize(output_audio_buffers.size());
-                        for (size_t channel = 0;
-                             channel < output_audio_buffers.size(); channel++) {
-                            output_pointers[channel] =
-                                output_audio_buffers[channel].data();
-                        }
-                    }
+                // As an optimization we no don't pass the input audio along
+                // with `Vst2ProcessRequest`, and instead we'll write it to a
+                // shared memory object on the plugin side. We can then write
+                // the output audio to the same shared memory object. Since the
+                // host should only be calling one of `process()`,
+                // processReplacing()` or `processDoubleReplacing()`, we can all
+                // handle them all at once. We pick which one to call depending
+                // on the type of data we got sent and the plugin's reported
+                // support for these functions.
+                auto do_process = [&]<typename T>(T) {
+                    // These were set up after the host called
+                    // `effMainsChanged()` with the correct size, so this
+                    // reinterpret cast is safe even if the host suddenly starts
+                    // sending 32-bit single precision audio after it set up
+                    // audio processing for double precision (not that the
+                    // Windows VST2 plugin would be able to handle that,
+                    // presumably)
+                    T** input_channel_pointers = reinterpret_cast<T**>(
+                        process_buffers_input_pointers.data());
+                    T** output_channel_pointers = reinterpret_cast<T**>(
+                        process_buffers_output_pointers.data());
 
                     if constexpr (std::is_same_v<T, float>) {
                         // Any plugin made in the last fifteen years or so
@@ -328,25 +302,28 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                         // ourselves.
                         if (plugin->processReplacing) {
                             plugin->processReplacing(
-                                plugin, input_pointers.data(),
-                                output_pointers.data(),
+                                plugin, input_channel_pointers,
+                                output_channel_pointers,
                                 process_request.sample_frames);
                         } else {
                             // If we zero out this buffer then the behavior is
                             // the same as `processReplacing`
-                            for (std::vector<T>& buffer :
-                                 output_audio_buffers) {
-                                std::fill(buffer.begin(), buffer.end(), (T)0.0);
+                            for (int channel = 0; channel < plugin->numOutputs;
+                                 channel++) {
+                                std::fill(output_channel_pointers[channel],
+                                          output_channel_pointers[channel] +
+                                              process_request.sample_frames,
+                                          static_cast<T>(0.0));
                             }
 
-                            plugin->process(plugin, input_pointers.data(),
-                                            output_pointers.data(),
+                            plugin->process(plugin, input_channel_pointers,
+                                            output_channel_pointers,
                                             process_request.sample_frames);
                         }
                     } else if (std::is_same_v<T, double>) {
                         plugin->processDoubleReplacing(
-                            plugin, input_pointers.data(),
-                            output_pointers.data(),
+                            plugin, input_channel_pointers,
+                            output_channel_pointers,
                             process_request.sample_frames);
                     } else {
                         static_assert(
@@ -355,19 +332,28 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                             "Audio processing only works with single and "
                             "double precision floating point numbers");
                     }
-                },
-                process_request.buffers);
+                };
 
-            // We modified the buffers within the `process_response` object, so
-            // we can just send that object back. Like on the plugin side we
-            // cannot reuse the request object because a plugin may have a
-            // different number of input and output channels
-            sockets.host_vst_process_replacing.send(process_response, buffer);
+                assert(process_buffers);
+                if (process_request.double_precision) {
+                    // XXX: Clangd doesn't let you specify template parameters
+                    //      for templated lambdas. This argument should get
+                    //      optimized out
+                    do_process(double());
+                } else {
+                    do_process(float());
+                }
 
-            // See the docstrong on `should_clear_midi_events` for why we
-            // don't just clear `next_buffer_midi_events` here
-            should_clear_midi_events = true;
-        });
+                // We modified the buffers within the `process_response` object,
+                // so we can just send that object back. Like on the plugin side
+                // we cannot reuse the request object because a plugin may have
+                // a different number of input and output channels
+                sockets.host_vst_process_replacing.send(Ack{}, buffer);
+
+                // See the docstrong on `should_clear_midi_events` for why we
+                // don't just clear `next_buffer_midi_events` here
+                should_clear_midi_events = true;
+            });
     });
 }
 
@@ -379,7 +365,8 @@ void Vst2Bridge::run() {
     set_realtime_priority(true);
 
     sockets.host_vst_dispatch.receive_events(
-        std::nullopt, [&](Vst2Event& event, bool /*on_main_thread*/) {
+        std::nullopt,
+        [&](Vst2Event& event, bool /*on_main_thread*/) -> Vst2EventResult {
             if (event.opcode == effProcessEvents) {
                 // For 99% of the plugins we can just call
                 // `effProcessReplacing()` and be done with it, but a select few
@@ -405,81 +392,92 @@ void Vst2Bridge::run() {
                     std::get<DynamicVstEvents>(event.payload));
                 DynamicVstEvents& events = next_audio_buffer_midi_events.back();
 
-                // Exact same handling as in `passthrough_event()`, apart
-                // from making a copy of the events first
+                // Exact same handling as in `passthrough_event()`, apart from
+                // making a copy of the events first
                 const intptr_t return_value = plugin->dispatcher(
                     plugin, event.opcode, event.index, event.value,
                     &events.as_c_events(), event.option);
 
-                Vst2EventResult response{.return_value = return_value,
-                                         .payload = nullptr,
-                                         .value_payload = std::nullopt};
+                return Vst2EventResult{.return_value = return_value,
+                                       .payload = nullptr,
+                                       .value_payload = std::nullopt};
+            }
 
-                return response;
-            } else {
-                return passthrough_event(
-                    plugin,
-                    [&](AEffect* plugin, int opcode, int index, intptr_t value,
-                        void* data, float option) -> intptr_t {
-                        // Certain functions will most definitely involve
-                        // the GUI or the Win32 message loop. These
-                        // functions have to be performed on the thread that
-                        // is running the IO context, since this is also
-                        // where the plugins were instantiated and where the
-                        // Win32 message loop is handled.
-                        if (unsafe_requests.contains(opcode)) {
-                            // Requests that potentially spawn an audio worker
-                            // thread should be run with `SCHED_FIFO` until Wine
-                            // implements the corresponding Windows API
-                            const bool is_realtime_request =
-                                unsafe_requests_realtime.contains(opcode);
+            Vst2EventResult result = passthrough_event(
+                plugin,
+                [&](AEffect* plugin, int opcode, int index, intptr_t value,
+                    void* data, float option) -> intptr_t {
+                    // Certain functions will most definitely involve
+                    // the GUI or the Win32 message loop. These
+                    // functions have to be performed on the thread that
+                    // is running the IO context, since this is also
+                    // where the plugins were instantiated and where the
+                    // Win32 message loop is handled.
+                    if (unsafe_requests.contains(opcode)) {
+                        // Requests that potentially spawn an audio worker
+                        // thread should be run with `SCHED_FIFO` until Wine
+                        // implements the corresponding Windows API
+                        const bool is_realtime_request =
+                            unsafe_requests_realtime.contains(opcode);
 
-                            return main_context
-                                .run_in_context([&]() -> intptr_t {
-                                    if (is_realtime_request) {
-                                        set_realtime_priority(true);
-                                    }
+                        return main_context
+                            .run_in_context([&]() -> intptr_t {
+                                if (is_realtime_request) {
+                                    set_realtime_priority(true);
+                                }
 
-                                    const intptr_t result =
-                                        dispatch_wrapper(plugin, opcode, index,
-                                                         value, data, option);
+                                const intptr_t result = dispatch_wrapper(
+                                    plugin, opcode, index, value, data, option);
 
-                                    if (is_realtime_request) {
-                                        set_realtime_priority(false);
-                                    }
+                                if (is_realtime_request) {
+                                    set_realtime_priority(false);
+                                }
 
-                                    // The Win32 message loop will not be run up
-                                    // to this point to prevent plugins with
-                                    // partially initialized states from
-                                    // misbehaving
-                                    if (opcode == effOpen) {
-                                        is_initialized = true;
-                                    }
+                                // The Win32 message loop will not be run up to
+                                // this point to prevent plugins with partially
+                                // initialized states from misbehaving
+                                if (opcode == effOpen) {
+                                    is_initialized = true;
+                                }
 
-                                    return result;
-                                })
-                                .get();
-                        } else if (safe_mutually_recursive_requests.contains(
-                                       opcode)) {
-                            // If this function call is potentially in response
-                            // to a callback contained in
-                            // `mutually_recursive_callbacks`, then we should
-                            // call it on the same thread that called that
-                            // callback if possible. This may be needed when
-                            // plugins use recursive mutexes, thus causing
-                            // deadlocks when the function is called from any
-                            // other thread.
-                            return mutual_recursion.handle([&]() {
-                                return dispatch_wrapper(plugin, opcode, index,
-                                                        value, data, option);
-                            });
-                        } else {
+                                return result;
+                            })
+                            .get();
+                    } else if (safe_mutually_recursive_requests.contains(
+                                   opcode)) {
+                        // If this function call is potentially in response to a
+                        // callback contained in `mutually_recursive_callbacks`,
+                        // then we should call it on the same thread that called
+                        // that callback if possible. This may be needed when
+                        // plugins use recursive mutexes, thus causing deadlocks
+                        // when the function is called from any other thread.
+                        return mutual_recursion.handle([&]() {
                             return dispatch_wrapper(plugin, opcode, index,
                                                     value, data, option);
-                        }
-                    },
-                    event);
+                        });
+                    } else {
+                        return dispatch_wrapper(plugin, opcode, index, value,
+                                                data, option);
+                    }
+                },
+                event);
+
+            // We also need some special handling to set up audio processing.
+            // After the plugin has finished setting up audio processing, we'll
+            // initialize our shared audio buffers on this side and send the
+            // configuration back to the native plugin so it can also connect to
+            // the same buffers. We cannot use `Vst2Bridge::dispatch_wrapper()`
+            // for this because we need to directly return payload data that
+            // won't be visible to the plugin at all.
+            if (event.opcode == effMainsChanged) {
+                // Returning another result this way is a bit ugly, but sadly
+                // optimizations have never made code nicer to read
+                return Vst2EventResult{.return_value = result.return_value,
+                                       .payload = setup_shared_audio_buffers(),
+                                       .value_payload = std::nullopt};
             }
+
+            return result;
         });
 }
 
@@ -491,50 +489,6 @@ void Vst2Bridge::handle_x11_events() noexcept {
 
 void Vst2Bridge::close_sockets() {
     sockets.close();
-}
-
-intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
-                                      int opcode,
-                                      int index,
-                                      intptr_t value,
-                                      void* data,
-                                      float option) {
-    // We have to intercept GUI open calls since we can't use the X11 window
-    // handle passed by the host. Keep in mind that in our `run()` function
-    // above some of these events will be called on some arbitrary thread (where
-    // we're running with realtime scheduling) and some might be called on the
-    // main thread using `main_context.run_in_context()` (where we don't use
-    // realtime scheduling).
-    switch (opcode) {
-        case effEditOpen: {
-            // Create a Win32 window through Wine, embed it into the window
-            // provided by the host, and let the plugin embed itself into
-            // the Wine window
-            const auto x11_handle = reinterpret_cast<size_t>(data);
-
-            Editor& editor_instance = editor.emplace(
-                main_context, config, x11_handle, [plugin = this->plugin]() {
-                    plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0.0);
-                });
-            const intptr_t result =
-                plugin->dispatcher(plugin, opcode, index, value,
-                                   editor_instance.get_win32_handle(), option);
-
-            return result;
-        } break;
-        case effEditClose: {
-            // Cleanup is handled through RAII
-            const intptr_t return_value =
-                plugin->dispatcher(plugin, opcode, index, value, data, option);
-            editor.reset();
-
-            return return_value;
-        } break;
-        default:
-            return plugin->dispatcher(plugin, opcode, index, value, data,
-                                      option);
-            break;
-    }
 }
 
 class HostCallbackDataConverter : public DefaultDataConverter {
@@ -721,6 +675,133 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
                                         mutual_recursion);
     return sockets.vst_host_callback.send_event(converter, std::nullopt, opcode,
                                                 index, value, data, option);
+}
+
+intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
+                                      int opcode,
+                                      int index,
+                                      intptr_t value,
+                                      void* data,
+                                      float option) {
+    // We have to intercept GUI open calls since we can't use the X11 window
+    // handle passed by the host. Keep in mind that in our `run()` function
+    // above some of these events will be called on some arbitrary thread (where
+    // we're running with realtime scheduling) and some might be called on the
+    // main thread using `main_context.run_in_context()` (where we don't use
+    // realtime scheduling).
+    switch (opcode) {
+        case effSetBlockSize:
+            // Used to initialize the shared audio buffers when handling
+            // `effMainsChanged` in `Vst2Bridge::run()`
+            max_samples_per_block = value;
+
+            return plugin->dispatcher(plugin, opcode, index, value, data,
+                                      option);
+            break;
+        case effEditOpen: {
+            // Create a Win32 window through Wine, embed it into the window
+            // provided by the host, and let the plugin embed itself into
+            // the Wine window
+            const auto x11_handle = reinterpret_cast<size_t>(data);
+
+            Editor& editor_instance = editor.emplace(
+                main_context, config, x11_handle, [plugin = this->plugin]() {
+                    plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0.0);
+                });
+            const intptr_t result =
+                plugin->dispatcher(plugin, opcode, index, value,
+                                   editor_instance.get_win32_handle(), option);
+
+            return result;
+        } break;
+        case effEditClose: {
+            // Cleanup is handled through RAII
+            const intptr_t return_value =
+                plugin->dispatcher(plugin, opcode, index, value, data, option);
+            editor.reset();
+
+            return return_value;
+        } break;
+        case effSetProcessPrecision:
+            // Used to initialize the shared audio buffers when handling
+            // `effMainsChanged` in `Vst2Bridge::run()`
+            double_precision = value == kVstProcessPrecision64;
+
+            return plugin->dispatcher(plugin, opcode, index, value, data,
+                                      option);
+            break;
+        default:
+            return plugin->dispatcher(plugin, opcode, index, value, data,
+                                      option);
+            break;
+    }
+}
+
+AudioShmBuffer::Config Vst2Bridge::setup_shared_audio_buffers() {
+    // We'll first compute the size and channel offsets for our buffer based on
+    // the information already passed to us by the host. The offsets for each
+    // audio channel are in samples (since they'll be used with pointer
+    // arithmetic in `AudioShmBuffer`), and we'll only use the first bus (since
+    // VST2 plugins don't have multiple audio busses).
+    assert(max_samples_per_block != 0);
+    uint32_t current_offset = 0;
+
+    std::vector<uint32_t> input_channel_offsets(plugin->numInputs);
+    for (int channel = 0; channel < plugin->numInputs; channel++) {
+        input_channel_offsets[channel] = current_offset;
+        current_offset += max_samples_per_block;
+    }
+
+    std::vector<uint32_t> output_channel_offsets(plugin->numOutputs);
+    for (int channel = 0; channel < plugin->numOutputs; channel++) {
+        output_channel_offsets[channel] = current_offset;
+        current_offset += max_samples_per_block;
+    }
+
+    // The size of the buffer is in bytes, and it will depend on whether the
+    // host is going to pass 32-bit or 64-bit audio to the plugin
+    const uint32_t buffer_size =
+        current_offset * (double_precision ? sizeof(double) : sizeof(float));
+
+    // We'll set up these shared memory buffers on the Wine side first, and then
+    // when this request returns we'll do the same thing on the native plugin
+    // side
+    AudioShmBuffer::Config buffer_config{
+        .name = sockets.base_dir.filename().string(),
+        .size = buffer_size,
+        .input_offsets = {std::move(input_channel_offsets)},
+        .output_offsets = {std::move(output_channel_offsets)}};
+    if (!process_buffers) {
+        process_buffers.emplace(buffer_config);
+    } else {
+        process_buffers->resize(buffer_config);
+    }
+
+    // The process functions expect a `T**` for their inputs and outputs, so
+    // we'll also set those up right now
+    process_buffers_input_pointers.resize(plugin->numInputs);
+    for (int channel = 0; channel < plugin->numInputs; channel++) {
+        if (double_precision) {
+            process_buffers_input_pointers[channel] =
+                process_buffers->input_channel_ptr<double>(0, channel);
+        } else {
+            process_buffers_input_pointers[channel] =
+                process_buffers->input_channel_ptr<float>(0, channel);
+        }
+    }
+
+    process_buffers_output_pointers.resize(plugin->numOutputs);
+    for (int channel = 0; channel < plugin->numOutputs; channel++) {
+        if (double_precision) {
+            process_buffers_output_pointers[channel] =
+                process_buffers->output_channel_ptr<double>(0, channel);
+        } else {
+            process_buffers_output_pointers[channel] =
+                process_buffers->output_channel_ptr<float>(0, channel);
+        }
+    }
+
+    return buffer_config;
 }
 
 intptr_t VST_CALL_CONV host_callback_proxy(AEffect* effect,

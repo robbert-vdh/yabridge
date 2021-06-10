@@ -8,6 +8,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The audio processing implementation for VST2 (and soon, also for VST3) plugins
+  has been rewritten using both shared memory and message passing to reduce
+  memory copies to a minimum. With this change the DSP load overhead during
+  audio processing should now be as low as it's going to get.
+
 ### Fixed
 
 - Fixed VST2 speaker arrangement configurations returned by the plugin not being

@@ -188,10 +188,14 @@ Vst2PluginBridge::~Vst2PluginBridge() noexcept {
 
 class DispatchDataConverter : public DefaultDataConverter {
    public:
-    DispatchDataConverter(std::vector<uint8_t>& chunk_data,
+    DispatchDataConverter(std::optional<AudioShmBuffer>& process_buffers,
+                          std::vector<uint8_t>& chunk_data,
                           AEffect& plugin,
                           VstRect& editor_rectangle) noexcept
-        : chunk(chunk_data), plugin(plugin), rect(editor_rectangle) {}
+        : process_buffers(process_buffers),
+          chunk(chunk_data),
+          plugin(plugin),
+          rect(editor_rectangle) {}
 
     Vst2Event::Payload read_data(const int opcode,
                                  const int index,
@@ -207,6 +211,10 @@ class DispatchDataConverter : public DefaultDataConverter {
                 // of during the initialization.
                 return WantsAEffectUpdate{};
                 break;
+            case effMainsChanged:
+                // At this point we'll set up our audio buffers since we (in
+                // theory) now know how large they need to be
+                return WantsAudioShmBufferConfig{};
             case effEditGetRect:
                 return WantsVstRect();
                 break;
@@ -289,7 +297,6 @@ class DispatchDataConverter : public DefaultDataConverter {
             case effGetProgram:
             case effSetSampleRate:
             case effSetBlockSize:
-            case effMainsChanged:
             case effEditClose:
             case effEditIdle:
             case effCanBeAutomated:
@@ -344,6 +351,15 @@ class DispatchDataConverter : public DefaultDataConverter {
                 const auto& updated_plugin =
                     std::get<AEffect>(response.payload);
                 update_aeffect(plugin, updated_plugin);
+            } break;
+            case effMainsChanged: {
+                const auto& audio_buffer_config =
+                    std::get<AudioShmBuffer::Config>(response.payload);
+                if (!process_buffers) {
+                    process_buffers.emplace(audio_buffer_config);
+                } else {
+                    process_buffers->resize(audio_buffer_config);
+                }
             } break;
             case effEditGetRect: {
                 // Either the plugin will have returned (a pointer to) their
@@ -448,6 +464,7 @@ class DispatchDataConverter : public DefaultDataConverter {
     }
 
    private:
+    std::optional<AudioShmBuffer>& process_buffers;
     std::vector<uint8_t>& chunk;
     AEffect& plugin;
     VstRect& rect;
@@ -476,7 +493,8 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
         return 0;
     }
 
-    DispatchDataConverter converter(chunk_data, plugin, editor_rectangle);
+    DispatchDataConverter converter(process_buffers, chunk_data, plugin,
+                                    editor_rectangle);
 
     switch (opcode) {
         case effClose: {
@@ -570,73 +588,81 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
 
 template <typename T, bool replacing>
 void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
+    // During audio processing we'll write the inputs to shared memory buffers,
+    // and we'll then send this request alongside it with additional information
+    // needed to process audio
+    Vst2ProcessRequest request{};
+
     // To prevent unnecessary bridging overhead, we'll send the time information
     // together with the buffers because basically every plugin needs this
     const VstTimeInfo* returned_time_info =
         reinterpret_cast<const VstTimeInfo*>(host_callback_function(
             &plugin, audioMasterGetTime, 0, 0, nullptr, 0.0));
     if (returned_time_info) {
-        process_input_buffers.current_time_info = *returned_time_info;
+        request.current_time_info = *returned_time_info;
     } else {
-        process_input_buffers.current_time_info.reset();
+        request.current_time_info.reset();
     }
 
     // Some plugisn also ask for the current process level, so we'll prefetch
     // that information as well
-    process_input_buffers.current_process_level =
-        static_cast<int>(host_callback_function(
-            &plugin, audioMasterGetCurrentProcessLevel, 0, 0, nullptr, 0.0));
+    request.current_process_level = static_cast<int>(host_callback_function(
+        &plugin, audioMasterGetCurrentProcessLevel, 0, 0, nullptr, 0.0));
 
     // We'll synchronize the scheduling priority of the audio thread on the Wine
     // plugin host with that of the host's audio thread every once in a while
     const time_t now = time(nullptr);
     if (now > last_audio_thread_priority_synchronization +
                   audio_thread_priority_synchronization_interval) {
-        process_input_buffers.new_realtime_priority = get_realtime_priority();
+        request.new_realtime_priority = get_realtime_priority();
         last_audio_thread_priority_synchronization = now;
     } else {
-        process_input_buffers.new_realtime_priority.reset();
+        request.new_realtime_priority.reset();
     }
 
     // We reuse this audio buffers object both for the request and the response
     // to avoid unnecessary allocations. The inputs and outputs arrays should be
     // `[num_inputs][sample_frames]` and `[num_outputs][sample_frames]` floats
     // large respectfully.
-    process_input_buffers.sample_frames = sample_frames;
-    if (!std::holds_alternative<std::vector<std::vector<T>>>(
-            process_input_buffers.buffers)) {
-        process_input_buffers.buffers.emplace<std::vector<std::vector<T>>>();
+
+    // As an optimization we don't send the actual audio buffers as part of the
+    // request. Instead, we'll write the audio to a shared memory object. In
+    // that object we've already predetermined the starting positions for each
+    // audio channel, but we'll still need this double precision flag so we know
+    // which function to call on the Wine side (since the host might mix these
+    // two up even though it really shouldn't do that and some plugins won't be
+    // able to handle that)
+    request.sample_frames = sample_frames;
+    if constexpr (std::is_same_v<T, double>) {
+        request.double_precision = true;
+    } else {
+        static_assert(std::is_same_v<T, float>);
     }
 
-    std::vector<std::vector<T>>& input_audio_buffers =
-        std::get<std::vector<std::vector<T>>>(process_input_buffers.buffers);
-    input_audio_buffers.resize(plugin.numInputs);
+    // The host should have called `effMainsChanged()` before sending audio to
+    // process
+    assert(process_buffers);
     for (int channel = 0; channel < plugin.numInputs; channel++) {
-        input_audio_buffers[channel].resize(sample_frames);
-        std::copy_n(inputs[channel], sample_frames,
-                    input_audio_buffers[channel].begin());
+        T* input_channel = process_buffers->input_channel_ptr<T>(0, channel);
+        std::copy_n(inputs[channel], sample_frames, input_channel);
     }
 
-    // After sending these buffers to the Wine plugin host, we'll receive the
-    // results back in the same object so we can write back the outputs
-    sockets.host_vst_process_replacing.send(process_input_buffers,
-                                            process_scratch_buffer);
+    // After writing audio to the shared memory buffers, we'll send the
+    // processing request parameters to the Wine plugin host so it can start
+    // processing audio. This is why we don't need any explicit synchronisation.
+    sockets.host_vst_process_replacing.send(request);
 
-    // NOTE: We use a different object for this, because otherwise
-    //       mono-to-stereo plugins or any other configuration where the number
-    //       of input channels does not match the number of output channels
-    //       would still result in constant reallocations
-    sockets.host_vst_process_replacing.receive_single<AudioBuffers>(
-        process_output_buffers, process_scratch_buffer);
+    // From the Wine side we'll send a zero byte struct back as an
+    // acknowledgement that audio processing has finished. At this point the
+    // audio will have been written to our buffers.
+    sockets.host_vst_process_replacing.receive_single<Ack>();
 
-    std::vector<std::vector<T>>& output_audio_buffers =
-        std::get<std::vector<std::vector<T>>>(process_output_buffers.buffers);
-    assert(output_audio_buffers.size() ==
-           static_cast<size_t>(plugin.numOutputs));
     for (int channel = 0; channel < plugin.numOutputs; channel++) {
+        const T* output_channel =
+            process_buffers->output_channel_ptr<T>(0, channel);
+
         if constexpr (replacing) {
-            std::copy(output_audio_buffers[channel].begin(),
-                      output_audio_buffers[channel].end(), outputs[channel]);
+            std::copy_n(output_channel, sample_frames, outputs[channel]);
         } else {
             // The old `process()` function expects the plugin to add its output
             // to the accumulated values in `outputs`. Since no host is ever
@@ -646,8 +672,7 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
             // We could use `std::execution::unseq` here but that would require
             // linking to TBB and since this probably won't ever be used anyways
             // that's a bit of a waste.
-            std::transform(output_audio_buffers[channel].begin(),
-                           output_audio_buffers[channel].end(),
+            std::transform(output_channel, output_channel + sample_frames,
                            outputs[channel], outputs[channel],
                            [](const T& new_value, T& current_value) -> T {
                                return new_value + current_value;

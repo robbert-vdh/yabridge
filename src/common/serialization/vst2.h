@@ -24,6 +24,7 @@
 #include <vestige/aeffectx.h>
 #include <boost/container/small_vector.hpp>
 
+#include "../audio-shm.h"
 #include "../bitsery/ext/in-place-variant.h"
 #include "../bitsery/traits/small-vector.h"
 #include "../utils.h"
@@ -227,6 +228,26 @@ struct WantsAEffectUpdate {
 };
 
 /**
+ * Marker struct to indicate that the Wine plugin host should set up shared
+ * memory buffers for audio processing. The size for this depends on the maximum
+ * block size indicated by the host using `effSetBlockSize()` and whether the
+ * host called `effSetProcessPrecision()` to indicate that the plugin is going
+ * to receive double precision audio or not.
+ *
+ * HACK: We need to do some manual work after the plugin has handled
+ *       `effMainsChanged`, and our current setup doesn't allow us to do that
+ *       from the `passthrough_event()` function. So for the time being we'll
+ *       have to do this manually in the `receive_events()` handler, see
+ *       `Vst2Bridge::run()`.
+ */
+struct WantsAudioShmBufferConfig {
+    using Response = AudioShmBuffer::Config;
+
+    template <typename S>
+    void serialize(S&) {}
+};
+
+/**
  * Marker struct to indicate that that the event writes arbitrary data into one
  * of its own buffers and uses the void pointer to store start of that data,
  * with the return value indicating the size of the array.
@@ -295,6 +316,7 @@ struct Vst2EventResult {
     using Payload = std::variant<std::nullptr_t,
                                  std::string,
                                  AEffect,
+                                 AudioShmBuffer::Config,
                                  ChunkData,
                                  DynamicSpeakerArrangement,
                                  VstIOProperties,
@@ -395,6 +417,7 @@ struct Vst2Event {
                                  DynamicVstEvents,
                                  DynamicSpeakerArrangement,
                                  WantsAEffectUpdate,
+                                 WantsAudioShmBufferConfig,
                                  WantsChunkBuffer,
                                  VstIOProperties,
                                  VstMidiKeyName,
@@ -485,28 +508,27 @@ struct Parameter {
 };
 
 /**
- * A buffer of audio for the plugin to process, or the response of that
- * processing. The number of samples is encoded in each audio buffer's length.
- * This is used for both `process()/processReplacing()` and
- * `processDoubleReplacing()`.
+ * When the host calls `processReplacing()`, `processDoubleReplacing()`, or the
+ * deprecated `process()` function on our VST2 plugin, we'll write the input
+ * buffers to an `AudioShmBuffer` object that's shared between the native plugin
+ * an the Wine plugin host, and we'll then send this object to the Wine plugin
+ * host with the rest of the .
  */
-struct AudioBuffers {
-    using Response = AudioBuffers;
+struct Vst2ProcessRequest {
+    using Response = Ack;
 
     /**
-     * An audio buffer for each of the plugin's audio channels. This uses floats
-     * or doubles depending on whether `process()/processReplacing()` or
-     * `processDoubleReplacing()` got called.
-     */
-    std::variant<std::vector<std::vector<float>>,
-                 std::vector<std::vector<double>>>
-        buffers;
-
-    /**
-     * The number of frames in a sample. If buffers is not empty, then
-     * `buffers[0].size() == sample_frames`.
+     * The number of samples per channel. We'll trust the host to never provide
+     * more samples than the maximum it indicated during `effSetBlockSize`.
      */
     int sample_frames;
+
+    /**
+     * Whether the host calling `processDoubleReplacing()` or
+     * `processReplacing()`. On Linux only REAPER seems to use double precision
+     * audio.
+     */
+    bool double_precision;
 
     /**
      * We'll prefetch the current transport information as part of handling an
@@ -533,21 +555,8 @@ struct AudioBuffers {
 
     template <typename S>
     void serialize(S& s) {
-        s.ext(
-            buffers,
-            bitsery::ext::InPlaceVariant{
-                [](S& s, std::vector<std::vector<float>>& buffer) {
-                    s.container(buffer, max_audio_channels, [](S& s, auto& v) {
-                        s.container4b(v, max_buffer_size);
-                    });
-                },
-                [](S& s, std::vector<std::vector<double>>& buffer) {
-                    s.container(buffer, max_audio_channels, [](S& s, auto& v) {
-                        s.container8b(v, max_buffer_size);
-                    });
-                },
-            });
         s.value4b(sample_frames);
+        s.value1b(double_precision);
 
         s.ext(current_time_info, bitsery::ext::StdOptional{});
         s.value4b(current_process_level);

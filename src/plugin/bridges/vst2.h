@@ -154,27 +154,18 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
     Vst2Logger logger;
 
     /**
-     * The object we'll serialize the audio buffers and any auxiliary
-     * information into when processing audio. We need to reuse this object to
-     * avoid reallocations since it contains pointers to heap data.
+     * A shared memory object that contains both the input and output audio
+     * buffers. This is first configured on the Wine plugin host side during
+     * `effMainsChanged` and then replicated on the plugin side. This way we
+     * reduce the amount of copying during audio processing to only two copies.
+     * We'll write the input audio to this buffer and send the process request
+     * to the Wine plugin host. There the Windows VST2 plugin will then read
+     * from the buffer and write its results to the same buffer. We can then
+     * write those results back to the host.
+     *
+     * This will be a nullopt until `effMainsChanged` has been called.
      */
-    AudioBuffers process_input_buffers;
-
-    /**
-     * The object we'll serialize the response into after the plugin has
-     * finished processing audio. We cannot reuse `process_input_buffers`
-     * because for instance a mono-to-stereo plugin would cause us to constantly
-     * reallocate the sample buffer for the last channel. We need to reuse this
-     * object to avoid reallocations since it contains pointers to heap data.
-     */
-    AudioBuffers process_output_buffers;
-
-    /**
-     * A scratch buffer for sending and receiving binary data during the
-     * `process()`, `processReplacing()` and `processDoubleReplacing()` calls.
-     * This buffer also needs to stay alive.
-     */
-    SerializationBuffer<0> process_scratch_buffer;
+    std::optional<AudioShmBuffer> process_buffers;
 
     /**
      * We'll periodically synchronize the Wine host's audio thread priority with
