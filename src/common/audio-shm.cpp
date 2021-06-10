@@ -36,9 +36,32 @@ AudioShmBuffer::~AudioShmBuffer() noexcept {
     }
 }
 
+void AudioShmBuffer::resize(const Config& new_config) {
+    if (new_config.name != config.name) {
+        throw std::invalid_argument("Expected buffer configuration for \"" +
+                                    config.name + "\", got \"" +
+                                    new_config.name + "\"");
+    }
+
+    config = new_config;
+    shm.truncate(config.size);
+    buffer =
+        boost::interprocess::mapped_region(shm, boost::interprocess::read_write,
+                                           0, config.size, nullptr, MAP_LOCKED);
+}
+
 AudioShmBuffer::AudioShmBuffer(AudioShmBuffer&& o) noexcept
     : config(std::move(o.config)),
       shm(std::move(o.shm)),
       buffer(std::move(o.buffer)) {
     o.is_moved = true;
+}
+
+AudioShmBuffer& AudioShmBuffer::operator=(AudioShmBuffer&& o) noexcept {
+    config = std::move(o.config);
+    shm = std::move(o.shm);
+    buffer = std::move(o.buffer);
+    o.is_moved = true;
+
+    return *this;
 }

@@ -121,11 +121,21 @@ class AudioShmBuffer {
     AudioShmBuffer& operator=(const AudioShmBuffer&) = delete;
 
     AudioShmBuffer(AudioShmBuffer&&) noexcept;
-    AudioShmBuffer& operator=(AudioShmBuffer&&) = delete;
+    AudioShmBuffer& operator=(AudioShmBuffer&&) noexcept;
+
+    /**
+     * Adapt to a new buffer size or channel layout. The name of the buffer
+     * needs to remain the same.
+     *
+     * @throw `std::invalid_argument` If the config is for a buffer with a
+     *   different name.
+     */
+    void resize(const Config& new_config);
 
     /**
      * Get a pointer to the part of the buffer where this input audio channel is
-     * stored in. Both the bus and the channel indices start at zero.
+     * stored in. Both the bus and the channel indices start at zero. These
+     * addresses might change after a call to `resize()`.
      */
     template <typename T>
     T* input_channel_ptr(const uint32_t bus, const uint32_t channel) {
@@ -135,7 +145,8 @@ class AudioShmBuffer {
 
     /**
      * Get a pointer to the part of the buffer where this output audio channel
-     * is stored in. Both the bus and the channel indices start at zero.
+     * is stored in. Both the bus and the channel indices start at zero. These
+     * addresses might change after a call to `resize()`.
      */
     template <typename T>
     T* output_channel_ptr(const uint32_t bus, const uint32_t channel) {
@@ -143,7 +154,7 @@ class AudioShmBuffer {
                config.output_offsets[bus][channel];
     }
 
-    const Config config;
+    Config config;
 
    private:
     boost::interprocess::shared_memory_object shm;
