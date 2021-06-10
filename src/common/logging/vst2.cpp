@@ -397,7 +397,7 @@ void Vst2Logger::log_event(
         if (value_payload) {
             std::visit(
                 overload{
-                    [&](auto) {},
+                    [](const auto&) {},
                     [&](const DynamicSpeakerArrangement& speaker_arrangement) {
                         message << "<" << speaker_arrangement.speakers.size()
                                 << " input_speakers>, ";
@@ -477,7 +477,7 @@ void Vst2Logger::log_event_response(
         if (value_payload) {
             std::visit(
                 overload{
-                    [&](auto) {},
+                    [](const auto&) {},
                     [&](const DynamicSpeakerArrangement& speaker_arrangement) {
                         message << ", <" << speaker_arrangement.speakers.size()
                                 << " input_speakers>";

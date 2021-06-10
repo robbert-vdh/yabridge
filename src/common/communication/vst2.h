@@ -455,14 +455,14 @@ Vst2EventResult passthrough_event(AEffect* plugin,
     std::fill(string_buffer.begin(), string_buffer.begin() + sizeof(size_t), 0);
 
     auto read_payload_fn = overload{
-        [&](const std::nullptr_t&) -> void* { return nullptr; },
-        [&](const std::string& s) -> void* {
+        [](const std::nullptr_t&) -> void* { return nullptr; },
+        [](const std::string& s) -> void* {
             return const_cast<char*>(s.c_str());
         },
-        [&](const ChunkData& chunk) -> void* {
+        [](const ChunkData& chunk) -> void* {
             return const_cast<uint8_t*>(chunk.buffer.data());
         },
-        [&](native_size_t& window_handle) -> void* {
+        [](const native_size_t& window_handle) -> void* {
             // This is the X11 window handle that the editor should reparent
             // itself to. We have a special wrapper around the dispatch function
             // that intercepts `effEditOpen` events and creates a Win32 window
@@ -471,27 +471,29 @@ Vst2EventResult passthrough_event(AEffect* plugin,
             // `size_t` in case this is the 32-bit host.
             return reinterpret_cast<void*>(static_cast<size_t>(window_handle));
         },
-        [&](const AEffect&) -> void* { return nullptr; },
-        [&](DynamicVstEvents& events) -> void* {
-            return &events.as_c_events();
+        [](const AEffect&) -> void* {
+            // This is used as a magic payload value to send `AEffect` struct
+            // updates to the native plugin from the Wine plugin host
+            return nullptr;
         },
-        [&](DynamicSpeakerArrangement& speaker_arrangement) -> void* {
+        [](DynamicVstEvents& events) -> void* { return &events.as_c_events(); },
+        [](DynamicSpeakerArrangement& speaker_arrangement) -> void* {
             return &speaker_arrangement.as_c_speaker_arrangement();
         },
-        [&](WantsAEffectUpdate&) -> void* {
+        [](const WantsAEffectUpdate&) -> void* {
             // The host will never actually ask for an updated `AEffect` object
             // since that should not be a thing. This is purely a meant as a
             // workaround for plugins that initialize their `AEffect` object
             // after the plugin has already finished initializing.
             return nullptr;
         },
-        [&](WantsChunkBuffer&) -> void* { return string_buffer.data(); },
-        [&](VstIOProperties& props) -> void* { return &props; },
-        [&](VstMidiKeyName& key_name) -> void* { return &key_name; },
-        [&](VstParameterProperties& props) -> void* { return &props; },
-        [&](WantsVstRect&) -> void* { return string_buffer.data(); },
-        [&](const WantsVstTimeInfo&) -> void* { return nullptr; },
-        [&](WantsString&) -> void* { return string_buffer.data(); }};
+        [&](const WantsChunkBuffer&) -> void* { return string_buffer.data(); },
+        [](VstIOProperties& props) -> void* { return &props; },
+        [](VstMidiKeyName& key_name) -> void* { return &key_name; },
+        [](VstParameterProperties& props) -> void* { return &props; },
+        [&](const WantsVstRect&) -> void* { return string_buffer.data(); },
+        [](const WantsVstTimeInfo&) -> void* { return nullptr; },
+        [&](const WantsString&) -> void* { return string_buffer.data(); }};
 
     // Almost all events pass data through the `data` argument. There are two
     // events, `effSetSpeakerArrangement()` and `effGetSpeakerArrangement()`
@@ -510,7 +512,7 @@ Vst2EventResult passthrough_event(AEffect* plugin,
 
     // For some payload types we need to write back a value to the data pointer
     auto write_payload_fn = overload{
-        [&](auto) -> Vst2EventResult::Payload { return nullptr; },
+        [](const auto&) -> Vst2EventResult::Payload { return nullptr; },
         [&](const AEffect& updated_plugin) -> Vst2EventResult::Payload {
             // This is a bit of a special case! Instead of writing some return
             // value, we will update values on the native VST plugin's `AEffect`
@@ -520,12 +522,12 @@ Vst2EventResult passthrough_event(AEffect* plugin,
 
             return nullptr;
         },
-        [&](DynamicSpeakerArrangement& speaker_arrangement)
+        [](const DynamicSpeakerArrangement& speaker_arrangement)
             -> Vst2EventResult::Payload { return speaker_arrangement; },
-        [&](WantsAEffectUpdate&) -> Vst2EventResult::Payload {
+        [&](const WantsAEffectUpdate&) -> Vst2EventResult::Payload {
             return *plugin;
         },
-        [&](WantsChunkBuffer&) -> Vst2EventResult::Payload {
+        [&](const WantsChunkBuffer&) -> Vst2EventResult::Payload {
             // In this case the plugin will have written its data stored in an
             // array to which a pointer is stored in `data`, with the return
             // value from the event determines how much data the plugin has
@@ -534,7 +536,7 @@ Vst2EventResult passthrough_event(AEffect* plugin,
             return ChunkData{
                 std::vector<uint8_t>(chunk_data, chunk_data + return_value)};
         },
-        [&](WantsVstRect&) -> Vst2EventResult::Payload {
+        [&](const WantsVstRect&) -> Vst2EventResult::Payload {
             // The plugin should have written a pointer to a VstRect struct into
             // the data pointer. I haven't seen this fail yet, but since some
             // hosts will call `effEditGetRect()` before `effEditOpen()` I can
@@ -546,7 +548,7 @@ Vst2EventResult passthrough_event(AEffect* plugin,
 
             return *editor_rect;
         },
-        [&](WantsVstTimeInfo&) -> Vst2EventResult::Payload {
+        [&](const WantsVstTimeInfo&) -> Vst2EventResult::Payload {
             // Not sure why the VST API has twenty different ways of
             // returning structs, but in this case the value returned from
             // the callback function is actually a pointer to a
@@ -560,16 +562,16 @@ Vst2EventResult passthrough_event(AEffect* plugin,
                 return *time_info;
             }
         },
-        [&](WantsString&) -> Vst2EventResult::Payload {
+        [&](const WantsString&) -> Vst2EventResult::Payload {
             return std::string(static_cast<char*>(data));
         },
-        [&](VstIOProperties& props) -> Vst2EventResult::Payload {
+        [](const VstIOProperties& props) -> Vst2EventResult::Payload {
             return props;
         },
-        [&](VstMidiKeyName& key_name) -> Vst2EventResult::Payload {
+        [](const VstMidiKeyName& key_name) -> Vst2EventResult::Payload {
             return key_name;
         },
-        [&](VstParameterProperties& props) -> Vst2EventResult::Payload {
+        [](const VstParameterProperties& props) -> Vst2EventResult::Payload {
             return props;
         }};
 
