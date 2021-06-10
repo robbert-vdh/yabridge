@@ -1768,6 +1768,19 @@ void Vst3Logger::log_response(
 
 void Vst3Logger::log_response(
     bool is_host_vst,
+    const YaAudioProcessor::SetupProcessingResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk) {
+            message << ", <shared memory configuration for \""
+                    << response.audio_buffers_config.name << "\", "
+                    << response.audio_buffers_config.size << " bytes>";
+        }
+    });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
     const YaAudioProcessor::ProcessResponse& response) {
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();

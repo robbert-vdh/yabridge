@@ -310,6 +310,8 @@ class Vst3Logger {
     void log_response(bool is_host_vst,
                       const YaAudioProcessor::GetBusArrangementResponse&);
     void log_response(bool is_host_vst,
+                      const YaAudioProcessor::SetupProcessingResponse&);
+    void log_response(bool is_host_vst,
                       const YaAudioProcessor::ProcessResponse&);
     void log_response(bool is_host_vst,
                       const YaComponent::GetControllerClassIdResponse&);

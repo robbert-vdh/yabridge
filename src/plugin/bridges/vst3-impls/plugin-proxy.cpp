@@ -182,9 +182,11 @@ uint32 PLUGIN_API Vst3PluginProxyImpl::getLatencySamples() {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
-    return bridge.send_audio_processor_message(
-        YaAudioProcessor::SetupProcessing{.instance_id = instance_id(),
-                                          .setup = setup});
+    // TOOD: Set up the shared audio buffers next
+    return bridge
+        .send_audio_processor_message(YaAudioProcessor::SetupProcessing{
+            .instance_id = instance_id(), .setup = setup})
+        .result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {

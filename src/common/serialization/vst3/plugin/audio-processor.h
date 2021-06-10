@@ -19,6 +19,7 @@
 #include <bitsery/ext/std_optional.h>
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
 
+#include "../../../audio-shm.h"
 #include "../../common.h"
 #include "../base.h"
 #include "../process-data.h"
@@ -176,11 +177,26 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
     virtual uint32 PLUGIN_API getLatencySamples() override = 0;
 
     /**
+     * The response code and written state for a call to
+     * `IAudioProcessor::setupProcessing(setup)`.
+     */
+    struct SetupProcessingResponse {
+        UniversalTResult result;
+        AudioShmBuffer::Config audio_buffers_config;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(audio_buffers_config);
+        }
+    };
+
+    /**
      * Message to pass through a call to
      * `IAudioProcessor::setupProcessing(setup)` to the Wine plugin host.
      */
     struct SetupProcessing {
-        using Response = UniversalTResult;
+        using Response = SetupProcessingResponse;
 
         native_size_t instance_id;
 

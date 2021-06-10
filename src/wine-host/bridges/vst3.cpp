@@ -1219,8 +1219,15 @@ size_t Vst3Bridge::register_object_instance(
                     },
                     [&](YaAudioProcessor::SetupProcessing& request)
                         -> YaAudioProcessor::SetupProcessing::Response {
-                        return object_instances[request.instance_id]
-                            .audio_processor->setupProcessing(request.setup);
+                        const tresult result =
+                            object_instances[request.instance_id]
+                                .audio_processor->setupProcessing(
+                                    request.setup);
+                        return YaAudioProcessor::SetupProcessingResponse{
+                            .result = result,
+                            // TODO: Send the configuration for the shared audio
+                            //       buffers
+                            .audio_buffers_config{}};
                     },
                     [&](const YaAudioProcessor::SetProcessing& request)
                         -> YaAudioProcessor::SetProcessing::Response {
