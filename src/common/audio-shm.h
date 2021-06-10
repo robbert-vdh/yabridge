@@ -70,8 +70,10 @@ class AudioShmBuffer {
         std::string name;
 
         /**
-         * The size of the shared memory object. This should be large enough to
-         * hold all input and output buffers.
+         * The size of the shared memory object **in bytes** (so not samples).
+         * This should be large enough to hold all input and output buffers, and
+         * it depends on whether the host is going to pass 32-bit single
+         * precision or 64-bit double precision audio to the plugin.
          */
         uint32_t size;
 
@@ -138,7 +140,7 @@ class AudioShmBuffer {
      * addresses might change after a call to `resize()`.
      */
     template <typename T>
-    T* input_channel_ptr(const uint32_t bus, const uint32_t channel) {
+    T* input_channel_ptr(const uint32_t bus, const uint32_t channel) noexcept {
         return reinterpret_cast<T*>(buffer.get_address()) +
                config.input_offsets[bus][channel];
     }
@@ -149,7 +151,7 @@ class AudioShmBuffer {
      * addresses might change after a call to `resize()`.
      */
     template <typename T>
-    T* output_channel_ptr(const uint32_t bus, const uint32_t channel) {
+    T* output_channel_ptr(const uint32_t bus, const uint32_t channel) noexcept {
         return reinterpret_cast<T*>(buffer.get_address()) +
                config.output_offsets[bus][channel];
     }
