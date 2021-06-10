@@ -507,8 +507,8 @@ void serialize(S& s, Vst2EventResult::Payload& payload) {
                   s.container1b(chunk.buffer, binary_buffer_size);
               },
               [](S& s, AEffect& effect) { s.object(effect); },
-              [&](DynamicSpeakerArrangement& speaker_arrangement) -> void* {
-                  return &speaker_arrangement.as_c_speaker_arrangement();
+              [](S& s, DynamicSpeakerArrangement& speaker_arrangement) {
+                  s.object(speaker_arrangement);
               },
               [](S& s, VstIOProperties& props) { s.object(props); },
               [](S& s, VstMidiKeyName& key_name) { s.object(key_name); },
