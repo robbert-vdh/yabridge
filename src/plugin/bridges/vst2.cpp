@@ -341,7 +341,8 @@ class DispatchDataConverter : public DefaultDataConverter {
                 // coded late initialing plugins. Hopefully the host will see
                 // that the object is updated because these plugins don't send
                 // any notification about this.
-                const auto updated_plugin = std::get<AEffect>(response.payload);
+                const auto& updated_plugin =
+                    std::get<AEffect>(response.payload);
                 update_aeffect(plugin, updated_plugin);
             } break;
             case effEditGetRect: {
@@ -351,7 +352,7 @@ class DispatchDataConverter : public DefaultDataConverter {
                     return;
                 }
 
-                const auto new_rect = std::get<VstRect>(response.payload);
+                const auto& new_rect = std::get<VstRect>(response.payload);
                 rect = new_rect;
 
                 *static_cast<VstRect**>(data) = &rect;
@@ -360,7 +361,7 @@ class DispatchDataConverter : public DefaultDataConverter {
                 // Write the chunk data to some publically accessible place in
                 // `Vst2PluginBridge` and write a pointer to that struct to the
                 // data pointer
-                const auto buffer =
+                const auto& buffer =
                     std::get<ChunkData>(response.payload).buffer;
                 chunk.assign(buffer.begin(), buffer.end());
 
@@ -371,21 +372,21 @@ class DispatchDataConverter : public DefaultDataConverter {
                 // These opcodes pass the plugin some empty struct through the
                 // data parameter that the plugin then fills with flags and
                 // other data to describe an input or output channel.
-                const auto properties =
+                const auto& properties =
                     std::get<VstIOProperties>(response.payload);
 
                 *static_cast<VstIOProperties*>(data) = properties;
             } break;
             case effGetParameterProperties: {
                 // Same as the above
-                const auto properties =
+                const auto& properties =
                     std::get<VstParameterProperties>(response.payload);
 
                 *static_cast<VstParameterProperties*>(data) = properties;
             } break;
             case effGetMidiKeyName: {
                 // Ditto
-                const auto properties =
+                const auto& properties =
                     std::get<VstMidiKeyName>(response.payload);
 
                 *static_cast<VstMidiKeyName*>(data) = properties;
