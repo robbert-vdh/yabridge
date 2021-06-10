@@ -42,6 +42,15 @@ using native_size_t = uint64_t;
 using native_intptr_t = int64_t;
 
 /**
+ * Empty struct for when we have send a response to some operation without any
+ * result values.
+ */
+struct Ack {
+    template <typename S>
+    void serialize(S&) {}
+};
+
+/**
  * An object containing the startup options for hosting a plugin. These options
  * are passed to `yabridge-host.exe` as command line arguments, and they are
  * used directly by group host processes.

@@ -70,15 +70,6 @@ const Steinberg::Vst::TChar* u16string_to_tchar_pointer(
     const std::u16string& string) noexcept;
 
 /**
- * Empty struct for when we have send a response to some operation without any
- * result values.
- */
-struct Ack {
-    template <typename S>
-    void serialize(S&) {}
-};
-
-/**
  * Both `TUID` (`int8_t[16]`) and `FIDString` (`char*`) are hard to work with
  * because you can't just copy them. So when serializing/deserializing them
  * we'll use `std::array`.
