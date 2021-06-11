@@ -145,6 +145,13 @@ class AudioShmBuffer {
                config.input_offsets[bus][channel];
     }
 
+    template <typename T>
+    const T* input_channel_ptr(const uint32_t bus,
+                               const uint32_t channel) const noexcept {
+        return reinterpret_cast<const T*>(buffer.get_address()) +
+               config.input_offsets[bus][channel];
+    }
+
     /**
      * Get a pointer to the part of the buffer where this output audio channel
      * is stored in. Both the bus and the channel indices start at zero. These
@@ -153,6 +160,13 @@ class AudioShmBuffer {
     template <typename T>
     T* output_channel_ptr(const uint32_t bus, const uint32_t channel) noexcept {
         return reinterpret_cast<T*>(buffer.get_address()) +
+               config.output_offsets[bus][channel];
+    }
+
+    template <typename T>
+    const T* output_channel_ptr(const uint32_t bus,
+                                const uint32_t channel) const noexcept {
+        return reinterpret_cast<const T*>(buffer.get_address()) +
                config.output_offsets[bus][channel];
     }
 
