@@ -257,6 +257,10 @@ class YaEventList : public Steinberg::Vst::IEventList {
     template <typename S>
     void serialize(S& s) {
         s.container(events, 1 << 16);
+
+        // NOTE: After deserializing events, we need to make sure to clear our
+        //       caches since those may still contain old events
+        reconstructed_events.clear();
     }
 
    private:
