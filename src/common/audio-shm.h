@@ -134,6 +134,14 @@ class AudioShmBuffer {
      */
     void resize(const Config& new_config);
 
+    inline size_t num_input_channels(const uint32_t bus) const {
+        return config.input_offsets[bus].size();
+    }
+
+    inline size_t num_output_channels(const uint32_t bus) const {
+        return config.output_offsets[bus].size();
+    }
+
     /**
      * Get a pointer to the part of the buffer where this input audio channel is
      * stored in. Both the bus and the channel indices start at zero. These
