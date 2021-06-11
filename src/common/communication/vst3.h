@@ -526,7 +526,8 @@ class Vst3Sockets final : public Sockets {
      * would have one dedicated thread for handling function calls to these
      * interfaces, and then another dedicated thread just idling around.
      */
-    std::map<size_t, Vst3MessageHandler<Thread, AudioProcessorRequest>>
+    std::unordered_map<size_t,
+                       Vst3MessageHandler<Thread, AudioProcessorRequest>>
         audio_processor_sockets;
     std::mutex audio_processor_sockets_mutex;
 };

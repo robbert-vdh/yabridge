@@ -529,7 +529,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
         /**
          * Memoizes `IEditController::getParameterInfo()`.
          */
-        std::map<int32, Steinberg::Vst::ParameterInfo> parameter_info;
+        std::unordered_map<int32, Steinberg::Vst::ParameterInfo> parameter_info;
     };
 
     /**

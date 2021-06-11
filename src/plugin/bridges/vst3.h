@@ -204,7 +204,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * `register_plugin_proxy()` in the constractor, and an instance is then
      * removed through a call to `unregister_plugin_proxy()` in the destructor.
      */
-    std::map<size_t, std::reference_wrapper<Vst3PluginProxyImpl>>
+    std::unordered_map<size_t, std::reference_wrapper<Vst3PluginProxyImpl>>
         plugin_proxies;
 
    private:

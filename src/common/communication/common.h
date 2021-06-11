@@ -744,7 +744,7 @@ class AdHocSocketHandler {
 
         // This works the exact same was as `active_plugins` and
         // `next_plugin_id` in `GroupBridge`
-        std::map<size_t, Thread> active_secondary_requests{};
+        std::unordered_map<size_t, Thread> active_secondary_requests{};
         std::atomic_size_t next_request_id{};
         std::mutex active_secondary_requests_mutex{};
         accept_requests(

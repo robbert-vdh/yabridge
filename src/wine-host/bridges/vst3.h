@@ -440,7 +440,7 @@ class Vst3Bridge : public HostBridge {
      * will cause all pointers to it to get dropped and the object to be cleaned
      * up.
      */
-    std::map<size_t, InstanceInterfaces> object_instances;
+    std::unordered_map<size_t, InstanceInterfaces> object_instances;
     std::mutex object_instances_mutex;
 
     /**
