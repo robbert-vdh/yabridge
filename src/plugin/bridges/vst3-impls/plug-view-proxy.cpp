@@ -61,7 +61,8 @@ void RunLoopTasks::schedule(fu2::unique_function<void()> task) {
     tasks.push_back(std::move(task));
 
     uint8_t notify_value = 1;
-    write(socket_write_fd, &notify_value, sizeof(notify_value));
+    assert(write(socket_write_fd, &notify_value, sizeof(notify_value)) ==
+           sizeof(notify_value));
 }
 
 void PLUGIN_API
@@ -77,7 +78,8 @@ RunLoopTasks::onFDIsSet(Steinberg::Linux::FileDescriptor /*fd*/) {
         // REAPER doesn't care. And funnily enough we only have to do all of
         // this because of REAPER.
         uint8_t notify_value;
-        read(socket_read_fd, &notify_value, sizeof(notify_value));
+        assert(read(socket_read_fd, &notify_value, sizeof(notify_value)) ==
+               sizeof(notify_value));
     }
 
     tasks.clear();
