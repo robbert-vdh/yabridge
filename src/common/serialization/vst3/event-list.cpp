@@ -227,21 +227,10 @@ tresult PLUGIN_API YaEventList::getEvent(int32 index,
         return Steinberg::kInvalidArgument;
     }
 
-    // On the first call to this, we'll reconstruct `Event` objects out of our
-    // `YaEvent`s all at once. This is also done if for whatever reason the
-    // plugin `getEvent()`s an event it just added.
-    const size_t num_already_reconstructed_events = reconstructed_events.size();
-    if (index >= static_cast<int32>(num_already_reconstructed_events)) {
-        reconstructed_events.resize(events.size());
-        std::transform(
-            events.begin() + static_cast<int>(num_already_reconstructed_events),
-            events.end(),
-            reconstructed_events.begin() +
-                static_cast<int>(num_already_reconstructed_events),
-            [](const YaEvent& event) { return event.get(); });
-    }
-
-    e = reconstructed_events[index];
+    // Reconstructing an event is cheap, but some events may contain pointers to
+    // heap data stored within the `events` vector so this event will still have
+    // the same lifetime as this class
+    e = events[index].get();
 
     return Steinberg::kResultOk;
 }

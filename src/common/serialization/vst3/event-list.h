@@ -257,21 +257,10 @@ class YaEventList : public Steinberg::Vst::IEventList {
     template <typename S>
     void serialize(S& s) {
         s.container(events, 1 << 16);
-
-        // NOTE: After deserializing events, we need to make sure to clear our
-        //       caches since those may still contain old events
-        reconstructed_events.clear();
     }
 
    private:
     boost::container::small_vector<YaEvent, 64> events;
-
-    /**
-     * On the first `getEvent()` call we'll reconstruct these from `events` all
-     * at once. These event objects may not outlive this event list.
-     */
-    boost::container::small_vector<Steinberg::Vst::Event, 64>
-        reconstructed_events;
 };
 
 #pragma GCC diagnostic pop
