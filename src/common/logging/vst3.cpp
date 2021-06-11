@@ -915,9 +915,10 @@ bool Vst3Logger::log_request(
             if (!first) {
                 message << ", ";
             }
-            message << "SpeakerArrangement: 0b"
-                    << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement)>(
-                           arrangement);
+            message
+                << "SpeakerArrangement: 0b"
+                << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement) * 8>(
+                       arrangement);
             first = false;
         }
 
@@ -927,9 +928,10 @@ bool Vst3Logger::log_request(
             if (!first) {
                 message << ", ";
             }
-            message << "SpeakerArrangement: 0b"
-                    << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement)>(
-                           arrangement);
+            message
+                << "SpeakerArrangement: 0b"
+                << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement) * 8>(
+                       arrangement);
             first = false;
         }
 
@@ -1778,10 +1780,11 @@ void Vst3Logger::log_response(
     log_response_base(is_host_vst, [&](auto& message) {
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
-            message << ", <SpeakerArrangement: 0b"
-                    << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement)>(
-                           response.arr)
-                    << ">";
+            message
+                << ", <SpeakerArrangement: 0b"
+                << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement) * 8>(
+                       response.arr)
+                << ">";
         }
     });
 }

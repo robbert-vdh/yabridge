@@ -34,6 +34,8 @@
  * `IComponent` pointer into an `IPluginBase` smart pointer. This way we can
  * keep the rest of yabridge's design in tact.
  */
+using std::endl;
+
 Steinberg::FUnknownPtr<Steinberg::IPluginBase> hack_init_plugin_base(
     Steinberg::IPtr<Steinberg::FUnknown> object,
     Steinberg::IPtr<Steinberg::Vst::IComponent> component);
@@ -1174,11 +1176,19 @@ AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
             audio_processor->getBusArrangement(direction, bus,
                                                speaker_arrangement);
 
+            std::cout << speaker_arrangement << std::endl;
+            std::cout
+                << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement) * 8>(
+                       speaker_arrangement)
+                << endl;
+
             const size_t num_channels =
-                std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement)>(
+                std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement) * 8>(
                     speaker_arrangement)
                     .count();
             bus_offsets[bus].resize(num_channels);
+
+            std::cout << num_channels << " channels" << std::endl;
 
             for (size_t channel = 0; channel < num_channels; channel++) {
                 bus_offsets[bus][channel] = current_offset;
