@@ -1002,12 +1002,24 @@ bool Vst3Logger::log_request(
             // this
             const YaAudioProcessor::Process& request = request_wrapper.get();
 
+            // TODO: The channel counts are now capped at what the plugin
+            //       supports (based on the audio buffers we set up during
+            //       `IAudioProcessor::setupProcessing()`). Some hosts may send
+            //       more buffers, but we don't reflect that in the output right
+            //       now.
             std::ostringstream num_input_channels;
             num_input_channels << "[";
             for (bool is_first = true;
                  const auto& buffers : request.data.inputs) {
                 num_input_channels << (is_first ? "" : ", ")
-                                   << buffers.num_channels();
+                                   << buffers.numChannels;
+                if (buffers.silenceFlags > 0 &&
+                    buffers.silenceFlags <
+                        (static_cast<uint64>(1)
+                         << static_cast<uint64>(buffers.numChannels))) {
+                    num_input_channels << " (silence)" << std::endl;
+                }
+
                 is_first = false;
             }
             num_input_channels << "]";
@@ -1015,8 +1027,16 @@ bool Vst3Logger::log_request(
             std::ostringstream num_output_channels;
             num_output_channels << "[";
             for (bool is_first = true;
-                 const auto& num_channels : request.data.outputs_num_channels) {
-                num_output_channels << (is_first ? "" : ", ") << num_channels;
+                 const auto& buffers : request.data.outputs) {
+                num_output_channels << (is_first ? "" : ", ")
+                                    << buffers.numChannels;
+                if (buffers.silenceFlags > 0 &&
+                    buffers.silenceFlags <
+                        (static_cast<uint64>(1)
+                         << static_cast<uint64>(buffers.numChannels))) {
+                    num_output_channels << " (silence)" << std::endl;
+                }
+
                 is_first = false;
             }
             num_output_channels << "]";
@@ -1030,7 +1050,7 @@ bool Vst3Logger::log_request(
                     << ", input_parameter_changes = <IParameterChanges* for "
                     << request.data.input_parameter_changes.num_parameters()
                     << " parameters>, output_parameter_changes = "
-                    << (request.data.output_parameter_changes_supported
+                    << (request.data.output_parameter_changes
                             ? "<IParameterChanges*>"
                             : "nullptr")
                     << ", input_events = ";
@@ -1042,8 +1062,8 @@ bool Vst3Logger::log_request(
                 message << "<nullptr>";
             }
             message << ", output_events = "
-                    << (request.data.output_events_supported ? "<IEventList*>"
-                                                             : "<nullptr>")
+                    << (request.data.output_events ? "<IEventList*>"
+                                                   : "<nullptr>")
                     << ", process_context = "
                     << (request.data.process_context ? "<ProcessContext*>"
                                                      : "<nullptr>")
@@ -1793,7 +1813,14 @@ void Vst3Logger::log_response(
         for (bool is_first = true;
              const auto& buffers : *response.output_data.outputs) {
             num_output_channels << (is_first ? "" : ", ")
-                                << buffers.num_channels();
+                                << buffers.numChannels;
+            if (buffers.silenceFlags > 0 &&
+                buffers.silenceFlags <
+                    (static_cast<uint64>(1)
+                     << static_cast<uint64>(buffers.numChannels))) {
+                num_output_channels << " (silence)" << std::endl;
+            }
+
             is_first = false;
         }
         num_output_channels << "]";

@@ -140,6 +140,34 @@ struct InstanceInterfaces {
     std::optional<InstancePlugView> plug_view_instance;
 
     /**
+     * A shared memory object we'll write the input audio buffers to on the
+     * native plugin side. We'll then let the plugin write its outputs here on
+     * the Wine side. The buffer will be configured during
+     * `IAudioProcessor::setupProcessing()`. At that point we'll build the
+     * configuration for the object here, on the Wine side, and then we'll
+     * initialize the buffers using that configuration. This same configuration
+     * is then used on the native plugin side to connect to this same shared
+     * memory object for the matching plugin instance.
+     */
+    std::optional<AudioShmBuffer> process_buffers;
+
+    /**
+     * Pointers to the per-bus input channels in process_buffers so we can pass
+     * them to the plugin after a call to `YaProcessData::reconstruct()`. These
+     * can be either `float*` or `double*`, so we sadly have to use void
+     * pointers here.
+     */
+    std::vector<std::vector<void*>> process_buffers_input_pointers;
+
+    /**
+     * Pointers to the per-bus output channels in process_buffers so we can pass
+     * them to the plugin after a call to `YaProcessData::reconstruct()`. These
+     * can be either `float*` or `double*`, so we sadly have to use void
+     * pointers here.
+     */
+    std::vector<std::vector<void*>> process_buffers_output_pointers;
+
+    /**
      * This instance's editor, if it has an open editor. Embedding here works
      * exactly the same as how it works for VST2 plugins.
      */
@@ -347,6 +375,15 @@ class Vst3Bridge : public HostBridge {
      * `IPluginFactory::createInstance()`.
      */
     size_t generate_instance_id() noexcept;
+
+    /**
+     * Sets up the shared memory audio buffers for a plugin instance plugin
+     * instance and return the configuration so the native plugin can connect to
+     * it as well.
+     */
+    AudioShmBuffer::Config setup_shared_audio_buffers(
+        size_t instance_id,
+        const Steinberg::Vst::ProcessSetup& setup);
 
     /**
      * Assign a unique identifier to an object and add it to `object_instances`.

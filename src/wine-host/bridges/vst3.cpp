@@ -1149,6 +1149,127 @@ size_t Vst3Bridge::generate_instance_id() noexcept {
     return current_instance_id.fetch_add(1);
 }
 
+AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
+    size_t instance_id,
+    const Steinberg::Vst::ProcessSetup& setup) {
+    const Steinberg::IPtr<Steinberg::Vst::IComponent> component =
+        object_instances[instance_id].component;
+    const Steinberg::IPtr<Steinberg::Vst::IAudioProcessor> audio_processor =
+        object_instances[instance_id].audio_processor;
+    assert(component && audio_processor);
+
+    // We'll query the plugin for its audio bus layouts, and then create
+    // calculate the offsets in a large memory buffer for the different audio
+    // channels. The offsets for each audio channel are in samples (since
+    // they'll be used with pointer arithmetic in `AudioShmBuffer`).
+    uint32_t current_offset = 0;
+
+    auto create_bus_offsets = [&](Steinberg::Vst::BusDirection direction) {
+        const auto num_busses =
+            component->getBusCount(Steinberg::Vst::kAudio, direction);
+
+        std::vector<std::vector<uint32_t>> bus_offsets(num_busses);
+        for (int bus = 0; bus < num_busses; bus++) {
+            Steinberg::Vst::SpeakerArrangement speaker_arrangement{};
+            audio_processor->getBusArrangement(direction, bus,
+                                               speaker_arrangement);
+
+            const size_t num_channels =
+                std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement)>(
+                    speaker_arrangement)
+                    .count();
+            bus_offsets[bus].resize(num_channels);
+
+            for (size_t channel = 0; channel < num_channels; channel++) {
+                bus_offsets[bus][channel] = current_offset;
+                current_offset += setup.maxSamplesPerBlock;
+            }
+        }
+
+        return bus_offsets;
+    };
+
+    // Creating the audio buffer offsets for every channel in every bus will
+    // advacne `current_offset` to keep pointing to the starting position for
+    // the next channel
+    std::vector<std::vector<uint32_t>> input_bus_offsets =
+        create_bus_offsets(Steinberg::Vst::kInput);
+    std::vector<std::vector<uint32_t>> output_bus_offsets =
+        create_bus_offsets(Steinberg::Vst::kOutput);
+
+    // The size of the buffer is in bytes, and it will depend on whether the
+    // host is going to pass 32-bit or 64-bit audio to the plugin
+    const bool double_precision =
+        setup.symbolicSampleSize == Steinberg::Vst::kSample64;
+    const uint32_t buffer_size =
+        current_offset * (double_precision ? sizeof(double) : sizeof(float));
+
+    // We'll set up these shared memory buffers on the Wine side first, and then
+    // when this request returns we'll do the same thing on the native plugin
+    // side
+    AudioShmBuffer::Config buffer_config{
+        .name = sockets.base_dir.filename().string() + "-" +
+                std::to_string(instance_id),
+        .size = buffer_size,
+        .input_offsets = std::move(input_bus_offsets),
+        .output_offsets = std::move(output_bus_offsets)};
+
+    std::optional<AudioShmBuffer>& process_buffers =
+        object_instances[instance_id].process_buffers;
+    if (!process_buffers) {
+        process_buffers.emplace(buffer_config);
+    } else {
+        process_buffers->resize(buffer_config);
+    }
+
+    // After setting up the shared memory buffer, we need to create a vector of
+    // channel audio pointers for every bus. These will then be assigned to the
+    // `AudioBusBuffers` objects in the `ProcessData` struct in
+    // `YaProcessData::reconstruct()` before passing the reconstructed process
+    // data to `IAudioProcessor::process()`.
+    auto set_bus_pointers =
+        [&]<std::invocable<uint32_t, uint32_t> F>(
+            std::vector<std::vector<void*>>& bus_pointers,
+            const std::vector<std::vector<uint32_t>>& bus_offsets,
+            F&& get_channel_pointer) {
+            bus_pointers.resize(bus_offsets.size());
+
+            for (size_t bus = 0; bus < bus_offsets.size(); bus++) {
+                bus_pointers[bus].resize(bus_offsets[bus].size());
+
+                for (size_t channel = 0; channel < bus_offsets[bus].size();
+                     channel++) {
+                    bus_pointers[bus][channel] =
+                        get_channel_pointer(bus, channel);
+                }
+            }
+        };
+
+    set_bus_pointers(
+        object_instances[instance_id].process_buffers_input_pointers,
+        process_buffers->config.input_offsets,
+        [&](uint32_t bus, uint32_t channel) -> void* {
+            if (double_precision) {
+                return process_buffers->input_channel_ptr<double>(bus, channel);
+            } else {
+                return process_buffers->input_channel_ptr<float>(bus, channel);
+            }
+        });
+    set_bus_pointers(
+        object_instances[instance_id].process_buffers_output_pointers,
+        process_buffers->config.output_offsets,
+        [&](uint32_t bus, uint32_t channel) -> void* {
+            if (double_precision) {
+                return process_buffers->output_channel_ptr<double>(bus,
+                                                                   channel);
+            } else {
+                return process_buffers->output_channel_ptr<float>(bus, channel);
+            }
+        });
+
+    return buffer_config;
+}
+
 size_t Vst3Bridge::register_object_instance(
     Steinberg::IPtr<Steinberg::FUnknown> object) {
     std::lock_guard lock(object_instances_mutex);
@@ -1223,11 +1344,20 @@ size_t Vst3Bridge::register_object_instance(
                             object_instances[request.instance_id]
                                 .audio_processor->setupProcessing(
                                     request.setup);
+
+                        // We'll set up the shared audio buffers on the Wine
+                        // side after the plugin has finished doing their setup.
+                        // This configuration can then be used on the native
+                        // plugin side to connect to the same shared audio
+                        // buffers.
+                        const AudioShmBuffer::Config audio_buffers_config =
+                            setup_shared_audio_buffers(request.instance_id,
+                                                       request.setup);
+
                         return YaAudioProcessor::SetupProcessingResponse{
                             .result = result,
-                            // TODO: Send the configuration for the shared audio
-                            //       buffers
-                            .audio_buffers_config{}};
+                            .audio_buffers_config =
+                                std::move(audio_buffers_config)};
                     },
                     [&](const YaAudioProcessor::SetProcessing& request)
                         -> YaAudioProcessor::SetProcessing::Response {
@@ -1260,10 +1390,17 @@ size_t Vst3Bridge::register_object_instance(
                                 true, *request.new_realtime_priority);
                         }
 
+                        // The actual audio is stored in the shared memory
+                        // buffers, so the reconstruction function will need to
+                        // know where it should point the `AudioBusBuffers` to
                         const tresult result =
                             object_instances[request.instance_id]
                                 .audio_processor->process(
-                                    request.data.reconstruct());
+                                    request.data.reconstruct(
+                                        object_instances[request.instance_id]
+                                            .process_buffers_input_pointers,
+                                        object_instances[request.instance_id]
+                                            .process_buffers_output_pointers));
 
                         return YaAudioProcessor::ProcessResponse{
                             .result = result,

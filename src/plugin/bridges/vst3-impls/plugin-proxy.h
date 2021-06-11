@@ -438,14 +438,16 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     std::atomic_size_t current_context_menu_id;
 
     /**
-     * NOTE: We'll reuse the request objects for the audio processor so we can
-     *       keep the process data object (which contains vectors and other heap
-     *       allocated data structure) alive. We'll then just fill this object
-     *       with new data every processing cycle to prevent allocations. Then,
-     *       we pass a `MessageReference<YaAudioProcessor::Process>` to our
-     *       sockets. This together with `bitisery::ext::MessageReference` will
-     *       let us serialize from and to existing objects without having to
-     *       copy or reallocate them.
+     * We'll reuse the request objects for the audio processor so we can keep
+     * the process data object (which contains vectors and other heap allocated
+     * data structure) alive. We'll then just fill this object with new data
+     * every processing cycle to prevent allocations. Then, we pass a
+     * `MessageReference<YaAudioProcessor::Process>` to our sockets. This
+     * together with `bitisery::ext::MessageReference` will let us serialize
+     * from and to existing objects without having to copy or reallocate them.
+     *
+     * To reduce the amount of copying during audio processing we'll write the
+     * audio data to a shared memory object stored in `process_buffers` first.
      */
     YaAudioProcessor::Process process_request;
 
@@ -455,6 +457,17 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * contains heap data, so we also want to reuse this.
      */
     YaAudioProcessor::ProcessResponse process_response;
+
+    /**
+     * A shared memory object to share audio buffers between the native plugin
+     * and the Wine plugin host. Copying audio is the most significant source of
+     * bridging overhead during audio processing, and this way we can reduce the
+     * amount of copies required to only once for the input audio, and one more
+     * copy when copying the results back to the host.
+     *
+     * This will be set up during `IAudioProcessor::setupProcessing()`.
+     */
+    std::optional<AudioShmBuffer> process_buffers;
 
     // Caches
 

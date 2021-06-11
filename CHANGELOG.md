@@ -10,10 +10,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- The audio processing implementation for VST2 (and soon, also for VST3) plugins
-  has been rewritten using both shared memory and message passing to reduce
-  memory copies to a minimum. With this change the DSP load overhead during
-  audio processing should now be as low as it's going to get.
+- The audio processing implementation for both VST2 and VST3 plugins has been
+  completely rewritten to use both shared memory and message passing to reduce
+  expensive memory copies to a minimum. With this change the DSP load overhead
+  during audio processing should now be about as low as it's going to get.
 - Prevented some more potential unnecessary memory operations during yabridge's
   communication. The underlying serialization library was recreating some
   objects even when that wasn't needed, which could in theory result in memory

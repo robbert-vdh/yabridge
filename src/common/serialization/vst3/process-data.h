@@ -20,6 +20,7 @@
 
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
 
+#include "../../audio-shm.h"
 #include "../../bitsery/ext/in-place-optional.h"
 #include "../../bitsery/ext/in-place-variant.h"
 #include "base.h"
@@ -29,113 +30,17 @@
 // This header provides serialization wrappers around `ProcessData`
 
 /**
- * A serializable wrapper around `AudioBusBuffers` back by `std::vector<T>`s.
- * Data can be read from a `AudioBusBuffers` object provided by the host, and
- * one the Wine plugin host side we can reconstruct the `AudioBusBuffers` object
- * back from this object again.
- *
- * @see YaProcessData
- */
-class alignas(16) YaAudioBusBuffers {
-   public:
-    /**
-     * We only provide a default constructor here, because we need to fill the
-     * existing object with new audio data every processing cycle to avoid
-     * reallocating a new object every time.
-     */
-    YaAudioBusBuffers() noexcept;
-
-    /**
-     * Create a new, zero initialize audio bus buffers object. Used to
-     * reconstruct the output buffers during `YaProcessData::reconstruct()`.
-     */
-    void clear(int32 sample_size, size_t num_samples, size_t num_channels);
-
-    /**
-     * Copy data from a host provided `AudioBusBuffers` object during a process
-     * call. Used in `YaProcessData::repopulate()`. Since `AudioBusBuffers`
-     * contains an untagged union for storing single and double precision
-     * floating point values, the original `ProcessData`'s `symbolicSampleSize`
-     * field determines which variant of that union to use. Similarly the
-     * `ProcessData`' `numSamples` field determines the extent of these arrays.
-     */
-    void repopulate(int32 sample_size,
-                    int32 num_samples,
-                    const Steinberg::Vst::AudioBusBuffers& data);
-
-    /**
-     * Reconstruct the original `AudioBusBuffers` object passed to the
-     * constructor and return it. This is used as part of
-     * `YaProcessData::reconstruct()`. The object contains pointers to
-     * `buffers`, so it may not outlive this object.
-     *
-     * NOTE: The `silenceFlags` field is of course not a reference, so writing
-     *       to that will not modify `silence_flags`.
-     */
-    void reconstruct(Steinberg::Vst::AudioBusBuffers& reconstructed_buffers);
-
-    /**
-     * Return the number of channels in `buffers`. Only used for debug logs.
-     */
-    size_t num_channels() const;
-
-    /**
-     * Write these buffers and the silence flag back to an `AudioBusBuffers
-     * object provided by the host.
-     */
-    void write_back_outputs(
-        Steinberg::Vst::AudioBusBuffers& output_buffers) const;
-
-    template <typename S>
-    void serialize(S& s) {
-        s.value8b(silence_flags);
-        s.ext(buffers, bitsery::ext::InPlaceVariant{
-                           [](S& s, std::vector<std::vector<float>>& buffers) {
-                               s.container(buffers, max_num_speakers,
-                                           [](S& s, auto& channel) {
-                                               s.container4b(channel, 1 << 16);
-                                           });
-                           },
-                           [](S& s, std::vector<std::vector<double>>& buffers) {
-                               s.container(buffers, max_num_speakers,
-                                           [](S& s, auto& channel) {
-                                               s.container8b(channel, 1 << 16);
-                                           });
-                           },
-                       });
-    }
-
-    /**
-     * A bitfield for silent channels copied directly from the input struct.
-     *
-     * We could have done some optimizations to avoid unnecessary copying when
-     * these silence flags are set, but since it's an optional feature we
-     * shouldn't risk it.
-     */
-    uint64 silence_flags = 0;
-
-   private:
-    /**
-     * We need these during the reconstruction process to provide a pointer to
-     * an array of pointers to the actual buffers.
-     */
-    std::vector<void*> buffer_pointers;
-
-    /**
-     * The original implementation uses heap arrays and it stores a
-     * {float,double} array pointer per channel, with a separate field for the
-     * number of channels. We'll store this using a vector of vectors.
-     */
-    std::variant<std::vector<std::vector<float>>,
-                 std::vector<std::vector<double>>>
-        buffers;
-};
-
-/**
  * A serializable wrapper around `ProcessData`. We'll read all information from
  * the host so we can serialize it and provide an equivalent `ProcessData`
- * struct to the plugin. Then we can create a `YaProcessData::Response` object
- * that contains all output values so we can write those back to the host.
+ * struct to the Windows VST3 plugin. Then we can create a
+ * `YaProcessData::Response` object that contains all output values so we can
+ * write those back to the host.
+ *
+ * As an optimization, this no longer stores any actual audio. Instead, both
+ * `Vst3PluginProxyImpl` and `Vst3Bridge::InstanceInterfaces` contain a shared
+ * memory object that stores the audio buffers used for the plugin instance.
+ * This object is then sent alongside it with auxiliary information. This
+ * prevents a lot of unnecessary copies.
  *
  * Be sure to double check how `YaProcessData::Response` is used. We do some
  * pointer tricks there to avoid copies and moves when serializing the results
@@ -157,21 +62,45 @@ class YaProcessData {
      * original `ProcessData` object. This will avoid allocating unless it's
      * absolutely necessary (e.g. when we receive more parameter changes than
      * we've received in previous calls).
+     *
+     * During this process the input audio will be written to
+     * `shared_audio_buffers`. There's no direct link between this
+     * `YaProcessData` object and those buffers, but they should be used as a
+     * pair. This is a bit ugly, but optimizations sadly never made code
+     * prettier.
      */
-    void repopulate(const Steinberg::Vst::ProcessData& process_data);
+    void repopulate(const Steinberg::Vst::ProcessData& process_data,
+                    AudioShmBuffer& shared_audio_buffers);
 
     /**
      * Reconstruct the original `ProcessData` object passed to the constructor
      * and return it. This is used in the Wine plugin host when processing an
      * `IAudioProcessor::process()` call.
+     *
+     * Because the actual audio is stored in an `AudioShmBuffer` outside of this
+     * object, we need to make sure that the `AudioBusBuffers` objects we're
+     * using point to the correct buffer even after a resize. To make it more
+     * difficult for us to mess this up, we'll store those bus-channel pointers
+     * in `Vst3Bridge::InstanceInterfaces` and we'll point the pointers in our
+     * `inputs` and `outputs` fields directly to those pointers. They will have
+     * been set up during `IAudioProcessor::setupProcessing()`.
+     *
+     * These can be either float or double pointers. Since a pointer is a
+     * pointer and they're stored using a union the actual type doesn't matter,
+     * but we'll accept these as void pointers since the stride will be
+     * different depending on whether the host is going to be sending double or
+     * single precision audio.
      */
-    Steinberg::Vst::ProcessData& reconstruct();
+    Steinberg::Vst::ProcessData& reconstruct(
+        std::vector<std::vector<void*>>& input_pointers,
+        std::vector<std::vector<void*>>& output_pointers);
 
     /**
      * A serializable wrapper around the output fields of `ProcessData`, so we
      * only have to copy the information back that's actually important. These
      * fields are pointers to the corresponding fields in `YaProcessData`. On
      * the plugin side this information can then be written back to the host.
+     * The actual output audio is stored in the shared memory object.
      *
      * HACK: All of this is an optimization to avoid unnecessarily copying or
      *       moving and reallocating. Directly serializing and deserializing
@@ -183,7 +112,8 @@ class YaProcessData {
     struct Response {
         // We store raw pointers instead of references so we can default
         // initialize this object during deserialization
-        std::vector<YaAudioBusBuffers>* outputs = nullptr;
+        boost::container::small_vector_base<Steinberg::Vst::AudioBusBuffers>*
+            outputs = nullptr;
         std::optional<YaParameterChanges>* output_parameter_changes = nullptr;
         std::optional<YaEventList>* output_events = nullptr;
 
@@ -218,20 +148,31 @@ class YaProcessData {
 
     /**
      * Write all of this output data back to the host's `ProcessData` object.
+     * During this process we'll also write the output audio from the
+     * corresponding shared memory audio buffers back.
      */
-    void write_back_outputs(Steinberg::Vst::ProcessData& process_data);
+    void write_back_outputs(Steinberg::Vst::ProcessData& process_data,
+                            const AudioShmBuffer& shared_audio_buffers);
 
     template <typename S>
     void serialize(S& s) {
         s.value4b(process_mode);
         s.value4b(symbolic_sample_size);
         s.value4b(num_samples);
+
+        // Both of these fields only store metadata. The actual audio is sent
+        // using an accompanying `AudioShmBuffer` object.
         s.container(inputs, max_num_speakers);
-        s.container4b(outputs_num_channels, max_num_speakers);
+        s.container(outputs, max_num_speakers);
+
+        // The output parameter changes and events will remain empty on the
+        // plugin side, so by serializing them we merely indicate to the Wine
+        // plugin host whether the host supports them or not
         s.object(input_parameter_changes);
-        s.value1b(output_parameter_changes_supported);
+        s.ext(output_parameter_changes, bitsery::ext::InPlaceOptional{});
         s.ext(input_events, bitsery::ext::InPlaceOptional{});
-        s.value1b(output_events_supported);
+        s.ext(output_events, bitsery::ext::InPlaceOptional{});
+
         s.ext(process_context, bitsery::ext::InPlaceOptional{});
 
         // We of course won't serialize the `reconstructed_process_data` and all
@@ -260,18 +201,20 @@ class YaProcessData {
     int32 num_samples;
 
     /**
-     * In `ProcessData` they use C-style heap arrays, so they have to store the
-     * number of input/output busses, and then also store pointers to the first
-     * audio buffer object. We can combine these two into vectors.
+     * This contains metadata about the input buffers for every bus. During
+     * `reconstruct()` the channel pointers contained within these objects will
+     * be set to point to our shared memory surface that holds the actual audio
+     * data.
      */
-    std::vector<YaAudioBusBuffers> inputs;
+    boost::container::small_vector<Steinberg::Vst::AudioBusBuffers, 8> inputs;
 
     /**
-     * For the outputs we only have to keep track of how many output channels
-     * each bus has. From this and from `num_samples` we can reconstruct the
-     * output buffers on the Wine side of the process call.
+     * This contains metadata about the output buffers for every bus. During
+     * `reconstruct()` the channel pointers contained within these objects will
+     * be set to point to our shared memory surface that holds the actual audio
+     * data.
      */
-    std::vector<int32> outputs_num_channels;
+    boost::container::small_vector<Steinberg::Vst::AudioBusBuffers, 8> outputs;
 
     /**
      * Incoming parameter changes.
@@ -279,10 +222,10 @@ class YaProcessData {
     YaParameterChanges input_parameter_changes;
 
     /**
-     * Whether the host supports output parameter changes (depending on whether
-     * `outputParameterChanges` was a null pointer or not).
+     * If the host supports it, this will allow the plugin to output parameter
+     * changes. Otherwise we'll also pass a null pointer to the plugin.
      */
-    bool output_parameter_changes_supported;
+    std::optional<YaParameterChanges> output_parameter_changes;
 
     /**
      * Incoming events.
@@ -290,10 +233,11 @@ class YaProcessData {
     std::optional<YaEventList> input_events;
 
     /**
-     * Whether the host supports output events (depending on whether
-     * `outputEvents` was a null pointer or not).
+     * If the host supports it, this will allow the plugin to output events,
+     * such as note events. Otherwise we'll also pass a null pointer to the
+     * plugin.
      */
-    bool output_events_supported;
+    std::optional<YaEventList> output_events;
 
     /**
      * Some more information about the project and transport.
@@ -301,29 +245,6 @@ class YaProcessData {
     std::optional<Steinberg::Vst::ProcessContext> process_context;
 
    private:
-    // These are the same fields as in `YaProcessData::Response`. We'll generate
-    // these as part of creating `reconstructed_process_data`, and they will be
-    // referred to in the response object created in `create_response()`
-
-    /**
-     * The outputs. Will be created based on `outputs_num_channels` (which
-     * determines how many output busses there are and how many channels each
-     * bus has) and `num_samples`.
-     */
-    std::vector<YaAudioBusBuffers> outputs;
-
-    /**
-     * The output parameter changes. Will be initialized depending on
-     * `output_parameter_changes_supported`.
-     */
-    std::optional<YaParameterChanges> output_parameter_changes;
-
-    /**
-     * The output events. Will be initialized depending on
-     * `output_events_supported`.
-     */
-    std::optional<YaEventList> output_events;
-
     // These last few members are used on the Wine plugin host side to
     // reconstruct the original `ProcessData` object. Here we also initialize
     // these `output*` fields so the Windows VST3 plugin can write to them
@@ -342,23 +263,6 @@ class YaProcessData {
     Response response_object;
 
     /**
-     * Obtained by calling `.get()` on every `YaAudioBusBuffers` object in
-     * `intputs`. These objects contain pointers to the data in `inputs` and may
-     * thus not outlive them.
-     */
-    std::vector<Steinberg::Vst::AudioBusBuffers> inputs_audio_bus_buffers;
-
-    /**
-     * Obtained by calling `.get()` on every `YaAudioBusBuffers` object in
-     * `outputs`. These objects contain pointers to the data in `outputs` and
-     * may thus not outlive them. These are created in a two step process, since
-     * we first have to create `outputs` from `outputs_num_channels` before we
-     * can transform it into a structure the Windows VST3 plugin can work with.
-     * Hooray for heap arrays.
-     */
-    std::vector<Steinberg::Vst::AudioBusBuffers> outputs_audio_bus_buffers;
-
-    /**
      * The process data we reconstruct from the other fields during `get()`.
      */
     Steinberg::Vst::ProcessData reconstructed_process_data;
@@ -366,6 +270,14 @@ class YaProcessData {
 
 namespace Steinberg {
 namespace Vst {
+template <typename S>
+void serialize(S& s, Steinberg::Vst::AudioBusBuffers& buffers) {
+    // We don't don't touch the audio pointers. Those should point to the
+    // correct positions in the corresponding `AudioShmBuffer` object.
+    s.value4b(buffers.numChannels);
+    s.value8b(buffers.silenceFlags);
+}
+
 template <typename S>
 void serialize(S& s, Steinberg::Vst::ProcessContext& process_context) {
     // The docs don't mention that things ever got added to this context (and

@@ -182,11 +182,19 @@ uint32 PLUGIN_API Vst3PluginProxyImpl::getLatencySamples() {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
-    // TOOD: Set up the shared audio buffers next
-    return bridge
-        .send_audio_processor_message(YaAudioProcessor::SetupProcessing{
-            .instance_id = instance_id(), .setup = setup})
-        .result;
+    const YaAudioProcessor::SetupProcessingResponse response =
+        bridge.send_audio_processor_message(YaAudioProcessor::SetupProcessing{
+            .instance_id = instance_id(), .setup = setup});
+
+    // We have now set up the shared audio buffers on the Wine side, and we'll
+    // be able to able to connect to them by using the same audio configuration
+    if (!process_buffers) {
+        process_buffers.emplace(response.audio_buffers_config);
+    } else {
+        process_buffers->resize(response.audio_buffers_config);
+    }
+
+    return response.result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {
@@ -220,9 +228,12 @@ Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
         last_audio_thread_priority_synchronization = now;
     }
 
-    // We reuse this existing object to avoid allocations
+    // We reuse this existing object to avoid allocations.
+    // `YaProcessData::repopulate()` will write the input audio to the shared
+    // audio buffers, so they're not stored within the request object itself.
+    assert(process_buffers);
     process_request.instance_id = instance_id();
-    process_request.data.repopulate(data);
+    process_request.data.repopulate(data, *process_buffers);
     process_request.new_realtime_priority = new_realtime_priority;
 
     // HACK: This is a bit ugly. This `YaProcessData::Response` object actually
@@ -245,7 +256,11 @@ Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
         MessageReference<YaAudioProcessor::Process>(process_request),
         process_response);
 
-    process_request.data.write_back_outputs(data);
+    // At this point the shared audio buffers should contain the output audio,
+    // so we'll write that back to the host along with any metadata (which in
+    // practice are only the silence flags), as well as any output parameter
+    // changes and events
+    process_request.data.write_back_outputs(data, *process_buffers);
 
     return process_response.result;
 }
