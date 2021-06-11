@@ -64,7 +64,7 @@ Vst2Bridge* current_bridge_instance = nullptr;
  *       `audioMasterUpdateDisplay()`, and PG-8X also requires that to be called
  *       from the same thread that called `audioMasterUpdateDisplay()`.
  */
-static const std::set<int> mutually_recursive_callbacks{
+static const std::unordered_set<int> mutually_recursive_callbacks{
     audioMasterUpdateDisplay};
 
 /**
@@ -78,8 +78,8 @@ static const std::set<int> mutually_recursive_callbacks{
  * just execute the function directly on the calling thread. See above for a
  * list of situations where this may be necessary.
  */
-static const std::set<int> safe_mutually_recursive_requests{effGetProgram,
-                                                            effGetProgramName};
+static const std::unordered_set<int> safe_mutually_recursive_requests{
+    effGetProgram, effGetProgramName};
 
 /**
  * Opcodes that should always be handled on the main thread because they may
@@ -92,7 +92,7 @@ static const std::set<int> safe_mutually_recursive_requests{effGetProgram,
  *       Algonaut Atlas doesn't restore chunk data unless `effSetChunk` is run
  *       from the GUI thread
  */
-static const std::set<int> unsafe_requests{
+static const std::unordered_set<int> unsafe_requests{
     effOpen,     effClose,   effEditGetRect,  effEditOpen, effEditClose,
     effEditIdle, effEditTop, effMainsChanged, effGetChunk, effSetChunk};
 
@@ -103,7 +103,8 @@ static const std::set<int> unsafe_requests{
  * implement thread priorities. Normally these unsafe requests are run on the
  * main thread, which doesn't use realtime scheduling.
  */
-static const std::set<int> unsafe_requests_realtime{effOpen, effMainsChanged};
+static const std::unordered_set<int> unsafe_requests_realtime{effOpen,
+                                                              effMainsChanged};
 
 intptr_t VST_CALL_CONV
 host_callback_proxy(AEffect*, int, int, intptr_t, void*, float);

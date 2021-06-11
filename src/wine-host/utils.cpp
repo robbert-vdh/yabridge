@@ -108,7 +108,7 @@ void MainContext::update_timer_interval(
 
 MainContext::WatchdogGuard::WatchdogGuard(
     HostBridge& bridge,
-    std::set<HostBridge*>& watched_bridges,
+    std::unordered_set<HostBridge*>& watched_bridges,
     std::mutex& watched_bridges_mutex)
     : bridge(&bridge),
       watched_bridges(watched_bridges),

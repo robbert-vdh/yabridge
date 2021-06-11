@@ -21,7 +21,7 @@
 #include <future>
 #include <memory>
 #include <optional>
-#include <set>
+#include <unordered_set>
 
 #include <windows.h>
 #include <boost/asio/dispatch.hpp>
@@ -195,7 +195,7 @@ class MainContext {
     class WatchdogGuard {
        public:
         WatchdogGuard(HostBridge& bridge,
-                      std::set<HostBridge*>& watched_bridges,
+                      std::unordered_set<HostBridge*>& watched_bridges,
                       std::mutex& watched_bridges_mutex);
         ~WatchdogGuard() noexcept;
 
@@ -220,7 +220,7 @@ class MainContext {
 
         // References to the same two fields on `MainContext`, so we don't have
         // to use `friend`
-        std::reference_wrapper<std::set<HostBridge*>> watched_bridges;
+        std::reference_wrapper<std::unordered_set<HostBridge*>> watched_bridges;
         std::reference_wrapper<std::mutex> watched_bridges_mutex;
     };
 
@@ -349,7 +349,7 @@ class MainContext {
      * pointers for efficiency's sake, since reference wrappers don't implement
      * any comparison operators.
      */
-    std::set<HostBridge*> watched_bridges;
+    std::unordered_set<HostBridge*> watched_bridges;
     std::mutex watched_bridges_mutex;
 
     /**

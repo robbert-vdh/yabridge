@@ -16,6 +16,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   during audio processing should now be about as low as it's going to get.
 - Optimized the management of VST3 plugin instances to reduce the overhead when
   using many instances of a VST3 plugin.
+- Slightly optimized the function call dispatch for VST2 plugins.
 - Prevented some more potential unnecessary memory operations during yabridge's
   communication. The underlying serialization library was recreating some
   objects even when that wasn't needed, which could in theory result in memory
