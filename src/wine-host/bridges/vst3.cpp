@@ -25,6 +25,13 @@
 // NOLINTNEXTLINE(bugprone-suspicious-include)
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
+using namespace std::literals::chrono_literals;
+
+/**
+ * The time between reports for the mean processing time.
+ */
+constexpr std::chrono::high_resolution_clock::duration report_interval = 5s;
+
 /**
  * This is a workaround for Bluecat Audio plugins that don't expose their
  * `IPluginBase` interface through the query interface. Even though every plugin
@@ -1392,17 +1399,123 @@ size_t Vst3Bridge::register_object_instance(
                                 true, *request.new_realtime_priority);
                         }
 
+                        auto& instances = object_instances[request.instance_id];
+
                         // The actual audio is stored in the shared memory
                         // buffers, so the reconstruction function will need to
                         // know where it should point the `AudioBusBuffers` to
+                        auto process_data = request.data.reconstruct(
+                            instances.process_buffers_input_pointers,
+                            instances.process_buffers_output_pointers);
+
+                        // We'll only measure the time it takes to run this
+                        // process function. That way we can subtract these
+                        // timings from the total to get the bridging overhead.
+                        // HACK: This is copied verbatim from the implementation
+                        //       on the plugin side. If this wasn't just a quick
+                        //       hack to find some things out I would have at
+                        //       least abstracted most of this away.
+                        if (const auto& now =
+                                std::chrono::high_resolution_clock::now();
+                            now - instances.last_report >= report_interval) {
+                            std::cerr << "Mean plugin processing time: "
+                                      << std::chrono::duration_cast<
+                                             std::chrono::duration<float,
+                                                                   std::micro>>(
+                                             instances.mean_process_time)
+                                             .count()
+                                      << " us" << std::endl;
+
+                            if (instances
+                                    .process_time_ring_buffer_wrapped_around) {
+                                // We only report these values every few
+                                // seconds, so we don't need to be clever with
+                                // keeping rolling minima and maxima and we can
+                                // just linearly iterate over everything every
+                                // now and then
+                                std::chrono::high_resolution_clock::duration
+                                    min_process_time =
+                                        instances.process_time_ring_buffer[0];
+                                std::chrono::high_resolution_clock::duration
+                                    max_process_time =
+                                        instances.process_time_ring_buffer[0];
+                                for (size_t i = 1;
+                                     i <
+                                     instances.process_time_ring_buffer.size();
+                                     i++) {
+                                    if (instances.process_time_ring_buffer[i] <
+                                        min_process_time) {
+                                        min_process_time =
+                                            instances
+                                                .process_time_ring_buffer[i];
+                                    } else if (instances
+                                                   .process_time_ring_buffer
+                                                       [i] > max_process_time) {
+                                        max_process_time =
+                                            instances
+                                                .process_time_ring_buffer[i];
+                                    }
+                                }
+
+                                std::cerr
+                                    << "Min plugin processing time:  "
+                                    << std::chrono::duration_cast<
+                                           std::chrono::duration<float,
+                                                                 std::micro>>(
+                                           min_process_time)
+                                           .count()
+                                    << " us" << std::endl;
+                                std::cerr
+                                    << "Max plugin processing time:  "
+                                    << std::chrono::duration_cast<
+                                           std::chrono::duration<float,
+                                                                 std::micro>>(
+                                           max_process_time)
+                                           .count()
+                                    << " us" << std::endl;
+                            } else {
+                                std::cerr << "Min plugin processing time:  "
+                                             "<still warming up>"
+                                          << std::endl;
+                                std::cerr << "max plugin processing time:  "
+                                             "<still warming up>"
+                                          << std::endl;
+                            }
+
+                            instances.last_report = now;
+                        }
+
+                        // Doing this twice is a bit of a waste, but we don't
+                        // want to measure IO
+                        const auto& process_start =
+                            std::chrono::high_resolution_clock::now();
+
                         const tresult result =
                             object_instances[request.instance_id]
-                                .audio_processor->process(
-                                    request.data.reconstruct(
-                                        object_instances[request.instance_id]
-                                            .process_buffers_input_pointers,
-                                        object_instances[request.instance_id]
-                                            .process_buffers_output_pointers));
+                                .audio_processor->process(process_data);
+
+                        const auto& process_end =
+                            std::chrono::high_resolution_clock::now();
+                        const auto& process_time = process_end - process_start;
+                        instances.mean_process_time =
+                            std::chrono::duration_cast<
+                                std::chrono::high_resolution_clock::duration>(
+                                (process_time * 0.05) +
+                                (instances.mean_process_time * 0.95));
+
+                        // For the minma and maxima we keep the last
+                        // `process_time_ring_buffer_size` timings around so we
+                        // can compute these during the report
+                        instances.process_time_ring_buffer
+                            [instances.process_time_ring_buffer_pos] =
+                            process_time;
+                        instances.process_time_ring_buffer_pos += 1;
+                        if (instances.process_time_ring_buffer_pos >=
+                            instances.process_time_ring_buffer.size()) {
+                            instances.process_time_ring_buffer_pos = 0;
+                            instances.process_time_ring_buffer_wrapped_around =
+                                true;
+                        }
 
                         return YaAudioProcessor::ProcessResponse{
                             .result = result,

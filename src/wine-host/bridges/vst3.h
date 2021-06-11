@@ -27,6 +27,8 @@
 #include "../editor.h"
 #include "common.h"
 
+constexpr size_t process_time_ring_buffer_size = 2048;
+
 // Forward declarations
 class Vst3ContextMenuProxyImpl;
 
@@ -166,6 +168,30 @@ struct InstanceInterfaces {
      * pointers here.
      */
     std::vector<std::vector<void*>> process_buffers_output_pointers;
+
+    /**
+     * A moving average for the time it takes to call
+     * `YaAudioProcessor::process()`.
+     */
+    std::chrono::high_resolution_clock::duration mean_process_time =
+        std::chrono::high_resolution_clock::duration::zero();
+
+    /**
+     * A ring buffer for calculating the rolling minimum and maximum for the
+     * time it takes to handle `YaAudioProcessor::process()`. Since we only
+     * report the maximum every five seconds, we don't need to be clever with
+     * rolling maxima and can just iterate over it every five seconds.
+     */
+    std::array<std::chrono::high_resolution_clock::duration,
+               process_time_ring_buffer_size>
+        process_time_ring_buffer;
+    size_t process_time_ring_buffer_pos = 0;
+    bool process_time_ring_buffer_wrapped_around = false;
+
+    /**
+     * The last time we reported the mean processing time.
+     */
+    std::chrono::high_resolution_clock::time_point last_report;
 
     /**
      * This instance's editor, if it has an open editor. Embedding here works
