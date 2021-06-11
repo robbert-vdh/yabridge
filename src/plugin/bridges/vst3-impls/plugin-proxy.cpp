@@ -237,20 +237,42 @@ Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
                     .count()) +
             " us");
 
-        // As mentioned below, we'll only record the maximum after the first
-        // report
-        bridge.logger.log(
-            "Max processing time:  " +
-            (have_reported
-                 ? std::to_string(std::chrono::duration_cast<
-                                      std::chrono::duration<float, std::micro>>(
-                                      max_process_time)
-                                      .count()) +
-                       " us"
-                 : "<still warming up>"));
+        if (process_time_ring_buffer_wrapped_around) {
+            // We only report these values every few seconds, so we don't need
+            // to be clever with keeping rolling minima and maxima and we can
+            // just linearly iterate over everything every now and then
+            std::chrono::high_resolution_clock::duration min_process_time =
+                process_time_ring_buffer[0];
+            std::chrono::high_resolution_clock::duration max_process_time =
+                process_time_ring_buffer[0];
+            for (size_t i = 1; i < process_time_ring_buffer.size(); i++) {
+                if (process_time_ring_buffer[i] < min_process_time) {
+                    min_process_time = process_time_ring_buffer[i];
+                } else if (process_time_ring_buffer[i] > max_process_time) {
+                    max_process_time = process_time_ring_buffer[i];
+                }
+            }
+
+            bridge.logger.log(
+                "Min processing time:  " +
+                std::to_string(std::chrono::duration_cast<
+                                   std::chrono::duration<float, std::micro>>(
+                                   min_process_time)
+                                   .count()) +
+                " us");
+            bridge.logger.log(
+                "Max processing time:  " +
+                std::to_string(std::chrono::duration_cast<
+                                   std::chrono::duration<float, std::micro>>(
+                                   max_process_time)
+                                   .count()) +
+                " us");
+        } else {
+            bridge.logger.log("Min processing time:  <still warming up>");
+            bridge.logger.log("Max processing time:  <still warming up>");
+        }
 
         last_report = now;
-        have_reported = true;
     }
 
     // Doing this twice is a bit of a waste, but we don't want to measure IO
@@ -306,11 +328,13 @@ Vst3PluginProxyImpl::process(Steinberg::Vst::ProcessData& data) {
         std::chrono::high_resolution_clock::duration>(
         (process_time * 0.05) + (mean_process_time * 0.95));
 
-    // With the current implementation we may need to resize our buffers in the
-    // first call, so we'll give ourselves a bit of a grace period to allow the
-    // buffers to warm up
-    if (have_reported) {
-        max_process_time = std::max(process_time, max_process_time);
+    // For the minma and maxima we keep the last `process_time_ring_buffer_size`
+    // timings around so we can compute these during the report
+    process_time_ring_buffer[process_time_ring_buffer_pos] = process_time;
+    process_time_ring_buffer_pos += 1;
+    if (process_time_ring_buffer_pos >= process_time_ring_buffer.size()) {
+        process_time_ring_buffer_pos = 0;
+        process_time_ring_buffer_wrapped_around = true;
     }
 
     return process_response.result;

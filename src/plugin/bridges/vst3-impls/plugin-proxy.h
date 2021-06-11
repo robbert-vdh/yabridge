@@ -19,6 +19,8 @@
 #include "../vst3.h"
 #include "plug-view-proxy.h"
 
+constexpr size_t process_time_ring_buffer_size = 2048;
+
 /**
  * Here we pass though all function calls made by the host to the Windows VST3
  * plugin. We had to deviate from yabridge's 'one-to-one passthrough' philosphy
@@ -555,19 +557,21 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      */
     std::chrono::high_resolution_clock::duration mean_process_time =
         std::chrono::high_resolution_clock::duration::zero();
+
     /**
-     * The maximum time it took to handle `YaAudioProcessor::process()`.
+     * A ring buffer for calculating the rolling minimum and maximum for the
+     * time it takes to handle `YaAudioProcessor::process()`. Since we only
+     * report the maximum every five seconds, we don't need to be clever with
+     * rolling maxima and can just iterate over it every five seconds.
      */
-    std::chrono::high_resolution_clock::duration max_process_time =
-        std::chrono::high_resolution_clock::duration::zero();
+    std::array<std::chrono::high_resolution_clock::duration,
+               process_time_ring_buffer_size>
+        process_time_ring_buffer;
+    size_t process_time_ring_buffer_pos = 0;
+    bool process_time_ring_buffer_wrapped_around = false;
 
     /**
      * The last time we reported the mean processing time.
      */
     std::chrono::high_resolution_clock::time_point last_report;
-    /**
-     * We'll wait with reporting the maximum processing time until the first
-     * report to allow buffers to warm up.
-     */
-    bool have_reported = false;
 };
