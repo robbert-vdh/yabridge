@@ -150,11 +150,11 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                     case audioMasterDeadBeef:
                         logger.log("");
                         logger.log(
-                            "   The plugin wants to use REAPER's host vendor "
-                            "extensions");
+                            "   The plugin wants to use REAPER's host vendor");
                         logger.log(
-                            "   which currently aren't supported by yabridge.");
-                        logger.log("   Ignoring the request.");
+                            "   extensions which currently aren't supported "
+                            "by");
+                        logger.log("   yabridge. Ignoring the request.");
                         logger.log("");
 
                         return Vst2EventResult{.return_value = 0,
