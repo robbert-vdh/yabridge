@@ -619,9 +619,14 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
 
     // To prevent unnecessary bridging overhead, we'll send the time information
     // together with the buffers because basically every plugin needs this
+    // NOTE: Apparently the value parameter here is a bitfield controlling which
+    //       for which transport information gets populated, and Ardour is the
+    //       only DAW that uses this. Since those flags aren't part of the
+    //       VeSTige headers, let's just set all of them!
     const VstTimeInfo* returned_time_info =
-        reinterpret_cast<const VstTimeInfo*>(host_callback_function(
-            &plugin, audioMasterGetTime, 0, 0, nullptr, 0.0));
+        reinterpret_cast<const VstTimeInfo*>(
+            host_callback_function(&plugin, audioMasterGetTime, 0,
+                                   ~static_cast<intptr_t>(0), nullptr, 0.0));
     if (returned_time_info) {
         request.current_time_info = *returned_time_info;
     } else {

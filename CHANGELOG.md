@@ -26,6 +26,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed missing transport information for VST2 plugins in **Ardour**, breaking
+  host sync and LFOs in certain plugins. This was a regression from yabridge
+  3.2.0.
 - Fixed _Insert Piz Here_'s _midiLooper_ crashing in **REAPER** when the plugin
   tries to use REAPER's [host function
   API](https://www.reaper.fm/sdk/vst/vst_ext.php#vst_host) which currently isn't
