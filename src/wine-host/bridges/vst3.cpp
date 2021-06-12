@@ -1176,19 +1176,11 @@ AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
             audio_processor->getBusArrangement(direction, bus,
                                                speaker_arrangement);
 
-            std::cout << speaker_arrangement << std::endl;
-            std::cout
-                << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement) * 8>(
-                       speaker_arrangement)
-                << endl;
-
             const size_t num_channels =
                 std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement) * 8>(
                     speaker_arrangement)
                     .count();
             bus_offsets[bus].resize(num_channels);
-
-            std::cout << num_channels << " channels" << std::endl;
 
             for (size_t channel = 0; channel < num_channels; channel++) {
                 bus_offsets[bus][channel] = current_offset;
