@@ -747,19 +747,19 @@ AudioShmBuffer::Config Vst2Bridge::setup_shared_audio_buffers() {
     // audio channel are in samples (since they'll be used with pointer
     // arithmetic in `AudioShmBuffer`), and we'll only use the first bus (since
     // VST2 plugins don't have multiple audio busses).
-    assert(max_samples_per_block != 0);
+    assert(max_samples_per_block);
     uint32_t current_offset = 0;
 
     std::vector<uint32_t> input_channel_offsets(plugin->numInputs);
     for (int channel = 0; channel < plugin->numInputs; channel++) {
         input_channel_offsets[channel] = current_offset;
-        current_offset += max_samples_per_block;
+        current_offset += *max_samples_per_block;
     }
 
     std::vector<uint32_t> output_channel_offsets(plugin->numOutputs);
     for (int channel = 0; channel < plugin->numOutputs; channel++) {
         output_channel_offsets[channel] = current_offset;
-        current_offset += max_samples_per_block;
+        current_offset += *max_samples_per_block;
     }
 
     // The size of the buffer is in bytes, and it will depend on whether the

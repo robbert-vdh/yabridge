@@ -146,8 +146,12 @@ class Vst2Bridge : public HostBridge {
      * `processReplacing()`/`processDoubleReplacing()`/`process()`. This is
      * indicated using a call to `effSetBlockSize()` prior to
      * `effMainsChanged()`.
+     *
+     * Some hosts forget to call this, so it will be a nullopt until it is
+     * called. In that case we'll use the value obtained through
+     * `audioMasterGetBlockSize()` instead.
      */
-    uint32_t max_samples_per_block = 0;
+    std::optional<uint32_t> max_samples_per_block;
 
     /**
      * Whether the host is going to send double precision audio or not. This
