@@ -227,8 +227,16 @@ class DispatchDataConverter : public DefaultDataConverter {
                 break;
             case effMainsChanged:
                 // At this point we'll set up our audio buffers since we (in
-                // theory) now know how large they need to be
-                return WantsAudioShmBufferConfig{};
+                // theory) now know how large they need to be. A value argument
+                // of 1 means that audio playback should be initialized.
+                // NOTE: Ardour unconditionally calls this with a value of 0
+                //       unconditionally when unloading a plugin, even if it has
+                //       never initialized audio playback
+                if (value == 1) {
+                    return WantsAudioShmBufferConfig{};
+                } else {
+                    return nullptr;
+                }
             case effEditGetRect:
                 return WantsVstRect();
                 break;
@@ -367,12 +375,14 @@ class DispatchDataConverter : public DefaultDataConverter {
                 update_aeffect(plugin, updated_plugin);
             } break;
             case effMainsChanged: {
-                const auto& audio_buffer_config =
-                    std::get<AudioShmBuffer::Config>(response.payload);
-                if (!process_buffers) {
-                    process_buffers.emplace(audio_buffer_config);
-                } else {
-                    process_buffers->resize(audio_buffer_config);
+                if (const auto* audio_buffer_config =
+                        std::get_if<AudioShmBuffer::Config>(
+                            &response.payload)) {
+                    if (!process_buffers) {
+                        process_buffers.emplace(*audio_buffer_config);
+                    } else {
+                        process_buffers->resize(*audio_buffer_config);
+                    }
                 }
             } break;
             case effEditGetRect: {

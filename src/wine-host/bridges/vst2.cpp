@@ -470,7 +470,11 @@ void Vst2Bridge::run() {
             // the same buffers. We cannot use `Vst2Bridge::dispatch_wrapper()`
             // for this because we need to directly return payload data that
             // won't be visible to the plugin at all.
-            if (event.opcode == effMainsChanged) {
+            // NOTE: Ardour will call `effMainsChanged()` with a value of 1
+            //       unconditionally when unloading a plugin, even when audio
+            //       playback has never been initialized (and `effSetBlockSize`
+            //       has never been called)
+            if (event.opcode == effMainsChanged && event.value == 1) {
                 // Returning another result this way is a bit ugly, but sadly
                 // optimizations have never made code nicer to read
                 return Vst2EventResult{.return_value = result.return_value,
