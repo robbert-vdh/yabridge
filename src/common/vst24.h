@@ -90,6 +90,15 @@
 [[maybe_unused]] constexpr int kVstProcessPrecision32 = 0;
 
 /**
+ * Used by VST2 plugins in REAPER to obtain pointers to host-specific functions
+ * implemented by REAPER.
+ *
+ * https://www.reaper.fm/sdk/vst/vst_ext.php#vst_host
+ */
+[[maybe_unused]] constexpr int audioMasterDeadBeef =
+    static_cast<int>(0xdeadbeef);
+
+/**
  * The struct that's being passed through the data parameter during the
  * `effGetInputProperties` and `effGetOutputProperties` opcodes. Reverse
  * engineered by attaching gdb to Bitwig. The actual fields are missing but for

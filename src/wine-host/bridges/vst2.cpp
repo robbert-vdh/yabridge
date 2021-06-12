@@ -554,6 +554,9 @@ class HostCallbackDataConverter : public DefaultDataConverter {
             case audioMasterUpdateDisplay:
             case audioMasterBeginEdit:
             case audioMasterEndEdit:
+            // NOTE: REAPER abuses the dispatcher to add their own opcodes
+            //       outside of `audioMasterVendorSpecific`
+            case audioMasterDeadBeef:
                 return nullptr;
                 break;
             default:

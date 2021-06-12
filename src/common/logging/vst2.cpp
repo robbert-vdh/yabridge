@@ -322,6 +322,9 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
             case audioMasterGetInputSpeakerArrangement:
                 return "audioMasterGetInputSpeakerArrangement";
                 break;
+            case audioMasterDeadBeef:
+                return "0xdeadbeef";
+                break;
             default:
                 return std::nullopt;
                 break;

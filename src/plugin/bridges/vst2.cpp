@@ -147,6 +147,20 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                                 .value_payload = std::nullopt};
                         }
                     } break;
+                    case audioMasterDeadBeef:
+                        logger.log("");
+                        logger.log(
+                            "   The plugin wants to use REAPER's host vendor "
+                            "extensions");
+                        logger.log(
+                            "   which currently aren't supported by yabridge.");
+                        logger.log("   Ignoring the request.");
+                        logger.log("");
+
+                        return Vst2EventResult{.return_value = 0,
+                                               .payload = nullptr,
+                                               .value_payload = std::nullopt};
+                        break;
                 }
 
                 return passthrough_event(&plugin, host_callback_function,
