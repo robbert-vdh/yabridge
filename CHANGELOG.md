@@ -30,6 +30,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   serialized correctly. No plugins seem to actually use these, so it should not
   have caused any issues.
 
+### yabridgectl
+
+- Copies of `libyabridge-vst2.so` and `libyabridge-vst3.so` are now reflinked
+  when supported by the file system. This speeds up the file coyping process
+  while also reducing the amount of disk space used for yabridge when using
+  Btrfs or XFS.
+
 ## [3.3.1] - 2021-06-09
 
 ### Added

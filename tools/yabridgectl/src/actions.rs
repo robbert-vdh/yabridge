@@ -501,7 +501,7 @@ fn install_file(
 
     match method {
         InstallationMethod::Copy => {
-            utils::copy(from, to)?;
+            utils::copy_or_reflink(from, to)?;
         }
         InstallationMethod::Symlink => {
             utils::symlink(from, to)?;

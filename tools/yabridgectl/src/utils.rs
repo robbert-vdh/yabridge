@@ -37,11 +37,12 @@ use crate::files::NativeFile;
 /// moment without causing issues.
 const YABRIDGE_HOST_EXPECTED_OUTPUT_PREFIX: &str = "Usage: yabridge-";
 
-/// Wrapper around [`std::fs::copy()`](std::fs::copy) with a human readable error message.
-pub fn copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<u64> {
-    fs::copy(&from, &to).with_context(|| {
+/// Wrapper around [`reflink::reflink_or_copy()`](reflink::reflink_or_copy) with a human readable
+/// error message.
+pub fn copy_or_reflink<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<Option<u64>> {
+    reflink::reflink_or_copy(&from, &to).with_context(|| {
         format!(
-            "Error copying '{}' to '{}'",
+            "Error reflinking '{}' to '{}'",
             from.as_ref().display(),
             to.as_ref().display()
         )
