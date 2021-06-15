@@ -257,8 +257,21 @@ Editor::Editor(MainContext& main_context,
                                   reinterpret_cast<LPCSTR>(get_window_class()),
                                   "yabridge plugin",
                                   WS_POPUP,
-                                  CW_USEDEFAULT,
-                                  CW_USEDEFAULT,
+                                  // NOTE: With certain DEs/WMs (notably,
+                                  //       Cinnamon), Wine does not render the
+                                  //       window at all when using a primary
+                                  //       display that's positioned to the
+                                  //       right of another display. Presumably
+                                  //       it tries to manually clip the client
+                                  //       rendered client area to the physical
+                                  //       display. During the reparenting and
+                                  //       `fix_local_coordinates()` the window
+                                  //       will be moved to `(0, 0)` anyways,
+                                  //       but setting its initial position
+                                  //       according to the primary display
+                                  //       fixes these rendering issues.
+                                  GetSystemMetrics(SM_XVIRTUALSCREEN),
+                                  GetSystemMetrics(SM_YVIRTUALSCREEN),
                                   client_area.width,
                                   client_area.height,
                                   nullptr,
@@ -372,9 +385,9 @@ Editor::Editor(MainContext& main_context,
                 main_context, x11_connection,
                 CreateWindowEx(WS_EX_TOOLWINDOW,
                                reinterpret_cast<LPCSTR>(get_window_class()),
-                               "yabridge plugin child", WS_CHILD, CW_USEDEFAULT,
-                               CW_USEDEFAULT, client_area.width,
-                               client_area.height, win32_window.handle, nullptr,
+                               "yabridge plugin child", WS_CHILD, 0, 0,
+                               client_area.width, client_area.height,
+                               win32_window.handle, nullptr,
                                GetModuleHandle(nullptr), this));
 
             ShowWindow(win32_child_window->handle, SW_SHOWNORMAL);
