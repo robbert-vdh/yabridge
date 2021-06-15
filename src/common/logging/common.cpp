@@ -25,6 +25,8 @@
 #include <iomanip>
 #include <iostream>
 
+namespace bp = boost::process;
+
 /**
  * The environment variable indicating whether to log to a file. Will log to
  * STDERR if not specified.
@@ -49,7 +51,7 @@ Logger::Logger(std::shared_ptr<std::ostream> stream,
       prefix_timestamp(prefix_timestamp) {}
 
 Logger Logger::create_from_environment(std::string prefix) {
-    auto env = boost::this_process::environment();
+    bp::environment env = boost::this_process::environment();
     std::string file_path = env[logging_file_environment_variable].to_string();
     std::string verbosity =
         env[logging_verbosity_environment_variable].to_string();
@@ -81,7 +83,7 @@ Logger Logger::create_from_environment(std::string prefix) {
 }
 
 Logger Logger::create_wine_stderr() {
-    auto env = boost::this_process::environment();
+    bp::environment env = boost::this_process::environment();
     std::string verbosity =
         env[logging_verbosity_environment_variable].to_string();
 
