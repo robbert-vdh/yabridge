@@ -654,6 +654,11 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   [plugin groups](#plugin-groups) to run multiple instances of your most
   frequently used plugins within a single process.
 
+- If you're using a `WINELOADER` that runs the Wine process under a separate
+  namespace while the host is not sandboxed, then you'll have to use the
+  `YABRIDGE_NO_WATCHDOG` environment variable to disable the watchdog timer. If
+  you know what this means then you probably know what you're doing.
+
 ## Performance tuning
 
 Running Windows plugins under Wine should have a minimal performance overhead,

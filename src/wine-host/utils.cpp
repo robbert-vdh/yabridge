@@ -16,9 +16,22 @@
 
 #include "utils.h"
 
+#include <iostream>
+
+#include <boost/process/environment.hpp>
+
 #include "bridges/common.h"
 
+namespace bp = boost::process;
+
 using namespace std::literals::chrono_literals;
+
+/**
+ * If this environment variable is set to `1`, then we won't enable the watchdog
+ * timer. This is only necessary when running the Wine process under a different
+ * namespace than the host.
+ */
+constexpr char disable_watchdog_timer_env_var[] = "YABRIDGE_NO_WATCHDOG";
 
 uint32_t WINAPI
 win32_thread_trampoline(fu2::unique_function<void()>* entry_point) {
@@ -81,9 +94,21 @@ MainContext::MainContext()
       events_timer(context),
       watchdog_context(),
       watchdog_timer(watchdog_context) {
+    bp::environment env = boost::this_process::environment();
+
+    // NOTE: We allow disabling the watchdog timer to allow the Wine process to
+    //       be run from a separate namespace. This is not something you'd
+    //       normally want to enable.
+    if (env[disable_watchdog_timer_env_var].to_string() == "1") {
+        std::cerr << "WARNING: Watchdog timer disabled. Not protecting"
+                  << std::endl;
+        std::cerr << "         against dangling processes." << std::endl;
+        return;
+    }
+
     // To account for hosts terminating before the bridged plugin has
-    // initialized, we'll do the first watchdog check five seconds. After this
-    // we'll run the timer on a 30 second interval.
+    // initialized, we'll do the first watchdog check five seconds. After
+    // this we'll run the timer on a 30 second interval.
     async_handle_watchdog_timer(5s);
 
     watchdog_handler = Win32Thread([&]() {

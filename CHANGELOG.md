@@ -8,6 +8,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added an environment variable to disable the watchdog timer. This allows the
+  Wine process to run under a separate namespace. If you don't know that you
+  need this, then you probably don't need this!
+
 ### Changed
 
 - The audio processing implementation for both VST2 and VST3 plugins has been
