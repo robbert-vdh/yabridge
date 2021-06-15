@@ -141,6 +141,11 @@ class Editor {
         std::optional<fu2::unique_function<void()>> timer_proc = std::nullopt);
 
     /**
+     * Handle X11 events sent to the window our editor is embedded in.
+     */
+    void handle_x11_events() const noexcept;
+
+    /**
      * Get the Win32 window handle so it can be passed to an `effEditOpen()`
      * call. This will return the child window's handle if double editor
      * embedding is enabled.
@@ -157,11 +162,6 @@ class Editor {
      * cached in `supports_ewmh_active_window_cache`.
      */
     bool supports_ewmh_active_window() const;
-
-    /**
-     * Handle X11 events sent to the window our editor is embedded in.
-     */
-    void handle_x11_events() const noexcept;
 
     /**
      * Lie to the Wine window about its coordinates on the screen for

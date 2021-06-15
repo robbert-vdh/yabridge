@@ -358,15 +358,6 @@ Editor::Editor(MainContext& main_context,
     }
 }
 
-HWND Editor::get_win32_handle() const noexcept {
-    // FIXME: The double embed and XEmbed options don't work together right now
-    if (win32_child_window && !use_xembed) {
-        return win32_child_window->handle;
-    } else {
-        return win32_window.handle;
-    }
-}
-
 void Editor::handle_x11_events() const noexcept {
     // NOTE: Ardour will unmap the window instead of closing the editor. When
     //       the window is unmapped `wine_window` doesn't exist and any X11
@@ -457,6 +448,15 @@ void Editor::handle_x11_events() const noexcept {
         }
     } catch (const std::runtime_error& error) {
         std::cerr << error.what() << std::endl;
+    }
+}
+
+HWND Editor::get_win32_handle() const noexcept {
+    // FIXME: The double embed and XEmbed options don't work together right now
+    if (win32_child_window && !use_xembed) {
+        return win32_child_window->handle;
+    } else {
+        return win32_window.handle;
     }
 }
 
