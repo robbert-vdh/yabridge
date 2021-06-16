@@ -49,6 +49,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   when supported by the file system. This speeds up the file coyping process
   while also reducing the amount of disk space used for yabridge when using
   Btrfs or XFS.
+- Print a more descriptive error message instead of panicing if running
+  `$WINELOADER --version` during yabridgectl's post-setup verification checks
+  does not result in any output. This is only relevant when using a custom
+  `WINELOADER` script that modifies Wine's output.
 
 ## [3.3.1] - 2021-06-09
 

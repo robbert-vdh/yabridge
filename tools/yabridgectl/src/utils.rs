@@ -262,7 +262,12 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
         .stdout;
     // Strip the trailing newline just to make the config file a bit neater
     let mut wine_version = String::from_utf8(wine_version_output)?;
-    wine_version.pop().unwrap();
+    wine_version.pop().with_context(|| {
+        format!(
+            "Running '{} --version' resulted in empty output",
+            wine_binary
+        )
+    })?;
 
     let files = config
         .files()
