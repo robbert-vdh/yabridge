@@ -562,35 +562,8 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   prefix is set to 32-bit only and it won't be possible to run 64-bit
   applications like `yabridge-host.exe`.
 
-- Timeout errors during plugin scanning are caused by the Wine process not being
-  able to start. There should be plugin output messages in your DAW or terminal
-  that with more information on what went wrong.
-
 - Sometimes left over Wine processes can cause problems. Run `wineserver -k` to
   terminate Wine related in the current or default Wine prefix.
-
-- If you're using the copy-based installation method and plugins are getting
-  skipped or blacklisted immediately when your VST host is scanning them, then
-  this is likely caused by `yabridge-host.exe` not being found in your search
-  path. See the [environment configuration](#environment-configuration) section
-  for instructions on how to fix this.
-
-- If you're using the symlink installation method and you're seeing multiple
-  duplicate instances of the same plugin, or after opening a single plugin every
-  subsequent plugin opens as another instance of that first plugin, then your
-  VST host is not sandboxing individual plugins. If you're using Bitwig Studio,
-  the make sure the '_Per plugin-in_'` or '_Individually_' plugin hosting mode
-  is enabled and all of the checkboxes in the list of sandboxing exceptions are
-  left unchecked.
-
-- If you're not using yabridgectl and a plugin is not getting picked up at all,
-  then you can verify that the symlink or copy is correct by running:
-
-  ```shell
-  readelf -s ~/.wine/drive_c/path/to/plugin.so | grep yabridge
-  ```
-
-  The output should contain several lines related to yabridge.
 
 - If you're using a _lot_ of plugins and you're unable to load any new plugins,
   then you may be running into Xorg's client limit. The exact number of plugins
