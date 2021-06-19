@@ -24,10 +24,10 @@ while also staying easy to debug and maintain.
   - [Bitbridge](#bitbridge)
   - [Wine prefixes](#wine-prefixes)
   - [Downgrading Wine](#downgrading-wine)
-  - [Configuration](#configuration)
-    - [Plugin groups](#plugin-groups)
-    - [Compatibility options](#compatibility-options)
-    - [Example](#example)
+- [Configuration](#configuration)
+  - [Plugin groups](#plugin-groups)
+  - [Compatibility options](#compatibility-options)
+  - [Example](#example)
 - [**Runtime dependencies and known issues**](#runtime-dependencies-and-known-issues)
 - [**Troubleshooting common issues**](#troubleshooting-common-issues)
 - [**Performance tuning**](#performance-tuning)
@@ -229,7 +229,7 @@ Wine. This can be done as follows:
   `IgnorePkg` field in `/etc/pacman.conf` and it won't be updated again
   automatically.
 
-### Configuration
+## Configuration
 
 Yabridge can be configured on a per plugin basis to host multiple plugins within
 a single process using [plugin groups](#plugin-groups), and there are also a
@@ -248,7 +248,7 @@ considered. See below for an [example](#example) of a `yabridge.toml` file. On
 startup, yabridge will print used `yabridge.toml` file and the matched section
 within it, as well as all of the options that have been set.
 
-#### Plugin groups
+### Plugin groups
 
 | Option  | Values            | Description                                                            |
 | ------- | ----------------- | ---------------------------------------------------------------------- |
@@ -276,7 +276,7 @@ enabled plugin groups or not._ _The only reason to use plugin groups with VST3
 plugins is to get slightly lower loading times the first time you load a new
 plugin._
 
-#### Compatibility options
+### Compatibility options
 
 | Option                | Values                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | --------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -293,7 +293,7 @@ These options are workarounds for issues mentioned in the [known
 issues](#runtime-dependencies-and-known-issues) section. Depending on the hosts
 and plugins you use you might want to enable some of them.
 
-#### Example
+### Example
 
 All of the paths used here are relative to the `yabridge.toml` file. A
 configuration file for VST2 plugins might look a little something like this:
