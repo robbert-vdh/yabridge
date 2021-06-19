@@ -23,6 +23,7 @@ while also staying easy to debug and maintain.
   - [DAW setup](#daw-setup)
   - [Bitbridge](#bitbridge)
   - [Wine prefixes](#wine-prefixes)
+  - [Downgrading Wine](#downgrading-wine)
   - [Search path setup](#search-path-setup)
   - [Configuration](#configuration)
     - [Plugin groups](#plugin-groups)
@@ -39,7 +40,7 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging 6.4[\*](#preliminaries):
+Yabridge has been tested under the following hosts using Wine Staging 6.11:
 
 | Host                            | VST2               | VST3                                                                           |
 | ------------------------------- | ------------------ | ------------------------------------------------------------------------------ |
@@ -73,45 +74,6 @@ Yabridge requires a recent version of Wine (Staging). Users of Debian, Ubuntu,
 Linux Mint and Pop!\_OS should install Wine Staging from the [WineHQ
 repositories](https://wiki.winehq.org/Download) as the versions of Wine provided
 by those distro's repositories will likely be too old to be used with yabridge.
-
-At the moment it's recommended to stick with Wine Staging 6.4, since newer
-versions have regressions that among other thing break the Spitfire Audio
-plugins, downloads in Native Access, and Wine process shutdown. Downgrading to
-Wine Staging 6.4 can be done as follows:
-
-- On Debian, Ubuntu, Linux Mint and other apt-based distros, you can use the
-  command below to install Wine Staging 6.4 after you add the WineHQ
-  repositories linked above. This command is a bit complicated because on these
-  distros the Wine package is split up into multiple smaller packages, and the
-  package versions include the distros codename (e.g. `focal`, or `buster`).
-
-  ```shell
-  codename=$(awk -F= '/VERSION_CODENAME/ { print $2 }' /etc/os-release)
-  sudo apt install --install-recommends {winehq-staging,wine-staging,wine-staging-amd64,wine-staging-i386}=6.4~$codename-1
-  ```
-
-  If you want to prevent these packages from being updated automatically, you
-  can then also run:
-
-  ```shell
-  sudo apt-mark hold winehq-staging
-  ```
-
-  Running the same command with `unhold` instead of `hold` will enable updates
-  again.
-
-- On Arch and Manjaro, you can install the
-  [downgrade](https://aur.archlinux.org/packages/downgrade/) tool from the repos
-  or the AUR, then run:
-
-  ```shell
-  sudo env DOWNGRADE_FROM_ALA=1 downgrade wine-staging
-  ```
-
-  Then select the package for wine-staging version 6.4 from the list. After
-  installing downgrade will ask if you want to add the package to `IgnorePkg`.
-  If you select `yes`, the package will be added to the `IgnorePkg` field in
-  `/etc/pacman.conf` and it won't be updated again automatically.
 
 For a general overview on how to use Wine to install Windows applications, check
 out Wine's [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
@@ -221,6 +183,51 @@ It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
 automatically detect and use the Wine prefix the plugin's `.dll` or `.vst3` file
 is located in. Alternatively, you can set the `WINEPREFIX` environment variable
 to override the Wine prefix for _all instances_ of yabridge.
+
+### Downgrading Wine
+
+There have been some regressions in Wine since Wine 6.4. If you run into
+software or a plugin that does not work correctly with the current version of
+Wine Staging, then you may want to try downgrading to an earlier version of
+Wine. This can be done as follows:
+
+- On Debian, Ubuntu, Linux Mint and other apt-based distros, you can use the
+  command below to install Wine Staging 6.4 after you add the WineHQ
+  repositories linked above. This command is a bit complicated because on these
+  distros the Wine package is split up into multiple smaller packages, and the
+  package versions include the distros codename (e.g. `focal`, or `buster`).
+  Since Linux Mint uses the Ubuntu repositories here, you'd have to manually set
+  `codename` to either `focal` for Linux Mint 20, or `bionic` for Linux Mint 19.
+
+  ```shell
+  version=6.4
+  codename=$(awk -F= '/VERSION_CODENAME/ { print $2 }' /etc/os-release)
+  sudo apt install --install-recommends {winehq-staging,wine-staging,wine-staging-amd64,wine-staging-i386}=$version~$codename-1
+  ```
+
+  If you want to prevent these packages from being updated automatically, then
+  you can do so with:
+
+  ```shell
+  sudo apt-mark hold winehq-staging
+  ```
+
+  Running the same command with `unhold` instead of `hold` will enable updates
+  again.
+
+- On Arch and Manjaro, you can install the
+  [downgrade](https://aur.archlinux.org/packages/downgrade/) tool from the repos
+  or the AUR, then run:
+
+  ```shell
+  sudo env DOWNGRADE_FROM_ALA=1 downgrade wine-staging
+  ```
+
+  Then select the package for the wine-staging version you want to isntall from
+  the list. After installing downgrade will ask if you want to add the package
+  to `IgnorePkg`. If you select `yes`, the package will be added to the
+  `IgnorePkg` field in `/etc/pacman.conf` and it won't be updated again
+  automatically.
 
 ### Search path setup
 
@@ -444,13 +451,13 @@ include:
   downloaded to your downloads directory and run the installer directly. _With
   Wine (Staging) 6.8 or later Native Access might also not be able to finish the
   download, in which case you should downgrade Wine first using the
-  [instructions above](#preliminaries)._ You may also have to manually terminate
-  the ISO driver installation process when installing Native Access for the
-  first time to allow the installation to proceed. Some Native Instruments .iso
-  files contain hidden files, and the installer will fail unless you mount the
-  .iso file with the correct mounting options. To do this, first run
-  `udisksctl loop-setup -f ~/Downloads/<filename>.iso` to load the .iso file,
-  and then use `udisksctl mount -t udf -o unhide -b /dev/loopX` where
+  [instructions above](#downgrading-wine)._ You may also have to manually
+  terminate the ISO driver installation process when installing Native Access
+  for the first time to allow the installation to proceed. Some Native
+  Instruments .iso files contain hidden files, and the installer will fail
+  unless you mount the .iso file with the correct mounting options. To do this,
+  first run `udisksctl loop-setup -f ~/Downloads/<filename>.iso` to load the
+  .iso file, and then use `udisksctl mount -t udf -o unhide -b /dev/loopX` where
   `/dev/loopX` corresponds to the loop device printed by the `loop-setup`
   command to mount the .iso file to a directory in `/run/media`.
 
