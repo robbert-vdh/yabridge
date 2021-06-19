@@ -203,12 +203,10 @@ Wine. This can be done as follows:
   repositories linked above. This command is a bit complicated because on these
   distros the Wine package is split up into multiple smaller packages, and the
   package versions include the distros codename (e.g. `focal`, or `buster`).
-  Since Linux Mint uses the Ubuntu repositories here, you'd have to manually set
-  `codename` to either `focal` for Linux Mint 20, or `bionic` for Linux Mint 19.
 
   ```shell
   version=6.4
-  codename=$(awk -F= '/VERSION_CODENAME/ { print $2 }' /etc/os-release)
+  codename=$(awk '/^deb https:\/\/dl\.winehq\.org/ { print $3 }' /etc/apt/sources.list)
   sudo apt install --install-recommends {winehq-staging,wine-staging,wine-staging-amd64,wine-staging-i386}=$version~$codename-1
   ```
 
