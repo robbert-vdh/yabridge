@@ -24,7 +24,6 @@ while also staying easy to debug and maintain.
   - [Bitbridge](#bitbridge)
   - [Wine prefixes](#wine-prefixes)
   - [Downgrading Wine](#downgrading-wine)
-  - [Search path setup](#search-path-setup)
   - [Configuration](#configuration)
     - [Plugin groups](#plugin-groups)
     - [Compatibility options](#compatibility-options)
@@ -32,6 +31,7 @@ while also staying easy to debug and maintain.
 - [**Runtime dependencies and known issues**](#runtime-dependencies-and-known-issues)
 - [**Troubleshooting common issues**](#troubleshooting-common-issues)
 - [**Performance tuning**](#performance-tuning)
+  - [Environment configuration](#environment-configuration)
 - [Building](#building)
   - [Building without VST3 support](#building-without-vst3-support)
   - [32-bit bitbridge](#32-bit-bitbridge)
@@ -228,65 +228,6 @@ Wine. This can be done as follows:
   to `IgnorePkg`. If you select `yes`, the package will be added to the
   `IgnorePkg` field in `/etc/pacman.conf` and it won't be updated again
   automatically.
-
-### Search path setup
-
-This section is only relevant if you're using the _copy-based_ installation
-method and your yabridge files are located somewhere other than in
-`~/.local/share/yabridge`. You can likely skip this section. If you're using one
-of the AUR packages or a distro package then you also won't have to worry about
-any of this.
-
-Yabridge needs to know where it can find `yabridge-host.exe`. By default,
-yabridge will search your through search path as well as in
-`~/.local/share/yabridge` if that exists. When loading yabridge from a
-non-standard location, such as when building from source, you may have to modify
-your _login shell_'s `PATH` environment variable so that yabridge is able to
-find its files. Yabridgectl will automatically check whether this is set up
-correctly when you run `yabridgectl sync`, and it will show a warning if it
-detects any issues. _If you do not see such a warning after running `yabridgectl sync`, then you can skip this section._
-
-To set this, you'll want to add yabridge's installation directory to your login
-shell's `PATH` environment variable. If you're unsure what your login shell is,
-then you can open a terminal and run `echo $SHELL` to find out. For the below
-examples I'll assume you're using the default installation location at
-`~/.local/share/yabridge`.
-
-- First of all, if you're using GDM, LightDM or LXDM as your display manager
-  (for instance if you're using GNOME, XFCE or LXDE), then your display manager
-  won't respect your login shell and it will always use `/bin/sh` instead. In
-  that case you will need to add the following line to `~/.profile`:
-
-  ```shell
-  export PATH="$HOME/.local/share/yabridge:$PATH"
-  ```
-
-- If you are using the default **Bash** shell, then you will want to add the
-  following line to `~/.bash_profile` (or `~/.profile` if that does not exist):
-
-  ```shell
-  export PATH="$HOME/.local/share/yabridge:$PATH"
-  ```
-
-- If you are using **Zsh**, then you can add the following line to `~/.zprofile`
-  (`~/.zshenv` should also work, but some distros such as Arch Linux overwrite
-  `PATH` after this file has been read):
-
-  ```shell
-  export PATH="$HOME/.local/share/yabridge:$PATH"
-  ```
-
-- If you are using **fish**, then you can add the following line to either
-  `~/.config/fish/config.fish` or some file in `~/.config/fish/conf.d/`:
-
-  ```shell
-  set -gp fish_user_paths ~/.local/share/yabridge
-  ```
-
-Rerun `yabridgectl sync` to make sure that the setup has been successful. If the
-environment variable has been set up correctly, you should not be seeing any
-warnings. _Make sure to log out and log back in again to ensure that all
-applications pick up the new changes._
 
 ### Configuration
 
@@ -631,8 +572,8 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
 - If you're using the copy-based installation method and plugins are getting
   skipped or blacklisted immediately when your VST host is scanning them, then
   this is likely caused by `yabridge-host.exe` not being found in your search
-  path. See the [search path setup](#search-path-setup) section for instructions
-  on how to fix this.
+  path. See the [environment configuration](#environment-configuration) section
+  for instructions on how to fix this.
 
 - If you're using the symlink installation method and you're seeing multiple
   duplicate instances of the same plugin, or after opening a single plugin every
@@ -697,20 +638,9 @@ negative side effects:
   Wine you'll also need a supported kernel for this to work. Manjaro's kernel
   supports fsync out of the box, and on Arch you can use the `linux-zen` kernel.
   Finally, you'll have to set the `WINEFSYNC` environment variable to `1` to
-  enable fsync. See the [search path setup](#search-path-setup) section for more
-  information on where to set this environment variable so that it gets picked
-  up when you start your DAW. You can use the following command to check if this
-  is set correctly:
-
-  ```shell
-  env -i HOME="$HOME" $SHELL -l -c 'echo $WINEFSYNC'
-  ```
-
-  If this prints `1` then everything is set up correctly. If you're using GNOME,
-  XFCE, or any other desktop environment using GDM, LightDM or LXDM, then you
-  should replace `$SHELL` in the command above with `sh` before running it.
-  You'll have to log out and back in again for this to take effect on
-  applications launched from the GUI.
+  enable fsync. See the [environment configuration](#environment-configuration)
+  section below for more information on where to set this environment variable
+  so that it gets picked up when you start your DAW.
 
   You can find a guide to setting these things up on Ubuntu
   [here](https://zezic.github.io/yabridge-benchmark/).
@@ -725,6 +655,57 @@ negative side effects:
   resources between different instances of the plugin. Hosting all instances of
   the same plugin in a single process can in those cases greatly reduce overall
   CPU usage and get rid of latency spikes.
+
+### Environment configuration
+
+This section is relevant if you want to configure environment variables in such
+a way that they will be set when you launch your DAW from the GUI instead of
+from a terminal. You may want to enable `WINEFSYNC` for fsync support with a
+compatible Wine version and kernel, or you may want to change your search `PATH`
+to allow yabridge to find the `yabridge-*.exe` binaries if you're using yabridge
+directly from the `build` directory. To do this you'll need to change your
+_login shell's_ profile, which is different from the configuration loaded during
+interactive sessions. And some display manager override your login shell to
+always use `/bin/sh`, so you need to be careful to modify the correct file or
+else these changes won't work. You can find out your current login shell by
+running `echo $SHELL` in a terminal.
+
+- First of all, if you're using GDM, LightDM or LXDM as your display manager
+  (for instance if you're using GNOME, XFCE or LXDE), then your display manager
+  won't respect your login shell and it will always use `/bin/sh`. In that case
+  you will need to add the following line to `~/.profile` to enable fsync:
+
+  ```shell
+  export WINEFSYNC=1
+  ```
+
+- If you are using the default **Bash** shell and you're not using any of the
+  above display managers, then you will want to add the following line to
+  `~/.bash_profile` (or `~/.profile` if the former does not exist):
+
+  ```shell
+  export WINEFSYNC=1
+  ```
+
+- If you are using **Zsh**, then you can add the following line to `~/.zprofile`
+  (`~/.zshenv` should also work, but some distros such as Arch Linux overwrite
+  the environment after this file has been read):
+
+  ```shell
+  export WINEFSYNC=1
+  ```
+
+- If you are using **fish**, then you can add the following line to either
+  `~/.config/fish/config.fish` or some file in `~/.config/fish/conf.d/`:
+
+  ```shell
+  set -gx WINEFSYNC=1
+  # Or if you're changing your PATH:
+  set -gp fish_user_paths ~/directory/with/yabridge/binaries
+  ```
+
+_Make sure to log out and log back in again to ensure that all applications pick
+up the new changes._
 
 ## Building
 
