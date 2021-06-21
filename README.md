@@ -408,7 +408,7 @@ include:
   command to mount the .iso file to a directory in `/run/media`.
 
   If you're using an older distro and you're getting a
-  `Mount option 'unhide is not allowed` error when trying to mount the file,
+  `Mount option 'unhide' is not allowed` error when trying to mount the file,
   then you may need to manually create or edit `/etc/udisks2/mount_options.conf`
   first, adding the following to the file:
 
