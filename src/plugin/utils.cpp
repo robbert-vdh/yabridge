@@ -109,7 +109,7 @@ std::string PluginInfo::wine_version() const {
 
     bp::ipstream output;
     try {
-        bp::system(wine_path, "--version", bp::std_out = output);
+        bp::system(wine_path, "--version", bp::std_out = output, bp::env = env);
     } catch (const std::system_error&) {
         return "<NOT FOUND>";
     }
