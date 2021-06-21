@@ -42,6 +42,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed VST2 speaker arrangement configurations returned by the plugin not being
   serialized correctly. No plugins seem to actually use these, so it should not
   have caused any issues.
+- When printing the Wine version during initialization, the Wine process used
+  for this is now run under the same environment as the Wine plugin host process
+  will be run under. This means that when using a custom `WINELOADER` script to
+  use different Wine versions depending on the Wine prefix, the `wine version:`
+  line in the initialization message will always match the version of Wine the
+  plugin is going to be run under.
 
 ### yabridgectl
 

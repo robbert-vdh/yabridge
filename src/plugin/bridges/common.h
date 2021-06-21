@@ -175,7 +175,7 @@ class PluginBridge {
             info.wine_prefix);
         init_msg << "'" << std::endl;
 
-        init_msg << "wine version:  '" << get_wine_version() << "'"
+        init_msg << "wine version:  '" << info.wine_version() << "'"
                  << std::endl;
         init_msg << std::endl;
 
