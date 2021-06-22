@@ -104,7 +104,7 @@ class Win32Thread {
      * Join (or wait on, since this is WIn32) the thread on shutdown, just like
      * `std::jthread` does.
      */
-    ~Win32Thread();
+    ~Win32Thread() noexcept;
 
     Win32Thread(const Win32Thread&) = delete;
     Win32Thread& operator=(const Win32Thread&) = delete;
