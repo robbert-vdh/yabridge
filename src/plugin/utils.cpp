@@ -394,8 +394,8 @@ Configuration load_config_for(const fs::path& yabridge_path) {
 
 bool send_notification(const std::string& title, const std::string body) {
     try {
-        return bp::system(bp::search_path("notify-send"), "--urgency=critical",
-                          "--expire-time=20000", "--app-name=yabridge", title,
+        return bp::system(bp::search_path("notify-send"), "--urgency=normal",
+                          "--expire-time=30000", "--app-name=yabridge", title,
                           body) == EXIT_SUCCESS;
     } catch (const boost::process::process_error&) {
         // We will have printed the message to the terminal anyways, so if the
