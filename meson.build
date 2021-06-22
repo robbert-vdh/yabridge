@@ -42,6 +42,8 @@ compiler_options = [
   # Disable the use of concepts in Boost.Asio until Boost 1.73 gets released
   # https://github.com/boostorg/asio/issues/312
   '-DBOOST_ASIO_DISABLE_CONCEPTS',
+  # Boost.Process's auto detection for vfork() support doesn't seem to work
+  '-DBOOST_POSIX_HAS_VFORK=1',
   # We use an intrinsic to force flush-to-zero. SSE2 is always enabled in x86_64
   # CPUs, but when we're compiling the 32-bit bitbridge we need to manually add
   # this flag.

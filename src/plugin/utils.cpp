@@ -16,9 +16,6 @@
 
 #include "utils.h"
 
-// Boost.Process's auto detection for vfork() support doesn't seem to work
-#define BOOST_POSIX_HAS_VFORK 1
-
 #include <unistd.h>
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/process/io.hpp>
