@@ -373,8 +373,12 @@ std::vector<boost::filesystem::path> get_augmented_search_path() {
         boost::this_process::path();
 
     const bp::environment environment = boost::this_process::environment();
-    if (auto home_directory = environment.find("HOME");
-        home_directory != environment.end()) {
+    if (auto xdg_data_home = environment.find("XDG_DATA_HOME");
+        xdg_data_home != environment.end()) {
+        search_path.push_back(fs::path(xdg_data_home->to_string()) /
+                              "yabridge");
+    } else if (auto home_directory = environment.find("HOME");
+               home_directory != environment.end()) {
         search_path.push_back(fs::path(home_directory->to_string()) / ".local" /
                               "share" / "yabridge");
     }

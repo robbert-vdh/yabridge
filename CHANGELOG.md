@@ -34,6 +34,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   allocations in certain situations. This is related to the similar issue that
   got fixed with yabridge 3.3.0. A fix for this issue has also been upstreamed
   to the library.
+- Respect `$XDG_DATA_HOME` when looking for yabridge's plugin host binaries
+  instead of hardcoding `~/.local/share/yabridge`. This matches the existing
+  behaviour in yabridgectl.
 
 ### Fixed
 
