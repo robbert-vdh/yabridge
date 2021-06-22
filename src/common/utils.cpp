@@ -70,7 +70,9 @@ bool is_watchdog_timer_disabled() {
     // This is safe because we're not storing the pointer anywhere and the
     // environment doesn't get modified anywhere
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    return getenv(disable_watchdog_timer_env_var) == "1"sv;
+    const char* disable_watchdog_env = getenv(disable_watchdog_timer_env_var);
+
+    return disable_watchdog_env && disable_watchdog_env == "1"sv;
 }
 
 bool pid_running(pid_t pid) {
