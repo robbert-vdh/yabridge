@@ -118,6 +118,16 @@ bool set_realtime_priority(bool sched_fifo, int priority = 5) noexcept;
 std::optional<rlim_t> get_rttime_limit() noexcept;
 
 /**
+ * Returns `true` if `YABRIDGE_NO_WATCHDOG` is set to `1`. In that case we will
+ * not check if the Wine plugin host process successfully started, and we'll
+ * also don't check if the native plugin host is still alive. Disabling the
+ * watchdog timers can cause plugins hang during scanning and dangling Wine
+ * processes to be left running, so this should only ever be used when running
+ * the Wine plugin host under a separate namespace.
+ */
+bool is_watchdog_timer_disabled();
+
+/**
  * Check whether a process with the given PID is still active (and not a
  * zombie).
  */

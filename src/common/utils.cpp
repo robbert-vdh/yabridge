@@ -23,6 +23,15 @@
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
+using namespace std::literals::string_literals;
+
+/**
+ * If this environment variable is set to `1`, then we won't enable the watchdog
+ * timer. This is only necessary when running the Wine process under a different
+ * namespace than the host.
+ */
+constexpr char disable_watchdog_timer_env_var[] = "YABRIDGE_NO_WATCHDOG";
+
 fs::path get_temporary_directory() {
     bp::environment env = boost::this_process::environment();
     if (!env["XDG_RUNTIME_DIR"].empty()) {
@@ -55,6 +64,13 @@ std::optional<rlim_t> get_rttime_limit() noexcept {
     } else {
         return std::nullopt;
     }
+}
+
+bool is_watchdog_timer_disabled() {
+    // This is safe because we're not storing the pointer anywhere and the
+    // environment doesn't get modified anywhere
+    // NOLINTNEXTLINE(concurrency-mt-unsafe)
+    return getenv(disable_watchdog_timer_env_var) == "1"s;
 }
 
 bool pid_running(pid_t pid) {
