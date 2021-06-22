@@ -113,7 +113,7 @@ pub fn show_status(config: &Config) -> Result<()> {
             );
         }
         Err(err) => {
-            println!("Could not find yabridge's files files: {}\n", err);
+            println!("Could not find yabridge's files: {}\n", err);
         }
     }
     println!("installation method: {}", config.method);
