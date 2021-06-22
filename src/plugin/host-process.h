@@ -52,7 +52,7 @@ class HostProcess {
      * Return true if the host process is still running. Used during startup to
      * abort connecting to sockets if the Wine process has crashed.
      */
-    virtual bool running() noexcept = 0;
+    virtual bool running() = 0;
 
     /**
      * Kill the process or cause the plugin that's being hosted to exit.
@@ -200,7 +200,7 @@ class IndividualHost : public HostProcess {
                    const HostRequest& host_request);
 
     boost::filesystem::path path() override;
-    bool running() noexcept override;
+    bool running() override;
     void terminate() override;
 
    private:

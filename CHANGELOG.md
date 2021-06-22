@@ -44,6 +44,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   tries to use REAPER's [host function
   API](https://www.reaper.fm/sdk/vst/vst_ext.php#vst_host) which currently isn't
   supported by yabridge. We now explicitly ignore these requests.
+- Fixed the plugin-side watchdog timer that checks whether the Wine plugin host
+  process failed to start treating zombie processes as still running. This could
+  cause plugins to hang during scanning if the Wine process crashed in a very
+  specific (and likely impossible) way.
 - Fixed VST2 speaker arrangement configurations returned by the plugin not being
   serialized correctly. No plugins seem to actually use these, so it should not
   have caused any issues.

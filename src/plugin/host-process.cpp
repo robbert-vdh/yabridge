@@ -96,11 +96,10 @@ fs::path IndividualHost::path() {
     return host_path;
 }
 
-bool IndividualHost::running() noexcept {
-    std::error_code error{};
-    const bool running = host.running(error);
-
-    return running && !error;
+bool IndividualHost::running() {
+    // NOTE: `boost::process::child::running()` still considers zombies as
+    //       running, so it's useless for our purposes.
+    return pid_running(host.id());
 }
 
 void IndividualHost::terminate() {
