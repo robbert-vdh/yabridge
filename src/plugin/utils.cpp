@@ -16,10 +16,14 @@
 
 #include "utils.h"
 
+// Boost.Process's auto detection for vfork() support doesn't seem to work
+#define BOOST_POSIX_HAS_VFORK 1
+
 #include <unistd.h>
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/process/io.hpp>
 #include <boost/process/pipe.hpp>
+#include <boost/process/posix.hpp>
 #include <boost/process/search_path.hpp>
 #include <boost/process/system.hpp>
 #include <sstream>
@@ -109,7 +113,8 @@ std::string PluginInfo::wine_version() const {
 
     bp::ipstream output;
     try {
-        bp::system(wine_path, "--version", bp::std_out = output, bp::env = env);
+        bp::system(wine_path, "--version", bp::std_out = output, bp::env = env,
+                   bp::posix::use_vfork);
     } catch (const std::system_error&) {
         return "<NOT FOUND>";
     }
@@ -396,7 +401,7 @@ bool send_notification(const std::string& title, const std::string body) {
     try {
         return bp::system(bp::search_path("notify-send"), "--urgency=normal",
                           "--expire-time=30000", "--app-name=yabridge", title,
-                          body) == EXIT_SUCCESS;
+                          body, bp::posix::use_vfork) == EXIT_SUCCESS;
     } catch (const boost::process::process_error&) {
         // We will have printed the message to the terminal anyways, so if the
         // user doesn't have libnotify installed we'll just fail silently
