@@ -23,7 +23,7 @@
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
-using namespace std::literals::string_literals;
+using namespace std::literals::string_view_literals;
 
 /**
  * If this environment variable is set to `1`, then we won't enable the watchdog
@@ -70,7 +70,7 @@ bool is_watchdog_timer_disabled() {
     // This is safe because we're not storing the pointer anywhere and the
     // environment doesn't get modified anywhere
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    return getenv(disable_watchdog_timer_env_var) == "1"s;
+    return getenv(disable_watchdog_timer_env_var) == "1"sv;
 }
 
 bool pid_running(pid_t pid) {
