@@ -10,6 +10,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- When the Wine plugin host process fails to start, yabridge will now show a
+  desktop notification to notify you about this. This lets you diagnose issues
+  faster if you didn't already start your DAW from a terminal. These
+  notifications require `libnotify` and the `notify-send` application to be
+  installed.
 - Added an environment variable to disable the watchdog timer. This allows the
   Wine process to run under a separate namespace. If you don't know that you
   need this, then you probably don't need this!

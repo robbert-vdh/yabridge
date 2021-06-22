@@ -310,6 +310,16 @@ class PluginBridge {
                     generic_logger.log(
                         "The Wine host process has exited unexpectedly. Check "
                         "the output above for more information.");
+
+                    // Also show a desktop notification so users running from
+                    // the GUI get a heads up
+                    send_notification(
+                        "Failed to start the Wine plugin host",
+                        "Check yabridge's output for more information on what "
+                        "went wrong. You may need to rerun your DAW from a "
+                        "terminal and restart the plugin scanning process to "
+                        "see the error.");
+
                     std::terminate();
                 }
 
