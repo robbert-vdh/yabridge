@@ -265,6 +265,21 @@ boost::filesystem::path get_this_file_location();
 Configuration load_config_for(const boost::filesystem::path& yabridge_path);
 
 /**
+ * Send a desktop notification using `notify-send`. Used for diagnostics when a
+ * plugin fails to load since the user may not be checking the output in a
+ * terminal.
+ *
+ * @param title The title (or technically, summary) of the notification.
+ * @param body The message to display. This can contain line feeds and also
+ *   basic HTML-like formatting, so special characters may need to be escaped.
+ *   The message can also be empty.
+ *
+ * @return Whether the notification was sent. This will be false if
+ *   `notify-send` is not available.
+ */
+bool send_notification(const std::string& title, const std::string body);
+
+/**
  * Starting from the starting file or directory, go up in the directory
  * hierarchy until we find a file named `filename`.
  *
