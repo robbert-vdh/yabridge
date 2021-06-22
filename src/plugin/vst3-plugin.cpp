@@ -55,6 +55,10 @@ bool InitModule() {
         logger.log("Error during initialization:");
         logger.log(error.what());
 
+        // Also show a desktop notification most people likely won't see the
+        // above message
+        send_notification("Failed to initialize VST3 plugin", error.what());
+
         return false;
     }
 }

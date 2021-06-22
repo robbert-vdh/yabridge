@@ -53,6 +53,10 @@ extern "C" VST_EXPORT AEffect* VSTPluginMain(
         logger.log("Error during initialization:");
         logger.log(error.what());
 
+        // Also show a desktop notification most people likely won't see the
+        // above message
+        send_notification("Failed to initialize VST2 plugin", error.what());
+
         return nullptr;
     }
 }
