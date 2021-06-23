@@ -271,9 +271,9 @@ Configuration load_config_for(const boost::filesystem::path& yabridge_path);
  * terminal.
  *
  * @param title The title (or technically, summary) of the notification.
- * @param body The message to display. This can contain line feeds and also
- *   basic HTML-like formatting, so special characters may need to be escaped.
- *   The message can also be empty.
+ * @param body The message to display. This can contain line feeds, and it any
+ *   HTML tags and XML escape sequences will be automatically escaped. The
+ *   message can also be empty.
  *
  * @return Whether the notification was sent. This will be false if
  *   `notify-send` is not available.

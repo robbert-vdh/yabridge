@@ -399,10 +399,45 @@ Configuration load_config_for(const fs::path& yabridge_path) {
 }
 
 bool send_notification(const std::string& title, const std::string body) {
+    const fs::path notify_send_path = bp::search_path("notify-send");
+    if (notify_send_path.empty()) {
+        return false;
+    }
+
+    // I think there's a zero chance that we're going to call this function with
+    // anything that even somewhat resembles HTML, but we should still do a
+    // basic XML escape anyways.
+    // Implementation idea stolen from https://stackoverflow.com/a/5665377
+    std::string escaped_body{};
+    escaped_body.reserve(
+        static_cast<size_t>(static_cast<double>(body.size()) * 1.1));
+    for (const char& character : body) {
+        switch (character) {
+            case '&':
+                escaped_body.append("&amp;");
+                break;
+            case '\"':
+                escaped_body.append("&quot;");
+                break;
+            case '\'':
+                escaped_body.append("&apos;");
+                break;
+            case '<':
+                escaped_body.append("&lt;");
+                break;
+            case '>':
+                escaped_body.append("&gt;");
+                break;
+            default:
+                escaped_body.push_back(character);
+                break;
+        }
+    }
+
     try {
-        return bp::system(bp::search_path("notify-send"), "--urgency=normal",
+        return bp::system(notify_send_path, "--urgency=normal",
                           "--expire-time=30000", "--app-name=yabridge", title,
-                          body, bp::posix::use_vfork) == EXIT_SUCCESS;
+                          escaped_body, bp::posix::use_vfork) == EXIT_SUCCESS;
     } catch (const boost::process::process_error&) {
         // We will have printed the message to the terminal anyways, so if the
         // user doesn't have libnotify installed we'll just fail silently
