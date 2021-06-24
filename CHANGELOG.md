@@ -70,6 +70,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added support for setting up merged VST3 bundles with a 32-bit version of
   `libyabridge-vst3.so`.
+- Merged VST3 bundles set up in `~/.vst3/yabridge` are now always cleared before
+  yabridgectl adds new files to them. This makes it easier to switch from the
+  64-bit version of a plugin to the 32-bit version, or from a 64-bit version of
+  yabridge to the 32-bit version. I don't know why you would want to do either
+  of those things, but now you can!
 - Copies of `libyabridge-vst2.so` and `libyabridge-vst3.so` are now reflinked
   when supported by the file system. This speeds up the file coyping process
   while also reducing the amount of disk space used for yabridge when using

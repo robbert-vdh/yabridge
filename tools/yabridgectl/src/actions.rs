@@ -285,9 +285,10 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
 
                     // 32-bit and 64-bit versions of the plugin cna live inside of the same
                     // bundle), and show a warning if we come across any duplicates.
+                    let target_bundle_home = module.target_bundle_home();
                     let (updated_libyabridge, already_installed_architectures) =
                         yabridge_vst3_bundles
-                            .entry(module.target_bundle_home())
+                            .entry(target_bundle_home.clone())
                             .or_insert_with(|| (false, BTreeSet::new()));
                     if !already_installed_architectures.insert(module.architecture) {
                         eprintln!(
@@ -305,13 +306,20 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         continue;
                     }
 
+                    // NOTE: We need to make sure the VST3 bundle is completely empty before setting
+                    //       it up. Otherwise you would it would contain orphan plugin files after
+                    //       uninstalling the 32-bit version of a VST3 plugin while the 64-bit
+                    //       version is still installed, or when switching between the 32-bit and
+                    //       the 64-bit versions of yabridge
+                    if !*updated_libyabridge && target_bundle_home.exists() {
+                        utils::remove_dir_all(target_bundle_home)
+                            .context("Could not clean up old VST3 bundle")?;
+                    }
+
                     // We're building a merged VST3 bundle containing both a copy or symlink to
                     // `libyabridge-vst3.so` and the Windows VST3 plugin. The path to this native
                     // module will depend on whether `libyabridge-vst3.so` is a 32-bit or a 64-bit
                     // library file.
-                    // TODO: Make sure the bundle is cleared before setting this up for the first
-                    //       time, or else it won't be possible to cleanly switch between 32-bit and
-                    //       64-bit yabridge.
                     let native_module_path = module.target_native_module_path(Some(&files));
                     utils::create_dir_all(native_module_path.parent().unwrap())?;
                     if install_file(
