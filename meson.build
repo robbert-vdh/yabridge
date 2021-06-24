@@ -153,9 +153,15 @@ boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
 #       use case anyways we'll just brute force it for the time being.
 if get_option('build.cpp_args').contains('-m32')
   if with_static_boost
-    boost_filesystem_dep = declare_dependency(link_args : '-staticboost_filesystem')
+    boost_filesystem_dep = declare_dependency(
+      link_args : '-staticboost_filesystem',
+      compile_args : '-DBOOST_FILESYSTEM_STATIC_LINK=1',
+    )
   else
-    boost_filesystem_dep = declare_dependency(link_args : '-lboost_filesystem')
+    boost_filesystem_dep = declare_dependency(
+      link_args : '-lboost_filesystem',
+      compile_args : '-DBOOST_FILESYSTEM_DYN_LINK=1',
+    )
   endif
 else
   boost_filesystem_dep = dependency(
@@ -605,22 +611,27 @@ if with_bitbridge
   # search path set by the system in `find_library()`. If anyone does know how
   # to properly do this, please let me know!
   winegcc = meson.get_compiler('cpp', native : false)
-  boost_filesystem_32bit_dep = winegcc.find_library(
-    'boost_filesystem',
-    static : with_static_boost,
-    dirs : [
-      # Used by Arch based distros
-      '/usr/local/lib32',
-      '/usr/lib32',
-      # Used by Debian based distros
-      '/usr/local/lib/i386-linux-gnu',
-      '/usr/lib/i386-linux-gnu',
-      # Used by Red Hat based distros, could cause issues though since Meson
-      # cannot differentiate between the 32-bit version and the regular 64-bit
-      # version that would normally be in /lib
-      '/usr/local/lib',
-      '/usr/lib',
-    ]
+  boost_filesystem_32bit_dep = declare_dependency(
+    dependencies : winegcc.find_library(
+      'boost_filesystem',
+      static : with_static_boost,
+      dirs : [
+        # Used by Arch based distros
+        '/usr/local/lib32',
+        '/usr/lib32',
+        # Used by Debian based distros
+        '/usr/local/lib/i386-linux-gnu',
+        '/usr/lib/i386-linux-gnu',
+        # Used by Red Hat based distros, could cause issues though since Meson
+        # cannot differentiate between the 32-bit version and the regular 64-bit
+        # version that would normally be in /lib
+        '/usr/local/lib',
+        '/usr/lib',
+      ]
+    ),
+    compile_args : with_static_boost
+      ? '-DBOOST_FILESYSTEM_STATIC_LINK=1'
+      : '-DBOOST_FILESYSTEM_DYN_LINK=1',
   )
   xcb_32bit_dep = winegcc.find_library('xcb')
 
