@@ -31,13 +31,6 @@
 // `intptr_t`. Otherwise the binary serialization would break. The 64 <-> 32 bit
 // conversion for the 32-bit host application won't cause any issues for us
 // since we can't directly pass pointers between the plugin and the host anyway.
-
-#ifndef __WINE__
-// Sanity check for the plugin, both the 64 and 32 bit hosts should follow these
-// conventions
-static_assert(std::is_same_v<size_t, uint64_t>);
-static_assert(std::is_same_v<intptr_t, int64_t>);
-#endif
 using native_size_t = uint64_t;
 using native_intptr_t = int64_t;
 
