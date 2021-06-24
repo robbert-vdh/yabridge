@@ -237,18 +237,19 @@ impl Vst3Module {
     }
 }
 
-/// The architecture of a `.dll` file. Needed so we can create a merged bundle for VST3 plugins.
+/// The architecture of a library file (either `.dll` or `.so` depending on the context). Needed so
+/// we can create a merged bundle for VST3 plugins.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Copy)]
 pub enum LibArchitecture {
-    Dll32,
-    Dll64,
+    Lib32,
+    Lib64,
 }
 
 impl Display for LibArchitecture {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            LibArchitecture::Dll32 => write!(f, "32-bit"),
-            LibArchitecture::Dll64 => write!(f, "64-bit"),
+            LibArchitecture::Lib32 => write!(f, "32-bit"),
+            LibArchitecture::Lib64 => write!(f, "64-bit"),
         }
     }
 }
@@ -258,8 +259,8 @@ impl LibArchitecture {
     /// https://developer.steinberg.help/display/VST/Plug-in+Format+Structure#PluginFormatStructure-FortheWindowsplatform.
     pub fn vst_arch(&self) -> &str {
         match &self {
-            LibArchitecture::Dll32 => "x86-win",
-            LibArchitecture::Dll64 => "x86_64-win",
+            LibArchitecture::Lib32 => "x86-win",
+            LibArchitecture::Lib64 => "x86_64-win",
         }
     }
 }
@@ -406,9 +407,9 @@ impl SearchIndex {
             .into_par_iter()
             .map(|path| {
                 let architecture = if DLL32_AUTOMATON.is_match(pe32_info(&path)?) {
-                    LibArchitecture::Dll32
+                    LibArchitecture::Lib32
                 } else {
-                    LibArchitecture::Dll64
+                    LibArchitecture::Lib64
                 };
 
                 if VST2_AUTOMATON.is_match(exported_functions(&path)?) {
@@ -428,9 +429,9 @@ impl SearchIndex {
             .into_par_iter()
             .map(|module_path| {
                 let architecture = if DLL32_AUTOMATON.is_match(pe32_info(&module_path)?) {
-                    LibArchitecture::Dll32
+                    LibArchitecture::Lib32
                 } else {
-                    LibArchitecture::Dll64
+                    LibArchitecture::Lib64
                 };
 
                 if VST3_AUTOMATON.is_match(exported_functions(&module_path)?) {
