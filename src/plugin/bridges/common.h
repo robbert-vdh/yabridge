@@ -126,6 +126,9 @@ class PluginBridge {
         std::stringstream init_msg;
 
         init_msg << "Initializing yabridge version " << yabridge_git_version
+#ifdef __i386__
+                 << " (32-bit build)"
+#endif
                  << std::endl;
         init_msg << "host:          '" << plugin_host->path().string() << "'"
                  << std::endl;
