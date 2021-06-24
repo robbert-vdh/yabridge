@@ -764,7 +764,7 @@ actual 32-bit system you would need to comment out the 64-bit `yabridge-host`
 and `yabridge-group` binaries in `meson.build`:
 
 ```shell
-meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000 -Dwith-bitbridge=true -Dbuild.cpp_link_args='-m32'
+meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000 -Dwith-bitbridge=true -Dbuild.cpp_args='-m32' -Dbuild.cpp_link_args='-m32'
 ninja -C build
 ```
 
