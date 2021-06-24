@@ -16,13 +16,14 @@
 
 //! Small helper utilities.
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use colored::Colorize;
 use is_executable::IsExecutable;
 use std::collections::hash_map::DefaultHasher;
 use std::env;
 use std::fs;
 use std::hash::Hasher;
+use std::io::{Read, Seek, SeekFrom};
 use std::os::unix::fs as unix_fs;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
@@ -30,7 +31,7 @@ use std::process::{Command, Stdio};
 use textwrap::Wrapper;
 
 use crate::config::{self, Config, KnownConfig, YABRIDGE_HOST_EXE_NAME};
-use crate::files::NativeFile;
+use crate::files::{LibArchitecture, NativeFile};
 
 /// (Part of) the expected output when running `yabridge-host.exe`. Used to verify that everything's
 /// working correctly. We'll only match this prefix so we can modify the exact output at a later
@@ -84,6 +85,41 @@ pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> Result<()> {
             dst.as_ref().display()
         )
     })
+}
+
+/// Get the architecture of the ELF file at `path`. This detection is a bit naive, but we'd rather
+/// not depend on `libmagic` or `libreadelf` just for this, since encountering a 32-bit yabridge
+/// library is going to be incredibly rare.
+///
+/// This is based on this file header specification:
+/// https://en.wikipedia.org/wiki/Executable_and_Linkable_Format#File_header
+pub fn get_elf_architecture(path: &Path) -> Result<LibArchitecture> {
+    // We'll assume `path` points to an ELF file and immediately skip to the good stuff
+    let mut file = fs::File::open(path)?;
+
+    // I doubt yabridge will ever run on a Big-Endian machine until audio production on Windows on
+    // ARM also becomes big, but we still need to account for this
+    let little_endian = {
+        let mut endianness_bytes = [0u8; 1];
+        file.seek(SeekFrom::Start(0x05))?; // e_ident[EI_DATA], 1 byte
+        file.read_exact(&mut endianness_bytes)?;
+        endianness_bytes[0] == 1
+    };
+
+    let mut machine_arch_bytes = [0u8; 2];
+    file.seek(SeekFrom::Start(0x12))?; // e_machine, 2 bytes
+    file.read_exact(&mut machine_arch_bytes)?;
+
+    let machine_arch = if little_endian {
+        u16::from_le_bytes(machine_arch_bytes)
+    } else {
+        u16::from_be_bytes(machine_arch_bytes)
+    };
+    match machine_arch {
+        0x03 => Ok(LibArchitecture::Lib32), // x86
+        0x3E => Ok(LibArchitecture::Lib64), // AMD x86-64
+        _ => Err(anyhow!("'{}' is not a recognized ELF machine ISA")),
+    }
 }
 
 /// Get the type of a file, if it exists.

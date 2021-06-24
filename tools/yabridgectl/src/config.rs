@@ -27,7 +27,8 @@ use std::path::{Path, PathBuf};
 use which::which;
 use xdg::BaseDirectories;
 
-use crate::files::{self, SearchResults};
+use crate::files::{self, LibArchitecture, SearchResults};
+use crate::utils;
 
 /// The name of the config file, relative to `$XDG_CONFIG_HOME/YABRIDGECTL_PREFIX`.
 pub const CONFIG_FILE_NAME: &str = "config.toml";
@@ -143,8 +144,9 @@ pub struct YabridgeFiles {
     /// The path to `libyabridge-vst2.so` we should use.
     pub libyabridge_vst2: PathBuf,
     /// The path to `libyabridge-vst3.so` we should use, if yabridge has been compiled with VST3
-    /// support.
-    pub libyabridge_vst3: Option<PathBuf>,
+    /// support. We need to know if it's a 32-bit or a 64-bit library so we can properly set up the
+    /// merged VST3 bundles.
+    pub libyabridge_vst3: Option<(PathBuf, LibArchitecture)>,
     /// The path to `yabridge-host.exe`. This is the path yabridge will actually use, and it does
     /// not have to be relative to `yabridge_home`.
     pub yabridge_host_exe: PathBuf,
@@ -260,7 +262,18 @@ impl Config {
         // Based on that we can check if `libyabridge-vst3.so` exists, since yabridge can be
         // compiled without VST3 support
         let libyabridge_vst3 = match libyabridge_vst2.with_file_name(LIBYABRIDGE_VST3_NAME) {
-            path if path.exists() => Some(path),
+            path if path.exists() => {
+                // We need to know `libyabridge-vst3.so`'s architecture to be able to set up the
+                // bundle properly
+                let arch = utils::get_elf_architecture(&path).with_context(|| {
+                    format!(
+                        "Could not determine ELF architecture for '{}'",
+                        path.display()
+                    )
+                })?;
+
+                Some((path, arch))
+            }
             _ => None,
         };
 

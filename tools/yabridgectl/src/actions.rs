@@ -108,7 +108,7 @@ pub fn show_status(config: &Config) -> Result<()> {
                 "libyabridge-vst3.so: {}\n",
                 files
                     .libyabridge_vst3
-                    .map(|path| format!("'{}'", path.display()))
+                    .map(|(path, arch)| format!("'{}' ({})", path.display(), arch))
                     .unwrap_or_else(|| "<not found>".red().to_string())
             );
         }
@@ -204,11 +204,11 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     let files: YabridgeFiles = config.files()?;
     let libyabridge_vst2_hash = utils::hash_file(&files.libyabridge_vst2)?;
     let libyabridge_vst3_hash = match &files.libyabridge_vst3 {
-        Some(path) => Some(utils::hash_file(path)?),
+        Some((path, _)) => Some(utils::hash_file(path)?),
         None => None,
     };
 
-    if let Some(libyabridge_vst3_path) = &files.libyabridge_vst3 {
+    if let Some((libyabridge_vst3_path, _)) = &files.libyabridge_vst3 {
         println!("Setting up VST2 and VST3 plugins using:");
         println!("- {}", files.libyabridge_vst2.display());
         println!("- {}\n", libyabridge_vst3_path.display());
@@ -308,7 +308,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     if install_file(
                         options.force,
                         config.method,
-                        files.libyabridge_vst3.as_ref().unwrap(),
+                        &files.libyabridge_vst3.as_ref().unwrap().0,
                         libyabridge_vst3_hash,
                         &native_module_path,
                     )? || *updated_libyabridge
