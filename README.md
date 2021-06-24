@@ -769,11 +769,9 @@ ninja -C build
 ```
 
 Like the above commands, you might need to tweak the unity size based on the
-amount of system memory available. You may also want to add
-`-Dwith-static-boost=true` and optionally also `-Dcpp_link_args='-static-libstdc++'`
-and `-Dbuild.cpp_link_args='-static-libstdc++'` to the `meson setup` command
-line if you're going to run these binaries on another system (that does still
-supports the same version of glibc).
+amount of system memory available. See the CI build definitions for some
+examples on how to add static linking in the mix if you're going to run this
+version of yabridge on some other machine.
 
 ## Debugging
 

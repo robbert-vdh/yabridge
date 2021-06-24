@@ -105,6 +105,7 @@ endif
 # Build options
 #
 
+with_32bit_libraries = get_option('build.cpp_args').contains('-m32')
 with_bitbridge = get_option('with-bitbridge')
 with_static_boost = get_option('with-static-boost')
 with_winedbg = get_option('with-winedbg')
@@ -142,35 +143,57 @@ endif
 # Dependencies
 #
 
+# I honestly have no idea what the correct way is to have `dependency()` or
+# `compiler.find_dependency()` search for 32-bit versions of libraries when
+# cross-compiling. Meson also doesn't seem to respect the default linker
+# search path set by the system in `find_library()`. If anyone does know how
+# to properly do this, please let me know!
+winegcc = meson.get_compiler('cpp', native : false)
+
 # Statically link against Boost.Filesystem, otherwise it would become impossible
 # to distribute a prebuilt version of yabridge
-boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
-
 # HACK: I couldn't get Meson's Boost dependency detection to work with `-m32`,
 #       because no matter what settings I use in machine/cross files it will
 #       keep rejecting the 32-bit libraries when the host system is 64-bit.
 #       Since cross-compiling 32-bit native libraries is not really a supported
 #       use case anyways we'll just brute force it for the time being.
-if get_option('build.cpp_args').contains('-m32')
-  if with_static_boost
-    boost_filesystem_dep = declare_dependency(
-      link_args : ['-staticboost_filesystem'],
-      compile_args : ['-DBOOST_FILESYSTEM_STATIC_LINK=1'],
-    )
-  else
-    boost_filesystem_dep = declare_dependency(
-      link_args : ['-lboost_filesystem'],
-      compile_args : ['-DBOOST_FILESYSTEM_DYN_LINK=1'],
-    )
-  endif
-else
-  boost_filesystem_dep = dependency(
-    'boost',
-    version : '>=1.66',
-    modules : ['filesystem'],
-    static : with_static_boost,
+#
+#       We also don't add any additional library search paths here, so you may
+#       need to manually add your own using something like
+#       `-Dbuild.cpp_link_args='-I/usr/local/lib'`.
+boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
+
+if with_32bit_libraries or with_bitbridge
+  boost_filesystem_32bit_dep = declare_dependency(
+    dependencies : winegcc.find_library(
+      'boost_filesystem',
+      static : with_static_boost,
+      dirs : [
+        # Used by Arch based distros
+        '/usr/local/lib32',
+        '/usr/lib32',
+        # Used by Debian based distros
+        '/usr/local/lib/i386-linux-gnu',
+        '/usr/lib/i386-linux-gnu',
+        # Used by Red Hat based distros, could cause issues though since Meson
+        # cannot differentiate between the 32-bit version and the regular 64-bit
+        # version that would normally be in /lib
+        '/usr/local/lib',
+        '/usr/lib',
+      ]
+    ),
+    compile_args : with_static_boost
+      ? ['-DBOOST_FILESYSTEM_STATIC_LINK=1']
+      : ['-DBOOST_FILESYSTEM_DYN_LINK=1'],
   )
 endif
+
+boost_filesystem_64bit_dep = dependency(
+  'boost',
+  version : '>=1.66',
+  modules : ['filesystem'],
+  static : with_static_boost,
+)
 
 # TODO: Meson doesn't have a way to define version ranges, does it? Like
 #       `^>=5.2.0`, `>=5.2.0 && <6.0.0` or `5.2.*`.
@@ -180,7 +203,7 @@ threads_dep = dependency('threads')
 tomlplusplus_dep = dependency('tomlplusplus', version : '>=2.1.0', fallback : ['tomlplusplus', 'tomlplusplus_dep'])
 # The built in threads dependency does not know how to handle winegcc
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
-xcb_dep = dependency('xcb')
+xcb_64bit_dep = dependency('xcb')
 
 dl_dep = declare_dependency(link_args : '-ldl')
 rt_dep = declare_dependency(link_args : '-lrt')
@@ -530,7 +553,9 @@ shared_library(
   include_directories : include_dir,
   dependencies : [
     boost_dep,
-    boost_filesystem_dep,
+    with_32bit_libraries
+      ? boost_filesystem_32bit_dep
+      : boost_filesystem_64bit_dep,
     bitsery_dep,
     dl_dep,
     rt_dep,
@@ -550,7 +575,9 @@ if with_vst3
     include_directories : include_dir,
     dependencies : [
       boost_dep,
-      boost_filesystem_dep,
+      with_32bit_libraries
+        ? boost_filesystem_32bit_dep
+        : boost_filesystem_64bit_dep,
       bitsery_dep,
       dl_dep,
       function2_dep,
@@ -569,13 +596,13 @@ endif
 
 host_64bit_deps = [
   boost_dep,
-  boost_filesystem_dep,
+  boost_filesystem_64bit_dep,
   bitsery_dep,
   function2_dep,
   rt_dep,
   tomlplusplus_dep,
   wine_threads_dep,
-  xcb_dep,
+  xcb_64bit_dep,
 ]
 if with_vst3
   host_64bit_deps += [
@@ -605,34 +632,6 @@ host_common_64bit_dep = declare_dependency(
 if with_bitbridge
   message('Bitbridge enabled, configuring a 32-bit host application')
 
-  # I honestly have no idea what the correct way is to have `dependency()` or
-  # `compiler.find_dependency()` search for 32-bit versions of libraries when
-  # cross-compiling. Meson also doesn't seem to respect the default linker
-  # search path set by the system in `find_library()`. If anyone does know how
-  # to properly do this, please let me know!
-  winegcc = meson.get_compiler('cpp', native : false)
-  boost_filesystem_32bit_dep = declare_dependency(
-    dependencies : winegcc.find_library(
-      'boost_filesystem',
-      static : with_static_boost,
-      dirs : [
-        # Used by Arch based distros
-        '/usr/local/lib32',
-        '/usr/lib32',
-        # Used by Debian based distros
-        '/usr/local/lib/i386-linux-gnu',
-        '/usr/lib/i386-linux-gnu',
-        # Used by Red Hat based distros, could cause issues though since Meson
-        # cannot differentiate between the 32-bit version and the regular 64-bit
-        # version that would normally be in /lib
-        '/usr/local/lib',
-        '/usr/lib',
-      ]
-    ),
-    compile_args : [with_static_boost
-      ? '-DBOOST_FILESYSTEM_STATIC_LINK=1'
-      : '-DBOOST_FILESYSTEM_DYN_LINK=1'],
-  )
   xcb_32bit_dep = winegcc.find_library('xcb')
 
   host_32bit_deps = [
