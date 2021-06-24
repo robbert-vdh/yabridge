@@ -26,7 +26,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use walkdir::WalkDir;
 
-use crate::config::yabridge_vst3_home;
+use crate::config::{yabridge_vst3_home, YabridgeFiles};
 use crate::utils::get_file_type;
 
 /// Stores the results from searching through a directory. We'll search for Windows VST2 plugin
@@ -189,8 +189,10 @@ impl Vst3Module {
     }
 
     /// Get the path to the `libyabridge.so` file in `~/.vst3` corresponding to the bridged version
-    /// of this module.
-    pub fn target_native_module_path(&self) -> PathBuf {
+    /// of this module. The path here depends on whether we're using a 32-bit or 64-bit version of
+    /// yabridge. If the configuration is not given (for instance, becuase yabridge is not set up
+    /// properly) we'll assume the module should be 64-bit.
+    pub fn target_native_module_path(&self, config: Option<&YabridgeFiles>) -> PathBuf {
         let native_module_name = match &self.module {
             Vst3ModuleType::Legacy(path) | Vst3ModuleType::Bundle(path) => path
                 .with_extension("so")
@@ -203,7 +205,16 @@ impl Vst3Module {
 
         let mut path = self.target_bundle_home();
         path.push("Contents");
-        path.push("x86_64-linux");
+
+        #[allow(clippy::wildcard_in_or_patterns)]
+        match config.and_then(|c| c.libyabridge_vst3.as_ref()) {
+            Some((_, LibArchitecture::Lib32)) => path.push("x86-linux"),
+            // NOTE: We'll always fall back to this if `libyabridge-vst3.so` is not found, just so
+            //       we cannot get any errors during `yabridgectl status` even if yabridge is not
+            //       set up correctly.
+            Some((_, LibArchitecture::Lib64)) | _ => path.push("x86_64-linux"),
+        }
+
         path.push(native_module_name);
         path
     }
@@ -269,7 +280,10 @@ impl SearchResults {
     /// Create a map out of all found plugins based on their file path that contains both a
     /// reference to the plugin (so we can print information about it) and the current installation
     /// status. The installation status will be `None` if the plugin has not yet been set up.
-    pub fn installation_status(&self) -> BTreeMap<PathBuf, (&Plugin, Option<NativeFile>)> {
+    pub fn installation_status(
+        &self,
+        config: Option<&YabridgeFiles>,
+    ) -> BTreeMap<PathBuf, (&Plugin, Option<NativeFile>)> {
         let so_files: HashMap<&Path, &NativeFile> = self
             .so_files
             .iter()
@@ -293,7 +307,7 @@ impl SearchResults {
                     vst3_module.original_path().to_owned(),
                     (
                         plugin,
-                        get_file_type(vst3_module.target_native_module_path()),
+                        get_file_type(vst3_module.target_native_module_path(config)),
                     ),
                 ),
             })

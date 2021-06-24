@@ -98,7 +98,8 @@ pub fn show_status(config: &Config) -> Result<()> {
             .unwrap_or_else(|| String::from("<auto>"))
     );
 
-    match config.files() {
+    let files = config.files();
+    match &files {
         Ok(files) => {
             println!(
                 "libyabridge-vst2.so: '{}'",
@@ -108,6 +109,7 @@ pub fn show_status(config: &Config) -> Result<()> {
                 "libyabridge-vst3.so: {}\n",
                 files
                     .libyabridge_vst3
+                    .as_ref()
                     .map(|(path, arch)| format!("'{}' ({})", path.display(), arch))
                     .unwrap_or_else(|| "<not found>".red().to_string())
             );
@@ -123,7 +125,9 @@ pub fn show_status(config: &Config) -> Result<()> {
         // be added both with and without a trailing slash
         println!("\n{}", path.join("").display());
 
-        for (plugin_path, (plugin, status)) in search_results.installation_status() {
+        for (plugin_path, (plugin, status)) in
+            search_results.installation_status(files.as_ref().ok())
+        {
             let plugin_type = match plugin {
                 Plugin::Vst2(Vst2Plugin { architecture, .. }) => {
                     format!("{}, {}", "VST2".cyan(), architecture)
@@ -302,8 +306,13 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     }
 
                     // We're building a merged VST3 bundle containing both a copy or symlink to
-                    // `libyabridge-vst3.so` and the Windows VST3 plugin
-                    let native_module_path = module.target_native_module_path();
+                    // `libyabridge-vst3.so` and the Windows VST3 plugin. The path to this native
+                    // module will depend on whether `libyabridge-vst3.so` is a 32-bit or a 64-bit
+                    // library file.
+                    // TODO: Make sure the bundle is cleared before setting this up for the first
+                    //       time, or else it won't be possible to cleanly switch between 32-bit and
+                    //       64-bit yabridge.
+                    let native_module_path = module.target_native_module_path(Some(&files));
                     utils::create_dir_all(native_module_path.parent().unwrap())?;
                     if install_file(
                         options.force,

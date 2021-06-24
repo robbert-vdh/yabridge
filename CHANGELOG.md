@@ -68,6 +68,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### yabridgectl
 
+- Added support for setting up merged VST3 bundles with a 32-bit version of
+  `libyabridge-vst3.so`.
 - Copies of `libyabridge-vst2.so` and `libyabridge-vst3.so` are now reflinked
   when supported by the file system. This speeds up the file coyping process
   while also reducing the amount of disk space used for yabridge when using
