@@ -712,7 +712,7 @@ disable unity builds completely by getting rid of `--unity=on` at the cost of
 slightly longer build times.
 
 ```shell
-meson setup --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000 build
+meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000
 ninja -C build
 ```
 
@@ -742,7 +742,7 @@ bit versions of the Boost and XCB libraries. This can then be set up as follows:
 # Enable the bitbridge on an existing build
 meson configure build -Dwith-bitbridge=true
 # Or configure a new build from scratch
-meson setup --buildtype=release --cross-file cross-wine.conf -Dwith-bitbridge=true build
+meson setup build --buildtype=release --cross-file cross-wine.conf -Dwith-bitbridge=true
 
 ninja -C build
 ```
@@ -764,7 +764,7 @@ you're compiling from a 64-bit system, so if you're compiling on an actual
 `yabridge-group` binaries in `meson.build`:
 
 ```shell
-meson setup --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000 -Dwith-bitbridge=true -Dbuild.cpp_link_args='-m32' build
+meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000 -Dwith-bitbridge=true -Dbuild.cpp_link_args='-m32'
 ninja -C build
 ```
 
