@@ -757,11 +757,11 @@ the `*-32.exe` variant accordingly.
 
 It also possible to build 32-bit versions of yabridge's libraries, which would
 let you use both 32-bit and 64-bit Windows VST2 and VST3 plugins from a 32-bit
-Linux plugin host. This is mostly untested since 32-bit desktop Linux doesn't
-really exist anymore, but it should work! The build system will still assume
-you're compiling from a 64-bit system, so if you're compiling on an actual
-32-bit system you would need to comment out the 64-bit `yabridge-host` and
-`yabridge-group` binaries in `meson.build`:
+Linux plugin host. This is mostly untested since 32-bit only Linux applications
+don't really exist anymore, but it should work! The build system will still
+assume you're compiling from a 64-bit system, so if you're compiling on an
+actual 32-bit system you would need to comment out the 64-bit `yabridge-host`
+and `yabridge-group` binaries in `meson.build`:
 
 ```shell
 meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000 -Dwith-bitbridge=true -Dbuild.cpp_link_args='-m32'
@@ -769,7 +769,11 @@ ninja -C build
 ```
 
 Like the above commands, you might need to tweak the unity size based on the
-amount of system memory available.
+amount of system memory available. You may also want to add
+`-Dwith-static-boost=true` and optionally also `-Dcpp_link_args='-static-libstdc++'`
+and `-Dbuild.cpp_link_args='-static-libstdc++'` to the `meson setup` command
+line if you're going to run these binaries on another system (that does still
+supports the same version of glibc).
 
 ## Debugging
 
