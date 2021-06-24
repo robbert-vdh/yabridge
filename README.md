@@ -753,6 +753,24 @@ This will produce four files called `yabridge-host-32.exe`,
 trying to load is 32-bit or 64-bit, and will run either the regular version or
 the `*-32.exe` variant accordingly.
 
+### 32-bit libraries
+
+It also possible to build 32-bit versions of yabridge's libraries, which would
+let you use both 32-bit and 64-bit Windows VST2 and VST3 plugins from a 32-bit
+Linux plugin host. This is mostly untested since 32-bit desktop Linux doesn't
+really exist anymore, but it should work! The build system will still assume
+you're compiling from a 64-bit system, so if you're compiling on an actual
+32-bit system you would need to comment out the 64-bit `yabridge-host` and
+`yabridge-group` binaries in `meson.build`:
+
+```shell
+meson setup --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000 -Dwith-bitbridge=true -Dbuild.cpp_link_args='-m32' build
+ninja -C build
+```
+
+Like the above commands, you might need to tweak the unity size based on the
+amount of system memory available.
+
 ## Debugging
 
 Wine's error messages and warning are usually very helpful whenever a plugin

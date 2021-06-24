@@ -18,6 +18,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added an environment variable to disable the watchdog timer. This allows the
   Wine process to run under a separate namespace. If you don't know that you
   need this, then you probably don't need this!
+- Added support for building 32-bit versions of the yabridge libraries, so you
+  can use both 32-bit and 64-bit Windows VST2 and VST3 plugins under 32-bit
+  Linux plugin hosts. This should not be necessary in any normal situation since
+  Desktop Linux has been 64-bit only for a while now, but it could be useful in
+  some very specific situations.
 
 ### Changed
 

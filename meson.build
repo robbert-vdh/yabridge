@@ -145,12 +145,27 @@ endif
 # Statically link against Boost.Filesystem, otherwise it would become impossible
 # to distribute a prebuilt version of yabridge
 boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
-boost_filesystem_dep = dependency(
-  'boost',
-  version : '>=1.66',
-  modules : ['filesystem'],
-  static : with_static_boost,
-)
+
+# HACK: I couldn't get Meson's Boost dependency detection to work with `-m32`,
+#       because no matter what settings I use in machine/cross files it will
+#       keep rejecting the 32-bit libraries when the host system is 64-bit.
+#       Since cross-compiling 32-bit native libraries is not really a supported
+#       use case anyways we'll just brute force it for the time being.
+if get_option('build.cpp_args').contains('-m32')
+  if with_static_boost
+    boost_filesystem_dep = declare_dependency(link_args : '-staticboost_filesystem')
+  else
+    boost_filesystem_dep = declare_dependency(link_args : '-lboost_filesystem')
+  endif
+else
+  boost_filesystem_dep = dependency(
+    'boost',
+    version : '>=1.66',
+    modules : ['filesystem'],
+    static : with_static_boost,
+  )
+endif
+
 # TODO: Meson doesn't have a way to define version ranges, does it? Like
 #       `^>=5.2.0`, `>=5.2.0 && <6.0.0` or `5.2.*`.
 bitsery_dep = dependency('bitsery', version : '>=5.2.0', fallback : ['bitsery', 'bitsery_dep'])
