@@ -154,13 +154,13 @@ boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
 if get_option('build.cpp_args').contains('-m32')
   if with_static_boost
     boost_filesystem_dep = declare_dependency(
-      link_args : '-staticboost_filesystem',
-      compile_args : '-DBOOST_FILESYSTEM_STATIC_LINK=1',
+      link_args : ['-staticboost_filesystem'],
+      compile_args : ['-DBOOST_FILESYSTEM_STATIC_LINK=1'],
     )
   else
     boost_filesystem_dep = declare_dependency(
-      link_args : '-lboost_filesystem',
-      compile_args : '-DBOOST_FILESYSTEM_DYN_LINK=1',
+      link_args : ['-lboost_filesystem'],
+      compile_args : ['-DBOOST_FILESYSTEM_DYN_LINK=1'],
     )
   endif
 else
@@ -629,9 +629,9 @@ if with_bitbridge
         '/usr/lib',
       ]
     ),
-    compile_args : with_static_boost
+    compile_args : [with_static_boost
       ? '-DBOOST_FILESYSTEM_STATIC_LINK=1'
-      : '-DBOOST_FILESYSTEM_DYN_LINK=1',
+      : '-DBOOST_FILESYSTEM_DYN_LINK=1'],
   )
   xcb_32bit_dep = winegcc.find_library('xcb')
 
