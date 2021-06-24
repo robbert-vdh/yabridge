@@ -208,7 +208,7 @@ impl Vst3Module {
 
         #[allow(clippy::wildcard_in_or_patterns)]
         match config.and_then(|c| c.libyabridge_vst3.as_ref()) {
-            Some((_, LibArchitecture::Lib32)) => path.push("x86-linux"),
+            Some((_, LibArchitecture::Lib32)) => path.push("i386-linux"),
             // NOTE: We'll always fall back to this if `libyabridge-vst3.so` is not found, just so
             //       we cannot get any errors during `yabridgectl status` even if yabridge is not
             //       set up correctly.
