@@ -42,6 +42,10 @@ pub const LIBYABRIDGE_VST2_NAME: &str = "libyabridge-vst2.so";
 pub const LIBYABRIDGE_VST3_NAME: &str = "libyabridge-vst3.so";
 /// The name of the script we're going to run to verify that everything's working correctly.
 pub const YABRIDGE_HOST_EXE_NAME: &str = "yabridge-host.exe";
+/// The 32-bit verison of `YABRIDGE_HOST_EXE_NAME`. If `~/.wine` was somehow created with
+/// `WINEARCH=win32` set, then it won't be possible to run the 64-bit `yabridge-host.exe` in there.
+/// In that case we'll just run the 32-bit version isntead, if it exists.
+pub const YABRIDGE_HOST_32_EXE_NAME: &str = "yabridge-host-32.exe";
 /// The name of the XDG base directory prefix for yabridge's own files, relative to
 /// `$XDG_CONFIG_HOME` and `$XDG_DATA_HOME`.
 const YABRIDGE_PREFIX: &str = "yabridge";
@@ -149,10 +153,15 @@ pub struct YabridgeFiles {
     pub libyabridge_vst3: Option<(PathBuf, LibArchitecture)>,
     /// The path to `yabridge-host.exe`. This is the path yabridge will actually use, and it does
     /// not have to be relative to `yabridge_home`.
-    pub yabridge_host_exe: PathBuf,
+    pub yabridge_host_exe: Option<PathBuf>,
     /// The actual Winelib binary for `yabridge-host.exe`. Will be hashed to check whether the user
     /// has updated yabridge.
-    pub yabridge_host_exe_so: PathBuf,
+    pub yabridge_host_exe_so: Option<PathBuf>,
+    /// The same as `yabridge_host_exe`, but for the 32-bit verison.
+    pub yabridge_host_32_exe: Option<PathBuf>,
+    /// The same as `yabridge_host_exe_so`, but for the 32-bit verison. We will hash this instead of
+    /// there's no 64-bit version available.
+    pub yabridge_host_32_exe_so: Option<PathBuf>,
 }
 
 impl Default for Config {
@@ -279,22 +288,26 @@ impl Config {
 
         // `yabridge-host.exe` should either be in the search path, or it should be in
         // `~/.local/share/yabridge`
-        let yabridge_host_exe = match which(YABRIDGE_HOST_EXE_NAME)
+        let yabridge_host_exe = which(YABRIDGE_HOST_EXE_NAME)
             .ok()
-            .or_else(|| xdg_dirs.find_data_file(YABRIDGE_HOST_EXE_NAME))
-        {
-            Some(path) => path,
-            _ => {
-                return Err(anyhow!("Could not locate '{}'.", YABRIDGE_HOST_EXE_NAME));
-            }
-        };
-        let yabridge_host_exe_so = yabridge_host_exe.with_extension("exe.so");
+            .or_else(|| xdg_dirs.find_data_file(YABRIDGE_HOST_EXE_NAME));
+        let yabridge_host_exe_so = yabridge_host_exe
+            .as_ref()
+            .map(|path| path.with_extension("exe.so"));
+        let yabridge_host_32_exe = which(YABRIDGE_HOST_32_EXE_NAME)
+            .ok()
+            .or_else(|| xdg_dirs.find_data_file(YABRIDGE_HOST_32_EXE_NAME));
+        let yabridge_host_32_exe_so = yabridge_host_32_exe
+            .as_ref()
+            .map(|path| path.with_extension("exe.so"));
 
         Ok(YabridgeFiles {
             libyabridge_vst2,
             libyabridge_vst3,
             yabridge_host_exe,
             yabridge_host_exe_so,
+            yabridge_host_32_exe,
+            yabridge_host_32_exe_so,
         })
     }
 

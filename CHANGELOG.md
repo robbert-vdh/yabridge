@@ -70,6 +70,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added support for setting up merged VST3 bundles with a 32-bit version of
   `libyabridge-vst3.so`.
+- Fixed the post-installation setup checks when the default Wine prefix over at
+  `~/.wine` was created with `WINEARCH=win32` set. This would otherwise result
+  in an `00cc:err:process:exec_process` error when running `yabridgectl sync`
+  because yabridgectl would try to run the 64-bit `yabridge-host.exe` in that
+  prefix.
 - Merged VST3 bundles set up in `~/.vst3/yabridge` are now always cleared before
   yabridgectl adds new files to them. This makes it easier to switch from the
   64-bit version of a plugin to the 32-bit version, or from a 64-bit version of

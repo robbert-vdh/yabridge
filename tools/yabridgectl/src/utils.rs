@@ -23,14 +23,14 @@ use std::collections::hash_map::DefaultHasher;
 use std::env;
 use std::fs;
 use std::hash::Hasher;
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
 use std::os::unix::fs as unix_fs;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use textwrap::Wrapper;
 
-use crate::config::{self, Config, KnownConfig, YABRIDGE_HOST_EXE_NAME};
+use crate::config::{self, Config, KnownConfig, YABRIDGE_HOST_32_EXE_NAME, YABRIDGE_HOST_EXE_NAME};
 use crate::files::{LibArchitecture, NativeFile};
 
 /// (Part of) the expected output when running `yabridge-host.exe`. Used to verify that everything's
@@ -130,6 +130,33 @@ pub fn get_file_type(path: PathBuf) -> Option<NativeFile> {
         Ok(_) => Some(NativeFile::Regular(path)),
         Err(_) => None,
     }
+}
+
+/// Get the architecture (either 64-bit or 32-bit) of the default Wine prefix in `~/.wine`. Defaults
+/// to 64-bit if `~/.wine` doesn't exist or if the prefix is invalid.
+pub fn get_default_wine_prefix_arch() -> LibArchitecture {
+    let wine_system_reg_path = PathBuf::from(env::var("HOME").expect("$HOME is not set"))
+        .join(".wine")
+        .join("system.reg");
+
+    // Fall back to 64-bit if the prefix doesn't exist
+    let wine_system_reg = match fs::File::open(wine_system_reg_path) {
+        Ok(file) => file,
+        _ => return LibArchitecture::Lib64,
+    };
+
+    for line in BufReader::new(wine_system_reg)
+        .lines()
+        .filter_map(|l| l.ok())
+    {
+        match line.as_str() {
+            "#arch=win32" => return LibArchitecture::Lib32,
+            "#arch=win64" => break,
+            _ => (),
+        };
+    }
+
+    LibArchitecture::Lib64
 }
 
 /// Hash the conetnts of a file as an `i64` using Rust's built in hasher. Collisions are not a big
@@ -310,8 +337,14 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
         .context(format!("Could not find '{}'", YABRIDGE_HOST_EXE_NAME))?;
 
     // Hash the contents of `yabridge-host.exe.so` since `yabridge-host.exe` is only a Wine
-    // generated shell script
-    let yabridge_host_hash = hash_file(&files.yabridge_host_exe_so)?;
+    // generated shell script. If somehow only the 32-bit verison is installed, we'll just hash that
+    // one.
+    let yabridge_host_hash = hash_file(
+        &files
+            .yabridge_host_exe_so
+            .or(files.yabridge_host_32_exe_so)
+            .with_context(|| format!("Could not locate '{}.so'", YABRIDGE_HOST_EXE_NAME))?,
+    )?;
 
     // Since these checks can take over a second if wineserver isn't already running we'll only
     // perform them when something has changed
@@ -323,9 +356,20 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
         return Ok(());
     }
 
-    let output = Command::new(&files.yabridge_host_exe)
+    // It could be that the default Wine prefix was created with `WINEARCH=win32` set. In that case
+    // we should run the 32-bit `yabridge-host.exe` since the 64-bit verison won't be able to run.
+    let host_binary_path = match get_default_wine_prefix_arch() {
+        LibArchitecture::Lib32 => files
+            .yabridge_host_32_exe
+            .with_context(|| format!("Could not find '{}'", YABRIDGE_HOST_32_EXE_NAME)),
+        LibArchitecture::Lib64 => files
+            .yabridge_host_exe
+            .with_context(|| format!("Could not find '{}'", YABRIDGE_HOST_EXE_NAME)),
+    }?;
+
+    let output = Command::new(&host_binary_path)
         .output()
-        .with_context(|| format!("Could not run '{}'", files.yabridge_host_exe.display()))?;
+        .with_context(|| format!("Could not run '{}'", host_binary_path.display()))?;
     let stderr = String::from_utf8(output.stderr)?;
 
     // There are three scenarios here:
