@@ -16,8 +16,9 @@
 
 #include "context-menu-target.h"
 
-YaContextMenuTargetImpl::YaContextMenuTargetImpl(Vst3PluginBridge& bridge,
-                                                 const ConstructArgs&& args) noexcept
+YaContextMenuTargetImpl::YaContextMenuTargetImpl(
+    Vst3PluginBridge& bridge,
+    const ConstructArgs&& args) noexcept
     : YaContextMenuTarget(std::move(args)), bridge(bridge) {}
 
 tresult PLUGIN_API

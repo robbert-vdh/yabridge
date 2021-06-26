@@ -23,5 +23,6 @@ YaKeyswitchController::ConstructArgs::ConstructArgs(
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IKeyswitchController>(
           object)) {}
 
-YaKeyswitchController::YaKeyswitchController(const ConstructArgs&& args) noexcept
+YaKeyswitchController::YaKeyswitchController(
+    const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

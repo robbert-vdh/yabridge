@@ -23,5 +23,6 @@ YaParameterFunctionName::ConstructArgs::ConstructArgs(
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IParameterFunctionName>(
           object)) {}
 
-YaParameterFunctionName::YaParameterFunctionName(const ConstructArgs&& args) noexcept
+YaParameterFunctionName::YaParameterFunctionName(
+    const ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

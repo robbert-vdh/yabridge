@@ -24,8 +24,9 @@ class Vst3PluginBridge;
 
 class Vst3PluginFactoryProxyImpl : public Vst3PluginFactoryProxy {
    public:
-    Vst3PluginFactoryProxyImpl(Vst3PluginBridge& bridge,
-                               Vst3PluginFactoryProxy::ConstructArgs&& args) noexcept;
+    Vst3PluginFactoryProxyImpl(
+        Vst3PluginBridge& bridge,
+        Vst3PluginFactoryProxy::ConstructArgs&& args) noexcept;
 
     /**
      * We'll override the query interface to log queries for interfaces we do
