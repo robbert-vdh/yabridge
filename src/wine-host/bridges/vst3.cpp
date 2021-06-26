@@ -34,8 +34,6 @@
  * `IComponent` pointer into an `IPluginBase` smart pointer. This way we can
  * keep the rest of yabridge's design in tact.
  */
-using std::endl;
-
 Steinberg::FUnknownPtr<Steinberg::IPluginBase> hack_init_plugin_base(
     Steinberg::IPtr<Steinberg::FUnknown> object,
     Steinberg::IPtr<Steinberg::Vst::IComponent> component);
