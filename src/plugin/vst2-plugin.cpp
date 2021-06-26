@@ -25,10 +25,9 @@
 #define VST_EXPORT __attribute__((visibility("default")))
 
 // The main entry point for VST2 plugins should be called `VSTPluginMain``. The
-// other one exist for legacy reasons since some old hosts might still use them.
-// There's also another possible legacy entry point just called `main`, but GCC
-// will refuse to compile a function called `main` that's not a regular C++ main
-// function.
+// other one exist for legacy reasons since some old hosts might still use them
+// (EnergyXT being the only known host on Linux that uses the `main` entry
+// point).
 
 /**
  * The main VST2 plugin entry point. We first set up a bridge that connects to a
@@ -61,6 +60,11 @@ extern "C" VST_EXPORT AEffect* VSTPluginMain(
     }
 }
 
-extern "C" VST_EXPORT AEffect* main_plugin(audioMasterCallback audioMaster) {
+// XXX: GCC doens't seem to have a clean way to let you define an arbitrary
+//      function called 'main'. Even JUCE does it this way, so it should be
+//      safe.
+extern "C" VST_EXPORT AEffect* deprecated_main(
+    audioMasterCallback audioMaster) asm("main");
+VST_EXPORT AEffect* deprecated_main(audioMasterCallback audioMaster) {
     return VSTPluginMain(audioMaster);
 }
