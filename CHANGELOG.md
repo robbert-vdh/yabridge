@@ -59,6 +59,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed VST2 speaker arrangement configurations returned by the plugin not being
   serialized correctly. No plugins seem to actually use these, so it should not
   have caused any issues.
+- Fixed yabridge's logging seeking STDERR to position 0 every time it writes a
+  log message. This would be noticeable when piping a DAW's STDERR stream to a
+  file when `YABRIDGE_DEBUG_LEVEL` wasn't set.
 - When printing the Wine version during initialization, the Wine process used
   for this is now run under the same environment as the Wine plugin host process
   will be run under. This means that when using a custom `WINELOADER` script to

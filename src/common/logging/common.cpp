@@ -77,7 +77,8 @@ Logger Logger::create_from_environment(std::string prefix) {
         // the only way to do this is by reopening the STDERR and STDOUT streams
         // to a pipe. Luckily `/dev/stderr` stays unaffected, so we can still
         // write there without causing infinite loops.
-        return Logger(std::make_shared<std::ofstream>("/dev/stderr"),
+        return Logger(std::make_shared<std::ofstream>(
+                          "/dev/stderr", std::fstream::out | std::fstream::app),
                       verbosity_level, prefix);
     }
 }
