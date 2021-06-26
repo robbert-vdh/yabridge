@@ -24,8 +24,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   Desktop Linux has been 64-bit only for a while now, but it could be useful in
   some very specific situations.
 - Defined the deprecated pre-VST2.4 `main` entry point for VST2 plugins. This
-  allows the above mentioned 32-bit version of yabridge to be used in EnergyXT,
-  allowing you to use both 32-bit and 64-bit Windows VST2 plugins there.
+  allows the above mentioned 32-bit version of yabridge to be used in
+  **EnergyXT**, allowing you to use both 32-bit and 64-bit Windows VST2 plugins
+  there.
 
 ### Changed
 
