@@ -280,15 +280,17 @@ Editor::Editor(MainContext& main_context,
     }
 
     // When using XEmbed we'll need the atoms for the corresponding properties
-    atom_cookie =
-        xcb_intern_atom(x11_connection.get(), true, strlen(xembed_message_name),
-                        xembed_message_name);
-    atom_reply =
-        xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
-    THROW_X11_ERROR(error);
+    if (use_xembed) {
+        atom_cookie =
+            xcb_intern_atom(x11_connection.get(), true,
+                            strlen(xembed_message_name), xembed_message_name);
+        atom_reply =
+            xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
+        THROW_X11_ERROR(error);
 
-    xcb_xembed_message = atom_reply->atom;
-    free(atom_reply);
+        xcb_xembed_message = atom_reply->atom;
+        free(atom_reply);
+    }
 
     // When not using XEmbed, Wine will interpret any local coordinates as
     // global coordinates. To work around this we'll tell the Wine window it's
