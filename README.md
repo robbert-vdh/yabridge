@@ -425,6 +425,10 @@ include:
 - Several **JUCE** based plugins have an issue under Wine where the mouse cursor
   will disappear after interacting with certain UI elements. This can usually be
   fixed by mousing over the resize handle in the bottom right corner.
+- Arturia's **Pigments**, Sonic Academy's **Kick 2**, Cytomic's **The Drop** and
+  likely other plugins have an issue where the GUI freezes when it's trying to
+  display a tooltip. This can be fixed by enabling the '_Hide Wine version from
+  applications_' option in the Staging tab of winecfg.
 - The GUI in **Sforzando** may appear to not respond to mouse clicks depending
   on your Wine and system configuration. This is actually a redrawing issue, and
   the GUI will still be updated even if it doesn't look that way. Dragging the
