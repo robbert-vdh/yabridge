@@ -422,6 +422,9 @@ include:
   you can try reinstalling those plugins to a new, clean Wine prefix. To avoid
   potential confusion, make sure to uninstall the Spitfire software along with
   the VST2 and VST3 plugins from your main Wine prefix first.
+- Several **JUCE** based plugins have an issue under Wine where the mouse cursor
+  will disappear after interacting with certain UI elements. This can usually be
+  fixed by mousing over the resize handle in the bottom right corner.
 - The GUI in **Sforzando** may appear to not respond to mouse clicks depending
   on your Wine and system configuration. This is actually a redrawing issue, and
   the GUI will still be updated even if it doesn't look that way. Dragging the
