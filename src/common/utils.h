@@ -134,6 +134,11 @@ bool is_watchdog_timer_disabled();
 bool pid_running(pid_t pid);
 
 /**
+ * Escape XML entities within a string. Used inside of desktop notifications.
+ */
+std::string xml_escape(std::string string);
+
+/**
  * A RAII wrapper that will temporarily enable the FTZ flag so that denormals
  * are automatically flushed to zero, returning to whatever the flag was
  * previously when it drops out of scope.

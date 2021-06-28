@@ -93,6 +93,37 @@ bool pid_running(pid_t pid) {
     }
 }
 
+std::string xml_escape(std::string string) {
+    // Implementation idea stolen from https://stackoverflow.com/a/5665377
+    std::string escaped;
+    escaped.reserve(
+        static_cast<size_t>(static_cast<double>(string.size()) * 1.1));
+    for (const char& character : string) {
+        switch (character) {
+            case '&':
+                escaped.append("&amp;");
+                break;
+            case '\"':
+                escaped.append("&quot;");
+                break;
+            case '\'':
+                escaped.append("&apos;");
+                break;
+            case '<':
+                escaped.append("&lt;");
+                break;
+            case '>':
+                escaped.append("&gt;");
+                break;
+            default:
+                escaped.push_back(character);
+                break;
+        }
+    }
+
+    return escaped;
+}
+
 ScopedFlushToZero::ScopedFlushToZero() noexcept {
     old_ftz_mode = _MM_GET_FLUSH_ZERO_MODE();
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
