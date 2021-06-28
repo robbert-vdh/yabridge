@@ -77,6 +77,8 @@ constexpr uint32_t xembed_focus_in_msg = 4;
 
 constexpr uint32_t xembed_focus_first = 1;
 
+const static HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
+
 /**
  * Find the the ancestors for the given window. This returns a list of window
  * IDs that starts wit h`starting_at`, and then iteratively contains the parent
@@ -307,7 +309,6 @@ Editor::Editor(MainContext& main_context,
         XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_VISIBILITY_CHANGE;
     xcb_change_window_attributes(x11_connection.get(), topmost_window,
                                  XCB_CW_EVENT_MASK, &topmost_event_mask);
-    xcb_flush(x11_connection.get());
     const uint32_t parent_event_mask =
         XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW |
         XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_VISIBILITY_CHANGE;
@@ -742,6 +743,22 @@ LRESULT CALLBACK window_proc(HWND handle,
 
             editor->set_input_focus(true);
         } break;
+        // HACK: JUCE (spuriously?) causes the cursor to be set to an empty
+        //       cursor from time to time while interacting with the plugins.
+        //       And Anaglyph seems to always hide the cursor when interacting
+        //       with the GUI while the transport is running. As a simple
+        //       workaround, we can just reset the cursor back to the default
+        //       arrow when this happens. Plugins that hide the cursor while
+        //       dragging a knob seem to still work fine despite this (based on
+        //       TDR, Voxengo, and KiloHearts plugins). If at some point a
+        //       plugin _does_ legitimately need to hide the cursor, we can
+        //       always add a `yabridge.toml` compatibilty option just for those
+        //       plugin and keep this as a default.
+        case WM_SETCURSOR: {
+            if (GetCursor() == nullptr) {
+                SetCursor(arrow_cursor);
+            }
+        } break;
     }
 
     return DefWindowProc(handle, message, wParam, lParam);
@@ -863,7 +880,7 @@ ATOM get_window_class() noexcept {
         window_class.style = CS_DBLCLKS;
         window_class.lpfnWndProc = window_proc;
         window_class.hInstance = GetModuleHandle(nullptr);
-        window_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        window_class.hCursor = arrow_cursor;
         window_class.lpszClassName = "yabridge plugin";
 
         window_class_handle = RegisterClassEx(&window_class);

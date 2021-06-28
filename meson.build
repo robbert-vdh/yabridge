@@ -608,7 +608,6 @@ host_64bit_deps = [
   wine_ole32_dep,
   wine_threads_dep,
   xcb_64bit_dep,
-  xcb_xfixes_64bit_dep,
 ]
 if with_vst3
   host_64bit_deps += [
@@ -646,7 +645,6 @@ if with_bitbridge
     tomlplusplus_dep,
     wine_threads_dep,
     xcb_32bit_dep,
-    xcb_xfixes_32bit_dep,
   ]
   if with_vst3
     host_32bit_deps += [
