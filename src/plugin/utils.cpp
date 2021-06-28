@@ -398,7 +398,9 @@ Configuration load_config_for(const fs::path& yabridge_path) {
     return Configuration(*config_file, yabridge_path);
 }
 
-bool send_notification(const std::string& title, const std::string body) {
+bool send_notification(const std::string& title,
+                       const std::string body,
+                       bool append_origin) {
     const fs::path notify_send_path = bp::search_path("notify-send");
     if (notify_send_path.empty()) {
         return false;
@@ -409,6 +411,24 @@ bool send_notification(const std::string& title, const std::string body) {
     // basic XML escape anyways.
     std::ostringstream formatted_body;
     formatted_body << xml_escape(body);
+
+    // If possible, append the path to this library file to the message.
+    if (append_origin) {
+        try {
+            const fs::path this_library = get_this_file_location();
+            formatted_body
+                << "\n"
+                << "Source: <a href=\"file://"
+                // TODO: This should be URL encoded, but let's just pray that
+                //       noone uses double quotes in their plugin names
+                << this_library.parent_path().string() << "\">"
+                << xml_escape(this_library.filename().string()) << "</a>";
+        } catch (const boost::system::system_error&) {
+            // I don't think this can fail in the way we're using it, but the
+            // last thing we want is our notification informing the user of an
+            // exception to trigger another exception
+        }
+    }
 
     try {
         return bp::system(notify_send_path, "--urgency=normal",

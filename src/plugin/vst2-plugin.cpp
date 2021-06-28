@@ -54,7 +54,8 @@ extern "C" VST_EXPORT AEffect* VSTPluginMain(
 
         // Also show a desktop notification most people likely won't see the
         // above message
-        send_notification("Failed to initialize VST2 plugin", error.what());
+        send_notification("Failed to initialize VST2 plugin", error.what(),
+                          true);
 
         return nullptr;
     }

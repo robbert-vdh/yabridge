@@ -321,7 +321,8 @@ class PluginBridge {
                         "Check yabridge's output for more information on what "
                         "went wrong. You may need to rerun your DAW from a "
                         "terminal and restart the plugin scanning process to "
-                        "see the error.");
+                        "see the error.",
+                        true);
 
                     std::terminate();
                 }

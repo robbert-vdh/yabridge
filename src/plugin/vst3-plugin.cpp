@@ -57,7 +57,8 @@ bool InitModule() {
 
         // Also show a desktop notification most people likely won't see the
         // above message
-        send_notification("Failed to initialize VST3 plugin", error.what());
+        send_notification("Failed to initialize VST3 plugin", error.what(),
+                          true);
 
         return false;
     }

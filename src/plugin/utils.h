@@ -274,11 +274,15 @@ Configuration load_config_for(const boost::filesystem::path& yabridge_path);
  * @param body The message to display. This can contain line feeds, and it any
  *   HTML tags and XML escape sequences will be automatically escaped. The
  *   message can also be empty.
+ * @param Whether to append 'Source: <XXX.so>' to the body, where `<XXX.so>` is
+ *   a hyperlink to the directory this library is placed in.
  *
  * @return Whether the notification was sent. This will be false if
  *   `notify-send` is not available.
  */
-bool send_notification(const std::string& title, const std::string body);
+bool send_notification(const std::string& title,
+                       const std::string body,
+                       bool append_origin);
 
 /**
  * Starting from the starting file or directory, go up in the directory
