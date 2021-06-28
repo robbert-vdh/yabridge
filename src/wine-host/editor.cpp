@@ -20,6 +20,20 @@
 
 using namespace std::literals::chrono_literals;
 
+// A catchable alternative to `assert()`. Normally all of our `assert(!error)`
+// should never fail, except for when Ardour hides the editor window without
+// closing the editor. In those case some of our X11 function calls may r turn
+// errors. When this happens we want to be able to catch them in
+// `handle_x11_events()`.
+#define THROW_X11_ERROR(error)                                          \
+    do {                                                                \
+        if (error) {                                                    \
+            free(error);                                                \
+            throw std::runtime_error("X111 error in " +                 \
+                                     std::string(__PRETTY_FUNCTION__)); \
+        }                                                               \
+    } while (0)
+
 /**
  * The Win32 timer ID we'll use to periodically call the VST2 `effeditidle`
  * function with. We have to do this on a timer because the function has to be
@@ -62,20 +76,6 @@ constexpr uint32_t xembed_window_activate_msg = 1;
 constexpr uint32_t xembed_focus_in_msg = 4;
 
 constexpr uint32_t xembed_focus_first = 1;
-
-// A catchable alternative to `assert()`. Normally all of our `assert(!error)`
-// should never fail, except for when Ardour hides the editor window without
-// closing the editor. In those case some of our X11 function calls may r turn
-// errors. When this happens we want to be able to catch them in
-// `handle_x11_events()`.
-#define THROW_X11_ERROR(error)                                          \
-    do {                                                                \
-        if (error) {                                                    \
-            free(error);                                                \
-            throw std::runtime_error("X111 error in " +                 \
-                                     std::string(__PRETTY_FUNCTION__)); \
-        }                                                               \
-    } while (0)
 
 /**
  * Find the the ancestors for the given window. This returns a list of window
