@@ -201,9 +201,11 @@ bitsery_dep = dependency('bitsery', version : '>=5.2.0', fallback : ['bitsery', 
 function2_dep = dependency('function2', version : '>=4.1.0', fallback : ['function2', 'function2_dep'])
 threads_dep = dependency('threads')
 tomlplusplus_dep = dependency('tomlplusplus', version : '>=2.1.0', fallback : ['tomlplusplus', 'tomlplusplus_dep'])
-# The built in threads dependency does not know how to handle winegcc
-wine_threads_dep = declare_dependency(link_args : '-lpthread')
+
 xcb_64bit_dep = dependency('xcb')
+if with_32bit_libraries or with_bitbridge
+  xcb_32bit_dep = winegcc.find_library('xcb')
+endif
 
 dl_dep = declare_dependency(link_args : '-ldl')
 rt_dep = declare_dependency(link_args : '-lrt')
@@ -211,6 +213,8 @@ rt_dep = declare_dependency(link_args : '-lrt')
 wine_ole32_dep = declare_dependency(link_args : '-lole32')
 # The SDK includes a comment pragma that would link to this on MSVC
 wine_shell32_dep = declare_dependency(link_args : '-lshell32')
+# The built in threads dependency does not know how to handle winegcc
+wine_threads_dep = declare_dependency(link_args : '-lpthread')
 wine_uuid_dep = declare_dependency(link_args : '-luuid')
 
 include_dir = include_directories('src/include')
@@ -604,6 +608,7 @@ host_64bit_deps = [
   wine_ole32_dep,
   wine_threads_dep,
   xcb_64bit_dep,
+  xcb_xfixes_64bit_dep,
 ]
 if with_vst3
   host_64bit_deps += [
@@ -632,8 +637,6 @@ host_common_64bit_dep = declare_dependency(
 if with_bitbridge
   message('Bitbridge enabled, configuring a 32-bit host application')
 
-  xcb_32bit_dep = winegcc.find_library('xcb')
-
   host_32bit_deps = [
     boost_dep,
     boost_filesystem_32bit_dep,
@@ -643,6 +646,7 @@ if with_bitbridge
     tomlplusplus_dep,
     wine_threads_dep,
     xcb_32bit_dep,
+    xcb_xfixes_32bit_dep,
   ]
   if with_vst3
     host_32bit_deps += [
