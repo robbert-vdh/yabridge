@@ -392,7 +392,7 @@ impl SearchIndex {
     pub fn search(self) -> Result<SearchResults> {
         lazy_static! {
             static ref VST2_AUTOMATON: AhoCorasick =
-                AhoCorasick::new_auto_configured(&["VSTPluginMain", "main", "main_plugin"]);
+                AhoCorasick::new_auto_configured(&["VSTPluginMain", "main"]);
             static ref VST3_AUTOMATON: AhoCorasick =
                 AhoCorasick::new_auto_configured(&["GetPluginFactory"]);
             static ref DLL32_AUTOMATON: AhoCorasick =

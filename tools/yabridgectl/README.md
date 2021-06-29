@@ -101,7 +101,7 @@ yabridge_home=$HOME/.local/share/yabridge
 plugin_dir="$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"
 
 find -L "$plugin_dir" -type f -iname '*.dll' -print0 |
-  xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
+  xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main') && printf '{}\0'" |
   sed -z 's/\.dll$/.so/' |
   xargs -0 -n1 ln -sf "$yabridge_home/libyabridge.so"
 
@@ -110,7 +110,7 @@ yabridge_home=$HOME/.local/share/yabridge
 plugin_dir="$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"
 
 find -L "$plugin_dir" -type f -iname '*.dll' -print0 |
-  xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main|main_plugin') && printf '{}\0'" |
+  xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main') && printf '{}\0'" |
   sed -z 's/\.dll$/.so/' |
   xargs -0 -n1 cp "$yabridge_home/libyabridge.so"
 ```

@@ -144,9 +144,9 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     }
 
     // VST plugin entry point functions should be called `VSTPluginMain`, but
-    // there are some older deprecated names that legacy plugins may still use
+    // pre-VST2.4 `main` was also a valid name
     VstEntryPoint vst_entry_point = nullptr;
-    for (auto name : {"VSTPluginMain", "main_plugin", "main"}) {
+    for (auto name : {"VSTPluginMain", "main"}) {
         vst_entry_point =
             reinterpret_cast<VstEntryPoint>(reinterpret_cast<size_t>(
                 GetProcAddress(plugin_handle.get(), name)));
