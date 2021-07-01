@@ -1,9 +1,22 @@
 # Meson does not allow mixing native and non native dependencies from
 # subprojects. The only workaround is to only define only the necessary
 # variables there, and to then assemble the dependencies here ourselves.
+
 vst3 = subproject('vst3', version : '3.7.2')
 vst3_compiler_options = vst3.get_variable('compiler_options')
 vst3_include_dir = vst3.get_variable('include_dir')
+
+# We need to do some minor hacking to get the SDK to compile with winegcc. Most
+# notably some attributes are named differently, and the SDK uses 'Windows.h'
+# instead of 'windows.h' like how the file is actually called.
+# message(vst3_include_dir)
+vst3_sdk_base_dir = vst3.get_variable('sdk_base_dir')
+patch_result = run_command('../../../tools/patch-vst3-sdk.sh', vst3_sdk_base_dir)
+if patch_result.returncode() == 0
+  message(patch_result.stdout())
+else
+  error('Error while trying to patch the VST3 SDK:\n' + patch_result.stderr())
+endif
 
 # We'll create a dependency for the plugin SDK for our native VST3 plugin
 vst3_base_native = static_library(
@@ -32,19 +45,7 @@ vst3_sdk_native = static_library(
   override_options : ['warning_level=0'],
 )
 
-# And another dependency for the host SDK for our Wine host applications
-# We need to do some minor hacking to get this to compile with winegcc. Most
-# notably some attributes are named differently, and the SDK uses 'Windows.h'
-# instead of 'windows.h' like how the file is actually called.
-# message(vst3_include_dir)
-vst3_sdk_base_dir = vst3.get_variable('sdk_base_dir')
-patch_result = run_command('../../../tools/patch-vst3-sdk.sh', vst3_sdk_base_dir)
-if patch_result.returncode() == 0
-  message(patch_result.stdout())
-else
-  error('Error while trying to patch the VST3 SDK:\n' + patch_result.stderr())
-endif
-
+# And two more dependencies for the host SDK for our Wine host applications
 vst3_base_wine_64bit = static_library(
   'vst3_base_wine_64bit',
   vst3.get_variable('base_sources'),
