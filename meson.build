@@ -11,15 +11,15 @@ project(
   ],
 )
 
-# Meson does not let us set a default cross compiler, which makes sense, but it
-# also means that it's easy to forget. This will cause the setup process to
-# abort if no cross compiler has been set up.
-winelib_check = '''#ifndef __WINE__
-#error 1
-#endif'''
-if not meson.get_compiler('cpp').compiles(winelib_check)
-  error('You need to set up a cross compiler, check the README for compilation instructions.')
-endif
+#
+# Build options
+#
+
+with_32bit_libraries = get_option('build.cpp_args').contains('-m32')
+with_bitbridge = get_option('with-bitbridge')
+with_static_boost = get_option('with-static-boost')
+with_winedbg = get_option('with-winedbg')
+with_vst3 = get_option('with-vst3')
 
 #
 # Compiler flags
@@ -73,9 +73,39 @@ wine_compiler_options = [
 wine_32bit_compiler_options = wine_compiler_options + ['-m32', '-malign-double']
 wine_64bit_compiler_options = wine_compiler_options + ['-m64']
 
-# Enable addition assertions on the STL containers during debug builds
+# Enable addition assertions on the STL containers during debug builds. Meson
+# has a `cpp_debugstl` option, but it's nicer having this automatically tied to
+# debug builds.
 if get_option('buildtype') == 'debug'
   compiler_options += ['-D_GLIBCXX_DEBUG']
+endif
+
+if with_bitbridge
+  compiler_options += '-DWITH_BITBRIDGE'
+endif
+
+# This provides an easy way to start the Wine VST host using winedbg since it
+# can be quite a pain to set up
+if with_winedbg
+  compiler_options += '-DWITH_WINEDBG'
+endif
+
+if with_vst3
+  compiler_options += '-DWITH_VST3'
+endif
+
+#
+# Wine checks
+#
+
+# Meson does not let us set a default cross compiler, which makes sense, but it
+# also means that it's easy to forget. This will cause the setup process to
+# abort if no cross compiler has been set up.
+winelib_check = '''#ifndef __WINE__
+#error 1
+#endif'''
+if not meson.get_compiler('cpp').compiles(winelib_check)
+  error('You need to set up a cross compiler, check the README for compilation instructions.')
 endif
 
 # Wine versions after Wine 5.6 and before 6.0 require a `__cdecl` calling
@@ -101,30 +131,6 @@ else
   warning('Unable to determine the current Wine version')
 endif
 
-#
-# Build options
-#
-
-with_32bit_libraries = get_option('build.cpp_args').contains('-m32')
-with_bitbridge = get_option('with-bitbridge')
-with_static_boost = get_option('with-static-boost')
-with_winedbg = get_option('with-winedbg')
-with_vst3 = get_option('with-vst3')
-
-if with_bitbridge
-  compiler_options += '-DWITH_BITBRIDGE'
-endif
-
-# This provides an easy way to start the Wine VST host using winedbg since it
-# can be quite a pain to set up
-if with_winedbg
-  compiler_options += '-DWITH_WINEDBG'
-endif
-
-if with_vst3
-  compiler_options += '-DWITH_VST3'
-endif
-
 # Wine versions below 5.7 will segfault in `CoCreateGuid` which gets called
 # during static initialization. I'm not exactly sure why this is happening, but
 # to prevent this from causing more headaches and confusion in the future we
@@ -143,6 +149,11 @@ endif
 # Dependencies
 #
 
+include_dir = include_directories('src/include')
+
+# These dependencies require separate linking flags for the 32-bit and 64-bit
+# versions
+
 # I honestly have no idea what the correct way is to have `dependency()` or
 # `compiler.find_dependency()` search for 32-bit versions of libraries when
 # cross-compiling. Meson also doesn't seem to respect the default linker
@@ -150,19 +161,12 @@ endif
 # to properly do this, please let me know!
 winegcc = meson.get_compiler('cpp', native : false)
 
-# Statically link against Boost.Filesystem, otherwise it would become impossible
-# to distribute a prebuilt version of yabridge
-# HACK: I couldn't get Meson's Boost dependency detection to work with `-m32`,
-#       because no matter what settings I use in machine/cross files it will
-#       keep rejecting the 32-bit libraries when the host system is 64-bit.
-#       Since cross-compiling 32-bit native libraries is not really a supported
-#       use case anyways we'll just brute force it for the time being.
-#
-#       We also don't add any additional library search paths here, so you may
-#       need to manually add your own using something like
-#       `-Dbuild.cpp_link_args='-I/usr/local/lib'`.
-boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
-
+boost_filesystem_64bit_dep = dependency(
+  'boost',
+  version : '>=1.66',
+  modules : ['filesystem'],
+  static : with_static_boost,
+)
 if with_32bit_libraries or with_bitbridge
   boost_filesystem_32bit_dep = declare_dependency(
     dependencies : winegcc.find_library(
@@ -188,24 +192,30 @@ if with_32bit_libraries or with_bitbridge
   )
 endif
 
-boost_filesystem_64bit_dep = dependency(
-  'boost',
-  version : '>=1.66',
-  modules : ['filesystem'],
-  static : with_static_boost,
-)
+xcb_64bit_dep = dependency('xcb')
+if with_32bit_libraries or with_bitbridge
+  xcb_32bit_dep = winegcc.find_library('xcb')
+endif
 
+# These are all headers-only libraries, and thus won't require separate 32-bit
+# and 64-bit versions
+
+# HACK: I couldn't get Meson's Boost dependency detection to work with `-m32`,
+#       because no matter what settings I use in machine/cross files it will
+#       keep rejecting the 32-bit libraries when the host system is 64-bit.
+#       Since cross-compiling 32-bit native libraries is not really a supported
+#       use case anyways we'll just brute force it for the time being.
+#
+#       We also don't add any additional library search paths here, so you may
+#       need to manually add your own using something like
+#       `-Dbuild.cpp_link_args='-I/usr/local/lib'`.
+boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
 # TODO: Meson doesn't have a way to define version ranges, does it? Like
 #       `^>=5.2.0`, `>=5.2.0 && <6.0.0` or `5.2.*`.
 bitsery_dep = dependency('bitsery', version : '>=5.2.0', fallback : ['bitsery', 'bitsery_dep'])
 function2_dep = dependency('function2', version : '>=4.1.0', fallback : ['function2', 'function2_dep'])
 threads_dep = dependency('threads')
 tomlplusplus_dep = dependency('tomlplusplus', version : '>=2.1.0', fallback : ['tomlplusplus', 'tomlplusplus_dep'])
-
-xcb_64bit_dep = dependency('xcb')
-if with_32bit_libraries or with_bitbridge
-  xcb_32bit_dep = winegcc.find_library('xcb')
-endif
 
 dl_dep = declare_dependency(link_args : '-ldl')
 rt_dep = declare_dependency(link_args : '-lrt')
@@ -217,14 +227,12 @@ wine_shell32_dep = declare_dependency(link_args : '-lshell32')
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 wine_uuid_dep = declare_dependency(link_args : '-luuid')
 
-include_dir = include_directories('src/include')
-
 #
 # VST3 SDK
 #
 # Meson does not allow mixing native and non native dependencies from
-# subprojects. The only workaround is to only define the necessary variables
-# there, and to then assemble the dependencies here ourselves.
+# subprojects. The only workaround is to only define only the necessary
+# variables there, and to then assemble the dependencies here ourselves.
 #
 
 if with_vst3
