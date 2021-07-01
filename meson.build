@@ -173,6 +173,15 @@ if is_64bit_system
     static : with_static_boost,
   )
 endif
+# HACK: I couldn't get Meson's Boost dependency detection to work with `-m32`,
+#       because no matter what settings I use in machine/cross files it will
+#       keep rejecting the 32-bit libraries when the host system is 64-bit.
+#       Since cross-compiling 32-bit native libraries is not really a supported
+#       use case anyways we'll just brute force it for the time being.
+#
+#       We also don't add any additional library search paths here, so you may
+#       need to manually add your own using something like
+#       `-Dbuild.cpp_link_args='-I/usr/local/lib'`.
 if with_32bit_libraries or with_bitbridge
   boost_filesystem_32bit_dep = declare_dependency(
     dependencies : winegcc.find_library(
@@ -208,15 +217,6 @@ endif
 # These are all headers-only libraries, and thus won't require separate 32-bit
 # and 64-bit versions
 
-# HACK: I couldn't get Meson's Boost dependency detection to work with `-m32`,
-#       because no matter what settings I use in machine/cross files it will
-#       keep rejecting the 32-bit libraries when the host system is 64-bit.
-#       Since cross-compiling 32-bit native libraries is not really a supported
-#       use case anyways we'll just brute force it for the time being.
-#
-#       We also don't add any additional library search paths here, so you may
-#       need to manually add your own using something like
-#       `-Dbuild.cpp_link_args='-I/usr/local/lib'`.
 boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
 # TODO: Meson doesn't have a way to define version ranges, does it? Like
 #       `^>=5.2.0`, `>=5.2.0 && <6.0.0` or `5.2.*`.
