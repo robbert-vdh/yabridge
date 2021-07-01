@@ -18,6 +18,8 @@
 
 #include <iostream>
 
+#include <boost/container/small_vector.hpp>
+
 using namespace std::literals::chrono_literals;
 
 // A catchable alternative to `assert()`. Normally all of our `assert(!error)`
@@ -25,6 +27,9 @@ using namespace std::literals::chrono_literals;
 // closing the editor. In those case some of our X11 function calls may r turn
 // errors. When this happens we want to be able to catch them in
 // `handle_x11_events()`.
+//
+// Since we use `std::unique_ptr<T>` for all xcb replies, throwing won't result
+// in any memory leaks.
 #define THROW_X11_ERROR(error)                                          \
     do {                                                                \
         if (error) {                                                    \
@@ -92,7 +97,7 @@ const static HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
  * @return A non-empty list containing `starting_at` and all of its ancestor
  * windows `starting_at`.
  */
-std::vector<xcb_window_t> find_ancestor_windows(
+boost::container::small_vector<xcb_window_t, 8> find_ancestor_windows(
     xcb_connection_t& x11_connection,
     xcb_window_t starting_at);
 /**
@@ -242,15 +247,14 @@ Editor::Editor(MainContext& main_context,
     xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(
         x11_connection.get(), true, strlen(active_window_property_name),
         active_window_property_name);
-    xcb_intern_atom_reply_t* atom_reply =
-        xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
+    std::unique_ptr<xcb_intern_atom_reply_t> atom_reply(
+        xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error));
     THROW_X11_ERROR(error);
 
     // In case the atom does not exist or the WM does not support this hint,
     // we'll print a warning and fall back to grabbing focus when the user
     // clicks on the window (which should trigger a `WM_PARENTNOTIFY`).
     active_window_property = atom_reply->atom;
-    free(atom_reply);
     if (!supports_ewmh_active_window()) {
         std::cerr << "WARNING: The current window manager does not support the"
                   << std::endl;
@@ -269,16 +273,14 @@ Editor::Editor(MainContext& main_context,
         atom_cookie = xcb_intern_atom(x11_connection.get(), true,
                                       strlen(x_dnd_aware_property_name),
                                       x_dnd_aware_property_name);
-        atom_reply =
-            xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
+        atom_reply.reset(
+            xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error));
         THROW_X11_ERROR(error);
 
         for (const xcb_window_t& window :
              find_ancestor_windows(*x11_connection, parent_window)) {
             xcb_delete_property(x11_connection.get(), window, atom_reply->atom);
         }
-
-        free(atom_reply);
     }
 
     // When using XEmbed we'll need the atoms for the corresponding properties
@@ -286,12 +288,11 @@ Editor::Editor(MainContext& main_context,
         atom_cookie =
             xcb_intern_atom(x11_connection.get(), true,
                             strlen(xembed_message_name), xembed_message_name);
-        atom_reply =
-            xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error);
+        atom_reply.reset(
+            xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error));
         THROW_X11_ERROR(error);
 
         xcb_xembed_message = atom_reply->atom;
-        free(atom_reply);
     }
 
     // When not using XEmbed, Wine will interpret any local coordinates as
@@ -367,9 +368,9 @@ void Editor::handle_x11_events() const noexcept {
     //       function calls involving it will fail. All functions called from
     //       here should be able to handle that cleanly.
     try {
-        xcb_generic_event_t* generic_event;
-        while ((generic_event = xcb_poll_for_event(x11_connection.get())) !=
-               nullptr) {
+        std::unique_ptr<xcb_generic_event_t> generic_event;
+        while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
+               generic_event != nullptr) {
             const uint8_t event_type =
                 generic_event->response_type & event_type_mask;
             switch (event_type) {
@@ -427,7 +428,7 @@ void Editor::handle_x11_events() const noexcept {
                 case XCB_LEAVE_NOTIFY: {
                     const auto event =
                         reinterpret_cast<xcb_leave_notify_event_t*>(
-                            generic_event);
+                            generic_event.get());
 
                     // This extra check for the `NonlinearVirtual` detail is
                     // important (see
@@ -446,8 +447,6 @@ void Editor::handle_x11_events() const noexcept {
                     }
                 } break;
             }
-
-            free(generic_event);
         }
     } catch (const std::runtime_error& error) {
         std::cerr << error.what() << std::endl;
@@ -493,9 +492,9 @@ void Editor::fix_local_coordinates() const {
     const xcb_translate_coordinates_cookie_t translate_cookie =
         xcb_translate_coordinates(x11_connection.get(), wine_window, root, 0,
                                   0);
-    xcb_translate_coordinates_reply_t* translated_coordinates =
-        xcb_translate_coordinates_reply(x11_connection.get(), translate_cookie,
-                                        &error);
+    const std::unique_ptr<xcb_translate_coordinates_reply_t>
+        translated_coordinates(xcb_translate_coordinates_reply(
+            x11_connection.get(), translate_cookie, &error));
     THROW_X11_ERROR(error);
 
     xcb_configure_notify_event_t translated_event{};
@@ -510,7 +509,6 @@ void Editor::fix_local_coordinates() const {
     translated_event.height = client_area.height;
     translated_event.x = translated_coordinates->dst_x;
     translated_event.y = translated_coordinates->dst_y;
-    free(translated_coordinates);
 
     xcb_send_event(
         x11_connection.get(), false, wine_window,
@@ -525,12 +523,9 @@ void Editor::set_input_focus(bool grab) const {
     xcb_generic_error_t* error;
     const xcb_get_input_focus_cookie_t focus_cookie =
         xcb_get_input_focus(x11_connection.get());
-    xcb_get_input_focus_reply_t* focus_reply =
-        xcb_get_input_focus_reply(x11_connection.get(), focus_cookie, &error);
+    const std::unique_ptr<xcb_get_input_focus_reply_t> focus_reply(
+        xcb_get_input_focus_reply(x11_connection.get(), focus_cookie, &error));
     THROW_X11_ERROR(error);
-
-    const xcb_window_t current_focus = focus_reply->focus;
-    free(focus_reply);
 
     // Calling `set_input_focus(true)` can trigger another `FocusIn` event,
     // which will then once again call `set_input_focus(true)`. To work around
@@ -541,6 +536,7 @@ void Editor::set_input_focus(bool grab) const {
     // focus, when grabbing focus we don't just check whether `current_focus`
     // and `focus_target` are the same window but we'll also allow
     // `current_focus` to be a child of `focus_target`.
+    const xcb_window_t current_focus = focus_reply->focus;
     if (current_focus == focus_target ||
         (grab && is_child_window_or_same(*x11_connection, current_focus,
                                          focus_target))) {
@@ -588,13 +584,12 @@ bool Editor::is_wine_window_active() const {
     const xcb_get_property_cookie_t property_cookie =
         xcb_get_property(x11_connection.get(), false, root_window,
                          active_window_property, XCB_ATOM_WINDOW, 0, 1);
-    xcb_get_property_reply_t* property_reply =
-        xcb_get_property_reply(x11_connection.get(), property_cookie, &error);
+    const std::unique_ptr<xcb_get_property_reply_t> property_reply(
+        xcb_get_property_reply(x11_connection.get(), property_cookie, &error));
     THROW_X11_ERROR(error);
 
-    const xcb_window_t active_window =
-        *static_cast<xcb_window_t*>(xcb_get_property_value(property_reply));
-    free(property_reply);
+    const xcb_window_t active_window = *static_cast<xcb_window_t*>(
+        xcb_get_property_value(property_reply.get()));
 
     return is_child_window_or_same(*x11_connection, wine_window, active_window);
 }
@@ -622,15 +617,14 @@ bool Editor::supports_ewmh_active_window() const {
     const xcb_get_property_cookie_t property_cookie =
         xcb_get_property(x11_connection.get(), false, root_window,
                          active_window_property, XCB_ATOM_WINDOW, 0, 1);
-    xcb_get_property_reply_t* property_reply =
-        xcb_get_property_reply(x11_connection.get(), property_cookie, &error);
+    const std::unique_ptr<xcb_get_property_reply_t> property_reply(
+        xcb_get_property_reply(x11_connection.get(), property_cookie, &error));
     THROW_X11_ERROR(error);
 
-    bool active_window_property_exists =
+    const bool active_window_property_exists =
         property_reply->format != XCB_ATOM_NONE;
-    free(property_reply);
-
     supports_ewmh_active_window_cache = active_window_property_exists;
+
     return active_window_property_exists;
 }
 
@@ -764,63 +758,57 @@ LRESULT CALLBACK window_proc(HWND handle,
     return DefWindowProc(handle, message, wParam, lParam);
 }
 
-std::vector<xcb_window_t> find_ancestor_windows(
+boost::container::small_vector<xcb_window_t, 8> find_ancestor_windows(
     xcb_connection_t& x11_connection,
     xcb_window_t starting_at) {
     xcb_window_t current_window = starting_at;
-    std::vector<xcb_window_t> ancestor_windows{current_window};
-
     xcb_generic_error_t* error;
     xcb_query_tree_cookie_t query_cookie =
         xcb_query_tree(&x11_connection, starting_at);
-    xcb_query_tree_reply_t* query_reply =
-        xcb_query_tree_reply(&x11_connection, query_cookie, &error);
+    std::unique_ptr<xcb_query_tree_reply_t> query_reply(
+        xcb_query_tree_reply(&x11_connection, query_cookie, &error));
     THROW_X11_ERROR(error);
 
-    xcb_window_t root = query_reply->root;
+    const xcb_window_t root = query_reply->root;
+    boost::container::small_vector<xcb_window_t, 8> ancestor_windows{
+        current_window};
     while (query_reply->parent != root) {
         current_window = query_reply->parent;
         ancestor_windows.push_back(current_window);
 
-        free(query_reply);
         query_cookie = xcb_query_tree(&x11_connection, current_window);
-        query_reply =
-            xcb_query_tree_reply(&x11_connection, query_cookie, &error);
+        query_reply.reset(
+            xcb_query_tree_reply(&x11_connection, query_cookie, &error));
         THROW_X11_ERROR(error);
     }
 
-    free(query_reply);
     return ancestor_windows;
 }
 
 bool is_child_window_or_same(xcb_connection_t& x11_connection,
                              xcb_window_t child,
                              xcb_window_t parent) {
-    xcb_window_t current_window = child;
-
     xcb_generic_error_t* error;
     xcb_query_tree_cookie_t query_cookie =
         xcb_query_tree(&x11_connection, child);
-    xcb_query_tree_reply_t* query_reply =
-        xcb_query_tree_reply(&x11_connection, query_cookie, &error);
+    std::unique_ptr<xcb_query_tree_reply_t> query_reply(
+        xcb_query_tree_reply(&x11_connection, query_cookie, &error));
     THROW_X11_ERROR(error);
 
+    xcb_window_t current_window = child;
     while (query_reply->parent != XCB_NONE) {
         if (current_window == parent) {
-            free(query_reply);
             return true;
         }
 
         current_window = query_reply->parent;
 
-        free(query_reply);
         query_cookie = xcb_query_tree(&x11_connection, current_window);
-        query_reply =
-            xcb_query_tree_reply(&x11_connection, query_cookie, &error);
+        query_reply.reset(
+            xcb_query_tree_reply(&x11_connection, query_cookie, &error));
         THROW_X11_ERROR(error);
     }
 
-    free(query_reply);
     return false;
 }
 
@@ -850,14 +838,11 @@ xcb_window_t get_root_window(xcb_connection_t& x11_connection,
     xcb_generic_error_t* error;
     const xcb_query_tree_cookie_t query_cookie =
         xcb_query_tree(&x11_connection, window);
-    xcb_query_tree_reply_t* query_reply =
-        xcb_query_tree_reply(&x11_connection, query_cookie, &error);
+    std::unique_ptr<xcb_query_tree_reply_t> query_reply(
+        xcb_query_tree_reply(&x11_connection, query_cookie, &error));
     THROW_X11_ERROR(error);
 
-    const xcb_window_t root = query_reply->root;
-    free(query_reply);
-
-    return root;
+    return query_reply->root;
 }
 
 xcb_window_t get_x11_handle(HWND win32_handle) noexcept {
