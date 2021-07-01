@@ -6,23 +6,25 @@
 # As with the libraries, we cannot call `executable()` here since we would like
 # to keep all relevant files in the root of the build directory, and Meson
 # doesn't have a way to customize that yet.
-host_64bit_deps = [
-  boost_dep,
-  boost_filesystem_64bit_dep,
-  bitsery_dep,
-  function2_dep,
-  rt_dep,
-  tomlplusplus_dep,
-  wine_ole32_dep,
-  wine_threads_dep,
-  xcb_64bit_dep,
-]
-if with_vst3
-  host_64bit_deps += [
-    vst3_sdk_hosting_wine_64bit_dep,
-    wine_shell32_dep,
-    wine_uuid_dep,
+if is_64bit_system
+  host_64bit_deps = [
+    boost_dep,
+    boost_filesystem_64bit_dep,
+    bitsery_dep,
+    function2_dep,
+    rt_dep,
+    tomlplusplus_dep,
+    wine_ole32_dep,
+    wine_threads_dep,
+    xcb_64bit_dep,
   ]
+  if with_vst3
+    host_64bit_deps += [
+      vst3_sdk_hosting_wine_64bit_dep,
+      wine_shell32_dep,
+      wine_uuid_dep,
+    ]
+  endif
 endif
 
 if with_bitbridge
@@ -146,21 +148,24 @@ group_host_sources = files(
   version_header,
 ]
 
-host_common_64bit = static_library(
-  'host_common_64bit',
-  host_common_sources,
-  native : false,
-  include_directories : include_dir,
-  dependencies : host_64bit_deps,
-  cpp_args : compiler_options + wine_64bit_compiler_options,
-  link_args : ['-m64'],
-)
-host_common_64bit_dep = declare_dependency(
-  link_with : host_common_64bit,
-  include_directories : include_dir,
-  dependencies : host_64bit_deps,
-  compile_args : compiler_options + wine_64bit_compiler_options,
-)
+if is_64bit_system
+  host_common_64bit = static_library(
+    'host_common_64bit',
+    host_common_sources,
+    native : false,
+    include_directories : include_dir,
+    dependencies : host_64bit_deps,
+    cpp_args : compiler_options + wine_64bit_compiler_options,
+    link_args : ['-m64'],
+  )
+  host_common_64bit_dep = declare_dependency(
+    link_with : host_common_64bit,
+    include_directories : include_dir,
+    dependencies : host_64bit_deps,
+    compile_args : compiler_options + wine_64bit_compiler_options,
+  )
+endif
+
 if with_bitbridge
   host_common_32bit = static_library(
     'host_common_32bit',

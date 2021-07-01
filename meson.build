@@ -15,7 +15,11 @@ project(
 # Build options
 #
 
-with_32bit_libraries = get_option('build.cpp_args').contains('-m32')
+# In theory yabridge should compile fine on a 32-bit system, but you will always
+# need to pass `-Dwith-bitbridge=true`. We just make sure that we won't build
+# any 64-bit binaries in that situation.
+is_64bit_system = build_machine.cpu_family() not in ['x86', 'arm']
+with_32bit_libraries = (not is_64bit_system) or get_option('build.cpp_args').contains('-m32')
 with_bitbridge = get_option('with-bitbridge')
 with_static_boost = get_option('with-static-boost')
 with_winedbg = get_option('with-winedbg')
@@ -161,12 +165,14 @@ include_dir = include_directories('src/include')
 # to properly do this, please let me know!
 winegcc = meson.get_compiler('cpp', native : false)
 
-boost_filesystem_64bit_dep = dependency(
-  'boost',
-  version : '>=1.66',
-  modules : ['filesystem'],
-  static : with_static_boost,
-)
+if is_64bit_system
+  boost_filesystem_64bit_dep = dependency(
+    'boost',
+    version : '>=1.66',
+    modules : ['filesystem'],
+    static : with_static_boost,
+  )
+endif
 if with_32bit_libraries or with_bitbridge
   boost_filesystem_32bit_dep = declare_dependency(
     dependencies : winegcc.find_library(
@@ -192,7 +198,9 @@ if with_32bit_libraries or with_bitbridge
   )
 endif
 
-xcb_64bit_dep = dependency('xcb')
+if is_64bit_system
+  xcb_64bit_dep = dependency('xcb')
+endif
 if with_32bit_libraries or with_bitbridge
   xcb_32bit_dep = winegcc.find_library('xcb')
 endif
@@ -300,21 +308,23 @@ if with_vst3
   )
 endif
 
-executable(
-  individual_host_name_64bit,
-  individual_host_sources,
-  native : false,
-  dependencies : host_common_64bit_dep,
-  link_args : ['-m64'],
-)
+if is_64bit_system
+  executable(
+    individual_host_name_64bit,
+    individual_host_sources,
+    native : false,
+    dependencies : host_common_64bit_dep,
+    link_args : ['-m64'],
+  )
 
-executable(
-  group_host_name_64bit,
-  group_host_sources,
-  native : false,
-  dependencies : host_common_64bit_dep,
-  link_args : ['-m64'],
-)
+  executable(
+    group_host_name_64bit,
+    group_host_sources,
+    native : false,
+    dependencies : host_common_64bit_dep,
+    link_args : ['-m64'],
+  )
+endif
 
 if with_bitbridge
   executable(

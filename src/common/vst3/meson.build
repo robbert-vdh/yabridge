@@ -45,32 +45,34 @@ vst3_sdk_native = static_library(
   override_options : ['warning_level=0'],
 )
 
-# And two more dependencies for the host SDK for our Wine host applications
-vst3_base_wine_64bit = static_library(
-  'vst3_base_wine_64bit',
-  vst3.get_variable('base_sources'),
-  native : false,
-  cpp_args : vst3_compiler_options + wine_64bit_compiler_options + [ '-Wno-cpp'],
-  include_directories : vst3_include_dir,
-  override_options : ['warning_level=0'],
-)
-vst3_pluginterfaces_wine_64bit = static_library(
-  'vst3_pluginterfaces_wine_64bit',
-  vst3.get_variable('pluginterfaces_sources'),
-  native : false,
-  cpp_args : vst3_compiler_options + wine_64bit_compiler_options,
-  include_directories : vst3_include_dir,
-  override_options : ['warning_level=0'],
-)
-vst3_sdk_hosting_wine_64bit = static_library(
-  'vst3_sdk_hosting_wine_64bit',
-  vst3.get_variable('sdk_common_sources') + vst3.get_variable('sdk_hosting_sources'),
-  native : false,
-  link_with : [vst3_base_wine_64bit, vst3_pluginterfaces_wine_64bit],
-  cpp_args : vst3_compiler_options + wine_64bit_compiler_options + ['-Wno-multichar'],
-  include_directories : vst3_include_dir,
-  override_options : ['warning_level=0'],
-)
+# We need a separate host SDK dependency for our Wine plugin host applications
+if is_64bit_system
+  vst3_base_wine_64bit = static_library(
+    'vst3_base_wine_64bit',
+    vst3.get_variable('base_sources'),
+    native : false,
+    cpp_args : vst3_compiler_options + wine_64bit_compiler_options + [ '-Wno-cpp'],
+    include_directories : vst3_include_dir,
+    override_options : ['warning_level=0'],
+  )
+  vst3_pluginterfaces_wine_64bit = static_library(
+    'vst3_pluginterfaces_wine_64bit',
+    vst3.get_variable('pluginterfaces_sources'),
+    native : false,
+    cpp_args : vst3_compiler_options + wine_64bit_compiler_options,
+    include_directories : vst3_include_dir,
+    override_options : ['warning_level=0'],
+  )
+  vst3_sdk_hosting_wine_64bit = static_library(
+    'vst3_sdk_hosting_wine_64bit',
+    vst3.get_variable('sdk_common_sources') + vst3.get_variable('sdk_hosting_sources'),
+    native : false,
+    link_with : [vst3_base_wine_64bit, vst3_pluginterfaces_wine_64bit],
+    cpp_args : vst3_compiler_options + wine_64bit_compiler_options + ['-Wno-multichar'],
+    include_directories : vst3_include_dir,
+    override_options : ['warning_level=0'],
+  )
+endif
 
 # And another time for the 32-bit version
 if with_bitbridge
@@ -111,14 +113,16 @@ vst3_sdk_native_dep = declare_dependency(
   compile_args : vst3_compiler_options,
 )
 
-vst3_sdk_hosting_wine_64bit_dep = declare_dependency(
-  link_with : vst3_sdk_hosting_wine_64bit,
-  include_directories : vst3_include_dir,
-  # This does mean that we now have a lot of defines in our code, but the
-  # alternative would be patching every location in the SDK where they include
-  # `windows.h`
-  compile_args : vst3_compiler_options + wine_64bit_compiler_options,
-)
+if is_64bit_system
+  vst3_sdk_hosting_wine_64bit_dep = declare_dependency(
+    link_with : vst3_sdk_hosting_wine_64bit,
+    include_directories : vst3_include_dir,
+    # This does mean that we now have a lot of defines in our code, but the
+    # alternative would be patching every location in the SDK where they include
+    # `windows.h`
+    compile_args : vst3_compiler_options + wine_64bit_compiler_options,
+  )
+endif
 
 if with_bitbridge
   vst3_sdk_hosting_wine_32bit_dep = declare_dependency(

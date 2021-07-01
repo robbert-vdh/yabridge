@@ -22,7 +22,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   can use both 32-bit and 64-bit Windows VST2 and VST3 plugins under 32-bit
   Linux plugin hosts. This should not be necessary in any normal situation since
   Desktop Linux has been 64-bit only for a while now, but it could be useful in
-  some very specific situations.
+  some very specific situations. Building on a real 32-bit system will also
+  work, in which case the 64-bit Wine plugin host applications simply won't be
+  built.
 - Defined the deprecated pre-VST2.4 `main` entry point for VST2 plugins. This
   allows the above mentioned 32-bit version of yabridge to be used in
   **EnergyXT**, allowing you to use both 32-bit and 64-bit Windows VST2 plugins
