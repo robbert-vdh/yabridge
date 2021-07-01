@@ -19,10 +19,11 @@
 #include <future>
 #include <iomanip>
 
-// Generated inside of the build directory
-#include <src/common/config/config.h>
-#include <src/common/config/version.h>
 #include <sys/resource.h>
+
+// Generated inside of the build directory
+#include <config.h>
+#include <version.h>
 
 #include "../../common/configuration.h"
 #include "../../common/utils.h"

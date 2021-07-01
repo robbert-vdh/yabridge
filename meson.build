@@ -235,205 +235,26 @@ if with_vst3
 endif
 
 #
-# Source files
+# Binaries
+#
+# The application consists of a plugin (`libyabridge-{vst2,vst3}.so`) that calls
+# a Winelib application (`yabridge-{host,group}{,-32}.exe`) that can host
+# Windows VST2 and VST3 plugins. More information about the way these two
+# components work together can be found in `docs/architecture.md`.
 #
 
 # Generate header files for configuration variables such as the current git tag
 # and the name of the host binary
 subdir('src/common/config')
 
-vst2_plugin_sources = [
-  'src/common/communication/common.cpp',
-  'src/common/communication/vst2.cpp',
-  'src/common/serialization/vst2.cpp',
-  'src/common/configuration.cpp',
-  'src/common/logging/common.cpp',
-  'src/common/logging/vst2.cpp',
-  'src/common/audio-shm.cpp',
-  'src/common/plugins.cpp',
-  'src/common/utils.cpp',
-  'src/plugin/bridges/vst2.cpp',
-  'src/plugin/host-process.cpp',
-  'src/plugin/utils.cpp',
-  'src/plugin/vst2-plugin.cpp',
-  version_header,
-]
-
-vst3_plugin_sources = [
-  'src/common/communication/common.cpp',
-  'src/common/logging/common.cpp',
-  'src/common/logging/vst3.cpp',
-  'src/common/serialization/vst3/component-handler/component-handler.cpp',
-  'src/common/serialization/vst3/component-handler/component-handler-2.cpp',
-  'src/common/serialization/vst3/component-handler/component-handler-3.cpp',
-  'src/common/serialization/vst3/component-handler/component-handler-bus-activation.cpp',
-  'src/common/serialization/vst3/component-handler/progress.cpp',
-  'src/common/serialization/vst3/component-handler/unit-handler.cpp',
-  'src/common/serialization/vst3/component-handler/unit-handler-2.cpp',
-  'src/common/serialization/vst3/context-menu/context-menu.cpp',
-  'src/common/serialization/vst3/host-context/host-application.cpp',
-  'src/common/serialization/vst3/host-context/plug-interface-support.cpp',
-  'src/common/serialization/vst3/plug-view/parameter-finder.cpp',
-  'src/common/serialization/vst3/plug-view/plug-view.cpp',
-  'src/common/serialization/vst3/plug-view/plug-view-content-scale-support.cpp',
-  'src/common/serialization/vst3/plug-frame/plug-frame.cpp',
-  'src/common/serialization/vst3/plugin/audio-presentation-latency.cpp',
-  'src/common/serialization/vst3/plugin/audio-processor.cpp',
-  'src/common/serialization/vst3/plugin/automation-state.cpp',
-  'src/common/serialization/vst3/plugin/component.cpp',
-  'src/common/serialization/vst3/plugin/connection-point.cpp',
-  'src/common/serialization/vst3/plugin/edit-controller.cpp',
-  'src/common/serialization/vst3/plugin/edit-controller-2.cpp',
-  'src/common/serialization/vst3/plugin/edit-controller-host-editing.cpp',
-  'src/common/serialization/vst3/plugin/info-listener.cpp',
-  'src/common/serialization/vst3/plugin/keyswitch-controller.cpp',
-  'src/common/serialization/vst3/plugin/midi-learn.cpp',
-  'src/common/serialization/vst3/plugin/midi-mapping.cpp',
-  'src/common/serialization/vst3/plugin/note-expression-controller.cpp',
-  'src/common/serialization/vst3/plugin/note-expression-physical-ui-mapping.cpp',
-  'src/common/serialization/vst3/plugin/parameter-function-name.cpp',
-  'src/common/serialization/vst3/plugin/plugin-base.cpp',
-  'src/common/serialization/vst3/plugin/prefetchable-support.cpp',
-  'src/common/serialization/vst3/plugin/process-context-requirements.cpp',
-  'src/common/serialization/vst3/plugin/program-list-data.cpp',
-  'src/common/serialization/vst3/plugin/unit-data.cpp',
-  'src/common/serialization/vst3/plugin/unit-info.cpp',
-  'src/common/serialization/vst3/plugin/xml-representation-controller.cpp',
-  'src/common/serialization/vst3/plugin-factory/plugin-factory.cpp',
-  'src/common/serialization/vst3/attribute-list.cpp',
-  'src/common/serialization/vst3/base.cpp',
-  'src/common/serialization/vst3/bstream.cpp',
-  'src/common/serialization/vst3/component-handler-proxy.cpp',
-  'src/common/serialization/vst3/connection-point-proxy.cpp',
-  'src/common/serialization/vst3/context-menu-proxy.cpp',
-  'src/common/serialization/vst3/context-menu-target.cpp',
-  'src/common/serialization/vst3/event-list.cpp',
-  'src/common/serialization/vst3/host-context-proxy.cpp',
-  'src/common/serialization/vst3/message.cpp',
-  'src/common/serialization/vst3/param-value-queue.cpp',
-  'src/common/serialization/vst3/parameter-changes.cpp',
-  'src/common/serialization/vst3/physical-ui-map-list.cpp',
-  'src/common/serialization/vst3/plug-frame-proxy.cpp',
-  'src/common/serialization/vst3/plug-view-proxy.cpp',
-  'src/common/serialization/vst3/plugin-proxy.cpp',
-  'src/common/serialization/vst3/plugin-factory-proxy.cpp',
-  'src/common/serialization/vst3/process-data.cpp',
-  'src/common/audio-shm.cpp',
-  'src/common/configuration.cpp',
-  'src/common/plugins.cpp',
-  'src/common/utils.cpp',
-  'src/plugin/bridges/vst3.cpp',
-  'src/plugin/bridges/vst3-impls/context-menu-target.cpp',
-  'src/plugin/bridges/vst3-impls/plugin-factory-proxy.cpp',
-  'src/plugin/bridges/vst3-impls/plug-view-proxy.cpp',
-  'src/plugin/bridges/vst3-impls/plugin-proxy.cpp',
-  'src/plugin/host-process.cpp',
-  'src/plugin/utils.cpp',
-  'src/plugin/vst3-plugin.cpp',
-]
-
-host_common_sources = [
-  'src/common/communication/vst2.cpp',
-  'src/common/serialization/vst2.cpp',
-  'src/common/configuration.cpp',
-  'src/common/logging/common.cpp',
-  'src/common/logging/vst2.cpp',
-  'src/common/audio-shm.cpp',
-  'src/common/plugins.cpp',
-  'src/common/utils.cpp',
-  'src/wine-host/bridges/common.cpp',
-  'src/wine-host/bridges/vst2.cpp',
-  'src/wine-host/editor.cpp',
-  'src/wine-host/editor.cpp',
-  'src/wine-host/utils.cpp',
-]
-
-if with_vst3
-  host_common_sources += [
-    'src/common/logging/vst3.cpp',
-    'src/common/serialization/vst3/component-handler/component-handler.cpp',
-    'src/common/serialization/vst3/component-handler/component-handler-2.cpp',
-    'src/common/serialization/vst3/component-handler/component-handler-3.cpp',
-    'src/common/serialization/vst3/component-handler/component-handler-bus-activation.cpp',
-    'src/common/serialization/vst3/component-handler/progress.cpp',
-    'src/common/serialization/vst3/component-handler/unit-handler.cpp',
-    'src/common/serialization/vst3/component-handler/unit-handler-2.cpp',
-    'src/common/serialization/vst3/context-menu/context-menu.cpp',
-    'src/common/serialization/vst3/host-context/host-application.cpp',
-    'src/common/serialization/vst3/host-context/plug-interface-support.cpp',
-    'src/common/serialization/vst3/plug-view/parameter-finder.cpp',
-    'src/common/serialization/vst3/plug-view/plug-view.cpp',
-    'src/common/serialization/vst3/plug-view/plug-view-content-scale-support.cpp',
-    'src/common/serialization/vst3/plug-frame/plug-frame.cpp',
-    'src/common/serialization/vst3/plugin/audio-presentation-latency.cpp',
-    'src/common/serialization/vst3/plugin/audio-processor.cpp',
-    'src/common/serialization/vst3/plugin/automation-state.cpp',
-    'src/common/serialization/vst3/plugin/component.cpp',
-    'src/common/serialization/vst3/plugin/connection-point.cpp',
-    'src/common/serialization/vst3/plugin/edit-controller.cpp',
-    'src/common/serialization/vst3/plugin/edit-controller-2.cpp',
-    'src/common/serialization/vst3/plugin/edit-controller-host-editing.cpp',
-    'src/common/serialization/vst3/plugin/info-listener.cpp',
-    'src/common/serialization/vst3/plugin/keyswitch-controller.cpp',
-    'src/common/serialization/vst3/plugin/midi-learn.cpp',
-    'src/common/serialization/vst3/plugin/midi-mapping.cpp',
-    'src/common/serialization/vst3/plugin/note-expression-controller.cpp',
-    'src/common/serialization/vst3/plugin/note-expression-physical-ui-mapping.cpp',
-    'src/common/serialization/vst3/plugin/parameter-function-name.cpp',
-    'src/common/serialization/vst3/plugin/plugin-base.cpp',
-    'src/common/serialization/vst3/plugin/prefetchable-support.cpp',
-    'src/common/serialization/vst3/plugin/process-context-requirements.cpp',
-    'src/common/serialization/vst3/plugin/program-list-data.cpp',
-    'src/common/serialization/vst3/plugin/unit-data.cpp',
-    'src/common/serialization/vst3/plugin/unit-info.cpp',
-    'src/common/serialization/vst3/plugin/xml-representation-controller.cpp',
-    'src/common/serialization/vst3/plugin-factory/plugin-factory.cpp',
-    'src/common/serialization/vst3/attribute-list.cpp',
-    'src/common/serialization/vst3/base.cpp',
-    'src/common/serialization/vst3/bstream.cpp',
-    'src/common/serialization/vst3/component-handler-proxy.cpp',
-    'src/common/serialization/vst3/connection-point-proxy.cpp',
-    'src/common/serialization/vst3/context-menu-proxy.cpp',
-    'src/common/serialization/vst3/context-menu-target.cpp',
-    'src/common/serialization/vst3/event-list.cpp',
-    'src/common/serialization/vst3/host-context-proxy.cpp',
-    'src/common/serialization/vst3/message.cpp',
-    'src/common/serialization/vst3/param-value-queue.cpp',
-    'src/common/serialization/vst3/parameter-changes.cpp',
-    'src/common/serialization/vst3/physical-ui-map-list.cpp',
-    'src/common/serialization/vst3/plug-frame-proxy.cpp',
-    'src/common/serialization/vst3/plug-view-proxy.cpp',
-    'src/common/serialization/vst3/plugin-proxy.cpp',
-    'src/common/serialization/vst3/plugin-factory-proxy.cpp',
-    'src/common/serialization/vst3/process-data.cpp',
-    'src/wine-host/bridges/vst3-impls/component-handler-proxy.cpp',
-    'src/wine-host/bridges/vst3-impls/connection-point-proxy.cpp',
-    'src/wine-host/bridges/vst3-impls/context-menu-proxy.cpp',
-    'src/wine-host/bridges/vst3-impls/host-context-proxy.cpp',
-    'src/wine-host/bridges/vst3-impls/plug-frame-proxy.cpp',
-    'src/wine-host/bridges/vst3.cpp',
-  ]
-endif
-
-# We'll link these against a static library `host_common_sources`
-individual_host_sources = [
-  'src/wine-host/individual-host.cpp',
-  version_header,
-]
-group_host_sources = [
-  'src/wine-host/bridges/group.cpp',
-  'src/wine-host/group-host.cpp',
-  version_header,
-]
-
-#
-# Libraries
-#
-# The application consists of a plugin (`libyabridge-{vst2,vst3}.so`) that calls
-# a Winelib application (`yabridge-{host,group}{,-32}.exe`) that can host
-# Windows VST plugins. More information about the way these two components work
-# together can be found in `docs/architecture.md`.
-#
+# These only contain the definitions for sources and dependencies. It would be
+# nice to define the libraries and executables inside of these meson.build
+# files, but that will also scatter the build artifacts around in the `build/`
+# directory and it's much more convenient having all of the important files
+# directory under `build/`.
+# https://github.com/mesonbuild/meson/pull/4037
+subdir('src/plugin')
+subdir('src/wine-host')
 
 shared_library(
   'yabridge-vst2',
@@ -476,84 +297,6 @@ if with_vst3
       vst3_sdk_native_dep,
     ],
     cpp_args : compiler_options,
-  )
-endif
-
-#
-# Hosts
-#
-
-host_64bit_deps = [
-  boost_dep,
-  boost_filesystem_64bit_dep,
-  bitsery_dep,
-  function2_dep,
-  rt_dep,
-  tomlplusplus_dep,
-  wine_ole32_dep,
-  wine_threads_dep,
-  xcb_64bit_dep,
-]
-if with_vst3
-  host_64bit_deps += [
-    vst3_sdk_hosting_wine_64bit_dep,
-    wine_shell32_dep,
-    wine_uuid_dep,
-  ]
-endif
-
-host_common_64bit = static_library(
-  'host_common_64bit',
-  host_common_sources,
-  native : false,
-  include_directories : include_dir,
-  dependencies : host_64bit_deps,
-  cpp_args : compiler_options + wine_64bit_compiler_options,
-  link_args : ['-m64'],
-)
-host_common_64bit_dep = declare_dependency(
-  link_with : host_common_64bit,
-  include_directories : include_dir,
-  dependencies : host_64bit_deps,
-  compile_args : compiler_options + wine_64bit_compiler_options,
-)
-
-if with_bitbridge
-  message('Bitbridge enabled, configuring a 32-bit host application')
-
-  host_32bit_deps = [
-    boost_dep,
-    boost_filesystem_32bit_dep,
-    bitsery_dep,
-    function2_dep,
-    rt_dep,
-    tomlplusplus_dep,
-    wine_threads_dep,
-    xcb_32bit_dep,
-  ]
-  if with_vst3
-    host_32bit_deps += [
-      vst3_sdk_hosting_wine_32bit_dep,
-      wine_ole32_dep,
-      wine_shell32_dep,
-      wine_uuid_dep,
-    ]
-  endif
-
-  host_common_32bit = static_library(
-    'host_common_32bit',
-    host_common_sources,
-    native : false,
-    include_directories : include_dir,
-    dependencies : host_32bit_deps,
-    cpp_args : compiler_options + wine_32bit_compiler_options,
-    link_args : ['-m32'],
-  )
-  host_common_32bit_dep = declare_dependency(
-    link_with : host_common_32bit,
-    include_directories : include_dir,
-    dependencies : host_32bit_deps,
-    compile_args : compiler_options + wine_32bit_compiler_options,
   )
 endif
 

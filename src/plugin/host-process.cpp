@@ -20,7 +20,7 @@
 #include <boost/process/env.hpp>
 #include <boost/process/start_dir.hpp>
 
-#include "src/common/utils.h"
+#include "../common/utils.h"
 
 namespace bp = boost::process;
 namespace fs = boost::filesystem;

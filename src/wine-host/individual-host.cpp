@@ -18,8 +18,8 @@
 #include <thread>
 
 // Generated inside of the build directory
-#include <src/common/config/config.h>
-#include <src/common/config/version.h>
+#include <config.h>
+#include <version.h>
 
 #include "../common/utils.h"
 #include "bridges/vst2.h"

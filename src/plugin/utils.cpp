@@ -30,7 +30,7 @@
 #include <boost/process/env.hpp>
 
 // Generated inside of the build directory
-#include <src/common/config/config.h>
+#include <config.h>
 
 #include "../common/configuration.h"
 #include "../common/utils.h"

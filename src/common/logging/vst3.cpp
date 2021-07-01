@@ -20,7 +20,7 @@
 
 #include <public.sdk/source/vst/utility/stringconvert.h>
 
-#include "src/common/serialization/vst3.h"
+#include "../serialization/vst3.h"
 
 /**
  * Format a `YaBStream` object as a string so we don't have to repeat this

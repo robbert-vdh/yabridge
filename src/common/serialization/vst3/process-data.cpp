@@ -16,7 +16,7 @@
 
 #include "process-data.h"
 
-#include "src/common/utils.h"
+#include "../../utils.h"
 
 YaProcessData::YaProcessData() noexcept
     // This response object acts as an optimization. It stores pointers to the
