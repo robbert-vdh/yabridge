@@ -43,16 +43,16 @@ while also staying easy to debug and maintain.
 Yabridge has been tested under the following hosts using Wine Staging
 6.4[\*](#downgrading-wine):
 
-| Host                            | VST2               | VST3                                                                           |
-| ------------------------------- | ------------------ | ------------------------------------------------------------------------------ |
-| Bitwig Studio 3.3.10/4.0 beta 2 | :heavy_check_mark: | :heavy_check_mark:                                                             |
-| REAPER 6.29                     | :heavy_check_mark: | :heavy_check_mark:                                                             |
-| Carla 2.3                       | :heavy_check_mark: | :heavy_check_mark:                                                             |
-| Qtractor 0.9.21                 | :heavy_check_mark: | :heavy_check_mark:                                                             |
-| Renoise 3.3.2                   | :heavy_check_mark: | :heavy_check_mark:                                                             |
-| Waveform 11.5.17                | :heavy_check_mark: | :heavy_check_mark:                                                             |
-| Ardour 6.7                      | :heavy_check_mark: | :warning: Ardour does not support plugins with multiple input or output busses |
-| Mixbus 7.0.140                  | :heavy_check_mark: | :warning: Mixbus does not support plugins with multiple input or output busses |
+| Host                            | VST2               | VST3               |
+| ------------------------------- | ------------------ | ------------------ |
+| Bitwig Studio 3.3.11/4.0 beta 6 | :heavy_check_mark: | :heavy_check_mark: |
+| REAPER 6.29                     | :heavy_check_mark: | :heavy_check_mark: |
+| Carla 2.3                       | :heavy_check_mark: | :heavy_check_mark: |
+| Qtractor 0.9.21                 | :heavy_check_mark: | :heavy_check_mark: |
+| Renoise 3.3.2                   | :heavy_check_mark: | :heavy_check_mark: |
+| Waveform 11.5.17                | :heavy_check_mark: | :heavy_check_mark: |
+| Ardour 6.8                      | :heavy_check_mark: | :heavy_check_mark: |
+| Mixbus 7.0.140                  | :heavy_check_mark: | :heavy_check_mark: |
 
 Please let me know if there are any issues with other hosts.
 
