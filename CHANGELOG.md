@@ -96,6 +96,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   makes it easy to switch from the 64-bit version of a plugin to the 32-bit
   version, or from a 64-bit version of yabridge to the 32-bit version. I don't
   know why you would want to do either of those things, but now you can!
+- If pruning causes a directory to be empty, then the empty directory will be
+  removed. This avoids having your plugin directories littered with empty
+  directories.
 - Copies of `libyabridge-vst2.so` and `libyabridge-vst3.so` are now reflinked
   when supported by the file system. This speeds up the file coyping process
   while also reducing the amount of disk space used for yabridge when using

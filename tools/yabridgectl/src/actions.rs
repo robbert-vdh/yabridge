@@ -451,17 +451,25 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
             );
         }
 
-        // TODO: Prune empty subdirectories
         for file in orphan_files {
             println!("- {}", file.path().display());
             if options.prune {
-                match file {
+                match &file {
                     NativeFile::Regular(path) | NativeFile::Symlink(path) => {
                         utils::remove_file(path)?;
                     }
                     NativeFile::Directory(path) => {
                         utils::remove_dir_all(path)?;
                     }
+                }
+
+                // If the directory `file` was in is now empty, then we'll also recursively prune
+                // the empty subdirectory
+                let mut parent_dir = file.path().parent();
+                while let Some(dir) =
+                    parent_dir.and_then(|dir| fs::remove_dir(dir).ok().map(|_| dir))
+                {
+                    parent_dir = dir.parent();
                 }
             }
         }
