@@ -74,13 +74,13 @@ Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
 Yabridge requires a recent version of Wine (Staging). Users of Debian, Ubuntu,
 Linux Mint and Pop!\_OS should install Wine Staging from the [WineHQ
 repositories](https://wiki.winehq.org/Download) as the versions of Wine provided
-by those distro's repositories will likely be too old to be used with yabridge.
+by those distro's repositories may be too old to be used with yabridge.
 
-At the moment it's recommended to stick with Wine Staging 6.4 since newer
-versions have regressions that tend to cause many popular plugins to crash
-during shutdown, downloads in Native Access to fail, and Wine processes to not
-shut down properly. See [below](#downgrading-wine) for instructions on
-downgrading to Wine Staging 6.4.
+At the moment it can be a good idea to stick with Wine Staging 6.4 as more
+recent versions contain regressions that may cause crashes with certain plugins,
+downloads in Native Access to fail, and Wine processes to not shut down
+properly. See [below](#downgrading-wine) for instructions on downgrading to Wine
+Staging 6.4.
 
 For a general overview on how to use Wine to install Windows applications, check
 out Wine's [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
