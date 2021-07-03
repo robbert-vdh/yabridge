@@ -18,14 +18,14 @@
 
 use anyhow::{Context, Result};
 use colored::Colorize;
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 use crate::config::{yabridge_vst3_home, Config, InstallationMethod, YabridgeFiles};
-use crate::files::{self, LibArchitecture, NativeFile, Plugin, Vst2Plugin};
-use crate::utils;
+use crate::files::{self, NativeFile, Plugin, Vst2Plugin};
+use crate::utils::{self, get_file_type};
 use crate::utils::{verify_path_setup, verify_wine_setup};
 
 pub mod blacklist;
@@ -226,23 +226,28 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         .context("Failure while searching for plugins")?;
 
     // Keep track of some global statistics
-    // The number of plugins we set up yabridge for
-    let mut num_installed = 0;
-    // The number of plugins we create a (new) copy of `libyabridge-{vst2,vst3}.so` for
-    let mut num_new = 0;
+    // The plugin files we installed. This tracks copies of/symlinks to `libabyrdge-*.so` managed.
+    // by yabridgectl. This could be optimized a bit so we wouldn't have to track everything, but
+    // this makes everything much easier since we'll have to deal with things like a plugin
+    // directory A containing a symlink to plugin directory B, as well as VST3 plugisn that come in
+    // both x86 and x86_64 flavours.
+    let mut managed_plugins: HashSet<PathBuf> = HashSet::new();
+    // The plugins we created a new copy of `libyabridge-{vst2,vst3}.so` for. We don't touch these
+    // files if they're already up to date to prevent hosts from unnecessarily rescanning the
+    // plugins.
+    let mut new_plugins: HashSet<PathBuf> = HashSet::new();
     // The files we skipped during the scan because they turned out to not be plugins
     let mut skipped_dll_files: Vec<PathBuf> = Vec::new();
     // `.so` files and unused VST3 modules we found during scanning that didn't have a corresponding
     // copy or symlink of `libyabridge-vst2.so`
     let mut orphan_files: Vec<NativeFile> = Vec::new();
-    // All the VST3 modules we have set up yabridge for. We need this to detect leftover VST3
-    // modules in `~/.vst3/yabridge`. The value is a set of all Windows architectures supported by
-    // the plugin, and a boolean indicating whether we updated the copy of `libyabridge-vst3.so` or
-    // not. This is necessary for keepign track of how many plugins we installed.
-    let mut yabridge_vst3_bundles: BTreeMap<PathBuf, (bool, BTreeSet<LibArchitecture>)> =
-        BTreeMap::new();
+    // Since VST3 bundles contain multiple files from multiple sources (native library files from
+    // yabridge, and symlinks to Windows VST3 modules or bundles), cleaning up orphan VST3 files is
+    // a bit more complicated. We want to clean both `.vst3` bundles that weren't used by anything
+    // during the syncing process, so we'll keep track of which VST3 files we touched per-bundle. We
+    // can then at the end remove all unkonwn bundles, and all unkonwn files within a bundle.
+    let mut known_vst3_files: HashMap<PathBuf, HashSet<PathBuf>> = HashMap::new();
     for (path, search_results) in results {
-        num_installed += search_results.plugins.len();
         orphan_files.extend(search_results.vst2_orphans().into_iter().cloned());
         skipped_dll_files.extend(search_results.skipped_files);
 
@@ -270,8 +275,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         Some(libyabridge_vst2_hash),
                         &target_path,
                     )? {
-                        num_new += 1;
+                        new_plugins.insert(target_path.clone());
                     }
+                    managed_plugins.insert(target_path);
 
                     plugin_path.clone()
                 }
@@ -283,14 +289,17 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         continue;
                     }
 
-                    // 32-bit and 64-bit versions of the plugin cna live inside of the same
-                    // bundle), and show a warning if we come across any duplicates.
                     let target_bundle_home = module.target_bundle_home();
-                    let (updated_libyabridge, already_installed_architectures) =
-                        yabridge_vst3_bundles
-                            .entry(target_bundle_home.clone())
-                            .or_insert_with(|| (false, BTreeSet::new()));
-                    if !already_installed_architectures.insert(module.architecture) {
+                    let target_native_module_path = module.target_native_module_path(Some(&files));
+                    let target_windows_module_path = module.target_windows_module_path();
+
+                    // 32-bit and 64-bit versions of the plugin can live inside of the same bundle),
+                    // but it's not possible to use the exact same plugin from multiple Wine
+                    // prefixes at the same time so we'll warn when that happens
+                    let managed_vst3_bundle_files = known_vst3_files
+                        .entry(target_bundle_home.clone())
+                        .or_insert_with(HashSet::new);
+                    if managed_vst3_bundle_files.contains(&target_windows_module_path) {
                         eprintln!(
                             "{}",
                             utils::wrap(&format!(
@@ -306,64 +315,50 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         continue;
                     }
 
-                    // FIXME: We should be more specific in this process and only remove the
-                    //        unwanted directories from `Contents`, because this will force rescans
-                    // // NOTE: We need to make sure the VST3 bundle is completely empty before setting
-                    // //       it up. Otherwise you would it would contain orphan plugin files after
-                    // //       uninstalling the 32-bit version of a VST3 plugin while the 64-bit
-                    // //       version is still installed, or when switching between the 32-bit and
-                    // //       the 64-bit versions of yabridge
-                    // if !*updated_libyabridge && target_bundle_home.exists() {
-                    //     utils::remove_dir_all(target_bundle_home)
-                    //         .context("Could not clean up old VST3 bundle")?;
-                    // }
-
                     // We're building a merged VST3 bundle containing both a copy or symlink to
                     // `libyabridge-vst3.so` and the Windows VST3 plugin. The path to this native
                     // module will depend on whether `libyabridge-vst3.so` is a 32-bit or a 64-bit
                     // library file.
-                    let native_module_path = module.target_native_module_path(Some(&files));
-                    utils::create_dir_all(native_module_path.parent().unwrap())?;
+                    utils::create_dir_all(target_native_module_path.parent().unwrap())?;
                     if install_file(
                         options.force,
                         config.method,
                         &files.libyabridge_vst3.as_ref().unwrap().0,
                         libyabridge_vst3_hash,
-                        &native_module_path,
-                    )? || *updated_libyabridge
-                    {
-                        // This is sadly a bit more complicated than what I would like, but the 'new
-                        // or updated plugins' count should also be updated correctly when we're
-                        // setting up 32-bit and a 64-bit Windows VST3 plugin inside of a single
-                        // bundle. So if we're counting one, we should count the other as well.
-                        num_new += 1;
-                        *updated_libyabridge = true;
+                        &target_native_module_path,
+                    )? {
+                        new_plugins.insert(target_native_module_path.clone());
                     }
+                    managed_plugins.insert(target_native_module_path.clone());
+                    managed_vst3_bundle_files.insert(target_native_module_path);
 
                     // We'll then symlink the Windows VST3 module to that bundle to create a merged
                     // bundle: https://developer.steinberg.help/display/VST/Plug-in+Format+Structure#PluginFormatStructure-MergedBundle
-                    let windows_module_path = module.target_windows_module_path();
-                    utils::create_dir_all(windows_module_path.parent().unwrap())?;
+                    utils::create_dir_all(target_windows_module_path.parent().unwrap())?;
                     install_file(
                         true,
                         InstallationMethod::Symlink,
                         &module.original_module_path(),
                         None,
-                        &windows_module_path,
+                        &target_windows_module_path,
                     )?;
+                    managed_vst3_bundle_files.insert(target_windows_module_path);
 
                     // If `module` is a bundle, then it may contain a `Resources` directory with
                     // screenshots and documentation
                     // TODO: Also symlink presets, but this is a bit more involved. See
                     //       https://developer.steinberg.help/display/VST/Preset+Locations
                     if let Some(original_resources_dir) = module.original_resources_dir() {
+                        let target_resources_dir = module.target_resources_dir();
+
                         install_file(
                             false,
                             InstallationMethod::Symlink,
                             &original_resources_dir,
                             None,
-                            &module.target_resources_dir(),
+                            &target_resources_dir,
                         )?;
+                        managed_vst3_bundle_files.insert(target_resources_dir);
                     }
 
                     module.original_path().to_path_buf()
@@ -396,28 +391,48 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         println!();
     }
 
+    // We want to remove both unmanaged VST3 bundles in `~/.vst3/yabridge` as well as
+    // unmanged files within managed bundles. That's why we'll immediately filter out
+    // kown files within VST3 bundles.
     // TODO: Move this elsewhere
-    // TODO: This can leave behind empty directories if we remove a subdirectory
-    orphan_files.extend(
-        WalkDir::new(yabridge_vst3_home())
-            .follow_links(true)
-            .same_file_system(true)
-            .into_iter()
-            .filter_entry(|entry| entry.file_type().is_dir())
-            .filter_map(|e| e.ok())
-            .filter(|entry| {
-                // Add all directories in `~/.vst3/yabridge` to `orphan_files` if they are not a
-                // VST3 module we just created. We'll ignore symlinks and regular files since those
-                // are always user created.
-                let extension = entry
-                    .path()
-                    .extension()
-                    .and_then(|extension| extension.to_str());
-
-                extension == Some("vst3") && !yabridge_vst3_bundles.contains_key(entry.path())
-            })
-            .map(|entry| NativeFile::Directory(entry.path().to_owned())),
-    );
+    let installed_vst3_bundles = WalkDir::new(yabridge_vst3_home())
+        .follow_links(true)
+        .same_file_system(true)
+        .into_iter()
+        .filter_entry(|entry| entry.file_type().is_dir())
+        .filter_map(|e| e.ok())
+        .filter(|entry| {
+            entry
+                .path()
+                .extension()
+                .and_then(|extension| extension.to_str())
+                == Some("vst3")
+        });
+    for bundle in installed_vst3_bundles {
+        match known_vst3_files.get(bundle.path()) {
+            None => orphan_files.push(NativeFile::Directory(bundle.path().to_owned())),
+            Some(managed_vst3_bundle_files) => {
+                // Find orphan files and symlinks within this bundle. We need this to be able to
+                // switch between 32-bit and 64-bit versions of both yabridge and the Windows plugin
+                orphan_files.extend(
+                    WalkDir::new(bundle.path())
+                        .follow_links(false)
+                        .into_iter()
+                        .filter_map(|e| e.ok())
+                        .filter_map(|entry| {
+                            let managed_file = managed_vst3_bundle_files.contains(entry.path());
+                            match get_file_type(entry.path().to_owned()).unwrap() {
+                                // Don't remove directories, since we're not tracking the
+                                // directories within the bundle
+                                NativeFile::Directory(_) => None,
+                                unknown_file if !managed_file => Some(unknown_file),
+                                _ => None,
+                            }
+                        }),
+                );
+            }
+        }
+    }
 
     // Always warn about leftover files since those might cause warnings or errors when a VST host
     // tries to load them
@@ -436,6 +451,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
             );
         }
 
+        // TODO: Prune empty subdirectories
         for file in orphan_files {
             println!("- {}", file.path().display());
             if options.prune {
@@ -455,9 +471,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
 
     println!(
         "Finished setting up {} plugins using {} ({} new), skipped {} non-plugin .dll files",
-        num_installed,
+        managed_plugins.len(),
         config.method.plural_name(),
-        num_new,
+        new_plugins.len(),
         num_skipped_files
     );
 
