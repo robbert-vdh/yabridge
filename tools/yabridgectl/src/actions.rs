@@ -306,15 +306,17 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         continue;
                     }
 
-                    // NOTE: We need to make sure the VST3 bundle is completely empty before setting
-                    //       it up. Otherwise you would it would contain orphan plugin files after
-                    //       uninstalling the 32-bit version of a VST3 plugin while the 64-bit
-                    //       version is still installed, or when switching between the 32-bit and
-                    //       the 64-bit versions of yabridge
-                    if !*updated_libyabridge && target_bundle_home.exists() {
-                        utils::remove_dir_all(target_bundle_home)
-                            .context("Could not clean up old VST3 bundle")?;
-                    }
+                    // FIXME: We should be more specific in this process and only remove the
+                    //        unwanted directories from `Contents`, because this will force rescans
+                    // // NOTE: We need to make sure the VST3 bundle is completely empty before setting
+                    // //       it up. Otherwise you would it would contain orphan plugin files after
+                    // //       uninstalling the 32-bit version of a VST3 plugin while the 64-bit
+                    // //       version is still installed, or when switching between the 32-bit and
+                    // //       the 64-bit versions of yabridge
+                    // if !*updated_libyabridge && target_bundle_home.exists() {
+                    //     utils::remove_dir_all(target_bundle_home)
+                    //         .context("Could not clean up old VST3 bundle")?;
+                    // }
 
                     // We're building a merged VST3 bundle containing both a copy or symlink to
                     // `libyabridge-vst3.so` and the Windows VST3 plugin. The path to this native
