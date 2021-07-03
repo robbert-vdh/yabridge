@@ -432,7 +432,7 @@ bool send_notification(const std::string& title,
 
     try {
         return bp::system(notify_send_path, "--urgency=normal",
-                          "--expire-time=30000", "--app-name=yabridge", title,
+                          "--expire-time=15000", "--app-name=yabridge", title,
                           formatted_body.str(),
                           bp::posix::use_vfork) == EXIT_SUCCESS;
     } catch (const boost::process::process_error&) {
