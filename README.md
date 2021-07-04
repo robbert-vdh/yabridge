@@ -40,8 +40,7 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging
-6.4[\*](#downgrading-wine):
+Yabridge has been tested under the following hosts using Wine Staging 6.12:
 
 | Host                            | VST2               | VST3               |
 | ------------------------------- | ------------------ | ------------------ |
@@ -71,16 +70,10 @@ Manjaro ([yabridge](https://aur.archlinux.org/packages/yabridge/),
 
 ### Preliminaries
 
-Yabridge requires a recent version of Wine (Staging). Users of Debian, Ubuntu,
-Linux Mint and Pop!\_OS should install Wine Staging from the [WineHQ
+Yabridge requires a recent-ish version of Wine (Staging). Users of Debian,
+Ubuntu, Linux Mint and Pop!\_OS should install Wine Staging from the [WineHQ
 repositories](https://wiki.winehq.org/Download) as the versions of Wine provided
 by those distro's repositories may be too old to be used with yabridge.
-
-At the moment it can be a good idea to stick with Wine Staging 6.4 as more
-recent versions contain regressions that may cause crashes with certain plugins,
-downloads in Native Access to fail, and Wine processes to not shut down
-properly. See [below](#downgrading-wine) for instructions on downgrading to Wine
-Staging 6.4.
 
 For a general overview on how to use Wine to install Windows applications, check
 out Wine's [user guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
@@ -193,9 +186,9 @@ to override the Wine prefix for _all instances_ of yabridge.
 
 ### Downgrading Wine
 
-There have been some regressions in Wine since Wine 6.4. If you run into
-software or a plugin that does not work correctly with the current version of
-Wine Staging, then you may want to try downgrading to an earlier version of
+There have been a couple of small regressions in Wine after Wine 6.4. If you run
+into software or a plugin that does not work correctly with the current version
+of Wine Staging, then you may want to try downgrading to an earlier version of
 Wine. This can be done as follows:
 
 - On Debian, Ubuntu, Linux Mint and other apt-based distros, you can use the
