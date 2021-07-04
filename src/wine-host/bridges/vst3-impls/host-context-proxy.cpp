@@ -32,8 +32,6 @@ Vst3HostContextProxyImpl::Vst3HostContextProxyImpl(
 tresult PLUGIN_API
 Vst3HostContextProxyImpl::queryInterface(const Steinberg::TUID _iid,
                                          void** obj) {
-    // I don't think it's expected of a host to implement multiple interfaces on
-    // this object, so if we do get a call here it's important that it's logged
     const tresult result = Vst3HostContextProxy::queryInterface(_iid, obj);
     bridge.logger.log_query_interface("In FUnknown::queryInterface()", result,
                                       Steinberg::FUID::fromTUID(_iid));
