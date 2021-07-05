@@ -61,8 +61,6 @@ struct Vst3PlugViewInterfaces {
  * `IPluginBase::initialize()`.
  */
 struct Vst3PluginInstance {
-    Vst3PluginInstance() noexcept;
-
     Vst3PluginInstance(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
     /**
