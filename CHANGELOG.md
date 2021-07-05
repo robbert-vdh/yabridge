@@ -96,8 +96,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   because yabridgectl would try to run the 64-bit `yabridge-host.exe` in that
   prefix.
 - Fixed incorrect new and total plugin counts. These counts are now always
-  correct, even when using multiple versions of the same VST3 plugin or when a
-  plugin directory contains a symlink to another plugin directory.
+  correct, even when using multiple versions of the same VST3 plugin or when
+  multiple plugin directories overlap because parts of the directory were
+  symlinked to another plugin directory.
 - Aside from pruning only unmanaged VST3 bundles in `~/.vst3/yabridge`, yabridge
   will now also prompt you to prune unmanaged files within a VST3 bundle. This
   makes it easy to switch from the 64-bit version of a plugin to the 32-bit

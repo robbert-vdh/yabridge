@@ -176,6 +176,22 @@ pub fn hash_file(file: &Path) -> Result<i64> {
     Ok(hasher.finish() as i64)
 }
 
+/// Resolve symlinks in a path, like the `realpath` coreutil, but don't throw any errors of `path`
+/// does not exist, unlike the `realpath` libc function.
+///
+/// This is used to resolve symlinked directories in the syncing process so the plugin counts are
+/// correct even when one plugin directory contains a symlink to another plugin directory.
+pub fn normalize_path(path: &Path) -> PathBuf {
+    for prefix in path.ancestors() {
+        // If part of `path`s prefix exists, then we'll try to resolve symlinks there
+        if let Ok(normalized_prefix) = fs::canonicalize(&prefix) {
+            return normalized_prefix.join(path.strip_prefix(prefix).unwrap());
+        }
+    }
+
+    path.to_owned()
+}
+
 /// Verify that `yabridge-host.exe` can be found when yabridge is run in a host launched from the
 /// GUI. We do this by launching a login shell, appending `~/.local/share/yabridge` to the login
 /// shell's search path since that's what yabridge also does, and then making the the file can be

@@ -231,6 +231,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // this makes everything much easier since we'll have to deal with things like a plugin
     // directory A containing a symlink to plugin directory B, as well as VST3 plugisn that come in
     // both x86 and x86_64 flavours.
+    // Paths added to this and to the `new_plugins` set below should be normalized with
+    // `utils::normalize_path()` so that the reported numbers are still correct when encountering
+    // overlapping symlinked paths.
     let mut managed_plugins: HashSet<PathBuf> = HashSet::new();
     // The plugins we created a new copy of `libyabridge-{vst2,vst3}.so` for. We don't touch these
     // files if they're already up to date to prevent hosts from unnecessarily rescanning the
@@ -265,6 +268,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     path: plugin_path, ..
                 }) => {
                     let target_path = plugin_path.with_extension("so");
+                    let normalized_target_path = utils::normalize_path(&target_path);
 
                     // Since we skip some files, we'll also keep track of how many new file we've
                     // actually set up
@@ -275,9 +279,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         Some(libyabridge_vst2_hash),
                         &target_path,
                     )? {
-                        new_plugins.insert(target_path.clone());
+                        new_plugins.insert(normalized_target_path.clone());
                     }
-                    managed_plugins.insert(target_path);
+                    managed_plugins.insert(normalized_target_path);
 
                     plugin_path.clone()
                 }
@@ -292,6 +296,8 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     let target_bundle_home = module.target_bundle_home();
                     let target_native_module_path = module.target_native_module_path(Some(&files));
                     let target_windows_module_path = module.target_windows_module_path();
+                    let normalized_native_module_path =
+                        utils::normalize_path(&target_native_module_path);
 
                     // 32-bit and 64-bit versions of the plugin can live inside of the same bundle),
                     // but it's not possible to use the exact same plugin from multiple Wine
@@ -327,9 +333,13 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         libyabridge_vst3_hash,
                         &target_native_module_path,
                     )? {
-                        new_plugins.insert(target_native_module_path.clone());
+                        // We're counting the native `.so` files and not the Windows VST3 plugins
+                        // because even though the 32-bit and 64-bit versions of a plugin are
+                        // technically separate plugins, we can only use one at a time anyways
+                        // because of how these bundles work
+                        new_plugins.insert(normalized_native_module_path.clone());
                     }
-                    managed_plugins.insert(target_native_module_path.clone());
+                    managed_plugins.insert(normalized_native_module_path.clone());
                     managed_vst3_bundle_files.insert(target_native_module_path);
 
                     // We'll then symlink the Windows VST3 module to that bundle to create a merged
