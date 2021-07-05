@@ -63,28 +63,9 @@ class YaPluginBase : public Steinberg::IPluginBase {
 
     inline bool supported() const noexcept { return arguments.supported; }
 
-    /**
-     * Message to pass through a call to `IPluginBase::initialize()` to the Wine
-     * plugin host. We will read what interfaces the passed context object
-     * implements so we can then create a proxy object on the Wine side that the
-     * plugin can use to make callbacks with. The lifetime of this
-     * `Vst3HostContextProxy` object should be bound to the `IComponent` we are
-     * proxying.
-     */
-    struct Initialize {
-        using Response = UniversalTResult;
-
-        native_size_t instance_id;
-
-        Vst3HostContextProxy::ConstructArgs host_context_args;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-            s.object(host_context_args);
-        }
-    };
-
+    // The request and response for `IPluginBase::initialize()` is defined
+    // within `Vst3PluginProxy` because it (thanks to Waves) requires all
+    // supported interfaces to be queried again
     virtual tresult PLUGIN_API initialize(FUnknown* context) override = 0;
 
     /**

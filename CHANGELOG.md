@@ -55,6 +55,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   happened often with _JUCE_ based plugins like Sonic Academy's _Kick 2_ and
   _Anaglyph_. While this is technically a workaround for a bad interaction with
   JUCE and Wine, it should make these plugins a lot more pleasant to use.
+- Fixed **Waves** VST3 plugins not being able to initialize correctly. These
+  plugins would at runtime change their query interface to support more VST3
+  interfaces, including the required edit controller interface. Yabridge now
+  requeries the supported interfaces at a later stage to work around this.
 - Fixed missing transport information for VST2 plugins in **Ardour**, breaking
   host sync and LFOs in certain plugins. This was a regression from yabridge
   3.2.0.

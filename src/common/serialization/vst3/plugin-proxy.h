@@ -232,6 +232,53 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
      */
     inline size_t instance_id() const noexcept { return arguments.instance_id; }
 
+    // These have to be defined here instead of in `YaPluginBase` because we
+    // need to reference the `ConstructArgs`
+
+    /**
+     * The response code and updated supported interface list after a call to
+     * `IPluginBase::initialize()`.
+     *
+     * HACK: This is needed to support Waves VST3 plugins because they only
+     *       expose the edit controller interface after this point
+     */
+    struct InitializeResponse {
+        UniversalTResult result;
+
+        // This is a very ugly hack, but we'll just have to requery all
+        // supported interfaces and replace the original constructargs in the
+        // plugin-side proxy object
+        Vst3PluginProxy::ConstructArgs updated_plugin_interfaces;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.object(updated_plugin_interfaces);
+        }
+    };
+
+    /**
+     * Message to pass through a call to `IPluginBase::initialize()` to the Wine
+     * plugin host. We will read what interfaces the passed context object
+     * implements so we can then create a proxy object on the Wine side that the
+     * plugin can use to make callbacks with. The lifetime of this
+     * `Vst3HostContextProxy` object should be bound to the `IComponent` we are
+     * proxying.
+     */
+    struct Initialize {
+        using Response = InitializeResponse;
+
+        native_size_t instance_id;
+
+        Vst3HostContextProxy::ConstructArgs host_context_args;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.value8b(instance_id);
+            s.object(host_context_args);
+        }
+    };
+
     // We'll define messages for functions that have identical definitions in
     // multiple interfaces below. When the Wine plugin host process handles
     // these it should check which of the interfaces is supported on the host.
@@ -287,7 +334,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
         }
     };
 
-   private:
+   protected:
     ConstructArgs arguments;
 };
 

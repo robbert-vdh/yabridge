@@ -906,8 +906,8 @@ void Vst3Bridge::run() {
                                 .get();
                         }
                     },
-            [&](YaPluginBase::Initialize& request)
-                -> YaPluginBase::Initialize::Response {
+            [&](Vst3PluginProxy::Initialize& request)
+                -> Vst3PluginProxy::Initialize::Response {
                 Vst3PluginInstance& instance =
                     object_instances.at(request.instance_id);
 
@@ -923,24 +923,43 @@ void Vst3Bridge::run() {
                 // `IPlugView::{initialize,terminate}`, we'll run these
                 // functions from the main GUI thread
                 return main_context
-                    .run_in_context([&]() -> tresult {
-                        // The plugin may try to spawn audio worker threads
-                        // during its initialization
-                        set_realtime_priority(true);
-                        // This static cast is required to upcast to `FUnknown*`
-                        const tresult result =
-                            instance.interfaces.plugin_base->initialize(
-                                static_cast<YaHostApplication*>(
-                                    instance.host_context_proxy));
-                        set_realtime_priority(false);
+                    .run_in_context(
+                        [&]() -> Vst3PluginProxy::InitializeResponse {
+                            // The plugin may try to spawn audio worker threads
+                            // during its initialization
+                            set_realtime_priority(true);
+                            // This static cast is required to upcast to
+                            // `FUnknown*`
+                            const tresult result =
+                                instance.interfaces.plugin_base->initialize(
+                                    static_cast<YaHostApplication*>(
+                                        instance.host_context_proxy));
+                            set_realtime_priority(false);
 
-                        // The Win32 message loop will not be run up to this
-                        // point to prevent plugins with partially initialized
-                        // states from misbehaving
-                        instance.is_initialized = true;
+                            // HACK: Waves plugins for some reason only add
+                            //       `IEditController` to their query interface
+                            //       after `IPluginBase::initialize()` has been
+                            //       called, so we need to update the list of
+                            //       supported interfaces at this point. This
+                            //       needs to be done on both the Wine and the
+                            //       plugin since, so we also need to return an
+                            //       updated list of supported interfaces.
+                            instance.interfaces =
+                                Vst3PluginInterfaces(instance.object);
 
-                        return result;
-                    })
+                            Vst3PluginProxy::ConstructArgs updated_interfaces(
+                                instance.object, request.instance_id);
+
+                            // The Win32 message loop will not be run up to this
+                            // point to prevent plugins with partially
+                            // initialized states from misbehaving
+                            instance.is_initialized = true;
+
+                            return Vst3PluginProxy::InitializeResponse{
+                                .result = result,
+                                .updated_plugin_interfaces =
+                                    updated_interfaces};
+                        })
                     .get();
             },
             [&](const YaPluginBase::Terminate& request)

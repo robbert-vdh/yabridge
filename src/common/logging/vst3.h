@@ -67,6 +67,7 @@ class Vst3Logger {
     bool log_request(bool is_host_vst, const Vst3PlugViewProxy::Destruct&);
     bool log_request(bool is_host_vst, const Vst3PluginProxy::Construct&);
     bool log_request(bool is_host_vst, const Vst3PluginProxy::Destruct&);
+    bool log_request(bool is_host_vst, const Vst3PluginProxy::Initialize&);
     bool log_request(bool is_host_vst, const Vst3PluginProxy::SetState&);
     bool log_request(bool is_host_vst, const Vst3PluginProxy::GetState&);
     bool log_request(
@@ -150,7 +151,6 @@ class Vst3Logger {
     bool log_request(
         bool is_host_vst,
         const YaPlugViewContentScaleSupport::SetContentScaleFactor&);
-    bool log_request(bool is_host_vst, const YaPluginBase::Initialize&);
     bool log_request(bool is_host_vst, const YaPluginBase::Terminate&);
     bool log_request(bool is_host_vst, const YaPluginFactory3::SetHostContext&);
     bool log_request(
@@ -252,6 +252,8 @@ class Vst3Logger {
     void log_response(
         bool is_host_vst,
         const std::variant<Vst3PluginProxy::ConstructArgs, UniversalTResult>&);
+    void log_response(bool is_host_vst,
+                      const Vst3PluginProxy::InitializeResponse&);
     void log_response(bool is_host_vst,
                       const Vst3PluginProxy::GetStateResponse&);
     void log_response(bool is_host_vst,

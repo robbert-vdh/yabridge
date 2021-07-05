@@ -1057,10 +1057,18 @@ tresult PLUGIN_API Vst3PluginProxyImpl::initialize(FUnknown* context) {
         host_application = host_context;
         plug_interface_support = host_context;
 
-        return bridge.send_message(YaPluginBase::Initialize{
-            .instance_id = instance_id(),
-            .host_context_args = Vst3HostContextProxy::ConstructArgs(
-                host_context, instance_id())});
+        const InitializeResponse response =
+            bridge.send_message(Vst3PluginProxy::Initialize{
+                .instance_id = instance_id(),
+                .host_context_args = Vst3HostContextProxy::ConstructArgs(
+                    host_context, instance_id())});
+
+        // HACK: For some reason, Waves plugins will only allow querying the
+        //       `IEditController` interface after this point, so we need to
+        //       update the list of interfaces we support for this object.
+        arguments = response.updated_plugin_interfaces;
+
+        return response.result;
     } else {
         bridge.logger.log(
             "WARNING: Null pointer passed to 'IPluginBase::initialize()'");

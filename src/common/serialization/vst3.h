@@ -70,6 +70,11 @@ using ControlRequest =
                  Vst3PlugViewProxy::Destruct,
                  Vst3PluginProxy::Construct,
                  Vst3PluginProxy::Destruct,
+                 // This is actually part of `YaPluginBase`, but thanks to Waves
+                 // we had to move this message to the main `Vst3PluginProxy`
+                 // class
+                 Vst3PluginProxy::Initialize,
+                 // These are defined in both `IComponent` and `IEditController`
                  Vst3PluginProxy::SetState,
                  Vst3PluginProxy::GetState,
                  YaAudioPresentationLatency::SetAudioPresentationLatencySamples,
@@ -119,7 +124,6 @@ using ControlRequest =
                  YaPlugView::CanResize,
                  YaPlugView::CheckSizeConstraint,
                  YaPlugViewContentScaleSupport::SetContentScaleFactor,
-                 YaPluginBase::Initialize,
                  YaPluginBase::Terminate,
                  YaPluginFactory3::SetHostContext,
                  YaProcessContextRequirements::GetProcessContextRequirements,

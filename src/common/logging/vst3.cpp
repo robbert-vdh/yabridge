@@ -699,7 +699,7 @@ bool Vst3Logger::log_request(
 }
 
 bool Vst3Logger::log_request(bool is_host_vst,
-                             const YaPluginBase::Initialize& request) {
+                             const Vst3PluginProxy::Initialize& request) {
     return log_request_base(is_host_vst, [&](auto& message) {
         message << request.instance_id
                 << ": IPluginBase::initialize(context = <FUnknown*>)";
@@ -1466,6 +1466,12 @@ void Vst3Logger::log_response(bool is_host_vst,
                             }},
                    result);
     });
+}
+
+void Vst3Logger::log_response(
+    bool is_host_vst,
+    const Vst3PluginProxy::InitializeResponse& response) {
+    log_response(is_host_vst, response.result);
 }
 
 void Vst3Logger::log_response(
