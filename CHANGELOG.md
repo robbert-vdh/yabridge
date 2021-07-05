@@ -66,6 +66,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   process failed to start treating zombie processes as still running. This could
   cause plugins to hang during scanning if the Wine process crashed in a very
   specific (and likely impossible) way.
+- In the event a VST3 plugin were to return a null pointer for
+  `IEditController::createView()`, this will now be propagated correctly on the
+  plugin side.
 - Fixed VST2 speaker arrangement configurations returned by the plugin not being
   serialized correctly. No plugins seem to actually use these, so it should not
   have caused any issues.

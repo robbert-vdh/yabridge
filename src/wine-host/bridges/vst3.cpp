@@ -466,11 +466,19 @@ void Vst3Bridge::run() {
                 // Instantiate the object from the GUI thread
                 main_context
                     .run_in_context([&]() -> void {
-                        object_instances.at(request.instance_id)
-                            .plug_view_instance.emplace(Steinberg::owned(
+                        Steinberg::IPtr<Steinberg::IPlugView> plug_view(
+                            Steinberg::owned(
                                 object_instances.at(request.instance_id)
                                     .edit_controller->createView(
                                         request.name.c_str())));
+
+                        if (plug_view) {
+                            object_instances.at(request.instance_id)
+                                .plug_view_instance.emplace(plug_view);
+                        } else {
+                            object_instances.at(request.instance_id)
+                                .plug_view_instance.reset()
+                        }
                     })
                     .wait();
 
