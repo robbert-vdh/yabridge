@@ -44,6 +44,8 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
       unit_info_args(object),
       xml_representation_controller_args(object) {}
 
+// NOTE: This has to be kept in sync with
+//       `Vst3PluginProxy::updated_plugin_interfaces()`
 Vst3PluginProxy::Vst3PluginProxy(ConstructArgs&& args) noexcept
     : YaAudioPresentationLatency(
           std::move(args.audio_presentation_latency_args)),
@@ -198,4 +200,51 @@ tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
 
     *obj = nullptr;
     return Steinberg::kNoInterface;
+}
+
+void Vst3PluginProxy::update_supported_interfaces(
+    ConstructArgs&& updated_interfaces) {
+    assert(arguments.instance_id == updated_interfaces.instance_id);
+
+    // NOTE: This has to be kept in sync with `Vst3PluginProxy`'s constructor
+    YaAudioPresentationLatency::arguments =
+        std::move(updated_interfaces.audio_presentation_latency_args);
+    YaAudioProcessor::arguments =
+        std::move(updated_interfaces.audio_processor_args);
+    YaAutomationState::arguments =
+        std::move(updated_interfaces.automation_state_args);
+    YaComponent::arguments = std::move(updated_interfaces.component_args);
+    YaConnectionPoint::arguments =
+        std::move(updated_interfaces.connection_point_args);
+    YaEditController::arguments =
+        std::move(updated_interfaces.edit_controller_args);
+    YaEditController2::arguments =
+        std::move(updated_interfaces.edit_controller_2_args);
+    YaEditControllerHostEditing::arguments =
+        std::move(updated_interfaces.edit_controller_host_editing_args);
+    YaInfoListener::arguments =
+        std::move(updated_interfaces.info_listener_args);
+    YaKeyswitchController::arguments =
+        std::move(updated_interfaces.keyswitch_controller_args);
+    YaMidiLearn::arguments = std::move(updated_interfaces.midi_learn_args);
+    YaMidiMapping::arguments = std::move(updated_interfaces.midi_mapping_args);
+    YaNoteExpressionController::arguments =
+        std::move(updated_interfaces.note_expression_controller_args);
+    YaNoteExpressionPhysicalUIMapping::arguments =
+        std::move(updated_interfaces.note_expression_physical_ui_mapping_args);
+    YaParameterFunctionName::arguments =
+        std::move(updated_interfaces.parameter_function_name_args);
+    YaPluginBase::arguments = std::move(updated_interfaces.plugin_base_args);
+    YaPrefetchableSupport::arguments =
+        std::move(updated_interfaces.prefetchable_support_args);
+    YaProcessContextRequirements::arguments =
+        std::move(updated_interfaces.process_context_requirements_args);
+    YaProgramListData::arguments =
+        std::move(updated_interfaces.program_list_data_args);
+    YaUnitData::arguments = std::move(updated_interfaces.unit_data_args);
+    YaUnitInfo::arguments = std::move(updated_interfaces.unit_info_args);
+    YaXmlRepresentationController::arguments =
+        std::move(updated_interfaces.xml_representation_controller_args);
+
+    arguments = std::move(updated_interfaces);
 }
