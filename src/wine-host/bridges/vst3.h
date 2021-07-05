@@ -34,12 +34,13 @@ class Vst3ContextMenuProxyImpl;
  * A holder for an object instance's `IPlugView` object and all smart pointers
  * casted from it.
  *
- * @relates InstanceInterfaces
+ * @relates Vst3PluginInstance
  */
-struct InstancePlugView {
-    InstancePlugView() noexcept;
+struct Vst3PlugViewInterfaces {
+    Vst3PlugViewInterfaces() noexcept;
 
-    InstancePlugView(Steinberg::IPtr<Steinberg::IPlugView> plug_View) noexcept;
+    Vst3PlugViewInterfaces(
+        Steinberg::IPtr<Steinberg::IPlugView> plug_View) noexcept;
 
     Steinberg::IPtr<Steinberg::IPlugView> plug_view;
 
@@ -59,10 +60,10 @@ struct InstancePlugView {
  * `IHostApplication` instance passed to the plugin during
  * `IPluginBase::initialize()`.
  */
-struct InstanceInterfaces {
-    InstanceInterfaces() noexcept;
+struct Vst3PluginInstance {
+    Vst3PluginInstance() noexcept;
 
-    InstanceInterfaces(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
+    Vst3PluginInstance(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
 
     /**
      * A dedicated thread for handling incoming `IAudioProcessor` and
@@ -137,7 +138,7 @@ struct InstanceInterfaces {
      *      multiple different view for a single plugin. This is not used within
      *      the SDK, so a single pointer should be fine for now.
      */
-    std::optional<InstancePlugView> plug_view_instance;
+    std::optional<Vst3PlugViewInterfaces> plug_view_instance;
 
     /**
      * A shared memory object we'll write the input audio buffers to on the
@@ -440,7 +441,7 @@ class Vst3Bridge : public HostBridge {
      * will cause all pointers to it to get dropped and the object to be cleaned
      * up.
      */
-    std::unordered_map<size_t, InstanceInterfaces> object_instances;
+    std::unordered_map<size_t, Vst3PluginInstance> object_instances;
     std::mutex object_instances_mutex;
 
     /**

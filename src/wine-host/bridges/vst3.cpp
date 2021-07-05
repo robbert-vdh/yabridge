@@ -40,17 +40,17 @@ Steinberg::FUnknownPtr<Steinberg::IPluginBase> hack_init_plugin_base(
     Steinberg::IPtr<Steinberg::FUnknown> object,
     Steinberg::IPtr<Steinberg::Vst::IComponent> component);
 
-InstancePlugView::InstancePlugView() noexcept {}
+Vst3PlugViewInterfaces::Vst3PlugViewInterfaces() noexcept {}
 
-InstancePlugView::InstancePlugView(
+Vst3PlugViewInterfaces::Vst3PlugViewInterfaces(
     Steinberg::IPtr<Steinberg::IPlugView> plug_view) noexcept
     : plug_view(plug_view),
       parameter_finder(plug_view),
       plug_view_content_scale_support(plug_view) {}
 
-InstanceInterfaces::InstanceInterfaces() noexcept {}
+Vst3PluginInstance::Vst3PluginInstance() noexcept {}
 
-InstanceInterfaces::InstanceInterfaces(
+Vst3PluginInstance::Vst3PluginInstance(
     Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : object(object),
       audio_presentation_latency(object),
