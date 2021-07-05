@@ -63,9 +63,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   API](https://www.reaper.fm/sdk/vst/vst_ext.php#vst_host) which currently isn't
   supported by yabridge. We now explicitly ignore these requests.
 - Fixed the plugin-side watchdog timer that checks whether the Wine plugin host
-  process failed to start treating zombie processes as still running. This could
-  cause plugins to hang during scanning if the Wine process crashed in a very
-  specific (and likely impossible) way.
+  process failed to start from treating zombie processes as running, active
+  processes. This could cause plugins to hang during scanning if the Wine
+  process crashed in a very specific (and likely impossible) way.
 - In the event a VST3 plugin were to return a null pointer for
   `IEditController::createView()`, this will now be propagated correctly on the
   plugin side.
