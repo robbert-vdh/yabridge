@@ -53,12 +53,54 @@ struct Vst3PlugViewInterfaces {
 };
 
 /**
- * A holder for plugin object instance created from the factory. This stores all
- * relevant interface smart pointers to that object so we can handle control
- * messages sent by the plugin without having to do these expensive casts all
- * the time. This also stores any additional context data, such as the
- * `IHostApplication` instance passed to the plugin during
- * `IPluginBase::initialize()`.
+ * Smart pointers for all interfaces a VST3 plugin object might support.
+ *
+ * @relates Vst3PluginInstance
+ */
+struct Vst3PluginInterfaces {
+    Vst3PluginInterfaces(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
+
+    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioPresentationLatency>
+        audio_presentation_latency;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audio_processor;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IAutomationState> automation_state;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IComponent> component;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> connection_point;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IEditController> edit_controller;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IEditController2> edit_controller_2;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IEditControllerHostEditing>
+        edit_controller_host_editing;
+    Steinberg::FUnknownPtr<Steinberg::Vst::ChannelContext::IInfoListener>
+        info_listener;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IKeyswitchController>
+        keyswitch_controller;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IMidiLearn> midi_learn;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midi_mapping;
+    Steinberg::FUnknownPtr<Steinberg::Vst::INoteExpressionController>
+        note_expression_controller;
+    Steinberg::FUnknownPtr<Steinberg::Vst::INoteExpressionPhysicalUIMapping>
+        note_expression_physical_ui_mapping;
+    Steinberg::FUnknownPtr<Steinberg::IPluginBase> plugin_base;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IUnitData> unit_data;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IParameterFunctionName>
+        parameter_function_name;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IPrefetchableSupport>
+        prefetchable_support;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IProcessContextRequirements>
+        process_context_requirements;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IProgramListData> program_list_data;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IUnitInfo> unit_info;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IXmlRepresentationController>
+        xml_representation_controller;
+};
+
+/**
+ * A holder for plugin object instance created from the factory. This contains a
+ * smart pointer to the object's `FUnknown` interface and everything else we
+ * need to proxy for this object, like audio threads and proxy objects for
+ * callbacks. We also store an `interfaces` object that contains smart pointers
+ * to all relevant VST3 interface so we can handle control messages sent by the
+ * plugin without having to do these expensive casts all the time.
  */
 struct Vst3PluginInstance {
     Vst3PluginInstance(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
@@ -124,21 +166,6 @@ struct Vst3PluginInstance {
     std::mutex registered_context_menus_mutex;
 
     /**
-     * The base object we cast from.
-     */
-    Steinberg::IPtr<Steinberg::FUnknown> object;
-
-    /**
-     * The `IPlugView` object the plugin returned from a call to
-     * `IEditController::createView()`.
-     *
-     * XXX: Technically VST3 supports multiple named views, so we could have
-     *      multiple different view for a single plugin. This is not used within
-     *      the SDK, so a single pointer should be fine for now.
-     */
-    std::optional<Vst3PlugViewInterfaces> plug_view_instance;
-
-    /**
      * A shared memory object we'll write the input audio buffers to on the
      * native plugin side. We'll then let the plugin write its outputs here on
      * the Wine side. The buffer will be configured during
@@ -172,41 +199,28 @@ struct Vst3PluginInstance {
      */
     std::optional<Editor> editor;
 
-    // All smart pointers below are created from `component`. They will be null
-    // pointers if `component` did not implement the interface.
+    /**
+     * The base object we cast from. This is upcasted form the object created by
+     * the factory.
+     */
+    Steinberg::IPtr<Steinberg::FUnknown> object;
 
-    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioPresentationLatency>
-        audio_presentation_latency;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audio_processor;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IAutomationState> automation_state;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IComponent> component;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> connection_point;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IEditController> edit_controller;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IEditController2> edit_controller_2;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IEditControllerHostEditing>
-        edit_controller_host_editing;
-    Steinberg::FUnknownPtr<Steinberg::Vst::ChannelContext::IInfoListener>
-        info_listener;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IKeyswitchController>
-        keyswitch_controller;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IMidiLearn> midi_learn;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midi_mapping;
-    Steinberg::FUnknownPtr<Steinberg::Vst::INoteExpressionController>
-        note_expression_controller;
-    Steinberg::FUnknownPtr<Steinberg::Vst::INoteExpressionPhysicalUIMapping>
-        note_expression_physical_ui_mapping;
-    Steinberg::FUnknownPtr<Steinberg::IPluginBase> plugin_base;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IUnitData> unit_data;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IParameterFunctionName>
-        parameter_function_name;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IPrefetchableSupport>
-        prefetchable_support;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IProcessContextRequirements>
-        process_context_requirements;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IProgramListData> program_list_data;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IUnitInfo> unit_info;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IXmlRepresentationController>
-        xml_representation_controller;
+    /**
+     * The `IPlugView` object the plugin returned from a call to
+     * `IEditController::createView()`. This object can also implement multiple
+     * interfaces.
+     *
+     * XXX: Technically VST3 supports multiple named views, so we could have
+     *      multiple different view for a single plugin. This is not used within
+     *      the SDK, so a single pointer should be fine for now.
+     */
+    std::optional<Vst3PlugViewInterfaces> plug_view_instance;
+
+    /**
+     * This contains smart pointers to all VST3 plugin interfaces that can be
+     * casted from `object`.
+     */
+    Vst3PluginInterfaces interfaces;
 
     /**
      * Whether `IPluginBase:initialize()` has already been called for this
