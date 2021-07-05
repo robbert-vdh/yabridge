@@ -340,7 +340,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
      * Waves changes its query interface after `IPluginBase::initialize()` has
      * been called.
      */
-    void update_supported_interfaces(ConstructArgs&& arguments);
+    void update_supported_interfaces(ConstructArgs&& updated_interfaces);
 
    private:
     ConstructArgs arguments;
