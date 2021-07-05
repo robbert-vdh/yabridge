@@ -199,7 +199,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
      * Instantiate this object instance with arguments read from another
      * interface implementation.
      */
-    Vst3PluginProxy(const ConstructArgs&& args) noexcept;
+    Vst3PluginProxy(ConstructArgs&& args) noexcept;
 
     /**
      * Message to request the Wine plugin host to destroy this object instance

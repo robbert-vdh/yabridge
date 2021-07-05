@@ -23,5 +23,5 @@ YaComponentHandler3::ConstructArgs::ConstructArgs(
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IComponentHandler3>(object)) {}
 
-YaComponentHandler3::YaComponentHandler3(const ConstructArgs&& args) noexcept
+YaComponentHandler3::YaComponentHandler3(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

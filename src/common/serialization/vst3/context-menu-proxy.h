@@ -90,7 +90,7 @@ class Vst3ContextMenuProxy : public YaContextMenu {
      *   struct. We need to use raw pointers or references here so we can refer
      *   to the object without interfering with the reference count.
      */
-    Vst3ContextMenuProxy(const ConstructArgs&& args) noexcept;
+    Vst3ContextMenuProxy(ConstructArgs&& args) noexcept;
 
     /**
      * Message to request the plugin to drop the the `IContextMenu*` returned by

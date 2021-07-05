@@ -58,7 +58,7 @@ class YaProgress : public Steinberg::Vst::IProgress {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaProgress(const ConstructArgs&& args) noexcept;
+    YaProgress(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

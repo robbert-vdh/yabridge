@@ -24,5 +24,5 @@ YaComponentHandlerBusActivation::ConstructArgs::ConstructArgs(
                 Steinberg::Vst::IComponentHandlerBusActivation>(object)) {}
 
 YaComponentHandlerBusActivation::YaComponentHandlerBusActivation(
-    const ConstructArgs&& args) noexcept
+    ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

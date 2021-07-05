@@ -57,7 +57,7 @@ class YaKeyswitchController : public Steinberg::Vst::IKeyswitchController {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaKeyswitchController(const ConstructArgs&& args) noexcept;
+    YaKeyswitchController(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

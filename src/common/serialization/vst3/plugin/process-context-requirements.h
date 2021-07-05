@@ -60,7 +60,7 @@ class YaProcessContextRequirements
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaProcessContextRequirements(const ConstructArgs&& args) noexcept;
+    YaProcessContextRequirements(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

@@ -98,7 +98,7 @@ class Vst3ComponentHandlerProxy : public YaComponentHandler,
      *   that of the objects they are passed to. If those objects get dropped,
      *   then the host contexts should also be dropped.
      */
-    Vst3ComponentHandlerProxy(const ConstructArgs&& args) noexcept;
+    Vst3ComponentHandlerProxy(ConstructArgs&& args) noexcept;
 
     /**
      * The lifetime of this object should be bound to the object we created it

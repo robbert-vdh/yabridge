@@ -25,5 +25,5 @@ YaXmlRepresentationController::ConstructArgs::ConstructArgs(
               object)) {}
 
 YaXmlRepresentationController::YaXmlRepresentationController(
-    const ConstructArgs&& args) noexcept
+    ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

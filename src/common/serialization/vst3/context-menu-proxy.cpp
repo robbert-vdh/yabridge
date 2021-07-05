@@ -26,7 +26,7 @@ Vst3ContextMenuProxy::ConstructArgs::ConstructArgs(
       context_menu_id(context_menu_id),
       context_menu_args(object) {}
 
-Vst3ContextMenuProxy::Vst3ContextMenuProxy(const ConstructArgs&& args) noexcept
+Vst3ContextMenuProxy::Vst3ContextMenuProxy(ConstructArgs&& args) noexcept
     : YaContextMenu(std::move(args.context_menu_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 

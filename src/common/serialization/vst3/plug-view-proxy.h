@@ -80,7 +80,7 @@ class Vst3PlugViewProxy : public YaPlugView,
      *   message. The destructor should still send a message to drop the
      *   original smart pointer.
      */
-    Vst3PlugViewProxy(const ConstructArgs&& args) noexcept;
+    Vst3PlugViewProxy(ConstructArgs&& args) noexcept;
 
     /**
      * Message to request the Wine plugin host to destroy the `IPlugView*`

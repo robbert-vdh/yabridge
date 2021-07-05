@@ -22,5 +22,5 @@ YaContextMenu::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IContextMenu>(object)) {}
 
-YaContextMenu::YaContextMenu(const ConstructArgs&& args) noexcept
+YaContextMenu::YaContextMenu(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

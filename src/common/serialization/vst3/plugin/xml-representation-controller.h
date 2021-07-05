@@ -65,7 +65,7 @@ class YaXmlRepresentationController
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaXmlRepresentationController(const ConstructArgs&& args) noexcept;
+    YaXmlRepresentationController(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

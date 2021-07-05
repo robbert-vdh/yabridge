@@ -57,7 +57,7 @@ class YaMidiLearn : public Steinberg::Vst::IMidiLearn {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaMidiLearn(const ConstructArgs&& args) noexcept;
+    YaMidiLearn(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

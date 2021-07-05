@@ -59,7 +59,7 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaContextMenu(const ConstructArgs&& args) noexcept;
+    YaContextMenu(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

@@ -50,7 +50,7 @@ class Vst3ConnectionPointProxy : public YaConnectionPoint {
      * @note This object will be created as part of handling
      *   `IConnectionPoint::connect()` if the connection is indirect.
      */
-    Vst3ConnectionPointProxy(const ConstructArgs&& args) noexcept;
+    Vst3ConnectionPointProxy(ConstructArgs&& args) noexcept;
 
     /**
      * This object will be destroyed again during

@@ -23,5 +23,5 @@ YaAutomationState::ConstructArgs::ConstructArgs(
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IAutomationState>(object)) {}
 
-YaAutomationState::YaAutomationState(const ConstructArgs&& args) noexcept
+YaAutomationState::YaAutomationState(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

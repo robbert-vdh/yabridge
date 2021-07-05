@@ -61,7 +61,7 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaHostApplication(const ConstructArgs&& args) noexcept;
+    YaHostApplication(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

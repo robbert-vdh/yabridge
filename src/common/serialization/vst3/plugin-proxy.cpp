@@ -44,7 +44,7 @@ Vst3PluginProxy::ConstructArgs::ConstructArgs(
       unit_info_args(object),
       xml_representation_controller_args(object) {}
 
-Vst3PluginProxy::Vst3PluginProxy(const ConstructArgs&& args) noexcept
+Vst3PluginProxy::Vst3PluginProxy(ConstructArgs&& args) noexcept
     : YaAudioPresentationLatency(
           std::move(args.audio_presentation_latency_args)),
       YaAudioProcessor(std::move(args.audio_processor_args)),

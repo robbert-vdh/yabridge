@@ -60,7 +60,7 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaAudioProcessor(const ConstructArgs&& args) noexcept;
+    YaAudioProcessor(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

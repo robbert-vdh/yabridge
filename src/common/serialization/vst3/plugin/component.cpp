@@ -22,5 +22,5 @@ YaComponent::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IComponent>(object)) {}
 
-YaComponent::YaComponent(const ConstructArgs&& args) noexcept
+YaComponent::YaComponent(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

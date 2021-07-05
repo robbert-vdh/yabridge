@@ -57,7 +57,7 @@ class YaUnitHandler2 : public Steinberg::Vst::IUnitHandler2 {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaUnitHandler2(const ConstructArgs&& args) noexcept;
+    YaUnitHandler2(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

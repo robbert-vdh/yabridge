@@ -22,5 +22,5 @@ YaMidiLearn::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IMidiLearn>(object)) {}
 
-YaMidiLearn::YaMidiLearn(const ConstructArgs&& args) noexcept
+YaMidiLearn::YaMidiLearn(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

@@ -17,7 +17,7 @@
 #include "connection-point-proxy.h"
 
 Vst3ConnectionPointProxy::Vst3ConnectionPointProxy(
-    const ConstructArgs&& args) noexcept
+    ConstructArgs&& args) noexcept
     : YaConnectionPoint(std::move(args.connection_point_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 

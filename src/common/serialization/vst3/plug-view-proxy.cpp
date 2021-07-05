@@ -26,7 +26,7 @@ Vst3PlugViewProxy::ConstructArgs::ConstructArgs(
       parameter_finder_args(object),
       plug_view_content_scale_support_args(object) {}
 
-Vst3PlugViewProxy::Vst3PlugViewProxy(const ConstructArgs&& args) noexcept
+Vst3PlugViewProxy::Vst3PlugViewProxy(ConstructArgs&& args) noexcept
     : YaPlugView(std::move(args.plug_view_args)),
       YaParameterFinder(std::move(args.parameter_finder_args)),
       YaPlugViewContentScaleSupport(

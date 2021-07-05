@@ -23,5 +23,5 @@ YaHostApplication::ConstructArgs::ConstructArgs(
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication>(object)) {}
 
-YaHostApplication::YaHostApplication(const ConstructArgs&& args) noexcept
+YaHostApplication::YaHostApplication(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

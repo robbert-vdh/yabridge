@@ -61,7 +61,7 @@ class YaNoteExpressionController
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaNoteExpressionController(const ConstructArgs&& args) noexcept;
+    YaNoteExpressionController(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

@@ -60,7 +60,7 @@ class YaComponentHandlerBusActivation
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaComponentHandlerBusActivation(const ConstructArgs&& args) noexcept;
+    YaComponentHandlerBusActivation(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

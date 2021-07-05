@@ -59,7 +59,7 @@ class YaPlugView : public Steinberg::IPlugView {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaPlugView(const ConstructArgs&& args) noexcept;
+    YaPlugView(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

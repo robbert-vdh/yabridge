@@ -58,7 +58,7 @@ class YaProgramListData : public Steinberg::Vst::IProgramListData {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaProgramListData(const ConstructArgs&& args) noexcept;
+    YaProgramListData(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

@@ -57,7 +57,7 @@ class YaPlugFrame : public Steinberg::IPlugFrame {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaPlugFrame(const ConstructArgs&& args) noexcept;
+    YaPlugFrame(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

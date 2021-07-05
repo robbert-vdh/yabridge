@@ -24,5 +24,5 @@ YaParameterFunctionName::ConstructArgs::ConstructArgs(
           object)) {}
 
 YaParameterFunctionName::YaParameterFunctionName(
-    const ConstructArgs&& args) noexcept
+    ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

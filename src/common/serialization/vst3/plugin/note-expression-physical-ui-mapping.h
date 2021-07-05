@@ -60,7 +60,7 @@ class YaNoteExpressionPhysicalUIMapping
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaNoteExpressionPhysicalUIMapping(const ConstructArgs&& args) noexcept;
+    YaNoteExpressionPhysicalUIMapping(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

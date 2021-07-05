@@ -58,7 +58,7 @@ class YaAudioPresentationLatency
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaAudioPresentationLatency(const ConstructArgs&& args) noexcept;
+    YaAudioPresentationLatency(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

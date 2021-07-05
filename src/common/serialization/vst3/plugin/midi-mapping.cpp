@@ -22,5 +22,5 @@ YaMidiMapping::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping>(object)) {}
 
-YaMidiMapping::YaMidiMapping(const ConstructArgs&& args) noexcept
+YaMidiMapping::YaMidiMapping(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

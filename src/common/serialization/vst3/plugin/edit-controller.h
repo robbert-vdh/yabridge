@@ -61,7 +61,7 @@ class YaEditController : public Steinberg::Vst::IEditController {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaEditController(const ConstructArgs&& args) noexcept;
+    YaEditController(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

@@ -60,7 +60,7 @@ class YaAutomationState : public Steinberg::Vst::IAutomationState {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaAutomationState(const ConstructArgs&& args) noexcept;
+    YaAutomationState(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

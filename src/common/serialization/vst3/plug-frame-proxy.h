@@ -71,7 +71,7 @@ class Vst3PlugFrameProxy : public YaPlugFrame {
      *   lifetime is bound to that of the objects they are passed to. If the
      *   plug view instance gets dropped, this proxy should also be dropped.
      */
-    Vst3PlugFrameProxy(const ConstructArgs&& args) noexcept;
+    Vst3PlugFrameProxy(ConstructArgs&& args) noexcept;
 
     /**
      * The lifetime of this object should be bound to the object we created it

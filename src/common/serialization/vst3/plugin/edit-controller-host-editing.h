@@ -58,7 +58,7 @@ class YaEditControllerHostEditing
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaEditControllerHostEditing(const ConstructArgs&& args) noexcept;
+    YaEditControllerHostEditing(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

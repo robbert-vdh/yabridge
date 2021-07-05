@@ -57,7 +57,7 @@ class YaMidiMapping : public Steinberg::Vst::IMidiMapping {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaMidiMapping(const ConstructArgs&& args) noexcept;
+    YaMidiMapping(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

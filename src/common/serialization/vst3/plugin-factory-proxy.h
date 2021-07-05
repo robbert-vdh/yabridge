@@ -68,7 +68,7 @@ class Vst3PluginFactoryProxy : public YaPluginFactory3 {
      * factory. The is done once during startup and the plugin factory gets
      * reused for the lifetime of the module.
      */
-    Vst3PluginFactoryProxy(const ConstructArgs&& args) noexcept;
+    Vst3PluginFactoryProxy(ConstructArgs&& args) noexcept;
 
     /**
      * We do not need special handling here since the Window VST3 plugin's

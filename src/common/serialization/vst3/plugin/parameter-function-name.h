@@ -59,7 +59,7 @@ class YaParameterFunctionName : public Steinberg::Vst::IParameterFunctionName {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaParameterFunctionName(const ConstructArgs&& args) noexcept;
+    YaParameterFunctionName(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

@@ -24,5 +24,5 @@ YaPrefetchableSupport::ConstructArgs::ConstructArgs(
           object)) {}
 
 YaPrefetchableSupport::YaPrefetchableSupport(
-    const ConstructArgs&& args) noexcept
+    ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

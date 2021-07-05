@@ -24,5 +24,5 @@ YaInfoListener::ConstructArgs::ConstructArgs(
           Steinberg::FUnknownPtr<Steinberg::Vst::ChannelContext::IInfoListener>(
               object)) {}
 
-YaInfoListener::YaInfoListener(const ConstructArgs&& args) noexcept
+YaInfoListener::YaInfoListener(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

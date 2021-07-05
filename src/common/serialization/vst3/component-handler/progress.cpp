@@ -22,5 +22,5 @@ YaProgress::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IProgress>(object)) {}
 
-YaProgress::YaProgress(const ConstructArgs&& args) noexcept
+YaProgress::YaProgress(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

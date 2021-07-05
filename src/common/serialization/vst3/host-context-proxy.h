@@ -81,7 +81,7 @@ class Vst3HostContextProxy : public YaHostApplication,
      *   objects they are passed to. If those objects get dropped, then the host
      *   contexts should also be dropped.
      */
-    Vst3HostContextProxy(const ConstructArgs&& args) noexcept;
+    Vst3HostContextProxy(ConstructArgs&& args) noexcept;
 
     /**
      * The lifetime of this object should be bound to the object we created it

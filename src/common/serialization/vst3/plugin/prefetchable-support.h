@@ -58,7 +58,7 @@ class YaPrefetchableSupport : public Steinberg::Vst::IPrefetchableSupport {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaPrefetchableSupport(const ConstructArgs&& args) noexcept;
+    YaPrefetchableSupport(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

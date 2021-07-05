@@ -24,5 +24,5 @@ YaKeyswitchController::ConstructArgs::ConstructArgs(
           object)) {}
 
 YaKeyswitchController::YaKeyswitchController(
-    const ConstructArgs&& args) noexcept
+    ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

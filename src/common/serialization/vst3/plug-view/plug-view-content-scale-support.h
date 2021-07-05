@@ -58,7 +58,7 @@ class YaPlugViewContentScaleSupport
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaPlugViewContentScaleSupport(const ConstructArgs&& args) noexcept;
+    YaPlugViewContentScaleSupport(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

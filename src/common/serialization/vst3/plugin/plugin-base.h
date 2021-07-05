@@ -59,7 +59,7 @@ class YaPluginBase : public Steinberg::IPluginBase {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaPluginBase(const ConstructArgs&& args) noexcept;
+    YaPluginBase(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

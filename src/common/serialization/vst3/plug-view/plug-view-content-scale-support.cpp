@@ -24,5 +24,5 @@ YaPlugViewContentScaleSupport::ConstructArgs::ConstructArgs(
           object)) {}
 
 YaPlugViewContentScaleSupport::YaPlugViewContentScaleSupport(
-    const ConstructArgs&& args) noexcept
+    ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

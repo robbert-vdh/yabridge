@@ -58,7 +58,7 @@ class YaPlugInterfaceSupport : public Steinberg::Vst::IPlugInterfaceSupport {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaPlugInterfaceSupport(const ConstructArgs&& args) noexcept;
+    YaPlugInterfaceSupport(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

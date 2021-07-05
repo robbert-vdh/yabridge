@@ -58,7 +58,7 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaUnitInfo(const ConstructArgs&& args) noexcept;
+    YaUnitInfo(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

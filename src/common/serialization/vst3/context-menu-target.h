@@ -69,7 +69,7 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
      * Create context menu target that when called, calls the corresponding
      * context menu target provided by the object.
      */
-    YaContextMenuTarget(const ConstructArgs&& args) noexcept;
+    YaContextMenuTarget(ConstructArgs&& args) noexcept;
 
     ~YaContextMenuTarget() noexcept;
 

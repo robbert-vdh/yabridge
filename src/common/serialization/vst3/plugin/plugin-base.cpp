@@ -22,5 +22,5 @@ YaPluginBase::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::IPluginBase>(object)) {}
 
-YaPluginBase::YaPluginBase(const ConstructArgs&& args) noexcept
+YaPluginBase::YaPluginBase(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

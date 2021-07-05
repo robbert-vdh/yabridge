@@ -22,8 +22,7 @@ Vst3PluginFactoryProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : plugin_factory_args(object) {}
 
-Vst3PluginFactoryProxy::Vst3PluginFactoryProxy(
-    const ConstructArgs&& args) noexcept
+Vst3PluginFactoryProxy::Vst3PluginFactoryProxy(ConstructArgs&& args) noexcept
     : YaPluginFactory3(std::move(args.plugin_factory_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 

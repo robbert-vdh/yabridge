@@ -23,5 +23,5 @@ YaParameterFinder::ConstructArgs::ConstructArgs(
     : supported(
           Steinberg::FUnknownPtr<Steinberg::Vst::IParameterFinder>(object)) {}
 
-YaParameterFinder::YaParameterFinder(const ConstructArgs&& args) noexcept
+YaParameterFinder::YaParameterFinder(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

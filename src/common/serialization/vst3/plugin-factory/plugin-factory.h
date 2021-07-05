@@ -122,7 +122,7 @@ class YaPluginFactory3 : public Steinberg::IPluginFactory3 {
      * Instantiate this instance with arguments read from the Windows VST3
      * plugin's plugin factory.
      */
-    YaPluginFactory3(const ConstructArgs&& args) noexcept;
+    YaPluginFactory3(ConstructArgs&& args) noexcept;
 
     inline bool supports_plugin_factory() const noexcept {
         return arguments.supports_plugin_factory;

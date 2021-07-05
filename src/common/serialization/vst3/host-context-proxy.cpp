@@ -25,7 +25,7 @@ Vst3HostContextProxy::ConstructArgs::ConstructArgs(
       host_application_args(object),
       plug_interface_support_args(object) {}
 
-Vst3HostContextProxy::Vst3HostContextProxy(const ConstructArgs&& args) noexcept
+Vst3HostContextProxy::Vst3HostContextProxy(ConstructArgs&& args) noexcept
     : YaHostApplication(std::move(args.host_application_args)),
       YaPlugInterfaceSupport(std::move(args.plug_interface_support_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}

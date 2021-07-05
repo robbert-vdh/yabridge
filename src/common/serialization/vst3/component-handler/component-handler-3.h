@@ -59,7 +59,7 @@ class YaComponentHandler3 : public Steinberg::Vst::IComponentHandler3 {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaComponentHandler3(const ConstructArgs&& args) noexcept;
+    YaComponentHandler3(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

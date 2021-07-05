@@ -22,5 +22,5 @@ YaUnitData::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IUnitData>(object)) {}
 
-YaUnitData::YaUnitData(const ConstructArgs&& args) noexcept
+YaUnitData::YaUnitData(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

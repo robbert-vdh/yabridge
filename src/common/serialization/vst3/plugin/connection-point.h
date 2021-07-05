@@ -105,7 +105,7 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaConnectionPoint(const ConstructArgs&& args) noexcept;
+    YaConnectionPoint(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

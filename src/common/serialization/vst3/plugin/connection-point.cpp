@@ -32,5 +32,5 @@ YaConnectionPoint::Vst3ConnectionPointProxyConstructArgs::
         size_t owner_instance_id) noexcept
     : owner_instance_id(owner_instance_id), connection_point_args(object) {}
 
-YaConnectionPoint::YaConnectionPoint(const ConstructArgs&& args) noexcept
+YaConnectionPoint::YaConnectionPoint(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

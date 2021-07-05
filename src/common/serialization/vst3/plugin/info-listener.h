@@ -58,7 +58,7 @@ class YaInfoListener : public Steinberg::Vst::ChannelContext::IInfoListener {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaInfoListener(const ConstructArgs&& args) noexcept;
+    YaInfoListener(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

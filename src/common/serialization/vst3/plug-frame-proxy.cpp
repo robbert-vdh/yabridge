@@ -23,7 +23,7 @@ Vst3PlugFrameProxy::ConstructArgs::ConstructArgs(
     size_t owner_instance_id) noexcept
     : owner_instance_id(owner_instance_id), plug_frame_args(object) {}
 
-Vst3PlugFrameProxy::Vst3PlugFrameProxy(const ConstructArgs&& args) noexcept
+Vst3PlugFrameProxy::Vst3PlugFrameProxy(ConstructArgs&& args) noexcept
     : YaPlugFrame(std::move(args.plug_frame_args)),
       arguments(std::move(args)){FUNKNOWN_CTOR}
 

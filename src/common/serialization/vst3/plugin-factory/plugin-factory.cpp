@@ -99,7 +99,7 @@ YaPluginFactory3::ConstructArgs::ConstructArgs(
     }
 }
 
-YaPluginFactory3::YaPluginFactory3(const ConstructArgs&& args) noexcept
+YaPluginFactory3::YaPluginFactory3(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}
 
 tresult PLUGIN_API

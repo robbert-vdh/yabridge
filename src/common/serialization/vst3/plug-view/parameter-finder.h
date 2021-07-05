@@ -57,7 +57,7 @@ class YaParameterFinder : public Steinberg::Vst::IParameterFinder {
      * Instantiate this instance with arguments read from another interface
      * implementation.
      */
-    YaParameterFinder(const ConstructArgs&& args) noexcept;
+    YaParameterFinder(ConstructArgs&& args) noexcept;
 
     inline bool supported() const noexcept { return arguments.supported; }
 

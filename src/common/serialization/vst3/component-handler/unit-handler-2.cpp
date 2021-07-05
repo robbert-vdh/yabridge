@@ -23,5 +23,5 @@ YaUnitHandler2::ConstructArgs::ConstructArgs(
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler2>(object)) {
 }
 
-YaUnitHandler2::YaUnitHandler2(const ConstructArgs&& args) noexcept
+YaUnitHandler2::YaUnitHandler2(ConstructArgs&& args) noexcept
     : arguments(std::move(args)) {}

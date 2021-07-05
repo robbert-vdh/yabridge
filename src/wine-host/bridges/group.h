@@ -130,7 +130,7 @@ class GroupBridge {
     GroupBridge(const GroupBridge&) = delete;
     GroupBridge& operator=(const GroupBridge&) = delete;
 
-    GroupBridge(const GroupBridge&&) = delete;
+    GroupBridge(GroupBridge&&) = delete;
     GroupBridge& operator=(GroupBridge&&) = delete;
 
     /**
