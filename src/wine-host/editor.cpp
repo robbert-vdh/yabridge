@@ -82,7 +82,7 @@ constexpr uint32_t xembed_focus_in_msg = 4;
 
 constexpr uint32_t xembed_focus_first = 1;
 
-const static HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
+static const HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
 
 /**
  * Find the the ancestors for the given window. This returns a list of window
