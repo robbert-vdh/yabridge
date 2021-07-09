@@ -155,12 +155,37 @@ WineXdndProxy::WineXdndProxy()
  */
 static std::atomic_size_t instance_reference_count = 0;
 
-WineXdndProxy::Handle::Handle(WineXdndProxy& proxy) : proxy(proxy) {}
+WineXdndProxy::Handle::Handle(WineXdndProxy* proxy) : proxy(proxy) {}
 
 WineXdndProxy::Handle::~Handle() noexcept {
     if (instance_reference_count.fetch_sub(1) == 1) {
-        delete &proxy;
+        delete proxy;
     }
+}
+
+WineXdndProxy::Handle::Handle(const Handle& o) noexcept : proxy(o.proxy) {
+    instance_reference_count += 1;
+}
+WineXdndProxy::Handle& WineXdndProxy::Handle::operator=(
+    const Handle& o) noexcept {
+    if (&o != this) {
+        instance_reference_count += 1;
+        proxy = o.proxy;
+    }
+
+    return *this;
+}
+
+WineXdndProxy::Handle::Handle(Handle&& o) noexcept : proxy(std::move(o.proxy)) {
+    instance_reference_count += 1;
+}
+WineXdndProxy::Handle& WineXdndProxy::Handle::operator=(Handle&& o) noexcept {
+    if (&o != this) {
+        instance_reference_count += 1;
+        proxy = std::move(o.proxy);
+    }
+
+    return *this;
 }
 
 WineXdndProxy::Handle WineXdndProxy::init_proxy() {
@@ -176,5 +201,5 @@ WineXdndProxy::Handle WineXdndProxy::init_proxy() {
         instance = new WineXdndProxy{};
     }
 
-    return Handle(*instance);
+    return Handle(instance);
 }

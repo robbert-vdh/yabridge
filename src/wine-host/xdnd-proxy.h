@@ -50,7 +50,7 @@ class WineXdndProxy {
          * Before calling this, the reference count should be increased by one
          * in `WineXdndProxy::init_proxy()`.
          */
-        Handle(WineXdndProxy& proxy);
+        Handle(WineXdndProxy* proxy);
 
        public:
         /**
@@ -59,8 +59,14 @@ class WineXdndProxy {
          */
         ~Handle() noexcept;
 
+        Handle(const Handle&) noexcept;
+        Handle& operator=(const Handle&) noexcept;
+
+        Handle(Handle&&) noexcept;
+        Handle& operator=(Handle&&) noexcept;
+
        private:
-        WineXdndProxy& proxy;
+        WineXdndProxy* proxy;
 
         friend WineXdndProxy;
     };
