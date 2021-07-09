@@ -101,7 +101,7 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                         drop, 0xFFFFFFFF, file_name.data(), file_name.size());
 
                     std::cerr << "Plugin wanted to drag-and-drop " << num_files
-                              << " files:" << std::endl;
+                              << " file(s):" << std::endl;
                     for (uint32_t file_idx = 0; file_idx < num_files;
                          file_idx++) {
                         file_name[0] = 0;
