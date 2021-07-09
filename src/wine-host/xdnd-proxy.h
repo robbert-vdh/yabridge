@@ -35,9 +35,10 @@ class WineXdndProxy {
      * is started, we will initiate the XDND protocol with the same file. This
      * will allow us to drag files from Wine windows to X11 applications,
      * something that's normally not possible. Calling this function more than
-     * once doesn't have any effect, but this will still be called from every
-     * plugin host instance. Because of that we'll use a global Win32 mutex to
-     * ensure that this is done from only one thread at a time.
+     * once doesn't have any effect, but this should still be called at least
+     * once from every plugin host instance. Because the actual data is stored
+     * in a COM object, we can only handle drag-and-drop coming form this
+     * process.
      */
     static WineXdndProxy& init_proxy();
 

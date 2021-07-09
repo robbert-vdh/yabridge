@@ -46,11 +46,15 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                                     LONG /*idChild*/,
                                     DWORD /*idEventThread*/,
                                     DWORD /*dwmsEventTime*/) {
-    // FIXME: Prevent this from being run by multiple processes at the same time
-
-    // XXX: `EVENT_OBJECT_DESTROY` doesn't seem to be implemented by Wine, so we
-    //      can't rely on that.
     if (!(event == EVENT_OBJECT_CREATE && idObject == OBJID_WINDOW)) {
+        return;
+    }
+
+    // Don't handle windows that weren't created in this process, because
+    // otherwise we obviously cannot access the `IDataObject` object
+    uint32_t process_id = 0;
+    GetWindowThreadProcessId(hwnd, &process_id);
+    if (process_id != GetCurrentProcessId()) {
         return;
     }
 
@@ -68,7 +72,7 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
     // data
     auto tracker_info =
         reinterpret_cast<TrackerWindowInfo*>(GetWindowLongPtr(hwnd, 0));
-    if (!tracker_info) {
+    if (!tracker_info || !tracker_info->dataObject) {
         return;
     }
 
@@ -122,9 +126,9 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                 } break;
             }
 
-            // We won't release the storage, because we're not actually doing
-            // the Windows drag and drop. We're just snooping in on the data
-            // that's being dragged.
+            if (storage.pUnkForRelease) {
+                storage.pUnkForRelease->Release();
+            }
         }
     }
 }
