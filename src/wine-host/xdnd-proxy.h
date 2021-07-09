@@ -18,6 +18,12 @@
 
 #include <memory>
 
+// Use the native version of xcb
+#pragma push_macro("_WIN32")
+#undef _WIN32
+#include <xcb/xcb.h>
+#pragma pop_macro("_WIN32")
+
 #include <windows.h>
 
 /**
@@ -45,6 +51,8 @@ class WineXdndProxy {
     static WineXdndProxy& init_proxy();
 
    private:
+    std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-attributes"
     std::unique_ptr<std::remove_pointer_t<HWINEVENTHOOK>,

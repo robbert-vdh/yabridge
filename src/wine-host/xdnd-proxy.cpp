@@ -134,7 +134,8 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
 }
 
 WineXdndProxy::WineXdndProxy()
-    : hook_handle(
+    : x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
+      hook_handle(
           SetWinEventHook(EVENT_OBJECT_CREATE,
                           EVENT_OBJECT_CREATE,
                           nullptr,
