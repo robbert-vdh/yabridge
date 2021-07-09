@@ -20,6 +20,8 @@
 
 #include <boost/container/small_vector.hpp>
 
+#include "xdnd-proxy.h"
+
 using namespace std::literals::chrono_literals;
 
 // A catchable alternative to `assert()`. Normally all of our `assert(!error)`
@@ -360,6 +362,11 @@ Editor::Editor(MainContext& main_context,
                             0);
         xcb_flush(x11_connection.get());
     }
+
+    // Set up our proxy for translating Wine drag-and-drop events into XDND
+    // events
+    // TODO: We're going to need to store this somewhere to pass the events
+    WineXdndProxy::init_proxy();
 }
 
 void Editor::handle_x11_events() const noexcept {

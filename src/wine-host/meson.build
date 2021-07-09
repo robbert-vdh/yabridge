@@ -62,8 +62,8 @@ host_common_sources = files(
   'bridges/common.cpp',
   'bridges/vst2.cpp',
   'editor.cpp',
-  'editor.cpp',
   'utils.cpp',
+  'xdnd-proxy.cpp',
 )
 
 if with_vst3
