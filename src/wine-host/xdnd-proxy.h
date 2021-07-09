@@ -37,6 +37,35 @@ class WineXdndProxy {
 
    public:
     /**
+     * A sort of smart pointer for `WineXdndProxy`, similar to how the COM/VST3
+     * pointers work. We want to unregister the hooks and drop the X11
+     * connection when the last editor closes in a plugin group. This is not
+     * strictly necessary, but there's an open X11 client limit and otherwise
+     * opening and closing a bunch of editors would get you very close to that
+     * limit.
+     */
+    class Handle {
+       protected:
+        /**
+         * Before calling this, the reference count should be increased by one
+         * in `WineXdndProxy::init_proxy()`.
+         */
+        Handle(WineXdndProxy& proxy);
+
+       public:
+        /**
+         * Reduces the reference count by one, and frees `proxy` if this was the
+         * last handle.
+         */
+        ~Handle() noexcept;
+
+       private:
+        WineXdndProxy& proxy;
+
+        friend WineXdndProxy;
+    };
+
+    /**
      * Initialize the Wine->X11 drag-and-drop proxy. Calling this will hook into
      * Wine's OLE drag and drop system by listening for the creation of special
      * proxy windows created by the Wine server. When a drag and drop operation
@@ -47,8 +76,15 @@ class WineXdndProxy {
      * once from every plugin host instance. Because the actual data is stored
      * in a COM object, we can only handle drag-and-drop coming form this
      * process.
+     *
+     * This is sort of a singleton but not quite, as the `WineXdndProxy` is only
+     * alive for as long as there are open editors in this process. This is done
+     * to avoid opening too many X11 connections.
+     *
+     * @note This function, like everything other GUI realted, should be called
+     *   from the main thread that's running the Win32 message loop.
      */
-    static WineXdndProxy& init_proxy();
+    static WineXdndProxy::Handle init_proxy();
 
    private:
     std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;

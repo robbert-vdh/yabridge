@@ -20,8 +20,6 @@
 
 #include <boost/container/small_vector.hpp>
 
-#include "xdnd-proxy.h"
-
 using namespace std::literals::chrono_literals;
 
 // A catchable alternative to `assert()`. Normally all of our `assert(!error)`
@@ -204,6 +202,7 @@ Editor::Editor(MainContext& main_context,
                std::optional<fu2::unique_function<void()>> timer_proc)
     : use_xembed(config.editor_xembed),
       x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
+      dnd_proxy_handle(WineXdndProxy::init_proxy()),
       client_area(get_maximum_screen_dimensions(*x11_connection)),
       // Create a window without any decoratiosn for easy embedding. The
       // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to

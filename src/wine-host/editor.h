@@ -31,6 +31,7 @@
 
 #include "../common/configuration.h"
 #include "utils.h"
+#include "xdnd-proxy.h"
 
 /**
  * The maximum number of Win32 messages to handle per message loop. This is
@@ -223,7 +224,16 @@ class Editor {
      */
     void do_xembed() const;
 
+    /**
+     * Every editor window gets its own X11 connection.
+     */
     std::shared_ptr<xcb_connection_t> x11_connection;
+
+    /**
+     * A handle for our Wine->X11 drag-and-drop proxy. We only have one of these
+     * per process, and it gets freed again when the last handle gets dropped.
+     */
+    WineXdndProxy::Handle dnd_proxy_handle;
 
     /**
      * The Wine window's client area, or the maximum size of that window. This

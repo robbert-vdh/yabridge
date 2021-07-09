@@ -16,6 +16,8 @@
 
 #include "xdnd-proxy.h"
 
+#include <atomic>
+
 // FIXME: Remove
 #include <iostream>
 
@@ -145,12 +147,34 @@ WineXdndProxy::WineXdndProxy()
                           WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS),
           UnhookWinEvent) {}
 
-WineXdndProxy& WineXdndProxy::init_proxy() {
-    static std::unique_ptr<WineXdndProxy> instance;
-    if (!instance) {
-        // Protected constructors, hooray!
-        instance.reset(new WineXdndProxy{});
+/**
+ * The number of handles to our Wine->X11 drag-and-drop proxy object. To prevent
+ * running out of X11 connections when opening and closing a lot of plugin
+ * editors in a project, we'll free this again after the last editor in this
+ * process gets closed.
+ */
+static std::atomic_size_t instance_reference_count = 0;
+
+WineXdndProxy::Handle::Handle(WineXdndProxy& proxy) : proxy(proxy) {}
+
+WineXdndProxy::Handle::~Handle() noexcept {
+    if (instance_reference_count.fetch_sub(1) == 1) {
+        delete &proxy;
+    }
+}
+
+WineXdndProxy::Handle WineXdndProxy::init_proxy() {
+    // We're doing a bit of a hybrid between a COM-style reference counted smart
+    // pointer and a singleton here because we need to ensure that there's only
+    // one proxy per process, but we want to free up the X11 connection when
+    // it's not needed anymore. Because of that this pointer may point to
+    // deallocated memory, so the reference count should be leading here. Oh and
+    // explained elsewhere, we won't even bother making this thread safe because
+    // it can only be called from the GUI thread anyways.
+    static WineXdndProxy* instance = nullptr;
+    if (instance_reference_count.fetch_add(1) == 0) {
+        instance = new WineXdndProxy{};
     }
 
-    return *instance;
+    return Handle(*instance);
 }
