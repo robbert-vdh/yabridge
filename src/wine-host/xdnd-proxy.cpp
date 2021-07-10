@@ -19,10 +19,17 @@
 #include <atomic>
 #include <iostream>
 
-#include "boost-fix.h"
-
-#include <boost/container/small_vector.hpp>
 #include "editor.h"
+
+// As defined in `editor.cpp`
+#define THROW_X11_ERROR(error)                                          \
+    do {                                                                \
+        if (error) {                                                    \
+            free(error);                                                \
+            throw std::runtime_error("X11 error in " +                  \
+                                     std::string(__PRETTY_FUNCTION__)); \
+        }                                                               \
+    } while (0)
 
 /**
  * The window class name Wine uses for its `DoDragDrop()` tracker window.
@@ -135,10 +142,6 @@ WineXdndProxy::Handle::Handle(Handle&& o) noexcept : proxy(o.proxy) {
     instance_reference_count += 1;
 }
 
-void WineXdndProxy::Handle::handle_x11_events() const noexcept {
-    proxy->handle_x11_events();
-}
-
 WineXdndProxy::Handle WineXdndProxy::get_handle() {
     // See the `instance` global above for an explanation on what's going on
     // here.
@@ -149,8 +152,36 @@ WineXdndProxy::Handle WineXdndProxy::get_handle() {
     return Handle(instance);
 }
 
-void WineXdndProxy::handle_x11_events() const noexcept {
-    // TODO
+void WineXdndProxy::begin_xdnd(
+    const boost::container::small_vector_base<std::string>& file_paths,
+    HWND tracker_window) {
+    // When XDND starts, we need to start listening for mouse events so we can
+    // react when the mouse cursor hovers over a target that supports XDND. The
+    // actual file contents will be transferred over X11 selections. See the
+    // spec for a description of the entire process:
+    // https://www.freedesktop.org/wiki/Specifications/XDND/#atomsandproperties
+    xcb_set_selection_owner(x11_connection.get(), proxy_window.window,
+                            xcb_xdnd_selection, XCB_CURRENT_TIME);
+    xcb_flush(x11_connection.get());
+
+    // Normally at this point you would grab the mouse pointer and track what
+    // windows it's moving over. Wine is already doing this, so as a hacky
+    // workaround we will instead just periodically poll the pointer position in
+    // `WineXdndProxy::handle_x11_events()`, and we'll consider the
+    // disappearance of `tracker_window` to indicate that the drag-and-drop has
+    // either been cancelled or it has succeeded.
+    dragged_file_paths.assign(file_paths.begin(), file_paths.end());
+    this->tracker_window = tracker_window;
+
+    // Because Wine is blocking the GUI thread, we need to do our XDND polling
+    // from another thread. Luckily the X11 API is thread safe.
+    xdnd_handler = Win32Thread([&]() { run_xdnd_loop(); });
+}
+
+void WineXdndProxy::end_xdnd() {
+    xcb_set_selection_owner(x11_connection.get(), XCB_NONE, xcb_xdnd_selection,
+                            XCB_CURRENT_TIME);
+    xcb_flush(x11_connection.get());
 }
 
 /**
@@ -165,6 +196,62 @@ struct TrackerWindowInfo {
     IDropSource* dropSource;
     // ... more fields that we don't need
 };
+
+void WineXdndProxy::run_xdnd_loop() {
+    const xcb_window_t root_window =
+        xcb_setup_roots_iterator(xcb_get_setup(x11_connection.get()))
+            .data->root;
+
+    // We cannot just grab the pointer because Wine is already doing that, and
+    // it's also blocking the GUI thread. So instead we will periodically poll
+    // the mouse cursor position, and we will consider the disappearance of
+    // `tracker_window` to mean that the drag-and-drop operation has ended.
+    uint16_t last_pointer_x = ~0;
+    uint16_t last_pointer_y = ~0;
+    while (IsWindow(tracker_window)) {
+        usleep(1000);
+
+        // TODO: Can we somehow ignore plugin windows?
+        std::unique_ptr<xcb_generic_event_t> generic_event;
+        while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
+               generic_event != nullptr) {
+            const uint8_t event_type =
+                generic_event->response_type & xcb_event_type_mask;
+            switch (event_type) {
+                // TODO: Handle ConvertSelection
+                // TODO: Handle client messages
+            }
+        }
+
+        xcb_generic_error_t* error = nullptr;
+        const xcb_query_pointer_cookie_t query_pointer_cookie =
+            xcb_query_pointer(x11_connection.get(), root_window);
+        const std::unique_ptr<xcb_query_pointer_reply_t> query_pointer_reply(
+            xcb_query_pointer_reply(x11_connection.get(), query_pointer_cookie,
+                                    &error));
+        if (error) {
+            free(error);
+            continue;
+        }
+
+        if (query_pointer_reply->root_x == last_pointer_x &&
+            query_pointer_reply->root_y == last_pointer_y) {
+            continue;
+        }
+
+        // TODO: Fetch the window under the mouse cursor, send messages to it
+        //       according to the XDND protocol
+
+        last_pointer_x = query_pointer_reply->root_x;
+        last_pointer_y = query_pointer_reply->root_y;
+    }
+
+    // TODO: Check if the escape key is pressed to allow cancelling the drop,
+    //       and either send the drop or leave message to the window that was
+    //       under the pointer
+
+    end_xdnd();
+}
 
 void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                                     DWORD event,
@@ -288,4 +375,13 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                   << std::endl;
         return;
     }
+
+    try {
+        instance->begin_xdnd(dragged_files, hwnd);
+    } catch (const std::exception& error) {
+        std::cerr << "XDND initialization failed:" << std::endl;
+        std::cerr << error.what() << std::endl;
+    }
 }
+
+#undef THROW_X11_ERROR

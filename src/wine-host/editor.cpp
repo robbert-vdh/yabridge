@@ -49,12 +49,6 @@ using namespace std::literals::chrono_literals;
 constexpr size_t idle_timer_id = 1337;
 
 /**
- * The most significant bit in an X11 event's response type is used to indicate
- * the event source.
- */
-constexpr uint8_t event_type_mask = 0b0111'1111;
-
-/**
  * The name of the X11 property on the root window used to denote the active
  * window in EWMH compliant window managers.
  */
@@ -355,15 +349,11 @@ void Editor::handle_x11_events() const noexcept {
     //       function calls involving it will fail. All functions called from
     //       here should be able to handle that cleanly.
     try {
-        // Pump X11 events for handling XDND client messages from the
-        // drag-and-drop proxy
-        dnd_proxy_handle.handle_x11_events();
-
         std::unique_ptr<xcb_generic_event_t> generic_event;
         while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
                generic_event != nullptr) {
             const uint8_t event_type =
-                generic_event->response_type & event_type_mask;
+                generic_event->response_type & xcb_event_type_mask;
             switch (event_type) {
                 // We're listening for `ConfigureNotify` events on the topmost
                 // window before the root window, i.e. the window that's

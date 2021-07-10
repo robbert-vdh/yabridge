@@ -27,6 +27,9 @@
 #pragma pop_macro("_WIN32")
 
 #include <windows.h>
+#include <boost/container/small_vector.hpp>
+
+#include "utils.h"
 
 /**
  * A simple, unmapped 1x1 proxy window we'll use for our Wine->X11 drag-and-drop
@@ -52,8 +55,11 @@ class ProxyWindow {
 
    private:
     std::shared_ptr<xcb_connection_t> x11_connection;
+
+   public:
     xcb_window_t window;
 
+   private:
     bool is_moved = false;
 };
 
@@ -99,11 +105,6 @@ class WineXdndProxy {
         Handle(Handle&&) noexcept;
         Handle& operator=(Handle&&) noexcept = default;
 
-        /**
-         * Handle X11 events for receiving XDND client messages.
-         */
-        void handle_x11_events() const noexcept;
-
        private:
         WineXdndProxy* proxy;
 
@@ -122,9 +123,6 @@ class WineXdndProxy {
      * in a COM object, we can only handle drag-and-drop coming form this
      * process.
      *
-     * The handle's `handle_x11_events()` method should be periodically called
-     * to pump the X11 events for handling XDND client messages.
-     *
      * This is sort of a singleton but not quite, as the `WineXdndProxy` is only
      * alive for as long as there are open editors in this process. This is done
      * to avoid opening too many X11 connections.
@@ -135,11 +133,28 @@ class WineXdndProxy {
     static WineXdndProxy::Handle get_handle();
 
     /**
-     * Handle X11 events for receiving XDND client messages.
+     * Initiate the XDDN protocol by taking ownership of the `XdndSelection`
+     * selection and setting up the event listeners.
      */
-    void handle_x11_events() const noexcept;
+    void begin_xdnd(
+        const boost::container::small_vector_base<std::string>& file_paths,
+        HWND tracker_window);
+
+    /**
+     * Release ownership of the selection stop listening for X11 events.
+     */
+    void end_xdnd();
 
    private:
+    /**
+     * From another thread, constantly poll the mouse position until
+     * `tracker_window` disappears, and then perform the drop if the mouse
+     * cursor was last positioned over an XDND aware window. This is a
+     * workaround for us not being able to grab the mouse cursor since Wine is
+     * already doing that.
+     */
+    void run_xdnd_loop();
+
     /**
      * We need a dedicated X11 connection for our proxy because we can have
      * multiple open editors in a single process (e.g. when using VST3 plugins
@@ -161,6 +176,30 @@ class WineXdndProxy {
                     std::decay_t<decltype(&UnhookWinEvent)>>
         hook_handle;
 #pragma GCC diagnostic pop
+
+    /**
+     * The files that are currently being dragged.
+     */
+    boost::container::small_vector<std::string, 4> dragged_file_paths;
+
+    /**
+     * Wine's tracker window for tracking the drag-and-drop operation. Normally
+     * you would grab the mouse pointer when the drag-and-drop operation starts
+     * so you can track what windows you are hovering over, but we cannot do
+     * that because Wine is already doing just that. So instead we will
+     * periodically poll the mouse position from another thread, and we'll
+     * consider the disappearance of this window to mean that the drop has
+     * either succeeded or cancelled (depending on whether or not Escape is
+     * pressed).
+     */
+    HWND tracker_window;
+
+    /**
+     * We need to poll for mouse position changes from another thread, because
+     * when the drag-and-drop operation starts Wine will be blocking the GUI
+     * thread, so we cannot rely on the normal event loop.
+     */
+    Win32Thread xdnd_handler;
 
     // These are the atoms used for the XDND protocol, as described by
     // https://www.freedesktop.org/wiki/Specifications/XDND/#atomsandproperties
