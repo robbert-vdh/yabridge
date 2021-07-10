@@ -49,6 +49,69 @@ static WineXdndProxy* instance = nullptr;
  */
 static std::atomic_size_t instance_reference_count = 0;
 
+void CALLBACK dnd_winevent_callback(HWINEVENTHOOK hWinEventHook,
+                                    DWORD event,
+                                    HWND hwnd,
+                                    LONG idObject,
+                                    LONG idChild,
+                                    DWORD idEventThread,
+                                    DWORD dwmsEventTime);
+
+WineXdndProxy::WineXdndProxy()
+    : x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
+      proxy_window(xcb_generate_id(x11_connection.get())),
+      hook_handle(
+          SetWinEventHook(EVENT_OBJECT_CREATE,
+                          EVENT_OBJECT_CREATE,
+                          nullptr,
+                          dnd_winevent_callback,
+                          0,
+                          0,
+                          WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS),
+          UnhookWinEvent) {
+    //
+}
+
+WineXdndProxy::~WineXdndProxy() noexcept {
+    // TODO: Move this to a RAII wrapper
+    xcb_destroy_window(x11_connection.get(), proxy_window);
+    xcb_flush(x11_connection.get());
+}
+
+WineXdndProxy::Handle::Handle(WineXdndProxy* proxy) : proxy(proxy) {}
+
+WineXdndProxy::Handle::~Handle() noexcept {
+    if (instance_reference_count.fetch_sub(1) == 1) {
+        delete proxy;
+    }
+}
+
+WineXdndProxy::Handle::Handle(const Handle& o) noexcept : proxy(o.proxy) {
+    instance_reference_count += 1;
+}
+
+WineXdndProxy::Handle::Handle(Handle&& o) noexcept : proxy(o.proxy) {
+    instance_reference_count += 1;
+}
+
+void WineXdndProxy::Handle::handle_x11_events() const noexcept {
+    proxy->handle_x11_events();
+}
+
+WineXdndProxy::Handle WineXdndProxy::get_handle() {
+    // See the `instance` global above for an explanation on what's going on
+    // here.
+    if (instance_reference_count.fetch_add(1) == 0) {
+        instance = new WineXdndProxy{};
+    }
+
+    return Handle(instance);
+}
+
+void WineXdndProxy::handle_x11_events() const noexcept {
+    // TODO
+}
+
 /**
  * Part of the struct Wine uses to keep track of the data during an OLE
  * drag-and-drop operation. We only really care about the first field that
@@ -184,59 +247,4 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                   << std::endl;
         return;
     }
-}
-
-WineXdndProxy::WineXdndProxy()
-    : x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
-      proxy_window(xcb_generate_id(x11_connection.get())),
-      hook_handle(
-          SetWinEventHook(EVENT_OBJECT_CREATE,
-                          EVENT_OBJECT_CREATE,
-                          nullptr,
-                          dnd_winevent_callback,
-                          0,
-                          0,
-                          WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS),
-          UnhookWinEvent) {
-    //
-}
-
-WineXdndProxy::~WineXdndProxy() noexcept {
-    // TODO: Move this to a RAII wrapper
-    xcb_destroy_window(x11_connection.get(), proxy_window);
-    xcb_flush(x11_connection.get());
-}
-
-WineXdndProxy::Handle::Handle(WineXdndProxy* proxy) : proxy(proxy) {}
-
-WineXdndProxy::Handle::~Handle() noexcept {
-    if (instance_reference_count.fetch_sub(1) == 1) {
-        delete proxy;
-    }
-}
-
-WineXdndProxy::Handle::Handle(const Handle& o) noexcept : proxy(o.proxy) {
-    instance_reference_count += 1;
-}
-
-WineXdndProxy::Handle::Handle(Handle&& o) noexcept : proxy(o.proxy) {
-    instance_reference_count += 1;
-}
-
-void WineXdndProxy::Handle::handle_x11_events() const noexcept {
-    proxy->handle_x11_events();
-}
-
-WineXdndProxy::Handle WineXdndProxy::get_handle() {
-    // See the `instance` global above for an explanation on what's going on
-    // here.
-    if (instance_reference_count.fetch_add(1) == 0) {
-        instance = new WineXdndProxy{};
-    }
-
-    return Handle(instance);
-}
-
-void WineXdndProxy::handle_x11_events() const noexcept {
-    // TODO
 }
