@@ -63,7 +63,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   freeze when they send a parameter change from the audio thread using the wrong
   VST3 API while at the same time the host is trying to resize the window. This
   would happen in this particular plugin when reopning the Smart Ops panel after
-  having used it once.
+  having used it once. To fix this, yabridge's Wine-side VST3 mutual recursion
+  mechanism now only operates when invoked from the GUI thread.
 - Fixed missing transport information for VST2 plugins in **Ardour**, breaking
   host sync and LFOs in certain plugins. This was a regression from yabridge
   3.2.0.
