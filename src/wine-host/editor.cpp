@@ -34,7 +34,7 @@ using namespace std::literals::chrono_literals;
     do {                                                                \
         if (error) {                                                    \
             free(error);                                                \
-            throw std::runtime_error("X111 error in " +                 \
+            throw std::runtime_error("X11 error in " +                  \
                                      std::string(__PRETTY_FUNCTION__)); \
         }                                                               \
     } while (0)
