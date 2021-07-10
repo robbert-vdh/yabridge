@@ -599,7 +599,7 @@ bool Editor::supports_ewmh_active_window() const {
     THROW_X11_ERROR(error);
 
     const bool active_window_property_exists =
-        property_reply->format != XCB_ATOM_NONE;
+        property_reply->type != XCB_ATOM_NONE;
     supports_ewmh_active_window_cache = active_window_property_exists;
 
     return active_window_property_exists;
