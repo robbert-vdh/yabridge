@@ -106,6 +106,8 @@ MainContext::MainContext()
 }
 
 void MainContext::run() {
+    gui_thread_id = GetCurrentThreadId();
+
     context.run();
 }
 

@@ -235,6 +235,14 @@ class MainContext {
     WatchdogGuard register_watchdog(HostBridge& bridge);
 
     /**
+     * Returns `true` if the calling thread is the GUI thread, aka the thread
+     * that called `MainContext::run()`.
+     */
+    inline bool is_gui_thread() const noexcept {
+        return GetCurrentThreadId() == gui_thread_id.value_or(0);
+    }
+
+    /**
      * Asynchronously execute a function inside of this main IO context and
      * return the results as a future. This is used to make sure that operations
      * that may involve the Win32 message loop are all run from the same thread.
@@ -315,6 +323,12 @@ class MainContext {
      */
     void async_handle_watchdog_timer(
         std::chrono::steady_clock::duration interval);
+
+    /**
+     * The **Windows** thread ID the context is running on, which will be our
+     * GUI thread. Will be a nullopt until `MainContext::run()` has been called.
+     */
+    std::optional<uint32_t> gui_thread_id;
 
     /**
      * The timer used to periodically handle X11 events and Win32 messages.
