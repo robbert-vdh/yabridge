@@ -156,6 +156,48 @@ class WineXdndProxy {
     void run_xdnd_loop();
 
     /**
+     * Find the first XDND aware X11 window at the current mouse cursor,
+     * starting at `window` and iteratively descending into its children until
+     * we reach the bottommost child where the mouse cursor is in. This respects
+     * `XdndProxy`. If no XdndAware window was found, then this will contain the
+     * deepest query so we still have access to the pointer coordinates. That
+     * means you will still need to check `is_xdnd_aware(result->child)` after
+     * the fact.
+     *
+     * This will return a null pointer if an X11 error was thrown.
+     */
+    std::unique_ptr<xcb_query_pointer_reply_t>
+    query_xdnd_aware_window_at_pointer(xcb_window_t window) const noexcept;
+
+    /**
+     * Check whether a window is XDND-aware, respecting `XdndProxy`. We should
+     * be checking the supported version as well and change our handling
+     * accordingly, but the XDND spec was last updated in 2002 so we'll just
+     * assume this won't cause any issues.
+     */
+    bool is_xdnd_aware(xcb_window_t window) const noexcept;
+
+    /**
+     * Return the XDND proxy window for `window` as specified in the `XdndProxy`
+     * property. Returns a nullopt if `window` doesn't have that property set.
+     */
+    std::optional<xcb_window_t> get_xdnd_proxy(
+        xcb_window_t window) const noexcept;
+
+    /**
+     * Send an XDND message to a window, respecting `XdndProxy` (i.e. window
+     * should always be the window under the cursor). This does not include a
+     * flush. See the spec for more information:
+     *
+     * https://www.freedesktop.org/wiki/Specifications/XDND/#clientmessages
+     */
+    void send_xdnd_message(const xcb_window_t& window,
+                           const uint32_t message,
+                           const uint32_t detail,
+                           const uint32_t data1,
+                           const uint32_t data2) const noexcept;
+
+    /**
      * We need a dedicated X11 connection for our proxy because we can have
      * multiple open editors in a single process (e.g. when using VST3 plugins
      * or plugin groups), and client messages are sent to the X11 connection

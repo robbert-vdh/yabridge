@@ -184,19 +184,6 @@ void WineXdndProxy::end_xdnd() {
     xcb_flush(x11_connection.get());
 }
 
-/**
- * Part of the struct Wine uses to keep track of the data during an OLE
- * drag-and-drop operation. We only really care about the first field that
- * contains the actual data.
- *
- * https://github.com/wine-mirror/wine/blob/d10887b8f56792ebcca717ccc28a289f7bcaf107/dlls/ole32/ole2.c#L54-L73
- */
-struct TrackerWindowInfo {
-    IDataObject* dataObject;
-    IDropSource* dropSource;
-    // ... more fields that we don't need
-};
-
 void WineXdndProxy::run_xdnd_loop() {
     const xcb_window_t root_window =
         xcb_setup_roots_iterator(xcb_get_setup(x11_connection.get()))
@@ -224,25 +211,23 @@ void WineXdndProxy::run_xdnd_loop() {
             }
         }
 
-        xcb_generic_error_t* error = nullptr;
-        const xcb_query_pointer_cookie_t query_pointer_cookie =
-            xcb_query_pointer(x11_connection.get(), root_window);
-        const std::unique_ptr<xcb_query_pointer_reply_t> query_pointer_reply(
-            xcb_query_pointer_reply(x11_connection.get(), query_pointer_cookie,
-                                    &error));
-        if (error) {
-            free(error);
-            continue;
-        }
-        if (query_pointer_reply->root_x == last_pointer_x &&
-            query_pointer_reply->root_y == last_pointer_y) {
+        // We'll try to find the first window under the pointer (starting form
+        // the root) until we find a window that supports XDND. The returned
+        // child window may not support XDND so we need to check that
+        // separately, as we still need to keep track of the pointer
+        // coordinates.
+        const std::unique_ptr<xcb_query_pointer_reply_t> xdnd_window_query =
+            query_xdnd_aware_window_at_pointer(root_window);
+        if (!xdnd_window_query ||
+            (xdnd_window_query->root_x == last_pointer_x &&
+             xdnd_window_query->root_y == last_pointer_y)) {
             continue;
         }
 
-        last_pointer_x = query_pointer_reply->root_x;
-        last_pointer_y = query_pointer_reply->root_y;
         last_window.reset();
-        if (query_pointer_reply->child == XCB_NONE) {
+        last_pointer_x = xdnd_window_query->root_x;
+        last_pointer_y = xdnd_window_query->root_y;
+        if (!is_xdnd_aware(xdnd_window_query->child)) {
             continue;
         }
 
@@ -257,7 +242,7 @@ void WineXdndProxy::run_xdnd_loop() {
 
         // TODO: Fetch the window under the mouse cursor, send messages to it
         //       according to the XDND protocol
-        last_window = query_pointer_reply->child;
+        last_window = xdnd_window_query->child;
     }
 
     // TODO: Check if the escape key is pressed to allow cancelling the drop,
@@ -266,6 +251,98 @@ void WineXdndProxy::run_xdnd_loop() {
 
     end_xdnd();
 }
+
+std::unique_ptr<xcb_query_pointer_reply_t>
+WineXdndProxy::query_xdnd_aware_window_at_pointer(
+    xcb_window_t window) const noexcept {
+    xcb_generic_error_t* error = nullptr;
+    xcb_query_pointer_cookie_t query_pointer_cookie;
+    std::unique_ptr<xcb_query_pointer_reply_t> query_pointer_reply = nullptr;
+    while (true) {
+        query_pointer_cookie = xcb_query_pointer(x11_connection.get(), window);
+        query_pointer_reply.reset(xcb_query_pointer_reply(
+            x11_connection.get(), query_pointer_cookie, &error));
+        if (error) {
+            free(error);
+            break;
+        }
+
+        // We want to find the first XDND aware window under the mouse pointer,
+        // if there is any
+        if (query_pointer_reply->child == XCB_NONE ||
+            is_xdnd_aware(query_pointer_reply->child)) {
+            break;
+        }
+
+        window = query_pointer_reply->child;
+    }
+
+    return query_pointer_reply;
+}
+
+bool WineXdndProxy::is_xdnd_aware(xcb_window_t window) const noexcept {
+    // Respect `XdndProxy`, if that's set
+    window = get_xdnd_proxy(window).value_or(window);
+
+    xcb_generic_error_t* error = nullptr;
+    const xcb_get_property_cookie_t property_cookie =
+        xcb_get_property(x11_connection.get(), false, window,
+                         xcb_xdnd_aware_property, XCB_ATOM_ATOM, 0, 1);
+    const std::unique_ptr<xcb_get_property_reply_t> property_reply(
+        xcb_get_property_reply(x11_connection.get(), property_cookie, &error));
+    if (error) {
+        free(error);
+        return false;
+    }
+
+    // Since the spec dates from 2002, we won't even bother checking the
+    // supported version
+    return property_reply->type != XCB_NONE &&
+           *static_cast<xcb_atom_t*>(
+               xcb_get_property_value(property_reply.get())) != 0;
+}
+
+std::optional<xcb_window_t> WineXdndProxy::get_xdnd_proxy(
+    xcb_window_t window) const noexcept {
+    xcb_generic_error_t* error = nullptr;
+    const xcb_get_property_cookie_t property_cookie =
+        xcb_get_property(x11_connection.get(), false, window,
+                         xcb_xdnd_proxy_property, XCB_ATOM_WINDOW, 0, 1);
+    const std::unique_ptr<xcb_get_property_reply_t> property_reply(
+        xcb_get_property_reply(x11_connection.get(), property_cookie, &error));
+    if (error) {
+        free(error);
+        return std::nullopt;
+    }
+
+    if (property_reply->type == XCB_NONE) {
+        return std::nullopt;
+    } else {
+        return *static_cast<xcb_window_t*>(
+            xcb_get_property_value(property_reply.get()));
+    }
+}
+
+void WineXdndProxy::send_xdnd_message(const xcb_window_t& /*window*/,
+                                      const uint32_t /*message*/,
+                                      const uint32_t /*detail*/,
+                                      const uint32_t /*data1*/,
+                                      const uint32_t /*data2*/) const noexcept {
+    // TODO: Implement
+}
+
+/**
+ * Part of the struct Wine uses to keep track of the data during an OLE
+ * drag-and-drop operation. We only really care about the first field that
+ * contains the actual data.
+ *
+ * https://github.com/wine-mirror/wine/blob/d10887b8f56792ebcca717ccc28a289f7bcaf107/dlls/ole32/ole2.c#L54-L73
+ */
+struct TrackerWindowInfo {
+    IDataObject* dataObject;
+    IDropSource* dropSource;
+    // ... more fields that we don't need
+};
 
 void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                                     DWORD event,
