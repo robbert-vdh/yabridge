@@ -65,6 +65,11 @@ class WineXdndProxy {
         Handle(Handle&&) noexcept;
         Handle& operator=(Handle&&) noexcept = default;
 
+        /**
+         * Handle X11 events for receiving XDND client messages.
+         */
+        void handle_x11_events() const noexcept;
+
        private:
         WineXdndProxy* proxy;
 
@@ -83,6 +88,9 @@ class WineXdndProxy {
      * in a COM object, we can only handle drag-and-drop coming form this
      * process.
      *
+     * The handle's `handle_x11_events()` method should be periodically called
+     * to pump the X11 events for handling XDND client messages.
+     *
      * This is sort of a singleton but not quite, as the `WineXdndProxy` is only
      * alive for as long as there are open editors in this process. This is done
      * to avoid opening too many X11 connections.
@@ -92,8 +100,19 @@ class WineXdndProxy {
      */
     static WineXdndProxy::Handle get_handle();
 
+    /**
+     * Handle X11 events for receiving XDND client messages.
+     */
+    void handle_x11_events() const noexcept;
+
    private:
     std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
+
+    /**
+     * We need an unmapped proxy window to send and receive client messages for
+     * the XDND protocol.
+     */
+    xcb_window_t proxy_window;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-attributes"

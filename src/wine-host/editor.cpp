@@ -374,6 +374,10 @@ void Editor::handle_x11_events() const noexcept {
     //       function calls involving it will fail. All functions called from
     //       here should be able to handle that cleanly.
     try {
+        // Pump X11 events for handling XDND client messages from the
+        // drag-and-drop proxy
+        dnd_proxy_handle.handle_x11_events();
+
         std::unique_ptr<xcb_generic_event_t> generic_event;
         while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
                generic_event != nullptr) {

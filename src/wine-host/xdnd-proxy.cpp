@@ -188,6 +188,7 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
 
 WineXdndProxy::WineXdndProxy()
     : x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
+      proxy_window(xcb_generate_id(x11_connection.get())),
       hook_handle(
           SetWinEventHook(EVENT_OBJECT_CREATE,
                           EVENT_OBJECT_CREATE,
@@ -196,7 +197,15 @@ WineXdndProxy::WineXdndProxy()
                           0,
                           0,
                           WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS),
-          UnhookWinEvent) {}
+          UnhookWinEvent) {
+    //
+}
+
+WineXdndProxy::~WineXdndProxy() noexcept {
+    // TODO: Move this to a RAII wrapper
+    xcb_destroy_window(x11_connection.get(), proxy_window);
+    xcb_flush(x11_connection.get());
+}
 
 WineXdndProxy::Handle::Handle(WineXdndProxy* proxy) : proxy(proxy) {}
 
@@ -214,6 +223,10 @@ WineXdndProxy::Handle::Handle(Handle&& o) noexcept : proxy(o.proxy) {
     instance_reference_count += 1;
 }
 
+void WineXdndProxy::Handle::handle_x11_events() const noexcept {
+    proxy->handle_x11_events();
+}
+
 WineXdndProxy::Handle WineXdndProxy::get_handle() {
     // See the `instance` global above for an explanation on what's going on
     // here.
@@ -222,4 +235,8 @@ WineXdndProxy::Handle WineXdndProxy::get_handle() {
     }
 
     return Handle(instance);
+}
+
+void WineXdndProxy::handle_x11_events() const noexcept {
+    // TODO
 }
