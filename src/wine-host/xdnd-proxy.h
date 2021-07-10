@@ -27,12 +27,44 @@
 #include <windows.h>
 
 /**
+ * A simple, unmapped 1x1 proxy window we'll use for our Wine->X11 drag-and-drop
+ * proxy so we can send and receive client messages.
+ */
+class ProxyWindow {
+   public:
+    /**
+     * Create the proxy window.
+     */
+    ProxyWindow(std::shared_ptr<xcb_connection_t> x11_connection);
+
+    /**
+     * Destroy the window again when this object gets dropped.
+     */
+    ~ProxyWindow() noexcept;
+
+    ProxyWindow(const ProxyWindow&) noexcept = delete;
+    ProxyWindow& operator=(const ProxyWindow&) noexcept = delete;
+
+    ProxyWindow(ProxyWindow&&) noexcept;
+    ProxyWindow& operator=(ProxyWindow&&) noexcept;
+
+   private:
+    std::shared_ptr<xcb_connection_t> x11_connection;
+    xcb_window_t window;
+
+    bool is_moved = false;
+};
+
+/**
  * A simple wrapper that registers a WinEvents hook to listen for new windows
  * being created, and handles XDND client messages to achieve the behaviour
  * described in `WineXdndProxy::init_proxy()`.
  */
 class WineXdndProxy {
    protected:
+    /**
+     * Initialize the proxy and register all hooks.
+     */
     WineXdndProxy();
 
    public:
@@ -106,13 +138,20 @@ class WineXdndProxy {
     void handle_x11_events() const noexcept;
 
    private:
-    std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;
+    /**
+     * We need a dedicated X11 connection for our proxy because we can have
+     * multiple open editors in a single process (e.g. when using VST3 plugins
+     * or plugin groups), and client messages are sent to the X11 connection
+     * that created the window. So we cannot just reuse the connection from the
+     * editor.
+     */
+    std::shared_ptr<xcb_connection_t> x11_connection;
 
     /**
      * We need an unmapped proxy window to send and receive client messages for
      * the XDND protocol.
      */
-    xcb_window_t proxy_window;
+    ProxyWindow proxy_window;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-attributes"
