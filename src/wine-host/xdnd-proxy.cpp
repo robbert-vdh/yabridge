@@ -22,13 +22,20 @@
 #include "boost-fix.h"
 
 #include <boost/container/small_vector.hpp>
+#include "editor.h"
 
 /**
  * The window class name Wine uses for its `DoDragDrop()` tracker window.
  *
  * https://github.com/wine-mirror/wine/blob/d10887b8f56792ebcca717ccc28a289f7bcaf107/dlls/ole32/ole2.c#L101-L104
  */
-static constexpr char OLEDD_DRAGTRACKERCLASS[] = "WineDragDropTracker32";
+constexpr char OLEDD_DRAGTRACKERCLASS[] = "WineDragDropTracker32";
+
+// These are the XDND atom names as described in
+// https://www.freedesktop.org/wiki/Specifications/XDND/#atomsandproperties
+constexpr char xdnd_selection_name[] = "XdndSelection";
+constexpr char xdnd_aware_property_name[] = "XdndAware";
+constexpr char xdnd_proxy_property_name[] = "XdndProxy";
 
 /**
  * We're doing a bit of a hybrid between a COM-style reference counted smart
@@ -102,7 +109,15 @@ WineXdndProxy::WineXdndProxy()
                           0,
                           0,
                           WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS),
-          UnhookWinEvent) {}
+          UnhookWinEvent) {
+    // XDND uses a whole load of atoms for its messages, properties, and
+    // selections
+    xcb_xdnd_selection = get_atom_by_name(*x11_connection, xdnd_selection_name);
+    xcb_xdnd_aware_property =
+        get_atom_by_name(*x11_connection, xdnd_aware_property_name);
+    xcb_xdnd_proxy_property =
+        get_atom_by_name(*x11_connection, xdnd_proxy_property_name);
+}
 
 WineXdndProxy::Handle::Handle(WineXdndProxy* proxy) : proxy(proxy) {}
 

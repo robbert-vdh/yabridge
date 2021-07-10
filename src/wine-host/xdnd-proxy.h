@@ -18,6 +18,8 @@
 
 #include <memory>
 
+#include "boost-fix.h"
+
 // Use the native version of xcb
 #pragma push_macro("_WIN32")
 #undef _WIN32
@@ -159,4 +161,10 @@ class WineXdndProxy {
                     std::decay_t<decltype(&UnhookWinEvent)>>
         hook_handle;
 #pragma GCC diagnostic pop
+
+    // These are the atoms used for the XDND protocol, as described by
+    // https://www.freedesktop.org/wiki/Specifications/XDND/#atomsandproperties
+    xcb_atom_t xcb_xdnd_selection;
+    xcb_atom_t xcb_xdnd_aware_property;
+    xcb_atom_t xcb_xdnd_proxy_property;
 };
