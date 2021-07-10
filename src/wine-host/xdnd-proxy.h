@@ -60,10 +60,10 @@ class WineXdndProxy {
         ~Handle() noexcept;
 
         Handle(const Handle&) noexcept;
-        Handle& operator=(const Handle&) noexcept;
+        Handle& operator=(const Handle&) noexcept = default;
 
         Handle(Handle&&) noexcept;
-        Handle& operator=(Handle&&) noexcept;
+        Handle& operator=(Handle&&) noexcept = default;
 
        private:
         WineXdndProxy* proxy;
