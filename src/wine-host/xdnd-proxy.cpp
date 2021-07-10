@@ -103,7 +103,8 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                         drop, 0xFFFFFFFF, file_name.data(), file_name.size());
 
                     std::cerr << "Plugin wanted to drag-and-drop " << num_files
-                              << " file(s):" << std::endl;
+                              << (num_files == 1 ? " file:" : " files:")
+                              << std::endl;
                     for (uint32_t file_idx = 0; file_idx < num_files;
                          file_idx++) {
                         file_name[0] = 0;
@@ -118,13 +119,15 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                     GlobalUnlock(GlobalLock(storage.hGlobal));
                 } break;
                 case TYMED_FILE: {
-                    std::cerr << "Plugin wanted to drag-and-drop '"
+                    std::cerr << "Plugin wanted to drag-and-drop 1 file:"
+                              << std::endl;
+                    std::cerr << "- "
                               << wine_get_unix_file_name(storage.lpszFileName)
-                              << "'" << std::endl;
+                              << std::endl;
                 } break;
                 default: {
-                    std::cerr << "Unknown format " << storage.tymed
-                              << std::endl;
+                    std::cerr << "Unknown drag-and-drop format "
+                              << storage.tymed << std::endl;
                 } break;
             }
 
