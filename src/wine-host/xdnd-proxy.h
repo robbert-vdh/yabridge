@@ -90,7 +90,7 @@ class WineXdndProxy {
      * @note This function, like everything other GUI realted, should be called
      *   from the main thread that's running the Win32 message loop.
      */
-    static WineXdndProxy::Handle init_proxy();
+    static WineXdndProxy::Handle get_handle();
 
    private:
     std::unique_ptr<xcb_connection_t, decltype(&xcb_disconnect)> x11_connection;

@@ -180,7 +180,8 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
 
     // This shouldn't be possible, but you can never be too sure!
     if (instance_reference_count <= 0 || !instance) {
-        std::cerr << "Drag-and-drop proxy wasn't initialized yet" << std::endl;
+        std::cerr << "Drag-and-drop proxy has not yet been initialized"
+                  << std::endl;
         return;
     }
 }
@@ -213,7 +214,7 @@ WineXdndProxy::Handle::Handle(Handle&& o) noexcept : proxy(o.proxy) {
     instance_reference_count += 1;
 }
 
-WineXdndProxy::Handle WineXdndProxy::init_proxy() {
+WineXdndProxy::Handle WineXdndProxy::get_handle() {
     // See the `instance` global above for an explanation on what's going on
     // here.
     if (instance_reference_count.fetch_add(1) == 0) {

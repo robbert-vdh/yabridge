@@ -202,7 +202,7 @@ Editor::Editor(MainContext& main_context,
                std::optional<fu2::unique_function<void()>> timer_proc)
     : use_xembed(config.editor_xembed),
       x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
-      dnd_proxy_handle(WineXdndProxy::init_proxy()),
+      dnd_proxy_handle(WineXdndProxy::get_handle()),
       client_area(get_maximum_screen_dimensions(*x11_connection)),
       // Create a window without any decoratiosn for easy embedding. The
       // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to
@@ -365,7 +365,7 @@ Editor::Editor(MainContext& main_context,
     // Set up our proxy for translating Wine drag-and-drop events into XDND
     // events
     // TODO: We're going to need to store this somewhere to pass the events
-    WineXdndProxy::init_proxy();
+    WineXdndProxy::get_handle();
 }
 
 void Editor::handle_x11_events() const noexcept {
