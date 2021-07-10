@@ -17,9 +17,11 @@
 #include "xdnd-proxy.h"
 
 #include <atomic>
-
-// FIXME: Remove
 #include <iostream>
+
+#include "boost-fix.h"
+
+#include <boost/container/small_vector.hpp>
 
 /**
  * The window class name Wine uses for its `DoDragDrop()` tracker window.
@@ -27,6 +29,25 @@
  * https://github.com/wine-mirror/wine/blob/d10887b8f56792ebcca717ccc28a289f7bcaf107/dlls/ole32/ole2.c#L101-L104
  */
 static constexpr char OLEDD_DRAGTRACKERCLASS[] = "WineDragDropTracker32";
+
+/**
+ * We're doing a bit of a hybrid between a COM-style reference counted smart
+ * pointer and a singleton here because we need to ensure that there's only one
+ * proxy per process, but we want to free up the X11 connection when it's not
+ * needed anymore. Because of that this pointer may point to deallocated memory,
+ * so the reference count should be leading here. Oh and explained elsewhere, we
+ * won't even bother making this thread safe because it can only be called from
+ * the GUI thread anyways.
+ */
+static WineXdndProxy* instance = nullptr;
+
+/**
+ * The number of handles to our Wine->X11 drag-and-drop proxy object. To prevent
+ * running out of X11 connections when opening and closing a lot of plugin
+ * editors in a project, we'll free this again after the last editor in this
+ * process gets closed.
+ */
+static std::atomic_size_t instance_reference_count = 0;
 
 /**
  * Part of the struct Wine uses to keep track of the data during an OLE
@@ -84,11 +105,19 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
         return;
     }
 
-    std::array<FORMATETC, 16> supported_formats;
+    // The plugin will indicate which formats they support for the
+    // drag-and-drop. In practice this is always going to be a single `HDROP`
+    // (through some `HGLOBAL` global memory) that contains a single file path.
+    // With this information we will set up XDND with those file paths, so we
+    // can drop the files onto native applications.
+    std::array<FORMATETC, 16> supported_formats{};
     unsigned int num_formats = 0;
     enumerator->Next(supported_formats.size(), supported_formats.data(),
                      &num_formats);
     enumerator->Release();
+
+    // This will contain the normal, Unix-style paths to the files
+    boost::container::small_vector<std::string, 4> dragged_files;
     for (unsigned int format_idx = 0; format_idx < num_formats; format_idx++) {
         STGMEDIUM storage{};
         if (HRESULT result = tracker_info->dataObject->GetData(
@@ -97,33 +126,31 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
             switch (storage.tymed) {
                 case TYMED_HGLOBAL: {
                     auto drop = static_cast<HDROP>(GlobalLock(storage.hGlobal));
+                    if (!drop) {
+                        std::cerr << "Failed to lock global memory in "
+                                     "drag-and-drop operation"
+                                  << std::endl;
+                        continue;
+                    }
 
                     std::array<WCHAR, 1024> file_name{0};
                     const uint32_t num_files = DragQueryFileW(
                         drop, 0xFFFFFFFF, file_name.data(), file_name.size());
-
-                    std::cerr << "Plugin wanted to drag-and-drop " << num_files
-                              << (num_files == 1 ? " file:" : " files:")
-                              << std::endl;
                     for (uint32_t file_idx = 0; file_idx < num_files;
                          file_idx++) {
                         file_name[0] = 0;
                         DragQueryFileW(drop, file_idx, file_name.data(),
                                        file_name.size());
 
-                        std::cerr << "- "
-                                  << wine_get_unix_file_name(file_name.data())
-                                  << std::endl;
+                        dragged_files.emplace_back(
+                            wine_get_unix_file_name(file_name.data()));
                     }
 
-                    GlobalUnlock(GlobalLock(storage.hGlobal));
+                    GlobalUnlock(storage.hGlobal);
                 } break;
                 case TYMED_FILE: {
-                    std::cerr << "Plugin wanted to drag-and-drop 1 file:"
-                              << std::endl;
-                    std::cerr << "- "
-                              << wine_get_unix_file_name(storage.lpszFileName)
-                              << std::endl;
+                    dragged_files.emplace_back(
+                        wine_get_unix_file_name(storage.lpszFileName));
                 } break;
                 default: {
                     std::cerr << "Unknown drag-and-drop format "
@@ -135,6 +162,26 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                 storage.pUnkForRelease->Release();
             }
         }
+    }
+
+    if (dragged_files.empty()) {
+        std::cerr
+            << "Plugin wanted to drag-and-drop, but didn't specify any files"
+            << std::endl;
+        return;
+    }
+
+    std::cerr << "Plugin wanted to drag-and-drop " << dragged_files.size()
+              << (dragged_files.size() == 1 ? " file:" : " files:")
+              << std::endl;
+    for (const auto& file : dragged_files) {
+        std::cerr << "- " << file << std::endl;
+    }
+
+    // This shouldn't be possible, but you can never be too sure!
+    if (instance_reference_count <= 0 || !instance) {
+        std::cerr << "Drag-and-drop proxy wasn't initialized yet" << std::endl;
+        return;
     }
 }
 
@@ -149,14 +196,6 @@ WineXdndProxy::WineXdndProxy()
                           0,
                           WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS),
           UnhookWinEvent) {}
-
-/**
- * The number of handles to our Wine->X11 drag-and-drop proxy object. To prevent
- * running out of X11 connections when opening and closing a lot of plugin
- * editors in a project, we'll free this again after the last editor in this
- * process gets closed.
- */
-static std::atomic_size_t instance_reference_count = 0;
 
 WineXdndProxy::Handle::Handle(WineXdndProxy* proxy) : proxy(proxy) {}
 
@@ -175,14 +214,8 @@ WineXdndProxy::Handle::Handle(Handle&& o) noexcept : proxy(o.proxy) {
 }
 
 WineXdndProxy::Handle WineXdndProxy::init_proxy() {
-    // We're doing a bit of a hybrid between a COM-style reference counted smart
-    // pointer and a singleton here because we need to ensure that there's only
-    // one proxy per process, but we want to free up the X11 connection when
-    // it's not needed anymore. Because of that this pointer may point to
-    // deallocated memory, so the reference count should be leading here. Oh and
-    // explained elsewhere, we won't even bother making this thread safe because
-    // it can only be called from the GUI thread anyways.
-    static WineXdndProxy* instance = nullptr;
+    // See the `instance` global above for an explanation on what's going on
+    // here.
     if (instance_reference_count.fetch_add(1) == 0) {
         instance = new WineXdndProxy{};
     }
