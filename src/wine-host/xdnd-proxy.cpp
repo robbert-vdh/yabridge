@@ -43,6 +43,12 @@ constexpr char OLEDD_DRAGTRACKERCLASS[] = "WineDragDropTracker32";
 constexpr char xdnd_selection_name[] = "XdndSelection";
 // xdnd_aware_property_name is defined in `editor.h``
 constexpr char xdnd_proxy_property_name[] = "XdndProxy";
+constexpr char xdnd_enter_message_name[] = "XdndEnter";
+constexpr char xdnd_leave_message_name[] = "XdndLeave";
+
+// Mime types for use in XDND
+constexpr char mime_text_uri_list_name[] = "text/uri-list";
+constexpr char mime_text_plain_name[] = "text/plain";
 
 /**
  * We're doing a bit of a hybrid between a COM-style reference counted smart
@@ -124,6 +130,15 @@ WineXdndProxy::WineXdndProxy()
         get_atom_by_name(*x11_connection, xdnd_aware_property_name);
     xcb_xdnd_proxy_property =
         get_atom_by_name(*x11_connection, xdnd_proxy_property_name);
+    xcb_xdnd_enter_message =
+        get_atom_by_name(*x11_connection, xdnd_enter_message_name);
+    xcb_xdnd_leave_message =
+        get_atom_by_name(*x11_connection, xdnd_leave_message_name);
+
+    xcb_mime_text_uri_list =
+        get_atom_by_name(*x11_connection, mime_text_uri_list_name);
+    xcb_mime_text_plain =
+        get_atom_by_name(*x11_connection, mime_text_plain_name);
 }
 
 WineXdndProxy::Handle::Handle(WineXdndProxy* proxy) : proxy(proxy) {}
@@ -238,6 +253,29 @@ void WineXdndProxy::run_xdnd_loop() {
         if (HWND windows_window = WindowFromPoint(windows_pointer_pos);
             windows_window && windows_window != windows_desktop_window) {
             continue;
+        }
+
+        // When transitioning between windows we need to announce this to both
+        // windows
+        if (last_window != xdnd_window_query->child) {
+            if (last_window) {
+                // FIXME: For some reason you get a -Wmaybe-uninitialized false
+                //        positive with GCC 11.1.0 if you just dereference
+                //        `last_window` here
+                send_xdnd_message(last_window.value_or(0),
+                                  xcb_xdnd_leave_message, 0, 0, 0, 0);
+            }
+
+            // We need to announce which file formats we support. There are a
+            // couple more common ones, but with `text/uri-list` and
+            // `text/plain` we should cover most applications, and this is also
+            // the recommended format for links/paths elsewhere:
+            // https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API/Recommended_drag_types#link
+            send_xdnd_message(xdnd_window_query->child, xcb_xdnd_enter_message,
+                              5 << 24, xcb_mime_text_uri_list,
+                              xcb_mime_text_plain, XCB_NONE);
+
+            xcb_flush(x11_connection.get());
         }
 
         // TODO: Fetch the window under the mouse cursor, send messages to it
