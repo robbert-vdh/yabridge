@@ -207,8 +207,9 @@ void WineXdndProxy::run_xdnd_loop() {
     // it's also blocking the GUI thread. So instead we will periodically poll
     // the mouse cursor position, and we will consider the disappearance of
     // `tracker_window` to mean that the drag-and-drop operation has ended.
-    uint16_t last_pointer_x = ~0;
-    uint16_t last_pointer_y = ~0;
+    std::optional<uint16_t> last_pointer_x;
+    std::optional<uint16_t> last_pointer_y;
+    std::optional<xcb_window_t> last_window;
     while (IsWindow(tracker_window)) {
         usleep(1000);
 
@@ -238,6 +239,13 @@ void WineXdndProxy::run_xdnd_loop() {
             continue;
         }
 
+        last_pointer_x = query_pointer_reply->root_x;
+        last_pointer_y = query_pointer_reply->root_y;
+        last_window.reset();
+        if (query_pointer_reply->child == XCB_NONE) {
+            continue;
+        }
+
         // We want to ignore all Wine windows (within this prefix), since Wine
         // will be able to handle the drag-and-drop better than we can
         POINT windows_pointer_pos;
@@ -249,9 +257,7 @@ void WineXdndProxy::run_xdnd_loop() {
 
         // TODO: Fetch the window under the mouse cursor, send messages to it
         //       according to the XDND protocol
-
-        last_pointer_x = query_pointer_reply->root_x;
-        last_pointer_y = query_pointer_reply->root_y;
+        last_window = query_pointer_reply->child;
     }
 
     // TODO: Check if the escape key is pressed to allow cancelling the drop,
