@@ -201,6 +201,7 @@ void WineXdndProxy::run_xdnd_loop() {
     const xcb_window_t root_window =
         xcb_setup_roots_iterator(xcb_get_setup(x11_connection.get()))
             .data->root;
+    const HWND windows_desktop_window = GetDesktopWindow();
 
     // We cannot just grab the pointer because Wine is already doing that, and
     // it's also blocking the GUI thread. So instead we will periodically poll
@@ -211,7 +212,6 @@ void WineXdndProxy::run_xdnd_loop() {
     while (IsWindow(tracker_window)) {
         usleep(1000);
 
-        // TODO: Can we somehow ignore plugin windows?
         std::unique_ptr<xcb_generic_event_t> generic_event;
         while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
                generic_event != nullptr) {
@@ -233,9 +233,17 @@ void WineXdndProxy::run_xdnd_loop() {
             free(error);
             continue;
         }
-
         if (query_pointer_reply->root_x == last_pointer_x &&
             query_pointer_reply->root_y == last_pointer_y) {
+            continue;
+        }
+
+        // We want to ignore all Wine windows (within this prefix), since Wine
+        // will be able to handle the drag-and-drop better than we can
+        POINT windows_pointer_pos;
+        GetCursorPos(&windows_pointer_pos);
+        if (HWND windows_window = WindowFromPoint(windows_pointer_pos);
+            windows_window && windows_window != windows_desktop_window) {
             continue;
         }
 
