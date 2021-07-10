@@ -54,12 +54,8 @@ constexpr size_t idle_timer_id = 1337;
  */
 constexpr char active_window_property_name[] = "_NET_ACTIVE_WINDOW";
 
-/**
- * The name of the X11 property that indicates whether a window supports
- * drag-and-drop. If the `editor_force_dnd` option is enabled we'll remove this
- * property from `topmost_window` to work around a bug in REAPER.
- */
-constexpr char xdnd_aware_property_name[] = "XdndAware";
+// `xdnd_aware_property_name` was moved to `editor.h` so the unity build
+// succeeds
 
 /**
  * Client message name for XEmbed messages. See

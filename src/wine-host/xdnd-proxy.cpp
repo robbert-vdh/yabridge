@@ -41,7 +41,7 @@ constexpr char OLEDD_DRAGTRACKERCLASS[] = "WineDragDropTracker32";
 // These are the XDND atom names as described in
 // https://www.freedesktop.org/wiki/Specifications/XDND/#atomsandproperties
 constexpr char xdnd_selection_name[] = "XdndSelection";
-constexpr char xdnd_aware_property_name[] = "XdndAware";
+// xdnd_aware_property_name is defined in `editor.h``
 constexpr char xdnd_proxy_property_name[] = "XdndProxy";
 
 /**

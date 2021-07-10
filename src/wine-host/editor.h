@@ -34,12 +34,6 @@
 #include "xdnd-proxy.h"
 
 /**
- * The most significant bit in an X11 event's response type is used to indicate
- * the event source.
- */
-constexpr uint8_t xcb_event_type_mask = 0b0111'1111;
-
-/**
  * The maximum number of Win32 messages to handle per message loop. This is
  * needed because otherwise some plugins can run into an infinite loop. I've
  * observed this with:
@@ -49,6 +43,19 @@ constexpr uint8_t xcb_event_type_mask = 0b0111'1111;
  *   plugin group
  */
 constexpr int max_win32_messages [[maybe_unused]] = 20;
+
+/**
+ * The most significant bit in an X11 event's response type is used to indicate
+ * the event source.
+ */
+constexpr uint8_t xcb_event_type_mask = 0b0111'1111;
+
+/**
+ * The name of the X11 property that indicates whether a window supports
+ * drag-and-drop. If the `editor_force_dnd` option is enabled we'll remove this
+ * property from `topmost_window` to work around a bug in REAPER.
+ */
+constexpr char xdnd_aware_property_name[] = "XdndAware";
 
 /**
  * Get the atom with the specified name. May throw when
