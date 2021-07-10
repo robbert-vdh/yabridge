@@ -323,12 +323,31 @@ std::optional<xcb_window_t> WineXdndProxy::get_xdnd_proxy(
     }
 }
 
-void WineXdndProxy::send_xdnd_message(const xcb_window_t& /*window*/,
-                                      const uint32_t /*message*/,
-                                      const uint32_t /*detail*/,
-                                      const uint32_t /*data1*/,
-                                      const uint32_t /*data2*/) const noexcept {
-    // TODO: Implement
+void WineXdndProxy::send_xdnd_message(const xcb_window_t& window,
+                                      const xcb_atom_t message_type,
+                                      const uint32_t data1,
+                                      const uint32_t data2,
+                                      const uint32_t data3,
+                                      const uint32_t data4) const noexcept {
+    // See https://www.freedesktop.org/wiki/Specifications/XDND/#clientmessages
+    xcb_client_message_event_t event;
+    event.response_type = XCB_CLIENT_MESSAGE;
+    event.type = message_type;
+    // If `window` has `XdndProxy` set, then we should still mention that window
+    // here, even though we will send the message to another window.
+    event.window = window;
+    event.format = 32;
+    // THis is the source window, so the other side cna reply
+    event.data.data32[0] = proxy_window.window;
+    event.data.data32[1] = data1;
+    event.data.data32[2] = data2;
+    event.data.data32[3] = data3;
+    event.data.data32[4] = data4;
+
+    // Make sure to respect `XdndProxy` only here, as explaiend in the spec
+    xcb_send_event(x11_connection.get(), false,
+                   get_xdnd_proxy(window).value_or(window),
+                   XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&event));
 }
 
 /**
