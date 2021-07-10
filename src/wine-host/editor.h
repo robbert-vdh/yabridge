@@ -45,6 +45,16 @@
 constexpr int max_win32_messages [[maybe_unused]] = 20;
 
 /**
+ * Get the atom with the specified name. May throw when
+ * `xcb_intern_atom_reply()` returns an error. Returns `XCB_ATOM_NONE` when the
+ * atom doesn't exist. We define this here because we'll also need to fetch a
+ * whole bunch of atoms for the We define this here because we'll also need to
+ * fetch a whole bunch of atoms for the XDND protocol in `xdnd-proxy.cpp`.
+ */
+xcb_atom_t get_atom_by_name(xcb_connection_t& x11_connection,
+                            const char* atom_name);
+
+/**
  * Used to store the maximum width and height of a screen.
  */
 struct Size {

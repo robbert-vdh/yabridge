@@ -65,7 +65,7 @@ constexpr char active_window_property_name[] = "_NET_ACTIVE_WINDOW";
  * drag-and-drop. If the `editor_force_dnd` option is enabled we'll remove this
  * property from `topmost_window` to work around a bug in REAPER.
  */
-constexpr char x_dnd_aware_property_name[] = "XdndAware";
+constexpr char xdnd_aware_property_name[] = "XdndAware";
 
 /**
  * Client message name for XEmbed messages. See
@@ -241,21 +241,12 @@ Editor::Editor(MainContext& main_context,
       wine_window(get_x11_handle(win32_window.handle)),
       topmost_window(
           find_ancestor_windows(*x11_connection, parent_window).back()) {
-    xcb_generic_error_t* error;
-
     // Used for input focus grabbing to only grab focus when the window is
-    // active.
-    xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(
-        x11_connection.get(), true, strlen(active_window_property_name),
-        active_window_property_name);
-    std::unique_ptr<xcb_intern_atom_reply_t> atom_reply(
-        xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error));
-    THROW_X11_ERROR(error);
-
-    // In case the atom does not exist or the WM does not support this hint,
-    // we'll print a warning and fall back to grabbing focus when the user
+    // active. In case the atom does not exist or the WM does not support this
+    // hint, we'll print a warning and fall back to grabbing focus when the user
     // clicks on the window (which should trigger a `WM_PARENTNOTIFY`).
-    active_window_property = atom_reply->atom;
+    active_window_property =
+        get_atom_by_name(*x11_connection, active_window_property_name);
     if (!supports_ewmh_active_window()) {
         std::cerr << "WARNING: The current window manager does not support the"
                   << std::endl;
@@ -271,29 +262,19 @@ Editor::Editor(MainContext& main_context,
     // `Configuration::editor_force_dnd` and the option description in the
     // readme for more information.
     if (config.editor_force_dnd) {
-        atom_cookie = xcb_intern_atom(x11_connection.get(), true,
-                                      strlen(x_dnd_aware_property_name),
-                                      x_dnd_aware_property_name);
-        atom_reply.reset(
-            xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error));
-        THROW_X11_ERROR(error);
-
+        const xcb_atom_t xcb_xdnd_aware_property =
+            get_atom_by_name(*x11_connection, xdnd_aware_property_name);
         for (const xcb_window_t& window :
              find_ancestor_windows(*x11_connection, parent_window)) {
-            xcb_delete_property(x11_connection.get(), window, atom_reply->atom);
+            xcb_delete_property(x11_connection.get(), window,
+                                xcb_xdnd_aware_property);
         }
     }
 
     // When using XEmbed we'll need the atoms for the corresponding properties
     if (use_xembed) {
-        atom_cookie =
-            xcb_intern_atom(x11_connection.get(), true,
-                            strlen(xembed_message_name), xembed_message_name);
-        atom_reply.reset(
-            xcb_intern_atom_reply(x11_connection.get(), atom_cookie, &error));
-        THROW_X11_ERROR(error);
-
-        xcb_xembed_message = atom_reply->atom;
+        xcb_xembed_message =
+            get_atom_by_name(*x11_connection, xembed_message_name);
     }
 
     // When not using XEmbed, Wine will interpret any local coordinates as
@@ -498,7 +479,7 @@ void Editor::fix_local_coordinates() const {
     //       inside directly inside of the dialog, and Waveform then moves the
     //       window 27 pixels down. That's why we cannot use `parent_window`
     //       here.
-    xcb_generic_error_t* error;
+    xcb_generic_error_t* error = nullptr;
     const xcb_translate_coordinates_cookie_t translate_cookie =
         xcb_translate_coordinates(x11_connection.get(), wine_window, root, 0,
                                   0);
@@ -530,7 +511,7 @@ void Editor::fix_local_coordinates() const {
 void Editor::set_input_focus(bool grab) const {
     const xcb_window_t focus_target = grab ? parent_window : topmost_window;
 
-    xcb_generic_error_t* error;
+    xcb_generic_error_t* error = nullptr;
     const xcb_get_input_focus_cookie_t focus_cookie =
         xcb_get_input_focus(x11_connection.get());
     const std::unique_ptr<xcb_get_input_focus_reply_t> focus_reply(
@@ -590,7 +571,7 @@ bool Editor::is_wine_window_active() const {
     const xcb_window_t root_window =
         get_root_window(*x11_connection, wine_window);
 
-    xcb_generic_error_t* error;
+    xcb_generic_error_t* error = nullptr;
     const xcb_get_property_cookie_t property_cookie =
         xcb_get_property(x11_connection.get(), false, root_window,
                          active_window_property, XCB_ATOM_WINDOW, 0, 1);
@@ -623,7 +604,7 @@ bool Editor::supports_ewmh_active_window() const {
     // If the `_NET_ACTIVE_WINDOW` property does not exist on the root window,
     // the returned property type will be `XCB_ATOM_NONE` as specified in the
     // X11 manual
-    xcb_generic_error_t* error;
+    xcb_generic_error_t* error = nullptr;
     const xcb_get_property_cookie_t property_cookie =
         xcb_get_property(x11_connection.get(), false, root_window,
                          active_window_property, XCB_ATOM_WINDOW, 0, 1);
@@ -772,7 +753,7 @@ boost::container::small_vector<xcb_window_t, 8> find_ancestor_windows(
     xcb_connection_t& x11_connection,
     xcb_window_t starting_at) {
     xcb_window_t current_window = starting_at;
-    xcb_generic_error_t* error;
+    xcb_generic_error_t* error = nullptr;
     xcb_query_tree_cookie_t query_cookie =
         xcb_query_tree(&x11_connection, starting_at);
     std::unique_ptr<xcb_query_tree_reply_t> query_reply(
@@ -798,7 +779,7 @@ boost::container::small_vector<xcb_window_t, 8> find_ancestor_windows(
 bool is_child_window_or_same(xcb_connection_t& x11_connection,
                              xcb_window_t child,
                              xcb_window_t parent) {
-    xcb_generic_error_t* error;
+    xcb_generic_error_t* error = nullptr;
     xcb_query_tree_cookie_t query_cookie =
         xcb_query_tree(&x11_connection, child);
     std::unique_ptr<xcb_query_tree_reply_t> query_reply(
@@ -820,6 +801,18 @@ bool is_child_window_or_same(xcb_connection_t& x11_connection,
     }
 
     return false;
+}
+
+xcb_atom_t get_atom_by_name(xcb_connection_t& x11_connection,
+                            const char* atom_name) {
+    xcb_generic_error_t* error = nullptr;
+    xcb_intern_atom_cookie_t atom_cookie =
+        xcb_intern_atom(&x11_connection, true, strlen(atom_name), atom_name);
+    std::unique_ptr<xcb_intern_atom_reply_t> atom_reply(
+        xcb_intern_atom_reply(&x11_connection, atom_cookie, &error));
+    THROW_X11_ERROR(error);
+
+    return atom_reply->atom;
 }
 
 Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection) noexcept {
@@ -845,7 +838,7 @@ Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection) noexcept {
 
 xcb_window_t get_root_window(xcb_connection_t& x11_connection,
                              xcb_window_t window) {
-    xcb_generic_error_t* error;
+    xcb_generic_error_t* error = nullptr;
     const xcb_query_tree_cookie_t query_cookie =
         xcb_query_tree(&x11_connection, window);
     std::unique_ptr<xcb_query_tree_reply_t> query_reply(
