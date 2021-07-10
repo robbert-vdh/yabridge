@@ -59,6 +59,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   plugins would at runtime change their query interface to support more VST3
   interfaces, including the required edit controller interface. Yabridge now
   requeries the supported interfaces at a later stage to work around this.
+- Fixed JUCE plugins like Tokyo Dawn Records' **SlickEQ M** causing the host to
+  freeze when they send a parameter change from the audio thread using the wrong
+  VST3 API while at the same time the host is trying to resize the window. This
+  would happen in this particular plugin when reopning the Smart Ops panel after
+  having used it once.
 - Fixed missing transport information for VST2 plugins in **Ardour**, breaking
   host sync and LFOs in certain plugins. This was a regression from yabridge
   3.2.0.

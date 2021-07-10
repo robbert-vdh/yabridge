@@ -294,8 +294,9 @@ class Vst3Bridge : public HostBridge {
     }
 
     /**
-     * Spawn a new thread and call `send_message()` from there, and then handle
-     * functions passed by calls to `do_mutual_recursion_on_gui_thread()` and
+     * When called form the GUI thread, spawn a new thread and call
+     * `send_message()` from there, and then handle functions passed by calls to
+     * `do_mutual_recursion_on_gui_thread()` and
      * `do_mutual_recursion_on_off_thread()` on this thread until we get a
      * response back. This is a very specific solution to a very specific
      * problem. When a plugin wants to resize itself, it will call
@@ -316,10 +317,24 @@ class Vst3Bridge : public HostBridge {
      * context.
      *
      * We apply the same trick in `Vst3HostBridge`.
+     *
+     * NOTE: This is meant to allow mutually recursive call chains where every
+     *       function is called from and handled on the GUI thread. JUCE calls
+     *       `IComponentHandler::performEdit` from the audio thread because they
+     *       didn't implement the VST3 output parameters, and if at the same
+     *       time a resize request comes in from the host that would mean that
+     *       the resize request is also called from the audio thread. To prevent
+     *       this we will make sure to only do this mutual recursion stuff if
+     *       this is actually called form the GUI thread.
      */
     template <typename T>
     typename T::Response send_mutually_recursive_message(const T& object) {
-        return mutual_recursion.fork([&]() { return send_message(object); });
+        if (main_context.is_gui_thread()) {
+            return mutual_recursion.fork(
+                [&]() { return send_message(object); });
+        } else {
+            return send_message(object);
+        }
     }
 
     /**
