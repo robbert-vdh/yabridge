@@ -611,7 +611,7 @@ void Editor::send_xembed_message(xcb_window_t window,
                                  uint32_t detail,
                                  uint32_t data1,
                                  uint32_t data2) const noexcept {
-    xcb_client_message_event_t event;
+    xcb_client_message_event_t event{};
     event.response_type = XCB_CLIENT_MESSAGE;
     event.type = xcb_xembed_message;
     event.window = window;

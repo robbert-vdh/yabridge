@@ -273,8 +273,40 @@ void WineXdndProxy::run_xdnd_loop() {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
             switch (event_type) {
-                // TODO: Handle ConvertSelection
                 // TODO: Handle client messages
+                // When the window we're dragging over wants to inspect the
+                // dragged content, it will call `ConvertSelection()` which
+                // sends us a `SelelectionRequest`. We should write the data in
+                // the requested format the property the specified on their
+                // window, and then send them a `SelectionNotify` to indicate
+                // that we're done.  Since we only provide a single unique
+                // format, we have already converted the file list to
+                // `text/uri-list` format.
+                case XCB_SELECTION_REQUEST: {
+                    const auto event =
+                        reinterpret_cast<xcb_selection_request_event_t*>(
+                            generic_event.get());
+
+                    xcb_change_property(
+                        x11_connection.get(), XCB_PROP_MODE_REPLACE,
+                        event->requestor, event->property, event->target, 8,
+                        // +1 to account for the trailing null byte
+                        dragged_files_uri_list.size() + 1,
+                        dragged_files_uri_list.c_str());
+                    xcb_flush(x11_connection.get());
+
+                    xcb_selection_notify_event_t selection_notify_event{};
+                    selection_notify_event.response_type = XCB_SELECTION_NOTIFY;
+                    selection_notify_event.requestor = event->requestor;
+                    selection_notify_event.selection = xcb_xdnd_selection;
+                    selection_notify_event.target = event->target;
+                    selection_notify_event.property = event->property;
+
+                    xcb_send_event(
+                        x11_connection.get(), false, event->requestor, XCB_NONE,
+                        reinterpret_cast<const char*>(&selection_notify_event));
+                    xcb_flush(x11_connection.get());
+                } break;
             }
         }
 
@@ -434,7 +466,7 @@ void WineXdndProxy::send_xdnd_message(xcb_window_t window,
                                       uint32_t data3,
                                       uint32_t data4) const noexcept {
     // See https://www.freedesktop.org/wiki/Specifications/XDND/#clientmessages
-    xcb_client_message_event_t event;
+    xcb_client_message_event_t event{};
     event.response_type = XCB_CLIENT_MESSAGE;
     event.type = message_type;
     // If `window` has `XdndProxy` set, then we should still mention that window
