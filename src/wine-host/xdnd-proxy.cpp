@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <iostream>
+#include <numeric>
 
 #include "editor.h"
 
@@ -179,6 +180,10 @@ WineXdndProxy::Handle WineXdndProxy::get_handle() {
 void WineXdndProxy::begin_xdnd(
     const boost::container::small_vector_base<std::string>& file_paths,
     HWND tracker_window) {
+    if (file_paths.empty()) {
+        throw std::runtime_error("Cannot drag-and-drop without any files");
+    }
+
     // When XDND starts, we need to start listening for mouse events so we can
     // react when the mouse cursor hovers over a target that supports XDND. The
     // actual file contents will be transferred over X11 selections. See the
@@ -188,13 +193,34 @@ void WineXdndProxy::begin_xdnd(
                             xcb_xdnd_selection, XCB_CURRENT_TIME);
     xcb_flush(x11_connection.get());
 
+    // We will transfer the files in `text/uri-list` format, so a string of URIs
+    // separated by line feeds. When the target window requests the selection to
+    // be converted, they will ask us to write this to a property on their
+    // window
+    // TODO: Like with the desktop notifications, we do not yet perform any
+    //       escaping here
+    constexpr char file_protocol[] = "file://";
+    dragged_files_uri_list.reserve(
+        std::accumulate(file_paths.begin() + 1, file_paths.end(),
+                        file_paths[0].size() + strlen(file_protocol) - 1,
+                        [file_protocol](size_t size, const auto& path) {
+                            return size + (strlen(file_protocol) - 1) +
+                                   path.size() + sizeof('\n');
+                        }));
+    dragged_files_uri_list.assign(file_protocol);
+    dragged_files_uri_list.append(file_paths[0]);
+    for (size_t i = 1; i < file_paths.size(); i++) {
+        dragged_files_uri_list.push_back('\n');
+        dragged_files_uri_list.append(file_protocol);
+        dragged_files_uri_list.append(file_paths[i]);
+    }
+
     // Normally at this point you would grab the mouse pointer and track what
     // windows it's moving over. Wine is already doing this, so as a hacky
     // workaround we will instead just periodically poll the pointer position in
     // `WineXdndProxy::handle_x11_events()`, and we'll consider the
     // disappearance of `tracker_window` to indicate that the drag-and-drop has
     // either been cancelled or it has succeeded.
-    dragged_file_paths.assign(file_paths.begin(), file_paths.end());
     this->tracker_window = tracker_window;
 
     // Because Wine is blocking the GUI thread, we need to do our XDND polling

@@ -221,9 +221,10 @@ class WineXdndProxy {
 #pragma GCC diagnostic pop
 
     /**
-     * The files that are currently being dragged.
+     * The files that are currently being dragged, stored as in `text/uri-list`
+     * format (i.e. a list of URIs, separated by line feeds)
      */
-    boost::container::small_vector<std::string, 4> dragged_file_paths;
+    std::string dragged_files_uri_list;
 
     /**
      * Wine's tracker window for tracking the drag-and-drop operation. Normally
