@@ -213,21 +213,18 @@ void WineXdndProxy::begin_xdnd(
     // be converted, they will ask us to write this to a property on their
     // window
     // TODO: Like with the desktop notifications, we do not yet perform any
-    //       escaping here
+    //       escaping here - apparently REAPER requires this
     constexpr char file_protocol[] = "file://";
+    dragged_files_uri_list.clear();
     dragged_files_uri_list.reserve(
-        std::accumulate(file_paths.begin() + 1, file_paths.end(),
-                        file_paths[0].size() + strlen(file_protocol) - 1,
-                        [file_protocol](size_t size, const auto& path) {
-                            return size + (strlen(file_protocol) - 1) +
-                                   path.size() + sizeof('\n');
-                        }));
-    dragged_files_uri_list.assign(file_protocol);
-    dragged_files_uri_list.append(file_paths[0]);
-    for (size_t i = 1; i < file_paths.size(); i++) {
-        dragged_files_uri_list.push_back('\n');
+        std::accumulate(
+            file_paths.begin(), file_paths.end(), 0,
+            [](size_t size, const auto& path) { return size + path.size(); }) +
+        ((strlen(file_protocol) - 1 + sizeof('\n')) * file_paths.size()));
+    for (const auto& path : file_paths) {
         dragged_files_uri_list.append(file_protocol);
-        dragged_files_uri_list.append(file_paths[i]);
+        dragged_files_uri_list.append(path);
+        dragged_files_uri_list.push_back('\n');
     }
 
     // Normally at this point you would grab the mouse pointer and track what
