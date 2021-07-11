@@ -211,7 +211,24 @@ void WineXdndProxy::run_xdnd_loop() {
     // `tracker_window` to mean that the drag-and-drop operation has ended.
     std::optional<uint16_t> last_pointer_x;
     std::optional<uint16_t> last_pointer_y;
+
+    // FIXME: For some reason you get a -Wmaybe-uninitialized false positive
+    //        with GCC 11.1.0 if you just dereference `last_window` here:
+    //        https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80635
+    //        Oh and Clang doesn't know about -Wmaybe-uninitialized, so we need
+    //        to ignore some more warnings here to get clangd to not complain
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
     std::optional<xcb_window_t> last_window;
+    auto maybe_leave_last_window = [&]() {
+        if (last_window) {
+            send_xdnd_message(*last_window, xcb_xdnd_leave_message, 0, 0, 0, 0);
+        }
+    };
+#pragma GCC diagnostic pop
+
     while (IsWindow(tracker_window)) {
         usleep(1000);
 
@@ -239,10 +256,11 @@ void WineXdndProxy::run_xdnd_loop() {
             continue;
         }
 
-        last_window.reset();
         last_pointer_x = xdnd_window_query->root_x;
         last_pointer_y = xdnd_window_query->root_y;
         if (!is_xdnd_aware(xdnd_window_query->child)) {
+            maybe_leave_last_window();
+            last_window.reset();
             continue;
         }
 
@@ -252,19 +270,15 @@ void WineXdndProxy::run_xdnd_loop() {
         GetCursorPos(&windows_pointer_pos);
         if (HWND windows_window = WindowFromPoint(windows_pointer_pos);
             windows_window && windows_window != windows_desktop_window) {
+            maybe_leave_last_window();
+            last_window.reset();
             continue;
         }
 
         // When transitioning between windows we need to announce this to both
         // windows
         if (last_window != xdnd_window_query->child) {
-            if (last_window) {
-                // FIXME: For some reason you get a -Wmaybe-uninitialized false
-                //        positive with GCC 11.1.0 if you just dereference
-                //        `last_window` here
-                send_xdnd_message(last_window.value_or(0),
-                                  xcb_xdnd_leave_message, 0, 0, 0, 0);
-            }
+            maybe_leave_last_window();
 
             // We need to announce which file formats we support. There are a
             // couple more common ones, but with `text/uri-list` and
@@ -287,6 +301,8 @@ void WineXdndProxy::run_xdnd_loop() {
     //       and either send the drop or leave message to the window that was
     //       under the pointer
 
+    // TODO: We should wait for XdndFinished instead, maybe add a timeout for
+    //       faulty implementations if those exist
     end_xdnd();
 }
 
