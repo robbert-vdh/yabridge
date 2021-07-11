@@ -136,9 +136,9 @@ class WineXdndProxy {
      * Initiate the XDDN protocol by taking ownership of the `XdndSelection`
      * selection and setting up the event listeners.
      */
-    void begin_xdnd(
-        const boost::container::small_vector_base<std::string>& file_paths,
-        HWND tracker_window);
+    void begin_xdnd(const boost::container::small_vector_base<
+                        boost::filesystem::path>& file_paths,
+                    HWND tracker_window);
 
     /**
      * Release ownership of the selection stop listening for X11 events.
@@ -236,7 +236,7 @@ class WineXdndProxy {
 
     /**
      * The files that are currently being dragged, stored as in `text/uri-list`
-     * format (i.e. a list of URIs, separated by line feeds)
+     * format (i.e. a list of URIs, each ending with a line feed)
      */
     std::string dragged_files_uri_list;
 

@@ -24,6 +24,8 @@
 
 using namespace std::literals::chrono_literals;
 
+namespace fs = boost::filesystem;
+
 // As defined in `editor.cpp`
 #define THROW_X11_ERROR(error)                                          \
     do {                                                                \
@@ -192,9 +194,9 @@ WineXdndProxy::Handle WineXdndProxy::get_handle() {
     return Handle(instance);
 }
 
-void WineXdndProxy::begin_xdnd(
-    const boost::container::small_vector_base<std::string>& file_paths,
-    HWND tracker_window) {
+void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
+                                   boost::filesystem::path>& file_paths,
+                               HWND tracker_window) {
     if (file_paths.empty()) {
         throw std::runtime_error("Cannot drag-and-drop without any files");
     }
@@ -223,7 +225,7 @@ void WineXdndProxy::begin_xdnd(
         ((strlen(file_protocol) - 1 + sizeof('\n')) * file_paths.size()));
     for (const auto& path : file_paths) {
         dragged_files_uri_list.append(file_protocol);
-        dragged_files_uri_list.append(path);
+        dragged_files_uri_list.append(path.string());
         dragged_files_uri_list.push_back('\n');
     }
 
@@ -708,7 +710,7 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
     enumerator->Release();
 
     // This will contain the normal, Unix-style paths to the files
-    boost::container::small_vector<std::string, 4> dragged_files;
+    boost::container::small_vector<fs::path, 4> dragged_files;
     for (unsigned int format_idx = 0; format_idx < num_formats; format_idx++) {
         STGMEDIUM storage{};
         if (HRESULT result = tracker_info->dataObject->GetData(
@@ -733,15 +735,36 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                         DragQueryFileW(drop, file_idx, file_name.data(),
                                        file_name.size());
 
-                        dragged_files.emplace_back(
-                            wine_get_unix_file_name(file_name.data()));
+                        // Normalize the paths to something a bit more friendly
+                        const char* unix_path =
+                            wine_get_unix_file_name(file_name.data());
+                        if (unix_path) {
+                            boost::system::error_code err;
+                            const fs::path cannonical_path =
+                                boost::filesystem::canonical(unix_path, err);
+                            if (err) {
+                                dragged_files.emplace_back(unix_path);
+                            } else {
+                                dragged_files.emplace_back(cannonical_path);
+                            }
+                        }
                     }
 
                     GlobalUnlock(storage.hGlobal);
                 } break;
                 case TYMED_FILE: {
-                    dragged_files.emplace_back(
-                        wine_get_unix_file_name(storage.lpszFileName));
+                    const char* unix_path =
+                        wine_get_unix_file_name(storage.lpszFileName);
+                    if (unix_path) {
+                        boost::system::error_code err;
+                        const fs::path cannonical_path =
+                            boost::filesystem::canonical(unix_path, err);
+                        if (err) {
+                            dragged_files.emplace_back(unix_path);
+                        } else {
+                            dragged_files.emplace_back(cannonical_path);
+                        }
+                    }
                 } break;
                 default: {
                     std::cerr << "Unknown drag-and-drop format "
