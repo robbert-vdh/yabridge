@@ -134,6 +134,12 @@ bool is_watchdog_timer_disabled();
 bool pid_running(pid_t pid);
 
 /**
+ * URL encode a file path. We won't escape forward slashes, and `path` should
+ * not yet include the `file://` prefix.
+ */
+std::string url_encode_path(std::string path);
+
+/**
  * Escape XML entities within a string. Used inside of desktop notifications.
  */
 std::string xml_escape(std::string string);
