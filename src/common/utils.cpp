@@ -103,6 +103,11 @@ std::string url_encode_path(std::string path) {
         static_cast<size_t>(static_cast<double>(path.size()) * 1.1));
     for (const char& character : path) {
         switch (character) {
+            // Spaces are somehow in the above list, but Bitwig Studio requires
+            // spaces to be escaped in the `text/uri-list` format
+            case ' ':
+                escaped.append("%20");
+                break;
             case '!':
                 escaped.append("%21");
                 break;
