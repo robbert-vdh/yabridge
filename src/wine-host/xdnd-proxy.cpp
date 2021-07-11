@@ -504,6 +504,9 @@ void WineXdndProxy::run_xdnd_loop() {
             }
 
             xcb_flush(x11_connection.get());
+
+            // We obviously don't want to spam the other client
+            waiting_for_status_message = true;
         }
     }
 
