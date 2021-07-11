@@ -416,13 +416,13 @@ bool send_notification(const std::string& title,
     if (append_origin) {
         try {
             const fs::path this_library = get_this_file_location();
-            formatted_body
-                << "\n"
-                << "Source: <a href=\"file://"
-                // TODO: This should be URL encoded, but let's just pray that
-                //       noone uses double quotes in their plugin names
-                << this_library.parent_path().string() << "\">"
-                << xml_escape(this_library.filename().string()) << "</a>";
+            formatted_body << "\n"
+                           << "Source: <a href=\"file://"
+                           << url_encode_path(
+                                  this_library.parent_path().string())
+                           << "\">"
+                           << xml_escape(this_library.filename().string())
+                           << "</a>";
         } catch (const boost::system::system_error&) {
             // I don't think this can fail in the way we're using it, but the
             // last thing we want is our notification informing the user of an
