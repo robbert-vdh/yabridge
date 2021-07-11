@@ -731,6 +731,22 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                      &num_formats);
     enumerator->Release();
 
+    // NOTE: MeldaProduction plugins don't return any supported formats for some
+    //       reason, so we'll hardcode a HDROP
+    if (num_formats == 0) {
+        std::cerr << "WARNING: The plugin didn't specify any formats for the"
+                  << std::endl;
+        std::cerr << "         drag-and-drop operation, trying an HDROP"
+                  << std::endl;
+
+        supported_formats[0].cfFormat = CF_HDROP;
+        supported_formats[0].ptd = nullptr;
+        supported_formats[0].dwAspect = -1;
+        supported_formats[0].lindex = 0;
+        supported_formats[0].tymed = TYMED_HGLOBAL;
+        num_formats = 1;
+    }
+
     // This will contain the normal, Unix-style paths to the files
     boost::container::small_vector<fs::path, 4> dragged_files;
     for (unsigned int format_idx = 0; format_idx < num_formats; format_idx++) {
