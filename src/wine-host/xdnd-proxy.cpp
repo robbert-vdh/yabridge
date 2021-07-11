@@ -624,8 +624,7 @@ void WineXdndProxy::handle_convert_selection(
     const xcb_selection_request_event_t& event) {
     xcb_change_property(x11_connection.get(), XCB_PROP_MODE_REPLACE,
                         event.requestor, event.property, event.target, 8,
-                        // +1 to account for the trailing null byte
-                        dragged_files_uri_list.size() + 1,
+                        dragged_files_uri_list.size(),
                         dragged_files_uri_list.c_str());
     xcb_flush(x11_connection.get());
 
