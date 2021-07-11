@@ -194,9 +194,9 @@ WineXdndProxy::Handle WineXdndProxy::get_handle() {
     return Handle(instance);
 }
 
-void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
-                                   boost::filesystem::path>& file_paths,
-                               HWND tracker_window) {
+void WineXdndProxy::begin_xdnd(
+    const boost::container::small_vector_base<boost::filesystem::path>&
+        file_paths) {
     if (file_paths.empty()) {
         throw std::runtime_error("Cannot drag-and-drop without any files");
     }
@@ -232,14 +232,10 @@ void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
 
     // Normally at this point you would grab the mouse pointer and track what
     // windows it's moving over. Wine is already doing this, so as a hacky
-    // workaround we will instead just periodically poll the pointer position in
-    // `WineXdndProxy::handle_x11_events()`, and we'll consider the
-    // disappearance of `tracker_window` to indicate that the drag-and-drop has
-    // either been cancelled or it has succeeded.
-    this->tracker_window = tracker_window;
-
-    // Because Wine is blocking the GUI thread, we need to do our XDND polling
-    // from another thread. Luckily the X11 API is thread safe.
+    // workaround we will just poll the mouse position every millisecond until
+    // the left mouse button gets released. Because Wine is also blocking the
+    // GUI thread, we need to do our XDND polling from another thread. Luckily
+    // the X11 API is thread safe.
     xdnd_handler = Win32Thread([&]() { run_xdnd_loop(); });
 }
 
@@ -301,11 +297,12 @@ void WineXdndProxy::run_xdnd_loop() {
 
     // We cannot just grab the pointer because Wine is already doing that, and
     // it's also blocking the GUI thread. So instead we will periodically poll
-    // the mouse cursor position, and we will consider the disappearance of
-    // `tracker_window` to mean that the drag-and-drop operation has ended.
+    // the mouse cursor position, and we will end the drag once the left mouse
+    // button gets released.
+    bool left_mouse_button_held = true;
     std::optional<uint16_t> last_pointer_x;
     std::optional<uint16_t> last_pointer_y;
-    while (IsWindow(tracker_window)) {
+    while (left_mouse_button_held) {
         usleep(1000);
 
         std::unique_ptr<xcb_generic_event_t> generic_event;
@@ -360,9 +357,19 @@ void WineXdndProxy::run_xdnd_loop() {
         // coordinates.
         const std::unique_ptr<xcb_query_pointer_reply_t> xdnd_window_query =
             query_xdnd_aware_window_at_pointer(root_window);
-        if (!xdnd_window_query ||
-            (xdnd_window_query->root_x == last_pointer_x &&
-             xdnd_window_query->root_y == last_pointer_y)) {
+        if (!xdnd_window_query) {
+            continue;
+        }
+
+        // We will stop the dragging operation as soon as the left mouse button
+        // gets released
+        // NOTE: In soem cases Wine's own drag-and-drop operation ends
+        //       prematurely. This seems to often happen with JUCE plugins. We
+        //       will still continue with the dragging operation, although at
+        //       that point the mouse pointer isn't grabbed by anything anymore.
+        left_mouse_button_held = xdnd_window_query->mask & XCB_BUTTON_MASK_1;
+        if (xdnd_window_query->root_x == last_pointer_x &&
+            xdnd_window_query->root_y == last_pointer_y) {
             continue;
         }
 
@@ -431,7 +438,7 @@ void WineXdndProxy::run_xdnd_loop() {
 
     // After the loop has finished we either:
     // 1) Finish the drop, if `last_xdnd_window` is a valid XDND window
-    // 2) Cancel the drop, if the escape key is held, or
+    // 2) Cancel the drop, if the escape key is being held, or
     // 3) Don't do antyhing, if `last_xdnd_window` is a nullopt
     // TODO: Check if the escape key is pressed to allow cancelling the drop. In
     //       that case we should call `maybe_leave_last_window()`
@@ -440,10 +447,10 @@ void WineXdndProxy::run_xdnd_loop() {
         return;
     }
 
-    // After the tracker window has disappeared we will try to send the drop to
-    // the last window we hovered over, if it was a valid XDND aware window. We
-    // should however wait with this until the window has accepted our
-    // `XdndPosition` message with an `XdndStatus`
+    // After the left mouse button has been released we will try to send the
+    // drop to the last window we hovered over, if it was a valid XDND aware
+    // window. We should however wait with this until the window has accepted
+    // our `XdndPosition` message with an `XdndStatus`
     bool drop_finished = false;
     const std::chrono::steady_clock::time_point wait_start =
         std::chrono::steady_clock::now();
@@ -801,7 +808,7 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
     }
 
     try {
-        instance->begin_xdnd(dragged_files, hwnd);
+        instance->begin_xdnd(dragged_files);
     } catch (const std::exception& error) {
         std::cerr << "XDND initialization failed:" << std::endl;
         std::cerr << error.what() << std::endl;

@@ -66,7 +66,7 @@ class ProxyWindow {
 /**
  * A simple wrapper that registers a WinEvents hook to listen for new windows
  * being created, and handles XDND client messages to achieve the behaviour
- * described in `WineXdndProxy::init_proxy()`.
+ * described in `WineXdndProxy::get_handle()`.
  */
 class WineXdndProxy {
    protected:
@@ -88,7 +88,7 @@ class WineXdndProxy {
        protected:
         /**
          * Before calling this, the reference count should be increased by one
-         * in `WineXdndProxy::init_proxy()`.
+         * in `WineXdndProxy::get_handle()`.
          */
         Handle(WineXdndProxy* proxy);
 
@@ -114,14 +114,14 @@ class WineXdndProxy {
     /**
      * Initialize the Wine->X11 drag-and-drop proxy. Calling this will hook into
      * Wine's OLE drag and drop system by listening for the creation of special
-     * proxy windows created by the Wine server. When a drag and drop operation
-     * is started, we will initiate the XDND protocol with the same file. This
-     * will allow us to drag files from Wine windows to X11 applications,
-     * something that's normally not possible. Calling this function more than
-     * once doesn't have any effect, but this should still be called at least
-     * once from every plugin host instance. Because the actual data is stored
-     * in a COM object, we can only handle drag-and-drop coming form this
-     * process.
+     * tracker windows created by the Wine server. When a drag and drop
+     * operation is started, we will initiate the XDND protocol with the files
+     * referenced by that tracker window. This will allow us to drag files from
+     * Wine windows to X11 applications, something that's normally not possible.
+     * Calling this function more than once doesn't have any effect, but this
+     * should still be called at least once from every plugin host instance.
+     * Because the actual data is stored in a COM object, we can only handle
+     * drag-and-drop coming form this process.
      *
      * This is sort of a singleton but not quite, as the `WineXdndProxy` is only
      * alive for as long as there are open editors in this process. This is done
@@ -136,9 +136,9 @@ class WineXdndProxy {
      * Initiate the XDDN protocol by taking ownership of the `XdndSelection`
      * selection and setting up the event listeners.
      */
-    void begin_xdnd(const boost::container::small_vector_base<
-                        boost::filesystem::path>& file_paths,
-                    HWND tracker_window);
+    void begin_xdnd(
+        const boost::container::small_vector_base<boost::filesystem::path>&
+            file_paths);
 
     /**
      * Release ownership of the selection stop listening for X11 events.
@@ -147,11 +147,11 @@ class WineXdndProxy {
 
    private:
     /**
-     * From another thread, constantly poll the mouse position until
-     * `tracker_window` disappears, and then perform the drop if the mouse
-     * cursor was last positioned over an XDND aware window. This is a
-     * workaround for us not being able to grab the mouse cursor since Wine is
-     * already doing that.
+     * From another thread, constantly poll the mouse position until the left
+     * mouse button gets released, and then perform the drop if the mouse cursor
+     * was last positioned over an XDND aware window. This is a workaround for
+     * us not being able to grab the mouse cursor since Wine is already doing
+     * that.
      */
     void run_xdnd_loop();
 
@@ -239,18 +239,6 @@ class WineXdndProxy {
      * format (i.e. a list of URIs, each ending with a line feed)
      */
     std::string dragged_files_uri_list;
-
-    /**
-     * Wine's tracker window for tracking the drag-and-drop operation. Normally
-     * you would grab the mouse pointer when the drag-and-drop operation starts
-     * so you can track what windows you are hovering over, but we cannot do
-     * that because Wine is already doing just that. So instead we will
-     * periodically poll the mouse position from another thread, and we'll
-     * consider the disappearance of this window to mean that the drop has
-     * either succeeded or cancelled (depending on whether or not Escape is
-     * pressed).
-     */
-    HWND tracker_window;
 
     /**
      * We need to poll for mouse position changes from another thread, because
