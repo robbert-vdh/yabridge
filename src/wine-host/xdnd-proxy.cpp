@@ -299,6 +299,28 @@ void WineXdndProxy::run_xdnd_loop() {
         }
     };
 
+    auto handle_xdnd_status_message =
+        [&](const xcb_client_message_event_t& event) {
+            const bool accepts_drop =
+                static_cast<bool>(event.data.data32[1] & 0b01);
+
+            // Because this is a Winelib we can cheat a bit here so
+            // we don't have to create our own cursors. This will
+            // probably also look better anyways.
+            // XXX: Because Wine is also changing the cursor to a
+            //      denied symbol at the same time this looks a bit
+            //      off. Would it be better to just not do anything
+            //      at all here?
+            if (accepts_drop) {
+                SetCursor(dnd_accepted_cursor);
+            } else {
+                SetCursor(dnd_denied_cursor);
+            }
+
+            last_window_accepted_status = accepts_drop;
+            waiting_for_status_message = false;
+        };
+
     // We cannot just grab the pointer because Wine is already doing that, and
     // it's also blocking the GUI thread. So instead we will periodically poll
     // the mouse cursor position, and we will end the drag once the left mouse
@@ -326,24 +348,7 @@ void WineXdndProxy::run_xdnd_loop() {
                             generic_event.get());
 
                     if (event->type == xcb_xdnd_status_message) {
-                        const bool accepts_drop =
-                            static_cast<bool>(event->data.data32[1] & 0b01);
-
-                        // Because this is a Winelib we can cheat a bit here so
-                        // we don't have to create our own cursors. This will
-                        // probably also look better anyways.
-                        // XXX: Because Wine is also changing the cursor to a
-                        //      denied symbol at the same time this looks a bit
-                        //      off. Would it be better to just not do anything
-                        //      at all here?
-                        if (accepts_drop) {
-                            SetCursor(dnd_accepted_cursor);
-                        } else {
-                            SetCursor(dnd_denied_cursor);
-                        }
-
-                        last_window_accepted_status = accepts_drop;
-                        waiting_for_status_message = false;
+                        handle_xdnd_status_message(*event);
                     }
                 } break;
             }
@@ -499,10 +504,7 @@ void WineXdndProxy::run_xdnd_loop() {
                     if (event->type == xcb_xdnd_status_message) {
                         // We may have to wait for the last `XdndStatus` to be
                         // sent by the target window
-                        const bool accepts_drop =
-                            static_cast<bool>(event->data.data32[1] & 0b01);
-                        last_window_accepted_status = accepts_drop;
-                        waiting_for_status_message = false;
+                        handle_xdnd_status_message(*event);
                     } else if (event->type == xcb_xdnd_finished_message) {
                         // At this point we're done here, and we can clean up
                         // and terminate this thread
