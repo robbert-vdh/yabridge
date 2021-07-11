@@ -443,7 +443,7 @@ void WineXdndProxy::run_xdnd_loop() {
     while (!drop_finished) {
         // In case that window somehow becomes unresponsive or disappears, we
         // will set a timeout here to avoid hanging
-        if (std::chrono::steady_clock::now() - wait_start < 5s) {
+        if (std::chrono::steady_clock::now() - wait_start > 5s) {
             maybe_leave_last_window();
             break;
         }
