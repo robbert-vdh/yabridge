@@ -605,11 +605,12 @@ bool Editor::supports_ewmh_active_window() const {
     return active_window_property_exists;
 }
 
-void Editor::send_xembed_message(const xcb_window_t& window,
-                                 const uint32_t message,
-                                 const uint32_t detail,
-                                 const uint32_t data1,
-                                 const uint32_t data2) const noexcept {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void Editor::send_xembed_message(xcb_window_t window,
+                                 uint32_t message,
+                                 uint32_t detail,
+                                 uint32_t data1,
+                                 uint32_t data2) const noexcept {
     xcb_client_message_event_t event;
     event.response_type = XCB_CLIENT_MESSAGE;
     event.type = xcb_xembed_message;
@@ -762,9 +763,11 @@ boost::container::small_vector<xcb_window_t, 8> find_ancestor_windows(
     return ancestor_windows;
 }
 
-bool is_child_window_or_same(xcb_connection_t& x11_connection,
-                             xcb_window_t child,
-                             xcb_window_t parent) {
+bool is_child_window_or_same(
+    xcb_connection_t& x11_connection,
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+    xcb_window_t child,
+    xcb_window_t parent) {
     xcb_generic_error_t* error = nullptr;
     xcb_query_tree_cookie_t query_cookie =
         xcb_query_tree(&x11_connection, child);

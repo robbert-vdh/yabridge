@@ -191,12 +191,12 @@ class WineXdndProxy {
      *
      * https://www.freedesktop.org/wiki/Specifications/XDND/#clientmessages
      */
-    void send_xdnd_message(const xcb_window_t& window,
-                           const xcb_atom_t message_type,
-                           const uint32_t data1,
-                           const uint32_t data2,
-                           const uint32_t data3,
-                           const uint32_t data4) const noexcept;
+    void send_xdnd_message(xcb_window_t window,
+                           xcb_atom_t message_type,
+                           uint32_t data1,
+                           uint32_t data2,
+                           uint32_t data3,
+                           uint32_t data4) const noexcept;
 
     /**
      * We need a dedicated X11 connection for our proxy because we can have

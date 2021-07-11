@@ -235,11 +235,11 @@ class Editor {
      *
      * https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html#lifecycle
      */
-    void send_xembed_message(const xcb_window_t& window,
-                             const uint32_t message,
-                             const uint32_t detail,
-                             const uint32_t data1,
-                             const uint32_t data2) const noexcept;
+    void send_xembed_message(xcb_window_t window,
+                             uint32_t message,
+                             uint32_t detail,
+                             uint32_t data1,
+                             uint32_t data2) const noexcept;
 
     /**
      * Start the XEmbed procedure when `use_xembed` is enabled. This should be

@@ -377,12 +377,13 @@ std::optional<xcb_window_t> WineXdndProxy::get_xdnd_proxy(
     }
 }
 
-void WineXdndProxy::send_xdnd_message(const xcb_window_t& window,
-                                      const xcb_atom_t message_type,
-                                      const uint32_t data1,
-                                      const uint32_t data2,
-                                      const uint32_t data3,
-                                      const uint32_t data4) const noexcept {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void WineXdndProxy::send_xdnd_message(xcb_window_t window,
+                                      xcb_atom_t message_type,
+                                      uint32_t data1,
+                                      uint32_t data2,
+                                      uint32_t data3,
+                                      uint32_t data4) const noexcept {
     // See https://www.freedesktop.org/wiki/Specifications/XDND/#clientmessages
     xcb_client_message_event_t event;
     event.response_type = XCB_CLIENT_MESSAGE;
