@@ -58,6 +58,10 @@ constexpr char xdnd_copy_action_name[] = "XdndActionCopy";
 constexpr char mime_text_uri_list_name[] = "text/uri-list";
 constexpr char mime_text_plain_name[] = "text/plain";
 
+// We can cheat by just using the Win32 cursors instead of providing our own
+static const HCURSOR dnd_accepted_cursor = LoadCursor(nullptr, IDC_HAND);
+static const HCURSOR dnd_denied_cursor = LoadCursor(nullptr, IDC_NO);
+
 /**
  * We're doing a bit of a hybrid between a COM-style reference counted smart
  * pointer and a singleton here because we need to ensure that there's only one
@@ -321,10 +325,21 @@ void WineXdndProxy::run_xdnd_loop() {
                             generic_event.get());
 
                     if (event->type == xcb_xdnd_status_message) {
-                        // At this point
-                        // `static_cast<bool>(event->data.data32[1] & 0b01)`
-                        // indicates whether the window accepts the drop, not
-                        // sure if we actually need to do antyhing with it
+                        const bool accepts_drop =
+                            static_cast<bool>(event->data.data32[1] & 0b01);
+
+                        // Because this is a Winelib we can cheat a bit here so
+                        // we don't have to create our own cursors. This will
+                        // probably also look better anyways.
+                        // XXX: Because Wine is also changing the cursor to a
+                        //      denied symbol at the same time this looks a bit
+                        //      off. Would it be better to just not do anything
+                        //      at all here?
+                        if (accepts_drop) {
+                            SetCursor(dnd_accepted_cursor);
+                        } else {
+                            SetCursor(dnd_denied_cursor);
+                        }
                     } else {
                         // TODO: Implement the other client messages
                     }
