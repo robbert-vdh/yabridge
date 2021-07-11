@@ -44,7 +44,9 @@ constexpr char OLEDD_DRAGTRACKERCLASS[] = "WineDragDropTracker32";
 constexpr char xdnd_selection_name[] = "XdndSelection";
 // xdnd_aware_property_name is defined in `editor.h``
 constexpr char xdnd_proxy_property_name[] = "XdndProxy";
+constexpr char xdnd_drop_message_name[] = "XdndDrop";
 constexpr char xdnd_enter_message_name[] = "XdndEnter";
+constexpr char xdnd_finished_message_name[] = "XdndFinished";
 constexpr char xdnd_position_message_name[] = "XdndPosition";
 constexpr char xdnd_status_message_name[] = "XdndStatus";
 constexpr char xdnd_leave_message_name[] = "XdndLeave";
@@ -136,8 +138,12 @@ WineXdndProxy::WineXdndProxy()
         get_atom_by_name(*x11_connection, xdnd_aware_property_name);
     xcb_xdnd_proxy_property =
         get_atom_by_name(*x11_connection, xdnd_proxy_property_name);
+    xcb_xdnd_drop_message =
+        get_atom_by_name(*x11_connection, xdnd_drop_message_name);
     xcb_xdnd_enter_message =
         get_atom_by_name(*x11_connection, xdnd_enter_message_name);
+    xcb_xdnd_finished_message =
+        get_atom_by_name(*x11_connection, xdnd_finished_message_name);
     xcb_xdnd_position_message =
         get_atom_by_name(*x11_connection, xdnd_position_message_name);
     xcb_xdnd_status_message =

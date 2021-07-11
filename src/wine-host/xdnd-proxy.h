@@ -250,7 +250,9 @@ class WineXdndProxy {
     xcb_atom_t xcb_xdnd_selection;
     xcb_atom_t xcb_xdnd_aware_property;
     xcb_atom_t xcb_xdnd_proxy_property;
+    xcb_atom_t xcb_xdnd_drop_message;
     xcb_atom_t xcb_xdnd_enter_message;
+    xcb_atom_t xcb_xdnd_finished_message;
     xcb_atom_t xcb_xdnd_position_message;
     xcb_atom_t xcb_xdnd_status_message;
     xcb_atom_t xcb_xdnd_leave_message;
