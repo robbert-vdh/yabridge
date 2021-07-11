@@ -282,6 +282,8 @@ void WineXdndProxy::run_xdnd_loop() {
             next_position_message_position.reset();
             last_window_accepted_status = false;
             waiting_for_status_message = false;
+
+            xcb_flush(x11_connection.get());
         }
     };
 
@@ -292,6 +294,8 @@ void WineXdndProxy::run_xdnd_loop() {
                               xcb_xdnd_copy_action);
             next_position_message_position.reset();
             waiting_for_status_message = true;
+
+            xcb_flush(x11_connection.get());
         }
     };
 
