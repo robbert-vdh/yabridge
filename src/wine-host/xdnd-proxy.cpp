@@ -267,9 +267,6 @@ void WineXdndProxy::run_xdnd_loop() {
     const HWND windows_desktop_window = GetDesktopWindow();
 
     std::optional<xcb_window_t> last_xdnd_window;
-    // We need to wait until we receive the last `XdndStatus` message until we
-    // send a leave, finished, or another position message
-    std::optional<bool> last_window_accepted_status;
     // Position and status messages should be sent in lockstep, which makes
     // everything a bit more complicated. Because of that we may need to spool
     // the `XdndPosition` messages. This field stores the next position we
@@ -277,13 +274,28 @@ void WineXdndProxy::run_xdnd_loop() {
     // won't need to spool anything when `last_window_accepted_status` contains
     // a value.
     std::optional<uint32_t> next_position_message_position;
+    // We need to wait until we receive the last `XdndStatus` message until we
+    // send a leave, finished, or another position message
+    bool last_window_accepted_status = false;
+    bool waiting_for_status_message = false;
 
     auto maybe_leave_last_window = [&]() {
         if (last_xdnd_window) {
             send_xdnd_message(*last_xdnd_window, xcb_xdnd_leave_message, 0, 0,
                               0, 0);
-            last_window_accepted_status.reset();
             next_position_message_position.reset();
+            last_window_accepted_status = false;
+            waiting_for_status_message = false;
+        }
+    };
+
+    auto maybe_send_spooled_status_message = [&]() {
+        if (next_position_message_position && !waiting_for_status_message) {
+            send_xdnd_message(*last_xdnd_window, xcb_xdnd_position_message, 0,
+                              *next_position_message_position, XCB_CURRENT_TIME,
+                              xcb_xdnd_copy_action);
+            next_position_message_position.reset();
+            waiting_for_status_message = true;
         }
     };
 
@@ -330,6 +342,7 @@ void WineXdndProxy::run_xdnd_loop() {
                         }
 
                         last_window_accepted_status = accepts_drop;
+                        waiting_for_status_message = false;
                     }
                 } break;
             }
@@ -338,13 +351,7 @@ void WineXdndProxy::run_xdnd_loop() {
         // As explained above, we may need to spool these position messages
         // because they can only be sent again after we receive an `XdndStatus`
         // reply
-        if (next_position_message_position && last_window_accepted_status) {
-            send_xdnd_message(*last_xdnd_window, xcb_xdnd_position_message, 0,
-                              *next_position_message_position, XCB_CURRENT_TIME,
-                              xcb_xdnd_copy_action);
-            last_window_accepted_status.reset();
-            next_position_message_position.reset();
-        }
+        maybe_send_spooled_status_message();
 
         // We'll try to find the first window under the pointer (starting form
         // the root) until we find a window that supports XDND. The returned
@@ -405,11 +412,11 @@ void WineXdndProxy::run_xdnd_loop() {
             //       `XdndStatus` message
             const uint32_t position =
                 (xdnd_window_query->root_x << 16) | xdnd_window_query->root_y;
-            if (last_window_accepted_status) {
+            if (!waiting_for_status_message) {
                 send_xdnd_message(xdnd_window_query->child,
                                   xcb_xdnd_position_message, 0, position,
                                   XCB_CURRENT_TIME, xcb_xdnd_copy_action);
-                last_window_accepted_status.reset();
+                waiting_for_status_message = true;
             } else {
                 next_position_message_position = position;
             }
@@ -472,6 +479,7 @@ void WineXdndProxy::run_xdnd_loop() {
                         const bool accepts_drop =
                             static_cast<bool>(event->data.data32[1] & 0b01);
                         last_window_accepted_status = accepts_drop;
+                        waiting_for_status_message = false;
                     } else if (event->type == xcb_xdnd_finished_message) {
                         // At this point we're done here, and we can clean up
                         // and terminate this thread
@@ -479,20 +487,23 @@ void WineXdndProxy::run_xdnd_loop() {
                     }
                 } break;
             }
+        }
 
+        // We May very well still have one unsent position change left
+        maybe_send_spooled_status_message();
+
+        if (!waiting_for_status_message) {
+            // After we receive the last `XdndStatus` message we'll know
+            // whether the window accepts or denies the drop
             if (last_window_accepted_status) {
-                // After we receive the last `XdndStatus` message we'll know
-                // whether the window accepts or denies the drop
-                if (*last_window_accepted_status) {
-                    send_xdnd_message(*last_xdnd_window, xcb_xdnd_drop_message,
-                                      0, XCB_CURRENT_TIME, 0, 0);
-                } else {
-                    maybe_leave_last_window();
-                    drop_finished = true;
-                }
-
-                xcb_flush(x11_connection.get());
+                send_xdnd_message(*last_xdnd_window, xcb_xdnd_drop_message, 0,
+                                  XCB_CURRENT_TIME, 0, 0);
+            } else {
+                maybe_leave_last_window();
+                drop_finished = true;
             }
+
+            xcb_flush(x11_connection.get());
         }
     }
 
