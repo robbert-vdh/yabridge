@@ -429,8 +429,6 @@ void WineXdndProxy::run_xdnd_loop() {
         if (last_xdnd_window) {
             // XXX: We'll always stick with the copy action for now because that
             //      seems safer than allowing the host to move the file
-            // TODO: We should technically wait until we have received an
-            //       `XdndStatus` message
             const uint32_t position =
                 (xdnd_window_query->root_x << 16) | xdnd_window_query->root_y;
             if (!waiting_for_status_message) {
