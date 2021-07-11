@@ -387,9 +387,23 @@ void WineXdndProxy::run_xdnd_loop() {
         GetCursorPos(&windows_pointer_pos);
         if (HWND windows_window = WindowFromPoint(windows_pointer_pos);
             windows_window && windows_window != windows_desktop_window) {
-            maybe_leave_last_window();
-            last_xdnd_window.reset();
-            continue;
+            // NOTE: Because resizing reparented Wine windows without XEmbed is
+            //       a bit janky, yabridge creates windows with client areas
+            //       large enough to fit the entire screen, and the plugin then
+            //       embeds its own GUI in a portion of that. The result is that
+            //       `WindowFromPoint()` will still return that same huge window
+            //       when we hover over an area to the right or to the bottom of
+            //       a plugin GUI. We can easily detect and skip that though,
+            //       since the embedded plugin windows won't have an  X11 window
+            //       ID property.
+            const xcb_window_t x11_window =
+                static_cast<xcb_window_t>(reinterpret_cast<size_t>(
+                    GetProp(windows_window, "__wine_x11_whole_window")));
+            if (x11_window == XCB_NONE) {
+                maybe_leave_last_window();
+                last_xdnd_window.reset();
+                continue;
+            }
         }
 
         // When transitioning between windows we need to announce this to
