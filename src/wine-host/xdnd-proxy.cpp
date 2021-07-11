@@ -266,18 +266,24 @@ void WineXdndProxy::run_xdnd_loop() {
             .data->root;
     const HWND windows_desktop_window = GetDesktopWindow();
 
+    std::optional<xcb_window_t> last_xdnd_window;
     // We need to wait until we receive the last `XdndStatus` message until we
     // send a leave, finished, or another position message
     std::optional<bool> last_window_accepted_status;
+    // Position and status messages should be sent in lockstep, which makes
+    // everything a bit more complicated. Because of that we may need to spool
+    // the `XdndPosition` messages. This field stores the next position we
+    // should send to `last_xdnd_window` (i.e. `(root_x << 16) | root_y`). We
+    // won't need to spool anything when `last_window_accepted_status` contains
+    // a value.
+    std::optional<uint32_t> next_position_message_position;
 
-    std::optional<uint16_t> last_pointer_x;
-    std::optional<uint16_t> last_pointer_y;
-    std::optional<xcb_window_t> last_xdnd_window;
     auto maybe_leave_last_window = [&]() {
         if (last_xdnd_window) {
             send_xdnd_message(*last_xdnd_window, xcb_xdnd_leave_message, 0, 0,
                               0, 0);
             last_window_accepted_status.reset();
+            next_position_message_position.reset();
         }
     };
 
@@ -285,6 +291,8 @@ void WineXdndProxy::run_xdnd_loop() {
     // it's also blocking the GUI thread. So instead we will periodically poll
     // the mouse cursor position, and we will consider the disappearance of
     // `tracker_window` to mean that the drag-and-drop operation has ended.
+    std::optional<uint16_t> last_pointer_x;
+    std::optional<uint16_t> last_pointer_y;
     while (IsWindow(tracker_window)) {
         usleep(1000);
 
@@ -325,6 +333,17 @@ void WineXdndProxy::run_xdnd_loop() {
                     }
                 } break;
             }
+        }
+
+        // As explained above, we may need to spool these position messages
+        // because they can only be sent again after we receive an `XdndStatus`
+        // reply
+        if (next_position_message_position && last_window_accepted_status) {
+            send_xdnd_message(*last_xdnd_window, xcb_xdnd_position_message, 0,
+                              *next_position_message_position, XCB_CURRENT_TIME,
+                              xcb_xdnd_copy_action);
+            last_window_accepted_status.reset();
+            next_position_message_position.reset();
         }
 
         // We'll try to find the first window under the pointer (starting form
@@ -375,25 +394,32 @@ void WineXdndProxy::run_xdnd_loop() {
         }
 
         // When the pointer is being moved inside of a window, we should
-        // continuously send `XdndPosition` messages to that window
+        // continuously send `XdndPosition` messages to that window. If the
+        // window has not yet sent an `XdndStatus` reply to our last
+        // `XdndPosition` message, then we need to spool this message and try
+        // again on the next iteration.
         if (last_xdnd_window) {
             // XXX: We'll always stick with the copy action for now because that
             //      seems safer than allowing the host to move the file
             // TODO: We should technically wait until we have received an
             //       `XdndStatus` message
-            send_xdnd_message(
-                xdnd_window_query->child, xcb_xdnd_position_message, 0,
-                (xdnd_window_query->root_x << 16) | xdnd_window_query->root_y,
-                XCB_CURRENT_TIME, xcb_xdnd_copy_action);
-            last_window_accepted_status.reset();
+            const uint32_t position =
+                (xdnd_window_query->root_x << 16) | xdnd_window_query->root_y;
+            if (last_window_accepted_status) {
+                send_xdnd_message(xdnd_window_query->child,
+                                  xcb_xdnd_position_message, 0, position,
+                                  XCB_CURRENT_TIME, xcb_xdnd_copy_action);
+                last_window_accepted_status.reset();
+            } else {
+                next_position_message_position = position;
+            }
         }
 
         // For efficiency's sake we'll only flush all of the client messages
         // we're sending once at the end of every cycle
-        // TODO: Fetch the window under the mouse cursor, send messages to it
-        //       according to the XDND protocol
-        last_xdnd_window = xdnd_window_query->child;
         xcb_flush(x11_connection.get());
+
+        last_xdnd_window = xdnd_window_query->child;
     }
 
     // After the loop has finished we either:
