@@ -46,6 +46,7 @@ constexpr char xdnd_selection_name[] = "XdndSelection";
 constexpr char xdnd_proxy_property_name[] = "XdndProxy";
 constexpr char xdnd_enter_message_name[] = "XdndEnter";
 constexpr char xdnd_position_message_name[] = "XdndPosition";
+constexpr char xdnd_status_message_name[] = "XdndStatus";
 constexpr char xdnd_leave_message_name[] = "XdndLeave";
 
 // XDND actions
@@ -139,6 +140,8 @@ WineXdndProxy::WineXdndProxy()
         get_atom_by_name(*x11_connection, xdnd_enter_message_name);
     xcb_xdnd_position_message =
         get_atom_by_name(*x11_connection, xdnd_position_message_name);
+    xcb_xdnd_status_message =
+        get_atom_by_name(*x11_connection, xdnd_status_message_name);
     xcb_xdnd_leave_message =
         get_atom_by_name(*x11_connection, xdnd_leave_message_name);
 
@@ -273,7 +276,6 @@ void WineXdndProxy::run_xdnd_loop() {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
             switch (event_type) {
-                // TODO: Handle client messages
                 // When the window we're dragging over wants to inspect the
                 // dragged content, it will call `ConvertSelection()` which
                 // sends us a `SelelectionRequest`. We should write the data in
@@ -306,6 +308,20 @@ void WineXdndProxy::run_xdnd_loop() {
                         x11_connection.get(), false, event->requestor, XCB_NONE,
                         reinterpret_cast<const char*>(&selection_notify_event));
                     xcb_flush(x11_connection.get());
+                } break;
+                case XCB_CLIENT_MESSAGE: {
+                    const auto event =
+                        reinterpret_cast<xcb_client_message_event_t*>(
+                            generic_event.get());
+
+                    if (event->type == xcb_xdnd_status_message) {
+                        // At this point
+                        // `static_cast<bool>(event->data.data32[1] & 0b01)`
+                        // indicates whether the window accepts the drop, not
+                        // sure if we actually need to do antyhing with it
+                    } else {
+                        // TODO: Implement the other client messages
+                    }
                 } break;
             }
         }

@@ -252,6 +252,7 @@ class WineXdndProxy {
     xcb_atom_t xcb_xdnd_proxy_property;
     xcb_atom_t xcb_xdnd_enter_message;
     xcb_atom_t xcb_xdnd_position_message;
+    xcb_atom_t xcb_xdnd_status_message;
     xcb_atom_t xcb_xdnd_leave_message;
 
     // XDND specifies various actions for drag-and-drop, but since the file is
