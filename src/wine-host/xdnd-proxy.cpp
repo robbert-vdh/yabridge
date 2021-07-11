@@ -214,18 +214,19 @@ void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
     // separated by line feeds. When the target window requests the selection to
     // be converted, they will ask us to write this to a property on their
     // window
-    // TODO: Like with the desktop notifications, we do not yet perform any
-    //       escaping here - apparently REAPER requires this
     constexpr char file_protocol[] = "file://";
     dragged_files_uri_list.clear();
-    dragged_files_uri_list.reserve(
-        std::accumulate(
-            file_paths.begin(), file_paths.end(), 0,
-            [](size_t size, const auto& path) { return size + path.size(); }) +
-        ((strlen(file_protocol) - 1 + sizeof('\n')) * file_paths.size()));
+    dragged_files_uri_list.reserve(std::accumulate(
+        file_paths.begin(), file_paths.end(), 0,
+        [](size_t size, const auto& path) {
+            // Account for the protocol, the trailing line feed, and URL
+            // encoding
+            return size +
+                   static_cast<size_t>(static_cast<double>(path.size()) * 1.2);
+        }));
     for (const auto& path : file_paths) {
         dragged_files_uri_list.append(file_protocol);
-        dragged_files_uri_list.append(path.string());
+        dragged_files_uri_list.append(url_encode_path(path.string()));
         dragged_files_uri_list.push_back('\n');
     }
 
