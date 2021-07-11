@@ -44,7 +44,11 @@ constexpr char xdnd_selection_name[] = "XdndSelection";
 // xdnd_aware_property_name is defined in `editor.h``
 constexpr char xdnd_proxy_property_name[] = "XdndProxy";
 constexpr char xdnd_enter_message_name[] = "XdndEnter";
+constexpr char xdnd_position_message_name[] = "XdndPosition";
 constexpr char xdnd_leave_message_name[] = "XdndLeave";
+
+// XDND actions
+constexpr char xdnd_copy_action_name[] = "XdndActionCopy";
 
 // Mime types for use in XDND
 constexpr char mime_text_uri_list_name[] = "text/uri-list";
@@ -132,8 +136,13 @@ WineXdndProxy::WineXdndProxy()
         get_atom_by_name(*x11_connection, xdnd_proxy_property_name);
     xcb_xdnd_enter_message =
         get_atom_by_name(*x11_connection, xdnd_enter_message_name);
+    xcb_xdnd_position_message =
+        get_atom_by_name(*x11_connection, xdnd_position_message_name);
     xcb_xdnd_leave_message =
         get_atom_by_name(*x11_connection, xdnd_leave_message_name);
+
+    xcb_xdnd_copy_action =
+        get_atom_by_name(*x11_connection, xdnd_copy_action_name);
 
     xcb_mime_text_uri_list =
         get_atom_by_name(*x11_connection, mime_text_uri_list_name);
@@ -205,13 +214,6 @@ void WineXdndProxy::run_xdnd_loop() {
             .data->root;
     const HWND windows_desktop_window = GetDesktopWindow();
 
-    // We cannot just grab the pointer because Wine is already doing that, and
-    // it's also blocking the GUI thread. So instead we will periodically poll
-    // the mouse cursor position, and we will consider the disappearance of
-    // `tracker_window` to mean that the drag-and-drop operation has ended.
-    std::optional<uint16_t> last_pointer_x;
-    std::optional<uint16_t> last_pointer_y;
-
     // FIXME: For some reason you get a -Wmaybe-uninitialized false positive
     //        with GCC 11.1.0 if you just dereference `last_window` here:
     //        https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80635
@@ -221,13 +223,20 @@ void WineXdndProxy::run_xdnd_loop() {
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-    std::optional<xcb_window_t> last_window;
+
+    // We cannot just grab the pointer because Wine is already doing that, and
+    // it's also blocking the GUI thread. So instead we will periodically poll
+    // the mouse cursor position, and we will consider the disappearance of
+    // `tracker_window` to mean that the drag-and-drop operation has ended.
+    std::optional<uint16_t> last_pointer_x;
+    std::optional<uint16_t> last_pointer_y;
+    std::optional<xcb_window_t> last_xdnd_window;
     auto maybe_leave_last_window = [&]() {
-        if (last_window) {
-            send_xdnd_message(*last_window, xcb_xdnd_leave_message, 0, 0, 0, 0);
+        if (last_xdnd_window) {
+            send_xdnd_message(*last_xdnd_window, xcb_xdnd_leave_message, 0, 0,
+                              0, 0);
         }
     };
-#pragma GCC diagnostic pop
 
     while (IsWindow(tracker_window)) {
         usleep(1000);
@@ -260,7 +269,7 @@ void WineXdndProxy::run_xdnd_loop() {
         last_pointer_y = xdnd_window_query->root_y;
         if (!is_xdnd_aware(xdnd_window_query->child)) {
             maybe_leave_last_window();
-            last_window.reset();
+            last_xdnd_window.reset();
             continue;
         }
 
@@ -271,13 +280,13 @@ void WineXdndProxy::run_xdnd_loop() {
         if (HWND windows_window = WindowFromPoint(windows_pointer_pos);
             windows_window && windows_window != windows_desktop_window) {
             maybe_leave_last_window();
-            last_window.reset();
+            last_xdnd_window.reset();
             continue;
         }
 
-        // When transitioning between windows we need to announce this to both
-        // windows
-        if (last_window != xdnd_window_query->child) {
+        // When transitioning between windows we need to announce this to
+        // both windows
+        if (last_xdnd_window != xdnd_window_query->child) {
             maybe_leave_last_window();
 
             // We need to announce which file formats we support. There are a
@@ -288,14 +297,28 @@ void WineXdndProxy::run_xdnd_loop() {
             send_xdnd_message(xdnd_window_query->child, xcb_xdnd_enter_message,
                               5 << 24, xcb_mime_text_uri_list,
                               xcb_mime_text_plain, XCB_NONE);
-
-            xcb_flush(x11_connection.get());
         }
 
+        // When the pointer is being moved inside of a window, we should
+        // continuously send `XdndPosition` messages to that window
+        if (last_xdnd_window) {
+            // XXX: We'll always stick with the copy action for now because that
+            //      seems safer than allowing the host to move the file
+            send_xdnd_message(
+                xdnd_window_query->child, xcb_xdnd_position_message, 0,
+                (xdnd_window_query->root_x << 16) | xdnd_window_query->root_y,
+                XCB_CURRENT_TIME, xcb_xdnd_copy_action);
+        }
+
+        // For efficiency's sake we'll only flush all of the client messages
+        // we're sending once at the end of every cycle
         // TODO: Fetch the window under the mouse cursor, send messages to it
         //       according to the XDND protocol
-        last_window = xdnd_window_query->child;
+        last_xdnd_window = xdnd_window_query->child;
+        xcb_flush(x11_connection.get());
     }
+
+#pragma GCC diagnostic pop
 
     // TODO: Check if the escape key is pressed to allow cancelling the drop,
     //       and either send the drop or leave message to the window that was

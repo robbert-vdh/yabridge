@@ -250,7 +250,13 @@ class WineXdndProxy {
     xcb_atom_t xcb_xdnd_aware_property;
     xcb_atom_t xcb_xdnd_proxy_property;
     xcb_atom_t xcb_xdnd_enter_message;
+    xcb_atom_t xcb_xdnd_position_message;
     xcb_atom_t xcb_xdnd_leave_message;
+
+    // XDND specifies various actions for drag-and-drop, but since the file is
+    // technically still owned by the plugin we'll just stick with copies to be
+    // safe
+    xcb_atom_t xcb_xdnd_copy_action;
 
     // Mime types for use in XDND, we'll only support dragging links since that
     // is the foramt the Windows OLE drag-and-drop provides us
