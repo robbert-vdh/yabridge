@@ -15,8 +15,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added support for dragging and dropping files and other content from a plugin
   running under yabridge to a native application, such as your DAW. This makes
-  it much more convenient to use plugins like **Scaler 2** that generate audio
-  or MIDI files. With the way this is implemented it will only work for plugins
+  it much more convenient to use plugins like _Scaler 2_ that generate audio or
+  MIDI files. With the way this is implemented it will only work for plugins
   running under yabridge, but it does work for any Wine version.
 - When a plugin fails to load or when the Wine plugin host process fails to
   start, yabridge will now show you the error in a desktop notification instead
@@ -63,11 +63,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   happened often with _JUCE_ based plugins like Sonic Academy's _Kick 2_ and
   _Anaglyph_. While this is technically a workaround for a bad interaction with
   JUCE and Wine, it should make these plugins a lot more pleasant to use.
-- Fixed **Waves** VST3 plugins not being able to initialize correctly. These
+- Fixed _Waves_ VST3 plugins not being able to initialize correctly. These
   plugins would at runtime change their query interface to support more VST3
   interfaces, including the required edit controller interface. Yabridge now
   requeries the supported interfaces at a later stage to work around this.
-- Fixed JUCE plugins like Tokyo Dawn Records' **SlickEQ M** causing the host to
+- Fixed JUCE plugins like Tokyo Dawn Records' _SlickEQ M_ causing the host to
   freeze when they send a parameter change from the audio thread using the wrong
   VST3 API while at the same time the host is trying to resize the window. This
   would happen in this particular plugin when reopning the Smart Ops panel after
