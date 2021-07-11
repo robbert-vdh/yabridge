@@ -199,6 +199,20 @@ class WineXdndProxy {
                            uint32_t data4) const noexcept;
 
     /**
+     * Handle any incoming `SelectionRequest` events.
+     *
+     * When the window we're dragging over wants to inspect the dragged content,
+     * it will call `ConvertSelection()` which sends us a `SelelectionRequest`.
+     * We should write the data in the requested format the property the
+     * specified on their window, and then send them a `SelectionNotify` to
+     * indicate that we're done. Since we only provide a single unique format,
+     * we have already converted the file list to `text/uri-list` format.
+     *
+     * This does included the necessary flushes.
+     */
+    void handle_convert_selection(const xcb_selection_request_event_t& event);
+
+    /**
      * We need a dedicated X11 connection for our proxy because we can have
      * multiple open editors in a single process (e.g. when using VST3 plugins
      * or plugin groups), and client messages are sent to the X11 connection

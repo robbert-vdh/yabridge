@@ -22,6 +22,8 @@
 
 #include "editor.h"
 
+using namespace std::literals::chrono_literals;
+
 // As defined in `editor.cpp`
 #define THROW_X11_ERROR(error)                                          \
     do {                                                                \
@@ -247,26 +249,27 @@ void WineXdndProxy::end_xdnd() {
     xcb_flush(x11_connection.get());
 }
 
+// FIXME: For some reason you get a -Wmaybe-uninitialized false positive with
+//        GCC 11.1.0 if you just dereference `last_window` here:
+//        https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80635
+//
+//        Oh and Clang doesn't know about -Wmaybe-uninitialized, so we need to
+//        ignore some more warnings here to get clangd to not complain
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+
 void WineXdndProxy::run_xdnd_loop() {
     const xcb_window_t root_window =
         xcb_setup_roots_iterator(xcb_get_setup(x11_connection.get()))
             .data->root;
     const HWND windows_desktop_window = GetDesktopWindow();
 
-    // FIXME: For some reason you get a -Wmaybe-uninitialized false positive
-    //        with GCC 11.1.0 if you just dereference `last_window` here:
-    //        https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80635
-    //        Oh and Clang doesn't know about -Wmaybe-uninitialized, so we need
-    //        to ignore some more warnings here to get clangd to not complain
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpragmas"
-#pragma GCC diagnostic ignored "-Wunknown-warning-option"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+    // We need to wait until we receive the last `XdndStatus` message until we
+    // send a leave, finished, or another position message
+    std::optional<bool> last_window_accepted_status;
 
-    // We cannot just grab the pointer because Wine is already doing that, and
-    // it's also blocking the GUI thread. So instead we will periodically poll
-    // the mouse cursor position, and we will consider the disappearance of
-    // `tracker_window` to mean that the drag-and-drop operation has ended.
     std::optional<uint16_t> last_pointer_x;
     std::optional<uint16_t> last_pointer_y;
     std::optional<xcb_window_t> last_xdnd_window;
@@ -274,9 +277,14 @@ void WineXdndProxy::run_xdnd_loop() {
         if (last_xdnd_window) {
             send_xdnd_message(*last_xdnd_window, xcb_xdnd_leave_message, 0, 0,
                               0, 0);
+            last_window_accepted_status.reset();
         }
     };
 
+    // We cannot just grab the pointer because Wine is already doing that, and
+    // it's also blocking the GUI thread. So instead we will periodically poll
+    // the mouse cursor position, and we will consider the disappearance of
+    // `tracker_window` to mean that the drag-and-drop operation has ended.
     while (IsWindow(tracker_window)) {
         usleep(1000);
 
@@ -286,38 +294,10 @@ void WineXdndProxy::run_xdnd_loop() {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
             switch (event_type) {
-                // When the window we're dragging over wants to inspect the
-                // dragged content, it will call `ConvertSelection()` which
-                // sends us a `SelelectionRequest`. We should write the data in
-                // the requested format the property the specified on their
-                // window, and then send them a `SelectionNotify` to indicate
-                // that we're done.  Since we only provide a single unique
-                // format, we have already converted the file list to
-                // `text/uri-list` format.
                 case XCB_SELECTION_REQUEST: {
-                    const auto event =
-                        reinterpret_cast<xcb_selection_request_event_t*>(
-                            generic_event.get());
-
-                    xcb_change_property(
-                        x11_connection.get(), XCB_PROP_MODE_REPLACE,
-                        event->requestor, event->property, event->target, 8,
-                        // +1 to account for the trailing null byte
-                        dragged_files_uri_list.size() + 1,
-                        dragged_files_uri_list.c_str());
-                    xcb_flush(x11_connection.get());
-
-                    xcb_selection_notify_event_t selection_notify_event{};
-                    selection_notify_event.response_type = XCB_SELECTION_NOTIFY;
-                    selection_notify_event.requestor = event->requestor;
-                    selection_notify_event.selection = xcb_xdnd_selection;
-                    selection_notify_event.target = event->target;
-                    selection_notify_event.property = event->property;
-
-                    xcb_send_event(
-                        x11_connection.get(), false, event->requestor, XCB_NONE,
-                        reinterpret_cast<const char*>(&selection_notify_event));
-                    xcb_flush(x11_connection.get());
+                    handle_convert_selection(
+                        *reinterpret_cast<xcb_selection_request_event_t*>(
+                            generic_event.get()));
                 } break;
                 case XCB_CLIENT_MESSAGE: {
                     const auto event =
@@ -340,8 +320,8 @@ void WineXdndProxy::run_xdnd_loop() {
                         } else {
                             SetCursor(dnd_denied_cursor);
                         }
-                    } else {
-                        // TODO: Implement the other client messages
+
+                        last_window_accepted_status = accepts_drop;
                     }
                 } break;
             }
@@ -399,10 +379,13 @@ void WineXdndProxy::run_xdnd_loop() {
         if (last_xdnd_window) {
             // XXX: We'll always stick with the copy action for now because that
             //      seems safer than allowing the host to move the file
+            // TODO: We should technically wait until we have received an
+            //       `XdndStatus` message
             send_xdnd_message(
                 xdnd_window_query->child, xcb_xdnd_position_message, 0,
                 (xdnd_window_query->root_x << 16) | xdnd_window_query->root_y,
                 XCB_CURRENT_TIME, xcb_xdnd_copy_action);
+            last_window_accepted_status.reset();
         }
 
         // For efficiency's sake we'll only flush all of the client messages
@@ -413,16 +396,84 @@ void WineXdndProxy::run_xdnd_loop() {
         xcb_flush(x11_connection.get());
     }
 
-#pragma GCC diagnostic pop
+    // After the loop has finished we either:
+    // 1) Finish the drop, if `last_xdnd_window` is a valid XDND window
+    // 2) Cancel the drop, if the escape key is held, or
+    // 3) Don't do antyhing, if `last_xdnd_window` is a nullopt
+    // TODO: Check if the escape key is pressed to allow cancelling the drop. In
+    //       that case we should call `maybe_leave_last_window()`
+    if (!last_xdnd_window) {
+        end_xdnd();
+        return;
+    }
 
-    // TODO: Check if the escape key is pressed to allow cancelling the drop,
-    //       and either send the drop or leave message to the window that was
-    //       under the pointer
+    // After the tracker window has disappeared we will try to send the drop to
+    // the last window we hovered over, if it was a valid XDND aware window. We
+    // should however wait with this until the window has accepted our
+    // `XdndPosition` message with an `XdndStatus`
+    bool drop_finished = false;
+    const std::chrono::steady_clock::time_point wait_start =
+        std::chrono::steady_clock::now();
+    while (!drop_finished) {
+        // In case that window somehow becomes unresponsive or disappears, we
+        // will set a timeout here to avoid hanging
+        if (std::chrono::steady_clock::now() - wait_start < 5s) {
+            maybe_leave_last_window();
+            break;
+        }
 
-    // TODO: We should wait for XdndFinished instead, maybe add a timeout for
-    //       faulty implementations if those exist
+        usleep(1000);
+
+        std::unique_ptr<xcb_generic_event_t> generic_event;
+        while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
+               generic_event != nullptr) {
+            const uint8_t event_type =
+                generic_event->response_type & xcb_event_type_mask;
+            switch (event_type) {
+                case XCB_SELECTION_REQUEST: {
+                    handle_convert_selection(
+                        *reinterpret_cast<xcb_selection_request_event_t*>(
+                            generic_event.get()));
+                } break;
+                case XCB_CLIENT_MESSAGE: {
+                    const auto event =
+                        reinterpret_cast<xcb_client_message_event_t*>(
+                            generic_event.get());
+
+                    if (event->type == xcb_xdnd_status_message) {
+                        // We may have to wait for the last `XdndStatus` to be
+                        // sent by the target window
+                        const bool accepts_drop =
+                            static_cast<bool>(event->data.data32[1] & 0b01);
+                        last_window_accepted_status = accepts_drop;
+                    } else if (event->type == xcb_xdnd_finished_message) {
+                        // At this point we're done here, and we can clean up
+                        // and terminate this thread
+                        drop_finished = true;
+                    }
+                } break;
+            }
+
+            if (last_window_accepted_status) {
+                // After we receive the last `XdndStatus` message we'll know
+                // whether the window accepts or denies the drop
+                if (*last_window_accepted_status) {
+                    send_xdnd_message(*last_xdnd_window, xcb_xdnd_drop_message,
+                                      0, XCB_CURRENT_TIME, 0, 0);
+                } else {
+                    maybe_leave_last_window();
+                    drop_finished = true;
+                }
+
+                xcb_flush(x11_connection.get());
+            }
+        }
+    }
+
     end_xdnd();
 }
+
+#pragma GCC diagnostic pop
 
 std::unique_ptr<xcb_query_pointer_reply_t>
 WineXdndProxy::query_xdnd_aware_window_at_pointer(
@@ -495,6 +546,13 @@ std::optional<xcb_window_t> WineXdndProxy::get_xdnd_proxy(
     }
 }
 
+// FIXME: See above for more context, spurious warning is generated by passing
+//        `*last_xdnd_window` to this function
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void WineXdndProxy::send_xdnd_message(xcb_window_t window,
                                       xcb_atom_t message_type,
@@ -521,6 +579,29 @@ void WineXdndProxy::send_xdnd_message(xcb_window_t window,
     xcb_send_event(x11_connection.get(), false,
                    get_xdnd_proxy(window).value_or(window),
                    XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&event));
+}
+
+#pragma GCC diagnostic pop
+
+void WineXdndProxy::handle_convert_selection(
+    const xcb_selection_request_event_t& event) {
+    xcb_change_property(x11_connection.get(), XCB_PROP_MODE_REPLACE,
+                        event.requestor, event.property, event.target, 8,
+                        // +1 to account for the trailing null byte
+                        dragged_files_uri_list.size() + 1,
+                        dragged_files_uri_list.c_str());
+    xcb_flush(x11_connection.get());
+
+    xcb_selection_notify_event_t selection_notify_event{};
+    selection_notify_event.response_type = XCB_SELECTION_NOTIFY;
+    selection_notify_event.requestor = event.requestor;
+    selection_notify_event.selection = xcb_xdnd_selection;
+    selection_notify_event.target = event.target;
+    selection_notify_event.property = event.property;
+
+    xcb_send_event(x11_connection.get(), false, event.requestor, XCB_NONE,
+                   reinterpret_cast<const char*>(&selection_notify_event));
+    xcb_flush(x11_connection.get());
 }
 
 /**
