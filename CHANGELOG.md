@@ -10,6 +10,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- TODO: Remove the notice about Wine->X11 drag and drop from the readme when
+  this gets released
+
+- Added support for dragging and dropping files and other content from a plugin
+  running under yabridge to a native application, such as your DAW. This makes
+  it much more convenient to use plugins like **Scaler 2** that generate audio
+  or MIDI files. With the way this is implemented it will only work for plugins
+  running under yabridge, but it does work for any Wine version.
 - When a plugin fails to load or when the Wine plugin host process fails to
   start, yabridge will now show you the error in a desktop notification instead
   of only printing it to the logger. This makes diagnosing issues much faster if

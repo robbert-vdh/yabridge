@@ -481,6 +481,9 @@ include:
   inotifywait -mre CLOSE_WRITE --format '%w%f' ~/.wine/drive_c
   ```
 
+  **The latest master branch version of yabridge actually does support
+  drag-and-drop from plugins running under Wine to native applications.**
+
 - Aside from the above mentioned Wine issue, _drag-and-drop_ to the plugin
   window under **REAPER** doesn't work because of a long standing issue in
   REAPER's FX window implementation. You can use a compatibility option to
