@@ -25,16 +25,6 @@ using namespace std::literals::chrono_literals;
 
 namespace fs = boost::filesystem;
 
-// As defined in `editor.cpp`
-#define THROW_X11_ERROR(error)                                          \
-    do {                                                                \
-        if (error) {                                                    \
-            free(error);                                                \
-            throw std::runtime_error("X11 error in " +                  \
-                                     std::string(__PRETTY_FUNCTION__)); \
-        }                                                               \
-    } while (0)
-
 /**
  * The window class name Wine uses for its `DoDragDrop()` tracker window.
  *
@@ -528,9 +518,9 @@ void WineXdndProxy::run_xdnd_loop() {
         // We May very well still have one unsent position change left
         maybe_send_spooled_status_message();
 
+        // After we receive the last `XdndStatus` message we'll know whether the
+        // window accepts or denies the drop
         if (!waiting_for_status_message) {
-            // After we receive the last `XdndStatus` message we'll know
-            // whether the window accepts or denies the drop
             if (last_window_accepted_status) {
                 send_xdnd_message(*last_xdnd_window, xcb_xdnd_drop_message, 0,
                                   XCB_CURRENT_TIME, 0, 0);
@@ -867,5 +857,3 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
         std::cerr << error.what() << std::endl;
     }
 }
-
-#undef THROW_X11_ERROR
