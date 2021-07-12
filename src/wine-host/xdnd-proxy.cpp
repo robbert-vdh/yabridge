@@ -194,9 +194,9 @@ WineXdndProxy::Handle WineXdndProxy::get_handle() {
     return Handle(instance);
 }
 
-void WineXdndProxy::begin_xdnd(
-    const boost::container::small_vector_base<boost::filesystem::path>&
-        file_paths) {
+void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
+                                   boost::filesystem::path>& file_paths,
+                               HWND tracker_window) {
     if (file_paths.empty()) {
         throw std::runtime_error("Cannot drag-and-drop without any files");
     }
@@ -236,6 +236,7 @@ void WineXdndProxy::begin_xdnd(
     // the left mouse button gets released. Because Wine is also blocking the
     // GUI thread, we need to do our XDND polling from another thread. Luckily
     // the X11 API is thread safe.
+    this->tracker_window = tracker_window;
     xdnd_handler = Win32Thread([&]() { run_xdnd_loop(); });
 }
 
@@ -479,6 +480,9 @@ void WineXdndProxy::run_xdnd_loop() {
         // In case that window somehow becomes unresponsive or disappears, we
         // will set a timeout here to avoid hanging
         if (std::chrono::steady_clock::now() - wait_start > 5s) {
+            // Just to make it extra clear that we don't want to interfere with
+            // Wine's own drag-and-drop if we reach a timeout
+            drop_finished = false;
             maybe_leave_last_window();
             break;
         }
@@ -533,6 +537,12 @@ void WineXdndProxy::run_xdnd_loop() {
             // We obviously don't want to spam the other client
             waiting_for_status_message = true;
         }
+    }
+
+    // Make sure the Windows drag-and-drop operation doesn't get stuck for
+    // whatever reason (it shouldn't but who knows)
+    if (drop_finished) {
+        PostMessageW(tracker_window, WM_QUIT, 0, 0);
     }
 
     end_xdnd();
@@ -841,8 +851,10 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
         return;
     }
 
+    PostMessageW(hwnd, WM_QUIT, 0, 0);
+
     try {
-        instance->begin_xdnd(dragged_files);
+        instance->begin_xdnd(dragged_files, hwnd);
     } catch (const std::exception& error) {
         std::cerr << "XDND initialization failed:" << std::endl;
         std::cerr << error.what() << std::endl;

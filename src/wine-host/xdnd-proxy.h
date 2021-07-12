@@ -136,9 +136,9 @@ class WineXdndProxy {
      * Initiate the XDDN protocol by taking ownership of the `XdndSelection`
      * selection and setting up the event listeners.
      */
-    void begin_xdnd(
-        const boost::container::small_vector_base<boost::filesystem::path>&
-            file_paths);
+    void begin_xdnd(const boost::container::small_vector_base<
+                        boost::filesystem::path>& file_paths,
+                    HWND tracker_window);
 
     /**
      * Release ownership of the selection stop listening for X11 events.
@@ -239,6 +239,14 @@ class WineXdndProxy {
      * format (i.e. a list of URIs, each ending with a line feed)
      */
     std::string dragged_files_uri_list;
+
+    /**
+     * Wine's tracker window for tracking the drag-and-drop operation. When the
+     * XDND operation succeeds, we make sure to close this window to avoid the
+     * potential for weird race conditions where the plugin may still think
+     * we're doing drag-and-drop.
+     */
+    HWND tracker_window;
 
     /**
      * We need to poll for mouse position changes from another thread, because
