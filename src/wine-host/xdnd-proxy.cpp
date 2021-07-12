@@ -539,7 +539,7 @@ void WineXdndProxy::run_xdnd_loop() {
     // Make sure the Windows drag-and-drop operation doesn't get stuck for
     // whatever reason (it shouldn't but who knows)
     if (drop_finished) {
-        PostMessageW(tracker_window, WM_QUIT, 0, 0);
+        PostMessageW(tracker_window, WM_KEYDOWN, VK_ESCAPE, 0);
     }
 
     end_xdnd();
