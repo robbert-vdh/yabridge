@@ -848,8 +848,6 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
         return;
     }
 
-    PostMessageW(hwnd, WM_QUIT, 0, 0);
-
     try {
         instance->begin_xdnd(dragged_files, hwnd);
     } catch (const std::exception& error) {
