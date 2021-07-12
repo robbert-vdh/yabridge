@@ -16,7 +16,6 @@
 
 #include "xdnd-proxy.h"
 
-#include <atomic>
 #include <iostream>
 #include <numeric>
 
@@ -201,6 +200,12 @@ void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
         throw std::runtime_error("Cannot drag-and-drop without any files");
     }
 
+    // NOTE: Needed for a quirk in MT-PowerDrumkit
+    bool expected = false;
+    if (drag_active.compare_exchange_strong(expected, true)) {
+        throw std::runtime_error("A drag-and-drop operation is already active");
+    }
+
     // When XDND starts, we need to start listening for mouse events so we can
     // react when the mouse cursor hovers over a target that supports XDND. The
     // actual file contents will be transferred over X11 selections. See the
@@ -244,6 +249,8 @@ void WineXdndProxy::end_xdnd() {
     xcb_set_selection_owner(x11_connection.get(), XCB_NONE, xcb_xdnd_selection,
                             XCB_CURRENT_TIME);
     xcb_flush(x11_connection.get());
+
+    drag_active = false;
 }
 
 // FIXME: For some reason you get a -Wmaybe-uninitialized false positive with

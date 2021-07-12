@@ -235,6 +235,13 @@ class WineXdndProxy {
 #pragma GCC diagnostic pop
 
     /**
+     * MT-PowerDrumkit for some reason initializes a drag-and-drop operation,
+     * cancels it, and then immediately starts a new one. We need to make sure
+     * that we only handle a single drag-and-drop operation at a time.
+     */
+    std::atomic_bool drag_active = false;
+
+    /**
      * The files that are currently being dragged, stored as in `text/uri-list`
      * format (i.e. a list of URIs, each ending with a line feed)
      */
