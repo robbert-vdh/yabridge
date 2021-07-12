@@ -192,7 +192,7 @@ void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
 
     // NOTE: Needed for a quirk in MT-PowerDrumkit
     bool expected = false;
-    if (drag_active.compare_exchange_strong(expected, true)) {
+    if (!drag_active.compare_exchange_strong(expected, true)) {
         throw std::runtime_error("A drag-and-drop operation is already active");
     }
 
