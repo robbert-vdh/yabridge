@@ -268,7 +268,13 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     path: plugin_path, ..
                 }) => {
                     let target_path = plugin_path.with_extension("so");
-                    let normalized_target_path = utils::normalize_path(&target_path);
+                    let normalized_target_path = if config.method == InstallationMethod::Symlink {
+                        // We should probably remove the symlink option altogether, but the count
+                        // will at least be soemwhat correct-ish this way
+                        target_path.clone()
+                    } else {
+                        utils::normalize_path(&target_path)
+                    };
 
                     // Since we skip some files, we'll also keep track of how many new file we've
                     // actually set up
@@ -297,7 +303,13 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     let target_native_module_path = module.target_native_module_path(Some(&files));
                     let target_windows_module_path = module.target_windows_module_path();
                     let normalized_native_module_path =
-                        utils::normalize_path(&target_native_module_path);
+                        if config.method == InstallationMethod::Symlink {
+                            // We should probably remove the symlink option altogether, but the
+                            // count will at least be soemwhat correct-ish this way
+                            target_native_module_path.clone()
+                        } else {
+                            utils::normalize_path(&target_native_module_path)
+                        };
 
                     // 32-bit and 64-bit versions of the plugin can live inside of the same bundle),
                     // but it's not possible to use the exact same plugin from multiple Wine
