@@ -82,6 +82,13 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK hWinEventHook,
                                     DWORD idEventThread,
                                     DWORD dwmsEventTime);
 
+/**
+ * Find the key code belonging to the Escape X11 keysym. If the keyboard somehow
+ * doesn't have an escape key, then this will return an nullopt.
+ */
+std::optional<xcb_keycode_t> find_escape_keycode(
+    xcb_connection_t& x11_connection);
+
 ProxyWindow::ProxyWindow(std::shared_ptr<xcb_connection_t> x11_connection)
     : x11_connection(x11_connection),
       window(xcb_generate_id(x11_connection.get())) {
@@ -196,6 +203,9 @@ void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
         throw std::runtime_error("A drag-and-drop operation is already active");
     }
 
+    const xcb_setup_t* x11_setup = xcb_get_setup(x11_connection.get());
+    root_window = xcb_setup_roots_iterator(x11_setup).data->root;
+
     // When XDND starts, we need to start listening for mouse events so we can
     // react when the mouse cursor hovers over a target that supports XDND. The
     // actual file contents will be transferred over X11 selections. See the
@@ -203,6 +213,20 @@ void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
     // https://www.freedesktop.org/wiki/Specifications/XDND/#atomsandproperties
     xcb_set_selection_owner(x11_connection.get(), proxy_window.window,
                             xcb_xdnd_selection, XCB_CURRENT_TIME);
+
+    // Escape key presses are supposed to cancel the drag-and-drop operation, so
+    // we will try to grab this key since Wine actually isn't doing that (they
+    // only listen for key pressed on their own windows). If we can't grab the
+    // keyboard, then it's not a huge deal. Oh and we also need to figure out
+    // what keycode the escape key corresponds to first.
+    if (!escape_keycode) {
+        escape_keycode = find_escape_keycode(*x11_connection);
+    }
+    if (escape_keycode) {
+        xcb_grab_key(x11_connection.get(), false, root_window, XCB_GRAB_ANY,
+                     *escape_keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    }
+
     xcb_flush(x11_connection.get());
 
     // We will transfer the files in `text/uri-list` format, so a string of URIs
@@ -236,6 +260,10 @@ void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
 }
 
 void WineXdndProxy::end_xdnd() {
+    if (escape_keycode) {
+        xcb_ungrab_key(x11_connection.get(), *escape_keycode, root_window,
+                       XCB_GRAB_ANY);
+    }
     xcb_set_selection_owner(x11_connection.get(), XCB_NONE, xcb_xdnd_selection,
                             XCB_CURRENT_TIME);
     xcb_flush(x11_connection.get());
@@ -255,9 +283,6 @@ void WineXdndProxy::end_xdnd() {
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
 void WineXdndProxy::run_xdnd_loop() {
-    const xcb_window_t root_window =
-        xcb_setup_roots_iterator(xcb_get_setup(x11_connection.get()))
-            .data->root;
     const HWND windows_desktop_window = GetDesktopWindow();
 
     std::optional<xcb_window_t> last_xdnd_window;
@@ -324,9 +349,10 @@ void WineXdndProxy::run_xdnd_loop() {
     // the mouse cursor position, and we will end the drag once the left mouse
     // button gets released.
     bool left_mouse_button_held = true;
+    bool escape_pressed = false;
     std::optional<uint16_t> last_pointer_x;
     std::optional<uint16_t> last_pointer_y;
-    while (left_mouse_button_held) {
+    while (left_mouse_button_held && !escape_pressed) {
         usleep(1000);
 
         std::unique_ptr<xcb_generic_event_t> generic_event;
@@ -335,6 +361,16 @@ void WineXdndProxy::run_xdnd_loop() {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
             switch (event_type) {
+                // As with the regular Windows drag-and-drop, we should allow
+                // cancelling the operation when the escape key is pressed
+                case XCB_KEY_PRESS: {
+                    const auto event = reinterpret_cast<xcb_key_press_event_t*>(
+                        generic_event.get());
+
+                    if (escape_keycode && event->detail == *escape_keycode) {
+                        escape_pressed = true;
+                    }
+                } break;
                 case XCB_SELECTION_REQUEST: {
                     handle_convert_selection(
                         *reinterpret_cast<xcb_selection_request_event_t*>(
@@ -459,9 +495,8 @@ void WineXdndProxy::run_xdnd_loop() {
     // 1) Finish the drop, if `last_xdnd_window` is a valid XDND window
     // 2) Cancel the drop, if the escape key is being held, or
     // 3) Don't do antyhing, if `last_xdnd_window` is a nullopt
-    // TODO: Check if the escape key is pressed to allow cancelling the drop. In
-    //       that case we should call `maybe_leave_last_window()`
-    if (!last_xdnd_window) {
+    if (!last_xdnd_window || escape_pressed) {
+        maybe_leave_last_window();
         end_xdnd();
         return;
     }
@@ -854,4 +889,39 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
         std::cerr << "XDND initialization failed:" << std::endl;
         std::cerr << error.what() << std::endl;
     }
+}
+
+std::optional<xcb_keycode_t> find_escape_keycode(
+    xcb_connection_t& x11_connection) {
+    const xcb_setup_t* x11_setup = xcb_get_setup(&x11_connection);
+
+    xcb_generic_error_t* error = nullptr;
+    const xcb_get_keyboard_mapping_cookie_t get_keyboard_cookie =
+        xcb_get_keyboard_mapping(
+            &x11_connection, x11_setup->min_keycode,
+            x11_setup->max_keycode - x11_setup->min_keycode + 1);
+    std::unique_ptr<xcb_get_keyboard_mapping_reply_t> get_keyboard_reply(
+        xcb_get_keyboard_mapping_reply(&x11_connection, get_keyboard_cookie,
+                                       &error));
+    if (error) {
+        free(error);
+        return std::nullopt;
+    }
+
+    const xcb_keysym_t* keysyms =
+        xcb_get_keyboard_mapping_keysyms(get_keyboard_reply.get());
+    const size_t num_keysyms =
+        xcb_get_keyboard_mapping_keysyms_length(get_keyboard_reply.get());
+    for (size_t i = 0; i < num_keysyms; i++) {
+        const size_t keycode = x11_setup->min_keycode +
+                               (i / get_keyboard_reply->keysyms_per_keycode);
+
+        // https://www.x.org/releases/X11R7.7/doc/xproto/x11protocol.html#Function_KEYSYMs
+        constexpr xcb_keysym_t escape_keysym = 0xFF1B;
+        if (keysyms[i] == escape_keysym) {
+            return keycode;
+        }
+    }
+
+    return std::nullopt;
 }

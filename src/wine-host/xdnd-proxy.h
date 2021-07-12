@@ -262,6 +262,17 @@ class WineXdndProxy {
      */
     Win32Thread xdnd_handler;
 
+    /**
+     * The X11 root window.
+     */
+    xcb_window_t root_window;
+
+    /**
+     * The X11 keycode for the escape key. We need to figure this out once when
+     * the first drag-and-drop operation happens.
+     */
+    std::optional<xcb_keycode_t> escape_keycode;
+
     // These are the atoms used for the XDND protocol, as described by
     // https://www.freedesktop.org/wiki/Specifications/XDND/#atomsandproperties
     xcb_atom_t xcb_xdnd_selection;
