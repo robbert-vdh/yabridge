@@ -427,12 +427,9 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
                  version of yabridge, in which case you'll need to upgrade Wine. Your current Wine \
                  version is '{wine_version}'. \
                  See the link below for instructions on how to upgrade your installation of Wine.\n\
-                 Finally, if the default Wine prefix over at {wine_prefix} is set to 32-bit only, \
-                 this check will also fail as the 64-bit {yabridge_host} won't be able to run.
                  \n\
                  https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues",
                 yabridge_host = "yabridge-host.exe".bright_white(),
-                wine_prefix = "~/.wine".bright_white(),
                 error = last_error.unwrap_or("<no_output>").bright_white(),
                 wine_version = wine_version
                     .strip_prefix("wine-")
