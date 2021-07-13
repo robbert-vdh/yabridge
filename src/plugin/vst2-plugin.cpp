@@ -22,6 +22,8 @@
 #include "../common/logging/common.h"
 #include "bridges/vst2.h"
 
+using namespace std::literals::string_literals;
+
 #define VST_EXPORT __attribute__((visibility("default")))
 
 // The main entry point for VST2 plugins should be called `VSTPluginMain``. The
@@ -54,8 +56,12 @@ extern "C" VST_EXPORT AEffect* VSTPluginMain(
 
         // Also show a desktop notification most people likely won't see the
         // above message
-        send_notification("Failed to initialize VST2 plugin", error.what(),
-                          true);
+        send_notification(
+            "Failed to initialize VST2 plugin",
+            error.what() +
+                "\nIf you just updated yabridge, then you may need to rerun "
+                "'yabridgectl sync' first to update your plugins."s,
+            true);
 
         return nullptr;
     }

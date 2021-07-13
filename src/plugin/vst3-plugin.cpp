@@ -16,6 +16,8 @@
 
 #include "bridges/vst3.h"
 
+using namespace std::literals::string_literals;
+
 // FIXME: The VST3 SDK as of version 3.7.2 now includes multiple local functions
 //        called `InitModule` and `DeinitModule`: one in the new
 //        `public.sdk/source/main/initmodule.cpp`, and the existing ones in the
@@ -57,8 +59,12 @@ bool InitModule() {
 
         // Also show a desktop notification most people likely won't see the
         // above message
-        send_notification("Failed to initialize VST3 plugin", error.what(),
-                          true);
+        send_notification(
+            "Failed to initialize VST3 plugin",
+            error.what() +
+                "\nIf you just updated yabridge, then you may need to rerun "
+                "'yabridgectl sync' first to update your plugins."s,
+            true);
 
         return false;
     }
