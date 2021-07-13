@@ -340,6 +340,30 @@ class PluginBridge {
     }
 
     /**
+     * Show a desktop notification if the Wine plugin host is using a different
+     * version of yabridge than this library. Yabridge may still work (and we do
+     * this often during development), but at some point a request may fail the
+     * plugin and the host are out of sync.
+     */
+    void warn_on_version_mismatch(const std::string& host_version) {
+        if (host_version != yabridge_git_version) {
+            generic_logger.log(
+                "WARNING: The host application's version does not match");
+            generic_logger.log(
+                "         this plugin's. If you just updated yabridge, then");
+            generic_logger.log(
+                "         you may need rerun 'yabridgectl sync' first to");
+            generic_logger.log("         update your plugins.");
+
+            send_notification(
+                "Version mismatch",
+                "If you just updated yabridge, then you may need "
+                "to rerun 'yabridgectl sync' first to update your plugins.",
+                true);
+        }
+    }
+
+    /**
      * The configuration for this instance of yabridge. Set based on the values
      * from a `yabridge.toml`, if it exists.
      *

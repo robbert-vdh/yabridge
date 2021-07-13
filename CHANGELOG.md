@@ -23,6 +23,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   of only printing it to the logger. This makes diagnosing issues much faster if
   you didn't already start your DAW from a terminal. These notifications require
   `libnotify` and the `notify-send` application to be installed.
+- Also added a warning and a desktop notification when there's a version
+  mismatch between the yabridge host application and the plugin to remind you to
+  rerun `yabridgectl sync`.
 - Added an environment variable to disable the watchdog timer. This allows the
   Wine process to run under a separate namespace. If you don't know that you
   need this, then you probably don't need this!

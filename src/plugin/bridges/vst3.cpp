@@ -63,7 +63,10 @@ Vst3PluginBridge::Vst3PluginBridge()
 
                     return Ack{};
                 },
-                [&](const WantsConfiguration&) -> WantsConfiguration::Response {
+                [&](const WantsConfiguration& request)
+                    -> WantsConfiguration::Response {
+                    warn_on_version_mismatch(request.host_version);
+
                     return config;
                 },
                 [&](const YaComponentHandler::BeginEdit& request)

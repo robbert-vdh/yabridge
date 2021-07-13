@@ -24,6 +24,9 @@
 #include "vst3-impls/host-context-proxy.h"
 #include "vst3-impls/plug-frame-proxy.h"
 
+// Generated inside of the build directory
+#include <version.h>
+
 // NOLINTNEXTLINE(bugprone-suspicious-include)
 #include <public.sdk/source/vst/hosting/module_win32.cpp>
 
@@ -100,8 +103,8 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
 
     // Fetch this instance's configuration from the plugin to finish the setup
     // process
-    config = sockets.vst_host_callback.send_message(WantsConfiguration{},
-                                                    std::nullopt);
+    config = sockets.vst_host_callback.send_message(
+        WantsConfiguration{.host_version = yabridge_git_version}, std::nullopt);
 
     // Allow this plugin to configure the main context's tick rate
     main_context.update_timer_interval(config.event_loop_interval());
