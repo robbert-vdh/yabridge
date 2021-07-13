@@ -19,6 +19,9 @@
 #include <iostream>
 #include <set>
 
+// Generated inside of the build directory
+#include <version.h>
+
 #include "../../common/communication/vst2.h"
 
 /**
@@ -194,9 +197,12 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     // Send the plugin's information to the Linux VST plugin. Any other updates
     // of this object will be sent over the `dispatcher()` socket. This would be
     // done after the host calls `effOpen()`, and when the plugin calls
-    // `audioMasterIOChanged()`.
-    sockets.host_vst_control.send(Vst2EventResult{
-        .return_value = 0, .payload = *plugin, .value_payload = std::nullopt});
+    // `audioMasterIOChanged()`. We will also send along this host's version so
+    // we can show a warning when the plugin's version doesn't match.
+    sockets.host_vst_control.send(
+        Vst2EventResult{.return_value = 0,
+                        .payload = *plugin,
+                        .value_payload = yabridge_git_version});
 
     // After sending the AEffect struct we'll receive this instance's
     // configuration as a response

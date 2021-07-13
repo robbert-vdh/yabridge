@@ -175,8 +175,12 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
     // calls `audioMasterIOChanged()` and after the host calls `effOpen()`.
     const auto initialization_data =
         sockets.host_vst_control.receive_single<Vst2EventResult>();
+
     const auto initialized_plugin =
         std::get<AEffect>(initialization_data.payload);
+    const auto host_version =
+        std::get<std::string>(*initialization_data.value_payload);
+    warn_on_version_mismatch(host_version);
 
     // After receiving the `AEffect` values we'll want to send the configuration
     // back to complete the startup process
