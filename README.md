@@ -96,10 +96,10 @@ First, yabridgectl needs to know where it can find yabridge's files. If you have
 downloaded the prebuilt binaries from GitHub, then you can simply extract the
 archive to `~/.local/share`. Both yabridge and yabridgectl will then pick up the
 files in `~/.local/share/yabridge` automatically. You also won't have to do any
-additional work if you're using one of the AUR packages. _Since
-`~/.local/share/yabridge` will likely not be in your search `PATH`,_ _you may
-have to replace `yabridgectl` in any of the commands below with_
-_`~/.local/share/yabridge/yabridgectl`._
+additional work if you're using one of the AUR packages. **Since
+`~/.local/share/yabridge` will likely not be in your search `PATH`,** **you may
+need to replace `yabridgectl` in the commands below with**
+**`~/.local/share/yabridge/yabridgectl`.**
 
 Next, you'll want to tell yabridgectl where it can find your VST2 and VST3
 plugins. For this you can use yabridgectl's `add`, `rm` and `list` commands. You
