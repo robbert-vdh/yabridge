@@ -27,3 +27,8 @@ version_header = vcs_tag(
   output : 'version.h',
   replace_string : '@VCS_VERSION@'
 )
+
+configuration_dep = declare_dependency(
+  include_directories : include_directories('.'),
+  sources : [config_header, version_header],
+)

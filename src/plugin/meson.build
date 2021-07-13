@@ -15,10 +15,7 @@ vst2_plugin_sources = files(
   'host-process.cpp',
   'utils.cpp',
   'vst2-plugin.cpp',
-) + [
-  config_header,
-  version_header,
-]
+)
 
 vst3_plugin_sources = files(
   '../common/communication/common.cpp',
@@ -91,7 +88,4 @@ vst3_plugin_sources = files(
   'host-process.cpp',
   'utils.cpp',
   'vst3-plugin.cpp',
-) + [
-  config_header,
-  version_header,
-]
+)

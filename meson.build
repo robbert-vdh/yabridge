@@ -270,6 +270,8 @@ shared_library(
   native : true,
   include_directories : include_dir,
   dependencies : [
+    configuration_dep,
+
     boost_dep,
     with_32bit_libraries
       ? boost_filesystem_32bit_dep
@@ -292,6 +294,8 @@ if with_vst3
     native : true,
     include_directories : include_dir,
     dependencies : [
+      configuration_dep,
+
       boost_dep,
       with_32bit_libraries
         ? boost_filesystem_32bit_dep

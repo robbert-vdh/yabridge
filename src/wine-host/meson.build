@@ -8,6 +8,8 @@
 # doesn't have a way to customize that yet.
 if is_64bit_system
   host_64bit_deps = [
+    configuration_dep,
+
     boost_dep,
     boost_filesystem_64bit_dep,
     bitsery_dep,
@@ -31,6 +33,8 @@ if with_bitbridge
   message('Bitbridge enabled, configuring a 32-bit host application')
 
   host_32bit_deps = [
+    configuration_dep,
+
     boost_dep,
     boost_filesystem_32bit_dep,
     bitsery_dep,
@@ -136,17 +140,11 @@ endif
 # These will be linked against a static library made from `host_common_sources`
 individual_host_sources = files(
   'individual-host.cpp',
-) + [
-  config_header,
-  version_header,
-]
+)
 group_host_sources = files(
   'bridges/group.cpp',
   'group-host.cpp',
-) + [
-  config_header,
-  version_header,
-]
+)
 
 if is_64bit_system
   host_common_64bit = static_library(
