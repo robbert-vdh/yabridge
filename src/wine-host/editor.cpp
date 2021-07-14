@@ -332,11 +332,6 @@ Editor::Editor(MainContext& main_context,
                             0);
         xcb_flush(x11_connection.get());
     }
-
-    // Set up our proxy for translating Wine drag-and-drop events into XDND
-    // events
-    // TODO: We're going to need to store this somewhere to pass the events
-    WineXdndProxy::get_handle();
 }
 
 void Editor::handle_x11_events() const noexcept {
