@@ -134,6 +134,7 @@ Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
 }
 
 Vst2Bridge::Vst2Bridge(MainContext& main_context,
+                       // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                        std::string plugin_dll_path,
                        std::string endpoint_base_dir,
                        pid_t parent_pid)

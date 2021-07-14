@@ -188,6 +188,7 @@ tresult PLUGIN_API YaBStream::write(void* buffer,
     return Steinberg::kResultOk;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 tresult PLUGIN_API YaBStream::seek(int64 pos, int32 mode, int64* result) {
     switch (mode) {
         case kIBSeekSet:

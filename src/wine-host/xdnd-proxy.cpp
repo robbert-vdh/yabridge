@@ -279,7 +279,7 @@ void WineXdndProxy::end_xdnd() {
 //        ignore some more warnings here to get clangd to not complain
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"
-#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma clang diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
 void WineXdndProxy::run_xdnd_loop() {
@@ -657,7 +657,7 @@ std::optional<xcb_window_t> WineXdndProxy::get_xdnd_proxy(
 //        `*last_xdnd_window` to this function
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"
-#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma clang diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)

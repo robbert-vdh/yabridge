@@ -86,6 +86,7 @@ Vst3PluginInstance::Vst3PluginInstance(
       is_initialized(!interfaces.plugin_base) {}
 
 Vst3Bridge::Vst3Bridge(MainContext& main_context,
+                       // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                        std::string plugin_dll_path,
                        std::string endpoint_base_dir,
                        pid_t parent_pid)

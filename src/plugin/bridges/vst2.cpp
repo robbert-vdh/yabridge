@@ -615,6 +615,7 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
 }
 
 template <typename T, bool replacing>
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     // During audio processing we'll write the inputs to shared memory buffers,
     // and we'll then send this request alongside it with additional information

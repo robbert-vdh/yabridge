@@ -27,6 +27,8 @@
 // FIXME: When used in a Boost.Containers small vector, GCC somehow complains
 //        that the fields in this class may be uninitialized (during the
 //        deserialization). This warning only shows up during a unity build.
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma clang diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
 /**
