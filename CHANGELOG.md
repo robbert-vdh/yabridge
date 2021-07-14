@@ -14,7 +14,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   this gets released
 
 - Added support for drag-and-drop from Windows plugins running under yabridge to
-  native applications such as your DAW. This makes it much more convenient to
+  native applications, such as your DAW. This makes it much more convenient to
   use plugins like _Scaler 2_ that generate audio or MIDI files. Because of the
   way this is implemented this feature will work with any Wine version.
 - When a plugin fails to load or when the Wine plugin host process fails to
@@ -37,9 +37,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   allows the above mentioned 32-bit version of yabridge to be used in
   **EnergyXT**, allowing you to use both 32-bit and 64-bit Windows VST2 plugins
   there.
-- Added an environment variable to disable the watchdog timer. This is needed
-  when running the Wine process under a separate namespace. If you don't know
-  that you need this, then you probably don't need this!
+- Added an environment variable to disable the watchdog timer. This is only
+  needed when running the Wine process under a separate namespace. If you don't
+  know that you need this, then you probably don't need this!
 
 ### Changed
 
@@ -77,12 +77,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   the Smart Ops panel after having used it once. To fix this, yabridge's
   Wine-side VST3 mutual recursion mechanism now only operates when invoked from
   the GUI thread.
-- Fixed missing transport information for VST2 plugins in **Ardour**, breaking
-  host sync and LFOs in certain plugins. This was a regression from yabridge
-  3.2.0.
+- Fixed VST2 plugins in **Ardour** not receiving all transport information,
+  breaking host sync and LFOs in certain plugins. This was a regression from
+  yabridge 3.2.0.
 - Fixed _Insert Piz Here_'s _midiLooper_ crashing in **REAPER** when the plugin
   tries to use REAPER's [host function
-  API](https://www.reaper.fm/sdk/vst/vst_ext.php#vst_host) which currently isn't
+  API](https://www.reaper.fm/sdk/vst/vst_ext.php#vst_host). This currently isn't
   supported by yabridge. We now explicitly ignore these requests.
 - Fixed yabridge's logging seeking the STDERR stream to position 0 every time it
   writes a log message. This would be noticeable when piping the host's STDERR
@@ -90,9 +90,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - When printing the Wine version during initialization, the Wine process used
   for this is now run under the same environment that the Wine plugin host
   process will be run under. This means that if you use a custom `WINELOADER`
-  script to use different Wine binaries depending on the prefix, the
-  `wine version:` line in the initialization message will now always match the
-  version of Wine the plugin is going to be run under.
+  script to use different Wine versions depending on the prefix,
+  the `wine version:` line in the initialization message will now always match
+  the version of Wine the plugin is going to be run under.
 - Fixed the plugin-side watchdog timer that allows a yabridge plugin to
   terminate when the Wine plugin host application fails to start treating zombie
   processes as still running, active processes. This could cause plugins to hang
@@ -118,14 +118,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   when supported by the file system. This speeds up the file coyping process
   while also reducing the amount of disk space used for yabridge when using
   Btrfs or XFS.
-- If pruning causes a directory to be empty, then the empty directory will also
-  be removed. This avoids having your plugin directories littered with empty
-  directories.
+- If pruning causes a directory to be empty, then the empty directory will now
+  also be removed. This avoids having your plugin directories littered with
+  empty directories.
 - Fixed incorrect new and total plugin counts. These counts are now always
   correct, even when using multiple versions of the same VST3 plugin or when
   multiple plugin directories overlap because of the use of symlinks.
 - Aside from pruning only unmanaged VST3 bundles in `~/.vst3/yabridge`, yabridge
-  will now also prompt you to prune unmanaged files within a managed VST3
+  will now also prompt you to prune leftover files from within a managed VST3
   bundle. This makes it easy to switch from the 64-bit version of a plugin to
   the 32-bit version, or from a 64-bit version of yabridge to the 32-bit
   version. I don't know why you would want to do either of those things, but now
