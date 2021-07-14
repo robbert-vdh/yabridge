@@ -287,16 +287,12 @@ impl Config {
         };
 
         // `yabridge-host.exe` should either be in the search path, or it should be in
-        // `~/.local/share/yabridge`
-        let yabridge_host_exe = which(YABRIDGE_HOST_EXE_NAME)
-            .ok()
-            .or_else(|| xdg_dirs.find_data_file(YABRIDGE_HOST_EXE_NAME));
+        // `~/.local/share/yabridge` (which was appended to the `$PATH` at the start of `main()`)
+        let yabridge_host_exe = which(YABRIDGE_HOST_EXE_NAME).ok();
         let yabridge_host_exe_so = yabridge_host_exe
             .as_ref()
             .map(|path| path.with_extension("exe.so"));
-        let yabridge_host_32_exe = which(YABRIDGE_HOST_32_EXE_NAME)
-            .ok()
-            .or_else(|| xdg_dirs.find_data_file(YABRIDGE_HOST_32_EXE_NAME));
+        let yabridge_host_32_exe = which(YABRIDGE_HOST_32_EXE_NAME).ok();
         let yabridge_host_32_exe_so = yabridge_host_32_exe
             .as_ref()
             .map(|path| path.with_extension("exe.so"));
