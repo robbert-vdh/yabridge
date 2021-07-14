@@ -5,6 +5,7 @@
   - [Editor embedding](#editor-embedding)
 - [VST2 plugins](#vst2-plugins)
 - [VST3 plugins](#vst3-plugins)
+- [Audio buffers](#audio-buffers)
 
 ## General architecture
 
@@ -175,11 +176,12 @@ pointer. This allows the VST3 SDK to be modular and its functionality to be
 expanded upon over time, but it does make proxying such an object more
 difficult. Yabridge's approach for this problem is described below.
 
-Communication for VST3 modules within yabridge uses one channel for function
-calls from the native host to the Windows plugin, one channel for callbacks from
-the Windows plugin to the native host, and then one additional channel per audio
-processor for performance reasons. All of these communication channels allow for
-additional sockets and threads to be spawned using the means outlined above.
+Communication for VST3 modules within yabridge uses one communication channel
+for function calls from the native host to the Windows plugin, one channel for
+callbacks from the Windows plugin to the native host, and then one additional
+channel per audio processor for performance reasons. All of these communication
+channels allow for additional sockets and threads to be spawned using the means
+outlined above.
 
 When the host loads the VST3 module, we'll go through a similar process as when
 initialzing the VST2 version of yabridge. After initialization the host will ask
@@ -224,3 +226,23 @@ itself up. Because of binary compatibility reasons destructors in the VST3 SDK
 are non-virtual, but we can safely make them virtual in our case.
 `Vst3*ProxyImpl` then provides an implementation for all of the applicable
 `IFoo` interfaces that perform function calls using those message structs.
+
+## Audio buffers
+
+Starting from yabridge 3.4.0, audio processing is now handled using a hybrid of
+both shared memory and the socket-based message passing mechanism. Yabridge uses
+sockets instead of shared memory everywhere else because of the added
+flexibility in terms of messages we can handle and so we can concurrently handle
+multiple messages, but the downside of this approach is that you will always
+need to do additional work during the (de)serialization process mostly in terms
+of copying and moving memory. Since audio buffers are large and have a maximum
+size that is known before audio processing begins, we can simply store the audio
+buffers in a big block of shared memory and use the sockets for all other data
+that gets sent along with the actual audio buffers. This also means that the
+sockets act as a form of synchronisation, so we do not need any additional
+inter-process locking. These shared memory audio buffers are defined as part of
+`AudioShmBuffer`, and they are configured while handling `effMainsChanged` for
+VST2 plugins and during `IAudioProcessor::setupProcessing()` for VST3 plugins.
+For VST2 plugins this does mean that we will need to keep track of the maximum
+block size and the sample size reported by the host, since this information is
+not passed along with `effMainsChanged`.
