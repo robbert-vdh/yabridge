@@ -85,10 +85,6 @@ struct Size {
  *
  * This is essentially an alternative around `std::unique_ptr` with a non-static
  * custom deleter.
- *
- * FIXME: It seems like there's a bug in Wine's X11Drv that _sometimes_ causes
- *        the window to get deleted twice resulting in an Xlib error inside of
- *        Wine.
  */
 class DeferredWindow {
    public:
