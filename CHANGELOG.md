@@ -13,69 +13,70 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - TODO: Remove the notice about Wine->X11 drag and drop from the readme when
   this gets released
 
-- Added support for dragging and dropping files and other content from a plugin
-  running under yabridge to a native application, such as your DAW. This makes
-  it much more convenient to use plugins like _Scaler 2_ that generate audio or
-  MIDI files. With the way this is implemented it will only work for plugins
-  running under yabridge, but it does work for any Wine version.
+- Added support for drag-and-drop from Windows plugins running under yabridge to
+  native applications such as your DAW. This makes it much more convenient to
+  use plugins like _Scaler 2_ that generate audio or MIDI files. Because of the
+  way this is implemented this feature will work with any Wine version.
 - When a plugin fails to load or when the Wine plugin host process fails to
   start, yabridge will now show you the error in a desktop notification instead
-  of only printing it to the logger. This makes diagnosing issues much faster if
-  you didn't already start your DAW from a terminal. These notifications require
-  `libnotify` and the `notify-send` application to be installed.
-- Also added a warning and a desktop notification when there's a version
-  mismatch between the yabridge host application and the plugin to remind you to
-  rerun `yabridgectl sync`.
-- Added an environment variable to disable the watchdog timer. This allows the
-  Wine process to run under a separate namespace. If you don't know that you
-  need this, then you probably don't need this!
-- Added support for building 32-bit versions of the yabridge libraries, so you
-  can use both 32-bit and 64-bit Windows VST2 and VST3 plugins under 32-bit
-  Linux plugin hosts. This should not be necessary in any normal situation since
+  of only printing it to the logger. This will make it much faster to quickly
+  diagnose issues if you weren't already running your DAW from a terminal. These
+  notifications require `libnotify` and its `notify-send` application to be
+  installed.
+- Similarly, yabridge will show you a warning and a desktop notification with a
+  reminder to rerun `yabridgctl sync` when it detects that there's been a
+  version mismatch between the plugin and the used Wine plugin host application.
+- Added support for building 32-bit versions of the yabridge libraries, allowing
+  you to use both 32-bit and 64-bit Windows VST2 and VST3 plugins under 32-bit
+  Linux plugin hosts. This should not be needed in any normal situation since
   Desktop Linux has been 64-bit only for a while now, but it could be useful in
-  some very specific situations. Building on a real 32-bit system will also
+  some very specific situations. Building on an actual 32-bit system will also
   work, in which case the 64-bit Wine plugin host applications simply won't be
   built.
-- Defined the deprecated pre-VST2.4 `main` entry point for VST2 plugins. This
+- Added the deprecated pre-VST2.4 `main` entry point for VST2 plugins. This
   allows the above mentioned 32-bit version of yabridge to be used in
   **EnergyXT**, allowing you to use both 32-bit and 64-bit Windows VST2 plugins
   there.
+- Added an environment variable to disable the watchdog timer. This is needed
+  when running the Wine process under a separate namespace. If you don't know
+  that you need this, then you probably don't need this!
 
 ### Changed
 
 - The audio processing implementation for both VST2 and VST3 plugins has been
-  completely rewritten to use both shared memory and message passing to reduce
-  expensive memory copies to a minimum. With this change the DSP load overhead
-  during audio processing should now be about as low as it's going to get.
+  completely rewritten to use both shared memory and message passing to cut down
+  the number of expensive memory copies to a minimum. This reduces the DSP load
+  overhead of audio processing even further.
+- Respect `$XDG_DATA_HOME` as a fallback when looking for yabridge's plugin host
+  binaries instead of hardcoding this to `~/.local/share/yabridge`. This matches
+  the existing behaviour in yabridgectl.
 - Optimized the management of VST3 plugin instances to reduce the overhead when
-  using many instances of a VST3 plugin.
+  using many instances of a single VST3 plugin.
 - Slightly optimized the function call dispatch for VST2 plugins.
 - Prevented some more potential unnecessary memory operations during yabridge's
   communication. The underlying serialization library was recreating some
-  objects even when that wasn't needed, which could in theory result in memory
-  allocations in certain situations. This is related to the similar issue that
-  got fixed with yabridge 3.3.0. A fix for this issue has also been upstreamed
-  to the library.
-- Respect `$XDG_DATA_HOME` when looking for yabridge's plugin host binaries
-  instead of hardcoding `~/.local/share/yabridge`. This matches the existing
-  behaviour in yabridgectl.
+  objects even when this wasn't needed, which could result in unnecessary memory
+  allocations under certain circumstances. This is related to the similar issue
+  that was fixed in yabridge 3.3.0. A fix for this issue has also been
+  upstreamed to the library.
 
 ### Fixed
 
 - Fixed mouse cursors disappearing when interacting with some plugin GUIs. This
-  happened often with _JUCE_ based plugins like Sonic Academy's _Kick 2_ and
-  _Anaglyph_. While this is technically a workaround for a bad interaction with
-  JUCE and Wine, it should make these plugins a lot more pleasant to use.
+  often happened with _JUCE_ based plugins, such as Sonic Academy's _Kick 2_ and
+  _Anaglyph_. While this is technically a workaround for a bad interaction
+  between JUCE and Wine, it should make these plugins much more pleasant to use.
 - Fixed _Waves_ VST3 plugins not being able to initialize correctly. These
   plugins would at runtime change their query interface to support more VST3
-  interfaces, including the required edit controller interface. Yabridge now
+  interfaces, including the mandatory edit controller interface. Yabridge now
   requeries the supported interfaces at a later stage to work around this.
-- Fixed JUCE plugins like Tokyo Dawn Records' _SlickEQ M_ causing the host to
-  freeze when they send a parameter change from the audio thread using the wrong
-  VST3 API while at the same time the host is trying to resize the window. This
-  would happen in this particular plugin when reopning the Smart Ops panel after
-  having used it once. To fix this, yabridge's Wine-side VST3 mutual recursion
-  mechanism now only operates when invoked from the GUI thread.
+- Fixed JUCE VST3 plugins like Tokyo Dawn Records' _SlickEQ M_ causing the host
+  to freeze when they send a parameter change from the audio thread using the
+  wrong VST3 API while the plugin is also trying to resize the window from the
+  GUI thread at the same time. This would happen in _SlickEQ M_ when reopning
+  the Smart Ops panel after having used it once. To fix this, yabridge's
+  Wine-side VST3 mutual recursion mechanism now only operates when invoked from
+  the GUI thread.
 - Fixed missing transport information for VST2 plugins in **Ardour**, breaking
   host sync and LFOs in certain plugins. This was a regression from yabridge
   3.2.0.
@@ -83,55 +84,56 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   tries to use REAPER's [host function
   API](https://www.reaper.fm/sdk/vst/vst_ext.php#vst_host) which currently isn't
   supported by yabridge. We now explicitly ignore these requests.
-- Fixed the plugin-side watchdog timer that checks whether the Wine plugin host
-  process failed to start from treating zombie processes as running, active
-  processes. This could cause plugins to hang during scanning if the Wine
-  process crashed in a very specific (and likely impossible) way.
-- In the event a VST3 plugin were to return a null pointer for
-  `IEditController::createView()`, this will now be propagated correctly on the
-  plugin side.
-- Fixed VST2 speaker arrangement configurations returned by the plugin not being
-  serialized correctly. No plugins seem to actually use these, so it should not
-  have caused any issues.
-- Fixed yabridge's logging seeking STDERR to position 0 every time it writes a
-  log message. This would be noticeable when piping a DAW's STDERR stream to a
-  file when `YABRIDGE_DEBUG_LEVEL` wasn't set.
+- Fixed yabridge's logging seeking the STDERR stream to position 0 every time it
+  writes a log message. This would be noticeable when piping the host's STDERR
+  stream to a file and `YABRIDGE_DEBUG_LEVEL` wasn't set.
 - When printing the Wine version during initialization, the Wine process used
-  for this is now run under the same environment as the Wine plugin host process
-  will be run under. This means that when using a custom `WINELOADER` script to
-  use different Wine versions depending on the Wine prefix, the `wine version:`
-  line in the initialization message will always match the version of Wine the
-  plugin is going to be run under.
+  for this is now run under the same environment that the Wine plugin host
+  process will be run under. This means that if you use a custom `WINELOADER`
+  script to use different Wine binaries depending on the prefix, the
+  `wine version:` line in the initialization message will now always match the
+  version of Wine the plugin is going to be run under.
+- Fixed the plugin-side watchdog timer that allows a yabridge plugin to
+  terminate when the Wine plugin host application fails to start treating zombie
+  processes as still running, active processes. This could cause plugins to hang
+  during scanning if the Wine process crashed in a very specific and likely
+  impossible way.
+- If a VST3 plugin returns a null pointer from `IEditController::createView()`,
+  then this will now be propagated correctly on the plugin side.
+- Fixed VST2 speaker arrangement configurations returned by the plugin not being
+  serialized correctly. Very few plugins and hosts seem to actually use these,
+  so it should not have caused any issues.
 
 ### yabridgectl
 
-- Added support for setting up merged VST3 bundles with a 32-bit version of
-  `libyabridge-vst3.so`.
+- Added support for setting up merged VST3 bundles when using a 32-bit version
+  of `libyabridge-vst3.so`.
 - Fixed the post-installation setup checks when the default Wine prefix over at
   `~/.wine` was created with `WINEARCH=win32` set. This would otherwise result
   in an `00cc:err:process:exec_process` error when running `yabridgectl sync`
   because yabridgectl would try to run the 64-bit `yabridge-host.exe` in that
-  prefix.
-- Fixed incorrect new and total plugin counts. These counts are now always
-  correct, even when using multiple versions of the same VST3 plugin or when
-  multiple plugin directories overlap because parts of the directory were
-  symlinked to another plugin directory.
-- Aside from pruning only unmanaged VST3 bundles in `~/.vst3/yabridge`, yabridge
-  will now also prompt you to prune unmanaged files within a VST3 bundle. This
-  makes it easy to switch from the 64-bit version of a plugin to the 32-bit
-  version, or from a 64-bit version of yabridge to the 32-bit version. I don't
-  know why you would want to do either of those things, but now you can!
-- If pruning causes a directory to be empty, then the empty directory will be
-  removed. This avoids having your plugin directories littered with empty
-  directories.
+  prefix. Yabridgectl now detects the architecture of the default prefix first
+  and then runs the proper Wine plugin host application for that prefix.
 - Copies of `libyabridge-vst2.so` and `libyabridge-vst3.so` are now reflinked
   when supported by the file system. This speeds up the file coyping process
   while also reducing the amount of disk space used for yabridge when using
   Btrfs or XFS.
-- Print a more descriptive error message instead of panicing if running
-  `$WINELOADER --version` during yabridgectl's post-setup verification checks
-  does not result in any output. This is only relevant when using a custom
-  `WINELOADER` script that modifies Wine's output.
+- If pruning causes a directory to be empty, then the empty directory will also
+  be removed. This avoids having your plugin directories littered with empty
+  directories.
+- Fixed incorrect new and total plugin counts. These counts are now always
+  correct, even when using multiple versions of the same VST3 plugin or when
+  multiple plugin directories overlap because of the use of symlinks.
+- Aside from pruning only unmanaged VST3 bundles in `~/.vst3/yabridge`, yabridge
+  will now also prompt you to prune unmanaged files within a managed VST3
+  bundle. This makes it easy to switch from the 64-bit version of a plugin to
+  the 32-bit version, or from a 64-bit version of yabridge to the 32-bit
+  version. I don't know why you would want to do either of those things, but now
+  you can!
+- Yabridgectl now prints a more descriptive error message instead of panicing if
+  running `$WINELOADER --version` during yabridgectl's post-setup verification
+  checks does not result in any output. This is only relevant when using a
+  custom `WINELOADER` script that modifies Wine's output.
 
 ## [3.3.1] - 2021-06-09
 
