@@ -163,7 +163,7 @@ class Editor {
     /**
      * Handle X11 events sent to the window our editor is embedded in.
      */
-    void handle_x11_events() const noexcept;
+    void handle_x11_events() noexcept;
 
     /**
      * Get the Win32 window handle so it can be passed to an `effEditOpen()`
@@ -224,6 +224,12 @@ class Editor {
      * @see Editor::supports_ewmh_active_window
      */
     bool is_wine_window_active() const;
+
+    /**
+     * After `parent_window` gets reparented, we may need to redetect the
+     * topmost window and adjust the events we're subscribed to accordingly.
+     */
+    void redetect_topmost_window() noexcept;
 
     /**
      * Send an XEmbed message to a window. This does not include a flush. See
@@ -313,8 +319,14 @@ class Editor {
      * REAPER) embed `parent_window` into another window. We have to listen for
      * configuration changes on this topmost window to know when the window is
      * being dragged around.
+     *
+     * NOTE: When reopening a REAPER FX window that has previously been closed,
+     *       REAPER will initialize the first plugin's editor first before
+     *       opening the window. This means that the topmost FX window doesn't
+     *       actually exist yet at that point, so we need to redetect this
+     *       later.
      */
-    const xcb_window_t topmost_window;
+    xcb_window_t topmost_window;
 
     /**
      * The atom corresponding to `_NET_ACTIVE_WINDOW`.

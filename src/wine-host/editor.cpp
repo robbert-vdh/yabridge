@@ -49,6 +49,21 @@ using namespace std::literals::chrono_literals;
 constexpr size_t idle_timer_id = 1337;
 
 /**
+ * The X11 event mask for the topmost window, which in most DAWs except for
+ * Ardour and REAPER will be the same as `parent_window`.
+ */
+constexpr uint32_t topmost_event_mask =
+    XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_VISIBILITY_CHANGE;
+
+/**
+ * The X11 event mask for the parent window. We need this structure notify here
+ * as well to detect reparents.
+ */
+constexpr uint32_t parent_event_mask =
+    topmost_event_mask | XCB_EVENT_MASK_FOCUS_CHANGE |
+    XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW;
+
+/**
  * The name of the X11 property on the root window used to denote the active
  * window in EWMH compliant window managers.
  */
@@ -278,13 +293,8 @@ Editor::Editor(MainContext& main_context,
     // release input focus as necessary.
     // If we do enable XEmbed support, we'll also listen for visibility changes
     // and trigger the embedding when the window becomes visible
-    const uint32_t topmost_event_mask =
-        XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_VISIBILITY_CHANGE;
     xcb_change_window_attributes(x11_connection.get(), topmost_window,
                                  XCB_CW_EVENT_MASK, &topmost_event_mask);
-    const uint32_t parent_event_mask =
-        XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW |
-        XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_VISIBILITY_CHANGE;
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
     xcb_flush(x11_connection.get());
@@ -334,7 +344,7 @@ Editor::Editor(MainContext& main_context,
     }
 }
 
-void Editor::handle_x11_events() const noexcept {
+void Editor::handle_x11_events() noexcept {
     // NOTE: Ardour will unmap the window instead of closing the editor. When
     //       the window is unmapped `wine_window` doesn't exist and any X11
     //       function calls involving it will fail. All functions called from
@@ -346,6 +356,17 @@ void Editor::handle_x11_events() const noexcept {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
             switch (event_type) {
+                // NOTE: When reopening a closed editor window in REAPER, REAPER
+                //       will initialize the editor first, and only then will it
+                //       reparent `parent_window` to a new FX window. This means
+                //       that `topmost_window` will be the same as
+                //       `parent_window` in REAPER if you reopen a plugin GUI,
+                //       which breaks our input focus handling. To work around
+                //       this, we will just check if the topmost window has
+                //       changed whenever the parent window gets reparented.
+                case XCB_REPARENT_NOTIFY: {
+                    redetect_topmost_window();
+                } break;
                 // We're listening for `ConfigureNotify` events on the topmost
                 // window before the root window, i.e. the window that's
                 // actually going to get dragged around the by the user. In most
@@ -354,19 +375,19 @@ void Editor::handle_x11_events() const noexcept {
                 // window, the local coordinates should be updated. The
                 // additional `EnterWindow` check is sometimes necessary for
                 // using multiple editor windows within a single plugin group.
-                case XCB_CONFIGURE_NOTIFY:
+                case XCB_CONFIGURE_NOTIFY: {
                     if (!use_xembed) {
                         fix_local_coordinates();
                     }
-                    break;
+                } break;
                 // Start the XEmbed procedure when the window becomes visible,
                 // since most hosts will only show the window after the plugin
                 // has embedded itself into it.
-                case XCB_VISIBILITY_NOTIFY:
+                case XCB_VISIBILITY_NOTIFY: {
                     if (use_xembed) {
                         do_xembed();
                     }
-                    break;
+                } break;
                 // We want to grab keyboard input focus when the user hovers
                 // over our embedded Wine window AND that window is a child of
                 // the currently active window. This ensures that the behavior
@@ -376,7 +397,7 @@ void Editor::handle_x11_events() const noexcept {
                 // for when returning to the main plugin window after closing a
                 // dialog, since that often won't trigger an `EnterNotify'.
                 case XCB_ENTER_NOTIFY:
-                case XCB_FOCUS_IN:
+                case XCB_FOCUS_IN: {
                     if (!use_xembed) {
                         fix_local_coordinates();
                     }
@@ -389,7 +410,7 @@ void Editor::handle_x11_events() const noexcept {
                         is_wine_window_active()) {
                         set_input_focus(true);
                     }
-                    break;
+                } break;
                 // When the user moves their mouse away from the Wine window
                 // _while the window provided by the host it is contained in is
                 // still active_, we will give back keyboard focus to that
@@ -564,6 +585,35 @@ bool Editor::is_wine_window_active() const {
         xcb_get_property_value(property_reply.get()));
 
     return is_child_window_or_same(*x11_connection, wine_window, active_window);
+}
+
+void Editor::redetect_topmost_window() noexcept {
+    const xcb_window_t new_topmost_window =
+        find_ancestor_windows(*x11_connection, parent_window).back();
+    if (new_topmost_window == topmost_window) {
+        return;
+    }
+
+    // We need to readjust the event masks for the new topmost window, keeping
+    // the (very probable) possibility in mind that the old topmost window is
+    // the same as the parent window or that the parent window now is the
+    // topmost window.
+    if (topmost_window != parent_window) {
+        constexpr uint32_t no_event_mask = XCB_EVENT_MASK_NO_EVENT;
+        xcb_change_window_attributes(x11_connection.get(), topmost_window,
+                                     XCB_CW_EVENT_MASK, &no_event_mask);
+    }
+
+    if (new_topmost_window == parent_window) {
+        xcb_change_window_attributes(x11_connection.get(), new_topmost_window,
+                                     XCB_CW_EVENT_MASK, &parent_event_mask);
+    } else {
+        xcb_change_window_attributes(x11_connection.get(), new_topmost_window,
+                                     XCB_CW_EVENT_MASK, &topmost_event_mask);
+    }
+
+    topmost_window = new_topmost_window;
+    xcb_flush(x11_connection.get());
 }
 
 bool Editor::supports_ewmh_active_window() const {

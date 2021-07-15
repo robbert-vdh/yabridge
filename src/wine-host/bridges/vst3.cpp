@@ -1171,7 +1171,7 @@ void Vst3Bridge::run() {
 void Vst3Bridge::handle_x11_events() noexcept {
     std::lock_guard lock(object_instances_mutex);
 
-    for (const auto& [instance_id, object] : object_instances) {
+    for (auto& [instance_id, object] : object_instances) {
         if (object.editor) {
             object.editor->handle_x11_events();
         }

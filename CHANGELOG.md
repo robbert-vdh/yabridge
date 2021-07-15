@@ -70,6 +70,16 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   plugins would at runtime change their query interface to support more VST3
   interfaces, including the mandatory edit controller interface. Yabridge now
   requeries the supported interfaces at a later stage to work around this.
+- Fixed VST2 plugins in **Ardour** not receiving all transport information,
+  breaking host sync and LFOs in certain plugins. This was a regression from
+  yabridge 3.2.0.
+- Fixed input focus handling being broken **REAPER** after reopning a closed FX
+  window. Now moving the mouse cursor outside of the plugin's GUI will always
+  release input focus, even after closing the window.
+- Fixed _Insert Piz Here_'s _midiLooper_ crashing in **REAPER** when the plugin
+  tries to use REAPER's [host function
+  API](https://www.reaper.fm/sdk/vst/vst_ext.php#vst_host). This currently isn't
+  supported by yabridge. We now explicitly ignore these requests.
 - Fixed JUCE VST3 plugins like Tokyo Dawn Records' _SlickEQ M_ causing the host
   to freeze when they send a parameter change from the audio thread using the
   wrong VST3 API while the plugin is also trying to resize the window from the
@@ -77,13 +87,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   the Smart Ops panel after having used it once. To fix this, yabridge's
   Wine-side VST3 mutual recursion mechanism now only operates when invoked from
   the GUI thread.
-- Fixed VST2 plugins in **Ardour** not receiving all transport information,
-  breaking host sync and LFOs in certain plugins. This was a regression from
-  yabridge 3.2.0.
-- Fixed _Insert Piz Here_'s _midiLooper_ crashing in **REAPER** when the plugin
-  tries to use REAPER's [host function
-  API](https://www.reaper.fm/sdk/vst/vst_ext.php#vst_host). This currently isn't
-  supported by yabridge. We now explicitly ignore these requests.
 - Fixed yabridge's logging seeking the STDERR stream to position 0 every time it
   writes a log message. This would be noticeable when piping the host's STDERR
   stream to a file and `YABRIDGE_DEBUG_LEVEL` wasn't set.
