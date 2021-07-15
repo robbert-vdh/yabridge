@@ -800,13 +800,20 @@ void Vst3Bridge::run() {
                     .get();
             },
             [&](YaPlugView::GetSize& request) -> YaPlugView::GetSize::Response {
+                Vst3PluginInstance& instance =
+                    object_instances.at(request.owner_instance_id);
+
                 // Melda plugins will refuse to open dialogs of this function is
-                // not run from the GUI thread
+                // not run from the GUI thread. Oh and they also deadlock if
+                // audio processing gets initialized at the same time as this
+                // function, not sure why.
+                std::lock_guard lock(instance.get_size_mutex);
+
                 Steinberg::ViewRect size{};
                 const tresult result =
                     do_mutual_recursion_on_gui_thread([&]() -> tresult {
-                        return object_instances.at(request.owner_instance_id)
-                            .plug_view_instance->plug_view->getSize(&size);
+                        return instance.plug_view_instance->plug_view->getSize(
+                            &size);
                     });
 
                 return YaPlugView::GetSizeResponse{.result = result,
@@ -1419,9 +1426,18 @@ size_t Vst3Bridge::register_object_instance(
                     },
                     [&](const YaAudioProcessor::SetProcessing& request)
                         -> YaAudioProcessor::SetProcessing::Response {
-                        return object_instances.at(request.instance_id)
-                            .interfaces.audio_processor->setProcessing(
-                                request.state);
+                        Vst3PluginInstance& instance =
+                            object_instances.at(request.instance_id);
+
+                        // HACK: MeldaProduction plugins for some reason cannot
+                        //       handle it if this function is called from the
+                        //       audio thread while at the same time
+                        //       `IPlugView::getSize()` is being called from the
+                        //       GUI thread
+                        std::lock_guard lock(instance.get_size_mutex);
+
+                        return instance.interfaces.audio_processor
+                            ->setProcessing(request.state);
                     },
                     [&](MessageReference<YaAudioProcessor::Process>&
                             request_ref)

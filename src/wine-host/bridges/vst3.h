@@ -217,6 +217,19 @@ struct Vst3PluginInstance {
     std::optional<Vst3PlugViewInterfaces> plug_view_instance;
 
     /**
+     * Used to make sure that `IPlugView::getSize()` can never be called at the
+     * same time as `IAudioProcessor::setProcessing()`.
+     *
+     * HACK: This really shouldn't be needed, but MeldaProduction plugins seem
+     *       to deadlock when this happens. It's pretty tricky to reproduce the
+     *       timing for making this happen (since opening the GUI also needs to
+     *       be delayed slightly, like when opening a plugin from Bitwig's popup
+     *       browser), but it seems like a good idea to make sure that this
+     *       doesn't cause any freezes.
+     */
+    std::mutex get_size_mutex;
+
+    /**
      * This contains smart pointers to all VST3 plugin interfaces that can be
      * casted from `object`.
      */
