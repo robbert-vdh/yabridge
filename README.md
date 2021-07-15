@@ -40,7 +40,8 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging 6.12:
+Yabridge has been tested under the following hosts using Wine Staging
+6.12[\*](#wine-version-notice):
 
 | Host              | VST2               | VST3               |
 | ----------------- | ------------------ | ------------------ |
@@ -54,6 +55,11 @@ Yabridge has been tested under the following hosts using Wine Staging 6.12:
 | Mixbus 7.0.140    | :heavy_check_mark: | :heavy_check_mark: |
 
 Please let me know if there are any issues with other hosts.
+
+<sup id="wine-version-notice">
+  *If any of your plugins freeze during shutdown or otherwise don't work, then
+  you may want to try <a href="#downgrading-wine">downgrading Wine</a> first.
+</sup>
 
 ## Usage
 
