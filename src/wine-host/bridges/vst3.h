@@ -337,8 +337,9 @@ class Vst3Bridge : public HostBridge {
      *       didn't implement the VST3 output parameters, and if at the same
      *       time a resize request comes in from the host that would mean that
      *       the resize request is also called from the audio thread. To prevent
-     *       this we will make sure to only do this mutual recursion stuff if
-     *       this is actually called form the GUI thread.
+     *       this we need to have two separate mutual recursion stacks for the
+     *       GUI thread and for other threads. See the docstring on
+     *       `audio_thread_mutual_recursion` for why _that_ is necessary.
      */
     template <typename T>
     typename T::Response send_mutually_recursive_message(const T& object) {
@@ -346,7 +347,8 @@ class Vst3Bridge : public HostBridge {
             return mutual_recursion.fork(
                 [&]() { return send_message(object); });
         } else {
-            return send_message(object);
+            return audio_thread_mutual_recursion.fork(
+                [&]() { return send_message(object); });
         }
     }
 
@@ -381,7 +383,12 @@ class Vst3Bridge : public HostBridge {
      */
     template <std::invocable F>
     std::invoke_result_t<F> do_mutual_recursion_on_off_thread(F&& fn) {
-        return mutual_recursion.handle(std::forward<F>(fn));
+        if (const auto result = audio_thread_mutual_recursion.maybe_handle(
+                std::forward<F>(fn))) {
+            return *result;
+        } else {
+            return mutual_recursion.handle(std::forward<F>(fn));
+        }
     }
 
     /**
@@ -492,4 +499,22 @@ class Vst3Bridge : public HostBridge {
      * response.
      */
     MutualRecursionHelper<Win32Thread> mutual_recursion;
+
+    /**
+     * The same thing as above, but just for the pair of
+     * `IEditController::setParamNormalized()` and
+     * `IComponentHandler::performEdit()`, when
+     * `IComponentHandler::performEdit()` is called from an audio thread.
+     *
+     * HACK: This is sadly needed to work around an interaction between a bug in
+     *       JUCE with a bug in Ardour/Mixbus. JUCE calls
+     *       `IComponentHandler::performEdit()` from the audio thread instead of
+     *       using the output parameters, and Ardour/Mixbus immediately call
+     *       `IEditController::setParamNormalized()` with the same value after
+     *       the plugin calls `IComponentHandler::performEdit()`. Both of these
+     *       functions need to be run on the same thread (because of recursive
+     *       mutexes), but they may not interfere with the GUI thread if
+     *       `IComponentHandler::performEdit()` wasn't called from there.
+     */
+    MutualRecursionHelper<Win32Thread> audio_thread_mutual_recursion;
 };
