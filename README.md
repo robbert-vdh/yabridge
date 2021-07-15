@@ -474,27 +474,10 @@ include:
   project. For REAPER there's an option called
   `Allow complete unload of VST plug-ins` in the `VST` tab of the settings
   dialog to disable this behaviour.
-- **Drag-and-drop** from applications running under Wine to X11 does not yet
-  work, so you won't be able to drag samples and MIDI files from a plugin to the
-  host. At least, not directly. Because Windows applications have to create
-  actual files on the disk for drag-and-drop to work, you can keep a file
-  manager open and manually drag the generated files into your DAW as a
-  workaround. To find out where in `~/.wine` the plugin is creating its files,
-  you can use the following command to monitor the Wine prefix for any newly
-  created files:
-
-  ```shell
-  inotifywait -mre CLOSE_WRITE --format '%w%f' ~/.wine/drive_c
-  ```
-
-  **The latest master branch version of yabridge actually does support
-  drag-and-drop from plugins running under Wine to native applications.**
-
-- Aside from the above mentioned Wine issue, _drag-and-drop_ to the plugin
-  window under **REAPER** doesn't work because of a long standing issue in
-  REAPER's FX window implementation. You can use a compatibility option to
-  [force drag-and-drop]([editor hosting mode](#compatibility-options)) to work
-  around this limitation.
+- _Drag-and-drop_ to the plugin window under **REAPER** doesn't work because of
+  a long standing issue in REAPER's FX window implementation. You can use a
+  compatibility option to [force drag-and-drop]([editor hosting
+  mode](#compatibility-options)) to work around this limitation.
 
 Aside from that, these are some known caveats:
 

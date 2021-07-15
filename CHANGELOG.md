@@ -10,9 +10,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- TODO: Remove the notice about Wine->X11 drag and drop from the readme when
-  this gets released
-
 - Added support for drag-and-drop from Windows plugins running under yabridge to
   native applications, such as your DAW. This makes it much more convenient to
   use plugins like _Scaler 2_ that generate audio or MIDI files. Because of the
