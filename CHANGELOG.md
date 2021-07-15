@@ -79,7 +79,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   supported by yabridge. We now explicitly ignore these requests.
 - Worked around a rare thread safety issue in _MeldaProduction_ VST3 plugins
   where the plugin would deadlock when the host asks for the editor's size while
-  plugin is also being initialized form the audio thread.
+  plugin is also being initialized form the audio thread at the same time.
 - Fixed JUCE VST3 plugins like Tokyo Dawn Records' _SlickEQ M_ causing the host
   to freeze when they send a parameter change from the audio thread using the
   wrong VST3 API while the plugin is also trying to resize the window from the
