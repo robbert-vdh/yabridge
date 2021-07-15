@@ -227,7 +227,7 @@ struct Vst3PluginInstance {
      *       browser), but it seems like a good idea to make sure that this
      *       doesn't cause any freezes.
      */
-    std::mutex get_size_mutex;
+    std::recursive_mutex get_size_mutex;
 
     /**
      * This contains smart pointers to all VST3 plugin interfaces that can be
