@@ -49,10 +49,10 @@ using namespace std::literals::chrono_literals;
 constexpr size_t idle_timer_id = 1337;
 
 /**
- * The X11 event mask for the topmost window, which in most DAWs except for
- * Ardour and REAPER will be the same as `parent_window`.
+ * The X11 event mask for the host window, which in most DAWs except for Ardour
+ * and REAPER will be the same as `parent_window`.
  */
-constexpr uint32_t topmost_event_mask =
+constexpr uint32_t host_event_mask =
     XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_VISIBILITY_CHANGE;
 
 /**
@@ -60,7 +60,7 @@ constexpr uint32_t topmost_event_mask =
  * as well to detect reparents.
  */
 constexpr uint32_t parent_event_mask =
-    topmost_event_mask | XCB_EVENT_MASK_FOCUS_CHANGE |
+    host_event_mask | XCB_EVENT_MASK_FOCUS_CHANGE |
     XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW;
 
 /**
@@ -93,14 +93,14 @@ static const HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
  * Find the the ancestors for the given window. This returns a list of window
  * IDs that starts wit h`starting_at`, and then iteratively contains the parent
  * of the previous window in the list until we reach the root window. The
- * topmost window (i.e. the window that will show up in the user's window
- * manager) will be the last window in this list.
+ * topmost window (i.e. the window closest to the root in the window stack) will
+ * be the last window in this list.
  *
  * @param x11_connection The X11 connection to use.
  * @param starting_at The window we want to know the ancestor windows of.
  *
  * @return A non-empty list containing `starting_at` and all of its ancestor
- * windows `starting_at`.
+ *   windows `starting_at`.
  */
 boost::container::small_vector<xcb_window_t, 8> find_ancestor_windows(
     xcb_connection_t& x11_connection,
@@ -244,7 +244,7 @@ Editor::Editor(MainContext& main_context,
       idle_timer_proc(std::move(timer_proc)),
       parent_window(parent_window_handle),
       wine_window(get_x11_handle(win32_window.handle)),
-      topmost_window(
+      host_window(
           find_ancestor_windows(*x11_connection, parent_window).back()) {
     // Used for input focus grabbing to only grab focus when the window is
     // active. In case the atom does not exist or the WM does not support this
@@ -293,8 +293,8 @@ Editor::Editor(MainContext& main_context,
     // release input focus as necessary.
     // If we do enable XEmbed support, we'll also listen for visibility changes
     // and trigger the embedding when the window becomes visible
-    xcb_change_window_attributes(x11_connection.get(), topmost_window,
-                                 XCB_CW_EVENT_MASK, &topmost_event_mask);
+    xcb_change_window_attributes(x11_connection.get(), host_window,
+                                 XCB_CW_EVENT_MASK, &host_event_mask);
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
     xcb_flush(x11_connection.get());
@@ -359,22 +359,22 @@ void Editor::handle_x11_events() noexcept {
                 // NOTE: When reopening a closed editor window in REAPER, REAPER
                 //       will initialize the editor first, and only then will it
                 //       reparent `parent_window` to a new FX window. This means
-                //       that `topmost_window` will be the same as
-                //       `parent_window` in REAPER if you reopen a plugin GUI,
-                //       which breaks our input focus handling. To work around
-                //       this, we will just check if the topmost window has
-                //       changed whenever the parent window gets reparented.
+                //       that `host_window` will be the same as `parent_window`
+                //       in REAPER if you reopen a plugin GUI, which breaks our
+                //       input focus handling. To work around this, we will just
+                //       check if the host's window has changed whenever the
+                //       parent window gets reparented.
                 case XCB_REPARENT_NOTIFY: {
-                    redetect_topmost_window();
+                    redetect_host_window();
                 } break;
-                // We're listening for `ConfigureNotify` events on the topmost
-                // window before the root window, i.e. the window that's
-                // actually going to get dragged around the by the user. In most
-                // cases this is the same as `parent_window`. When either this
-                // window gets moved, or when the user moves his mouse over our
-                // window, the local coordinates should be updated. The
-                // additional `EnterWindow` check is sometimes necessary for
-                // using multiple editor windows within a single plugin group.
+                // We're listening for `ConfigureNotify` events on the host's
+                //  window (i.e. the window that's actually going to get dragged
+                //  around the by the user). In most cases this is the same as
+                //  `parent_window`. When either this window gets moved, or when
+                //  the user moves his mouse over our window, the local
+                //  coordinates should be updated. The additional `EnterWindow`
+                //  check is sometimes necessary for using multiple editor
+                //  windows within a single plugin group.
                 case XCB_CONFIGURE_NOTIFY: {
                     if (!use_xembed) {
                         fix_local_coordinates();
@@ -511,7 +511,7 @@ void Editor::fix_local_coordinates() const {
 }
 
 void Editor::set_input_focus(bool grab) const {
-    const xcb_window_t focus_target = grab ? parent_window : topmost_window;
+    const xcb_window_t focus_target = grab ? parent_window : host_window;
 
     xcb_generic_error_t* error = nullptr;
     const xcb_get_input_focus_cookie_t focus_cookie =
@@ -522,13 +522,13 @@ void Editor::set_input_focus(bool grab) const {
 
     // Calling `set_input_focus(true)` can trigger another `FocusIn` event,
     // which will then once again call `set_input_focus(true)`. To work around
-    // this we prevent unnecessary repeat keyboard focus grabs.
-    // One thing that slightly complicates this is the use of unmapped input
-    // proxy windows. When `topmost_window` gets foccused, some hosts will
-    // reassign input focus to such a proxy window. To avoid fighting over
-    // focus, when grabbing focus we don't just check whether `current_focus`
-    // and `focus_target` are the same window but we'll also allow
-    // `current_focus` to be a child of `focus_target`.
+    // this we prevent unnecessary repeat keyboard focus grabs. One thing that
+    // slightly complicates this is the use of unmapped input proxy windows.
+    // When `host_window` gets foccused, some hosts will reassign input focus to
+    // such a proxy window. To avoid fighting over focus, when grabbing focus we
+    // don't just check whether `current_focus` and `focus_target` are the same
+    // window but we'll also allow `current_focus` to be a child of
+    // `focus_target`.
     const xcb_window_t current_focus = focus_reply->focus;
     if (current_focus == focus_target ||
         (grab && is_child_window_or_same(*x11_connection, current_focus,
@@ -537,7 +537,7 @@ void Editor::set_input_focus(bool grab) const {
     }
 
     // Explicitly request input focus when the user interacts with the window.
-    // Without this `topmost_window` will capture all keyboard events in most
+    // Without this, `host_window` will capture all keyboard events in most
     // hosts. Ideally we would just do this whenever the child window calls
     // `SetFocus()` (or no handling should be necessary), but as far as I'm
     // aware there is no way to do this. Right now we will grab input focus when
@@ -587,32 +587,31 @@ bool Editor::is_wine_window_active() const {
     return is_child_window_or_same(*x11_connection, wine_window, active_window);
 }
 
-void Editor::redetect_topmost_window() noexcept {
-    const xcb_window_t new_topmost_window =
+void Editor::redetect_host_window() noexcept {
+    const xcb_window_t new_host_window =
         find_ancestor_windows(*x11_connection, parent_window).back();
-    if (new_topmost_window == topmost_window) {
+    if (new_host_window == host_window) {
         return;
     }
 
-    // We need to readjust the event masks for the new topmost window, keeping
-    // the (very probable) possibility in mind that the old topmost window is
-    // the same as the parent window or that the parent window now is the
-    // topmost window.
-    if (topmost_window != parent_window) {
+    // We need to readjust the event masks for the new host window, keeping the
+    // (very probable) possibility in mind that the old host window is the same
+    // as the parent window or that the parent window now is the host window.
+    if (host_window != parent_window) {
         constexpr uint32_t no_event_mask = XCB_EVENT_MASK_NO_EVENT;
-        xcb_change_window_attributes(x11_connection.get(), topmost_window,
+        xcb_change_window_attributes(x11_connection.get(), host_window,
                                      XCB_CW_EVENT_MASK, &no_event_mask);
     }
 
-    if (new_topmost_window == parent_window) {
-        xcb_change_window_attributes(x11_connection.get(), new_topmost_window,
+    if (new_host_window == parent_window) {
+        xcb_change_window_attributes(x11_connection.get(), new_host_window,
                                      XCB_CW_EVENT_MASK, &parent_event_mask);
     } else {
-        xcb_change_window_attributes(x11_connection.get(), new_topmost_window,
-                                     XCB_CW_EVENT_MASK, &topmost_event_mask);
+        xcb_change_window_attributes(x11_connection.get(), new_host_window,
+                                     XCB_CW_EVENT_MASK, &host_event_mask);
     }
 
-    topmost_window = new_topmost_window;
+    host_window = new_host_window;
     xcb_flush(x11_connection.get());
 }
 

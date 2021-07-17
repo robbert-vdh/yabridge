@@ -53,7 +53,8 @@ constexpr uint8_t xcb_event_type_mask = 0b0111'1111;
 /**
  * The name of the X11 property that indicates whether a window supports
  * drag-and-drop. If the `editor_force_dnd` option is enabled we'll remove this
- * property from `topmost_window` to work around a bug in REAPER.
+ * property from all of `parent_window`'s ancestors to work around a bug in
+ * REAPER.
  */
 constexpr char xdnd_aware_property_name[] = "XdndAware";
 
@@ -197,7 +198,7 @@ class Editor {
      * details on when this is used.
      *
      * @param grab Whether to grab input focus (if `true`) or to give back input
-     *   focus to `topmost_window` (if `false`).
+     *   focus to `host_window` (if `false`).
      */
     void set_input_focus(bool grab) const;
 
@@ -226,10 +227,11 @@ class Editor {
     bool is_wine_window_active() const;
 
     /**
-     * After `parent_window` gets reparented, we may need to redetect the
-     * topmost window and adjust the events we're subscribed to accordingly.
+     * After `parent_window` gets reparented, we may need to redetect which
+     * toplevel-ish window the host is using and adjust the events we're
+     * subscribed to accordingly.
      */
-    void redetect_topmost_window() noexcept;
+    void redetect_host_window() noexcept;
 
     /**
      * Send an XEmbed message to a window. This does not include a flush. See
@@ -313,20 +315,26 @@ class Editor {
      */
     const xcb_window_t wine_window;
     /**
-     * The X11 window that's at the top of the window tree starting from
-     * `parent_window`, i.e. a direct child of the root window. In most cases
-     * this is going to be the same as `parent_window`, but some DAWs (such as
-     * REAPER) embed `parent_window` into another window. We have to listen for
-     * configuration changes on this topmost window to know when the window is
-     * being dragged around.
+     * The toplevel X11 window `parent_window` is contained in, or
+     * `parent_window` if the host doesn't do any fancy window embedding. We'll
+     * find this by looking for the topmost ancestor window of `parent_window`
+     * that has `WM_STATE` set. This is similar to how `xprop` and `xwininfo`
+     * select windows. In most cases this is going to be the same as
+     * `parent_window`, but some DAWs (such as REAPER) embed `parent_window`
+     * into another window. We have to listen for configuration changes on this
+     * topmost window to know when the window is being dragged around, and when
+     * returning keyboard focus to the host we'll focus this window.
      *
      * NOTE: When reopening a REAPER FX window that has previously been closed,
      *       REAPER will initialize the first plugin's editor first before
      *       opening the window. This means that the topmost FX window doesn't
      *       actually exist yet at that point, so we need to redetect this
      *       later.
+     * NOTE: Taking the very topmost window is not an option, because for some
+     *       reason REAPER will only process keyboard input for that window when
+     *       the mouse is within the window.
      */
-    xcb_window_t topmost_window;
+    xcb_window_t host_window;
 
     /**
      * The atom corresponding to `_NET_ACTIVE_WINDOW`.
