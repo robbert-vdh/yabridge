@@ -183,7 +183,6 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     set_realtime_priority(false);
 
     if (!plugin) {
-        set_realtime_priority(false);
         throw std::runtime_error("VST plugin at '" + plugin_dll_path +
                                  "' failed to initialize.");
     }
