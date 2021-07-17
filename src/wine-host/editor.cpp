@@ -69,6 +69,12 @@ constexpr uint32_t parent_event_mask =
  */
 constexpr char active_window_property_name[] = "_NET_ACTIVE_WINDOW";
 
+/**
+ * We'll use this property to filter windows for `host_window`. Like `xprop` and
+ * `xwininfo`, we'll only consider windows with this property set.
+ */
+constexpr char wm_state_property_name[] = "WM_STATE";
+
 // `xdnd_aware_property_name` was moved to `editor.h` so the unity build
 // succeeds
 
@@ -105,6 +111,31 @@ static const HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
 boost::container::small_vector<xcb_window_t, 8> find_ancestor_windows(
     xcb_connection_t& x11_connection,
     xcb_window_t starting_at);
+
+/**
+ * Figure out which window is used by the host to embed `parent_window` in. In
+ * most cases this will be the same as `parent_window`, but for instance Ardour
+ * and REAPER will have `parent_window` embedded inside of another window. It's
+ * sadly not as easy as just taking the topmost window from
+ * `find_ancestor_windows()`, as the topmost window may not be a 'normal' window
+ * that shows up the window manager. For validity we'll simply look for
+ * `WM_STATE` being set on the window, similar to how `xprop` and `xwininfo`
+ * filter windows, although we won't check for mapped states. In most cases this
+ * wouldn't matter, but REAPER (i.e. the whole reason why we need this separate
+ * host window) doesn't pass through keyboard input for the window once the
+ * mouse leaves the window.
+ *
+ * @param x11_connection The X11 connection to use.
+ * @param starting_at The window we want to know the ancestor windows of.
+ * @param xcb_wm_state_property The X11 atom corresponding to `WM_STATE`
+ *
+ * @return The host's editor window, or a nullopt if we cannot find a valid
+ *   window.
+ */
+std::optional<xcb_window_t> find_host_window(xcb_connection_t& x11_connection,
+                                             xcb_window_t starting_at,
+                                             xcb_atom_t xcb_wm_state_property);
+
 /**
  * Check whether `child` is a descendant of `parent` or the same window. Used
  * during focus checks to only grab focus when needed.
@@ -242,10 +273,14 @@ Editor::Editor(MainContext& main_context,
                         .count())
               : Win32Timer()),
       idle_timer_proc(std::move(timer_proc)),
+      xcb_wm_state_property(
+          get_atom_by_name(*x11_connection, wm_state_property_name)),
       parent_window(parent_window_handle),
       wine_window(get_x11_handle(win32_window.handle)),
-      host_window(
-          find_ancestor_windows(*x11_connection, parent_window).back()) {
+      host_window(find_host_window(*x11_connection,
+                                   parent_window,
+                                   xcb_wm_state_property)
+                      .value_or(parent_window)) {
     // Used for input focus grabbing to only grab focus when the window is
     // active. In case the atom does not exist or the WM does not support this
     // hint, we'll print a warning and fall back to grabbing focus when the user
@@ -589,7 +624,8 @@ bool Editor::is_wine_window_active() const {
 
 void Editor::redetect_host_window() noexcept {
     const xcb_window_t new_host_window =
-        find_ancestor_windows(*x11_connection, parent_window).back();
+        find_host_window(*x11_connection, parent_window, xcb_wm_state_property)
+            .value_or(parent_window);
     if (new_host_window == host_window) {
         return;
     }
@@ -805,6 +841,34 @@ boost::container::small_vector<xcb_window_t, 8> find_ancestor_windows(
     }
 
     return ancestor_windows;
+}
+
+std::optional<xcb_window_t> find_host_window(
+    xcb_connection_t& x11_connection,
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+    xcb_window_t starting_at,
+    xcb_atom_t xcb_wm_state_property) {
+    // See the docstring for why this works the way it does
+    const auto ancestors = find_ancestor_windows(x11_connection, starting_at);
+    for (auto window = ancestors.rbegin(); window != ancestors.rend();
+         window++) {
+        xcb_generic_error_t* error = nullptr;
+        const xcb_get_property_cookie_t property_cookie =
+            xcb_get_property(&x11_connection, false, *window,
+                             xcb_wm_state_property, XCB_ATOM_WINDOW, 0, 1);
+        const std::unique_ptr<xcb_get_property_reply_t> property_reply(
+            xcb_get_property_reply(&x11_connection, property_cookie, &error));
+        if (error) {
+            free(error);
+            continue;
+        }
+
+        if (property_reply->type != XCB_NONE) {
+            return *window;
+        }
+    }
+
+    return std::nullopt;
 }
 
 bool is_child_window_or_same(

@@ -307,6 +307,11 @@ class Editor {
     std::optional<fu2::unique_function<void()>> idle_timer_proc;
 
     /**
+     * The atom corresponding to `WM_STATE`.
+     */
+    xcb_atom_t xcb_wm_state_property;
+
+    /**
      * The window handle of the editor window created by the DAW.
      */
     const xcb_window_t parent_window;
