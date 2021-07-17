@@ -21,10 +21,14 @@ AudioShmBuffer::AudioShmBuffer(const Config& config)
       shm(boost::interprocess::open_or_create,
           config.name.c_str(),
           boost::interprocess::read_write) {
-    shm.truncate(config.size);
-    buffer =
-        boost::interprocess::mapped_region(shm, boost::interprocess::read_write,
-                                           0, config.size, nullptr, MAP_LOCKED);
+    // Apparently you get a `Resource temporarily unavailable` when calling
+    // `ftruncate()` with a size of 0 on shared memory
+    if (config.size > 0) {
+        shm.truncate(config.size);
+        buffer = boost::interprocess::mapped_region(
+            shm, boost::interprocess::read_write, 0, config.size, nullptr,
+            MAP_LOCKED);
+    }
 }
 
 AudioShmBuffer::~AudioShmBuffer() noexcept {
@@ -44,10 +48,12 @@ void AudioShmBuffer::resize(const Config& new_config) {
     }
 
     config = new_config;
-    shm.truncate(config.size);
-    buffer =
-        boost::interprocess::mapped_region(shm, boost::interprocess::read_write,
-                                           0, config.size, nullptr, MAP_LOCKED);
+    if (config.size > 0) {
+        shm.truncate(config.size);
+        buffer = boost::interprocess::mapped_region(
+            shm, boost::interprocess::read_write, 0, config.size, nullptr,
+            MAP_LOCKED);
+    }
 }
 
 AudioShmBuffer::AudioShmBuffer(AudioShmBuffer&& o) noexcept

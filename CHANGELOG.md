@@ -10,12 +10,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed a regression from yabridge 3.4.0 where plugins with zero audio channels
+  would result in a crash.
+- Fixed a regression from yabridge 3.4.0 where JUCE-based VST3 plugins might
+  cause **Ardour** or **Mixbus** to freeze in very specific circumstances.
 - Worked around a **REAPER** bug that would cause REAPER to not process any
   keyboard input when the FX window is active but the mouse is outside of the
   window. We now use the same validation used in `xprop` and `xwininfo` to find
   the host's window instead of always taking the topmost window.
-- Fixed a regression from yabridge 3.4.0 where JUCE-based VST3 plugins might
-  cause **Ardour** or **Mixbus** to freeze.
 
 ## [3.4.0] - 2021-07-15
 
