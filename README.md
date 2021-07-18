@@ -521,6 +521,12 @@ If your problem is not listed here, then feel free to post on the [issue
 tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask about it in
 the yabridge [Discord](https://discord.gg/pyNeweqadf).
 
+- Both yabridgectl and yabridge try to diagnose many common issues for you. If
+  you're running into crashes or other issues, then try launching your DAW from
+  a terminal and reading the log output for any clues. Bitwig Studio writes
+  plugin output to `~/.BitwigStudio/log/engine.log`, so you may need to look
+  there instead.
+
 - Using PipeWire's JACK implementation might cause certain plugins to crash.
   PipeWire currently uses rtkit instead of the realtime priorities you would
   normally set up using groups and `/etc/limits.d`, and it will impose a limit
