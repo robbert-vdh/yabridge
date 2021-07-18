@@ -66,15 +66,11 @@ jobs:
   build-focal:
     name: Build on Ubuntu 20.04
     runs-on: ubuntu-latest
-    # This container contains everything needed to build yabridge except for
-    # Boost since that's not easily available and it the parts we need are
-    # quick to compile anyway
     container: robbert/docker-yabridge:focal
     outputs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
     steps:
       - uses: actions/checkout@v2
-      # Needed for git-describe to do anything useful
       - name: Fetch all git history
         run: git fetch --force --prune --tags --unshallow
       - name: Determine build archive name
@@ -82,11 +78,12 @@ jobs:
           echo "ARCHIVE_NAME=yabridge-$(git describe --always).tar.gz" >> "$GITHUB_ENV"
       - name: Build the binaries
         run: |
-          # Wine won't create a Wine prefix in ~/.wine because /github/home is
-          # not owned by the user that's executing this job
           mkdir -p /tmp/prefix
           export WINEPREFIX=/tmp/prefix
 
+          # In this version we don't need to statically link libstdc++ since
+          # Ubuntu 20.04 and similar distros will ship with a version that's
+          # compatible with GCC 10, even if that's not the default GCC version
           meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=10000 -Dwith-static-boost=true -Dwith-bitbridge=true
           ninja -C build
       - name: Create an archive for the binaries
