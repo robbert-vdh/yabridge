@@ -8,6 +8,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added a specific error message when yabridge is not allowed to lock enough
+  shared memory. If you have not yet set up realtime priviliges and memory
+  locking limits for your user, then yabridge may not be able to map enough
+  shared memory for processing audio in plugins with a lot of inputs or outputs.
+
 ### Fixed
 
 - Fixed crashes or freezes when a plugin uses the Windows drag-and-drop system

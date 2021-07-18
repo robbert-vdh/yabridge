@@ -16,6 +16,8 @@
 
 #include "audio-shm.h"
 
+#include <iostream>
+
 AudioShmBuffer::AudioShmBuffer(const Config& config)
     : config(config),
       shm(boost::interprocess::open_or_create,
@@ -61,12 +63,29 @@ void AudioShmBuffer::resize(const Config& new_config) {
 }
 
 void AudioShmBuffer::setup_mapping() {
-    // Apparently you get a `Resource temporarily unavailable` when calling
-    // `ftruncate()` with a size of 0 on shared memory
-    if (config.size > 0) {
-        shm.truncate(config.size);
-        buffer = boost::interprocess::mapped_region(
-            shm, boost::interprocess::read_write, 0, config.size, nullptr,
-            MAP_LOCKED);
+    try {
+        // Apparently you get a `Resource temporarily unavailable` when calling
+        // `ftruncate()` with a size of 0 on shared memory
+        if (config.size > 0) {
+            shm.truncate(config.size);
+            buffer = boost::interprocess::mapped_region(
+                shm, boost::interprocess::read_write, 0, config.size, nullptr,
+                MAP_LOCKED);
+        }
+    } catch (const boost::interprocess::interprocess_exception& error) {
+        if (error.get_native_error() == EAGAIN) {
+            std::cerr << "ERROR: Could not map shared memory. This means that"
+                      << std::endl;
+            std::cerr << "       your user's memory locking limit has been set"
+                      << std::endl;
+            std::cerr << "       too low. Check your distro's documentation or"
+                      << std::endl;
+            std::cerr << "       wiki for instructions on how to set up"
+                      << std::endl;
+            std::cerr << "        realtime privileges and memlock limits."
+                      << std::endl;
+        }
+
+        throw;
     }
 }
