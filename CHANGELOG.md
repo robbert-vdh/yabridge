@@ -10,6 +10,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed crashes or freezes when a plugin uses the Windows drag-and-drop system
+  to transfer arbitrary data. This prevents **Reaktor** from freezing when
+  editing a patch after upgrading to yabridge 3.4.0.
 - Fixed the process status detection treating a process as dead when the user
   doesn't have permissions to access the child process's memory. This fixes a
   seemingly very rare regression from yabridge 3.4.0 where the Wine plugin host

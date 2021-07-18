@@ -802,39 +802,53 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
             result == S_OK) {
             switch (storage.tymed) {
                 case TYMED_HGLOBAL: {
-                    auto drop = static_cast<HDROP>(GlobalLock(storage.hGlobal));
-                    if (!drop) {
-                        std::cerr << "Failed to lock global memory in "
-                                     "drag-and-drop operation"
-                                  << std::endl;
-                        continue;
-                    }
-
-                    std::array<WCHAR, 1024> file_name{0};
-                    const uint32_t num_files = DragQueryFileW(
-                        drop, 0xFFFFFFFF, file_name.data(), file_name.size());
-                    for (uint32_t file_idx = 0; file_idx < num_files;
-                         file_idx++) {
-                        file_name[0] = 0;
-                        DragQueryFileW(drop, file_idx, file_name.data(),
-                                       file_name.size());
-
-                        // Normalize the paths to something a bit more friendly
-                        const char* unix_path =
-                            wine_get_unix_file_name(file_name.data());
-                        if (unix_path) {
-                            boost::system::error_code err;
-                            const fs::path cannonical_path =
-                                boost::filesystem::canonical(unix_path, err);
-                            if (err) {
-                                dragged_files.emplace_back(unix_path);
-                            } else {
-                                dragged_files.emplace_back(cannonical_path);
+                    switch (supported_formats[format_idx].cfFormat) {
+                        case CF_HDROP: {
+                            auto drop =
+                                static_cast<HDROP>(GlobalLock(storage.hGlobal));
+                            if (!drop) {
+                                std::cerr << "Failed to lock global memory in "
+                                             "drag-and-drop operation"
+                                          << std::endl;
+                                continue;
                             }
-                        }
-                    }
 
-                    GlobalUnlock(storage.hGlobal);
+                            std::array<WCHAR, 1024> file_name{0};
+                            const uint32_t num_files = DragQueryFileW(
+                                drop, 0xFFFFFFFF, file_name.data(),
+                                file_name.size());
+                            for (uint32_t file_idx = 0; file_idx < num_files;
+                                 file_idx++) {
+                                file_name[0] = 0;
+                                DragQueryFileW(drop, file_idx, file_name.data(),
+                                               file_name.size());
+
+                                // Normalize the paths to something a bit more
+                                // friendly
+                                const char* unix_path =
+                                    wine_get_unix_file_name(file_name.data());
+                                if (unix_path) {
+                                    boost::system::error_code err;
+                                    const fs::path cannonical_path =
+                                        boost::filesystem::canonical(unix_path,
+                                                                     err);
+                                    if (err) {
+                                        dragged_files.emplace_back(unix_path);
+                                    } else {
+                                        dragged_files.emplace_back(
+                                            cannonical_path);
+                                    }
+                                }
+                            }
+
+                            GlobalUnlock(storage.hGlobal);
+                        } break;
+                        default: {
+                            std::cerr << "Unknown format in drag-and-drop: "
+                                      << supported_formats[format_idx].cfFormat
+                                      << std::endl;
+                        } break;
+                    }
                 } break;
                 case TYMED_FILE: {
                     const char* unix_path =
@@ -851,8 +865,8 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                     }
                 } break;
                 default: {
-                    std::cerr << "Unknown drag-and-drop format "
-                              << storage.tymed << std::endl;
+                    std::cerr << "Unknown drag-and-drop type: " << storage.tymed
+                              << std::endl;
                 } break;
             }
 
