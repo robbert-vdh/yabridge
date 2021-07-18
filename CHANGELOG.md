@@ -14,6 +14,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   shared memory. If you have not yet set up realtime priviliges and memory
   locking limits for your user, then yabridge may not be able to map enough
   shared memory for processing audio in plugins with a lot of inputs or outputs.
+- Also added a warning for thisq in the initialization message if yabridge
+  detects a low value for `RLIMIT_MEMLOCK`.
 
 ### Fixed
 

@@ -57,6 +57,15 @@ bool set_realtime_priority(bool sched_fifo, int priority) noexcept {
                               &params) == 0;
 }
 
+std::optional<rlim_t> get_memlock_limit() noexcept {
+    rlimit limits{};
+    if (getrlimit(RLIMIT_MEMLOCK, &limits) == 0) {
+        return limits.rlim_cur;
+    } else {
+        return std::nullopt;
+    }
+}
+
 std::optional<rlim_t> get_rttime_limit() noexcept {
     rlimit limits{};
     if (getrlimit(RLIMIT_RTTIME, &limits) == 0) {

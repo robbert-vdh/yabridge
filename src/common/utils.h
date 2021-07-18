@@ -106,10 +106,19 @@ std::optional<int> get_realtime_priority() noexcept;
 bool set_realtime_priority(bool sched_fifo, int priority = 5) noexcept;
 
 /**
- * Get the (soft) `RTTIME` resource limit, or the amount of time a `SCHED_FIFO`
- * process may spend uninterrupted before being killed by the scheduler. A value
- * of `-1`/`RLIM_INFINITY` means that there is no limit. If there was some error
- * fetching this value, then a nullopt will be returned.
+ * Get the (soft) `RLIMIT_MEMLOCK` resource limit. If this is set to some low
+ * value, then we'll print a warning during initialization because mapping
+ * shared memory may fail. A value of `-1`/`RLIM_INFINITY` means that there is
+ * no limit. If there was some error fetching this value, then a nullopt will be
+ * returned.
+ */
+std::optional<rlim_t> get_memlock_limit() noexcept;
+
+/**
+ * Get the (soft) `RLIMIT_RTTIME` resource limit, or the amount of time a
+ * `SCHED_FIFO` process may spend uninterrupted before being killed by the
+ * scheduler. A value of `-1`/`RLIM_INFINITY` means that there is no limit. If
+ * there was some error fetching this value, then a nullopt will be returned.
  *
  * This is useful to diagnose issues caused by PipeWire. They use rtkit at the
  * moment, and both rtkit and PipeWire's rtkit module will enable a realtime CPU

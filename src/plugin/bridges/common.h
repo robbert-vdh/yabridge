@@ -30,6 +30,14 @@
 #include "../host-process.h"
 
 /**
+ * If the amount of lockable memory is below this, then we'll warn about it
+ * during startup. Otherwise we may run into issues when mapping shared memory
+ * for plugins with a lot of inputs or outputs. We would of course prefer this
+ * to just be set to `RLIM_INFINITY`, but this seems like a reasonable amount.
+ */
+constexpr int memlock_min_safe_threshold = 256 << 20;
+
+/**
  * PipeWire uses rtkit, and both set `RLIMIT_RTTIME` to some low value. Normally
  * this is kept at unlimited, and low values can cause the host process to get
  * terminated during initialization because some plugins may take longer than
@@ -149,7 +157,8 @@ class PluginBridge {
                     init_msg << "   RLIMIT_RTTIME is set to " << *rttime_limit
                              << " us. This can happen when" << std::endl;
                     init_msg << "   using PipeWire. yabridge may crash when "
-                             << "loading plugins" << std::endl;
+                                "loading plugins"
+                             << std::endl;
                     init_msg << "   until you fix this." << std::endl;
                     init_msg << std::endl;
                 } else {
@@ -161,6 +170,32 @@ class PluginBridge {
             }
         } else {
             init_msg << "'no'" << std::endl;
+        }
+        // This doesn't really fit here, but this seems like the place to warn
+        // about low memlock limits. Because this is meant to just be a helpful
+        // warning, we won't print anything at all when there's no need to.
+        if (auto memlock_limit = get_memlock_limit()) {
+            if (*memlock_limit != RLIM_INFINITY &&
+                *memlock_limit < memlock_min_safe_threshold) {
+                init_msg << "memlock limit: 'WARNING: " << *memlock_limit
+                         << " bytes, see below'" << std::endl;
+                init_msg << std::endl;
+                init_msg
+                    << "   With a low memory locking limit, yabridge may not be"
+                    << std::endl;
+                init_msg << "   be able to map enough shared memory for audio "
+                            "buffers,"
+                         << std::endl;
+                init_msg << "   yabridge may crash when using plugins with "
+                            "many inputs"
+                         << std::endl;
+                init_msg << "   or outputs until you fix this." << std::endl;
+                init_msg << std::endl;
+            }
+        } else {
+            init_msg
+                << "memlock limit: 'WARNING: Could not fetch RLIMIT_MEMLOCK'"
+                << std::endl;
         }
         init_msg << "sockets:       '" << sockets.base_dir.string() << "'"
                  << std::endl;
