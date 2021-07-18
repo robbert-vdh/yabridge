@@ -181,6 +181,11 @@ class AudioShmBuffer {
     Config config;
 
    private:
+    /**
+     * Resize the shared memory object, and set up the memory mapping.
+     */
+    void setup_mapping();
+
     boost::interprocess::shared_memory_object shm;
     boost::interprocess::mapped_region buffer;
 

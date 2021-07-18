@@ -21,14 +21,7 @@ AudioShmBuffer::AudioShmBuffer(const Config& config)
       shm(boost::interprocess::open_or_create,
           config.name.c_str(),
           boost::interprocess::read_write) {
-    // Apparently you get a `Resource temporarily unavailable` when calling
-    // `ftruncate()` with a size of 0 on shared memory
-    if (config.size > 0) {
-        shm.truncate(config.size);
-        buffer = boost::interprocess::mapped_region(
-            shm, boost::interprocess::read_write, 0, config.size, nullptr,
-            MAP_LOCKED);
-    }
+    setup_mapping();
 }
 
 AudioShmBuffer::~AudioShmBuffer() noexcept {
@@ -37,22 +30,6 @@ AudioShmBuffer::~AudioShmBuffer() noexcept {
     // shared memory
     if (!is_moved) {
         boost::interprocess::shared_memory_object::remove(config.name.c_str());
-    }
-}
-
-void AudioShmBuffer::resize(const Config& new_config) {
-    if (new_config.name != config.name) {
-        throw std::invalid_argument("Expected buffer configuration for \"" +
-                                    config.name + "\", got \"" +
-                                    new_config.name + "\"");
-    }
-
-    config = new_config;
-    if (config.size > 0) {
-        shm.truncate(config.size);
-        buffer = boost::interprocess::mapped_region(
-            shm, boost::interprocess::read_write, 0, config.size, nullptr,
-            MAP_LOCKED);
     }
 }
 
@@ -70,4 +47,26 @@ AudioShmBuffer& AudioShmBuffer::operator=(AudioShmBuffer&& o) noexcept {
     o.is_moved = true;
 
     return *this;
+}
+
+void AudioShmBuffer::resize(const Config& new_config) {
+    if (new_config.name != config.name) {
+        throw std::invalid_argument("Expected buffer configuration for \"" +
+                                    config.name + "\", got \"" +
+                                    new_config.name + "\"");
+    }
+
+    config = new_config;
+    setup_mapping();
+}
+
+void AudioShmBuffer::setup_mapping() {
+    // Apparently you get a `Resource temporarily unavailable` when calling
+    // `ftruncate()` with a size of 0 on shared memory
+    if (config.size > 0) {
+        shm.truncate(config.size);
+        buffer = boost::interprocess::mapped_region(
+            shm, boost::interprocess::read_write, 0, config.size, nullptr,
+            MAP_LOCKED);
+    }
 }
