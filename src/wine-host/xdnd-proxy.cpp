@@ -353,7 +353,7 @@ void WineXdndProxy::run_xdnd_loop() {
     std::optional<uint16_t> last_pointer_x;
     std::optional<uint16_t> last_pointer_y;
     while (left_mouse_button_held && !escape_pressed) {
-        usleep(1000);
+        std::this_thread::sleep_for(1ms);
 
         std::unique_ptr<xcb_generic_event_t> generic_event;
         while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
@@ -519,7 +519,7 @@ void WineXdndProxy::run_xdnd_loop() {
             break;
         }
 
-        usleep(1000);
+        std::this_thread::sleep_for(1ms);
 
         std::unique_ptr<xcb_generic_event_t> generic_event;
         while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
