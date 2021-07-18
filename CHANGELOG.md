@@ -10,6 +10,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed the process status detection treating a process as dead when the user
+  doesn't have permissions to access the child process's memory. This fixes a
+  seemingly very rare regression from yabridge 3.4.0 where the Wine plugin host
+  application would immediately be seen as dead when using AppArmor, preventing
+  yabridge from starting.
 - Fixed a regression from yabridge 3.4.0 where plugins with zero audio channels
   like FrozenPlain **Obelisk** would result in a crash.
 - Fixed a regression from yabridge 3.4.0 where JUCE-based VST3 plugins might

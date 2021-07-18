@@ -85,11 +85,16 @@ bool pid_running(pid_t pid) {
     // processes and zombies, and a terminated group host process will always be
     // left as a zombie process. If the process is active, then
     // `/proc/<pid>/{cwd,exe,root}` will be valid symlinks.
-    try {
-        fs::canonical("/proc/" + std::to_string(pid) + "/exe");
-        return true;
-    } catch (const fs::filesystem_error&) {
+    // NOTE: We can get a `EACCES` here if we don't have permissions to read
+    //       this process's memory, so we should explicitly check for `EINVAL`
+    //       indicating that the 'symlink' is broken or just does not exist at
+    //       all.
+    boost::system::error_code err;
+    fs::canonical("/proc/" + std::to_string(pid) + "/exe", err);
+    if (err && err.value() == EINVAL) {
         return false;
+    } else {
+        return true;
     }
 }
 
