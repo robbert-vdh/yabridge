@@ -372,7 +372,7 @@ Editor::Editor(MainContext& main_context,
         //       reproduce, but if it doesn't work the first time, just keep
         //       trying!
         //
-        //       https://github.com/robot-vdh/yabridge/issues/40
+        //       https://github.com/robbert-vdh/yabridge/issues/40
         xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0,
                             0);
         xcb_flush(x11_connection.get());
