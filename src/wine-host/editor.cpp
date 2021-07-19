@@ -458,7 +458,9 @@ void Editor::handle_x11_events() noexcept {
                             generic_event.get());
 
                     std::cerr << "DEBUG: ReparentNotify for window "
-                              << event->window << std::endl;
+                              << event->window << " to new parent "
+                              << event->parent << ", generated from "
+                              << event->event << std::endl;
 
                     redetect_host_window();
                 } break;
@@ -478,8 +480,11 @@ void Editor::handle_x11_events() noexcept {
                     std::cerr << "DEBUG: ConfigureNotify for window "
                               << event->window << std::endl;
 
-                    if (!use_xembed) {
-                        fix_local_coordinates();
+                    if (event->window == host_window ||
+                        event->window == parent_window) {
+                        if (!use_xembed) {
+                            fix_local_coordinates();
+                        }
                     }
                 } break;
                 // Start the XEmbed procedure when the window becomes visible,
@@ -493,8 +498,11 @@ void Editor::handle_x11_events() noexcept {
                     std::cerr << "DEBUG: VisibilityNotify for window "
                               << event->window << std::endl;
 
-                    if (use_xembed) {
-                        do_xembed();
+                    if (event->window == host_window ||
+                        event->window == parent_window) {
+                        if (use_xembed) {
+                            do_xembed();
+                        }
                     }
                 } break;
                 // We want to grab keyboard input focus when the user hovers
@@ -511,18 +519,20 @@ void Editor::handle_x11_events() noexcept {
                         fix_local_coordinates();
                     }
 
+                    const xcb_window_t window =
+                        event_type == XCB_ENTER_NOTIFY
+                            ? reinterpret_cast<xcb_enter_notify_event_t*>(
+                                  generic_event.get())
+                                  ->child
+                            : reinterpret_cast<xcb_focus_in_event_t*>(
+                                  generic_event.get())
+                                  ->event;
+
                     if (event_type == XCB_ENTER_NOTIFY) {
-                        std::cerr
-                            << "DEBUG: EnterNotify for window "
-                            << reinterpret_cast<xcb_enter_notify_event_t*>(
-                                   generic_event.get())
-                                   ->event
-                            << std::endl;
+                        std::cerr << "DEBUG: EnterNotify for window " << window
+                                  << std::endl;
                     } else {
-                        std::cerr << "DEBUG: FocusIn for window "
-                                  << reinterpret_cast<xcb_focus_in_event_t*>(
-                                         generic_event.get())
-                                         ->event
+                        std::cerr << "DEBUG: FocusIn for window " << window
                                   << std::endl;
                     }
 
@@ -530,7 +540,8 @@ void Editor::handle_x11_events() noexcept {
                     // `_NET_ACTIVE_WINDOW`, a more naive focus grabbing method
                     // implemented in the `WM_PARENTNOTIFY` handler will be
                     // used.
-                    if (supports_ewmh_active_window() &&
+                    if (window == wine_window &&
+                        supports_ewmh_active_window() &&
                         is_wine_window_active()) {
                         set_input_focus(true);
                     }
@@ -548,7 +559,7 @@ void Editor::handle_x11_events() noexcept {
                             generic_event.get());
 
                     std::cerr << "DEBUG: LeaveNotify for window "
-                              << event->event << std::endl;
+                              << event->child << std::endl;
 
                     // This extra check for the `NonlinearVirtual` detail is
                     // important (see
@@ -560,7 +571,8 @@ void Editor::handle_x11_events() noexcept {
                     // with an actual Win32 dropdown menu). Without this check
                     // these fake dropdowns would immediately close when
                     // hovering over them.
-                    if (event->detail != XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL &&
+                    if (event->child == wine_window &&
+                        event->detail != XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL &&
                         supports_ewmh_active_window() &&
                         is_wine_window_active()) {
                         set_input_focus(false);
