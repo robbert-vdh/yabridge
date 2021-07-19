@@ -246,6 +246,11 @@ class Editor {
                              uint32_t data2) const noexcept;
 
     /**
+     * Reparent `wine_window` to `parent_window`. This includes the flush.
+     */
+    void do_reparent() const;
+
+    /**
      * Start the XEmbed procedure when `use_xembed` is enabled. This should be
      * rerun whenever visibility changes.
      */

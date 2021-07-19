@@ -64,6 +64,12 @@ constexpr uint32_t parent_event_mask =
     XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW;
 
 /**
+ * The X11 event mask for the Wine window. We'll use this to detect if the
+ * Window manager somehow steals the Wine window.
+ */
+constexpr uint32_t wine_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+
+/**
  * The name of the X11 property on the root window used to denote the active
  * window in EWMH compliant window managers.
  */
@@ -325,13 +331,18 @@ Editor::Editor(MainContext& main_context,
     // or resized, and when the user moves his mouse over the window because
     // this is sometimes needed for plugin groups. We also listen for
     // EnterNotify and LeaveNotify events on the Wine window so we can grab and
-    // release input focus as necessary.
+    // release input focus as necessary. And lastly we'll look out for
+    // reparents, so we can make sure that the window does not get stolen by the
+    // window manager and that we correctly handle the host reparenting
+    // `parent_window` themselves.
     // If we do enable XEmbed support, we'll also listen for visibility changes
     // and trigger the embedding when the window becomes visible
     xcb_change_window_attributes(x11_connection.get(), host_window,
                                  XCB_CW_EVENT_MASK, &host_event_mask);
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
+    xcb_change_window_attributes(x11_connection.get(), wine_window,
+                                 XCB_CW_EVENT_MASK, &wine_event_mask);
     xcb_flush(x11_connection.get());
 
     std::cerr << "DEBUG: host_window: " << host_window << std::endl;
@@ -349,52 +360,6 @@ Editor::Editor(MainContext& main_context,
         // of using the XEmbed protocol, we'll register a few events and manage
         // the child window ourselves. This is a hack to work around the issue's
         // described in `Editor`'s docstring'.
-        auto do_reparent = [&]() {
-            const xcb_void_cookie_t reparent_cookie =
-                xcb_reparent_window_checked(x11_connection.get(), wine_window,
-                                            parent_window, 0, 0);
-            if (std::unique_ptr<xcb_generic_error_t> reparent_error(
-                    xcb_request_check(x11_connection.get(), reparent_cookie));
-                reparent_error) {
-                std::cerr << "DEBUG: Reparent failed:" << std::endl;
-                std::cerr << "Error code: " << reparent_error->error_code
-                          << std::endl;
-                std::cerr << "Major code: " << reparent_error->major_code
-                          << std::endl;
-                std::cerr << "Minor code: " << reparent_error->minor_code
-                          << std::endl;
-
-                // Let's just check all of the reasons why the reparent could
-                // fail according to the spec in advance
-                xcb_generic_error_t* error = nullptr;
-                const xcb_query_pointer_cookie_t query_pointer_cookie =
-                    xcb_query_pointer(x11_connection.get(), wine_window);
-                const std::unique_ptr<xcb_query_pointer_reply_t>
-                    query_pointer_reply(xcb_query_pointer_reply(
-                        x11_connection.get(), query_pointer_cookie, &error));
-                if (error) {
-                    free(error);
-                    std::cerr << "DEBUG: Could not query pointer location"
-                              << std::endl;
-                } else {
-                    if (query_pointer_reply->same_screen) {
-                        std::cerr
-                            << "DEBUG: Pointer is on the same screen as the "
-                               "Wine window, good"
-                            << std::endl;
-                    } else {
-                        std::cerr
-                            << "DEBUG: Pointer is not on the same screen as "
-                               "the Wine window, oh no"
-                            << std::endl;
-                    }
-                }
-            } else {
-                std::cerr << "DEBUG: Reparent succeeded" << std::endl;
-            }
-            xcb_flush(x11_connection.get());
-        };
-
         do_reparent();
 
         // If we're using the double embedding option, then the child window
@@ -414,17 +379,6 @@ Editor::Editor(MainContext& main_context,
 
             ShowWindow(win32_child_window->handle, SW_SHOWNORMAL);
         }
-
-        // HACK: I can't seem to figure why the initial reparent would fail on
-        //       this particular i3 config in a way that I'm unable to
-        //       reproduce, but if it doesn't work the first time, just keep
-        //       trying!
-        //
-        //       https://github.com/robbert-vdh/yabridge/issues/40
-        std::cerr
-            << "DEBUG: Reparent 2 is allowed to fail if the first one succeeded"
-            << std::endl;
-        do_reparent();
     }
 }
 
@@ -463,6 +417,21 @@ void Editor::handle_x11_events() noexcept {
                               << event->event << std::endl;
 
                     redetect_host_window();
+
+                    // NOTE: Some window managers like to steal the window, so
+                    //       we must prevent that. This situation is easily
+                    //       recognized since the window will then cover the
+                    //       entire screen (since that's what the client area
+                    //       has been set to).
+                    if (event->window == parent_window ||
+                        (event->window == wine_window &&
+                         event->parent != parent_window)) {
+                        if (use_xembed) {
+                            do_xembed();
+                        } else {
+                            do_reparent();
+                        }
+                    }
                 } break;
                 // We're listening for `ConfigureNotify` events on the host's
                 //  window (i.e. the window that's actually going to get dragged
@@ -814,6 +783,48 @@ void Editor::send_xembed_message(xcb_window_t window,
 
     xcb_send_event(x11_connection.get(), false, window, XCB_EVENT_MASK_NO_EVENT,
                    reinterpret_cast<char*>(&event));
+}
+
+void Editor::do_reparent() const {
+    // TODO: When rebasing this, we should keep in the error logging for when
+    //       the reparent fails
+    const xcb_void_cookie_t reparent_cookie = xcb_reparent_window_checked(
+        x11_connection.get(), wine_window, parent_window, 0, 0);
+    if (std::unique_ptr<xcb_generic_error_t> reparent_error(
+            xcb_request_check(x11_connection.get(), reparent_cookie));
+        reparent_error) {
+        std::cerr << "DEBUG: Reparent failed:" << std::endl;
+        std::cerr << "Error code: " << reparent_error->error_code << std::endl;
+        std::cerr << "Major code: " << reparent_error->major_code << std::endl;
+        std::cerr << "Minor code: " << reparent_error->minor_code << std::endl;
+
+        // Let's just check all of the reasons why the reparent could
+        // fail according to the spec in advance
+        xcb_generic_error_t* error = nullptr;
+        const xcb_query_pointer_cookie_t query_pointer_cookie =
+            xcb_query_pointer(x11_connection.get(), wine_window);
+        const std::unique_ptr<xcb_query_pointer_reply_t> query_pointer_reply(
+            xcb_query_pointer_reply(x11_connection.get(), query_pointer_cookie,
+                                    &error));
+        if (error) {
+            free(error);
+            std::cerr << "DEBUG: Could not query pointer location" << std::endl;
+        } else {
+            if (query_pointer_reply->same_screen) {
+                std::cerr << "DEBUG: Pointer is on the same screen as the "
+                             "Wine window, good"
+                          << std::endl;
+            } else {
+                std::cerr << "DEBUG: Pointer is not on the same screen as "
+                             "the Wine window, oh no"
+                          << std::endl;
+            }
+        }
+    } else {
+        std::cerr << "DEBUG: Reparent succeeded" << std::endl;
+    }
+
+    xcb_flush(x11_connection.get());
 }
 
 void Editor::do_xembed() const {
