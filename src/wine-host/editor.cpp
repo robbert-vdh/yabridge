@@ -334,6 +334,10 @@ Editor::Editor(MainContext& main_context,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
     xcb_flush(x11_connection.get());
 
+    std::cerr << "DEBUG: host_window: " << host_window << std::endl;
+    std::cerr << "DEBUG: parent_window: " << parent_window << std::endl;
+    std::cerr << "DEBUG: wine_window: " << wine_window << std::endl;
+
     if (use_xembed) {
         // This call alone doesn't do anything. We need to call this function a
         // second time on visibility change because Wine's XEmbed implementation
@@ -345,8 +349,18 @@ Editor::Editor(MainContext& main_context,
         // of using the XEmbed protocol, we'll register a few events and manage
         // the child window ourselves. This is a hack to work around the issue's
         // described in `Editor`'s docstring'.
-        xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0,
-                            0);
+        xcb_void_cookie_t reparent_cookie = xcb_reparent_window_checked(
+            x11_connection.get(), wine_window, parent_window, 0, 0);
+        if (std::unique_ptr<xcb_generic_error_t> error(
+                xcb_request_check(x11_connection.get(), reparent_cookie));
+            error) {
+            std::cerr << "DEBUG: Reparent 1 failed:" << std::endl;
+            std::cerr << "Error code: " << error->error_code << std::endl;
+            std::cerr << "Major code: " << error->major_code << std::endl;
+            std::cerr << "Minor code: " << error->minor_code << std::endl;
+        } else {
+            std::cerr << "DEBUG: Reparent 1 succeeded" << std::endl;
+        }
         xcb_flush(x11_connection.get());
 
         // If we're using the double embedding option, then the child window
@@ -373,8 +387,18 @@ Editor::Editor(MainContext& main_context,
         //       trying!
         //
         //       https://github.com/robbert-vdh/yabridge/issues/40
-        xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0,
-                            0);
+        reparent_cookie = xcb_reparent_window_checked(
+            x11_connection.get(), wine_window, parent_window, 0, 0);
+        if (std::unique_ptr<xcb_generic_error_t> error(
+                xcb_request_check(x11_connection.get(), reparent_cookie));
+            error) {
+            std::cerr << "DEBUG: Reparent 2 failed:" << std::endl;
+            std::cerr << "Error code: " << error->error_code << std::endl;
+            std::cerr << "Major code: " << error->major_code << std::endl;
+            std::cerr << "Minor code: " << error->minor_code << std::endl;
+        } else {
+            std::cerr << "DEBUG: Reparent 2 succeeded" << std::endl;
+        }
         xcb_flush(x11_connection.get());
     }
 }
@@ -390,6 +414,10 @@ void Editor::handle_x11_events() noexcept {
                generic_event != nullptr) {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
+
+            std::cerr << "DEBUG: X11 event " << static_cast<int>(event_type)
+                      << std::endl;
+
             switch (event_type) {
                 // NOTE: When reopening a closed editor window in REAPER, REAPER
                 //       will initialize the editor first, and only then will it
@@ -400,6 +428,12 @@ void Editor::handle_x11_events() noexcept {
                 //       check if the host's window has changed whenever the
                 //       parent window gets reparented.
                 case XCB_REPARENT_NOTIFY: {
+                    std::cerr << "DEBUG: ReparentNotify for window "
+                              << reinterpret_cast<xcb_reparent_notify_event_t*>(
+                                     generic_event.get())
+                                     ->window
+                              << std::endl;
+
                     redetect_host_window();
                 } break;
                 // We're listening for `ConfigureNotify` events on the host's
@@ -411,6 +445,13 @@ void Editor::handle_x11_events() noexcept {
                 //  check is sometimes necessary for using multiple editor
                 //  windows within a single plugin group.
                 case XCB_CONFIGURE_NOTIFY: {
+                    std::cerr
+                        << "DEBUG: ConfigureNotify for window "
+                        << reinterpret_cast<xcb_configure_notify_event_t*>(
+                               generic_event.get())
+                               ->window
+                        << std::endl;
+
                     if (!use_xembed) {
                         fix_local_coordinates();
                     }
@@ -419,6 +460,13 @@ void Editor::handle_x11_events() noexcept {
                 // since most hosts will only show the window after the plugin
                 // has embedded itself into it.
                 case XCB_VISIBILITY_NOTIFY: {
+                    std::cerr
+                        << "DEBUG: VisibilityNotify for window "
+                        << reinterpret_cast<xcb_visibility_notify_event_t*>(
+                               generic_event.get())
+                               ->window
+                        << std::endl;
+
                     if (use_xembed) {
                         do_xembed();
                     }
@@ -435,6 +483,21 @@ void Editor::handle_x11_events() noexcept {
                 case XCB_FOCUS_IN: {
                     if (!use_xembed) {
                         fix_local_coordinates();
+                    }
+
+                    if (event_type == XCB_ENTER_NOTIFY) {
+                        std::cerr
+                            << "DEBUG: EnterNotify for window "
+                            << reinterpret_cast<xcb_enter_notify_event_t*>(
+                                   generic_event.get())
+                                   ->event
+                            << std::endl;
+                    } else {
+                        std::cerr << "DEBUG: FocusIn for window "
+                                  << reinterpret_cast<xcb_focus_in_event_t*>(
+                                         generic_event.get())
+                                         ->event
+                                  << std::endl;
                     }
 
                     // In case the WM somehow does not support
@@ -458,6 +521,9 @@ void Editor::handle_x11_events() noexcept {
                         reinterpret_cast<xcb_leave_notify_event_t*>(
                             generic_event.get());
 
+                    std::cerr << "DEBUG: LeaveNotify for window "
+                              << event->event << std::endl;
+
                     // This extra check for the `NonlinearVirtual` detail is
                     // important (see
                     // https://www.x.org/releases/X11R7.5/doc/x11proto/proto.html
@@ -474,6 +540,10 @@ void Editor::handle_x11_events() noexcept {
                         set_input_focus(false);
                     }
                 } break;
+                default: {
+                    std::cerr << "DEBUG: Unhandled X11 event "
+                              << static_cast<int>(event_type) << std::endl;
+                }
             }
         }
     } catch (const std::runtime_error& error) {
@@ -629,6 +699,8 @@ void Editor::redetect_host_window() noexcept {
     if (new_host_window == host_window) {
         return;
     }
+
+    std::cerr << "DEBUG: new host_window: " << new_host_window << std::endl;
 
     // We need to readjust the event masks for the new host window, keeping the
     // (very probable) possibility in mind that the old host window is the same
