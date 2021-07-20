@@ -784,8 +784,10 @@ offers these two environment variables to control yabridge's logging facilities:
   `env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log <daw>`, and then use
   `tail -F /tmp/yabridge.log` to keep track of the output. If this option is not
   present then yabridge will write all of its debug output to STDERR instead.
-- `YABRIDGE_DEBUG_LEVEL={0,1,2}` allows you to set the verbosity of the debug
-  information. Each level increases the amount of debug information printed:
+- `YABRIDGE_DEBUG_LEVEL={0,1,2}{,+editor}` allows you to set the verbosity of
+  the debug information. You can set a debug level, optionally followed by
+  `+editor` to also get more debug output related to the editor window handling.
+  Each level increases the amount of debug information printed:
 
   - A value of `0` (the default) means that yabridge will only log the output
     from the Wine process and some basic information about the

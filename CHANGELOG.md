@@ -16,6 +16,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   shared memory for processing audio in plugins with a lot of inputs or outputs.
 - Also added a warning for thisq in the initialization message if yabridge
   detects a low value for `RLIMIT_MEMLOCK`.
+- Added a `+editor` flag to the `YABRIDGE_DEBUG_LEVEL` environment variable that
+  can be combined with any debug level to also print debug tracing information
+  about the plugin editor window. This can be useful for diagnosing DAW or
+  window manager specific issues.
 
 ### Fixed
 

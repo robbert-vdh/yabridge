@@ -96,6 +96,9 @@ class Logger {
      * @param verbosity_level The verbosity of the logging, see the
      *   `Logger::Verbosity` constants above for a description of the verbosity
      *   levels.
+     * @param editor_tracing Whether we should enable debug tracing for the
+     *   editor window handling. If we end up adding more of these options, we
+     *   should move to a bitfield or something.
      * @param prefix An optional prefix for the logger. Useful for differentiate
      *   messages coming from the Wine VST host. Should end with a single space
      *   character.
@@ -107,6 +110,7 @@ class Logger {
      */
     Logger(std::shared_ptr<std::ostream> stream,
            Verbosity verbosity_level,
+           bool editor_tracing,
            std::string prefix = "",
            bool prefix_timestamp = true);
 
@@ -116,8 +120,12 @@ class Logger {
      *
      * @param prefix A message to prepend for every log message, useful to
      *   differentiate between the Wine process and the Linux VST plugin.
+     * @param stream If specified, disregard `YABRIDGE_DEBUG_FILE` and output
+     *   the log to this stream isntead.
      */
-    static Logger create_from_environment(std::string prefix = "");
+    static Logger create_from_environment(
+        std::string prefix = "",
+        std::shared_ptr<std::ostream> stream = nullptr);
 
     /**
      * Create a special logger instance that outputs directly to STDERR without
@@ -173,7 +181,21 @@ class Logger {
      */
     template <invocable_returning<std::string> F>
     void log_trace(F&& fn) {
-        if (verbosity >= Verbosity::all_events) {
+        if (verbosity >= Verbosity::all_events) [[unlikely]] {
+            log(fn());
+        }
+    }
+
+    /**
+     * Log a message that should only be printed when the `editor_tracing`
+     * option is enabled. This can be useful to provide debugging information
+     * for weird setup-specific bugs.
+     *
+     * @param message A lambda producing a string that should be written.
+     */
+    template <invocable_returning<std::string> F>
+    void log_editor_trace(F&& fn) {
+        if (editor_tracing) [[unlikely]] {
             log(fn());
         }
     }
@@ -183,6 +205,12 @@ class Logger {
      * messages may or may not be shown.
      */
     const Verbosity verbosity;
+
+    /**
+     * If this is set to true, then we'll print debug traces for the plugin
+     * editor.
+     */
+    const bool editor_tracing;
 
    private:
     /**
