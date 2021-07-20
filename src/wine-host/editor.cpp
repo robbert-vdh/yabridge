@@ -64,6 +64,12 @@ constexpr uint32_t parent_event_mask =
     XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW;
 
 /**
+ * The X11 event mask for the Wine window. We'll use this to detect if the
+ * Window manager somehow steals the Wine window.
+ */
+constexpr uint32_t wine_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+
+/**
  * The name of the X11 property on the root window used to denote the active
  * window in EWMH compliant window managers.
  */
@@ -251,8 +257,21 @@ Editor::Editor(MainContext& main_context,
                                   reinterpret_cast<LPCSTR>(get_window_class()),
                                   "yabridge plugin",
                                   WS_POPUP,
-                                  CW_USEDEFAULT,
-                                  CW_USEDEFAULT,
+                                  // NOTE: With certain DEs/WMs (notably,
+                                  //       Cinnamon), Wine does not render the
+                                  //       window at all when using a primary
+                                  //       display that's positioned to the
+                                  //       right of another display. Presumably
+                                  //       it tries to manually clip the client
+                                  //       rendered client area to the physical
+                                  //       display. During the reparenting and
+                                  //       `fix_local_coordinates()` the window
+                                  //       will be moved to `(0, 0)` anyways,
+                                  //       but setting its initial position
+                                  //       according to the primary display
+                                  //       fixes these rendering issues.
+                                  GetSystemMetrics(SM_XVIRTUALSCREEN),
+                                  GetSystemMetrics(SM_YVIRTUALSCREEN),
                                   client_area.width,
                                   client_area.height,
                                   nullptr,
@@ -325,14 +344,23 @@ Editor::Editor(MainContext& main_context,
     // or resized, and when the user moves his mouse over the window because
     // this is sometimes needed for plugin groups. We also listen for
     // EnterNotify and LeaveNotify events on the Wine window so we can grab and
-    // release input focus as necessary.
+    // release input focus as necessary. And lastly we'll look out for
+    // reparents, so we can make sure that the window does not get stolen by the
+    // window manager and that we correctly handle the host reparenting
+    // `parent_window` themselves.
     // If we do enable XEmbed support, we'll also listen for visibility changes
     // and trigger the embedding when the window becomes visible
     xcb_change_window_attributes(x11_connection.get(), host_window,
                                  XCB_CW_EVENT_MASK, &host_event_mask);
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
+    xcb_change_window_attributes(x11_connection.get(), wine_window,
+                                 XCB_CW_EVENT_MASK, &wine_event_mask);
     xcb_flush(x11_connection.get());
+
+    std::cerr << "DEBUG: host_window: " << host_window << std::endl;
+    std::cerr << "DEBUG: parent_window: " << parent_window << std::endl;
+    std::cerr << "DEBUG: wine_window: " << wine_window << std::endl;
 
     if (use_xembed) {
         // This call alone doesn't do anything. We need to call this function a
@@ -345,9 +373,7 @@ Editor::Editor(MainContext& main_context,
         // of using the XEmbed protocol, we'll register a few events and manage
         // the child window ourselves. This is a hack to work around the issue's
         // described in `Editor`'s docstring'.
-        xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0,
-                            0);
-        xcb_flush(x11_connection.get());
+        do_reparent();
 
         // If we're using the double embedding option, then the child window
         // should only be created after the parent window is visible
@@ -359,23 +385,13 @@ Editor::Editor(MainContext& main_context,
                 main_context, x11_connection,
                 CreateWindowEx(WS_EX_TOOLWINDOW,
                                reinterpret_cast<LPCSTR>(get_window_class()),
-                               "yabridge plugin child", WS_CHILD, CW_USEDEFAULT,
-                               CW_USEDEFAULT, client_area.width,
-                               client_area.height, win32_window.handle, nullptr,
+                               "yabridge plugin child", WS_CHILD, 0, 0,
+                               client_area.width, client_area.height,
+                               win32_window.handle, nullptr,
                                GetModuleHandle(nullptr), this));
 
             ShowWindow(win32_child_window->handle, SW_SHOWNORMAL);
         }
-
-        // HACK: I can't seem to figure why the initial reparent would fail on
-        //       this particular i3 config in a way that I'm unable to
-        //       reproduce, but if it doesn't work the first time, just keep
-        //       trying!
-        //
-        //       https://github.com/robbert-vdh/yabridge/issues/40
-        xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0,
-                            0);
-        xcb_flush(x11_connection.get());
     }
 }
 
@@ -384,12 +400,18 @@ void Editor::handle_x11_events() noexcept {
     //       the window is unmapped `wine_window` doesn't exist and any X11
     //       function calls involving it will fail. All functions called from
     //       here should be able to handle that cleanly.
+    // TODO: Move all debug messages to a special editor debug level, which
+    //       should be specified as <N>+editor
     try {
         std::unique_ptr<xcb_generic_event_t> generic_event;
         while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
                generic_event != nullptr) {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
+
+            std::cerr << "DEBUG: X11 event " << static_cast<int>(event_type)
+                      << std::endl;
+
             switch (event_type) {
                 // NOTE: When reopening a closed editor window in REAPER, REAPER
                 //       will initialize the editor first, and only then will it
@@ -400,7 +422,31 @@ void Editor::handle_x11_events() noexcept {
                 //       check if the host's window has changed whenever the
                 //       parent window gets reparented.
                 case XCB_REPARENT_NOTIFY: {
+                    const auto event =
+                        reinterpret_cast<xcb_reparent_notify_event_t*>(
+                            generic_event.get());
+
+                    std::cerr << "DEBUG: ReparentNotify for window "
+                              << event->window << " to new parent "
+                              << event->parent << ", generated from "
+                              << event->event << std::endl;
+
                     redetect_host_window();
+
+                    // NOTE: Some window managers like to steal the window, so
+                    //       we must prevent that. This situation is easily
+                    //       recognized since the window will then cover the
+                    //       entire screen (since that's what the client area
+                    //       has been set to).
+                    if (event->window == parent_window ||
+                        (event->window == wine_window &&
+                         event->parent != parent_window)) {
+                        if (use_xembed) {
+                            do_xembed();
+                        } else {
+                            do_reparent();
+                        }
+                    }
                 } break;
                 // We're listening for `ConfigureNotify` events on the host's
                 //  window (i.e. the window that's actually going to get dragged
@@ -411,16 +457,36 @@ void Editor::handle_x11_events() noexcept {
                 //  check is sometimes necessary for using multiple editor
                 //  windows within a single plugin group.
                 case XCB_CONFIGURE_NOTIFY: {
-                    if (!use_xembed) {
-                        fix_local_coordinates();
+                    const auto event =
+                        reinterpret_cast<xcb_configure_notify_event_t*>(
+                            generic_event.get());
+
+                    std::cerr << "DEBUG: ConfigureNotify for window "
+                              << event->window << std::endl;
+
+                    if (event->window == host_window ||
+                        event->window == parent_window) {
+                        if (!use_xembed) {
+                            fix_local_coordinates();
+                        }
                     }
                 } break;
                 // Start the XEmbed procedure when the window becomes visible,
                 // since most hosts will only show the window after the plugin
                 // has embedded itself into it.
                 case XCB_VISIBILITY_NOTIFY: {
-                    if (use_xembed) {
-                        do_xembed();
+                    const auto event =
+                        reinterpret_cast<xcb_visibility_notify_event_t*>(
+                            generic_event.get());
+
+                    std::cerr << "DEBUG: VisibilityNotify for window "
+                              << event->window << std::endl;
+
+                    if (event->window == host_window ||
+                        event->window == parent_window) {
+                        if (use_xembed) {
+                            do_xembed();
+                        }
                     }
                 } break;
                 // We want to grab keyboard input focus when the user hovers
@@ -437,11 +503,29 @@ void Editor::handle_x11_events() noexcept {
                         fix_local_coordinates();
                     }
 
+                    const xcb_window_t window =
+                        event_type == XCB_ENTER_NOTIFY
+                            ? reinterpret_cast<xcb_enter_notify_event_t*>(
+                                  generic_event.get())
+                                  ->child
+                            : reinterpret_cast<xcb_focus_in_event_t*>(
+                                  generic_event.get())
+                                  ->event;
+
+                    if (event_type == XCB_ENTER_NOTIFY) {
+                        std::cerr << "DEBUG: EnterNotify for window " << window
+                                  << std::endl;
+                    } else {
+                        std::cerr << "DEBUG: FocusIn for window " << window
+                                  << std::endl;
+                    }
+
                     // In case the WM somehow does not support
                     // `_NET_ACTIVE_WINDOW`, a more naive focus grabbing method
                     // implemented in the `WM_PARENTNOTIFY` handler will be
                     // used.
-                    if (supports_ewmh_active_window() &&
+                    if (window == wine_window &&
+                        supports_ewmh_active_window() &&
                         is_wine_window_active()) {
                         set_input_focus(true);
                     }
@@ -458,6 +542,9 @@ void Editor::handle_x11_events() noexcept {
                         reinterpret_cast<xcb_leave_notify_event_t*>(
                             generic_event.get());
 
+                    std::cerr << "DEBUG: LeaveNotify for window "
+                              << event->child << std::endl;
+
                     // This extra check for the `NonlinearVirtual` detail is
                     // important (see
                     // https://www.x.org/releases/X11R7.5/doc/x11proto/proto.html
@@ -468,12 +555,17 @@ void Editor::handle_x11_events() noexcept {
                     // with an actual Win32 dropdown menu). Without this check
                     // these fake dropdowns would immediately close when
                     // hovering over them.
-                    if (event->detail != XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL &&
+                    if (event->child == wine_window &&
+                        event->detail != XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL &&
                         supports_ewmh_active_window() &&
                         is_wine_window_active()) {
                         set_input_focus(false);
                     }
                 } break;
+                default: {
+                    std::cerr << "DEBUG: Unhandled X11 event "
+                              << static_cast<int>(event_type) << std::endl;
+                }
             }
         }
     } catch (const std::runtime_error& error) {
@@ -630,6 +722,8 @@ void Editor::redetect_host_window() noexcept {
         return;
     }
 
+    std::cerr << "DEBUG: new host_window: " << new_host_window << std::endl;
+
     // We need to readjust the event masks for the new host window, keeping the
     // (very probable) possibility in mind that the old host window is the same
     // as the parent window or that the parent window now is the host window.
@@ -704,6 +798,48 @@ void Editor::send_xembed_message(xcb_window_t window,
 
     xcb_send_event(x11_connection.get(), false, window, XCB_EVENT_MASK_NO_EVENT,
                    reinterpret_cast<char*>(&event));
+}
+
+void Editor::do_reparent() const {
+    // TODO: When rebasing this, we should keep in the error logging for when
+    //       the reparent fails
+    const xcb_void_cookie_t reparent_cookie = xcb_reparent_window_checked(
+        x11_connection.get(), wine_window, parent_window, 0, 0);
+    if (std::unique_ptr<xcb_generic_error_t> reparent_error(
+            xcb_request_check(x11_connection.get(), reparent_cookie));
+        reparent_error) {
+        std::cerr << "DEBUG: Reparent failed:" << std::endl;
+        std::cerr << "Error code: " << reparent_error->error_code << std::endl;
+        std::cerr << "Major code: " << reparent_error->major_code << std::endl;
+        std::cerr << "Minor code: " << reparent_error->minor_code << std::endl;
+
+        // Let's just check all of the reasons why the reparent could
+        // fail according to the spec in advance
+        xcb_generic_error_t* error = nullptr;
+        const xcb_query_pointer_cookie_t query_pointer_cookie =
+            xcb_query_pointer(x11_connection.get(), wine_window);
+        const std::unique_ptr<xcb_query_pointer_reply_t> query_pointer_reply(
+            xcb_query_pointer_reply(x11_connection.get(), query_pointer_cookie,
+                                    &error));
+        if (error) {
+            free(error);
+            std::cerr << "DEBUG: Could not query pointer location" << std::endl;
+        } else {
+            if (query_pointer_reply->same_screen) {
+                std::cerr << "DEBUG: Pointer is on the same screen as the "
+                             "Wine window, good"
+                          << std::endl;
+            } else {
+                std::cerr << "DEBUG: Pointer is not on the same screen as "
+                             "the Wine window, oh no"
+                          << std::endl;
+            }
+        }
+    } else {
+        std::cerr << "DEBUG: Reparent succeeded" << std::endl;
+    }
+
+    xcb_flush(x11_connection.get());
 }
 
 void Editor::do_xembed() const {

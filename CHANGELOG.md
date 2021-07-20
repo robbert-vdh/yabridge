@@ -31,6 +31,17 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   like FrozenPlain **Obelisk** would result in a crash.
 - Fixed a regression from yabridge 3.4.0 where JUCE-based VST3 plugins might
   cause **Ardour** or **Mixbus** to freeze in very specific circumstances.
+- When the window manager somehow steals yabridge's window away from the host,
+  yabridge will now try to steal it back and reparent it to the host's window
+  again. This very rarely happened with some window managers, like XFWM, and
+  only in certain DAWs like **Ardour**.
+- Possibly fixed an obscure error where the editor would not render when using
+  multiple displays, and the rightmost display was set as primary. This issue is
+  very rare, and I haven't gotten any response back when I asked the people
+  affected by this to test a potential fix, so I'm just including it in yabridge
+  proper in case it helps (it should at least not make anything worse). If
+  anyone was affected by this, please let me know if this patch makes any
+  difference!
 - Worked around a **REAPER** bug that would cause REAPER to not process any
   keyboard input when the FX window is active but the mouse is outside of the
   window. We now use the same validation used in `xprop` and `xwininfo` to find
