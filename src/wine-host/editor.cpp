@@ -489,7 +489,7 @@ void Editor::handle_x11_events() noexcept {
                         reinterpret_cast<xcb_visibility_notify_event_t*>(
                             generic_event.get());
                     logger.log_editor_trace([&]() {
-                        return "DEBUG: VisibilityNotify  for window " +
+                        return "DEBUG: VisibilityNotify for window " +
                                std::to_string(event->window);
                     });
 
