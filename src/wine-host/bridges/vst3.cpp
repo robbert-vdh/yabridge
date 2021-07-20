@@ -499,6 +499,16 @@ void Vst3Bridge::run() {
 
                         if (plug_view) {
                             instance.plug_view_instance.emplace(plug_view);
+
+                            // HACK: Nimble Kick (and perhaps other plugins, but
+                            //       I haven't heard any reports of this being
+                            //       an issue coming from other plugins) starts
+                            //       a timer in `IEditController::createView()`
+                            //       that relies on data that is only
+                            //       initialized once `IPlugView::attached()`
+                            //       has been called. So until that point, we'll
+                            //       prevent the event loop from running.
+                            instance.is_initialized = false;
                         } else {
                             instance.plug_view_instance.reset();
                         }
@@ -716,6 +726,9 @@ void Vst3Bridge::run() {
             },
             [&](const YaPlugView::Attached& request)
                 -> YaPlugView::Attached::Response {
+                Vst3PluginInstance& instance =
+                    object_instances.at(request.owner_instance_id);
+
                 const std::string type =
                     request.type == Steinberg::kPlatformTypeX11EmbedWindowID
                         ? Steinberg::kPlatformTypeHWND
@@ -729,22 +742,26 @@ void Vst3Bridge::run() {
                 // be done in the main UI thread
                 return main_context
                     .run_in_context([&]() -> tresult {
-                        Editor& editor_instance =
-                            object_instances.at(request.owner_instance_id)
-                                .editor.emplace(main_context, config,
-                                                generic_logger, x11_handle);
+                        Editor& editor_instance = instance.editor.emplace(
+                            main_context, config, generic_logger, x11_handle);
                         const tresult result =
-                            object_instances.at(request.owner_instance_id)
-                                .plug_view_instance->plug_view->attached(
-                                    editor_instance.get_win32_handle(),
-                                    type.c_str());
+                            instance.plug_view_instance->plug_view->attached(
+                                editor_instance.get_win32_handle(),
+                                type.c_str());
 
                         // Get rid of the editor again if the plugin didn't
                         // embed itself in it
                         if (result != Steinberg::kResultOk) {
-                            object_instances.at(request.owner_instance_id)
-                                .editor.reset();
+                            instance.editor.reset();
                         }
+
+                        // HACK: See the comment in our handling of
+                        //       `IEditController::createView()`. We'll reset
+                        //       this regardless of whether or not this request
+                        //       succeeded or else JUCE plugins without editors
+                        //       might cause us to get stuck in a situation
+                        //       where the event loop gets blocked indefinitely.
+                        instance.is_initialized = true;
 
                         return result;
                     })

@@ -35,6 +35,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   like FrozenPlain **Obelisk** would result in a crash.
 - Fixed a regression from yabridge 3.4.0 where JUCE-based VST3 plugins might
   cause **Ardour** or **Mixbus** to freeze in very specific circumstances.
+- Worked around a race condition in _Nimble Kick_, which would trigger a stack
+  overflow when loading the plugin if it wasn't already activated.
 - When the window manager somehow steals yabridge's window away from the host,
   yabridge will now try to steal it back and reparent it to the host's window
   again. This very rarely happened with some window managers, like XFWM, and
