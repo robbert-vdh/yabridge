@@ -36,6 +36,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   window. We now use the same validation used in `xprop` and `xwininfo` to find
   the host's window instead of always taking the topmost window.
 
+### yabridgectl
+
+- `yabridgectl status` now also lists the paths to `yabridge-host.exe` and
+  `yabridge-host-32.exe` that yabridge will end up using. This can be helpful
+  for diagnosing issues with complex setups.
+
 ## [3.4.0] - 2021-07-15
 
 ### Added

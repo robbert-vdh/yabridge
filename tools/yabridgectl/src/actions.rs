@@ -113,6 +113,25 @@ pub fn show_status(config: &Config) -> Result<()> {
                     .map(|(path, arch)| format!("'{}' ({})", path.display(), arch))
                     .unwrap_or_else(|| "<not found>".red().to_string())
             );
+            println!(
+                "yabridge-host.exe: {}",
+                files
+                    .yabridge_host_exe
+                    .as_ref()
+                    // We don't care about the actual path, but the file should at least exist
+                    .zip(files.yabridge_host_exe_so.as_ref())
+                    .map(|(path, _)| format!("'{}'", path.display()))
+                    .unwrap_or_else(|| "<not found>".red().to_string())
+            );
+            println!(
+                "yabridge-host-32.exe: {}\n",
+                files
+                    .yabridge_host_32_exe
+                    .as_ref()
+                    .zip(files.yabridge_host_32_exe_so.as_ref())
+                    .map(|(path, _)| format!("'{}'", path.display()))
+                    .unwrap_or_else(|| "<not found>".red().to_string())
+            );
         }
         Err(err) => {
             println!("Could not find yabridge's files: {}\n", err);
