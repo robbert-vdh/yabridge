@@ -866,8 +866,7 @@ void Editor::do_xembed() const {
     // If we're embedding using XEmbed, then we'll have to go through the whole
     // XEmbed dance here. See the spec for more information on how this works:
     // https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html#lifecycle
-    xcb_reparent_window(x11_connection.get(), wine_window, parent_window, 0, 0);
-    xcb_flush(x11_connection.get());
+    do_reparent();
 
     // Let the Wine window know it's being embedded into the parent window
     send_xembed_message(wine_window, xembed_embedded_notify_msg, 0,
