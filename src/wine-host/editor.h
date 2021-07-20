@@ -30,6 +30,7 @@
 #pragma pop_macro("_WIN32")
 
 #include "../common/configuration.h"
+#include "../common/logging/common.h"
 #include "utils.h"
 #include "xdnd-proxy.h"
 
@@ -147,6 +148,9 @@ class Editor {
      *   `DestroyWindow::~DestroyWindow()`.
      * @param config This instance's configuration, used to enable alternative
      *   editor behaviours.
+     * @param logger A logger instance created with
+     *   `Logger::create_wine_stderr()`. We'll use this to print editor tracing
+     *   information only when needed.
      * @param parent_window_handle The X11 window handle passed by the VST host
      *   for the editor to embed itself into.
      * @param timer_proc A function to run on a timer. This is used for VST2
@@ -158,6 +162,7 @@ class Editor {
     Editor(
         MainContext& main_context,
         const Configuration& config,
+        Logger& logger,
         const size_t parent_window_handle,
         std::optional<fu2::unique_function<void()>> timer_proc = std::nullopt);
 
@@ -255,6 +260,11 @@ class Editor {
      * rerun whenever visibility changes.
      */
     void do_xembed() const;
+
+    /**
+     * The logger instance we will print debug tracing information to.
+     */
+    Logger& logger;
 
     /**
      * Every editor window gets its own X11 connection.

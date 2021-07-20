@@ -732,7 +732,7 @@ void Vst3Bridge::run() {
                         Editor& editor_instance =
                             object_instances.at(request.owner_instance_id)
                                 .editor.emplace(main_context, config,
-                                                x11_handle);
+                                                generic_logger, x11_handle);
                         const tresult result =
                             object_instances.at(request.owner_instance_id)
                                 .plug_view_instance->plug_view->attached(

@@ -719,7 +719,8 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             const auto x11_handle = reinterpret_cast<size_t>(data);
 
             Editor& editor_instance = editor.emplace(
-                main_context, config, x11_handle, [plugin = this->plugin]() {
+                main_context, config, generic_logger, x11_handle,
+                [plugin = this->plugin]() {
                     plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0.0);
                 });
             const intptr_t result =

@@ -240,9 +240,11 @@ DeferredWindow::~DeferredWindow() noexcept {
 
 Editor::Editor(MainContext& main_context,
                const Configuration& config,
+               Logger& logger,
                const size_t parent_window_handle,
                std::optional<fu2::unique_function<void()>> timer_proc)
     : use_xembed(config.editor_xembed),
+      logger(logger),
       x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
       dnd_proxy_handle(WineXdndProxy::get_handle()),
       client_area(get_maximum_screen_dimensions(*x11_connection)),
@@ -300,6 +302,14 @@ Editor::Editor(MainContext& main_context,
                                    parent_window,
                                    xcb_wm_state_property)
                       .value_or(parent_window)) {
+    logger.log_editor_trace(
+        [&]() { return "DEBUG: host_window: " + std::to_string(host_window); });
+    logger.log_editor_trace([&]() {
+        return "DEBUG: parent_window: " + std::to_string(parent_window);
+    });
+    logger.log_editor_trace(
+        [&]() { return "DEBUG: wine_window: " + std::to_string(wine_window); });
+
     // Used for input focus grabbing to only grab focus when the window is
     // active. In case the atom does not exist or the WM does not support this
     // hint, we'll print a warning and fall back to grabbing focus when the user
@@ -358,10 +368,6 @@ Editor::Editor(MainContext& main_context,
                                  XCB_CW_EVENT_MASK, &wine_event_mask);
     xcb_flush(x11_connection.get());
 
-    std::cerr << "DEBUG: host_window: " << host_window << std::endl;
-    std::cerr << "DEBUG: parent_window: " << parent_window << std::endl;
-    std::cerr << "DEBUG: wine_window: " << wine_window << std::endl;
-
     if (use_xembed) {
         // This call alone doesn't do anything. We need to call this function a
         // second time on visibility change because Wine's XEmbed implementation
@@ -408,9 +414,9 @@ void Editor::handle_x11_events() noexcept {
                generic_event != nullptr) {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
-
-            std::cerr << "DEBUG: X11 event " << static_cast<int>(event_type)
-                      << std::endl;
+            logger.log_editor_trace([&]() {
+                return "DEBUG: X11 event " + std::to_string(event_type);
+            });
 
             switch (event_type) {
                 // NOTE: When reopening a closed editor window in REAPER, REAPER
@@ -425,11 +431,14 @@ void Editor::handle_x11_events() noexcept {
                     const auto event =
                         reinterpret_cast<xcb_reparent_notify_event_t*>(
                             generic_event.get());
-
-                    std::cerr << "DEBUG: ReparentNotify for window "
-                              << event->window << " to new parent "
-                              << event->parent << ", generated from "
-                              << event->event << std::endl;
+                    logger.log_editor_trace([&]() {
+                        return "DEBUG: ReparentNotify for window " +
+                               std::to_string(event->window) +
+                               " to new parent " +
+                               std::to_string(event->parent) +
+                               ", generated from " +
+                               std::to_string(event->event);
+                    });
 
                     redetect_host_window();
 
@@ -460,9 +469,10 @@ void Editor::handle_x11_events() noexcept {
                     const auto event =
                         reinterpret_cast<xcb_configure_notify_event_t*>(
                             generic_event.get());
-
-                    std::cerr << "DEBUG: ConfigureNotify for window "
-                              << event->window << std::endl;
+                    logger.log_editor_trace([&]() {
+                        return "DEBUG: ConfigureNotify for window " +
+                               std::to_string(event->window);
+                    });
 
                     if (event->window == host_window ||
                         event->window == parent_window) {
@@ -478,9 +488,10 @@ void Editor::handle_x11_events() noexcept {
                     const auto event =
                         reinterpret_cast<xcb_visibility_notify_event_t*>(
                             generic_event.get());
-
-                    std::cerr << "DEBUG: VisibilityNotify for window "
-                              << event->window << std::endl;
+                    logger.log_editor_trace([&]() {
+                        return "DEBUG: VisibilityNotify  for window " +
+                               std::to_string(event->window);
+                    });
 
                     if (event->window == host_window ||
                         event->window == parent_window) {
@@ -513,11 +524,15 @@ void Editor::handle_x11_events() noexcept {
                                   ->event;
 
                     if (event_type == XCB_ENTER_NOTIFY) {
-                        std::cerr << "DEBUG: EnterNotify for window " << window
-                                  << std::endl;
+                        logger.log_editor_trace([&]() {
+                            return "DEBUG: EnterNotify for window " +
+                                   std::to_string(window);
+                        });
                     } else {
-                        std::cerr << "DEBUG: FocusIn for window " << window
-                                  << std::endl;
+                        logger.log_editor_trace([&]() {
+                            return "DEBUG: FocusIn for window " +
+                                   std::to_string(window);
+                        });
                     }
 
                     // In case the WM somehow does not support
@@ -541,9 +556,10 @@ void Editor::handle_x11_events() noexcept {
                     const auto event =
                         reinterpret_cast<xcb_leave_notify_event_t*>(
                             generic_event.get());
-
-                    std::cerr << "DEBUG: LeaveNotify for window "
-                              << event->child << std::endl;
+                    logger.log_editor_trace([&]() {
+                        return "DEBUG: LeaveNotify for window " +
+                               std::to_string(event->child);
+                    });
 
                     // This extra check for the `NonlinearVirtual` detail is
                     // important (see
@@ -563,8 +579,10 @@ void Editor::handle_x11_events() noexcept {
                     }
                 } break;
                 default: {
-                    std::cerr << "DEBUG: Unhandled X11 event "
-                              << static_cast<int>(event_type) << std::endl;
+                    logger.log_editor_trace([&]() {
+                        return "DEBUG: Unhandled X11 event " +
+                               std::to_string(event_type);
+                    });
                 }
             }
         }
@@ -722,7 +740,9 @@ void Editor::redetect_host_window() noexcept {
         return;
     }
 
-    std::cerr << "DEBUG: new host_window: " << new_host_window << std::endl;
+    logger.log_editor_trace([&]() {
+        return "DEBUG: new host_window: " + std::to_string(new_host_window);
+    });
 
     // We need to readjust the event masks for the new host window, keeping the
     // (very probable) possibility in mind that the old host window is the same
@@ -801,13 +821,13 @@ void Editor::send_xembed_message(xcb_window_t window,
 }
 
 void Editor::do_reparent() const {
-    // TODO: When rebasing this, we should keep in the error logging for when
-    //       the reparent fails
     const xcb_void_cookie_t reparent_cookie = xcb_reparent_window_checked(
         x11_connection.get(), wine_window, parent_window, 0, 0);
     if (std::unique_ptr<xcb_generic_error_t> reparent_error(
             xcb_request_check(x11_connection.get(), reparent_cookie));
         reparent_error) {
+        // When the reparent fails, we always want to log this, regardless of
+        // whether or not `YABRIDGE_DEBUG_LEVEL` contains `+editor`
         std::cerr << "DEBUG: Reparent failed:" << std::endl;
         std::cerr << "Error code: " << reparent_error->error_code << std::endl;
         std::cerr << "Major code: " << reparent_error->major_code << std::endl;
