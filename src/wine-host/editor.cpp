@@ -414,10 +414,6 @@ void Editor::handle_x11_events() noexcept {
                generic_event != nullptr) {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
-            logger.log_editor_trace([&]() {
-                return "DEBUG: X11 event " + std::to_string(event_type);
-            });
-
             switch (event_type) {
                 // NOTE: When reopening a closed editor window in REAPER, REAPER
                 //       will initialize the editor first, and only then will it
