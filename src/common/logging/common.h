@@ -122,10 +122,13 @@ class Logger {
      *   differentiate between the Wine process and the Linux VST plugin.
      * @param stream If specified, disregard `YABRIDGE_DEBUG_FILE` and output
      *   the log to this stream isntead.
+     * @param prefix_timestamp Whether to prefix every log message with a
+     *   timestamp.
      */
     static Logger create_from_environment(
         std::string prefix = "",
-        std::shared_ptr<std::ostream> stream = nullptr);
+        std::shared_ptr<std::ostream> stream = nullptr,
+        bool prefix_timestamp = true);
 
     /**
      * Create a special logger instance that outputs directly to STDERR without

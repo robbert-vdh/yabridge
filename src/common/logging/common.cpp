@@ -58,7 +58,8 @@ Logger::Logger(std::shared_ptr<std::ostream> stream,
       prefix_timestamp(prefix_timestamp) {}
 
 Logger Logger::create_from_environment(std::string prefix,
-                                       std::shared_ptr<std::ostream> stream) {
+                                       std::shared_ptr<std::ostream> stream,
+                                       bool prefix_timestamp) {
     bp::environment env = boost::this_process::environment();
     const std::string file_path =
         env[logging_file_environment_variable].to_string();
@@ -103,7 +104,8 @@ Logger Logger::create_from_environment(std::string prefix,
         }
     }
 
-    return Logger(stream, verbosity_level, editor_tracing, prefix);
+    return Logger(stream, verbosity_level, editor_tracing, prefix,
+                  prefix_timestamp);
 }
 
 Logger Logger::create_wine_stderr() {
@@ -111,7 +113,7 @@ Logger Logger::create_wine_stderr() {
     // we want the STDERR redirection from the group host processes to still
     // function here
     return create_from_environment(
-        "", std::shared_ptr<std::ostream>(&std::cerr, [](auto*) {}));
+        "", std::shared_ptr<std::ostream>(&std::cerr, [](auto*) {}), false);
 }
 
 void Logger::log(const std::string& message) {
