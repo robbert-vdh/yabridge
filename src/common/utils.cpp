@@ -100,7 +100,7 @@ bool pid_running(pid_t pid) {
     // NOTE: We can get a `EACCES` here if we don't have permissions to read
     //       this process's memory. This does mean that the process is still
     //       running.
-    return err.failed() || err.value() == EACCES;
+    return !err.failed() || err.value() == EACCES;
 }
 
 std::string url_encode_path(std::string path) {
