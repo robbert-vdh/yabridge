@@ -102,7 +102,7 @@ class DeferredWin32Window {
      */
     DeferredWin32Window(MainContext& main_context,
                         std::shared_ptr<xcb_connection_t> x11_connection,
-                        HWND window) noexcept;
+                        HWND window);
 
     /**
      * Post a `WM_CLOSE` message to the `handle`'s message queue as described
@@ -115,6 +115,9 @@ class DeferredWin32Window {
    private:
     MainContext& main_context;
     std::shared_ptr<xcb_connection_t> x11_connection;
+
+    const xcb_window_t wine_window;
+    const xcb_window_t root_window;
 };
 
 /**
