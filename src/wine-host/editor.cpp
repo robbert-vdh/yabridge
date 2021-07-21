@@ -66,6 +66,17 @@ constexpr uint32_t parent_event_mask =
     XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW;
 
 /**
+ * The X11 event mask for our wrapper window.
+ *
+ * NOTE: The only reason we need this structure notify mask is because Tracktion
+ *       Waveform offsets our window a bit vertically, so we need to catch that
+ *       `ConfigureNotify` event or else the mouse clicks would be offset
+ *       slightly when the mouse is already inside of the editor window when
+ *       opening it.
+ */
+constexpr uint32_t wrapper_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+
+/**
  * The name of the X11 property on the root window used to denote the active
  * window in EWMH compliant window managers.
  */
@@ -381,6 +392,8 @@ Editor::Editor(MainContext& main_context,
                                  XCB_CW_EVENT_MASK, &host_event_mask);
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
+    xcb_change_window_attributes(x11_connection.get(), wrapper_window.window,
+                                 XCB_CW_EVENT_MASK, &wrapper_event_mask);
     xcb_flush(x11_connection.get());
 
     // First reparent our dumb wrapper window to the host's window, and then
@@ -491,7 +504,8 @@ void Editor::handle_x11_events() noexcept {
                     });
 
                     if (event->window == host_window ||
-                        event->window == parent_window) {
+                        event->window == parent_window ||
+                        event->window == wrapper_window.window) {
                         if (!use_xembed) {
                             fix_local_coordinates();
                         }
