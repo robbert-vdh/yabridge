@@ -56,8 +56,10 @@ constexpr uint32_t host_event_mask =
     XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_VISIBILITY_CHANGE;
 
 /**
- * The X11 event mask for the parent window. We need this structure notify here
- * as well to detect reparents.
+ * The X11 event mask for the parent window. We'll use this for input focus
+ * grabbing (we'll receive the `EnterNotify` and `LeaveNotify` events for
+ * `wrapper_window`). We also need this structure notify here as well to detect
+ * reparents.
  */
 constexpr uint32_t parent_event_mask =
     host_event_mask | XCB_EVENT_MASK_FOCUS_CHANGE |
@@ -545,15 +547,18 @@ void Editor::handle_x11_events() noexcept {
                         });
                     }
 
-                    if (window == parent_window && !use_xembed) {
-                        fix_local_coordinates();
+                    if (window == parent_window ||
+                        window == wrapper_window.window) {
+                        if (!use_xembed) {
+                            fix_local_coordinates();
+                        }
                     }
 
                     // In case the WM somehow does not support
                     // `_NET_ACTIVE_WINDOW`, a more naive focus grabbing method
                     // implemented in the `WM_PARENTNOTIFY` handler will be
                     // used.
-                    if (window == wine_window &&
+                    if (window == wrapper_window.window &&
                         supports_ewmh_active_window() &&
                         is_wine_window_active()) {
                         set_input_focus(true);
@@ -585,7 +590,7 @@ void Editor::handle_x11_events() noexcept {
                     // with an actual Win32 dropdown menu). Without this check
                     // these fake dropdowns would immediately close when
                     // hovering over them.
-                    if (event->child == wine_window &&
+                    if (event->child == wrapper_window.window &&
                         event->detail != XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL &&
                         supports_ewmh_active_window() &&
                         is_wine_window_active()) {
