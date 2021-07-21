@@ -307,6 +307,44 @@ class Editor {
     WineXdndProxy::Handle dnd_proxy_handle;
 
     /**
+     * The atom corresponding to `WM_STATE`.
+     */
+    xcb_atom_t xcb_wm_state_property;
+    /**
+     * The window handle of the editor window created by the DAW.
+     */
+    const xcb_window_t parent_window;
+    /**
+     * The toplevel X11 window `parent_window` is contained in, or
+     * `parent_window` if the host doesn't do any fancy window embedding. We'll
+     * find this by looking for the topmost ancestor window of `parent_window`
+     * that has `WM_STATE` set. This is similar to how `xprop` and `xwininfo`
+     * select windows. In most cases this is going to be the same as
+     * `parent_window`, but some DAWs (such as REAPER) embed `parent_window`
+     * into another window. We have to listen for configuration changes on this
+     * topmost window to know when the window is being dragged around, and when
+     * returning keyboard focus to the host we'll focus this window.
+     *
+     * NOTE: When reopening a REAPER FX window that has previously been closed,
+     *       REAPER will initialize the first plugin's editor first before
+     *       opening the window. This means that the topmost FX window doesn't
+     *       actually exist yet at that point, so we need to redetect this
+     *       later.
+     * NOTE: Taking the very topmost window is not an option, because for some
+     *       reason REAPER will only process keyboard input for that window when
+     *       the mouse is within the window.
+     */
+    xcb_window_t host_window;
+
+    /**
+     * A window that sits between `parent_window` and `wine_window`. The entire
+     * purpose of this is to prevent the host from responding to the
+     * `ConfigureNotify` events we send to `wine_window` when the host
+     * subscribes to `SubStructureNotify` events on `parent_window`.
+     */
+    X11Window wrapper_window;
+
+    /**
      * The Wine window's client area, or the maximum size of that window. This
      * will be set to a size that's large enough to be able to enter full screen
      * on a single display. This is more of a theoretical maximum size, as the
@@ -322,6 +360,10 @@ class Editor {
      * embed itself in.
      */
     DeferredWin32Window win32_window;
+    /**
+     * The X11 window handle of the window belonging to `win32_window`.
+     */
+    const xcb_window_t wine_window;
 
     /**
      * A child window embedded inside of `win32_window`. This is only used if
@@ -349,48 +391,6 @@ class Editor {
      * being blocked.
      */
     std::optional<fu2::unique_function<void()>> idle_timer_proc;
-
-    /**
-     * The atom corresponding to `WM_STATE`.
-     */
-    xcb_atom_t xcb_wm_state_property;
-
-    /**
-     * The window handle of the editor window created by the DAW.
-     */
-    const xcb_window_t parent_window;
-    /**
-     * A window that sits between `parent_window` and `wine_window`. The entire
-     * purpose of this is to prevent the host from responding to the
-     * `ConfigureNotify` events we send to `wine_window` when the host
-     * subscribes to `SubStructureNotify` events on `parent_window`.
-     */
-    X11Window wrapper_window;
-    /**
-     * The X11 window handle of the window belonging to `win32_window`.
-     */
-    const xcb_window_t wine_window;
-    /**
-     * The toplevel X11 window `parent_window` is contained in, or
-     * `parent_window` if the host doesn't do any fancy window embedding. We'll
-     * find this by looking for the topmost ancestor window of `parent_window`
-     * that has `WM_STATE` set. This is similar to how `xprop` and `xwininfo`
-     * select windows. In most cases this is going to be the same as
-     * `parent_window`, but some DAWs (such as REAPER) embed `parent_window`
-     * into another window. We have to listen for configuration changes on this
-     * topmost window to know when the window is being dragged around, and when
-     * returning keyboard focus to the host we'll focus this window.
-     *
-     * NOTE: When reopening a REAPER FX window that has previously been closed,
-     *       REAPER will initialize the first plugin's editor first before
-     *       opening the window. This means that the topmost FX window doesn't
-     *       actually exist yet at that point, so we need to redetect this
-     *       later.
-     * NOTE: Taking the very topmost window is not an option, because for some
-     *       reason REAPER will only process keyboard input for that window when
-     *       the mouse is within the window.
-     */
-    xcb_window_t host_window;
 
     /**
      * The atom corresponding to `_NET_ACTIVE_WINDOW`.
