@@ -21,6 +21,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   about the plugin editor window. This can be useful for diagnosing DAW or
   window manager specific issues.
 
+### Changed
+
+- The way editor embedding works has been rewritten. Yabridge now inserts a
+  wrapper window between the host's parent window and the embedded Wine window.
+  This should get rid of all rare edge cases where the host ignores the size
+  reported by the plugin and instead grows the editor window to cover the entire
+  screen.
+
 ### Fixed
 
 - Fixed crashes or freezes when a plugin uses the Windows drag-and-drop system
@@ -37,6 +45,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   cause **Ardour** or **Mixbus** to freeze in very specific circumstances.
 - Worked around a race condition in _Nimble Kick_, which would trigger a stack
   overflow when loading the plugin if it wasn't already activated.
+- As mentioned above, it's now no longer possible for hosts to wrongly detect
+  the editor window size. This fixes a rare issue with **Ardour** on older XFCE
+  versions where the editor window would extend to cover the entire screen. A
+  similar issue also happened with **Carla** 2.3.1.
 - When the window manager somehow steals yabridge's window away from the host,
   yabridge will now try to steal it back and reparent it to the host's window
   again. This very rarely happened with some window managers, like XFWM, and
