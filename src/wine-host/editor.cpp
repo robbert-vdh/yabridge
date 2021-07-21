@@ -190,7 +190,6 @@ DeferredWin32Window::~DeferredWin32Window() noexcept {
         const xcb_window_t wine_window = get_x11_handle(handle);
         const xcb_window_t root_window =
             get_root_window(*x11_connection, wine_window);
-        xcb_unmap_window(x11_connection.get(), wine_window);
         xcb_reparent_window(x11_connection.get(), wine_window, root_window, 0,
                             0);
     } catch (const std::runtime_error& error) {
@@ -243,31 +242,6 @@ Editor::Editor(MainContext& main_context,
       logger(logger),
       x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
       dnd_proxy_handle(WineXdndProxy::get_handle()),
-      xcb_wm_state_property(
-          get_atom_by_name(*x11_connection, wm_state_property_name)),
-      parent_window(parent_window_handle),
-      host_window(find_host_window(*x11_connection,
-                                   parent_window,
-                                   xcb_wm_state_property)
-                      .value_or(parent_window)),
-      wrapper_window(
-          x11_connection,
-          [parent_window = parent_window](
-              std::shared_ptr<xcb_connection_t> x11_connection,
-              xcb_window_t window) {
-              xcb_generic_error_t* error = nullptr;
-              const xcb_query_tree_cookie_t query_cookie =
-                  xcb_query_tree(x11_connection.get(), parent_window);
-              const std::unique_ptr<xcb_query_tree_reply_t> query_reply(
-                  xcb_query_tree_reply(x11_connection.get(), query_cookie,
-                                       &error));
-              THROW_X11_ERROR(error);
-
-              xcb_create_window(x11_connection.get(), XCB_COPY_FROM_PARENT,
-                                window, query_reply->root, 0, 0, 128, 128, 0,
-                                XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                XCB_COPY_FROM_PARENT, 0, nullptr);
-          }),
       client_area(get_maximum_screen_dimensions(*x11_connection)),
       // Create a window without any decoratiosn for easy embedding. The
       // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to
@@ -301,7 +275,6 @@ Editor::Editor(MainContext& main_context,
                                   nullptr,
                                   GetModuleHandle(nullptr),
                                   this)),
-      wine_window(get_x11_handle(win32_window.handle)),
       // If `config.editor_double_embed` is set, then we'll also create a child
       // window in `win32_child_window`. If we do this before calling
       // `ShowWindow()` on `win32_window` we'll run into X11 errors.
@@ -315,7 +288,33 @@ Editor::Editor(MainContext& main_context,
                         config.event_loop_interval())
                         .count())
               : Win32Timer()),
-      idle_timer_proc(std::move(timer_proc)) {
+      idle_timer_proc(std::move(timer_proc)),
+      xcb_wm_state_property(
+          get_atom_by_name(*x11_connection, wm_state_property_name)),
+      parent_window(parent_window_handle),
+      wrapper_window(
+          x11_connection,
+          [parent_window = parent_window](
+              std::shared_ptr<xcb_connection_t> x11_connection,
+              xcb_window_t window) {
+              xcb_generic_error_t* error = nullptr;
+              const xcb_query_tree_cookie_t query_cookie =
+                  xcb_query_tree(x11_connection.get(), parent_window);
+              const std::unique_ptr<xcb_query_tree_reply_t> query_reply(
+                  xcb_query_tree_reply(x11_connection.get(), query_cookie,
+                                       &error));
+              THROW_X11_ERROR(error);
+
+              xcb_create_window(x11_connection.get(), XCB_COPY_FROM_PARENT,
+                                window, query_reply->root, 0, 0, 128, 128, 0,
+                                XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                                XCB_COPY_FROM_PARENT, 0, nullptr);
+          }),
+      wine_window(get_x11_handle(win32_window.handle)),
+      host_window(find_host_window(*x11_connection,
+                                   parent_window,
+                                   xcb_wm_state_property)
+                      .value_or(parent_window)) {
     logger.log_editor_trace(
         [&]() { return "DEBUG: host_window: " + std::to_string(host_window); });
     logger.log_editor_trace([&]() {
