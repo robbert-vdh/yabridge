@@ -190,6 +190,7 @@ DeferredWin32Window::~DeferredWin32Window() noexcept {
         const xcb_window_t wine_window = get_x11_handle(handle);
         const xcb_window_t root_window =
             get_root_window(*x11_connection, wine_window);
+        xcb_unmap_window(x11_connection.get(), wine_window);
         xcb_reparent_window(x11_connection.get(), wine_window, root_window, 0,
                             0);
     } catch (const std::runtime_error& error) {
