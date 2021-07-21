@@ -865,7 +865,10 @@ void Vst3Bridge::run() {
 
                     // Also resize our wrapper window if the plugin agreed to
                     // the new size
-                    if (result == Steinberg::kResultOk && instance.editor) {
+                    // NOTE: MeldaProduction plugins return `kResultFalse` even
+                    //       if they accept the resize, so we shouldn't check
+                    //       the result here
+                    if (instance.editor) {
                         instance.editor->resize(request.new_size.getWidth(),
                                                 request.new_size.getHeight());
                     }
