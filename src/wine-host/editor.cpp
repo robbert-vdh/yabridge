@@ -443,9 +443,8 @@ void Editor::handle_x11_events() noexcept {
                     //       recognized since the window will then cover the
                     //       entire screen (since that's what the client area
                     //       has been set to).
-                    if (event->window == parent_window ||
-                        (event->window == wine_window &&
-                         event->parent != parent_window)) {
+                    if (event->window == wine_window &&
+                        event->parent != parent_window) {
                         if (use_xembed) {
                             do_xembed();
                         } else {
