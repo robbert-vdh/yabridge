@@ -174,12 +174,10 @@ ATOM get_window_class() noexcept;
 DeferredWin32Window::DeferredWin32Window(
     MainContext& main_context,
     std::shared_ptr<xcb_connection_t> x11_connection,
-    HWND window)
+    HWND window) noexcept
     : handle(window),
       main_context(main_context),
-      x11_connection(x11_connection),
-      wine_window(get_x11_handle(handle)),
-      root_window(get_root_window(*x11_connection, wine_window)) {}
+      x11_connection(x11_connection) {}
 
 DeferredWin32Window::~DeferredWin32Window() noexcept {
     // NOTE: For some rason, Wine will sometimes try to delete a window twice if
@@ -188,7 +186,16 @@ DeferredWin32Window::~DeferredWin32Window() noexcept {
     //       iZotope Rx plugins. In Renoise this would otherwise trigger an X11
     //       error every time you close such a plugin's editor, and in other
     //       DAWs I've also seen it happen from time to time.
-    xcb_reparent_window(x11_connection.get(), wine_window, root_window, 0, 0);
+    try {
+        const xcb_window_t wine_window = get_x11_handle(handle);
+        const xcb_window_t root_window =
+            get_root_window(*x11_connection, wine_window);
+        xcb_reparent_window(x11_connection.get(), wine_window, root_window, 0,
+                            0);
+    } catch (const std::runtime_error& error) {
+        // If we can't reparent the window (or, well, fetch the root window),
+        // then that's not a big deal here
+    }
 
     // XXX: We are already deferring this closing by posting `WM_CLOSE` to the
     //      message loop instead of calling `DestroyWindow()` ourselves, but we
