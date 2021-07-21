@@ -884,8 +884,6 @@ void Editor::do_xembed() const {
         return;
     }
 
-    // TODO: Test if XEmbed still works, or if it maybe works better now
-
     // If we're embedding using XEmbed, then we'll have to go through the whole
     // XEmbed dance here. See the spec for more information on how this works:
     // https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html#lifecycle

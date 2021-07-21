@@ -777,14 +777,15 @@ void Vst3Bridge::run() {
             },
             [&](const YaPlugView::Removed& request)
                 -> YaPlugView::Removed::Response {
+                Vst3PluginInstance& instance =
+                    object_instances.at(request.owner_instance_id);
+
                 return main_context
                     .run_in_context([&]() -> tresult {
                         // Cleanup is handled through RAII
                         const tresult result =
-                            object_instances.at(request.owner_instance_id)
-                                .plug_view_instance->plug_view->removed();
-                        object_instances.at(request.owner_instance_id)
-                            .editor.reset();
+                            instance.plug_view_instance->plug_view->removed();
+                        instance.editor.reset();
 
                         return result;
                     })
