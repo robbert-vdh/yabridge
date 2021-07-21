@@ -88,7 +88,7 @@ struct Size {
  * This is essentially an alternative around `std::unique_ptr` with a non-static
  * custom deleter.
  */
-class DeferredWindow {
+class DeferredWin32Window {
    public:
     /**
      * Manage a window so that it will be asynchronously closed when this object
@@ -100,15 +100,15 @@ class DeferredWindow {
      *   editor.
      * @param window A `HWND` obtained through a call to `CreateWindowEx`
      */
-    DeferredWindow(MainContext& main_context,
-                   std::shared_ptr<xcb_connection_t> x11_connection,
-                   HWND window) noexcept;
+    DeferredWin32Window(MainContext& main_context,
+                        std::shared_ptr<xcb_connection_t> x11_connection,
+                        HWND window) noexcept;
 
     /**
      * Post a `WM_CLOSE` message to the `handle`'s message queue as described
      * above.
      */
-    ~DeferredWindow() noexcept;
+    ~DeferredWin32Window() noexcept;
 
     const HWND handle;
 
@@ -292,7 +292,7 @@ class Editor {
      * The handle for the window created through Wine that the plugin uses to
      * embed itself in.
      */
-    DeferredWindow win32_window;
+    DeferredWin32Window win32_window;
 
     /**
      * A child window embedded inside of `win32_window`. This is only used if
@@ -302,7 +302,7 @@ class Editor {
      * of the readme for more details). The plugin should then embed itself
      * within this child window.
      */
-    std::optional<DeferredWindow> win32_child_window;
+    std::optional<DeferredWin32Window> win32_child_window;
 
     /**
      * A timer we'll use to periodically run `idle_timer_proc`, if set. Thisi is

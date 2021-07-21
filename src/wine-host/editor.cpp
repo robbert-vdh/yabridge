@@ -177,14 +177,15 @@ xcb_window_t get_x11_handle(HWND win32_handle) noexcept;
  */
 ATOM get_window_class() noexcept;
 
-DeferredWindow::DeferredWindow(MainContext& main_context,
-                               std::shared_ptr<xcb_connection_t> x11_connection,
-                               HWND window) noexcept
+DeferredWin32Window::DeferredWin32Window(
+    MainContext& main_context,
+    std::shared_ptr<xcb_connection_t> x11_connection,
+    HWND window) noexcept
     : handle(window),
       main_context(main_context),
       x11_connection(x11_connection) {}
 
-DeferredWindow::~DeferredWindow() noexcept {
+DeferredWin32Window::~DeferredWin32Window() noexcept {
     // NOTE: For some rason, Wine will sometimes try to delete a window twice if
     //       the parent window no longer exists. I've only seen this cause
     //       issues with plugins that hang when their window is hidden, like the
