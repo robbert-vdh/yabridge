@@ -524,10 +524,6 @@ void Editor::handle_x11_events() noexcept {
                 // dialog, since that often won't trigger an `EnterNotify'.
                 case XCB_ENTER_NOTIFY:
                 case XCB_FOCUS_IN: {
-                    if (!use_xembed) {
-                        fix_local_coordinates();
-                    }
-
                     const xcb_window_t window =
                         event_type == XCB_ENTER_NOTIFY
                             ? reinterpret_cast<xcb_enter_notify_event_t*>(
@@ -547,6 +543,10 @@ void Editor::handle_x11_events() noexcept {
                             return "DEBUG: FocusIn for window " +
                                    std::to_string(window);
                         });
+                    }
+
+                    if (window == parent_window && !use_xembed) {
+                        fix_local_coordinates();
                     }
 
                     // In case the WM somehow does not support
