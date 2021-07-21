@@ -1202,10 +1202,6 @@ void Vst3Bridge::handle_x11_events() noexcept {
     }
 }
 
-void Vst3Bridge::close_sockets() {
-    sockets.close();
-}
-
 void Vst3Bridge::register_context_menu(Vst3ContextMenuProxyImpl& context_menu) {
     std::lock_guard lock(object_instances.at(context_menu.owner_instance_id())
                              .registered_context_menus_mutex);
@@ -1223,6 +1219,10 @@ void Vst3Bridge::unregister_context_menu(size_t object_instance_id,
 
     object_instances.at(object_instance_id)
         .registered_context_menus.erase(context_menu_id);
+}
+
+void Vst3Bridge::close_sockets() {
+    sockets.close();
 }
 
 size_t Vst3Bridge::generate_instance_id() noexcept {

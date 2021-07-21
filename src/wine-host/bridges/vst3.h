@@ -292,6 +292,21 @@ class Vst3Bridge : public HostBridge {
 
     void handle_x11_events() noexcept override;
 
+    /**
+     * Register a context with with `context_menu`'s ID and owner in
+     * `object_instances`. This will be called during the constructor of
+     * `Vst3ContextMenuProxyImpl` so we can refer to the exact instance later.
+     */
+    void register_context_menu(Vst3ContextMenuProxyImpl& context_menu);
+
+    /**
+     * Remove a previously registered context menu from `object_instances`. This
+     * is called from the destructor of `Vst3ContextMenuProxyImpl` just before
+     * the object gets freed.
+     */
+    void unregister_context_menu(size_t object_instance_id,
+                                 size_t context_menu_id);
+
    protected:
     void close_sockets() override;
 
@@ -390,21 +405,6 @@ class Vst3Bridge : public HostBridge {
             return mutual_recursion.handle(std::forward<F>(fn));
         }
     }
-
-    /**
-     * Register a context with with `context_menu`'s ID and owner in
-     * `object_instances`. This will be called during the constructor of
-     * `Vst3ContextMenuProxyImpl` so we can refer to the exact instance later.
-     */
-    void register_context_menu(Vst3ContextMenuProxyImpl& context_menu);
-
-    /**
-     * Remove a previously registered context menu from `object_instances`. This
-     * is called from the destructor of `Vst3ContextMenuProxyImpl` just before
-     * the object gets freed.
-     */
-    void unregister_context_menu(size_t object_instance_id,
-                                 size_t context_menu_id);
 
     /**
      * A logger instance we'll use to log about failed
