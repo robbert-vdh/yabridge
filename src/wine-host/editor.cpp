@@ -64,12 +64,6 @@ constexpr uint32_t parent_event_mask =
     XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW;
 
 /**
- * The X11 event mask for the Wine window. We'll use this to detect if the
- * Window manager somehow steals the Wine window.
- */
-constexpr uint32_t wine_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-
-/**
  * The name of the X11 property on the root window used to denote the active
  * window in EWMH compliant window managers.
  */
@@ -384,9 +378,6 @@ Editor::Editor(MainContext& main_context,
                                  XCB_CW_EVENT_MASK, &host_event_mask);
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
-    // We currently dont listen for any events on `wrapper_window`
-    xcb_change_window_attributes(x11_connection.get(), wine_window,
-                                 XCB_CW_EVENT_MASK, &wine_event_mask);
     xcb_flush(x11_connection.get());
 
     // First reparent our dumb wrapper window to the host's window, and then
@@ -478,20 +469,6 @@ void Editor::handle_x11_events() noexcept {
                     });
 
                     redetect_host_window();
-
-                    // NOTE: Some window managers like to steal the window, so
-                    //       we must prevent that. This situation is easily
-                    //       recognized since the window will then cover the
-                    //       entire screen (since that's what the client area
-                    //       has been set to).
-                    if (event->window == wine_window &&
-                        event->parent != wrapper_window.window) {
-                        if (use_xembed) {
-                            do_xembed();
-                        } else {
-                            do_reparent(wine_window, wrapper_window.window);
-                        }
-                    }
                 } break;
                 // We're listening for `ConfigureNotify` events on the host's
                 //  window (i.e. the window that's actually going to get dragged

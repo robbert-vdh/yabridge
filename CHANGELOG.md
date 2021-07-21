@@ -49,10 +49,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   the editor window size. This fixes a rare issue with **Ardour** on older XFCE
   versions where the editor window would extend to cover the entire screen. A
   similar issue also happened with **Carla** 2.3.1.
-- When the window manager somehow steals yabridge's window away from the host,
-  yabridge will now try to steal it back and reparent it to the host's window
-  again. This very rarely happened with some window managers, like XFWM, and
-  only in certain DAWs like **Ardour**.
 - Possibly fixed an obscure error where the editor would not render when using
   multiple displays, and the rightmost display was set as primary. This issue is
   very rare, and I haven't gotten any response back when I asked the people
