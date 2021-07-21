@@ -824,7 +824,8 @@ void Editor::do_reparent() const {
         reparent_error) {
         // When the reparent fails, we always want to log this, regardless of
         // whether or not `YABRIDGE_DEBUG_LEVEL` contains `+editor`
-        std::cerr << "DEBUG: Reparent failed:" << std::endl;
+        std::cerr << "DEBUG: Reparenting " << wine_window << " to "
+                  << parent_window << " failed:" << std::endl;
         std::cerr << "Error code: " << reparent_error->error_code << std::endl;
         std::cerr << "Major code: " << reparent_error->major_code << std::endl;
         std::cerr << "Minor code: " << reparent_error->minor_code << std::endl;
@@ -852,7 +853,10 @@ void Editor::do_reparent() const {
             }
         }
     } else {
-        std::cerr << "DEBUG: Reparent succeeded" << std::endl;
+        logger.log_editor_trace([&]() {
+            return "DEBUG: Reparenting " + std::to_string(wine_window) +
+                   " to " + std::to_string(parent_window) + " succeeded";
+        });
     }
 
     xcb_flush(x11_connection.get());
