@@ -298,6 +298,24 @@ Editor::Editor(MainContext& main_context,
       xcb_wm_state_property(
           get_atom_by_name(*x11_connection, wm_state_property_name)),
       parent_window(parent_window_handle),
+      wrapper_window(
+          x11_connection,
+          [parent_window = parent_window](
+              std::shared_ptr<xcb_connection_t> x11_connection,
+              xcb_window_t window) {
+              xcb_generic_error_t* error = nullptr;
+              const xcb_query_tree_cookie_t query_cookie =
+                  xcb_query_tree(x11_connection.get(), parent_window);
+              const std::unique_ptr<xcb_query_tree_reply_t> query_reply(
+                  xcb_query_tree_reply(x11_connection.get(), query_cookie,
+                                       &error));
+              THROW_X11_ERROR(error);
+
+              xcb_create_window(x11_connection.get(), XCB_COPY_FROM_PARENT,
+                                window, query_reply->root, 0, 0, 128, 128, 0,
+                                XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                                XCB_COPY_FROM_PARENT, 0, nullptr);
+          }),
       wine_window(get_x11_handle(win32_window.handle)),
       host_window(find_host_window(*x11_connection,
                                    parent_window,
@@ -307,6 +325,10 @@ Editor::Editor(MainContext& main_context,
         [&]() { return "DEBUG: host_window: " + std::to_string(host_window); });
     logger.log_editor_trace([&]() {
         return "DEBUG: parent_window: " + std::to_string(parent_window);
+    });
+    logger.log_editor_trace([&]() {
+        return "DEBUG: wrapper_window: " +
+               std::to_string(wrapper_window.window);
     });
     logger.log_editor_trace(
         [&]() { return "DEBUG: wine_window: " + std::to_string(wine_window); });
@@ -342,10 +364,7 @@ Editor::Editor(MainContext& main_context,
     }
 
     // When using XEmbed we'll need the atoms for the corresponding properties
-    if (use_xembed) {
-        xcb_xembed_message =
-            get_atom_by_name(*x11_connection, xembed_message_name);
-    }
+    xcb_xembed_message = get_atom_by_name(*x11_connection, xembed_message_name);
 
     // When not using XEmbed, Wine will interpret any local coordinates as
     // global coordinates. To work around this we'll tell the Wine window it's
@@ -365,8 +384,15 @@ Editor::Editor(MainContext& main_context,
                                  XCB_CW_EVENT_MASK, &host_event_mask);
     xcb_change_window_attributes(x11_connection.get(), parent_window,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
+    // We currently dont listen for any events on `wrapper_window`
     xcb_change_window_attributes(x11_connection.get(), wine_window,
                                  XCB_CW_EVENT_MASK, &wine_event_mask);
+    xcb_flush(x11_connection.get());
+
+    // First reparent our dumb wrapper window to the host's window, and then
+    // embed the Wine window into our wrapper window
+    do_reparent(wrapper_window.window, parent_window);
+    xcb_map_window(x11_connection.get(), wrapper_window.window);
     xcb_flush(x11_connection.get());
 
     if (use_xembed) {
@@ -380,7 +406,7 @@ Editor::Editor(MainContext& main_context,
         // of using the XEmbed protocol, we'll register a few events and manage
         // the child window ourselves. This is a hack to work around the issue's
         // described in `Editor`'s docstring'.
-        do_reparent();
+        do_reparent(wine_window, wrapper_window.window);
 
         // If we're using the double embedding option, then the child window
         // should only be created after the parent window is visible
@@ -445,11 +471,11 @@ void Editor::handle_x11_events() noexcept {
                     //       entire screen (since that's what the client area
                     //       has been set to).
                     if (event->window == wine_window &&
-                        event->parent != parent_window) {
+                        event->parent != wrapper_window.window) {
                         if (use_xembed) {
                             do_xembed();
                         } else {
-                            do_reparent();
+                            do_reparent(wine_window, wrapper_window.window);
                         }
                     }
                 } break;
@@ -816,16 +842,16 @@ void Editor::send_xembed_message(xcb_window_t window,
                    reinterpret_cast<char*>(&event));
 }
 
-void Editor::do_reparent() const {
+void Editor::do_reparent(xcb_window_t child, xcb_window_t new_parent) const {
     const xcb_void_cookie_t reparent_cookie = xcb_reparent_window_checked(
-        x11_connection.get(), wine_window, parent_window, 0, 0);
+        x11_connection.get(), child, new_parent, 0, 0);
     if (std::unique_ptr<xcb_generic_error_t> reparent_error(
             xcb_request_check(x11_connection.get(), reparent_cookie));
         reparent_error) {
         // When the reparent fails, we always want to log this, regardless of
         // whether or not `YABRIDGE_DEBUG_LEVEL` contains `+editor`
-        std::cerr << "DEBUG: Reparenting " << wine_window << " to "
-                  << parent_window << " failed:" << std::endl;
+        std::cerr << "DEBUG: Reparenting " << child << " to " << new_parent
+                  << " failed:" << std::endl;
         std::cerr << "Error code: " << reparent_error->error_code << std::endl;
         std::cerr << "Major code: " << reparent_error->major_code << std::endl;
         std::cerr << "Minor code: " << reparent_error->minor_code << std::endl;
@@ -834,7 +860,7 @@ void Editor::do_reparent() const {
         // fail according to the spec in advance
         xcb_generic_error_t* error = nullptr;
         const xcb_query_pointer_cookie_t query_pointer_cookie =
-            xcb_query_pointer(x11_connection.get(), wine_window);
+            xcb_query_pointer(x11_connection.get(), child);
         const std::unique_ptr<xcb_query_pointer_reply_t> query_pointer_reply(
             xcb_query_pointer_reply(x11_connection.get(), query_pointer_cookie,
                                     &error));
@@ -854,8 +880,8 @@ void Editor::do_reparent() const {
         }
     } else {
         logger.log_editor_trace([&]() {
-            return "DEBUG: Reparenting " + std::to_string(wine_window) +
-                   " to " + std::to_string(parent_window) + " succeeded";
+            return "DEBUG: Reparenting " + std::to_string(child) + " to " +
+                   std::to_string(new_parent) + " succeeded";
         });
     }
 
@@ -867,14 +893,16 @@ void Editor::do_xembed() const {
         return;
     }
 
+    // TODO: Test if XEmbed still works, or if it maybe works better now
+
     // If we're embedding using XEmbed, then we'll have to go through the whole
     // XEmbed dance here. See the spec for more information on how this works:
     // https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html#lifecycle
-    do_reparent();
+    do_reparent(wine_window, wrapper_window.window);
 
     // Let the Wine window know it's being embedded into the parent window
     send_xembed_message(wine_window, xembed_embedded_notify_msg, 0,
-                        parent_window, xembed_protocol_version);
+                        wrapper_window.window, xembed_protocol_version);
     send_xembed_message(wine_window, xembed_focus_in_msg, xembed_focus_first, 0,
                         0);
     send_xembed_message(wine_window, xembed_window_activate_msg, 0, 0, 0);
@@ -1093,7 +1121,7 @@ xcb_window_t get_root_window(xcb_connection_t& x11_connection,
     xcb_generic_error_t* error = nullptr;
     const xcb_query_tree_cookie_t query_cookie =
         xcb_query_tree(&x11_connection, window);
-    std::unique_ptr<xcb_query_tree_reply_t> query_reply(
+    const std::unique_ptr<xcb_query_tree_reply_t> query_reply(
         xcb_query_tree_reply(&x11_connection, query_cookie, &error));
     THROW_X11_ERROR(error);
 

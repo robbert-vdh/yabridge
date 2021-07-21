@@ -136,6 +136,29 @@ class DeferredWin32Window {
  *
  * As of yabridge 3.0 XEmbed is back as an option, but it's disabled by default
  * because of the issues mentioned above.
+ *
+ * In yabridge 3.5.0 we added another layer to the embedding structure. This is
+ * to prevent the host from directly using the size of `wine_window`, which has
+ * a client area the size of the entire root window so the window can resized
+ * and fullscreened at will. Some hosts, like Carla 2.3.1 (this didn't happen in
+ * earlier versions), may directly resize their editor window depending on the
+ * child window's size even without using XEmbed. To combat this, we need to
+ * manually manage a window that sits in between the parent window and wine's
+ * window. The embedding structure thus ends up looking like:
+ *
+ * ```
+ * [host_window ->] parent_window -> wrapper_window -> wine_window
+ * ```
+ *
+ * Where `host_window` and `parent_window` may be the same window (which will be
+ * the case for most hosts), and `wine_window` is the X11 window backing the
+ * window we created using `CreateWindowEx()`. We will need to manually resize
+ * `wrapper_window` to match size changes coming from and going to the plugin
+ * belonging to `wine_window`.
+ *
+ * TODO: Check if we can remove the double embed option after implementing this
+ * TODO: Update architecture document
+ * TODO: Add Ardour, Renoise 3.3, and Carla 3.3.1 in the changelog if this works
  */
 class Editor {
    public:
@@ -251,9 +274,9 @@ class Editor {
                              uint32_t data2) const noexcept;
 
     /**
-     * Reparent `wine_window` to `parent_window`. This includes the flush.
+     * Reparent `child` to `new_parent`. This includes the flush.
      */
-    void do_reparent() const;
+    void do_reparent(xcb_window_t child, xcb_window_t new_parent) const;
 
     /**
      * Start the XEmbed procedure when `use_xembed` is enabled. This should be
@@ -331,7 +354,14 @@ class Editor {
      */
     const xcb_window_t parent_window;
     /**
-     * The X11 window handle of the window belonging to  `win32_window`.
+     * A window that sits between `parent_window` and `wine_window`. The entire
+     * purpose of this is to prevent the host from responding to the
+     * `ConfigureNotify` events we send to `wine_window` when the host
+     * subscribes to `SubStructureNotify` events on `parent_window`.
+     */
+    X11Window wrapper_window;
+    /**
+     * The X11 window handle of the window belonging to `win32_window`.
      */
     const xcb_window_t wine_window;
     /**
