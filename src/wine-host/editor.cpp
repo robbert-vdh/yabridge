@@ -642,8 +642,8 @@ void Editor::fix_local_coordinates() const {
     //       here.
     xcb_generic_error_t* error = nullptr;
     const xcb_translate_coordinates_cookie_t translate_cookie =
-        xcb_translate_coordinates(x11_connection.get(), wine_window, root, 0,
-                                  0);
+        xcb_translate_coordinates(x11_connection.get(), wrapper_window.window,
+                                  root, 0, 0);
     const std::unique_ptr<xcb_translate_coordinates_reply_t>
         translated_coordinates(xcb_translate_coordinates_reply(
             x11_connection.get(), translate_cookie, &error));
