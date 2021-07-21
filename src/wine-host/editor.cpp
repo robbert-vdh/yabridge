@@ -428,6 +428,20 @@ Editor::Editor(MainContext& main_context,
     }
 }
 
+void Editor::resize(uint16_t width, uint16_t height) noexcept {
+    logger.log_editor_trace([&]() {
+        return "DEBUG: Resizing wrapper window to " + std::to_string(width) +
+               "x" + std::to_string(height);
+    });
+
+    const uint16_t value_mask =
+        XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
+    const std::array<uint32_t, 2> values{width, height};
+    xcb_configure_window(x11_connection.get(), wrapper_window.window,
+                         value_mask, values.data());
+    xcb_flush(x11_connection.get());
+}
+
 void Editor::handle_x11_events() noexcept {
     // NOTE: Ardour will unmap the window instead of closing the editor. When
     //       the window is unmapped `wine_window` doesn't exist and any X11

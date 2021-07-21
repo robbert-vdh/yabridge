@@ -650,10 +650,10 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
                                    void* data,
                                    float option) {
     switch (opcode) {
+        // During a processing call we'll have already sent the current
+        // transport information from the plugin side to avoid an unnecessary
+        // callback
         case audioMasterGetTime: {
-            // During a processing call we'll have already sent the current
-            // transport information from the plugin side to avoid an
-            // unnecessary callback
             const VstTimeInfo* cached_time_info = time_info_cache.get();
             if (cached_time_info) {
                 // This cached value is temporary, so we'll still use the
@@ -671,8 +671,8 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
                 return result;
             }
         } break;
+        // We also send the current process level for similar reasons
         case audioMasterGetCurrentProcessLevel: {
-            // We also send the current process level for similar reasons
             const int* current_process_level = process_level_cache.get();
             if (current_process_level) {
                 logger.log_event(false, opcode, index, value, nullptr, option,
@@ -681,6 +681,13 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
                                           nullptr, std::nullopt, true);
 
                 return *current_process_level;
+            }
+        } break;
+        // If the plugin changes its window size, we'll also resize the wrapper
+        // window accordingly.
+        case audioMasterSizeWindow: {
+            if (editor) {
+                editor->resize(index, value);
             }
         } break;
     }
@@ -704,14 +711,14 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
     // main thread using `main_context.run_in_context()` (where we don't use
     // realtime scheduling).
     switch (opcode) {
-        case effSetBlockSize:
+        case effSetBlockSize: {
             // Used to initialize the shared audio buffers when handling
             // `effMainsChanged` in `Vst2Bridge::run()`
             max_samples_per_block = value;
 
             return plugin->dispatcher(plugin, opcode, index, value, data,
                                       option);
-            break;
+        } break;
         case effEditOpen: {
             // Create a Win32 window through Wine, embed it into the window
             // provided by the host, and let the plugin embed itself into
@@ -723,6 +730,16 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
                 [plugin = this->plugin]() {
                     plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0.0);
                 });
+
+            // Make sure the wrapper window has the correct initial size. The
+            // plugin can later change this size using `audioMasterSizeWindow`.
+            VstRect* editor_rect = nullptr;
+            plugin->dispatcher(plugin, effEditGetRect, 0, 0, &editor_rect, 0.0);
+            if (editor_rect) {
+                editor->resize(editor_rect->right - editor_rect->left,
+                               editor_rect->bottom - editor_rect->top);
+            }
+
             const intptr_t result =
                 plugin->dispatcher(plugin, opcode, index, value,
                                    editor_instance.get_win32_handle(), option);
@@ -737,7 +754,7 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
 
             return return_value;
         } break;
-        case effSetProcessPrecision:
+        case effSetProcessPrecision: {
             // Used to initialize the shared audio buffers when handling
             // `effMainsChanged` in `Vst2Bridge::run()`
             double_precision = value == kVstProcessPrecision64;
@@ -745,10 +762,12 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             return plugin->dispatcher(plugin, opcode, index, value, data,
                                       option);
             break;
-        default:
+        }
+        default: {
             return plugin->dispatcher(plugin, opcode, index, value, data,
                                       option);
             break;
+        }
     }
 }
 

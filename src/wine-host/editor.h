@@ -190,6 +190,13 @@ class Editor {
         std::optional<fu2::unique_function<void()>> timer_proc = std::nullopt);
 
     /**
+     * Resize the `wrapper_window` to this new size. We need to manually call
+     * this whenever the plugin requests a resize, or when the host resizes the
+     * window (using the plugin API). Before yabridge 3.5.0 this was implicit.
+     */
+    void resize(uint16_t width, uint16_t height) noexcept;
+
+    /**
      * Handle X11 events sent to the window our editor is embedded in.
      */
     void handle_x11_events() noexcept;
