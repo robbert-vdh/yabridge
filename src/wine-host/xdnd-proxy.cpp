@@ -89,30 +89,18 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK hWinEventHook,
 std::optional<xcb_keycode_t> find_escape_keycode(
     xcb_connection_t& x11_connection);
 
-ProxyWindow::ProxyWindow(std::shared_ptr<xcb_connection_t> x11_connection)
-    : x11_connection(x11_connection),
-      window(xcb_generate_id(x11_connection.get())) {
-    const xcb_screen_t* screen =
-        xcb_setup_roots_iterator(xcb_get_setup(x11_connection.get())).data;
-
-    xcb_create_window(x11_connection.get(), XCB_COPY_FROM_PARENT, window,
-                      screen->root, 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_ONLY,
-                      XCB_COPY_FROM_PARENT, 0, nullptr);
-    xcb_flush(x11_connection.get());
-}
-
-ProxyWindow::~ProxyWindow() noexcept {
+X11Window::~X11Window() noexcept {
     if (!is_moved) {
         xcb_destroy_window(x11_connection.get(), window);
         xcb_flush(x11_connection.get());
     }
 }
 
-ProxyWindow::ProxyWindow(ProxyWindow&& o) noexcept
+X11Window::X11Window(X11Window&& o) noexcept
     : x11_connection(std::move(o.x11_connection)), window(std::move(o.window)) {
     o.is_moved = true;
 }
-ProxyWindow& ProxyWindow::operator=(ProxyWindow&& o) noexcept {
+X11Window& X11Window::operator=(X11Window&& o) noexcept {
     if (&o != this) {
         x11_connection = std::move(o.x11_connection);
         window = std::move(o.window);
@@ -125,7 +113,19 @@ ProxyWindow& ProxyWindow::operator=(ProxyWindow&& o) noexcept {
 
 WineXdndProxy::WineXdndProxy()
     : x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
-      proxy_window(x11_connection),
+      proxy_window(
+          x11_connection,
+          [](std::shared_ptr<xcb_connection_t> x11_connection,
+             xcb_window_t window) {
+              const xcb_screen_t* screen =
+                  xcb_setup_roots_iterator(xcb_get_setup(x11_connection.get()))
+                      .data;
+
+              xcb_create_window(x11_connection.get(), XCB_COPY_FROM_PARENT,
+                                window, screen->root, 0, 0, 1, 1, 0,
+                                XCB_WINDOW_CLASS_INPUT_ONLY,
+                                XCB_COPY_FROM_PARENT, 0, nullptr);
+          }),
       hook_handle(
           SetWinEventHook(EVENT_OBJECT_CREATE,
                           EVENT_OBJECT_CREATE,

@@ -32,26 +32,38 @@
 #include "utils.h"
 
 /**
- * A simple, unmapped 1x1 proxy window we'll use for our Wine->X11 drag-and-drop
- * proxy so we can send and receive client messages.
+ * A RAII wrapper for creating an X11 window.
  */
-class ProxyWindow {
+class X11Window {
    public:
     /**
-     * Create the proxy window.
+     * Create the window.
+     *
+     * @param x11_connection The X11 connection to use for creating this window.
+     *   Events sent to the window will be received here.
+     * @param create_window_fn A function receiving the X11 connection and the
+     *   window ID that should call `xcb_create_window()`. The function doesn't
+     *   need to call `xcb_flush()`.
      */
-    ProxyWindow(std::shared_ptr<xcb_connection_t> x11_connection);
+    template <std::invocable<std::shared_ptr<xcb_connection_t>, xcb_window_t> F>
+    X11Window(std::shared_ptr<xcb_connection_t> x11_connection,
+              F&& create_window_fn)
+        : x11_connection(x11_connection),
+          window(xcb_generate_id(x11_connection.get())) {
+        create_window_fn(x11_connection, window);
+        xcb_flush(x11_connection.get());
+    }
 
     /**
      * Destroy the window again when this object gets dropped.
      */
-    ~ProxyWindow() noexcept;
+    ~X11Window() noexcept;
 
-    ProxyWindow(const ProxyWindow&) noexcept = delete;
-    ProxyWindow& operator=(const ProxyWindow&) noexcept = delete;
+    X11Window(const X11Window&) noexcept = delete;
+    X11Window& operator=(const X11Window&) noexcept = delete;
 
-    ProxyWindow(ProxyWindow&&) noexcept;
-    ProxyWindow& operator=(ProxyWindow&&) noexcept;
+    X11Window(X11Window&&) noexcept;
+    X11Window& operator=(X11Window&&) noexcept;
 
    private:
     std::shared_ptr<xcb_connection_t> x11_connection;
@@ -222,10 +234,10 @@ class WineXdndProxy {
     std::shared_ptr<xcb_connection_t> x11_connection;
 
     /**
-     * We need an unmapped proxy window to send and receive client messages for
-     * the XDND protocol.
+     * We need an unmapped 1x1 proxy window to send and receive client messages
+     * for the XDND protocol.
      */
-    ProxyWindow proxy_window;
+    X11Window proxy_window;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-attributes"
