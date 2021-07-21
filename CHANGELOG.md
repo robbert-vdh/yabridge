@@ -49,6 +49,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   the editor window size. This fixes a rare issue with **Ardour** on older XFCE
   versions where the editor window would extend to cover the entire screen. A
   similar issue also happened with **Carla** 2.3.1.
+- This change also fixes VST3 editors in **Ardour** not rendering past their
+  original size when resizing them from the plugin (as opposed to resizing the
+  actual window).
 - Possibly fixed an obscure error where the editor would not render when using
   multiple displays, and the rightmost display was set as primary. This issue is
   very rare, and I haven't gotten any response back when I asked the people

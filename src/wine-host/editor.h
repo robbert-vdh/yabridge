@@ -158,7 +158,6 @@ class DeferredWin32Window {
  *
  * TODO: Check if we can remove the double embed option after implementing this
  * TODO: Update architecture document
- * TODO: Add Ardour, Renoise 3.3, and Carla 3.3.1 in the changelog if this works
  */
 class Editor {
    public:
