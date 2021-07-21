@@ -293,6 +293,14 @@ class Vst3Bridge : public HostBridge {
     void handle_x11_events() noexcept override;
 
     /**
+     * If the plugin instance has an editor, resize the wrapper window to match
+     * the new size. This is called from `IPlugFrame::resizeView()` to make sure
+     * we do the resize before the request gets sent to the host.
+     */
+    bool maybe_resize_editor(size_t instance_id,
+                             const Steinberg::ViewRect& new_size);
+
+    /**
      * Register a context with with `context_menu`'s ID and owner in
      * `object_instances`. This will be called during the constructor of
      * `Vst3ContextMenuProxyImpl` so we can refer to the exact instance later.

@@ -43,6 +43,11 @@ Vst3PlugFrameProxyImpl::resizeView(Steinberg::IPlugView* /*view*/,
         //      assume `view` is the `IPlugView*` returned by the last call to
         //      `IEditController::createView()`
 
+        // Resize the editor wrapper window in advance. We will do another
+        // resize automatically on `IPlugView::onSize()`, but this should make
+        // resizes look a bit smoother.
+        bridge.maybe_resize_editor(owner_instance_id(), *newSize);
+
         // We have to use this special sending function here so we can handle
         // calls to `IPlugView::onSize()` from this same thread (the UI thread).
         // See the docstring for more information.

@@ -749,9 +749,17 @@ void Vst3Bridge::run() {
                                 editor_instance.get_win32_handle(),
                                 type.c_str());
 
-                        // Get rid of the editor again if the plugin didn't
-                        // embed itself in it
-                        if (result != Steinberg::kResultOk) {
+                        // Set the window's initial size according to what the
+                        // plugin reports. Otherwise get rid of the editor again
+                        // if the plugin didn't embed itself in it.
+                        if (result == Steinberg::kResultOk) {
+                            Steinberg::ViewRect size{};
+                            if (instance.plug_view_instance->plug_view->getSize(
+                                    &size) == Steinberg::kResultOk) {
+                                instance.editor->resize(size.getWidth(),
+                                                        size.getHeight());
+                            }
+                        } else {
                             instance.editor.reset();
                         }
 
@@ -837,6 +845,9 @@ void Vst3Bridge::run() {
                                                    .size = std::move(size)};
             },
             [&](YaPlugView::OnSize& request) -> YaPlugView::OnSize::Response {
+                Vst3PluginInstance& instance =
+                    object_instances.at(request.owner_instance_id);
+
                 // HACK: This function has to be run from the UI thread since
                 //       the plugin probably wants to redraw when it gets
                 //       resized. The issue here is that this function can be
@@ -847,9 +858,18 @@ void Vst3Bridge::run() {
                 //       response to the message it sent. See the docstring of
                 //       this function for more information on how this works.
                 return do_mutual_recursion_on_gui_thread([&]() -> tresult {
-                    return object_instances.at(request.owner_instance_id)
-                        .plug_view_instance->plug_view->onSize(
+                    const tresult result =
+                        instance.plug_view_instance->plug_view->onSize(
                             &request.new_size);
+
+                    // Also resize our wrapper window if the plugin agreed to
+                    // the new size
+                    if (result == Steinberg::kResultOk && instance.editor) {
+                        instance.editor->resize(request.new_size.getWidth(),
+                                                request.new_size.getHeight());
+                    }
+
+                    return result;
                 });
             },
             [&](const YaPlugView::OnFocus& request)
@@ -1199,6 +1219,17 @@ void Vst3Bridge::handle_x11_events() noexcept {
         if (object.editor) {
             object.editor->handle_x11_events();
         }
+    }
+}
+
+bool Vst3Bridge::maybe_resize_editor(size_t instance_id,
+                                     const Steinberg::ViewRect& new_size) {
+    Vst3PluginInstance& instance = object_instances.at(instance_id);
+    if (instance.editor) {
+        instance.editor->resize(new_size.getWidth(), new_size.getHeight());
+        return true;
+    } else {
+        return false;
     }
 }
 
