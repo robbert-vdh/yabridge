@@ -125,6 +125,13 @@ host. For hosts like REAPER where the editor window is embedded in a larger
 window with more controls this is even more important as it allows you to still
 interact with those controls using the keyboard.
 
+The last big feature we implement here is support for Wine->X11 drag-and-drop.
+All of this happens in `src/wine-host/xdnd-proxy.{h,cpp}`. There we simply rely
+on the fact that Wine's OLE drag-and-drop implementation uses a tracker window
+that stores the `IDataSource` used for the drop. That means that we can just
+listen for that tracker window being created, read the data the plugin is trying
+to drag-and-drop, and then set up XDND with that same data.
+
 ## VST2 plugins
 
 When a VST2 plugin gets initialized using the process described above, we'll
