@@ -10,41 +10,43 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added a specific error message when yabridge is not allowed to lock enough
-  shared memory. If you have not yet set up realtime priviliges and memory
-  locking limits for your user, then yabridge may not be able to map enough
-  shared memory for processing audio in plugins with a lot of inputs or outputs.
-- Also added a warning for thisq in the initialization message if yabridge
-  detects a low value for `RLIMIT_MEMLOCK`.
-- Added a `+editor` flag to the `YABRIDGE_DEBUG_LEVEL` environment variable that
-  can be combined with any debug level to also print debug tracing information
-  about the plugin editor window. This can be useful for diagnosing DAW or
-  window manager specific issues.
+- Added a warning on startup if yabridge may not be able to lock enough shared
+  memory for its audio processing. If you have not yet set up realtime
+  priviliges and memory locking limits for your user, then yabridge may not be
+  able to map enough shared memory for processing audio in plugins with a lot of
+  inputs or outputs.
+- Also added a specific error message when that memory locking fails because of
+  a low value being set for `RLIMIT_MEMLOCK`.
+- Added a an optional `+editor` flag to the `YABRIDGE_DEBUG_LEVEL` environment
+  variable to also print debug tracing information about the plugin editor
+  window. This can be useful for diagnosing DAW or window manager specific
+  issues.
 
 ### Changed
 
 - The way editor embedding works has been rewritten. Yabridge now inserts a
-  wrapper window between the host's parent window and the embedded Wine window.
-  This should get rid of all rare edge cases where the host ignores the size
-  reported by the plugin and instead grows the editor window to cover the entire
-  screen.
+  wrapper window between the host's parent window and the embedded Wine window
+  instead of embedding the Wine window directly. This should get rid of all rare
+  edge cases where the host would ignore the window size reported by the plugin
+  and would instead try to intercept configuration events sent to the Wine
+  window in an effort to detect the plugin's size on its own. This could cause
+  the editor window to grow to fit the entire screen in certain hosts under very
+  specific circumstances.
 
 ### Fixed
 
 - Fixed crashes or freezes when a plugin uses the Windows drag-and-drop system
-  to transfer arbitrary data. This prevents **Reaktor** from freezing when
-  editing a patch after upgrading to yabridge 3.4.0.
-- Fixed the process status detection treating a process as dead when the user
-  doesn't have permissions to access the child process's memory. This fixes a
-  seemingly very rare regression from yabridge 3.4.0 where the Wine plugin host
-  application would immediately be seen as dead when using AppArmor, preventing
-  yabridge from starting.
-- Fixed a regression from yabridge 3.4.0 where plugins with zero audio channels
-  like FrozenPlain **Obelisk** would result in a crash.
+  to transfer arbitrary, vendor specific data. This prevents **Reaktor** from
+  freezing when editing a patch after upgrading to yabridge 3.4.0.
+- Fixed yabridge thinking that the Wine plugin host process has died when the
+  user doesn't have permissions to access the child process's memory. This fixes
+  a seemingly very rare regression from yabridge 3.4.0 where the Wine plugin
+  host application would immediately be seen as dead when using AppArmor,
+  preventing yabridge from starting.
+- Fixed a regression from yabridge 3.4.0 where plugins with zero input and
+  output audio channels like FrozenPlain **Obelisk** would result in a crash.
 - Fixed a regression from yabridge 3.4.0 where JUCE-based VST3 plugins might
   cause **Ardour** or **Mixbus** to freeze in very specific circumstances.
-- Worked around a race condition in _Nimble Kick_, which would trigger a stack
-  overflow when loading the plugin if it wasn't already activated.
 - As mentioned above, it's now no longer possible for hosts to wrongly detect
   the editor window size. This fixes a rare issue with **Ardour** on older XFCE
   versions where the editor window would extend to cover the entire screen. A
@@ -52,17 +54,18 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - This change also fixes VST3 editors in **Ardour** not rendering past their
   original size when resizing them from the plugin (as opposed to resizing the
   actual window).
-- Possibly fixed an obscure error where the editor would not render when using
-  multiple displays, and the rightmost display was set as primary. This issue is
-  very rare, and I haven't gotten any response back when I asked the people
-  affected by this to test a potential fix, so I'm just including it in yabridge
-  proper in case it helps (it should at least not make anything worse). If
-  anyone was affected by this, please let me know if this patch makes any
-  difference!
 - Worked around a **REAPER** bug that would cause REAPER to not process any
   keyboard input when the FX window is active but the mouse is outside of the
   window. We now use the same validation used in `xprop` and `xwininfo` to find
   the host's window instead of always taking the topmost window.
+- Worked around a race condition in _Nimble Kick_, which would trigger a stack
+  overflow when loading the plugin if it wasn't already activated.
+- Possibly fixed an obscure error where the editor would not render when using
+  multiple displays and the rightmost display was set as the primary display.
+  This issue appears to be very rare, and I haven't gotten any response back
+  when I asked the people affected by this to test a potential fix, so I'm just
+  including it in yabridge proper in case it helps. If anyone was affected by
+  this, please let me know if this update makes any difference!
 
 ### yabridgectl
 
