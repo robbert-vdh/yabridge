@@ -21,6 +21,7 @@
 #include <boost/container/small_vector.hpp>
 
 using namespace std::literals::chrono_literals;
+using namespace std::literals::string_literals;
 
 // A catchable alternative to `assert()`. Normally all of our `assert(!error)`
 // should never fail, except for when Ardour hides the editor window without
@@ -548,18 +549,12 @@ void Editor::handle_x11_events() noexcept {
                             : reinterpret_cast<xcb_focus_in_event_t*>(
                                   generic_event.get())
                                   ->event;
-
-                    if (event_type == XCB_ENTER_NOTIFY) {
-                        logger.log_editor_trace([&]() {
-                            return "DEBUG: EnterNotify for window " +
-                                   std::to_string(window);
-                        });
-                    } else {
-                        logger.log_editor_trace([&]() {
-                            return "DEBUG: FocusIn for window " +
-                                   std::to_string(window);
-                        });
-                    }
+                    logger.log_editor_trace([&]() {
+                        return "DEBUG: "s +
+                               (event_type == XCB_ENTER_NOTIFY ? "EnterNotify"
+                                                               : "FocusIn") +
+                               " for window " + std::to_string(window);
+                    });
 
                     if (window == parent_window ||
                         window == wrapper_window.window) {
