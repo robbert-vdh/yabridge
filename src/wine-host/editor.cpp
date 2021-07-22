@@ -863,9 +863,12 @@ void Editor::do_reparent(xcb_window_t child, xcb_window_t new_parent) const {
         // whether or not `YABRIDGE_DEBUG_LEVEL` contains `+editor`
         std::cerr << "DEBUG: Reparenting " << child << " to " << new_parent
                   << " failed:" << std::endl;
-        std::cerr << "Error code: " << reparent_error->error_code << std::endl;
-        std::cerr << "Major code: " << reparent_error->major_code << std::endl;
-        std::cerr << "Minor code: " << reparent_error->minor_code << std::endl;
+        std::cerr << "Error code: "
+                  << static_cast<int>(reparent_error->error_code) << std::endl;
+        std::cerr << "Major code: "
+                  << static_cast<int>(reparent_error->major_code) << std::endl;
+        std::cerr << "Minor code: "
+                  << static_cast<int>(reparent_error->minor_code) << std::endl;
 
         // Let's just check all of the reasons why the reparent could
         // fail according to the spec in advance
