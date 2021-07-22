@@ -643,11 +643,10 @@ void Editor::handle_x11_events() noexcept {
 
                         // We will reset the `response_type`, because the X11
                         // server will have already set the first bit for us to
-                        // indicate that it's a synthetic event. All other
-                        // fields can stay the same.
+                        // indicate that it's a synthetic event. Most likely not
+                        // needed, but it feels like the right thing to do. All
+                        // other fields can stay the same.
                         event->response_type = event_type;
-                        event->sequence = 0;
-                        event->time = XCB_CURRENT_TIME;
                         event->event = wine_window;
 
                         xcb_send_event(x11_connection.get(), true, wine_window,
