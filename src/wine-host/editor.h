@@ -155,9 +155,6 @@ class DeferredWin32Window {
  * window we created using `CreateWindowEx()`. We will need to manually resize
  * `wrapper_window` to match size changes coming from and going to the plugin
  * belonging to `wine_window`.
- *
- * TODO: Check if we can remove the double embed option after implementing this
- * TODO: Update architecture document
  */
 class Editor {
    public:

@@ -84,9 +84,15 @@ editors on both the Linux and the Wine sides.
 
 Everything related to editor embedding happens in `src/wine-host/editor.h`. To
 embed the Windows plugin's editor in the X11 window provided by the host we'll
-create a Wine window, embed that window into the host's window, and then ask the
-Windows plugin to embed itself into that Wine window. For embedding the Wine
-window into the host's window we support two different implementations:
+create a Wine window and an X11 wrapper window, embed that Wine window into the
+wrapper window, embed the wrapper window into the host's window, and then ask
+the Windows plugin to embed itself into that Wine window. The reason why we need
+a separate wrapper window in between is to prevent the host from incorrectly
+subscribing to `SubStructureNotify` events and catching the `ConfigureNotify`
+events we're going to send to the Wine window. We will manually resize the
+wrapper window whenever the host asks the plugin to resize itself to a certain
+size or when the plugin resizes its own window. For embedding the Wine window
+into the host's window we support two different implementations:
 
 - The main approach involves reparenting the Wine window to the host window, and
   then manually sending X11 `ConfigureNotify` events to the corresponding X11
