@@ -67,7 +67,8 @@ constexpr uint32_t parent_event_mask =
     XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW;
 
 /**
- * The X11 event mask for our wrapper window.
+ * The X11 event mask for our wrapper window. We will forward synthetic keyboard
+ * events sent by the host to the Wine window.
  *
  * NOTE: The only reason we need this structure notify mask is because Tracktion
  *       Waveform offsets our window a bit vertically, so we need to catch that
@@ -75,7 +76,9 @@ constexpr uint32_t parent_event_mask =
  *       slightly when the mouse is already inside of the editor window when
  *       opening it.
  */
-constexpr uint32_t wrapper_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+constexpr uint32_t wrapper_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY |
+                                        XCB_EVENT_MASK_KEY_PRESS |
+                                        XCB_EVENT_MASK_KEY_RELEASE;
 
 /**
  * The name of the X11 property on the root window used to denote the active
@@ -463,6 +466,8 @@ void Editor::handle_x11_events() noexcept {
                generic_event != nullptr) {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
+            const bool is_synthetic_event =
+                generic_event->response_type & ~xcb_event_type_mask;
             switch (event_type) {
                 // NOTE: When reopening a closed editor window in REAPER, REAPER
                 //       will initialize the editor first, and only then will it
@@ -604,6 +609,51 @@ void Editor::handle_x11_events() noexcept {
                         supports_ewmh_active_window() &&
                         is_wine_window_active()) {
                         set_input_focus(false);
+                    }
+                } break;
+                // We need to forward synthetic keyboard events sent by the host
+                // from the wrapper window to the Wine window
+                // NOTE: We're _only_ forwarding synthetic events sent by the
+                //       host. Wine can listen for regular keyboard events on
+                //       its own, so we won't forward those. Bitwig Studio uses
+                //       this approach to still allow you to press Space to
+                //       control the transport.
+                case XCB_KEY_PRESS:
+                case XCB_KEY_RELEASE: {
+                    static_assert(std::is_same_v<xcb_key_press_event_t,
+                                                 xcb_key_release_event_t>);
+                    const auto event = reinterpret_cast<xcb_key_press_event_t*>(
+                        generic_event.get());
+                    logger.log_editor_trace([&]() {
+                        return "DEBUG: "s +
+                               (is_synthetic_event ? "synthetic " : "") +
+                               (event_type == XCB_KEY_PRESS ? "KeyPress"
+                                                            : "KeyRelease") +
+                               " for window " + std::to_string(event->event) +
+                               " with key code " +
+                               std::to_string(event->detail);
+                    });
+
+                    if (is_synthetic_event &&
+                        event->event == wrapper_window.window) {
+                        const uint32_t event_mask =
+                            event_type == XCB_KEY_PRESS
+                                ? XCB_EVENT_MASK_KEY_PRESS
+                                : XCB_EVENT_MASK_KEY_RELEASE;
+
+                        // We will reset the `response_type`, because the X11
+                        // server will have already set the first bit for us to
+                        // indicate that it's a synthetic event. All other
+                        // fields can stay the same.
+                        event->response_type = event_type;
+                        event->sequence = 0;
+                        event->time = XCB_CURRENT_TIME;
+                        event->event = wine_window;
+
+                        xcb_send_event(x11_connection.get(), true, wine_window,
+                                       event_mask,
+                                       reinterpret_cast<const char*>(event));
+                        xcb_flush(x11_connection.get());
                     }
                 } break;
                 default: {
