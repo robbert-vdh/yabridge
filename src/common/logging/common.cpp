@@ -116,6 +116,14 @@ Logger Logger::create_wine_stderr() {
         "", std::shared_ptr<std::ostream>(&std::cerr, [](auto*) {}), false);
 }
 
+Logger Logger::create_exception_logger() {
+#ifdef __WINE__
+    return Logger::create_wine_stderr();
+#else
+    return Logger::create_from_environment("[error] ");
+#endif
+}
+
 void Logger::log(const std::string& message) {
     std::ostringstream formatted_message;
 

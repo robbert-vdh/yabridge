@@ -50,7 +50,7 @@ extern "C" VST_EXPORT AEffect* VSTPluginMain(
 
         return &bridge->plugin;
     } catch (const std::exception& error) {
-        Logger logger = Logger::create_from_environment();
+        Logger logger = Logger::create_exception_logger();
         logger.log("Error during initialization:");
         logger.log(error.what());
 

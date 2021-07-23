@@ -138,6 +138,17 @@ class Logger {
     static Logger create_wine_stderr();
 
     /**
+     * Create a special logger instance for printing caught exceptions. This
+     * simply calls `Logger::create_from_environment()` on the plugin side, and
+     * `Logger::create_wine_stderr()` on the Wine side. Printing directly to
+     * STDERR on the Wine side is fine, but on the plugin side that means that
+     * we cannot redirect the output with `YABRIDGE_DEBUG_FILE`. So this should
+     * also be used instead of writing to `std::cerr` when catching exceptions
+     * in `src/common/`.
+     */
+    static Logger create_exception_logger();
+
+    /**
      * Write a message to the log, prefixing it with a timestamp and this
      * logger's prefix string.
      *
