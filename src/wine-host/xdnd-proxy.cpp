@@ -310,7 +310,7 @@ void WineXdndProxy::run_xdnd_loop() {
         }
     };
 
-    auto maybe_send_spooled_status_message = [&]() {
+    auto maybe_send_spooled_position_message = [&]() {
         if (next_position_message_position && !waiting_for_status_message) {
             send_xdnd_message(*last_xdnd_window, xcb_xdnd_position_message, 0,
                               *next_position_message_position, XCB_CURRENT_TIME,
@@ -391,7 +391,7 @@ void WineXdndProxy::run_xdnd_loop() {
         // As explained above, we may need to spool these position messages
         // because they can only be sent again after we receive an `XdndStatus`
         // reply
-        maybe_send_spooled_status_message();
+        maybe_send_spooled_position_message();
 
         // We'll try to find the first window under the pointer (starting form
         // the root) until we find a window that supports XDND. The returned
@@ -551,7 +551,7 @@ void WineXdndProxy::run_xdnd_loop() {
         }
 
         // We May very well still have one unsent position change left
-        maybe_send_spooled_status_message();
+        maybe_send_spooled_position_message();
 
         // After we receive the last `XdndStatus` message we'll know whether the
         // window accepts or denies the drop
