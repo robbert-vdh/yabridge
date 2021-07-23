@@ -527,14 +527,17 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   plugin output to `~/.BitwigStudio/log/engine.log`, so you may need to look
   there instead.
 
-- Using PipeWire's JACK implementation might cause certain plugins to crash.
-  PipeWire currently uses rtkit instead of the realtime priorities you would
-  normally set up using groups and `/etc/limits.d`, and it will impose a limit
-  on the maximum amount of CPU time a realtime process may use at a time. This
-  will cause plugins that take a long time to initialize, for instance because
-  they're loading a lot of resources, to crash. For the time being the best
-  solution for this problem would be to just use JACK2 until PipeWire doesn't
-  require rtkit anymore.
+- Using PipeWire's JACK implementation might cause certain plugins to crash with
+  the out of the box configuration. PipeWire versions before 0.32.0 used rtkit
+  instead of regular realtime scheduling, and both PipeWire and rtkit would
+  impose a low limit on the maximum amount of CPU time a realtime process may
+  use at a time. This would cause plugins that take a long time to initialize to
+  crash. With PipeWire 0.32.0 you only need to change a single configuration
+  file to prevent this from happening. Simply copy
+  `/usr/share/pipewire/jack.conf` to `~/.config/pipewire/jack.conf`, uncomment
+  the `rt.time.soft` and `rt.time.hard` arguments for the
+  `libpipewire-module-rt` module, and then set both to `-1`. Alternatively, you
+  can also use regular JACK2 or straight ALSA instead of PipeWire.
 
 - If you have the `WINEPREFIX` environment variable set and you _don't_ want all
   of your plugins to use that specific Wine prefix, then you should unset it to
