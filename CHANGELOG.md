@@ -17,25 +17,25 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   lot of inputs or outputs channels.
 - When this shared memory mapping fails because of a low value being set for
   `RLIMIT_MEMLOCK`, yabridge will now print a more specific error message
-  telling you about the issue.
+  telling you about the issue and how to fix it.
 - Added a an optional `+editor` flag to the `YABRIDGE_DEBUG_LEVEL` environment
-  variable to also print debug tracing information about the plugin editor
-  window. This can be useful for diagnosing DAW or window manager specific
-  issues.
+  variable that causes debug tracing information about the plugin editor window
+  to be printed. This can be useful for diagnosing DAW or window manager
+  specific issues.
 
 ### Changed
 
 - The way editor embedding works has been rewritten. Yabridge now inserts a
   wrapper window between the host's parent window and the embedded Wine window
-  instead of embedding the Wine window directly. This should get rid of all rare
-  edge cases where the host would ignore the window size reported by the plugin
-  and would instead try to intercept configuration events sent to the Wine
-  window in an effort to detect the plugin's size on its own. This could cause
-  the editor window to grow to fit the entire screen in certain hosts under very
-  specific circumstances.
+  instead of embedding the Wine window directly into the host. This should get
+  rid of all rare edge cases where the host would ignore the window size
+  reported by the plugin and would instead try to detect the plugin's size on
+  its own by intercepting configuration events sent to the Wine window. This
+  could cause the editor window to grow to fit the entire screen in certain
+  hosts under very specific circumstances.
 - We now support version 3 and 4 of the XDND specification for the Wine->X11
   drag-and-drop support. Before this yabridge assumed every application
-  supported version 5, from 2002. JUCE based hosts only support XDND version 3.
+  supported version 5 from 2002, but JUCE based hosts only support XDND version 3.
 
 ### Fixed
 
@@ -43,9 +43,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   to transfer arbitrary, vendor specific data. This prevents **Reaktor** from
   freezing when editing a patch after upgrading to yabridge 3.4.0.
 - Fixed yabridge thinking that the Wine plugin host process has died when the
-  user doesn't have permissions to access the child process's memory. This fixes
+  user doesn't have permissions to access the Wine process's memory. This fixes
   a seemingly very rare regression from yabridge 3.4.0 where the Wine plugin
-  host application would immediately be seen as dead when using AppArmor,
+  host application would immediately be seen as dead when using _AppArmor_,
   preventing yabridge from starting.
 - Fixed a regression from yabridge 3.4.0 where plugins with zero input and
   output audio channels like FrozenPlain **Obelisk** would result in a crash.
@@ -54,32 +54,33 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - As mentioned above, it's now no longer possible for hosts to wrongly detect
   the editor window size. This fixes a rare issue with **Ardour** on older XFCE
   versions where the editor window would extend to cover the entire screen. A
-  similar issue also happened with **Carla** 2.3.1.
-- This change also fixes VST3 editors in **Ardour** not rendering past their
-  original size when resizing them from the plugin (as opposed to resizing the
-  actual window).
+  similar issue also exists with **Carla** 2.3.1.
+- This same change also fixes VST3 editors in **Ardour** not rendering past
+  their original size when resizing them from the plugin (as opposed to resizing
+  the actual window).
 - Worked around a **REAPER** bug that would cause REAPER to not process any
-  keyboard input when the FX window is active but the mouse is outside of the
-  window. We now use the same validation used in `xprop` and `xwininfo` to find
-  the host's window instead of always taking the topmost window.
+  keyboard input when the FX window is active but the mouse cursor is positioned
+  outside of the window. We now use the same validation used in `xprop` and
+  `xwininfo` to find the host's window instead of always taking the topmost
+  window.
 - Fixed Wine->X11 drag-and-drop in **Tracktion Waveform**. Waveform only
   supports an old 1998 version of the XDND specification, so it was ignoring our
-  messages since we assumed every application would support the most recent
+  messages since we assumed every application would support the most recent XDND
   version from 2002.
 - Worked around a race condition in _Nimble Kick_, which would trigger a stack
   overflow when loading the plugin if it wasn't already activated.
-- Possibly fixed an obscure error where the editor would not render when using
-  multiple displays and the rightmost display was set as the primary display.
-  This issue appears to be very rare, and I haven't gotten any response back
-  when I asked the people affected by this to test a potential fix, so I'm just
-  including it in yabridge proper in case it helps. If anyone was affected by
-  this, please let me know if this update makes any difference!
+- Potentially fixed an obscure issue where the editor would not render at all
+  when using multiple displays and the rightmost display was set as the primary
+  display. This issue appears to be very rare, and I haven't gotten any response
+  back when I asked the people affected by this to test a potential fix, so I'm
+  just including it in yabridge anyways in case it helps. If anyone was affected
+  by this, please let me know if this update makes any difference!
 
 ### yabridgectl
 
-- `yabridgectl status` now also lists the paths to `yabridge-host.exe` and
-  `yabridge-host-32.exe` that yabridge will end up using. This can be helpful
-  for diagnosing issues with complex setups.
+- `yabridgectl status` now also lists the paths to the `yabridge-host.exe` and
+  `yabridge-host-32.exe` binaries that yabridge will end up running. This can be
+  helpful for diagnosing issues with complex setups.
 
 ## [3.4.0] - 2021-07-15
 
