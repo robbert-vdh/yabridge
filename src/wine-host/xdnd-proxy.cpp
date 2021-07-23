@@ -418,7 +418,9 @@ void WineXdndProxy::run_xdnd_loop() {
 
         last_pointer_x = xdnd_window_query->root_x;
         last_pointer_y = xdnd_window_query->root_y;
-        if (!is_xdnd_aware(xdnd_window_query->child)) {
+        const std::optional<unsigned char> supported_xdnd_version =
+            is_xdnd_aware(xdnd_window_query->child);
+        if (!supported_xdnd_version) {
             maybe_leave_last_window();
             last_xdnd_window.reset();
             continue;
@@ -459,9 +461,14 @@ void WineXdndProxy::run_xdnd_loop() {
             // `text/plain` we should cover most applications, and this is also
             // the recommended format for links/paths elsewhere:
             // https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API/Recommended_drag_types#link
-            send_xdnd_message(xdnd_window_query->child, xcb_xdnd_enter_message,
-                              5 << 24, xcb_mime_text_uri_list,
-                              xcb_mime_text_plain, XCB_NONE);
+            // NOTE: In theory everything should support XDND version 5 since
+            //       the spec dates from 2002, but JUCE only supports version 3.
+            //       We'll just pretend no other changes are required.
+            send_xdnd_message(
+                xdnd_window_query->child, xcb_xdnd_enter_message,
+                std::clamp(static_cast<int>(*supported_xdnd_version), 3, 5)
+                    << 24,
+                xcb_mime_text_uri_list, xcb_mime_text_plain, XCB_NONE);
         }
 
         // When the pointer is being moved inside of a window, we should
@@ -610,7 +617,8 @@ WineXdndProxy::query_xdnd_aware_window_at_pointer(
     return query_pointer_reply;
 }
 
-bool WineXdndProxy::is_xdnd_aware(xcb_window_t window) const noexcept {
+std::optional<uint8_t> WineXdndProxy::is_xdnd_aware(
+    xcb_window_t window) const noexcept {
     // Respect `XdndProxy`, if that's set
     window = get_xdnd_proxy(window).value_or(window);
 
@@ -627,9 +635,12 @@ bool WineXdndProxy::is_xdnd_aware(xcb_window_t window) const noexcept {
 
     // Since the spec dates from 2002, we won't even bother checking the
     // supported version
-    return property_reply->type != XCB_NONE &&
-           *static_cast<xcb_atom_t*>(
-               xcb_get_property_value(property_reply.get())) != 0;
+    if (property_reply->type == XCB_NONE) {
+        return std::nullopt;
+    } else {
+        return *static_cast<xcb_atom_t*>(
+            xcb_get_property_value(property_reply.get()));
+    }
 }
 
 std::optional<xcb_window_t> WineXdndProxy::get_xdnd_proxy(

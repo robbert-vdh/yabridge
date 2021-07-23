@@ -32,6 +32,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   window in an effort to detect the plugin's size on its own. This could cause
   the editor window to grow to fit the entire screen in certain hosts under very
   specific circumstances.
+- We now support version 3 and 4 of the XDND specification for the Wine->X11
+  drag-and-drop support. Before this yabridge assumed every application
+  supported version 5, from 2002. JUCE based hosts only support XDND version 3.
 
 ### Fixed
 
@@ -58,6 +61,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   keyboard input when the FX window is active but the mouse is outside of the
   window. We now use the same validation used in `xprop` and `xwininfo` to find
   the host's window instead of always taking the topmost window.
+- Fixed Wine->X11 drag-and-drop in **Tracktion Waveform**. Waveform only
+  supports an old 1998 version of the XDND specification, so it was ignoring our
+  messages since we assumed every application would support the most recent
+  version from 2002.
 - Worked around a race condition in _Nimble Kick_, which would trigger a stack
   overflow when loading the plugin if it wasn't already activated.
 - Possibly fixed an obscure error where the editor would not render when using

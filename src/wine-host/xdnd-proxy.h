@@ -182,12 +182,12 @@ class WineXdndProxy {
     query_xdnd_aware_window_at_pointer(xcb_window_t window) const noexcept;
 
     /**
-     * Check whether a window is XDND-aware, respecting `XdndProxy`. We should
-     * be checking the supported version as well and change our handling
-     * accordingly, but the XDND spec was last updated in 2002 so we'll just
-     * assume this won't cause any issues.
+     * Check whether a window is XDND-aware, respecting `XdndProxy`. This will
+     * return the supported XDND version. In theory we could just assume that
+     * everything supports version 5 of the spec since that came out in 20020,
+     * but for some reason JUCE only supports version 3 from 1998.
      */
-    bool is_xdnd_aware(xcb_window_t window) const noexcept;
+    std::optional<uint8_t> is_xdnd_aware(xcb_window_t window) const noexcept;
 
     /**
      * Return the XDND proxy window for `window` as specified in the `XdndProxy`
