@@ -177,19 +177,20 @@ class PluginBridge {
         if (auto memlock_limit = get_memlock_limit()) {
             if (*memlock_limit != RLIM_INFINITY &&
                 *memlock_limit < memlock_min_safe_threshold) {
-                init_msg << "memlock limit: 'WARNING: " << *memlock_limit
+                init_msg << "memlock limit: '" << *memlock_limit
                          << " bytes, see below'" << std::endl;
                 init_msg << std::endl;
                 init_msg
                     << "   With a low memory locking limit, yabridge may not be"
                     << std::endl;
-                init_msg << "   be able to map enough shared memory for audio "
-                            "buffers,"
+                init_msg << "   be able to map enough shared memory for its "
+                            "audio buffers."
                          << std::endl;
-                init_msg << "   yabridge may crash when using plugins with "
-                            "many inputs"
+                init_msg
+                    << "   Plugins with many input or output channels may cause"
+                    << std::endl;
+                init_msg << "   yabridge to crash until you fix this."
                          << std::endl;
-                init_msg << "   or outputs until you fix this." << std::endl;
                 init_msg << std::endl;
             }
         } else {
