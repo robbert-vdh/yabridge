@@ -13,10 +13,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added a warning on startup if yabridge may not be able to lock enough shared
   memory for its audio processing. If you have not yet set up realtime
   priviliges and memory locking limits for your user, then yabridge may not be
-  able to map enough shared memory for processing audio in plugins with a lot of
-  inputs or outputs.
-- Also added a specific error message when that memory locking fails because of
-  a low value being set for `RLIMIT_MEMLOCK`.
+  able to map enough shared memory for processing audio with plugins that have a
+  lot of inputs or outputs channels.
+- When this shared memory mapping fails because of a low value being set for
+  `RLIMIT_MEMLOCK`, yabridge will now print a more specific error message
+  telling you about the issue.
 - Added a an optional `+editor` flag to the `YABRIDGE_DEBUG_LEVEL` environment
   variable to also print debug tracing information about the plugin editor
   window. This can be useful for diagnosing DAW or window manager specific
