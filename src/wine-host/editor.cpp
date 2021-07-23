@@ -458,8 +458,6 @@ void Editor::handle_x11_events() noexcept {
     //       the window is unmapped `wine_window` doesn't exist and any X11
     //       function calls involving it will fail. All functions called from
     //       here should be able to handle that cleanly.
-    // TODO: Move all debug messages to a special editor debug level, which
-    //       should be specified as <N>+editor
     try {
         std::unique_ptr<xcb_generic_event_t> generic_event;
         while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
