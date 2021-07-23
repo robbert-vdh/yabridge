@@ -54,8 +54,11 @@ bool InitModule() {
         return true;
     } catch (const std::exception& error) {
         Logger logger = Logger::create_exception_logger();
+
+        logger.log("");
         logger.log("Error during initialization:");
         logger.log(error.what());
+        logger.log("");
 
         // Also show a desktop notification most people likely won't see the
         // above message

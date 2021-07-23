@@ -18,6 +18,8 @@
 
 #include <iostream>
 
+#include "logging/common.h"
+
 AudioShmBuffer::AudioShmBuffer(const Config& config)
     : config(config),
       shm(boost::interprocess::open_or_create,
@@ -74,16 +76,15 @@ void AudioShmBuffer::setup_mapping() {
         }
     } catch (const boost::interprocess::interprocess_exception& error) {
         if (error.get_native_error() == EAGAIN) {
-            std::cerr << "ERROR: Could not map shared memory. This means that"
-                      << std::endl;
-            std::cerr << "       your user's memory locking limit has been set"
-                      << std::endl;
-            std::cerr << "       too low. Check your distro's documentation or"
-                      << std::endl;
-            std::cerr << "       wiki for instructions on how to set up"
-                      << std::endl;
-            std::cerr << "        realtime privileges and memlock limits."
-                      << std::endl;
+            Logger logger = Logger::create_exception_logger();
+
+            logger.log("");
+            logger.log("ERROR: Could not map shared memory. This means that");
+            logger.log("       your user's memory locking limit has been");
+            logger.log("       reached. Check your distro's documentation or");
+            logger.log("       wiki for instructions on how to set up");
+            logger.log("       realtime privileges and memlock limits.");
+            logger.log("");
         }
 
         throw;

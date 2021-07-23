@@ -309,11 +309,12 @@ class Sockets {
             if (base_dir.string().starts_with(temp_dir.string())) {
                 boost::filesystem::remove_all(base_dir);
             } else {
-                std::cerr << std::endl;
-                std::cerr << "WARNING: Unexpected socket base directory found, "
-                             "not removing '"
-                          << base_dir.string() << "'" << std::endl;
-                std::cerr << std::endl;
+                Logger logger = Logger::create_exception_logger();
+
+                logger.log("");
+                logger.log("WARNING: Unexpected socket base directory found,");
+                logger.log("         not removing '" + base_dir.string() + "'");
+                logger.log("");
             }
         } catch (const boost::filesystem::filesystem_error&) {
             // There should not be any filesystem errors since only one side
