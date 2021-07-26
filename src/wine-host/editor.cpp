@@ -556,7 +556,11 @@ void Editor::handle_x11_events() noexcept {
                         return "DEBUG: "s +
                                (event_type == XCB_ENTER_NOTIFY ? "EnterNotify"
                                                                : "FocusIn") +
-                               " for window " + std::to_string(window);
+                               " for window " + std::to_string(window) +
+                               " (wine window " +
+                               (is_wine_window_active() ? "active"
+                                                        : "inactive") +
+                               ")";
                     });
 
                     if (window == parent_window ||
@@ -589,7 +593,11 @@ void Editor::handle_x11_events() noexcept {
                             generic_event.get());
                     logger.log_editor_trace([&]() {
                         return "DEBUG: LeaveNotify for window " +
-                               std::to_string(event->child);
+                               std::to_string(event->child) + " (wine window " +
+                               (is_wine_window_active() ? "active"
+                                                        : "inactive") +
+                               ", detail " + std::to_string(event->detail) +
+                               ")";
                     });
 
                     // This extra check for the `NonlinearVirtual` detail is
