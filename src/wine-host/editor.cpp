@@ -753,6 +753,21 @@ void Editor::set_input_focus(bool grab) const {
     if (current_focus == focus_target ||
         (grab && is_child_window_or_same(*x11_connection, current_focus,
                                          focus_target))) {
+        logger.log_editor_trace([&]() {
+            std::string reason = "unknown reason";
+            if (current_focus == focus_target) {
+                reason = "already focused";
+            } else if (grab &&
+                       is_child_window_or_same(*x11_connection, current_focus,
+                                               focus_target)) {
+                reason = "current focus " + std::to_string(current_focus) +
+                         " is a child of " + std::to_string(focus_target);
+            }
+
+            return "DEBUG: Not grabbing input focus for window " +
+                   std::to_string(focus_target) + "(" + reason + ")";
+        });
+
         return;
     }
 
@@ -770,6 +785,11 @@ void Editor::set_input_focus(bool grab) const {
     //      `IPlugView::onKey{Down,Up}` should handle all keyboard events. But
     //      in practice a lot of hosts don't use that, so we still need to grab
     //      focus ourselves.
+    logger.log_editor_trace([&]() {
+        return "DEBUG: Setting input focus to window " +
+               std::to_string(focus_target);
+    });
+
     xcb_set_input_focus(x11_connection.get(), XCB_INPUT_FOCUS_PARENT,
                         focus_target, XCB_CURRENT_TIME);
     xcb_flush(x11_connection.get());
