@@ -283,8 +283,6 @@ void WineXdndProxy::end_xdnd() {
 #endif
 
 void WineXdndProxy::run_xdnd_loop() {
-    const HWND windows_desktop_window = GetDesktopWindow();
-
     std::optional<xcb_window_t> last_xdnd_window;
     // Position and status messages should be sent in lockstep, which makes
     // everything a bit more complicated. Because of that we may need to spool
@@ -428,27 +426,10 @@ void WineXdndProxy::run_xdnd_loop() {
 
         // We want to ignore all Wine windows (within this prefix), since Wine
         // will be able to handle the drag-and-drop better than we can
-        POINT windows_pointer_pos;
-        GetCursorPos(&windows_pointer_pos);
-        if (HWND windows_window = WindowFromPoint(windows_pointer_pos);
-            windows_window && windows_window != windows_desktop_window) {
-            // NOTE: Because resizing reparented Wine windows without XEmbed is
-            //       a bit janky, yabridge creates windows with client areas
-            //       large enough to fit the entire screen, and the plugin then
-            //       embeds its own GUI in a portion of that. The result is that
-            //       `WindowFromPoint()` will still return that same huge window
-            //       when we hover over an area to the right or to the bottom of
-            //       a plugin GUI. We can easily detect and skip that though,
-            //       since the embedded plugin windows won't have an  X11 window
-            //       ID property.
-            const xcb_window_t x11_window =
-                static_cast<xcb_window_t>(reinterpret_cast<size_t>(
-                    GetProp(windows_window, "__wine_x11_whole_window")));
-            if (x11_window == XCB_NONE) {
-                maybe_leave_last_window();
-                last_xdnd_window.reset();
-                continue;
-            }
+        if (is_cursor_in_wine_window()) {
+            maybe_leave_last_window();
+            last_xdnd_window.reset();
+            continue;
         }
 
         // When transitioning between windows we need to announce this to

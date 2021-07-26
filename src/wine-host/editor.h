@@ -70,6 +70,15 @@ xcb_atom_t get_atom_by_name(xcb_connection_t& x11_connection,
                             const char* atom_name);
 
 /**
+ * Check if the cursor is within a Wine window. We can of course only detect
+ * Wine applications within the current prefix. This ignores the extended client
+ * area of yabridge windows (which might mean that this function will spuriously
+ * return false if another window on the bottom right of an editor window is
+ * 'obstructed' by this clipped, invisible window).
+ */
+bool is_cursor_in_wine_window() noexcept;
+
+/**
  * Used to store the maximum width and height of a screen.
  */
 struct Size {
