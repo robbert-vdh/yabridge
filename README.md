@@ -1,6 +1,6 @@
 # yabridge
 
-[![Automated builds](https://github.com/robbert-vdh/yabridge/workflows/Automated%20builds/badge.svg?branch=master&event=push)](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)
+[![Automated builds](https://github.com/robbert-vdh/yabridge/workflows/Automated%20builds/badge.svg?branch=master&event=push)](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaste)r)
 [![Discord](https://img.shields.io/discord/786993304197267527.svg?label=Discord&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/pyNeweqadf)
 
 Yet Another way to use Windows VST plugins on Linux. Yabridge seamlessly
@@ -24,6 +24,7 @@ while also staying easy to debug and maintain.
   - [Bitbridge](#bitbridge)
   - [Wine prefixes](#wine-prefixes)
   - [Downgrading Wine](#downgrading-wine)
+  - [Installing a development build](#installing-a-development-build)
 - [Configuration](#configuration)
   - [Plugin groups](#plugin-groups)
   - [Compatibility options](#compatibility-options)
@@ -232,6 +233,32 @@ Wine. This can be done as follows:
   to `IgnorePkg`. If you select `yes`, the package will be added to the
   `IgnorePkg` field in `/etc/pacman.conf` and it won't be updated again
   automatically.
+
+### Installing a development build
+
+If you want to try to a development version of yabridge, then you can do so as
+follows:
+
+- On Arch and Manjaro, you can install the latest master branch version of
+  yabridge by installing the
+  [yabridge-git](https://aur.archlinux.org/packages/yabridge-git/)and
+  [yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/) AUR
+  packages.
+- Otherwise, you can find development builds on the [automated build
+  page](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaste).
+  Before you can download these files, you need log in to GitHub. Then simply
+  select the latest commit with a green checkmark next to it, scroll down the
+  build page, and download the latest yabridge and yabridgectl binaries that
+  match your system. You'll need to extract these files twice, since GitHub
+  automatically puts the tarball inside of a .zip archive. Then simply overwrite
+  the existing files in `~/.local/share/yabridge` with the ones from the
+  `yabridge` directory, and replace `~/.local/share/yabridge/yabridgectl` with
+  the new `yabridgectl/yabridgectl` binary. It's also possible to use these
+  builds if you're using a distro package, but then you should remove the
+  package first in order to avoid conflicts.
+
+After updating yabridge's files, you will need to rerun `yabridgectl sync` to
+finish the upgrade.
 
 ## Configuration
 
