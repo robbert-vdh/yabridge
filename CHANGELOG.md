@@ -13,6 +13,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added more tracing for input focus handling when using the `+editor`
   `YABRIDGE_DEBUG_LEVEL` flag.
 
+### Fixed
+
+- Changed the filter in the Wine->X11 drag-and-drop implementation for
+  distinguishing between Wine windows and other windows (so that we don't
+  interfere with Wine->Wine drag-and-drop) to be more specific. Before this
+  change we might use our own XDND implementation when dragging from a plugin to
+  a standalone Wine application running within the same Wine prefix.
+
 ## [3.5.0] - 2021-06-23
 
 ### Added
