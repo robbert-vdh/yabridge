@@ -75,8 +75,13 @@ xcb_atom_t get_atom_by_name(xcb_connection_t& x11_connection,
  * area of yabridge windows. (so it will consider other Wine windows to the
  * right or to the bottom of a yabridge plugin editor, but not the extended
  * client area itself)
+ *
+ * @param windows_pointer_pos The screen coordinates to use for the query. If
+ *   this is left at a nullopt, we will simply use `GetCursorPos()`. Note that
+ *   this value only updates once every 100 milliseconds.
  */
-bool is_cursor_in_wine_window() noexcept;
+bool is_cursor_in_wine_window(
+    std::optional<POINT> windows_pointer_pos = std::nullopt) noexcept;
 
 /**
  * Used to store the maximum width and height of a screen.

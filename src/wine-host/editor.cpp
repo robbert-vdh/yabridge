@@ -1259,12 +1259,16 @@ ATOM get_window_class() noexcept {
     return window_class_handle;
 }
 
-bool is_cursor_in_wine_window() noexcept {
+bool is_cursor_in_wine_window(
+    std::optional<POINT> windows_pointer_pos) noexcept {
     static const HWND windows_desktop_window = GetDesktopWindow();
 
-    POINT windows_pointer_pos;
-    GetCursorPos(&windows_pointer_pos);
-    if (HWND windows_window = WindowFromPoint(windows_pointer_pos);
+    if (!windows_pointer_pos) {
+        windows_pointer_pos.emplace();
+        GetCursorPos(&*windows_pointer_pos);
+    }
+
+    if (HWND windows_window = WindowFromPoint(*windows_pointer_pos);
         windows_window && windows_window != windows_desktop_window) {
         // NOTE: Because resizing reparented Wine windows without XEmbed is a
         //       bit janky, yabridge creates windows with client areas large
