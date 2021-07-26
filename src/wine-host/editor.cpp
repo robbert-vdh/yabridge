@@ -1082,6 +1082,20 @@ LRESULT CALLBACK window_proc(HWND handle,
                 SetCursor(arrow_cursor);
             }
         } break;
+        // NOTE: Needed for our `is_cursor_in_wine_window()` implementation. Our
+        //       `win32_window` extends way past the visible plugin GUI. And
+        //       even though it will appear nicely clipped on screen,
+        //       `WindowFromPoint()` would still return our window when hovering
+        //       to the right or bottom of a plugin GUI, even if there's another
+        //       window right behind it. To make sure we can detect other Wine
+        //       windows in that region, we need to make sure that
+        //       `WindowFromPoint()` doesn't consider the parent window (it's
+        //       not going to be relevant anyways). In practice this will still
+        //       mean that the function returns our parent window if it's the
+        //       only window on that coordinate.
+        case WM_NCHITTEST: {
+            return HTNOWHERE;
+        } break;
     }
 
     return DefWindowProc(handle, message, wParam, lParam);
@@ -1259,7 +1273,8 @@ bool is_cursor_in_wine_window() noexcept {
         //       `WindowFromPoint()` will still return that same huge window
         //       when we hover over an area to the right or to the bottom of a
         //       plugin GUI. We can easily detect by just checking the window
-        //       class name.
+        //       class name. Also check out the `WM_NCHITTEST` implementation in
+        //       the message loop above.
         std::array<char, 64> window_class_name{0};
         GetClassName(windows_window, window_class_name.data(),
                      window_class_name.size());
