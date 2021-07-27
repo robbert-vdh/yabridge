@@ -15,11 +15,20 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Changed the filter in the Wine->X11 drag-and-drop implementation for
-  distinguishing between Wine windows and other windows (so that we don't
-  interfere with Wine->Wine drag-and-drop) to be more specific. Before this
-  change we might use our own XDND implementation when dragging from a plugin to
-  a standalone Wine application running within the same Wine prefix.
+- Changed how input focus releasing works by more specifically ignoring events
+  where the mouse pointer is still hovering over a Wine window instead of
+  ignoring a wider class of events. This should fix some edge cases where input
+  focus would not be given back to the host, or where dropdown menus could close
+  immediately when moving your mouse outsdie of them. The first case would in
+  practice only happen when using a touchscreen or drawing tablet, since that
+  would require the mouse to instantly move from the plugin GUI to another
+  window without going over the window's borders.
+- Similarly, the filter in the Wine->X11 drag-and-drop implementation for
+  distinguishing between Wine windows and other windows (so that we won't
+  interfere with Wine's own internal drag-and-drop mechanism) has also been made
+  more specific. Before this change we might use our own XDND implementation
+  when dragging from a plugin to a standalone Wine application running within
+  the same Wine prefix.
 
 ## [3.5.0] - 2021-06-23
 

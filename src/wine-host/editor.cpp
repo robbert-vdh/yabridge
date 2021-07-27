@@ -597,13 +597,52 @@ void Editor::handle_x11_events() noexcept {
                     const auto event =
                         reinterpret_cast<xcb_leave_notify_event_t*>(
                             generic_event.get());
+
+                    // HACK: We need to do a `WindowFromPoint()` query inside of
+                    //       `is_cursor_in_wine_window()`, and
+                    //       `GetCursorPos()`'s value only updates once every
+                    //       100 milliseconds:
+                    //       https://github.com/wine-mirror/wine/blob/25271032dfb3f126a8b0dff2adb9b96a7d09241d/dlls/user32/input.c#L345
+                    //
+                    //       To avoid this, we will use the X11 cursor position.
+                    //       For this to work we will need to translate X11 root
+                    //       window coordinates into Wine virtual screen
+                    //       coordinates, like so:
+                    //       https://github.com/wine-mirror/wine/tree/25271032dfb3f126a8b0dff2adb9b96a7d09241d/dlls/winex11.drv/display.c
+                    //
+                    //       This function is sadly not exposed, so instead we
+                    //       will get the root window cursor position, and then
+                    //       add to that the difference between `wine_window`'s
+                    //       root-relative X11 position and its Win32 position.
+                    //       The alternative is sleeping for 100 milliseconds,
+                    //       but this is faster.
+                    const std::optional<POINT> windows_pointer_pos =
+                        get_current_pointer_position();
+
                     logger.log_editor_trace([&]() {
-                        return "DEBUG: LeaveNotify for window " +
-                               std::to_string(event->child) + " (wine window " +
-                               (is_wine_window_active() ? "active"
-                                                        : "inactive") +
-                               ", detail " + std::to_string(event->detail) +
-                               ")";
+                        std::ostringstream message;
+                        message << "DEBUG: LeaveNotify for window "
+                                << event->child;
+                        message << " (wine window "
+                                << (is_wine_window_active() ? "active"
+                                                            : "inactive");
+                        message << ", detail: "
+                                << static_cast<int>(event->detail);
+                        message << ", pointer pos: ";
+                        if (windows_pointer_pos) {
+                            message << windows_pointer_pos->x << ", "
+                                    << windows_pointer_pos->y;
+                        } else {
+                            message << "<unknown>";
+                        }
+                        message
+                            << ", pointer "
+                            << (is_cursor_in_wine_window(windows_pointer_pos)
+                                    ? "is"
+                                    : "is not")
+                            << " in Wine window)";
+
+                        return message.str();
                     });
 
                     // This extra check for the `NonlinearVirtual` detail is
@@ -617,9 +656,9 @@ void Editor::handle_x11_events() noexcept {
                     // these fake dropdowns would immediately close when
                     // hovering over them.
                     if (event->child == wrapper_window.window &&
-                        event->detail != XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL &&
                         supports_ewmh_active_window() &&
-                        is_wine_window_active()) {
+                        is_wine_window_active() &&
+                        !is_cursor_in_wine_window(windows_pointer_pos)) {
                         set_input_focus(false);
                     }
                 } break;
@@ -813,6 +852,40 @@ void Editor::maybe_run_timer_proc() {
     if (idle_timer_proc) {
         (*idle_timer_proc)();
     }
+}
+
+std::optional<POINT> Editor::get_current_pointer_position() const {
+    xcb_generic_error_t* error = nullptr;
+    const xcb_query_pointer_cookie_t query_pointer_cookie =
+        xcb_query_pointer(x11_connection.get(), wine_window);
+    const std::unique_ptr<xcb_query_pointer_reply_t> query_pointer_reply(
+        xcb_query_pointer_reply(x11_connection.get(), query_pointer_cookie,
+                                &error));
+    if (error) {
+        free(error);
+        return std::nullopt;
+    }
+
+    // We know the mouse coordinates relative to the root window, and we know
+    // the mouse coordinates relative to `wine_window`, so we can skip a request
+    // by calculating Wine window's coordinates ourself.
+    const uint16_t x11_x_pos =
+        query_pointer_reply->root_x - query_pointer_reply->win_x;
+    const uint16_t x11_y_pos =
+        query_pointer_reply->root_y - query_pointer_reply->win_y;
+
+    // We need to offset the root-relative pointer position with the difference
+    // between `wine_window`'s X11 and Win32 coordinates. Wine sadly does not
+    // expose a function that just lets us translate X11 coordinates into
+    // Windows coordinates.
+    RECT win32_pos{};
+    if (!GetWindowRect(get_win32_handle(), &win32_pos)) {
+        return std::nullopt;
+    }
+
+    return POINT{
+        .x = query_pointer_reply->root_x + (win32_pos.left - x11_x_pos),
+        .y = query_pointer_reply->root_y + (win32_pos.top - x11_y_pos)};
 }
 
 bool Editor::is_wine_window_active() const {

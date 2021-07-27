@@ -263,6 +263,18 @@ class Editor {
 
    private:
     /**
+     * Get the current cursor position, in Win32 screen coordinates. This is
+     * needed for our `LeaveNotify` handling because `GetCursorPos()` only
+     * updates once every 100 ms. This takes the X11 mouse cursor position, and
+     * then adds to that the difference between `wine_window`'s X11 coordinates
+     * and its Win32 coordinates. This is kind of a workaround for Wine's
+     * X11drv's `root_to_virtual_screen()` function not being exposed.
+     *
+     * If we cannot obtain the X11 cursor position, then this returns a nullopt.
+     */
+    std::optional<POINT> get_current_pointer_position() const;
+
+    /**
      * Returns `true` if the currently active window (as per
      * `_NET_ACTIVE_WINDOW`) contains `wine_window`. If the window manager does
      * not support this hint, this will always return false.
