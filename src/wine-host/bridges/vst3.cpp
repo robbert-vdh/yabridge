@@ -499,16 +499,6 @@ void Vst3Bridge::run() {
 
                         if (plug_view) {
                             instance.plug_view_instance.emplace(plug_view);
-
-                            // HACK: Nimble Kick (and perhaps other plugins, but
-                            //       I haven't heard any reports of this being
-                            //       an issue coming from other plugins) starts
-                            //       a timer in `IEditController::createView()`
-                            //       that relies on data that is only
-                            //       initialized once `IPlugView::attached()`
-                            //       has been called. So until that point, we'll
-                            //       prevent the event loop from running.
-                            instance.is_initialized = false;
                         } else {
                             instance.plug_view_instance.reset();
                         }
@@ -749,27 +739,11 @@ void Vst3Bridge::run() {
                                 editor_instance.get_win32_handle(),
                                 type.c_str());
 
-                        // Set the window's initial size according to what the
-                        // plugin reports. Otherwise get rid of the editor again
-                        // if the plugin didn't embed itself in it.
-                        if (result == Steinberg::kResultOk) {
-                            Steinberg::ViewRect size{};
-                            if (instance.plug_view_instance->plug_view->getSize(
-                                    &size) == Steinberg::kResultOk) {
-                                instance.editor->resize(size.getWidth(),
-                                                        size.getHeight());
-                            }
-                        } else {
+                        // Get rid of the editor again if the plugin didn't
+                        // embed itself in it
+                        if (result != Steinberg::kResultOk) {
                             instance.editor.reset();
                         }
-
-                        // HACK: See the comment in our handling of
-                        //       `IEditController::createView()`. We'll reset
-                        //       this regardless of whether or not this request
-                        //       succeeded or else JUCE plugins without editors
-                        //       might cause us to get stuck in a situation
-                        //       where the event loop gets blocked indefinitely.
-                        instance.is_initialized = true;
 
                         return result;
                     })

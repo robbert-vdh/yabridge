@@ -15,6 +15,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Reverted the workaround for _Nimble Kick_ freezing added in yabridge 3.5.0.
+  This could cause VST3 plugins in **Bitwig Studio** to not process their
+  message loop and thus potentially freeze when using multiple instances of the
+  plugin. Bitwig now always initializes calls `IEditController::createView()`,
+  even if the user doesn't open the plugin's editor. Our workaround for the
+  Nimble Kick race condition expected this to be immediately followed by
+  `IPlugView::attached()`, which is not the case here. Since the plugin would
+  also cause the native Windows version of Bitwig Studio to crash, we'll thus
+  just simply revert this change.
 - Changed how input focus releasing works by more specifically ignoring events
   where the mouse pointer is still hovering over a Wine window instead of
   ignoring a wider class of events. This should fix some edge cases where input
