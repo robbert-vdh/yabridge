@@ -503,8 +503,8 @@ include:
   dialog to disable this behaviour.
 - _Drag-and-drop_ to the plugin window under **REAPER** doesn't work because of
   a long standing issue in REAPER's FX window implementation. You can use a
-  compatibility option to [force drag-and-drop]([editor hosting
-  mode](#compatibility-options)) to work around this limitation.
+  compatibility option to [force drag-and-drop](#compatibility-options) to work
+  around this limitation.
 
 Aside from that, these are some known caveats:
 
