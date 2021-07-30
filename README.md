@@ -23,6 +23,7 @@ while also staying easy to debug and maintain.
   - [DAW setup](#daw-setup)
   - [Bitbridge](#bitbridge)
   - [Wine prefixes](#wine-prefixes)
+  - [Drag-and-drop](#drag-and-drop)
   - [Downgrading Wine](#downgrading-wine)
   - [Installing a development build](#installing-a-development-build)
 - [Configuration](#configuration)
@@ -190,6 +191,14 @@ It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
 automatically detect and use the Wine prefix the plugin's `.dll` or `.vst3` file
 is located in. Alternatively, you can set the `WINEPREFIX` environment variable
 to override the Wine prefix for _all instances_ of yabridge.
+
+### Drag-and-drop
+
+Yabridge supports drag-and-drop both from a native (X11) Linux application to
+plugins running under yabridge, as well as drag-and-drop from yabridge to native
+X11 applications like your DAW. If you're using yabridge in _REAPER_ or _Carla_,
+then you may need to enable a [compatibility option](#compatibility-options) to
+prevent those hosts from stealing the drop.
 
 ### Downgrading Wine
 
