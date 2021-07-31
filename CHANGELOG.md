@@ -291,7 +291,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed the log message for the cached `IPlugView::canResize()` VST3 function
   calls implemented in yabridge 3.2.0.
 
-## [3.3.0] - 2020-06-03
+## [3.3.0] - 2021-06-03
 
 ### Added
 
