@@ -854,7 +854,22 @@ void Editor::run_timer_proc() {
     idle_timer_proc();
 }
 
-std::optional<POINT> Editor::get_current_pointer_position() const {
+std::optional<uint16_t> Editor::get_active_modifiers() const noexcept {
+    xcb_generic_error_t* error = nullptr;
+    const xcb_query_pointer_cookie_t query_pointer_cookie =
+        xcb_query_pointer(x11_connection.get(), wine_window);
+    const std::unique_ptr<xcb_query_pointer_reply_t> query_pointer_reply(
+        xcb_query_pointer_reply(x11_connection.get(), query_pointer_cookie,
+                                &error));
+    if (error) {
+        free(error);
+        return std::nullopt;
+    }
+
+    return query_pointer_reply->mask;
+}
+
+std::optional<POINT> Editor::get_current_pointer_position() const noexcept {
     xcb_generic_error_t* error = nullptr;
     const xcb_query_pointer_cookie_t query_pointer_cookie =
         xcb_query_pointer(x11_connection.get(), wine_window);

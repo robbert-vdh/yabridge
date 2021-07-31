@@ -264,6 +264,14 @@ class Editor {
 
    private:
     /**
+     * Get the X11 event mask containing the current keyboard modifiers. Because
+     * we don't want to link with `xcb-xkb` and we also can't really use
+     * key/motion events for this, we'll do this by querying the pointer
+     * position instead. Will return a nullopt if that query fails.
+     */
+    std::optional<uint16_t> get_active_modifiers() const noexcept;
+
+    /**
      * Get the current cursor position, in Win32 screen coordinates. This is
      * needed for our `LeaveNotify` handling because `GetCursorPos()` only
      * updates once every 100 ms. This takes the X11 mouse cursor position, and
@@ -273,7 +281,7 @@ class Editor {
      *
      * If we cannot obtain the X11 cursor position, then this returns a nullopt.
      */
-    std::optional<POINT> get_current_pointer_position() const;
+    std::optional<POINT> get_current_pointer_position() const noexcept;
 
     /**
      * Returns `true` if the currently active window (as per
