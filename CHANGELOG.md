@@ -12,6 +12,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added more tracing for input focus handling when using the `+editor`
   `YABRIDGE_DEBUG_LEVEL` flag.
+- In addition to the other editor and event handling related changes mentioned
+  in the fixes section below, yabridge will now handle X11 events from within
+  the Win32 event loop. What this means is that X11 events are now handled even
+  when the plugin is blocking the GUI thread, which could potentially increase
+  responsiveness and help with graphical issues in certain situations (although
+  at the moment there aren't any known situations where the old approach caused
+  any issues).
 
 ### Fixed
 

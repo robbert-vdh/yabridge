@@ -67,17 +67,14 @@ class HostBridge {
     virtual void run() = 0;
 
     /**
-     * Handle X11 events for the editor window if it is open. This can safely be
-     * run from any thread.
-     */
-    virtual void handle_x11_events() = 0;
-
-    /**
-     * Run the message loop for this plugin. This is only used for the
-     * individual plugin host, so that we can filter out some unnecessary timer
-     * events. When hosting multiple plugins, a simple central message loop
-     * should be used instead. This is run on a timer in the same IO context as
-     * the one that handles the events, i.e. `main_context`.
+     * Run the message loop for this plugin. This should be called from a timer.
+     * X11 events for the open editors are also handled in this same way,
+     * because they are run from a Win32 timer. This lets us still process those
+     * events even when the Win32 event loop blocks the GUI thread. Since this
+     * function doesn't have any per-plugin behavior, only a single invocation
+     * of this is needed when hosting multiple plugins. This is run on a timer
+     * in the same IO context as the one that handles the events, i.e.
+     * `main_context`.
      *
      * Because of the way the Win32 API works we have to process events on the
      * same thread as the one the window was created on, and that thread is the
@@ -88,7 +85,7 @@ class HostBridge {
      * because of incorrect assumptions made by the plugin. See the dostring for
      * `Vst2Bridge::editor` for more information.
      */
-    void handle_win32_events() noexcept;
+    static void handle_events() noexcept;
 
     /**
      * Used as part of the watchdog. This will check whether the remote host

@@ -290,8 +290,6 @@ class Vst3Bridge : public HostBridge {
      */
     void run() override;
 
-    void handle_x11_events() noexcept override;
-
     /**
      * If the plugin instance has an editor, resize the wrapper window to match
      * the new size. This is called from `IPlugFrame::resizeView()` to make sure

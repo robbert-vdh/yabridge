@@ -492,12 +492,6 @@ void Vst2Bridge::run() {
         });
 }
 
-void Vst2Bridge::handle_x11_events() noexcept {
-    if (editor) {
-        editor->handle_x11_events();
-    }
-}
-
 void Vst2Bridge::close_sockets() {
     sockets.close();
 }

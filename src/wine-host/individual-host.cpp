@@ -145,10 +145,7 @@ __cdecl
     // Handle Win32 messages and X11 events on a timer, just like in
     // `GroupBridge::async_handle_events()``
     main_context.async_handle_events(
-        [&]() {
-            bridge->handle_x11_events();
-            bridge->handle_win32_events();
-        },
+        [&]() { bridge->handle_events(); },
         [&]() { return !bridge->inhibits_event_loop(); });
     main_context.run();
 }

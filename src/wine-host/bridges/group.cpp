@@ -264,31 +264,17 @@ void GroupBridge::accept_requests() {
 void GroupBridge::async_handle_events() {
     main_context.async_handle_events(
         [&]() {
-            {
-                // Always handle X11 events
-                std::lock_guard lock(active_plugins_mutex);
-                for (auto& [parameters, value] : active_plugins) {
-                    auto& [thread, bridge] = value;
-                    bridge->handle_x11_events();
-                }
-            }
-
             std::lock_guard lock(active_plugins_mutex);
 
-            MSG msg;
-
-            // Keep the loop responsive by not handling too many events at once
+            // Keep the loop responsive by not handling too many events at once.
+            // All X11 events are handled from a Win32 timer so they'll still be
+            // handled even when the GUI is blocked.
             //
             // For some reason the Melda plugins run into a seemingly infinite
             // timer loop for a little while after opening a second editor.
             // Without this limit everything will get blocked indefinitely. How
             // could this be fixed?
-            for (int i = 0; i < max_win32_messages &&
-                            PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-                 i++) {
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
-            }
+            HostBridge::handle_events();
         },
         [&]() { return !is_event_loop_inhibited(); });
 }

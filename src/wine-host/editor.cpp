@@ -304,15 +304,17 @@ Editor::Editor(MainContext& main_context,
       // `ShowWindow()` on `win32_window` we'll run into X11 errors.
       win32_child_window(std::nullopt),
       idle_timer(
-          timer_proc
-              ? Win32Timer(
-                    win32_window.handle,
-                    idle_timer_id,
-                    std::chrono::duration_cast<std::chrono::milliseconds>(
-                        config.event_loop_interval())
-                        .count())
-              : Win32Timer()),
-      idle_timer_proc(std::move(timer_proc)),
+          Win32Timer(win32_window.handle,
+                     idle_timer_id,
+                     std::chrono::duration_cast<std::chrono::milliseconds>(
+                         config.event_loop_interval())
+                         .count())),
+      idle_timer_proc([this, timer_proc = std::move(timer_proc)]() mutable {
+          handle_x11_events();
+          if (timer_proc) {
+              (*timer_proc)();
+          }
+      }),
       xcb_wm_state_property(
           get_atom_by_name(*x11_connection, wm_state_property_name)),
       parent_window(parent_window_handle),
@@ -848,10 +850,8 @@ void Editor::set_input_focus(bool grab) const {
     xcb_flush(x11_connection.get());
 }
 
-void Editor::maybe_run_timer_proc() {
-    if (idle_timer_proc) {
-        (*idle_timer_proc)();
-    }
+void Editor::run_timer_proc() {
+    idle_timer_proc();
 }
 
 std::optional<POINT> Editor::get_current_pointer_position() const {
@@ -1121,7 +1121,7 @@ LRESULT CALLBACK window_proc(HWND handle,
             // the plugin will get keep periodically updating its editor either
             // when the host sends `effEditIdle` themself, or periodically when
             // the GUI is being blocked by a dropdown or a message box.
-            editor->maybe_run_timer_proc();
+            editor->run_timer_proc();
             return 0;
         } break;
         // In case the WM does not support the EWMH active window property,

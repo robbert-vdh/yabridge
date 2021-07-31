@@ -1190,16 +1190,6 @@ void Vst3Bridge::run() {
         });
 }
 
-void Vst3Bridge::handle_x11_events() noexcept {
-    std::lock_guard lock(object_instances_mutex);
-
-    for (auto& [instance_id, object] : object_instances) {
-        if (object.editor) {
-            object.editor->handle_x11_events();
-        }
-    }
-}
-
 bool Vst3Bridge::maybe_resize_editor(size_t instance_id,
                                      const Steinberg::ViewRect& new_size) {
     Vst3PluginInstance& instance = object_instances.at(instance_id);

@@ -31,7 +31,7 @@ HostBridge::HostBridge(MainContext& main_context,
 
 HostBridge::~HostBridge() noexcept {}
 
-void HostBridge::handle_win32_events() noexcept {
+void HostBridge::handle_events() noexcept {
     MSG msg;
 
     for (int i = 0;

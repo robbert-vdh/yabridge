@@ -248,12 +248,13 @@ class Editor {
     void set_input_focus(bool grab) const;
 
     /**
-     * Run the timer proc function passed to the constructor, if one was passed.
+     * Run the X11 event loop plus the timer proc function passed to the
+     * constructor, if one was passed.
      *
      * @see idle_timer
      * @see idle_timer_proc
      */
-    void maybe_run_timer_proc();
+    void run_timer_proc();
 
     /**
      * Whether to use XEmbed instead of yabridge's normal window embedded. Wine
@@ -357,10 +358,13 @@ class Editor {
     std::optional<DeferredWin32Window> win32_child_window;
 
     /**
-     * A timer we'll use to periodically run `idle_timer_proc`, if set. Thisi is
-     * only needed for VST2 plugins, as they expected the host to periodically
-     * send an idle event. We used to just pass through the calls from the host
-     * before yabridge 3.x, but doing it ourselves here makes things m much more
+     * A timer we'll use to periodically run the X11 event loop plus
+     * `idle_timer_proc`, if that is set. We handle X11 events from within the
+     * Win32 event loop because that allows us to still process those while the
+     * GUI is blocked. Additionally for VST2 plugins we also need this
+     * `idle_timer_proc`, as they expected the host to periodically send an idle
+     * event. We used to just pass through the calls from the host before
+     * yabridge 3.x, but doing it ourselves here makes things m much more
      * manageable and we'd still need a timer anyways for when the GUI is
      * blocked.
      */
@@ -368,10 +372,10 @@ class Editor {
 
     /**
      * A function to call when the Win32 timer procs. This is used to
-     * periodically call `effEditIdle()` for VST2 plugins even if the GUI is
-     * being blocked.
+     * periodically call `handle_x11_events()`, as well as `effEditIdle()` for
+     * VST2 plugins even if the GUI is being blocked.
      */
-    std::optional<fu2::unique_function<void()>> idle_timer_proc;
+    fu2::unique_function<void()> idle_timer_proc;
 
     /**
      * The atom corresponding to `WM_STATE`.

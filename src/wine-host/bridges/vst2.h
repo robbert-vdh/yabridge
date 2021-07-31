@@ -67,8 +67,6 @@ class Vst2Bridge : public HostBridge {
      */
     void run() override;
 
-    void handle_x11_events() noexcept override;
-
    protected:
     void close_sockets() override;
 
