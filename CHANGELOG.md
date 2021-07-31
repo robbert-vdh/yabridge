@@ -10,54 +10,53 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added the ability to directly focus the plugin's editor instead of allowing
-  the host to also process keyboard events by holding down the <kbd>Shift</kbd>
-  key while entering the plugin's GUI with your mouse. Certain hosts like
-  **Bitwig Studio** normally still respond to the common key presses like Space
-  for play/pause while interacting with a plugin. This does mean that it becomes
-  impossible to type a space character in those hosts, which can become a
-  problem when naming presets. With this feature you can temporarily override
-  this behaviour, and allow all keyboard input to go directly to Wine. This can
-  also be useful for _Voxengo_ plugins, which don't grab keyboard focus in their
-  settings and license dialogs.
+- You can now directly focus the plugin's editor instead of allowing the host to
+  process keyboard events by holding down the <kbd>Shift</kbd> key while
+  entering a plugin's GUI with your mouse. Certain hosts like **Bitwig Studio**
+  normally still respond to common key presses like <kbd>Space</kbd> for
+  play/pause while interacting with a plugin. That in turn can make it
+  impossible to type a space character in those hosts, which may become a
+  problem when searching for or naming presets. With this feature you can
+  temporarily override this behaviour and allow all keyboard input to go
+  directly to Wine. This can also be useful for _Voxengo_ plugins, which don't
+  grab input focus in their settings and license dialogs.
 
 ### Changed
 
-- Added more tracing for input focus handling when using the `+editor`
+- Added more tracing for the input focus handling when using the `+editor`
   `YABRIDGE_DEBUG_LEVEL` flag.
-- In addition to the other editor and event handling related changes mentioned
-  in the fixes section below, yabridge will now handle X11 events from within
-  the Win32 event loop. What this means is that X11 events are now handled even
-  when the plugin is blocking the GUI thread, which could potentially increase
-  responsiveness and help with graphical issues in certain situations (although
-  at the moment there aren't any known situations where the old approach caused
-  any issues).
+- Yabridge will now handle X11 events from within the Win32 message loop. What
+  this means is that X11 events are now handled even when the plugin is blocking
+  the GUI thread, which can potentially increase responsiveness and help with
+  graphical issues in certain situations (although at the moment there aren't
+  any known situations where the old approach caused any issues).
 
 ### Fixed
 
-- Reverted the workaround for _Nimble Kick_ freezing added in yabridge 3.5.0.
-  This could cause VST3 plugins in **Bitwig Studio** and **Ardour** to have
-  frozen, nonfunctional editors when using multiple instances of the plugin
-  unless you opened every plugin instance's editor. Since the plugin would also
-  cause the native Windows version of Bitwig Studio to crash, we should thus
-  just simply revert this change.
-- Changed how input focus releasing works by more specifically ignoring events
-  where the mouse pointer is still hovering over a Wine window instead of
-  ignoring a wider class of events. This should fix some edge cases where input
-  focus would not be given back to the host, or where dropdown menus could close
-  immediately when moving your mouse outsdie of them. The first case would in
-  practice only happen when using a touchscreen or drawing tablet, since that
-  would require the mouse to instantly move from the plugin GUI to another
-  window without going over the window's borders.
-- Similarly, the filter in the Wine->X11 drag-and-drop implementation for
-  distinguishing between Wine windows and other windows (so that we won't
-  interfere with Wine's own internal drag-and-drop mechanism) has also been made
-  more specific. Before this change we might use our own XDND implementation
-  when dragging from a plugin to a standalone Wine application running within
-  the same Wine prefix.
-- Fixed an edge case where clicking inside of a plugin GUI in **REAPER** while
-  the FX window already open in the background would not give keyboard focus to
-  the plugin.
+- Reverted the workaround for the _Nimble Kick_ plugin freezing added in
+  yabridge 3.5.0. This could cause VST3 plugins in **Bitwig Studio** and
+  **Ardour** to have frozen, nonfunctional editors when using multiple instances
+  of a plugin unless you opened every plugin instance's editor. Since the plugin
+  would also cause the native Windows version of Bitwig to crash, we will thus
+  simply revert this change.
+- Fixed a regression from yabridge 3.5.0 where clicking inside of a plugin GUI
+  while the window is already open in the background would not give keyboard
+  focus to the plugin.
+- Changed how input focus releasing works by more selectively filtering out
+  mouse pointer leave events where the pointer is still hovering over a Wine
+  window instead of ignoring an entire wider class of events. This should fix
+  some edge cases where input focus would not be given back to the host, or
+  where dropdown menus could close immediately when hovering over and them
+  leaving them with your mouse. The first case would in practice only happen
+  when using a touchscreen or drawing tablet, since it would require the mouse
+  to instantly move from the plugin GUI to another window without first going
+  over the window's borders.
+- Similarly, the filter in yabridge 3.5.0's Wine->X11 drag-and-drop
+  implementation for distinguishing between Wine windows and other windows (so
+  that we won't interfere with Wine's own internal drag-and-drop mechanism) has
+  also been made more specific. Before this change we might use our own
+  XDND-based drag-and-drop implementation when dragging files from a plugin to a
+  standalone Wine application running within the same Wine prefix.
 
 ## [3.5.0] - 2021-06-23
 

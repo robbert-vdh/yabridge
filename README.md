@@ -207,10 +207,10 @@ Yabridge tries to be clever about the way grabbing input focus for a plugin and
 subsequently giving it back to the host works. One important detail here is that
 when grabbing input focus, yabridge will always focus the _parent window_ passed
 by the host for the plugin to embed itself into. This means that hosts like
-Bitwig Studio can still process common keys like Space for play/pause even while
-interacting with a plugin's GUI. The downside of this approach is that this also
-means that in those hosts you simply cannot type a space character, as the key
-will always go to the host.
+Bitwig Studio can still process common keys like <kbd>Space</kbd> for play/pause
+even while interacting with a plugin's GUI. The downside of this approach is
+that this also means that in those hosts you simply cannot type a space
+character, as the key will always go to the host.
 
 For the very specific situations where you may want to focus the plugin's editor
 directly so that all keyboard input goes to Wine, you can hold down the
