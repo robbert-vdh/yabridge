@@ -42,6 +42,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   more specific. Before this change we might use our own XDND implementation
   when dragging from a plugin to a standalone Wine application running within
   the same Wine prefix.
+- Fixed an edge case where clicking inside of a plugin GUI in **REAPER** while
+  the FX window already open in the background would not give keyboard focus to
+  the plugin.
 
 ## [3.5.0] - 2021-06-23
 

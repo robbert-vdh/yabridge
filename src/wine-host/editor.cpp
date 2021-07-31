@@ -576,16 +576,15 @@ void Editor::handle_x11_events() noexcept {
                         if (!use_xembed) {
                             fix_local_coordinates();
                         }
-                    }
 
-                    // In case the WM somehow does not support
-                    // `_NET_ACTIVE_WINDOW`, a more naive focus grabbing method
-                    // implemented in the `WM_PARENTNOTIFY` handler will be
-                    // used.
-                    if (window == wrapper_window.window &&
-                        supports_ewmh_active_window() &&
-                        is_wine_window_active()) {
-                        set_input_focus(true);
+                        // In case the WM somehow does not support
+                        // `_NET_ACTIVE_WINDOW`, a more naive focus grabbing
+                        // method implemented in the `WM_PARENTNOTIFY` handler
+                        // will be used.
+                        if (supports_ewmh_active_window() &&
+                            is_wine_window_active()) {
+                            set_input_focus(true);
+                        }
                     }
                 } break;
                 // When the user moves their mouse away from the Wine window
