@@ -8,6 +8,19 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added the ability to directly focus the plugin's editor instead of allowing
+  the host to also process keyboard events by holding down the <kbd>Shift</kbd>
+  key while entering the plugin's GUI with your mouse. Certain hosts like
+  **Bitwig Studio** normally still respond to the common key presses like Space
+  for play/pause while interacting with a plugin. This does mean that it becomes
+  impossible to type a space character in those hosts, which can become a
+  problem when naming presets. With this feature you can temporarily override
+  this behaviour, and allow all keyboard input to go directly to Wine. This can
+  also be useful for _Voxengo_ plugins, which don't grab keyboard focus in their
+  settings and license dialogs.
+
 ### Changed
 
 - Added more tracing for input focus handling when using the `+editor`

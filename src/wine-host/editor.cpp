@@ -785,7 +785,17 @@ void Editor::fix_local_coordinates() const {
 }
 
 void Editor::set_input_focus(bool grab) const {
-    const xcb_window_t focus_target = grab ? parent_window : host_window;
+    // NOTE: When grabbing focus, you can hold down the shift key to focus the
+    //       Wine window directly. This allows you to use the space key in
+    //       plugin GUIs in Bitwig when necessary (e.g. for naming presets) but
+    //       still allow space to pause/resume the transport when it's not
+    //       needed. It's also needed for dialogs in Voxengo plugins to function
+    //       properly, as they don't grab input focus themselves.
+    const xcb_window_t focus_target =
+        grab ? (get_active_modifiers().value_or(0) & XCB_MOD_MASK_SHIFT
+                    ? wine_window
+                    : parent_window)
+             : host_window;
 
     xcb_generic_error_t* error = nullptr;
     const xcb_get_input_focus_cookie_t focus_cookie =
@@ -864,6 +874,11 @@ std::optional<uint16_t> Editor::get_active_modifiers() const noexcept {
         free(error);
         return std::nullopt;
     }
+
+    logger.log_editor_trace([&]() {
+        return "DEBUG: Active keyboard modifiers: " +
+               std::to_string(query_pointer_reply->mask);
+    });
 
     return query_pointer_reply->mask;
 }

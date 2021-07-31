@@ -24,6 +24,7 @@ while also staying easy to debug and maintain.
   - [Bitbridge](#bitbridge)
   - [Wine prefixes](#wine-prefixes)
   - [Drag-and-drop](#drag-and-drop)
+  - [Input focus grabbing](#input-focus-grabbing)
   - [Downgrading Wine](#downgrading-wine)
   - [Installing a development build](#installing-a-development-build)
 - [Configuration](#configuration)
@@ -199,6 +200,24 @@ plugins running under yabridge, as well as drag-and-drop from yabridge to native
 X11 applications like your DAW. If you're using yabridge in _REAPER_ or _Carla_,
 then you may need to enable a [compatibility option](#compatibility-options) to
 prevent those hosts from stealing the drop.
+
+### Input focus grabbing
+
+Yabridge tries to be clever about the way grabbing input focus for a plugin and
+subsequently giving it back to the host works. One important detail here is that
+when grabbing input focus, yabridge will always focus the _parent window_ passed
+by the host for the plugin to embed itself into. This means that hosts like
+Bitwig Studio can still process common keys like Space for play/pause even while
+interacting with a plugin's GUI. The downside of this approach is that this also
+means that in those hosts you simply cannot type a space character, as the key
+will always go to the host.
+
+For the very specific situations where you may want to focus the plugin's editor
+directly so that all keyboard input goes to Wine, you can hold down the
+<kbd>Shift</kbd> key while entering the plugin's GUI with your mouse. This will
+let you type spaces in text fields in **Bitwig Studio**, type text into the
+settings and license dialogs in **Voxengo** plugins, and it will also allow you
+to navigate dropdowns with the keyboard.
 
 ### Downgrading Wine
 

@@ -242,6 +242,16 @@ class Editor {
      * is calling `SetFocus()`. See the comment inside of this function for more
      * details on when this is used.
      *
+     * NOTE: There's a little bit of special behaviour in here. When the shift
+     *       key is held while grabbing input focus, then we'll focus
+     *       `wine_window` directly instead of focussing `wrapper_window`. This
+     *       allows you to temporarily override the default focus grabbing
+     *       behaviour, allowing you to use the space key in plugins GUIs in
+     *       Bitwig and to enter text in Voxengo settings and license dialogs.
+     *       This can also help with plugins that use popups but still rely on
+     *       the parent window's keyboard events to come up to control those
+     *       popups.
+     *
      * @param grab Whether to grab input focus (if `true`) or to give back input
      *   focus to `host_window` (if `false`).
      */
