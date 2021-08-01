@@ -635,6 +635,18 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   able to open the terminal at all), then you might want to consider using
   [plugin groups](#plugin-groups) to run multiple instances of your most
   frequently used plugins within a single process.
+  
+- Also when using a lot of plugins, you may reach your systems shared memory
+  limit. This can be checked with `ulimit --lock-size`. If it's a small value
+  like 64k, it can be adjusted on systemd systems by editing `/etc/systemd/system.conf`
+  and setting:
+  
+  ```
+  [Manager]
+  DefaultLimitMEMLOCK=97656
+  ```
+  
+  Then you can reboot and check your limit again.
 
 - If you're using a `WINELOADER` that runs the Wine process under a separate
   namespace while the host is not sandboxed, then you'll have to use the
