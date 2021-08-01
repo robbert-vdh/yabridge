@@ -665,7 +665,7 @@ negative side effects:
 - First of all, you'll want to make sure that you can run programs with realtime
   scheduling. Note that on Arch and Manjaro this does not necessarily require a
   realtime kernel as they include the `PREEMPT` patch set in their regular
-  kernels. You can verify that this is working correctly by running `chrt -f 10 whoami`, which should your username, and running `uname -a` should print
+  kernels. You can verify that this is working correctly by running `chrt -f 10 whoami`, which should print your username, and running `uname -a` should print
   something that contains `PREEMPT` in the output.
 
 - You can also try enabling the `threadirqs` kernel parameter and using which
