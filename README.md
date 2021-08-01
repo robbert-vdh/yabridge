@@ -582,6 +582,20 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   plugin output to `~/.BitwigStudio/log/engine.log`, so you may need to look
   there instead.
 
+- If yabridge prints errors or warnings about memory locking limits, then that
+  means that you have not yet set up realtime priviliges for your user. Setting
+  the memlock limit to unlimited (or -1) is usually part of this process. How
+  you should do this will depend on your distro. On _Arch_ and _Manjaro_, you
+  will need to install the `realtime-priviliges` package, add your user to the
+  `realtime` group with `sudo gpasswd -a "$USER" realtime`, and then reboot.
+  _Fedora_ does the same thing with their `realtime-setup` package, which also
+  sets up a `realtime` group that you will need to add your user to. On
+  _Debian_, _Ubuntu_, and distros based on those, the `jackd2` package usually
+  sets this up for the `audio` group instead. If
+  `/etc/security/limits.d/audio.conf` exists, then you can simply add yourself
+  to the `audio` group and reboot. In any other case you may need to [set this
+  up yourself](https://jackaudio.org/faq/linux_rt_config.html).
+
 - Using PipeWire's JACK implementation might cause certain plugins to crash with
   the out of the box configuration. PipeWire versions before 0.32.0 used rtkit
   instead of regular realtime scheduling, and both PipeWire and rtkit would
