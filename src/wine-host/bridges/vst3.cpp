@@ -739,9 +739,17 @@ void Vst3Bridge::run() {
                                 editor_instance.get_win32_handle(),
                                 type.c_str());
 
-                        // Get rid of the editor again if the plugin didn't
-                        // embed itself in it
-                        if (result != Steinberg::kResultOk) {
+                        // Set the window's initial size according to what the
+                        // plugin reports. Otherwise get rid of the editor again
+                        // if the plugin didn't embed itself in it.
+                        if (result == Steinberg::kResultOk) {
+                            Steinberg::ViewRect size{};
+                            if (instance.plug_view_instance->plug_view->getSize(
+                                    &size) == Steinberg::kResultOk) {
+                                instance.editor->resize(size.getWidth(),
+                                                        size.getHeight());
+                            }
+                        } else {
                             instance.editor.reset();
                         }
 

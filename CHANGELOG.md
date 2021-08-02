@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed a regression from yabridge 3.5.1 where certain non-standard compliant
+  VST3 plugins wouldn't resize to their correct size when opening the editor.
+  This affects **Kontakt**, and it was caused by reverting just a little bit too
+  much code in the regression fix from the previous release.
+
 ## [3.5.1] - 2021-06-31
 
 ### Added
