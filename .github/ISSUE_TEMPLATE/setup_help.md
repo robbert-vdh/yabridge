@@ -32,7 +32,7 @@ Please also include a debug log if possible. If you are having issues with yabri
 2. Launch your host from a terminal using:
 
    ```bash
-   rm -f /tmp/yabridge.log; env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log YABRIDGE_DEBUG_LEVEL=2 <host>
+   rm -f /tmp/yabridge.log; env YABRIDGE_DEBUG_FILE=/tmp/yabridge.log YABRIDGE_DEBUG_LEVEL=2+editor <host>
    ```
 
    Where `<host>` is the name of your host, like `bitwig-studio`, `reaper`, or
