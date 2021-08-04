@@ -165,6 +165,9 @@ const int effStopProcess = 72;
 const int kEffectMagic = CCONST('V', 's', 't', 'P');
 const int kVstLangEnglish = 1;
 const int kVstMidiType = 1;
+// From
+// https://github.com/x42/lv2vst/blob/30a669a021812da05258519cef9d4202f5ce26c3/include/vestige.h#L139
+const int kVstSysExType = 6;
 
 const int kVstNanosValid = 1 << 8;
 const int kVstPpqPosValid = 1 << 9;
@@ -205,6 +208,20 @@ class VstMidiEvent {
     char reserved1;
     // 1f?
     char reserved2;
+};
+
+// SysEx events weren't in Audacity's VeSTige implementation, so these are from
+// https://github.com/x42/lv2vst/blob/30a669a021812da05258519cef9d4202f5ce26c3/include/vestige.h#L188
+class VstMidiSysExEvent {
+   public:
+    int type;
+    int byteSize;
+    int deltaFrames;
+    int flags;
+    int dumpBytes;
+    void* reserved1;
+    char* sysexDump;
+    void* reserved2;
 };
 
 class VstEvent {
