@@ -40,147 +40,147 @@
 #define CCONST(a, b, c, d) \
     ((((int)a) << 24) | (((int)b) << 16) | (((int)c) << 8) | (((int)d) << 0))
 
-const int audioMasterAutomate = 0;
-const int audioMasterVersion = 1;
-const int audioMasterCurrentId = 2;
-const int audioMasterIdle = 3;
-const int audioMasterPinConnected = 4;
+constexpr int audioMasterAutomate = 0;
+constexpr int audioMasterVersion = 1;
+constexpr int audioMasterCurrentId = 2;
+constexpr int audioMasterIdle = 3;
+constexpr int audioMasterPinConnected = 4;
 // unsupported? 5
-const int audioMasterWantMidi = 6;
-const int audioMasterGetTime = 7;
-const int audioMasterProcessEvents = 8;
-const int audioMasterSetTime = 9;
-const int audioMasterTempoAt = 10;
-const int audioMasterGetNumAutomatableParameters = 11;
-const int audioMasterGetParameterQuantization = 12;
-const int audioMasterIOChanged = 13;
-const int audioMasterNeedIdle = 14;
-const int audioMasterSizeWindow = 15;
-const int audioMasterGetSampleRate = 16;
-const int audioMasterGetBlockSize = 17;
-const int audioMasterGetInputLatency = 18;
-const int audioMasterGetOutputLatency = 19;
-const int audioMasterGetPreviousPlug = 20;
-const int audioMasterGetNextPlug = 21;
-const int audioMasterWillReplaceOrAccumulate = 22;
-const int audioMasterGetCurrentProcessLevel = 23;
-const int audioMasterGetAutomationState = 24;
-const int audioMasterOfflineStart = 25;
-const int audioMasterOfflineRead = 26;
-const int audioMasterOfflineWrite = 27;
-const int audioMasterOfflineGetCurrentPass = 28;
-const int audioMasterOfflineGetCurrentMetaPass = 29;
-const int audioMasterSetOutputSampleRate = 30;
+constexpr int audioMasterWantMidi = 6;
+constexpr int audioMasterGetTime = 7;
+constexpr int audioMasterProcessEvents = 8;
+constexpr int audioMasterSetTime = 9;
+constexpr int audioMasterTempoAt = 10;
+constexpr int audioMasterGetNumAutomatableParameters = 11;
+constexpr int audioMasterGetParameterQuantization = 12;
+constexpr int audioMasterIOChanged = 13;
+constexpr int audioMasterNeedIdle = 14;
+constexpr int audioMasterSizeWindow = 15;
+constexpr int audioMasterGetSampleRate = 16;
+constexpr int audioMasterGetBlockSize = 17;
+constexpr int audioMasterGetInputLatency = 18;
+constexpr int audioMasterGetOutputLatency = 19;
+constexpr int audioMasterGetPreviousPlug = 20;
+constexpr int audioMasterGetNextPlug = 21;
+constexpr int audioMasterWillReplaceOrAccumulate = 22;
+constexpr int audioMasterGetCurrentProcessLevel = 23;
+constexpr int audioMasterGetAutomationState = 24;
+constexpr int audioMasterOfflineStart = 25;
+constexpr int audioMasterOfflineRead = 26;
+constexpr int audioMasterOfflineWrite = 27;
+constexpr int audioMasterOfflineGetCurrentPass = 28;
+constexpr int audioMasterOfflineGetCurrentMetaPass = 29;
+constexpr int audioMasterSetOutputSampleRate = 30;
 // unsupported? 31
-const int audioMasterGetSpeakerArrangement = 31;  // deprecated in 2.4?
-const int audioMasterGetVendorString = 32;
-const int audioMasterGetProductString = 33;
-const int audioMasterGetVendorVersion = 34;
-const int audioMasterVendorSpecific = 35;
-const int audioMasterSetIcon = 36;
-const int audioMasterCanDo = 37;
-const int audioMasterGetLanguage = 38;
-const int audioMasterOpenWindow = 39;
-const int audioMasterCloseWindow = 40;
-const int audioMasterGetDirectory = 41;
-const int audioMasterUpdateDisplay = 42;
-const int audioMasterBeginEdit = 43;
-const int audioMasterEndEdit = 44;
-const int audioMasterOpenFileSelector = 45;
-const int audioMasterCloseFileSelector = 46;           // currently unused
-const int audioMasterEditFile = 47;                    // currently unused
-const int audioMasterGetChunkFile = 48;                // currently unused
-const int audioMasterGetInputSpeakerArrangement = 49;  // currently unused
+constexpr int audioMasterGetSpeakerArrangement = 31;  // deprecated in 2.4?
+constexpr int audioMasterGetVendorString = 32;
+constexpr int audioMasterGetProductString = 33;
+constexpr int audioMasterGetVendorVersion = 34;
+constexpr int audioMasterVendorSpecific = 35;
+constexpr int audioMasterSetIcon = 36;
+constexpr int audioMasterCanDo = 37;
+constexpr int audioMasterGetLanguage = 38;
+constexpr int audioMasterOpenWindow = 39;
+constexpr int audioMasterCloseWindow = 40;
+constexpr int audioMasterGetDirectory = 41;
+constexpr int audioMasterUpdateDisplay = 42;
+constexpr int audioMasterBeginEdit = 43;
+constexpr int audioMasterEndEdit = 44;
+constexpr int audioMasterOpenFileSelector = 45;
+constexpr int audioMasterCloseFileSelector = 46;           // currently unused
+constexpr int audioMasterEditFile = 47;                    // currently unused
+constexpr int audioMasterGetChunkFile = 48;                // currently unused
+constexpr int audioMasterGetInputSpeakerArrangement = 49;  // currently unused
 
-const int effFlagsHasEditor = 1;
-const int effFlagsCanReplacing = 1 << 4;   // very likely
-const int effFlagsProgramChunks = 1 << 5;  // from Ardour
-const int effFlagsIsSynth = 1 << 8;        // currently unused
+constexpr int effFlagsHasEditor = 1;
+constexpr int effFlagsCanReplacing = 1 << 4;   // very likely
+constexpr int effFlagsProgramChunks = 1 << 5;  // from Ardour
+constexpr int effFlagsIsSynth = 1 << 8;        // currently unused
 
-const int effOpen = 0;
-const int effClose = 1;       // currently unused
-const int effSetProgram = 2;  // currently unused
-const int effGetProgram = 3;  // currently unused
+constexpr int effOpen = 0;
+constexpr int effClose = 1;       // currently unused
+constexpr int effSetProgram = 2;  // currently unused
+constexpr int effGetProgram = 3;  // currently unused
 // The next one was gleaned from
 // http://www.kvraudio.com/forum/viewtopic.php?p=1905347
-const int effSetProgramName = 4;
-const int effGetProgramName = 5;  // currently unused
+constexpr int effSetProgramName = 4;
+constexpr int effGetProgramName = 5;  // currently unused
 // The next two were gleaned from
 // http://www.kvraudio.com/forum/viewtopic.php?p=1905347
-const int effGetParamLabel = 6;
-const int effGetParamDisplay = 7;
-const int effGetParamName = 8;  // currently unused
-const int effSetSampleRate = 10;
-const int effSetBlockSize = 11;
-const int effMainsChanged = 12;
-const int effEditGetRect = 13;
-const int effEditOpen = 14;
-const int effEditClose = 15;
-const int effEditIdle = 19;
-const int effEditTop = 20;
-const int effIdentify =
+constexpr int effGetParamLabel = 6;
+constexpr int effGetParamDisplay = 7;
+constexpr int effGetParamName = 8;  // currently unused
+constexpr int effSetSampleRate = 10;
+constexpr int effSetBlockSize = 11;
+constexpr int effMainsChanged = 12;
+constexpr int effEditGetRect = 13;
+constexpr int effEditOpen = 14;
+constexpr int effEditClose = 15;
+constexpr int effEditIdle = 19;
+constexpr int effEditTop = 20;
+constexpr int effIdentify =
     22;  // from http://www.asseca.org/vst-24-specs/efIdentify.html
-const int effGetChunk = 23;  // from Ardour
-const int effSetChunk = 24;  // from Ardour
-const int effProcessEvents = 25;
+constexpr int effGetChunk = 23;  // from Ardour
+constexpr int effSetChunk = 24;  // from Ardour
+constexpr int effProcessEvents = 25;
 // The next one was gleaned from
 // http://www.asseca.org/vst-24-specs/efCanBeAutomated.html
-const int effCanBeAutomated = 26;
+constexpr int effCanBeAutomated = 26;
 // The next one was gleaned from
 // http://www.kvraudio.com/forum/viewtopic.php?p=1905347
-const int effGetProgramNameIndexed = 29;
+constexpr int effGetProgramNameIndexed = 29;
 // The next one was gleaned from
 // http://www.asseca.org/vst-24-specs/efGetPlugCategory.html
-const int effGetPlugCategory = 35;
-const int effGetEffectName = 45;
-const int effGetParameterProperties = 56;  // missing
-const int effGetVendorString = 47;
-const int effGetProductString = 48;
-const int effGetVendorVersion = 49;
-const int effCanDo = 51;  // currently unused
+constexpr int effGetPlugCategory = 35;
+constexpr int effGetEffectName = 45;
+constexpr int effGetParameterProperties = 56;  // missing
+constexpr int effGetVendorString = 47;
+constexpr int effGetProductString = 48;
+constexpr int effGetVendorVersion = 49;
+constexpr int effCanDo = 51;  // currently unused
 // The next one was gleaned from http://www.asseca.org/vst-24-specs/efIdle.html
-const int effIdle = 53;
-const int effGetVstVersion = 58;  // currently unused
+constexpr int effIdle = 53;
+constexpr int effGetVstVersion = 58;  // currently unused
 // The next one was gleaned from
 // http://www.asseca.org/vst-24-specs/efBeginSetProgram.html
-const int effBeginSetProgram = 67;
+constexpr int effBeginSetProgram = 67;
 // The next one was gleaned from
 // http://www.asseca.org/vst-24-specs/efEndSetProgram.html
-const int effEndSetProgram = 68;
+constexpr int effEndSetProgram = 68;
 // The next one was gleaned from
 // http://www.asseca.org/vst-24-specs/efShellGetNextPlugin.html
-const int effShellGetNextPlugin = 70;
+constexpr int effShellGetNextPlugin = 70;
 // The next one was gleaned from
 // http://www.asseca.org/vst-24-specs/efBeginLoadBank.html
-const int effBeginLoadBank = 75;
+constexpr int effBeginLoadBank = 75;
 // The next one was gleaned from
 // http://www.asseca.org/vst-24-specs/efBeginLoadProgram.html
-const int effBeginLoadProgram = 76;
+constexpr int effBeginLoadProgram = 76;
 
 // The next two were gleaned from
 // http://www.kvraudio.com/forum/printview.php?t=143587&start=0
-const int effStartProcess = 71;
-const int effStopProcess = 72;
+constexpr int effStartProcess = 71;
+constexpr int effStopProcess = 72;
 
-const int kEffectMagic = CCONST('V', 's', 't', 'P');
-const int kVstLangEnglish = 1;
-const int kVstMidiType = 1;
+constexpr int kEffectMagic = CCONST('V', 's', 't', 'P');
+constexpr int kVstLangEnglish = 1;
+constexpr int kVstMidiType = 1;
 // From
 // https://github.com/x42/lv2vst/blob/30a669a021812da05258519cef9d4202f5ce26c3/include/vestige.h#L139
-const int kVstSysExType = 6;
+constexpr int kVstSysExType = 6;
 
-const int kVstNanosValid = 1 << 8;
-const int kVstPpqPosValid = 1 << 9;
-const int kVstTempoValid = 1 << 10;
-const int kVstBarsValid = 1 << 11;
-const int kVstCyclePosValid = 1 << 12;
-const int kVstTimeSigValid = 1 << 13;
-const int kVstSmpteValid = 1 << 14;  // from Ardour
-const int kVstClockValid = 1 << 15;  // from Ardour
+constexpr int kVstNanosValid = 1 << 8;
+constexpr int kVstPpqPosValid = 1 << 9;
+constexpr int kVstTempoValid = 1 << 10;
+constexpr int kVstBarsValid = 1 << 11;
+constexpr int kVstCyclePosValid = 1 << 12;
+constexpr int kVstTimeSigValid = 1 << 13;
+constexpr int kVstSmpteValid = 1 << 14;  // from Ardour
+constexpr int kVstClockValid = 1 << 15;  // from Ardour
 
-const int kVstTransportPlaying = 1 << 1;
-const int kVstTransportCycleActive = 1 << 2;
-const int kVstTransportChanged = 1;
+constexpr int kVstTransportPlaying = 1 << 1;
+constexpr int kVstTransportCycleActive = 1 << 2;
+constexpr int kVstTransportChanged = 1;
 
 class RemoteVstPlugin;
 
