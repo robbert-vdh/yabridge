@@ -41,13 +41,28 @@ DynamicVstEvents::DynamicVstEvents(const VstEvents& c_events)
     // Copy from the C-style array into a vector for serialization
     for (int i = 0; i < c_events.numEvents; i++) {
         events[i] = *c_events.events[i];
+
+        // If we encounter a SysEx event, also store the payload data in an
+        // associative list (so we can potentially still avoid allocations)
+        const auto sysex_event =
+            reinterpret_cast<VstMidiSysExEvent*>(c_events.events[i]);
+        if (sysex_event->type == kVstSysExType) {
+            sysex_data.emplace_back(
+                i, std::string(sysex_event->sysexDump, sysex_event->byteSize));
+        }
     }
 }
 
 VstEvents& DynamicVstEvents::as_c_events() {
     // As explained in `vst_events_buffer`'s docstring we have to build the
     // `VstEvents` struct by hand on the heap since it's actually a dynamically
-    // sized object
+    // sized object. If we encountered any SysEx events, then we'll need to
+    // update the pointers in `events` to point to the correct data location.
+    for (const auto& [event_idx, data] : sysex_data) {
+        auto& sysex_event =
+            reinterpret_cast<VstMidiSysExEvent&>(events[event_idx]);
+        sysex_event.sysexDump = const_cast<char*>(data.data());
+    }
 
     // First we need to allocate enough memory for the entire object. The events
     // are stored as pointers to objects in the `events` vector that we sent

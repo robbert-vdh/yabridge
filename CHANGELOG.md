@@ -8,12 +8,21 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added support for VST2 plugins sending and receiving SysEx events. Certain
+  MIDI controllers like the _Arturia MiniLab Mk II_ output SysEx events when
+  changing between octaves, and hosts like **REAPER** forwards these events
+  directly to the plugin. Before this change this might cause crashes with
+  plugins that try to handle SysEx events, like the _D16 Group_ plugins.
+
 ### Fixed
 
 - Fixed a regression from yabridge 3.5.1 where certain non-standard compliant
   VST3 plugins wouldn't resize to their correct size when opening the editor.
   This affects **Kontakt**, and it was caused by reverting just a little bit too
   much code in the regression fix from the previous release.
+- Fixed _D16 Group_ plugins crashing when the host tries to send SysEx events.
 
 ## [3.5.1] - 2021-06-31
 

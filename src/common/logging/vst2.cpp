@@ -428,7 +428,13 @@ void Vst2Logger::log_event(
                 },
                 [&](const AEffect&) { message << "<nullptr>"; },
                 [&](const DynamicVstEvents& events) {
-                    message << "<" << events.events.size() << " midi_events>";
+                    message << "<" << events.events.size() << " midi_events";
+                    if (!events.sysex_data.empty()) {
+                        message << ", including " << events.sysex_data.size()
+                                << " sysex_events>";
+                    } else {
+                        message << ">";
+                    }
                 },
                 [&](const DynamicSpeakerArrangement& speaker_arrangement) {
                     message << "<" << speaker_arrangement.speakers.size()

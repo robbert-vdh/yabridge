@@ -89,7 +89,9 @@ struct ChunkData {
  * A wrapper around `VstEvents` that stores the data in a vector instead of a
  * C-style array. Needed until bitsery supports C-style arrays
  * https://github.com/fraillt/bitsery/issues/28. An advantage of this approach
- * is that RAII will handle cleanup for us.
+ * is that RAII will handle cleanup for us. We'll handle both regular MIDI
+ * events as well as SysEx here. If we somehow encounter a different kind of
+ * event, we'll just treat it as regular MIDI and print a warning.
  *
  * Before serialization the events are read from a C-style array into a vector
  * using this class's constructor, and after deserializing the original struct
@@ -116,14 +118,32 @@ class alignas(16) DynamicVstEvents {
     /**
      * MIDI events are sent just before the audio processing call. Technically a
      * host can call `effProcessEvents()` multiple times, but in practice this
-     * of course doesn't happen.
+     * of course doesn't happen. In case the host or plugin sent SysEx data, we
+     * will need to update the `dumpBytes` field to point to the data stored in
+     * the `sysex_data` field before dumping everything to `vst_events_buffer`.
      */
     boost::container::small_vector<VstEvent, 64> events;
+
+    /**
+     * If the host or a plugin sends SysEx data, then we will store that data
+     * here. I've only seen this happen with the combination of an Arturia
+     * MiniLab keyboard, REAPER, and D16 Group plugins. We'll store this as an
+     * associative list of `(index, data)` pairs, where `index` corresponds to
+     * an event in `events`. There's no 'small_unordered_map' in
+     * Boost.Container, so this will have to do.
+     */
+    boost::container::small_vector<std::pair<native_size_t, std::string>, 8>
+        sysex_data;
 
     template <typename S>
     void serialize(S& s) {
         s.container(events, max_midi_events,
                     [](S& s, VstEvent& event) { s.container1b(event.dump); });
+        s.container(sysex_data, max_midi_events,
+                    [](S& s, std::pair<native_size_t, std::string>& pair) {
+                        s.value8b(pair.first);
+                        s.text1b(pair.second, max_buffer_size);
+                    });
     }
 
    private:

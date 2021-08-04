@@ -556,9 +556,6 @@ There are also some extension features for both VST2.4 and VST3 that have not
 been implemented yet because I either haven't seen them used or because we don't
 have permission to do so yet. Examples of this are:
 
-- SysEx messages for VST2 plugins. In addition to MIDI, VST 2.4 also supports
-  SysEx. I don't know of any hosts or plugins that use this, but please let me
-  know if this is needed for something.
 - Vendor specific VST2.4 extensions (for instance, for
   [REAPER](https://www.reaper.fm/sdk/vst/vst_ext.php), though most of these
   extension functions will work out of the box without any modifications).
