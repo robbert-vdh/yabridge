@@ -217,7 +217,7 @@ Vst3PlugViewProxyImpl::setFrame(Steinberg::IPlugFrame* frame) {
         // try to call those functions from an `IRunLoop` event handler.
         try {
             run_loop_tasks.emplace(plug_frame);
-        } catch (const std::runtime_error& e) {
+        } catch (const std::runtime_error& error) {
             // In case the host does not support `IRunLoop` or if we can't
             // register an event handler, we'll throw during `RunLoopTasks`'
             // constructor
@@ -226,7 +226,7 @@ Vst3PlugViewProxyImpl::setFrame(Steinberg::IPlugFrame* frame) {
             bridge.logger.log(
                 "The host does not support IRunLoop, falling back to naive GUI "
                 "function execution: " +
-                std::string(e.what()));
+                std::string(error.what()));
         }
 
         return bridge.send_mutually_recursive_message(YaPlugView::SetFrame{

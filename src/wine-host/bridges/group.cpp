@@ -286,7 +286,7 @@ boost::asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
     try {
         return boost::asio::local::stream_protocol::acceptor(io_context,
                                                              endpoint);
-    } catch (const boost::system::system_error& error) {
+    } catch (const boost::system::system_error&) {
         // If this failed, then either there is a stale socket file or another
         // process is already is already listening. In the last case we will
         // simply throw so the other process can handle the request.
@@ -301,7 +301,7 @@ boost::asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
             if (file == endpoint_path) {
                 // Another process is already listening, so we don't have to do
                 // anything
-                throw error;
+                throw;
             }
         }
 

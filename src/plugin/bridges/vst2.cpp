@@ -536,7 +536,7 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
                 return_value = sockets.host_vst_dispatch.send_event(
                     converter, std::pair<Vst2Logger&, bool>(logger, true),
                     opcode, index, value, data, option);
-            } catch (const boost::system::system_error& a) {
+            } catch (const boost::system::system_error&) {
                 // Thrown when the socket gets closed because the VST plugin
                 // loaded into the Wine process crashed during shutdown
                 logger.log("The plugin crashed during shutdown, ignoring");

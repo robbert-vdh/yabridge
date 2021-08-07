@@ -671,7 +671,7 @@ class AdHocSocketHandler {
                 secondary_socket.connect(endpoint);
 
                 return callback(secondary_socket);
-            } catch (const boost::system::system_error& e) {
+            } catch (const boost::system::system_error&) {
                 // So, what do we do when noone is listening on the endpoint
                 // yet? This can happen with plugin groups when the Wine
                 // host process does an `audioMaster()` call before the
@@ -699,7 +699,7 @@ class AdHocSocketHandler {
                 } else {
                     // Rethrow the exception if the sockets we're not
                     // handling the specific case described above
-                    throw e;
+                    throw;
                 }
             }
         }
