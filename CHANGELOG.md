@@ -24,7 +24,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   the regression fix from the previous release.
 - Fixed _D16 Group_ plugins crashing when the host tries to send SysEx events.
 
-## [3.5.1] - 2021-06-31
+## [3.5.1] - 2021-07-31
 
 ### Added
 
@@ -76,7 +76,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   XDND-based drag-and-drop implementation when dragging files from a plugin to a
   standalone Wine application running within the same Wine prefix.
 
-## [3.5.0] - 2021-06-23
+## [3.5.0] - 2021-07-23
 
 ### Added
 
