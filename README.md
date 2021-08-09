@@ -157,7 +157,7 @@ Please let me know if there are any issues with other hosts.
 
    2. VST3 plugins are always set up in `~/.vst3/yabridge` as per the VST3
       specification. Just make sure your DAW searches for VST3 plugins in
-      `~/.vst3` and will pick up those plugins automatically without any
+      `~/.vst3` and it will pick up those plugins automatically without any
       additional setup. Don't add the Windows VST3 plugin directories to your
       DAW's plugin search paths, as that can cause some DAWs like REAPER that
       blacklist plugins based on the plugin file's name rather than the full
