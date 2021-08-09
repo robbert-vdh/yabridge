@@ -11,6 +11,11 @@ page](https://github.com/robbert-vdh/yabridge/releases) on GitHub and can run
 from anywhere. All of the information below can also be found through
 `yabridgectl --help`.
 
+Keep in mind that during normal usage you should not need to do anything other
+than the things listed in yabridge's [main
+readme](https://github.com/robbert-vdh/yabridge#usage). All of the other options
+mentioned here are only useful during development.
+
 ### Yabridge path
 
 Yabridgectl will need to know where it can find `libyabridge-vst2.so` and
