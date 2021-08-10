@@ -75,7 +75,8 @@ Please let me know if there are any issues with other hosts.
 
 1. You can install yabridge and yabridgectl using a prebuilt binary, through the
    AUR, from a distro package, or by building from source. Keep in mind that the
-   distro packages mentioned below may not always be up to date.
+   distro packages mentioned below may not always be up to date, and they may
+   also not be compiled with support for 32-bit plugins.
 
    - On **Arch** and **Manjaro**, you can install yabridge using the official
      AUR packages. You have three options here:
