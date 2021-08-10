@@ -2,7 +2,7 @@
 # subprojects. The only workaround is to only define only the necessary
 # variables there, and to then assemble the dependencies here ourselves.
 
-vst3 = subproject('vst3', version : '3.7.2')
+vst3 = subproject('vst3', version : '3.7.3')
 vst3_compiler_options = vst3.get_variable('compiler_options')
 vst3_include_dir = vst3.get_variable('include_dir')
 

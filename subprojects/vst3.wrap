@@ -1,7 +1,7 @@
 [wrap-git]
 url = https://github.com/robbert-vdh/vst3sdk.git
-# This is VST3 SDK v3.7.2_build_28 with the documentation and VSTGUI submodules
-# removed
-revision = v3.7.2_build_28-patched
+# This is VST3 SDK v3.7.3_build_20 with the documentation and VSTGUI submodules
+# removed and a dummy `meson.build` file that just lists all source files
+revision = v3.7.3_build_20-patched
 clone-recursive = true
 depth = 1
