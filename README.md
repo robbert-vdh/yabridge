@@ -32,8 +32,8 @@ while also staying easy to debug and maintain.
 - [**Performance tuning**](#performance-tuning)
   - [Environment configuration](#environment-configuration)
 - [Building](#building)
-  - [Building without VST3 support](#building-without-vst3-support)
   - [32-bit bitbridge](#32-bit-bitbridge)
+  - [32-bit libraries](#32-bit-libraries)
 - [Debugging](#debugging)
   - [Attaching a debugger](#attaching-a-debugger)
 
