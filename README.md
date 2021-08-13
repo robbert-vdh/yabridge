@@ -110,9 +110,9 @@ Please let me know if there are any issues with other hosts.
         that `~/.local/share/yabridge/yabridgectl` exists. You can do this from
         the command line with `tar -C ~/.local/share -xavf yabridge-x.y.z.tar.gz`.
      3. **Whenever any step below mentions running `yabridgectl <something>`,
-        then you should run `~/.local/share/yabridgectl <something>` instead**
-        as `~/.local/share/yabridge` is not in your search path so your shell
-        won't know where to look for yabridge.
+        then you should run `~/.local/share/yabridge/yabridgectl <something>`
+        instead** as `~/.local/share/yabridge` is not in your search path so
+        your shell won't know where to look for yabridge.
 
         Alternatively, you can also add that directory to your shell's search
         path so you'll be able to run `yabridgectl` directly. If you don't know
