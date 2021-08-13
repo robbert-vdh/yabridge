@@ -42,6 +42,10 @@ while also staying easy to debug and maintain.
 Yabridge has been tested under the following hosts using Wine Staging
 6.14[\*](#wine-version-notice):
 
+**Wine 6.15 will not work with yabridge because of Wine bug
+[\#51596](https://bugs.winehq.org/show_bug.cgi?id=51596).** **See below for
+[downgrading instructions](#downgrading-wine).**
+
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
 | Bitwig Studio 4.0.1 | :heavy_check_mark: | :heavy_check_mark:                                                   |
