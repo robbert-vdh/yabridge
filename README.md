@@ -233,7 +233,7 @@ Wine. This can be done as follows:
 
   ```shell
   version=6.4
-  codename=$(awk '/^deb https:\/\/dl\.winehq\.org/ { print $3 }' /etc/apt/sources.list)
+  codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ { print $3; exit }' /etc/apt/sources.list /etc/apt/sources.list.d/*.list)
   sudo apt install --install-recommends {winehq-staging,wine-staging,wine-staging-amd64,wine-staging-i386}=$version~$codename-1
   ```
 
