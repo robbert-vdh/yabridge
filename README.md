@@ -272,7 +272,7 @@ follows:
   [yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/) AUR
   packages.
 - Otherwise, you can find development builds on the [automated build
-  page](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaste).
+  page](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster).
   Before you can download these files, you need log in to GitHub. Then simply
   select the latest commit with a green checkmark next to it, scroll down the
   build page, and download the latest yabridge and yabridgectl binaries that
