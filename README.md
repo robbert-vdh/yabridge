@@ -491,7 +491,7 @@ include:
   is enabled. This can be fixed by disabling GPU acceleration in the plugin
   settings. I'm not sure whether this is an issue with Wine or the plugins
   themselves. Notable issues here are missing redraws and incorrect positioning
-  when the window gets dragged offscreen on the top and left dies of the screen.
+  when the window gets dragged offscreen on the top and left sides of the screen.
 - Knobs in **Tokyo Dawn Records** plugins may not behave as expected when
   dragging long distances. Setting the 'Continuous Drag' option in the plugin's
   options to 'Linear' fixes the issue.
