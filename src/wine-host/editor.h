@@ -213,8 +213,7 @@ class Editor {
 
     /**
      * Get the Win32 window handle so it can be passed to an `effEditOpen()`
-     * call. This will return the child window's handle if double editor
-     * embedding is enabled.
+     * call.
      */
     HWND get_win32_handle() const noexcept;
 
@@ -364,16 +363,6 @@ class Editor {
      * embed itself in.
      */
     DeferredWin32Window win32_window;
-
-    /**
-     * A child window embedded inside of `win32_window`. This is only used if
-     * the `editor_double_embed` option is enabled. It can be used as a
-     * workaround for plugins that rely on their parent window's screen
-     * coordinates instead of their own (see the 'Editor hosting modes' section
-     * of the readme for more details). The plugin should then embed itself
-     * within this child window.
-     */
-    std::optional<DeferredWin32Window> win32_child_window;
 
     /**
      * A timer we'll use to periodically run the X11 event loop plus

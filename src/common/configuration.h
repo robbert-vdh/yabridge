@@ -95,20 +95,6 @@ class Configuration {
     std::optional<boost::filesystem::path> disable_pipes;
 
     /**
-     * If this is set to `true`, then the plugin editor should be embedded in
-     * yet another window. This would result in an embedding sequence of
-     * `<window_provided_by_host> <-> <wine_parent_window> <->
-     * <wine_child_window> <-> <window_created_by_plugin>`, where
-     * `<wine_child_window>` is the new addition. The only plugin I've
-     * encountered where this was necessary was PSPaudioware E27 (and it likely
-     * also applies to other PSPaudioware plugins with expandable GUIs). I also
-     * haven't noticed any issues caused from having this enabled, but having it
-     * behind a flag reduces the amount of moving parts so that's probably a
-     * better idea.
-     */
-    bool editor_double_embed = false;
-
-    /**
      * If set to `true`, we'll remove the `XdndAware` property all ancestor
      * windows in `editor.cpp`. This is needed for REAPER as REAPER implements
      * (but doesn't use) drag-and-drop support on all of its windows. This
@@ -202,7 +188,6 @@ class Configuration {
 
         s.ext(disable_pipes, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath{}); });
-        s.value1b(editor_double_embed);
         s.value1b(editor_force_dnd);
         s.value1b(editor_xembed);
         s.ext(frame_rate, bitsery::ext::InPlaceOptional(),

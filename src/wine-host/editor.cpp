@@ -299,10 +299,6 @@ Editor::Editor(MainContext& main_context,
                                   nullptr,
                                   GetModuleHandle(nullptr),
                                   this)),
-      // If `config.editor_double_embed` is set, then we'll also create a child
-      // window in `win32_child_window`. If we do this before calling
-      // `ShowWindow()` on `win32_window` we'll run into X11 errors.
-      win32_child_window(std::nullopt),
       idle_timer(
           Win32Timer(win32_window.handle,
                      idle_timer_id,
@@ -427,23 +423,7 @@ Editor::Editor(MainContext& main_context,
         // described in `Editor`'s docstring'.
         do_reparent(wine_window, wrapper_window.window);
 
-        // If we're using the double embedding option, then the child window
-        // should only be created after the parent window is visible
         ShowWindow(win32_window.handle, SW_SHOWNORMAL);
-        if (config.editor_double_embed) {
-            // As explained above, we can't do this directly in the initializer
-            // list
-            win32_child_window.emplace(
-                main_context, x11_connection,
-                CreateWindowEx(WS_EX_TOOLWINDOW,
-                               reinterpret_cast<LPCSTR>(get_window_class()),
-                               "yabridge plugin child", WS_CHILD, 0, 0,
-                               client_area.width, client_area.height,
-                               win32_window.handle, nullptr,
-                               GetModuleHandle(nullptr), this));
-
-            ShowWindow(win32_child_window->handle, SW_SHOWNORMAL);
-        }
     }
 }
 
@@ -727,12 +707,7 @@ void Editor::handle_x11_events() noexcept {
 }
 
 HWND Editor::get_win32_handle() const noexcept {
-    // FIXME: The double embed and XEmbed options don't work together right now
-    if (win32_child_window && !use_xembed) {
-        return win32_child_window->handle;
-    } else {
-        return win32_window.handle;
-    }
+    return win32_window.handle;
 }
 
 void Editor::fix_local_coordinates() const {
@@ -937,7 +912,7 @@ std::optional<POINT> Editor::get_current_pointer_position() const noexcept {
     // expose a function that just lets us translate X11 coordinates into
     // Windows coordinates.
     RECT win32_pos{};
-    if (!GetWindowRect(get_win32_handle(), &win32_pos)) {
+    if (!GetWindowRect(win32_window.handle, &win32_pos)) {
         return std::nullopt;
     }
 

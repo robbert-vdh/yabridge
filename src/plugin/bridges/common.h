@@ -255,9 +255,6 @@ class PluginBridge {
                 "hack: pipes disabled, plugin output will go to \"" +
                 config.disable_pipes->string() + "\"");
         }
-        if (config.editor_double_embed) {
-            other_options.push_back("editor: double embed");
-        }
         if (config.editor_force_dnd) {
             other_options.push_back("editor: force drag-and-drop");
         }

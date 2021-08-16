@@ -8,13 +8,21 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Removed
+
+- The `editor_double_embed` option added in yabridge 1.4.0 has been removed.
+  This option was added to work around _PSPaudioware E27_ which used its parent
+  window's position as an offset for drawing its GUI, and without this option
+  that GUI would be misaligned. The below change to yabridge's embedding method
+  supersedes this option, as it also fixes a similar issue for another plugin.
+
 ### Changed
 
 - Yabridge's Wine window embedding now takes more measures to make sure that the
   plugin draws itself properly in the top left corner of the window. This is
   needed for some buggy plugins that draw window based on absolute screen
   coordinates, instead of their positioning within the parent window, like the
-  _Soundtoys_ plugins.
+  _Soundtoys_ plugins and older _PSPaudioware_ plugins.
 
 ### Fixed
 

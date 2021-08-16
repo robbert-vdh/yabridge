@@ -101,12 +101,6 @@ Configuration::Configuration(const fs::path& config_path,
                 } else {
                     invalid_options.push_back(key);
                 }
-            } else if (key == "editor_double_embed") {
-                if (const auto parsed_value = value.as_boolean()) {
-                    editor_double_embed = parsed_value->get();
-                } else {
-                    invalid_options.push_back(key);
-                }
             } else if (key == "editor_force_dnd") {
                 if (const auto parsed_value = value.as_boolean()) {
                     editor_force_dnd = parsed_value->get();
