@@ -8,6 +8,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### TODOs
+
+- Remove the remaining mentions of `editor_double_embed` from the readme.
+
 ### Removed
 
 - The `editor_double_embed` option added in yabridge 1.4.0 has been removed.
