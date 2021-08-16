@@ -447,7 +447,7 @@ Editor::Editor(MainContext& main_context,
     }
 }
 
-void Editor::resize(uint16_t width, uint16_t height) noexcept {
+void Editor::resize(uint16_t width, uint16_t height) {
     logger.log_editor_trace([&]() {
         return "DEBUG: Resizing wrapper window to " + std::to_string(width) +
                "x" + std::to_string(height);

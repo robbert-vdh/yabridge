@@ -204,7 +204,7 @@ class Editor {
      * this whenever the plugin requests a resize, or when the host resizes the
      * window (using the plugin API). Before yabridge 3.5.0 this was implicit.
      */
-    void resize(uint16_t width, uint16_t height) noexcept;
+    void resize(uint16_t width, uint16_t height);
 
     /**
      * Handle X11 events sent to the window our editor is embedded in.
