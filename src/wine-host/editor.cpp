@@ -459,6 +459,12 @@ void Editor::resize(uint16_t width, uint16_t height) noexcept {
     xcb_configure_window(x11_connection.get(), wrapper_window.window,
                          value_mask, values.data());
     xcb_flush(x11_connection.get());
+
+    // Make sure that after the resize the screen coordinates always match up
+    // properly. Without this Soundtoys Crystallizer might appear choppy or skip
+    // a frame during their resize animation (which somehow calls
+    // `audioMasterSizeWindow()` with the same size a bunch of times in a row).
+    fix_local_coordinates();
 }
 
 void Editor::handle_x11_events() noexcept {
@@ -734,6 +740,23 @@ void Editor::fix_local_coordinates() const {
         return;
     }
 
+    // Before lying to Wine about the window's coordinates, we do need to make
+    // sure that the window is actually placed at (0, 0) coordinates. Otherwise
+    // some plugins that rely on screen coordinates, like the Soundtoys plugins
+    // and older PSPaudioware plugins, will draw their GUI at the wrong
+    // location. In case we have multiple `ConfiguratioNotify` events in a row,
+    // we'll only need to do this once.
+    RECT current_pos{};
+    if (GetWindowRect(win32_window.handle, &current_pos) ||
+        current_pos.left != 0 || current_pos.top != 0) {
+        logger.log_editor_trace([]() {
+            return "DEBUG: Resetting Wine window position back to (0, 0)";
+        });
+        SetWindowPos(win32_window.handle, nullptr, 0, 0, 0, 0,
+                     SWP_NOSIZE | SWP_NOREDRAW | SWP_NOACTIVATE |
+                         SWP_NOCOPYBITS | SWP_NOOWNERZORDER | SWP_DEFERERASE);
+    }
+
     // We're purposely not using XEmbed here. This has the consequence that wine
     // still thinks that any X and Y coordinates are relative to the x11 window
     // root instead of the parent window provided by the DAW, causing all sorts
@@ -776,6 +799,12 @@ void Editor::fix_local_coordinates() const {
     translated_event.height = client_area.height;
     translated_event.x = translated_coordinates->dst_x;
     translated_event.y = translated_coordinates->dst_y;
+
+    logger.log_editor_trace([&]() {
+        return "DEBUG: Spoofing local coordinates to (" +
+               std::to_string(translated_event.x) + ", " +
+               std::to_string(translated_event.y) + ")";
+    });
 
     xcb_send_event(
         x11_connection.get(), false, wine_window,

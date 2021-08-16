@@ -8,6 +8,19 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Yabridge's Wine window embedding now takes more measures to make sure that the
+  plugin draws itself properly in the top left corner of the window. This is
+  needed for some buggy plugins that draw window based on absolute screen
+  coordinates, instead of their positioning within the parent window, like the
+  _Soundtoys_ plugins.
+
+### Fixed
+
+- Fixed an offset editor GUI after clicking the 'Tweak' button in _Soundtoys
+  Crytallizer_.
+
 ### Packaging notes
 
 - We now target VST3 SDK version 3.7.3 with git tag `v3.7.3_build_20-patched`.
