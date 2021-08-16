@@ -262,7 +262,8 @@ Editor::Editor(MainContext& main_context,
                Logger& logger,
                const size_t parent_window_handle,
                std::optional<fu2::unique_function<void()>> timer_proc)
-    : use_xembed(config.editor_xembed),
+    : use_coordinate_hack(config.editor_coordinate_hack),
+      use_xembed(config.editor_xembed),
       logger(logger),
       x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
       dnd_proxy_handle(WineXdndProxy::get_handle()),
@@ -440,23 +441,28 @@ void Editor::resize(uint16_t width, uint16_t height) {
                          value_mask, values.data());
     xcb_flush(x11_connection.get());
 
-    // Before lying to Wine about the window's coordinates, we do need to make
-    // sure that the window is actually placed at (0, 0) coordinates. Otherwise
-    // some plugins that rely on screen coordinates, like the Soundtoys plugins
-    // and older PSPaudioware plugins, will draw their GUI at the wrong
-    // location.
-    logger.log_editor_trace([]() {
-        return "DEBUG: Resetting Wine window position back to (0, 0)";
-    });
-    SetWindowPos(win32_window.handle, nullptr, 0, 0, 0, 0,
-                 SWP_NOSIZE | SWP_NOREDRAW | SWP_NOACTIVATE | SWP_NOCOPYBITS |
-                     SWP_NOOWNERZORDER | SWP_DEFERERASE);
+    // When the `editor_coordinate_hack` option is enabled, we will make sure
+    // that the window is actually placed at (0, 0) coordinates. Otherwise some
+    // plugins that rely on screen coordinates, like the Soundtoys plugins and
+    // older PSPaudioware plugins, will draw their GUI at the wrong location
+    // because they look at the (top level) window's screen coordinates instead
+    // of their own relative coordinates. We don't do by default as this also
+    // interferes with resize handles.
+    if (use_coordinate_hack) {
+        logger.log_editor_trace([]() {
+            return "DEBUG: Resetting Wine window position back to (0, 0)";
+        });
+        SetWindowPos(win32_window.handle, nullptr, 0, 0, 0, 0,
+                     SWP_NOSIZE | SWP_NOREDRAW | SWP_NOACTIVATE |
+                         SWP_NOCOPYBITS | SWP_NOOWNERZORDER | SWP_DEFERERASE);
 
-    // Make sure that after the resize the screen coordinates always match up
-    // properly. Without this Soundtoys Crystallizer might appear choppy or skip
-    // a frame during their resize animation (which somehow calls
-    // `audioMasterSizeWindow()` with the same size a bunch of times in a row).
-    fix_local_coordinates();
+        // Make sure that after the resize the screen coordinates always match
+        // up properly. Without this Soundtoys Crystallizer might appear choppy
+        // or skip a frame during their resize animation (which somehow calls
+        // `audioMasterSizeWindow()` with the same size a bunch of times in a
+        // row).
+        fix_local_coordinates();
+    }
 }
 
 void Editor::handle_x11_events() noexcept {

@@ -10,28 +10,22 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### TODOs
 
-- Remove the remaining mentions of `editor_double_embed` from the readme.
+- Remove the note after the `editor_coordinate_hack` compatibility option in the
+  readme.
+
+### Added
+
+- Added a new `editor_coordinate_hack` option which replaces
+  `editor_double_embed`. This can be useful with buggy plugins that have their
+  editor GUIs misaligned after resizing the window because they draw their GUI
+  based on (top level) window's absolute screen coordinates instead of their own
+  relative coordinates. The known plugins that can benefit from this are
+  _PSPaudioware E27_ and _Soundtoys Crystallizer_.
 
 ### Removed
 
-- The `editor_double_embed` option added in yabridge 1.4.0 has been removed.
-  This option was added to work around _PSPaudioware E27_ which used its parent
-  window's position as an offset for drawing its GUI, and without this option
-  that GUI would be misaligned. The below change to yabridge's embedding method
-  supersedes this option, as it also fixes a similar issue for another plugin.
-
-### Changed
-
-- Yabridge's Wine window embedding now takes more measures to make sure that the
-  plugin draws itself properly in the top left corner of the window when windows
-  are being resized. This is needed for some buggy plugins that draw window
-  based on absolute screen coordinates, instead of their positioning within the
-  parent window, like the _Soundtoys_ plugins and older _PSPaudioware_ plugins.
-
-### Fixed
-
-- Fixed an offset editor GUI after clicking the 'Tweak' button in _Soundtoys
-  Crytallizer_.
+- The `editor_double_embed` option added in yabridge 1.4.0 has been removed as
+  the `editor_coordinate_hack` option supersedes it.
 
 ### Packaging notes
 

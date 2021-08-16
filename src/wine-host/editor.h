@@ -266,10 +266,17 @@ class Editor {
     void run_timer_proc();
 
     /**
+     * Whether to reposition `win32_window` to (0, 0) every time the window
+     * resizes. This can help with buggy plugins that use the (top level)
+     * window's screen coordinates when drawing their GUI.
+     */
+    const bool use_coordinate_hack = false;
+
+    /**
      * Whether to use XEmbed instead of yabridge's normal window embedded. Wine
      * with XEmbed tends to cause rendering issues, so it's disabled by default.
      */
-    const bool use_xembed;
+    const bool use_xembed = false;
 
    private:
     /**
