@@ -440,6 +440,18 @@ void Editor::resize(uint16_t width, uint16_t height) {
                          value_mask, values.data());
     xcb_flush(x11_connection.get());
 
+    // Before lying to Wine about the window's coordinates, we do need to make
+    // sure that the window is actually placed at (0, 0) coordinates. Otherwise
+    // some plugins that rely on screen coordinates, like the Soundtoys plugins
+    // and older PSPaudioware plugins, will draw their GUI at the wrong
+    // location.
+    logger.log_editor_trace([]() {
+        return "DEBUG: Resetting Wine window position back to (0, 0)";
+    });
+    SetWindowPos(win32_window.handle, nullptr, 0, 0, 0, 0,
+                 SWP_NOSIZE | SWP_NOREDRAW | SWP_NOACTIVATE | SWP_NOCOPYBITS |
+                     SWP_NOOWNERZORDER | SWP_DEFERERASE);
+
     // Make sure that after the resize the screen coordinates always match up
     // properly. Without this Soundtoys Crystallizer might appear choppy or skip
     // a frame during their resize animation (which somehow calls
@@ -713,23 +725,6 @@ HWND Editor::get_win32_handle() const noexcept {
 void Editor::fix_local_coordinates() const {
     if (use_xembed) {
         return;
-    }
-
-    // Before lying to Wine about the window's coordinates, we do need to make
-    // sure that the window is actually placed at (0, 0) coordinates. Otherwise
-    // some plugins that rely on screen coordinates, like the Soundtoys plugins
-    // and older PSPaudioware plugins, will draw their GUI at the wrong
-    // location. In case we have multiple `ConfiguratioNotify` events in a row,
-    // we'll only need to do this once.
-    RECT current_pos{};
-    if (GetWindowRect(win32_window.handle, &current_pos) ||
-        current_pos.left != 0 || current_pos.top != 0) {
-        logger.log_editor_trace([]() {
-            return "DEBUG: Resetting Wine window position back to (0, 0)";
-        });
-        SetWindowPos(win32_window.handle, nullptr, 0, 0, 0, 0,
-                     SWP_NOSIZE | SWP_NOREDRAW | SWP_NOACTIVATE |
-                         SWP_NOCOPYBITS | SWP_NOOWNERZORDER | SWP_DEFERERASE);
     }
 
     // We're purposely not using XEmbed here. This has the consequence that wine
