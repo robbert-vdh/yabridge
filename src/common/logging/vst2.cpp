@@ -452,7 +452,7 @@ void Vst2Logger::log_event(
                 [&](const WantsChunkBuffer&) {
                     message << "<writable_buffer>";
                 },
-                [&](const WantsVstRect&) { message << "<writable_buffer>"; },
+                [&](const WantsVstRect&) { message << "<VstRect**>"; },
                 [&](const WantsVstTimeInfo&) { message << "<nullptr>"; },
                 [&](const WantsString&) { message << "<writable_string>"; }},
             payload);
