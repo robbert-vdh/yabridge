@@ -3,7 +3,9 @@
 # variables there, and to then assemble the dependencies here ourselves.
 
 vst3 = subproject('vst3', version : '3.7.3')
-vst3_compiler_options = vst3.get_variable('compiler_options')
+
+# Also include our normal compiler options so symbols are hidden by default
+vst3_compiler_options = compiler_options + vst3.get_variable('compiler_options')
 vst3_include_dir = vst3.get_variable('include_dir')
 
 # We need to do some minor hacking to get the SDK to compile with winegcc. Most
