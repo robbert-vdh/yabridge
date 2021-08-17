@@ -410,7 +410,7 @@ void Vst2Logger::log_event(
 
         std::visit(
             overload{
-                [&](const std::nullptr_t&) { message << "<nullptr>"; },
+                [&](const std::nullptr_t&) { message << "nullptr"; },
                 [&](const std::string& s) {
                     if (s.size() < 32) {
                         message << "\"" << s << "\"";
@@ -426,7 +426,7 @@ void Vst2Logger::log_event(
                 [&](const native_size_t& window_id) {
                     message << "<window " << window_id << ">";
                 },
-                [&](const AEffect&) { message << "<nullptr>"; },
+                [&](const AEffect&) { message << "nullptr"; },
                 [&](const DynamicVstEvents& events) {
                     message << "<" << events.events.size() << " midi_events";
                     if (!events.sysex_data.empty()) {
@@ -445,15 +445,13 @@ void Vst2Logger::log_event(
                 [&](const VstParameterProperties&) {
                     message << "<writable_buffer>";
                 },
-                [&](const WantsAEffectUpdate&) { message << "<nullptr>"; },
-                [&](const WantsAudioShmBufferConfig&) {
-                    message << "<nullptr>";
-                },
+                [&](const WantsAEffectUpdate&) { message << "nullptr"; },
+                [&](const WantsAudioShmBufferConfig&) { message << "nullptr"; },
                 [&](const WantsChunkBuffer&) {
                     message << "<writable_buffer>";
                 },
-                [&](const WantsVstRect&) { message << "<VstRect**>"; },
-                [&](const WantsVstTimeInfo&) { message << "<nullptr>"; },
+                [&](const WantsVstRect&) { message << "VstRect**"; },
+                [&](const WantsVstTimeInfo&) { message << "nullptr"; },
                 [&](const WantsString&) { message << "<writable_string>"; }},
             payload);
 
@@ -465,6 +463,7 @@ void Vst2Logger::log_event(
 
 void Vst2Logger::log_event_response(
     bool is_dispatch,
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     int opcode,
     intptr_t return_value,
     const Vst2EventResult::Payload& payload,
