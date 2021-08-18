@@ -73,6 +73,9 @@ Please let me know if there are any issues with other hosts.
    with yabridge. On other distros you should be able to just install
    `wine-staging` using your distro's package manager.
 
+   **Please note that yabridge won't work with Wine 6.15, [see
+   above](#tested-with).**
+
    For a general overview on how to use Wine to install Windows applications,
    check out Wine's [user
    guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
@@ -572,6 +575,9 @@ have permission to do so yet. Examples of this are:
 If your problem is not listed here, then feel free to post on the [issue
 tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask about it in
 the yabridge [Discord](https://discord.gg/pyNeweqadf).
+
+- **Please note that yabridge won't work with Wine 6.15, [see
+  above](#tested-with).**
 
 - Both yabridgectl and yabridge try to diagnose many common issues for you. If
   you're running into crashes or other issues, then try launching your DAW from
