@@ -180,7 +180,7 @@ will automatically detect whether a plugin is 32-bit or 64-bit on startup and it
 will handle it accordingly.
 
 If you want to use the 32-bit version of a VST3 plugin when you also have the
-64-bit version installed, then you may have to enable the `vst3_prefer_64bit`
+64-bit version installed, then you may have to enable the `vst3_prefer_32bit`
 [compatibility
 option](https://github.com/robbert-vdh/yabridge#compatibility-options) if those
 two plugins are located in the same VST3 bundle in `~/.vst3/yabridge`.
