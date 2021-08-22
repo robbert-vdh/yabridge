@@ -342,6 +342,17 @@ void WineXdndProxy::run_xdnd_loop() {
             waiting_for_status_message = false;
         };
 
+    // HACK: Bitwig Studio seems to always deny the drop for the first couple of
+    //       `XdndPosition` messages. To work around this, we'll make sure the
+    //       dragging goes on for at least 200 milliseconds, and we'll allow
+    //       repeat position requests for the same coordinates during that part.
+    //       Normally this wouldn't be necessary, but Samplab's drag-and-drop
+    //       operation lasts only a fraction of a second, so we need to prolong
+    //       this a bit for Bitwig to accept the drop.
+    const std::chrono::steady_clock::time_point drag_loop_start =
+        std::chrono::steady_clock::now();
+    bool xdnd_warmup_active = true;
+
     // We cannot just grab the pointer because Wine is already doing that, and
     // it's also blocking the GUI thread. So instead we will periodically poll
     // the mouse cursor position, and we will end the drag once the left mouse
@@ -350,7 +361,16 @@ void WineXdndProxy::run_xdnd_loop() {
     bool escape_pressed = false;
     std::optional<uint16_t> last_pointer_x;
     std::optional<uint16_t> last_pointer_y;
-    while (left_mouse_button_held && !escape_pressed) {
+    while (xdnd_warmup_active || (left_mouse_button_held && !escape_pressed)) {
+        // See above for why we need to do this. We'll also stop this warmup
+        // phase once the host accepts the drop (since at that point it's no
+        // longer necessary).
+        if (xdnd_warmup_active) {
+            xdnd_warmup_active =
+                !last_window_accepted_status ||
+                std::chrono::steady_clock::now() - drag_loop_start <= 200ms;
+        }
+
         std::this_thread::sleep_for(1ms);
 
         std::unique_ptr<xcb_generic_event_t> generic_event;
@@ -408,9 +428,12 @@ void WineXdndProxy::run_xdnd_loop() {
         //       prematurely. This seems to often happen with JUCE plugins. We
         //       will still continue with the dragging operation, although at
         //       that point the mouse pointer isn't grabbed by anything anymore.
+        // NOTE: During the first couple of milliseconds we'll spam the host,
+        //       see above for why this is necessary
         left_mouse_button_held = xdnd_window_query->mask & XCB_BUTTON_MASK_1;
         if (xdnd_window_query->root_x == last_pointer_x &&
-            xdnd_window_query->root_y == last_pointer_y) {
+            xdnd_window_query->root_y == last_pointer_y &&
+            !xdnd_warmup_active) {
             continue;
         }
 
