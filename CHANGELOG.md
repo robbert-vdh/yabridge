@@ -27,6 +27,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - The `editor_double_embed` option added in yabridge 1.4.0 has been removed as
   the `editor_coordinate_hack` option supersedes it.
 
+### Fixed
+
+- Fixed the drag-and-drop implementation now sending an `XdndStatus` message on
+  the very first tick. This fixes drag-and-drop from _Samplab_ which has a
+  broken drag-and-drop implementation and only starts the operation after the
+  left mouse button has already been released.
+
 ### Packaging notes
 
 - We now target VST3 SDK version 3.7.3 with git tag `v3.7.3_build_20-patched`.

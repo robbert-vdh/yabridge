@@ -457,19 +457,17 @@ void WineXdndProxy::run_xdnd_loop() {
         // window has not yet sent an `XdndStatus` reply to our last
         // `XdndPosition` message, then we need to spool this message and try
         // again on the next iteration.
-        if (last_xdnd_window) {
-            // XXX: We'll always stick with the copy action for now because that
-            //      seems safer than allowing the host to move the file
-            const uint32_t position =
-                (xdnd_window_query->root_x << 16) | xdnd_window_query->root_y;
-            if (!waiting_for_status_message) {
-                send_xdnd_message(xdnd_window_query->child,
-                                  xcb_xdnd_position_message, 0, position,
-                                  XCB_CURRENT_TIME, xcb_xdnd_copy_action);
-                waiting_for_status_message = true;
-            } else {
-                next_position_message_position = position;
-            }
+        // XXX: We'll always stick with the copy action for now because that
+        //      seems safer than allowing the host to move the file
+        const uint32_t position =
+            (xdnd_window_query->root_x << 16) | xdnd_window_query->root_y;
+        if (!waiting_for_status_message) {
+            send_xdnd_message(xdnd_window_query->child,
+                              xcb_xdnd_position_message, 0, position,
+                              XCB_CURRENT_TIME, xcb_xdnd_copy_action);
+            waiting_for_status_message = true;
+        } else {
+            next_position_message_position = position;
         }
 
         // For efficiency's sake we'll only flush all of the client messages
