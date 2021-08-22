@@ -35,6 +35,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   left mouse button has already been released.
 - Fixed the drag-and-drop implementation not properly handling errors caused by
   the pointer being grabbed. This would only happen with _Samplab_.
+- Fixed sub 100 millisecond drag-and-drop operations being ignored by certain
+  hosts, like **Bitwig Studio**. This would only happen with _Samplab_. The XDND
+  implementation now has a warmup phase to prevent this from happening.
 
 ### Packaging notes
 
