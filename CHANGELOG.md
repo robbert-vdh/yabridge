@@ -29,10 +29,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed the drag-and-drop implementation now sending an `XdndStatus` message on
+- Fixed the drag-and-drop implementation not sending an `XdndStatus` message on
   the very first tick. This fixes drag-and-drop from _Samplab_ which has a
   broken drag-and-drop implementation and only starts the operation after the
   left mouse button has already been released.
+- Fixed the drag-and-drop implementation not properly handling errors caused by
+  the pointer being grabbed. This would only happen with _Samplab_.
 
 ### Packaging notes
 

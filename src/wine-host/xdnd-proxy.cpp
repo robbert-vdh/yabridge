@@ -609,7 +609,7 @@ std::optional<uint8_t> WineXdndProxy::is_xdnd_aware(
         xcb_get_property_reply(x11_connection.get(), property_cookie, &error));
     if (error) {
         free(error);
-        return false;
+        return std::nullopt;
     }
 
     // Since the spec dates from 2002, we won't even bother checking the
