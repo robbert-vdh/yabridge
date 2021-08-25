@@ -467,7 +467,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   option](https://github.com/robbert-vdh/yabridge#compatibility-options) to hide
   the name of the DAW you're using. This can be useful with plugins that have
   undesirable or broken DAW-specific behaviour. See the [known
-  issues](https://github.com/robbert-vdh/yabridge#runtime-dependencies-and-known-issues)
+  issues](https://github.com/robbert-vdh/yabridge#known-issues-and-fixes)
   section of the readme for more information on when this may be useful.
 - Yabridge now uses a watchdog timer to prevent rare instances where Wine
   processes would be left running after the native host has crashed or when it
@@ -1055,7 +1055,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   doesn't expect it, see
   [#29](https://github.com/robbert-vdh/yabridge/issues/29) and
   [#32](https://github.com/robbert-vdh/yabridge/issues/32). The
-  [readme](https://github.com/robbert-vdh/yabridge#runtime-dependencies-and-known-issues)
+  [readme](https://github.com/robbert-vdh/yabridge#known-issues-and-fixes)
   contains instructions on how to enable this.
 
 ### Changed
