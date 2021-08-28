@@ -1,0 +1,16 @@
+name: Feature request
+description: I wish yabridge did this
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature description
+      placeholder: >-
+        What should yabridge be doing that it currently doesn't?
+  - type: textarea
+    id: other-information
+    attributes:
+      label: Anything else?
+      placeholder: If there's anything else you'd like to add, then you can do so here.
+    validations:
+      required: false
