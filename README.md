@@ -42,7 +42,7 @@ while also staying easy to debug and maintain.
 Yabridge has been tested under the following hosts using Wine Staging
 6.14[\*](#wine-version-notice):
 
-**Wine 6.15 will not work with yabridge because of Wine bug
+**Wine 6.15 and 6.16 will not work with yabridge because of Wine bug
 [\#51596](https://bugs.winehq.org/show_bug.cgi?id=51596).** **See below for
 [downgrading instructions](#downgrading-wine).**
 
@@ -73,7 +73,7 @@ Please let me know if there are any issues with other hosts.
    with yabridge. On other distros you should be able to just install
    `wine-staging` using your distro's package manager.
 
-   **Please note that yabridge won't work with Wine 6.15, [see
+   **Please note that yabridge won't work with Wine 6.15 and 6.16, [see
    above](#tested-with).**
 
    For a general overview on how to use Wine to install Windows applications,
@@ -576,7 +576,7 @@ If your problem is not listed here, then feel free to post on the [issue
 tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask about it in
 the yabridge [Discord](https://discord.gg/pyNeweqadf).
 
-- **Please note that yabridge won't work with Wine 6.15, [see
+- **Please note that yabridge won't work with Wine 6.15 and 6.16, [see
   above](#tested-with).**
 
 - Both yabridgectl and yabridge try to diagnose many common issues for you. If
