@@ -68,6 +68,14 @@ body:
       placeholder: e.g. 3.5.2, or commit a29f43a
     validations:
       required: true
+  - type: input
+    id: wine-version
+    attributes:
+      label: Wine version
+      description: Use `wine --version` if you're not sure about this.
+      placeholder: e.g. Wine Staging 4.20, or wine-tkg 6.14
+    validations:
+      required: true
   - type: dropdown
     id: installation-method
     attributes:
