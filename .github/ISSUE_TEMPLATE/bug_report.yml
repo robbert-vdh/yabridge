@@ -5,14 +5,19 @@ body:
     id: checks
     attributes:
       label: Thanks for giving yabridge a shot!
-      description: |
-        If you're having issues with plugins not working at all or scans timing out then make sure to check out the [troubleshooting common issues](https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues) section of the readme.
-
-        You should also read through the [known issues and fixes](https://github.com/robbert-vdh/yabridge#known-issues-and-fixes) section. There may already be a solution or a workaround for the issue you're having.
+      description: >-
+        If you're having issues with plugins not working at all or scans timing
+        out then make sure to check out the [troubleshooting common
+        issues](https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues)
+        section of the readme. You should also read through the [known issues
+        and
+        fixes](https://github.com/robbert-vdh/yabridge#known-issues-and-fixes)
+        section. There may already be a solution or a workaround for the issue
+        you're having.
       options:
         - label: >-
-            I read through both the troubleshooting and known issues sections my
-            issue isn't listed there
+            I read through both the troubleshooting and the known issues sections my
+            issue wasn't listed there
           required: true
   - type: textarea
     id: description
@@ -92,7 +97,7 @@ body:
     id: plugin-arch
     attributes:
       label: Plugin architecture
-      options: ["32-bit", "64-bit", "both 32-bit and 64-bit"]
+      options: ["64-bit", "32-bit", "both 64-bit and 32-bit"]
     validations:
       required: true
   - type: input
@@ -144,5 +149,12 @@ body:
 
         3. Try to scan or load the plugin that's causing issues.
         4. `/tmp/yabridge.log` should now contain a debug log. You can drag this file directly onto the text field below to upload it to GitHub.
+    validations:
+      required: false
+  - type: textarea
+    id: other-information
+    attributes:
+      label: Anything else?
+      placeholder: If there's anything else you'd like to add, then you can do so here.
     validations:
       required: false
