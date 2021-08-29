@@ -589,7 +589,7 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   means that you have not yet set up realtime priviliges for your user. Setting
   the memlock limit to unlimited (or -1) is usually part of this process. How
   you should do this will depend on your distro. On _Arch_ and _Manjaro_, you
-  will need to install the `realtime-priviliges` package, add your user to the
+  will need to install the `realtime-privileges` package, add your user to the
   `realtime` group with `sudo gpasswd -a "$USER" realtime`, and then reboot.
   _Fedora_ does the same thing with their `realtime-setup` package, which also
   sets up a `realtime` group that you will need to add your user to. On
