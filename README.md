@@ -40,7 +40,7 @@ while also staying easy to debug and maintain.
 ## Tested with
 
 Yabridge has been tested under the following hosts using Wine Staging
-6.14[\*](#wine-version-notice):
+6.17[\*](#wine-version-notice):
 
 **Wine 6.15 and 6.16 would not work with yabridge because of Wine bug
 [\#51596](https://bugs.winehq.org/show_bug.cgi?id=51596).** **If you're still
@@ -50,13 +50,13 @@ not available for your distro yet.**
 
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
-| Bitwig Studio 4.0.1 | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| REAPER 6.33         | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Bitwig Studio 4.0.2 | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| REAPER 6.36         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Carla 2.3.2         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Qtractor 0.9.23     | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Renoise 3.3.2       | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly |
 | Waveform 11.5.17    | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Ardour 6.8          | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Ardour 6.9          | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Mixbus 7.0.140      | :heavy_check_mark: | :heavy_check_mark:                                                   |
 
 Please let me know if there are any issues with other hosts.
