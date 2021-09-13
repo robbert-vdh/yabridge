@@ -107,6 +107,7 @@ Please let me know if there are any issues with other hosts.
    - On the **OpenSUSE** distros, yabridge and yabridgectl are packaged by
      [GeekosDAW](https://geekosdaw.tuxfamily.org/en/).
    - On **NixOS**, yabridge and yabridgectl are in the repositories.
+   - On **Ubuntu**, you can install yabridge using [pacstall](https://github.com/pacstall/pacstall) 
 
    - On any other distro, you can simply download and install a prebuilt version
      of yabridge:
