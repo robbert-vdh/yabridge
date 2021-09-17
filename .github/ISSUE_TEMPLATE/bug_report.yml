@@ -16,8 +16,8 @@ body:
         you're having.
       options:
         - label: >-
-            I read through both the troubleshooting and the known issues sections my
-            issue wasn't listed there
+            I read through both the troubleshooting and the known issues
+            sections, and my issue wasn't listed there
           required: true
   - type: textarea
     id: description
