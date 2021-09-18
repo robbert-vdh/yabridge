@@ -233,14 +233,18 @@ Wine. This can be done as follows:
 
 - On Debian, Ubuntu, Linux Mint and other apt-based distros, you can use the
   command below to install Wine Staging 6.4 after you add the WineHQ
-  repositories linked above. This command is a bit complicated because on these
+  repositories linked above. This command is a bit cryptic because on these
   distros the Wine package is split up into multiple smaller packages, and the
-  package versions include the distros codename (e.g. `focal`, or `buster`).
+  package versions include the distros codename (e.g. `focal`, or `buster`) as
+  well as some numeric suffix. Change the version to whatever version of Wine
+  you want to install, and then run these commands under Bash:
 
   ```shell
   version=6.4
+  variant=staging
   codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ { print $3; exit }' /etc/apt/sources.list /etc/apt/sources.list.d/*.list)
-  sudo apt install --install-recommends {winehq-staging,wine-staging,wine-staging-amd64,wine-staging-i386}=$version~$codename-1
+  suffix=$(dpkg --compare-versions "$version" ge 6.1 && ((dpkg --compare-versions "$version" ge 6.17 && echo "-2") || echo "-1"))
+  sudo apt install --install-recommends {"winehq-$variant","wine-$variant","wine-$variant-amd64","wine-$variant-i386"}="$version~$codename$suffix"
   ```
 
   If you want to prevent these packages from being updated automatically, then
