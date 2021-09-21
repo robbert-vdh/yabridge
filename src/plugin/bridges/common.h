@@ -189,9 +189,21 @@ class PluginBridge {
                 init_msg
                     << "   Plugins with many input or output channels may cause"
                     << std::endl;
-                init_msg << "   yabridge to crash until you fix this."
+                init_msg << "   yabridge to crash until you fix this. Check the"
+                         << std::endl;
+                init_msg << "   readme for instructions on how to do this."
                          << std::endl;
                 init_msg << std::endl;
+
+                send_notification(
+                    "Low memory locking limit detected",
+                    "The current memlock limit is set to " +
+                        std::to_string(*memlock_limit) +
+                        " bytes. This means that you have not yet set up "
+                        "realtime privileges for your user, and some plugins "
+                        "may cause your DAW to crash until you fix this. Check "
+                        "the readme for instructions on how to do that.",
+                    false);
             }
         } else {
             init_msg
