@@ -162,7 +162,7 @@ class PluginBridge {
                     init_msg << "   until you fix this. Check the readme for "
                                 "instructions"
                              << std::endl;
-                    init_msg << "   on how to fix this." << std::endl;
+                    init_msg << "   on how to do that." << std::endl;
                     init_msg << std::endl;
 
                     send_notification(
@@ -206,7 +206,7 @@ class PluginBridge {
                     << std::endl;
                 init_msg << "   yabridge to crash until you fix this. Check the"
                          << std::endl;
-                init_msg << "   readme for instructions on how to do this."
+                init_msg << "   readme for instructions on how to do that."
                          << std::endl;
                 init_msg << std::endl;
 
