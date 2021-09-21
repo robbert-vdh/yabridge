@@ -29,6 +29,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed _New Sonic Arts' Vice_ plugin freezing when loading the plugin. This
+  happened because the plugin tried to spawn new threads and perform drawing
+  calls when changing the sample rate or block size from the audio thread. We're
+  now doing these things from the main GUI thread, so please let me know if this
+  results in loading issues with any other VST2 plugins.
 - Fixed the drag-and-drop implementation not sending an `XdndStatus` message on
   the very first tick. This fixes drag-and-drop from _Samplab_ which has a
   broken drag-and-drop implementation and only starts the operation after the
