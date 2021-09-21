@@ -15,6 +15,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Yabridge will now also show desktop notifications when encountering low
+  `RLIMIT_RTTIME` and `RLIMIT_MEMLOCK` values. This can happen on systems that
+  have not yet been configured correctly for pro audio work, and certain plugins
+  will crash during initialization until this is fixed. We would already print
+  warnings about this to the terminal, but since some don't read those it seems
+  like a good idea to make them more visible.
 - Added a new `editor_coordinate_hack` option which replaces
   `editor_double_embed`. This can be useful with buggy plugins that have their
   editor GUIs misaligned after resizing the window because they draw their GUI

@@ -159,8 +159,23 @@ class PluginBridge {
                     init_msg << "   using PipeWire. yabridge may crash when "
                                 "loading plugins"
                              << std::endl;
-                    init_msg << "   until you fix this." << std::endl;
+                    init_msg << "   until you fix this. Check the readme for "
+                                "instructions"
+                             << std::endl;
+                    init_msg << "   on how to fix this." << std::endl;
                     init_msg << std::endl;
+
+                    send_notification(
+                        "Low RTTIME limit detected",
+                        "RLIMIT_RTTIME is set to " +
+                            std::to_string(*rttime_limit) +
+                            " us. This can happen when using PipeWire's JACK "
+                            "backend with the default settings. Some plugins "
+                            "may crash during initialization because of this, "
+                            "so it's recommended to either increase or to "
+                            "remove this limit. Check the readme for "
+                            "instructions on how to do that.",
+                        false);
                 } else {
                     init_msg << "'yes'" << std::endl;
                 }
