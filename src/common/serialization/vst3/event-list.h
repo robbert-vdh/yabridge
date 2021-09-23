@@ -31,7 +31,7 @@
 
 /**
  * A wrapper around `DataEvent` for serialization purposes, as this event
- * contains a heap array.
+ * contains a heap array. This would presumably be used for SysEx.
  */
 struct YaDataEvent {
     YaDataEvent() noexcept;
@@ -50,12 +50,18 @@ struct YaDataEvent {
     Steinberg::Vst::DataEvent get() const noexcept;
 
     uint32 type;
-    std::vector<uint8> buffer;
+
+    /**
+     * We'll just abuse the standard library's Small String Optimization to
+     * avoid allocations for small messages, just like we do for VST2 SysEx
+     * events.
+     */
+    std::string buffer;
 
     template <typename S>
     void serialize(S& s) {
         s.value4b(type);
-        s.container1b(buffer, 1 << 16);
+        s.text1b(buffer, 1 << 16);
     }
 };
 

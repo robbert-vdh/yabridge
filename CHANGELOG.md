@@ -33,6 +33,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - The `editor_double_embed` option added in yabridge 1.4.0 has been removed as
   the `editor_coordinate_hack` option supersedes it.
 
+### Changed
+
+- VST3 Data (SysEx) events now use the same small buffer optimization we use for
+  VST2 SysEx events. This avoids allocations when a VST3 plugin sends or
+  receives a SysEx event.
+
 ### Fixed
 
 - Fixed _New Sonic Arts' Vice_ plugin freezing when loading the plugin. This

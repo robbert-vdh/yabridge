@@ -24,9 +24,12 @@ YaDataEvent::YaDataEvent(const Steinberg::Vst::DataEvent& event) noexcept
     : type(event.type), buffer(event.bytes, event.bytes + event.size) {}
 
 Steinberg::Vst::DataEvent YaDataEvent::get() const noexcept {
-    return Steinberg::Vst::DataEvent{.size = static_cast<uint32>(buffer.size()),
-                                     .type = type,
-                                     .bytes = buffer.data()};
+    static_assert(sizeof(decltype(buffer)::value_type) == sizeof(uint8));
+
+    return Steinberg::Vst::DataEvent{
+        .size = static_cast<uint32>(buffer.size()),
+        .type = type,
+        .bytes = reinterpret_cast<const uint8*>(buffer.data())};
 }
 
 YaNoteExpressionTextEvent::YaNoteExpressionTextEvent() noexcept {}
