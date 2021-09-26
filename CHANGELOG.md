@@ -43,6 +43,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Worked around a [bug](https://svn.boost.org/trac10/changeset/72855) in
+  Boost.Process that would cause yabridge to crash with
+  `locale::facet::_S_create_c_locale name not valid` when (part of) the current
+  locale is invalid.
 - Fixed _New Sonic Arts' Vice_ plugin freezing when loading the plugin. This
   happened because the plugin tried to spawn new threads and perform drawing
   calls when changing the sample rate or block size from the audio thread. We're

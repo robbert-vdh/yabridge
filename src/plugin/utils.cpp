@@ -16,6 +16,8 @@
 
 #include "utils.h"
 
+#include <iostream>
+
 #include <unistd.h>
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/process/io.hpp>
@@ -369,6 +371,31 @@ boost::filesystem::path generate_group_endpoint(
 }
 
 std::vector<boost::filesystem::path> get_augmented_search_path() {
+    // HACK: `std::locale("")` would return the current locale, but this
+    //       overload is implementation specific, and libstdc++ returns an error
+    //       when this happens and one of the locale variables (or `LANG`) is
+    //       set to a locale that doesn't exist. Because of that, you should use
+    //       the default constructor instead which does fall back gracefully
+    //       when using an invalid locale. Boost.Process sadly doesn't seem to
+    //       do this, so some intervention is required. We can remove this once
+    //       the PR linked below is merged into Boost proper and included in
+    //       most distro's copy of Boost (which will probably take a while):
+    //
+    //       https://svn.boost.org/trac10/changeset/72855
+    //
+    //       https://github.com/boostorg/process/pull/179
+    try {
+        std::locale("");
+    } catch (const std::runtime_error&) {
+        // We normally avoid modifying the current process' environment and
+        // instead use `boost::process::environment` to only modify the
+        // environment of launched child processes, but in this case we do need
+        // to fix this
+        // TODO: We don't have access to the logger here, so we can't inform the
+        //       user that their locale is broken when this happens
+        setenv("LC_ALL", "C", true);  // NOLINT(concurrency-mt-unsafe)
+    }
+
     std::vector<boost::filesystem::path> search_path =
         boost::this_process::path();
 
