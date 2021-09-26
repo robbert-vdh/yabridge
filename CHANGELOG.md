@@ -35,6 +35,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The Wine plugin host applications now print their version information before
+  the `Usage: ` string when invoked without command line argument.
 - VST3 Data (SysEx) events now use the same small buffer optimization we use for
   VST2 SysEx events. This avoids allocations when a VST3 plugin sends or
   receives a SysEx event.

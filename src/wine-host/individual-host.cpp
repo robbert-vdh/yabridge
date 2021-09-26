@@ -27,6 +27,13 @@
 #include "bridges/vst3.h"
 #endif
 
+static const std::string host_name = "yabridge host version " +
+                                     std::string(yabridge_git_version)
+#ifdef __i386__
+                                     + " (32-bit compatibility mode)"
+#endif
+    ;
+
 /**
  * This is the default plugin host application. It will load the specified
  * plugin plugin, and then connect back to the `libyabridge-{vst2,vst3}.so`
@@ -42,6 +49,7 @@ __cdecl
     // to connect to and the process ID of the process the native plugin is
     // being hosted in as arguments for yabridge-host.exe
     if (argc < 5) {
+        std::cerr << host_name << std::endl;
         std::cerr << "Usage: "
 #ifdef __i386__
                   << yabridge_individual_host_name_32bit
@@ -61,11 +69,7 @@ __cdecl
     const std::string socket_endpoint_path(argv[3]);
     const pid_t parent_pid = std::stoi(argv[4]);
 
-    std::cerr << "Initializing yabridge host version " << yabridge_git_version
-#ifdef __i386__
-              << " (32-bit compatibility mode)"
-#endif
-              << std::endl;
+    std::cerr << "Initializing " << host_name << std::endl;
     std::cerr << "Preparing to load " << plugin_type_to_string(plugin_type)
               << " plugin at '" << plugin_location << "'" << std::endl;
 

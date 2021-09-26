@@ -24,6 +24,13 @@
 #include "bridges/group.h"
 #include "bridges/vst2.h"
 
+static const std::string host_name = "yabridge group host version " +
+                                     std::string(yabridge_git_version)
+#ifdef __i386__
+                                     + " (32-bit compatibility mode)"
+#endif
+    ;
+
 /**
  * This works very similar to the host application defined in
  * `individual-host.cpp`, but instead of just loading a single plugin this will
@@ -43,6 +50,7 @@ __cdecl
     // domain socket endpoint path that it should listen on to allow yabridge
     // instances to spawn plugins in this process.
     if (argc < 2) {
+        std::cerr << host_name << std::endl;
         std::cerr << "Usage: "
 #ifdef __i386__
                   << yabridge_group_host_name_32bit
@@ -56,12 +64,7 @@ __cdecl
 
     const std::string group_socket_endpoint_path(argv[1]);
 
-    std::cerr << "Initializing yabridge group host version "
-              << yabridge_git_version
-#ifdef __i386__
-              << " (32-bit compatibility mode)"
-#endif
-              << std::endl;
+    std::cerr << "Initializing " << host_name << std::endl;
 
     // NOTE: Some plugins use Microsoft COM, but don't initialize it first and
     //       just pray the host does it for them. Examples of this are
