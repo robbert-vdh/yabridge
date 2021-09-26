@@ -16,8 +16,6 @@
 
 #include "utils.h"
 
-#include <iostream>
-
 #include <unistd.h>
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/process/io.hpp>
