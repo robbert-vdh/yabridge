@@ -481,6 +481,9 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * @see processing_bus_cache
      */
     struct BusInfoCache {
+        // `std::unordered_map` would be better here, but tuples aren't hashable
+        // out of the box and the difference in performance won't be noticeable
+        // enough to warrent the effort.
         std::map<
             std::tuple<Steinberg::Vst::MediaType, Steinberg::Vst::BusDirection>,
             int32>
