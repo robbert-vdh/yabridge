@@ -55,7 +55,8 @@ class Vst3ContextMenuProxyImpl : public Vst3ContextMenuProxy {
      * The targets passed when to `addItem` calls made by the plugin. This way
      * we can call these same targets later. The key here is the item's tag.
      */
-    std::map<int32, Steinberg::IPtr<Steinberg::Vst::IContextMenuTarget>>
+    std::unordered_map<int32,
+                       Steinberg::IPtr<Steinberg::Vst::IContextMenuTarget>>
         context_menu_targets;
 
    private:

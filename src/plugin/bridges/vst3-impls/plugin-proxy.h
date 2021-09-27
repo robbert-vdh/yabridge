@@ -357,7 +357,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
          * lot of details o how this should be implemented and there's no
          * example implementation around.
          */
-        std::map<int32, Steinberg::IPtr<YaContextMenuTarget>> targets;
+        std::unordered_map<int32, Steinberg::IPtr<YaContextMenuTarget>> targets;
     };
 
     /**
