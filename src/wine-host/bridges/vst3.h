@@ -17,6 +17,7 @@
 #pragma once
 
 #include <iostream>
+#include <map>
 #include <string>
 
 #include <public.sdk/source/vst/hosting/module.h>

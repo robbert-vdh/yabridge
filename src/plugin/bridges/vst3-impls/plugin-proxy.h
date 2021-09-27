@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <map>
+
 #include "../vst3.h"
 #include "plug-view-proxy.h"
 
