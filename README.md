@@ -117,8 +117,12 @@ Please let me know if there are any issues with other hosts.
         Linux Mint 19, or AV Linux MXE 2021, then you should download the
         version that ends with `-ubuntu-18.04.tar.gz`.
      2. Extract the contents of the downloaded archive to `~/.local/share`, such
-        that `~/.local/share/yabridge/yabridgectl` exists. You can do this from
-        the command line with `tar -C ~/.local/share -xavf yabridge-x.y.z.tar.gz`.
+        that the file `~/.local/share/yabridge/yabridgectl` exists after
+        extracting. You can extract an archive here from the command line with
+        `tar -C ~/.local/share -xavf yabridge-x.y.z.tar.gz`. If you're
+        extracting the archive using a GUI file manager or archive tool, then
+        make sure that hidden files and directories are visible by pressing
+        <kbd>Ctrl+H</kbd>.
      3. **Whenever any step below mentions running `yabridgectl <something>`,
         then you should run `~/.local/share/yabridge/yabridgectl <something>`
         instead** as `~/.local/share/yabridge` is not in your search path so
