@@ -73,12 +73,15 @@ class HostProcess {
                                       Args&&... args) {
         return boost::process::child(
 #ifdef WITH_WINEDBG
-            // Use the terminal output or `$YABRIDGE_DEBUG_LOG` to get
-            // yabridge's output, and use the printed target command in a GDB
-            // session where you load the yabridge `.so` file you're trying to
-            // debug
-            "/usr/bin/winedbg", "--gdb", "--no-start",
-            host_path.string() + ".so",
+            // This is set up for KDE Plasma. Other desktop environments and
+            // window managers require some slight modifications to spawn a
+            // detached terminal emulator. Alternatively, you can spawn
+            // `/usr/bin/winedbg` with the `--no-start` option to launch a gdb
+            // server and then connect to it from another terminal. Note the
+            // double quoting here, winedbg doesn't respect `argv` and instead
+            // expects a standard Win32 command line.
+            "/usr/bin/kstart5", "konsole", "--", "-e", "winedbg", "--gdb",
+            "\"" + host_path.string() + ".so\"",
 #else
             host_path,
 #endif

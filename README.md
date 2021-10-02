@@ -897,20 +897,17 @@ within the loaded VST plugin itself.
 
 ### Attaching a debugger
 
-To debug the plugin you can just attach gdb to the host as long as any
-sandboxing or out of process hosting is disabled (or you'll have to wrap around
-that host process). Debugging the Wine plugin host is a bit more difficult. Wine
-comes with a GDB proxy for winedbg, but it requires a little bit of additional
-setup and it doesn't support arguments containing spaces. To make this a bit
-easier, yabridge includes winedbg support behind a build option. You can enable
-this using:
+To debug the plugin, you can just attach gdb to the host. Debugging the Wine
+plugin host is a bit trickier. Wine comes with a GDB proxy for winedbg, but it
+requires a little bit of additional setup and it expects the command line
+arguments to be a valid Win32 command line. You'll also need to launch winedbg
+in a seperate detached terminal emulator so it doesn't terminate together with
+the plugin, and winedbg can be a bit picky about the arguments it accepts. I've
+already set this up behind a feature flag for use in KDE Plasma. Other desktop
+environments and window managers will require some slight modifications in
+`src/plugin/host-process.cpp`. To enable this, simply run the follow and then
+rebuild yabridge:
 
 ```shell
 meson configure build --buildtype=debug -Dwith-winedbg=true
 ```
-
-Currently winedbg's normal GDB proxy is broken, so this option will start a
-remote GDB server that you have to connect to. You can use `gdb build/yabridge-host.exe.so` to start GDB, and then use the GDB `target` command
-printed to STDERR or `$YABRIDGE_DEBUG_FILE` to start the debugging session. Note
-that plugin names with spaces in the actual `.dll` or `.vst3` file name will
-have to be renamed first for this approach to work.
