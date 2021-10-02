@@ -64,30 +64,29 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
       host_path(find_vst_host(plugin_info.native_library_path,
                               plugin_info.plugin_arch,
                               false)),
-      host(launch_host(
-          host_path,
-          plugin_type_to_string(host_request.plugin_type),
+      host(
+          launch_host(host_path,
+                      plugin_type_to_string(host_request.plugin_type),
 #ifdef WITH_WINEDBG
-          plugin_info.windows_plugin_path.filename(),
+                      // Winedbg flattens all command line arguments to a single
+                      // space separate Win32 command line, so we need to do our
+                      // own quoting.
+                      "\"" + plugin_info.windows_plugin_path + "\"",
 #else
-          host_request.plugin_path,
+                      host_request.plugin_path,
 #endif
-          host_request.endpoint_base_dir,
-          // We pass this process' process ID as an argument so we can run a
-          // watchdog on the Wine plugin host process that shuts down the
-          // sockets after this process shuts down
-          std::to_string(getpid()),
-          bp::env = plugin_info.create_host_env()
+                      host_request.endpoint_base_dir,
+                      // We pass this process' process ID as an argument so we
+                      // can run a watchdog on the Wine plugin host process that
+                      // shuts down the sockets after this process shuts down
+                      std::to_string(getpid()),
+                      bp::env = plugin_info.create_host_env())) {
 #ifdef WITH_WINEDBG
-              ,  // winedbg has no reliable way to escape spaces, so
-                 // we'll start the process in the plugin's directory
-          bp::start_dir = plugin_info.windows_plugin_path.parent_path()
-#endif
-              )) {
-#ifdef WITH_WINEDBG
-    if (plugin_info.windows_plugin_path.filename().string().find(' ') !=
+    if (plugin_info.windows_plugin_path.string().find('"') !=
         std::string::npos) {
-        logger.log("Warning: winedbg does not support paths containing spaces");
+        logger.log(
+            "Warning: plugin paths containing double quotes won't be properly "
+            "escaped");
     }
 #endif
 }
@@ -127,13 +126,6 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
       host_path(find_vst_host(plugin_info.native_library_path,
                               plugin_info.plugin_arch,
                               true)) {
-#ifdef WITH_WINEDBG
-    if (plugin_info.windows_plugin_path.string().find(' ') !=
-        std::string::npos) {
-        logger.log("Warning: winedbg does not support paths containing spaces");
-    }
-#endif
-
     // When using plugin groups, we'll first try to connect to an existing group
     // host process and ask it to host our plugin. If no such process exists,
     // then we'll start a new process. In the event that multiple yabridge
