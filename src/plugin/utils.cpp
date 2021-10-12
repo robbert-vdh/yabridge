@@ -16,6 +16,8 @@
 
 #include "utils.h"
 
+#include <iostream>
+
 #include <unistd.h>
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/process/io.hpp>
@@ -389,8 +391,16 @@ std::vector<boost::filesystem::path> get_augmented_search_path() {
         // instead use `boost::process::environment` to only modify the
         // environment of launched child processes, but in this case we do need
         // to fix this
-        // TODO: We don't have access to the logger here, so we can't inform the
-        //       user that their locale is broken when this happens
+        // TODO: We don't have access to the logger here, so we cannot yet
+        //       properly print the message inform the user that their locale is
+        //       broken when this happens
+        std::cerr << std::endl;
+        std::cerr << "WARNING: Your locale is broken. Yabridge was kind enough "
+                     "to monkey patch it for you in this DAW session, but you "
+                     "should probably take a look at it ;)"
+                  << std::endl;
+        std::cerr << std::endl;
+
         setenv("LC_ALL", "C", true);  // NOLINT(concurrency-mt-unsafe)
     }
 
