@@ -17,6 +17,7 @@
 use anyhow::Result;
 use clap::{app_from_crate, App, AppSettings, Arg};
 use colored::Colorize;
+use std::collections::HashSet;
 use std::env;
 use std::path::{Path, PathBuf};
 
@@ -42,17 +43,14 @@ fn main() -> Result<()> {
     let mut config = Config::read()?;
 
     // Used for validation in `yabridgectl rm <path>`
-    let plugin_directories: Vec<&str> = config
+    let plugin_directories: HashSet<&Path> = config
         .plugin_dirs
         .iter()
-        .map(|path| path.to_str().expect("Path contains invalid unicode"))
+        .map(|path| path.as_path())
         .collect();
     // Used for validation in `yabridgectl blacklist rm <path>`
-    let blacklist_entries: Vec<&str> = config
-        .blacklist
-        .iter()
-        .map(|path| path.to_str().expect("Path contains invalid unicode"))
-        .collect();
+    let blacklist_entries: HashSet<&Path> =
+        config.blacklist.iter().map(|path| path.as_path()).collect();
 
     let matches = app_from_crate!()
         .setting(AppSettings::SubcommandRequiredElseHelp)
@@ -75,7 +73,7 @@ fn main() -> Result<()> {
                 .arg(
                     Arg::new("path")
                         .about("Path to a previously added directory")
-                        .possible_values(&plugin_directories)
+                        .validator(|path| match_in_path_list(Path::new(path), &plugin_directories))
                         .takes_value(true)
                         .required(true),
                 ),
@@ -207,7 +205,8 @@ fn main() -> Result<()> {
                         .arg(
                             Arg::new("path")
                                 .about("Path to a previously added file or directory")
-                                .possible_values(&blacklist_entries)
+                                .validator(|path| match_in_path_list(Path::new(path), &blacklist_entries))
+                                .validator(validate_path)
                                 .takes_value(true)
                                 .required(true),
                         ),
@@ -238,7 +237,16 @@ fn main() -> Result<()> {
                 .canonicalize()?,
         ),
         Some(("rm", options)) => {
-            actions::remove_directory(&mut config, &options.value_of_t_or_exit::<PathBuf>("path"))
+            // Clap sadly doesn't have custom parsers/transforms, so we need to rerun the validator
+            // to get the result
+            let path = match_in_path_list(
+                &options.value_of_t_or_exit::<PathBuf>("path"),
+                &plugin_directories,
+            )
+            .unwrap()
+            .to_owned();
+
+            actions::remove_directory(&mut config, &path)
         }
         Some(("list", _)) => actions::list_directories(&config),
         Some(("status", _)) => actions::show_status(&config),
@@ -272,10 +280,16 @@ fn main() -> Result<()> {
                     .value_of_t_or_exit::<PathBuf>("path")
                     .canonicalize()?,
             ),
-            Some(("rm", options)) => actions::blacklist::remove_path(
-                &mut config,
-                &options.value_of_t_or_exit::<PathBuf>("path"),
-            ),
+            Some(("rm", options)) => {
+                let path = match_in_path_list(
+                    &options.value_of_t_or_exit::<PathBuf>("path"),
+                    &blacklist_entries,
+                )
+                .unwrap()
+                .to_owned();
+
+                actions::blacklist::remove_path(&mut config, &path)
+            }
             Some(("list", _)) => actions::blacklist::list_paths(&config),
             Some(("clear", _)) => actions::blacklist::clear(&mut config),
             _ => unreachable!(),
@@ -296,4 +310,52 @@ fn validate_path(path: &str) -> Result<(), String> {
             path.display()
         ))
     }
+}
+
+/// Find `path` in `candidates` and return it as an absolute path. If the path is relative, we will
+/// try to resolve as much of it as possible (in case the referred to file doesn't exist anymore).
+/// We don't iteratively try to resolve symlinks until a candidate matches a path in `candidates`,
+/// but this can match a relative path to a symlink that's in the paths list.
+fn match_in_path_list<'a>(path: &Path, candidates: &'a HashSet<&Path>) -> Result<&'a Path, String> {
+    let absolute_path = if path.is_absolute() {
+        path.to_owned()
+    } else {
+        // This absolute absolute_path is also needed for the `utils::normalize_path()` below
+        std::env::current_dir()
+            .expect("Couldn't get current directory")
+            .join(path)
+    };
+    if let Some(path) = candidates.get(absolute_path.as_path()) {
+        return Ok(path);
+    }
+
+    // This will include a trailing slash if `path` was `.`. All paths entered through yabridgectl
+    // will be cannonicalized and won't contain a trailing slash, but we'll try both variants
+    // anyways just in case someone edited the config file.
+    let normalized_path = utils::normalize_path(absolute_path.as_path());
+
+    // Is there a nicer way to strip trailing slashes with the standard library?
+    let normalized_path_str = normalized_path
+        .to_str()
+        .expect("Input path contains invalid characters");
+    let normalized_path_without_slash = if normalized_path_str.ends_with("/") {
+        Path::new(normalized_path_str.trim_end_matches('/'))
+    } else {
+        normalized_path.as_path()
+    };
+    // This ia bit of a hack, but it works
+    let normalized_path_with_slash = normalized_path.join("");
+
+    if let Some(path) = candidates
+        .get(normalized_path_without_slash)
+        .or_else(|| candidates.get(normalized_path_with_slash.as_path()))
+    {
+        return Ok(path);
+    }
+
+    Err(format!(
+        "'{}' is not a known path.\n\n\tPossible options are: {}",
+        path.display(),
+        format!("{:?}", candidates).green()
+    ))
 }

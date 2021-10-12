@@ -62,6 +62,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   hosts, like **Bitwig Studio**. This would only happen with _Samplab_. The XDND
   implementation now has a warmup phase to prevent this from happening.
 
+### yabridgectl
+
+- `yabridgectl rm` and `yabridgectl blacklist rm` now accept relative paths.
+
 ### Packaging notes
 
 - We now target VST3 SDK version 3.7.3 with git tag `v3.7.3_build_20-patched`.
