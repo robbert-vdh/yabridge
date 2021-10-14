@@ -51,7 +51,7 @@ not available for your distro yet.**
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
 | Bitwig Studio 4.0.5 | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| REAPER 6.36         | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| REAPER 6.37         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Carla 2.3.2         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Qtractor 0.9.23     | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Renoise 3.3.2       | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly |
