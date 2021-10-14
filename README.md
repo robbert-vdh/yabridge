@@ -40,13 +40,13 @@ while also staying easy to debug and maintain.
 ## Tested with
 
 Yabridge has been tested under the following hosts using Wine Staging
-6.19[\*](#wine-version-notice):
+6.19:
 
 **Wine 6.15 and 6.16 would not work with yabridge because of Wine bug
-[\#51596](https://bugs.winehq.org/show_bug.cgi?id=51596).** **If you're still
-running either of those versions, then you'll need to upgrade to Wine Staging
-6.17 or you can [downgrade](#downgrading-wine) to an earlier version if that's
-not available for your distro yet.**
+[\#51596](https://bugs.winehq.org/show_bug.cgi?id=51596).** **If you are still
+running either of those versions, then you'll need to either upgrade to a later
+version or [downgrade](#downgrading-wine) to Wine Staging 6.14 if those versions
+are not available for your distro yet.**
 
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
@@ -60,11 +60,6 @@ not available for your distro yet.**
 | Mixbus 7.0.140      | :heavy_check_mark: | :heavy_check_mark:                                                   |
 
 Please let me know if there are any issues with other hosts.
-
-<sup id="wine-version-notice">
-  *If any of your plugins freeze during shutdown or otherwise don't work, then
-  you may want to try <a href="#downgrading-wine">downgrading Wine</a> first.
-</sup>
 
 ## Usage
 
@@ -230,10 +225,9 @@ to navigate dropdowns with the keyboard.
 
 ### Downgrading Wine
 
-There have been a couple of small regressions in Wine after Wine 6.4. If you run
-into software or a plugin that does not work correctly with the current version
-of Wine Staging, then you may want to try downgrading to an earlier version of
-Wine. This can be done as follows:
+If you run into software or a plugin that does not work correctly with the
+current version of Wine Staging, then you may want to try downgrading to an
+earlier version of Wine. This can be done as follows:
 
 - On Debian, Ubuntu, Linux Mint and other apt-based distros, you can use the
   command below to install Wine Staging 6.4 after you add the WineHQ
