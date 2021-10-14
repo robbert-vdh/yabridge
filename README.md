@@ -201,9 +201,13 @@ to override the Wine prefix for _all instances_ of yabridge.
 
 Yabridge supports drag-and-drop both from a native (X11) Linux application to
 plugins running under yabridge, as well as drag-and-drop from yabridge to native
-X11 applications like your DAW. If you're using yabridge in _REAPER_ or _Carla_,
-then you may need to enable a [compatibility option](#compatibility-options) to
-prevent those hosts from stealing the drop.
+X11 applications like your DAW. When dragging things from a plugin to your DAW,
+then depending on which DAW you're using it may look like the drop is going to
+fail while still hodling down the left mouse button. That's expected, since both
+yabridge's and Wine's own drag-and-drop systems are active at the same time. If
+you're using yabridge in _REAPER_ or _Carla_, then you may need to enable a
+[compatibility option](#compatibility-options) to prevent those hosts from
+stealing the drop.
 
 ### Input focus grabbing
 
