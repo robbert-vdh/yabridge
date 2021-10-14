@@ -15,18 +15,22 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Yabridge will now also show desktop notifications when encountering low
-  `RLIMIT_RTTIME` and `RLIMIT_MEMLOCK` values. This can happen on systems that
-  have not yet been configured correctly for pro audio work, and certain plugins
-  will crash during initialization until this is fixed. We would already print
-  warnings about this to the terminal, but since some don't read those it seems
-  like a good idea to make them more visible.
-- Added a new `editor_coordinate_hack` option which replaces
-  `editor_double_embed`. This can be useful with buggy plugins that have their
-  editor GUIs misaligned after resizing the window because they draw their GUI
-  based on (top level) window's absolute screen coordinates instead of their own
-  relative coordinates. The known plugins that can benefit from this are
-  _PSPaudioware E27_ and _Soundtoys Crystallizer_.
+- Yabridge will now also show annoying desktop notifications when encountering
+  low `RLIMIT_RTTIME` and `RLIMIT_MEMLOCK` values. This can happen on systems
+  that have not yet been configured for pro audio work or with using an out of
+  the box PipeWire configuration. If these issues are not fixed, then certain
+  plugins will crash during initialization. Since these configuration issues may
+  not immediately cause obvious problems, it's better to be upfront about it so
+  they can't cause mysterious issues later on. We would already print warnings
+  about this to the terminal, but those are easily missed if you launch your DAW
+  from the GUI.
+- Added a new `editor_coordinate_hack` [compatibility
+  option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
+  replace `editor_double_embed`. This can be useful with buggy plugins that have
+  their editor GUIs misaligned after resizing the window because they draw their
+  GUI based on (top level) window's absolute screen coordinates instead of their
+  own relative position within the parent window. Some known plugins that can
+  benefit from this are _PSPaudioware E27_ and _Soundtoys Crystallizer_.
 
 ### Removed
 
@@ -36,26 +40,27 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - The Wine plugin host applications now print their version information before
-  the `Usage: ` string when invoked without command line argument.
-- VST3 Data (SysEx) events now use the same small buffer optimization we use for
-  VST2 SysEx events. This avoids allocations when a VST3 plugin sends or
-  receives a SysEx event.
+  the `Usage: ` string when invoked without command line arguments.
+- VST3 Data (SysEx) events now use the same small buffer optimization yabridge
+  already used for VST2 SysEx events. This avoids allocations when a VST3 plugin
+  sends or receives a small SysEx event.
 
 ### Fixed
 
 - Worked around a [bug](https://svn.boost.org/trac10/changeset/72855) in
-  Boost.Process that would cause yabridge to crash with
-  `locale::facet::_S_create_c_locale name not valid` when (part of) the current
-  locale is invalid.
-- Fixed _New Sonic Arts' Vice_ plugin freezing when loading the plugin. This
-  happened because the plugin tried to spawn new threads and perform drawing
-  calls when changing the sample rate or block size from the audio thread. We're
-  now doing these things from the main GUI thread, so please let me know if this
-  results in loading issues with any other VST2 plugins.
+  Boost.Process that would cause yabridge to crash with an
+  `locale::facet::_S_create_c_locale name not valid` exception when (part of)
+  the current locale is invalid. This could happen on Arch Linux if you skipped
+  part of the Arch installation process.
+- Fixed New Sonic Arts' _Vice_ plugin freezing when loading the plugin. This
+  happened because the plugin tried to spawn new threads and interacted with the
+  GUI when changing the sample rate or block size from the audio thread. These
+  things are now done from the main GUI thread, so please let me know if this
+  now results in loading issues with any other VST2 plugins.
 - Fixed the drag-and-drop implementation not sending an `XdndStatus` message on
-  the very first tick. This fixes drag-and-drop from _Samplab_ which has a
-  broken drag-and-drop implementation and only starts the operation after the
-  left mouse button has already been released.
+  the very first tick. This fixes drag-and-drop from the _Samplab_ plugin which
+  has a broken drag-and-drop implementation and only starts the operation after
+  the left mouse button has already been released.
 - Fixed the drag-and-drop implementation not properly handling errors caused by
   the pointer being grabbed. This would only happen with _Samplab_.
 - Fixed sub 100 millisecond drag-and-drop operations being ignored by certain
