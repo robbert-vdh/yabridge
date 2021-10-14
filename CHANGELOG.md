@@ -69,6 +69,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Packaging notes
 
 - We now target VST3 SDK version 3.7.3 with git tag `v3.7.3_build_20-patched`.
+- Because of an
+  [update](https://github.com/clap-rs/clap/commit/241d183b9c3fb21ea4ecb6720a9d2118b9533029)
+  to clap, the minimum rustc version required to build yabridgectl is now
+  `1.54`.
 
 ## [3.5.2] - 2021-08-08
 
