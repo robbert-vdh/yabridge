@@ -308,12 +308,8 @@ std::string join_quoted_strings(std::vector<std::string>& strings) {
 
 std::string create_logger_prefix(const fs::path& endpoint_base_dir) {
     // Use the name of the base directory used for our sockets as the logger
-    // prefix, but strip the `yabridge-` part since that's redundant
+    // prefix
     std::string endpoint_name = endpoint_base_dir.filename().string();
-
-    constexpr std::string_view socket_prefix("yabridge-");
-    assert(endpoint_name.starts_with(socket_prefix));
-    endpoint_name = endpoint_name.substr(socket_prefix.size());
 
     return "[" + endpoint_name + "] ";
 }

@@ -45,7 +45,7 @@ boost::filesystem::path generate_endpoint_base(const std::string& plugin_name) {
         // sockets, so putting them inside of a subdirectory would only leave
         // behind an empty directory
         std::ostringstream socket_name;
-        socket_name << "yabridge-" << plugin_name << "-" << random_id;
+        socket_name << plugin_name << "-" << random_id;
 
         candidate_endpoint = temp_directory / socket_name.str();
     } while (fs::exists(candidate_endpoint));

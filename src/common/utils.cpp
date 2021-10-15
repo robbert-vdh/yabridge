@@ -35,7 +35,7 @@ constexpr char disable_watchdog_timer_env_var[] = "YABRIDGE_NO_WATCHDOG";
 fs::path get_temporary_directory() {
     bp::environment env = boost::this_process::environment();
     if (!env["XDG_RUNTIME_DIR"].empty()) {
-        return env["XDG_RUNTIME_DIR"].to_string();
+        return fs::path(env["XDG_RUNTIME_DIR"].to_string()) / "yabridge";
     } else {
         return fs::temp_directory_path();
     }

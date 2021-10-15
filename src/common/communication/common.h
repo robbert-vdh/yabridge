@@ -260,7 +260,7 @@ inline T read_object(Socket& socket) {
 /**
  * Generate a unique base directory that can be used as a prefix for all Unix
  * domain socket endpoints used in `Vst2PluginBridge`/`Vst2Bridge`. This will
- * usually return `/run/user/<uid>/yabridge-<plugin_name>-<random_id>/`.
+ * usually return `/run/user/<uid>/yabridge/<plugin_name>-<random_id>/`.
  *
  * Sockets for group hosts are handled separately. See
  * `../plugin/utils.h:generate_group_endpoint` for more information on those.
@@ -274,7 +274,7 @@ boost::filesystem::path generate_endpoint_base(const std::string& plugin_name);
  * Manages all the sockets used for communicating between the plugin and the
  * Wine host. Every plugin will get its own directory (the socket endpoint base
  * directory), and all socket endpoints are created within this directory. This
- * is usually `/run/user/<uid>/yabridge-<plugin_name>-<random_id>/`.
+ * is usually `/run/user/<uid>/yabridge/<plugin_name>-<random_id>/`.
  */
 class Sockets {
    public:
