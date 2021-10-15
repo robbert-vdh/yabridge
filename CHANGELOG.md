@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added an environment variable to choose a different directory for yabridge to
+  store its sockets and other temporary files in. This is only needed when
+  running the Wine process under a separate namespace. If you don't know that
+  you need this, then you probably don't need this!
+
 ## [3.6.0] - 2021-10-15
 
 ### Added

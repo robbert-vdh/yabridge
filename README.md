@@ -668,7 +668,9 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
 - If you're using a `WINELOADER` that runs the Wine process under a separate
   namespace while the host is not sandboxed, then you'll have to use the
   `YABRIDGE_NO_WATCHDOG` environment variable to disable the watchdog timer. If
-  you know what this means then you probably know what you're doing.
+  you know what this means then you probably know what you're doing. In that
+  case, you may also want to use `YABRIDGE_TEMP_PATH` to choose a different
+  directory for yabridge to store its sockets and other temporary files in.
 
 ## Performance tuning
 

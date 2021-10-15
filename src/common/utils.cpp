@@ -32,9 +32,18 @@ using namespace std::literals::string_view_literals;
  */
 constexpr char disable_watchdog_timer_env_var[] = "YABRIDGE_NO_WATCHDOG";
 
+/**
+ * If this environment variable is set, yabridge will store its sockets and
+ * other temporary files here instead of in `$XDG_RUNTIME_DIR` or `/tmp`. This
+ * is only relevant when using some namespacing setup for sandboxing.
+ */
+constexpr char temp_dir_override_env_var[] = "YABRIDGE_TEMP_PATH";
+
 fs::path get_temporary_directory() {
     bp::environment env = boost::this_process::environment();
-    if (!env["XDG_RUNTIME_DIR"].empty()) {
+    if (!env[temp_dir_override_env_var].empty()) {
+        return env[temp_dir_override_env_var].to_string();
+    } else if (!env["XDG_RUNTIME_DIR"].empty()) {
         return env["XDG_RUNTIME_DIR"].to_string();
     } else {
         return fs::temp_directory_path();
