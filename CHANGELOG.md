@@ -8,11 +8,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### TODOs
-
-- Remove the note after the `editor_coordinate_hack` compatibility option in the
-  readme.
-
 ### Added
 
 - Yabridge will now also show annoying desktop notifications when encountering
