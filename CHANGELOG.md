@@ -14,18 +14,19 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   low `RLIMIT_RTTIME` and `RLIMIT_MEMLOCK` values. This can happen on systems
   that have not yet been configured for pro audio work or with using an out of
   the box PipeWire configuration. If these issues are not fixed, then certain
-  plugins will crash during initialization. Since these configuration issues may
-  not immediately cause obvious problems, it's better to be upfront about it so
-  they can't cause mysterious issues later on. We would already print warnings
-  about this to the terminal, but those are easily missed if you launch your DAW
-  from the GUI.
+  plugins may crash during initialization. Since these configuration issues may
+  not immediately cause any obvious problems, it's better to be upfront about it
+  so they can't cause mysterious issues later on. We would already print
+  warnings about this to the terminal, but those are easily missed when starting
+  a DAW from the GUI.
 - Added a new `editor_coordinate_hack` [compatibility
   option](https://github.com/robbert-vdh/yabridge#compatibility-options) to
   replace `editor_double_embed`. This can be useful with buggy plugins that have
-  their editor GUIs misaligned after resizing the window because they draw their
-  GUI based on (top level) window's absolute screen coordinates instead of their
-  own relative position within the parent window. Some known plugins that can
-  benefit from this are _PSPaudioware E27_ and _Soundtoys Crystallizer_.
+  their editor GUIs misaligned after resizing the window. These plugins tend to
+  draw their GUI based on (top level) window's absolute screen coordinates
+  instead of their own relative position within the parent window. Some known
+  plugins that can benefit from this are _PSPaudioware E27_ and _Soundtoys
+  Crystallizer_.
 
 ### Removed
 
@@ -35,7 +36,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - The Wine plugin host applications now print their version information before
-  the `Usage: ` string when invoked without command line arguments.
+  the `Usage: ` string when invoked without any command line arguments.
 - VST3 Data (SysEx) events now use the same small buffer optimization yabridge
   already used for VST2 SysEx events. This avoids allocations when a VST3 plugin
   sends or receives a small SysEx event.
@@ -48,10 +49,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   the current locale is invalid. This could happen on Arch Linux if you skipped
   part of the Arch installation process.
 - Fixed New Sonic Arts' _Vice_ plugin freezing when loading the plugin. This
-  happened because the plugin tried to spawn new threads and interacted with the
-  GUI when changing the sample rate or block size from the audio thread. These
-  things are now done from the main GUI thread, so please let me know if this
-  now results in loading issues with any other VST2 plugins.
+  happened because the plugin interacted with the GUI and tried to spawn new
+  threads when the host changes the sample rate or block size from the audio
+  thread. These things are now done from the main GUI thread, so please let me
+  know if there are any new loading issues with other VST2 plugins after this
+  update.
 - Fixed the drag-and-drop implementation not sending an `XdndStatus` message on
   the very first tick. This fixes drag-and-drop from the _Samplab_ plugin which
   has a broken drag-and-drop implementation and only starts the operation after
