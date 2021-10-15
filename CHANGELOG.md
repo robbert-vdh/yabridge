@@ -15,6 +15,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   running the Wine process under a separate namespace. If you don't know that
   you need this, then you probably don't need this!
 
+### Fixed
+
+- The socket endpoint used by a plugin group host process to accept new
+  connections now gets removed when the group host process shuts down.
+  Previously this would leave behind a file in the temporary directory.
+
 ## [3.6.0] - 2021-10-15
 
 ### Added

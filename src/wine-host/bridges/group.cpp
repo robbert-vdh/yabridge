@@ -111,6 +111,11 @@ GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
 }
 
 GroupBridge::~GroupBridge() noexcept {
+    // Our fancy `Vst2Sockets` and `Vst3Sockets` clean up after themselves, but
+    // here we need to do it manually
+    // TODO: Encapsulate this, destructors are evil
+    fs::remove(group_socket_endpoint.path());
+
     stdio_context.stop();
 }
 
@@ -291,7 +296,7 @@ boost::asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
         // process is already is already listening. In the last case we will
         // simply throw so the other process can handle the request.
         std::ifstream open_sockets("/proc/net/unix");
-        std::string endpoint_path = endpoint.path();
+        const std::string endpoint_path = endpoint.path();
         for (std::string line; std::getline(open_sockets, line);) {
             if (line.size() < endpoint_path.size()) {
                 continue;
@@ -330,7 +335,13 @@ void GroupBridge::maybe_schedule_shutdown(
                 "All plugins have exited, shutting down the group process");
 
             // main_context.stop();
-            // FIXME: See the comment in `individual-host.cpp`
+            // FIXME: See the comment in `individual-host.cpp`. Because of that
+            //        we also need to manually clean up the socket endpoint.
+            //        ...was there a reason why we can't do this terminate at
+            //        the end of `group-host.cpp`? I don't think there is. Then
+            //        we don't need to duplicate this nasty destructor
+            //        behaviour.
+            fs::remove(group_socket_endpoint.path());
             TerminateProcess(GetCurrentProcess(), 0);
         }
     });
