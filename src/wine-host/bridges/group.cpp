@@ -334,15 +334,8 @@ void GroupBridge::maybe_schedule_shutdown(
             logger.log(
                 "All plugins have exited, shutting down the group process");
 
-            // main_context.stop();
-            // FIXME: See the comment in `individual-host.cpp`. Because of that
-            //        we also need to manually clean up the socket endpoint.
-            //        ...was there a reason why we can't do this terminate at
-            //        the end of `group-host.cpp`? I don't think there is. Then
-            //        we don't need to duplicate this nasty destructor
-            //        behaviour.
-            fs::remove(group_socket_endpoint.path());
-            TerminateProcess(GetCurrentProcess(), 0);
+            // The whole process will exit in `group-host.cpp` because of this
+            main_context.stop();
         }
     });
 }
