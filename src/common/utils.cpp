@@ -37,7 +37,7 @@ constexpr char disable_watchdog_timer_env_var[] = "YABRIDGE_NO_WATCHDOG";
  * other temporary files here instead of in `$XDG_RUNTIME_DIR` or `/tmp`. This
  * is only relevant when using some namespacing setup for sandboxing.
  */
-constexpr char temp_dir_override_env_var[] = "YABRIDGE_TEMP_PATH";
+constexpr char temp_dir_override_env_var[] = "YABRIDGE_TEMP_DIR";
 
 fs::path get_temporary_directory() {
     bp::environment env = boost::this_process::environment();
