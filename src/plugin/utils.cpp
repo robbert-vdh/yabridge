@@ -257,8 +257,7 @@ fs::path normalize_plugin_path(const fs::path& windows_library_path,
 std::variant<OverridenWinePrefix, fs::path, DefaultWinePrefix> find_wine_prefix(
     fs::path windows_plugin_path) {
     const bp::environment env = boost::this_process::environment();
-    if (const auto prefix = env.find("WINEPREFIX");
-        prefix != env.end() && !prefix->empty()) {
+    if (const auto prefix = env.find("WINEPREFIX"); prefix != env.end()) {
         return OverridenWinePrefix{prefix->to_string()};
     }
 
