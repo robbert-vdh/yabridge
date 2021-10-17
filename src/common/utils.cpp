@@ -40,11 +40,13 @@ constexpr char disable_watchdog_timer_env_var[] = "YABRIDGE_NO_WATCHDOG";
 constexpr char temp_dir_override_env_var[] = "YABRIDGE_TEMP_DIR";
 
 fs::path get_temporary_directory() {
-    bp::environment env = boost::this_process::environment();
-    if (!env[temp_dir_override_env_var].empty()) {
-        return env[temp_dir_override_env_var].to_string();
-    } else if (!env["XDG_RUNTIME_DIR"].empty()) {
-        return env["XDG_RUNTIME_DIR"].to_string();
+    const bp::environment env = boost::this_process::environment();
+    if (const auto directory = env.find(temp_dir_override_env_var);
+        directory != env.end() && !directory->empty()) {
+        return directory->to_string();
+    } else if (const auto directory = env.find("XDG_RUNTIME_DIR");
+               directory != env.end() && !directory->empty()) {
+        return directory->to_string();
     } else {
         return fs::temp_directory_path();
     }

@@ -256,12 +256,13 @@ fs::path normalize_plugin_path(const fs::path& windows_library_path,
 
 std::variant<OverridenWinePrefix, fs::path, DefaultWinePrefix> find_wine_prefix(
     fs::path windows_plugin_path) {
-    bp::environment env = boost::this_process::environment();
-    if (!env["WINEPREFIX"].empty()) {
-        return OverridenWinePrefix{env["WINEPREFIX"].to_string()};
+    const bp::environment env = boost::this_process::environment();
+    if (const auto prefix = env.find("WINEPREFIX");
+        prefix != env.end() && !prefix->empty()) {
+        return OverridenWinePrefix{prefix->to_string()};
     }
 
-    std::optional<fs::path> dosdevices_dir = find_dominating_file(
+    const std::optional<fs::path> dosdevices_dir = find_dominating_file(
         "dosdevices", windows_plugin_path, fs::is_directory);
     if (!dosdevices_dir) {
         return DefaultWinePrefix{};
