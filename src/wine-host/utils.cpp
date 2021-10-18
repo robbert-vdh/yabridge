@@ -82,7 +82,15 @@ MainContext::MainContext()
     : context(),
       events_timer(context),
       watchdog_context(),
-      watchdog_timer(watchdog_context) {
+      watchdog_timer(watchdog_context) {}
+
+void MainContext::run() {
+    // We need to know which thread is the GUI thread because mutual recursion
+    // in VST3 plugins needs to be handled differently depending on whether the
+    // potentially mutually recursive function was called from an audio thread
+    // or a GUI thread
+    gui_thread_id = GetCurrentThreadId();
+
     // NOTE: We allow disabling the watchdog timer to allow the Wine process to
     //       be run from a separate namespace. This is not something you'd
     //       normally want to enable.
@@ -90,25 +98,26 @@ MainContext::MainContext()
         std::cerr << "WARNING: Watchdog timer disabled. Not protecting"
                   << std::endl;
         std::cerr << "         against dangling processes." << std::endl;
-        return;
+    } else {
+        // To account for hosts terminating before the bridged plugin has
+        // initialized, we'll do the first watchdog check five seconds. After
+        // this we'll run the timer on a 30 second interval.
+        async_handle_watchdog_timer(5s);
+
+        watchdog_handler = Win32Thread([&]() {
+            pthread_setname_np(pthread_self(), "watchdog");
+
+            watchdog_context.run();
+        });
     }
 
-    // To account for hosts terminating before the bridged plugin has
-    // initialized, we'll do the first watchdog check five seconds. After
-    // this we'll run the timer on a 30 second interval.
-    async_handle_watchdog_timer(5s);
-
-    watchdog_handler = Win32Thread([&]() {
-        pthread_setname_np(pthread_self(), "watchdog");
-
-        watchdog_context.run();
-    });
-}
-
-void MainContext::run() {
-    gui_thread_id = GetCurrentThreadId();
-
     context.run();
+
+    // We only need to check if the host is still running while the main context
+    // is also running. If a stop was requested, the entire application is
+    // supposed to shut down. Otherwise `watchdog_handler` would just block on
+    // the join as the watchdog timer is still active.
+    watchdog_context.stop();
 }
 
 void MainContext::stop() noexcept {
