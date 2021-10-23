@@ -40,7 +40,7 @@ while also staying easy to debug and maintain.
 ## Tested with
 
 Yabridge has been tested under the following hosts using Wine Staging
-6.19:
+6.20:
 
 **Wine 6.15 and 6.16 would not work with yabridge because of Wine bug
 [\#51596](https://bugs.winehq.org/show_bug.cgi?id=51596).** **If you are still
@@ -50,7 +50,7 @@ are not available for your distro yet.**
 
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
-| Bitwig Studio 4.0.5 | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Bitwig Studio 4.0.6 | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | REAPER 6.38         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Carla 2.4.0         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Qtractor 0.9.24     | :heavy_check_mark: | :heavy_check_mark:                                                   |
