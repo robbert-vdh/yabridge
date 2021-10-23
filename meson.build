@@ -69,6 +69,13 @@ wine_compiler_options = [
   #
   # https://bugs.winehq.org/show_bug.cgi?id=50670
   '-D__IFileOperation_INTERFACE_DEFINED__',
+  # This Wine 6.20 commit `dfdf56fbe47f8ff50ebe533e6d73f2de6546f008` added a
+  # bunch of new SAL includes to `windows.h`, which include things like `__in`
+  # and `__out`. This breaks libstdc++ compilation since they often use those
+  # names for function parameters.
+  #
+  # https://bugs.winehq.org/show_bug.cgi?id=51919
+  '-D__WINE_SAL_H__',
 ]
 
 # NOTE: GCC doesn't 8-byte align doubles in structs on x86 for ABI-compatibilty

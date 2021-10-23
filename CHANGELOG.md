@@ -15,6 +15,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   running the Wine process under a separate namespace. If you don't know that
   you need this, then you probably don't need this!
 
+### Changed
+
+- Added a workaround for a new
+  [bug](https://bugs.winehq.org/show_bug.cgi?id=51919) in Wine 6.20 that would
+  cause compilation to fail by redefining common variable names used in the
+  standard library.
+
 ### Fixed
 
 - The socket endpoint used by a plugin group host process to accept new
