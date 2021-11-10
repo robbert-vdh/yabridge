@@ -1019,7 +1019,7 @@ bool Vst3Logger::log_request(
                     buffers.silenceFlags <
                         (static_cast<uint64>(1)
                          << static_cast<uint64>(buffers.numChannels))) {
-                    num_input_channels << " (silence)" << std::endl;
+                    num_input_channels << " (silence)";
                 }
 
                 is_first = false;
@@ -1036,7 +1036,7 @@ bool Vst3Logger::log_request(
                     buffers.silenceFlags <
                         (static_cast<uint64>(1)
                          << static_cast<uint64>(buffers.numChannels))) {
-                    num_output_channels << " (silence)" << std::endl;
+                    num_output_channels << " (silence)";
                 }
 
                 is_first = false;
@@ -1827,7 +1827,7 @@ void Vst3Logger::log_response(
                 buffers.silenceFlags <
                     (static_cast<uint64>(1)
                      << static_cast<uint64>(buffers.numChannels))) {
-                num_output_channels << " (silence)" << std::endl;
+                num_output_channels << " (silence)";
             }
 
             is_first = false;
