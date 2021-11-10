@@ -114,8 +114,11 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
 bool Vst3Bridge::inhibits_event_loop() noexcept {
     std::lock_guard lock(object_instances_mutex);
 
-    for (const auto& [instance_id, object] : object_instances) {
-        if (!object.is_initialized) {
+    for (const auto& [instance_id, instance] : object_instances) {
+        // HACK: IK Multimedia's T-RackS 5 will deadlock if it receives a timer
+        //       proc during offline processing, so we need to prevent that from
+        //       happening.
+        if (!instance.is_initialized || instance.is_offline_processing) {
             return true;
         }
     }
@@ -1429,6 +1432,15 @@ size_t Vst3Bridge::register_object_instance(
                     },
                     [&](YaAudioProcessor::SetupProcessing& request)
                         -> YaAudioProcessor::SetupProcessing::Response {
+                        Vst3PluginInstance& instance =
+                            object_instances.at(request.instance_id);
+
+                        // See the comment in
+                        // `Vst3Bridge::inhibits_event_loop()`
+                        instance.is_offline_processing =
+                            request.setup.processMode ==
+                            Steinberg::Vst::kOffline;
+
                         const tresult result =
                             object_instances.at(request.instance_id)
                                 .interfaces.audio_processor->setupProcessing(

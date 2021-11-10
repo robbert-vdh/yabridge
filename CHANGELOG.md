@@ -27,6 +27,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - The socket endpoint used by a plugin group host process to accept new
   connections now gets removed when the group host process shuts down.
   Previously this would leave behind a file in the temporary directory.
+- Fixed the VST3 version of _IK Multimedia's T-RackS 5_ causing offline
+  rendering to stall indefinitely. This could happen when exporting or bouncing
+  audio in **Bitwig Studio 4.1** or in **REAPER**. That plugin deadlocks when it
+  receives timer events while doing offline audio processing, so we now prevent
+  that from happening.
 
 ## [3.6.0] - 2021-10-15
 
