@@ -3,3 +3,6 @@
 # The above pattern doesn't match submodules
 /tomlplusplus
 /vst3
+
+# And we obviously don't want to ignore our overlays
+!/function2-patch/*

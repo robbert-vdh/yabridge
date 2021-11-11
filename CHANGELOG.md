@@ -33,6 +33,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   receives timer events while doing offline audio processing, so we now prevent
   that from happening.
 
+### Packaging notes
+
+- The function2 wrap dependency was updated to version 4.2.0.
+
 ## [3.6.0] - 2021-10-15
 
 ### Added

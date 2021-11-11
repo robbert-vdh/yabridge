@@ -228,7 +228,7 @@ boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
 # TODO: Meson doesn't have a way to define version ranges, does it? Like
 #       `^>=5.2.0`, `>=5.2.0 && <6.0.0` or `5.2.*`.
 bitsery_dep = dependency('bitsery', version : '>=5.2.0', fallback : ['bitsery', 'bitsery_dep'])
-function2_dep = dependency('function2', version : '>=4.1.0', fallback : ['function2', 'function2_dep'])
+function2_dep = dependency('function2', version : '>=4.2.0', fallback : ['function2', 'function2_dep'])
 threads_dep = dependency('threads')
 tomlplusplus_dep = dependency('tomlplusplus', version : '>=2.1.0', fallback : ['tomlplusplus', 'tomlplusplus_dep'])
 
