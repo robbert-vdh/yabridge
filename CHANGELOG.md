@@ -35,6 +35,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Packaging notes
 
+- All Meson wraps now use `wrap-git` instead of downloading tarballs from
+  GitHub. Previously the bitsery and function2 wraps would use source tarballs.
+- The patch overlays for the bitsery and function2 wraps are now in regular
+  directories instead of being in tarballs committed to yabridge's repository.
+  This means that building now requires **Meson 0.55** or later because of the
+  use of `patch_directory`.
+- The bitsery wrap dependency was updated to version 5.2.2.
 - The function2 wrap dependency was updated to version 4.2.0.
 
 ## [3.6.0] - 2021-10-15

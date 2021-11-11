@@ -1,11 +1,7 @@
-[wrap-file]
-directory = bitsery-5.2.0
+[wrap-git]
+url = https://github.com/fraillt/bitsery.git
+# This is tag v5.2.2
+revision = c0fc083c9de805e5825d7553507569febf6a6f93
+depth = 1
 
-source_url = https://github.com/fraillt/bitsery/archive/v5.2.0.tar.gz
-source_filename = bitsery-v5.2.0.tar.gz
-source_hash = 99f47bca227abb6b9e8030703dcc402ab930ff3bf0a87c89c3f0fb9536cad448
-
-# TODO: Meson 0.55 added patch_directory, so we can just use that instead
-patch_url = file:./subprojects/bitsery-patch-5.2.0.tar.xz
-patch_filename = bitsery-patch-5.2.0.tar.xz
-patch_hash = ab12b1622de7a17e2996ab86a0947bbbc39e6684d9ad06c46f8e3877e5f8683d
+patch_directory = subprojects/bitsery-patch

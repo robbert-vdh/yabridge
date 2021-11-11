@@ -5,4 +5,5 @@
 /vst3
 
 # And we obviously don't want to ignore our overlays
+!/bitsery-patch/*
 !/function2-patch/*
