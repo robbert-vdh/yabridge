@@ -4,3 +4,6 @@ url = https://github.com/fraillt/bitsery.git
 revision = c0fc083c9de805e5825d7553507569febf6a6f93
 depth = 1
 patch_directory = bitsery
+
+[provide]
+bitsery = bitsery_dep

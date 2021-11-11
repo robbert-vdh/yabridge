@@ -4,3 +4,6 @@ url = https://github.com/Naios/function2.git
 revision = 02ca99831de59c7c3a4b834789260253cace0ced
 depth = 1
 patch_directory = function2
+
+[provide]
+function2 = function2_dep

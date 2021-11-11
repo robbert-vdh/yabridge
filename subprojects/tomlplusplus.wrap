@@ -3,3 +3,6 @@ url = https://github.com/marzer/tomlplusplus.git
 # This is tag v2.5.0
 revision = 037bfdd21f794d7212616d5e6f4f8baab543c472
 depth = 1
+
+[provide]
+tomlplusplus = tomlplusplus_dep
