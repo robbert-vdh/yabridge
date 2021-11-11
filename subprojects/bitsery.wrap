@@ -3,5 +3,4 @@ url = https://github.com/fraillt/bitsery.git
 # This is tag v5.2.2
 revision = c0fc083c9de805e5825d7553507569febf6a6f93
 depth = 1
-
-patch_directory = subprojects/bitsery-patch
+patch_directory = bitsery

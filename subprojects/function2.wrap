@@ -3,5 +3,4 @@ url = https://github.com/Naios/function2.git
 # Tag 4.2.0
 revision = 02ca99831de59c7c3a4b834789260253cace0ced
 depth = 1
-
-patch_directory = subprojects/function2-patch
+patch_directory = function2

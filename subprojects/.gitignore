@@ -1,9 +1,12 @@
 /*/*
 
 # The above pattern doesn't match submodules
+/bitsery
+/function2
 /tomlplusplus
 /vst3
 
 # And we obviously don't want to ignore our overlays
-!/bitsery-patch/*
+!/packagefiles/bitsery
+!/packagefiles/function2
 !/function2-patch/*
