@@ -229,7 +229,7 @@ boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
 bitsery_dep = dependency('bitsery', version : '>=5.2.0', fallback : ['bitsery', 'bitsery_dep'])
 function2_dep = dependency('function2', version : '>=4.2.0', fallback : ['function2', 'function2_dep'])
 threads_dep = dependency('threads')
-tomlplusplus_dep = dependency('tomlplusplus', version : '>=2.1.0', fallback : ['tomlplusplus', 'tomlplusplus_dep'])
+tomlplusplus_dep = dependency('tomlplusplus', version : '>=2.5.0', fallback : ['tomlplusplus', 'tomlplusplus_dep'])
 
 dl_dep = declare_dependency(link_args : '-ldl')
 rt_dep = declare_dependency(link_args : '-lrt')

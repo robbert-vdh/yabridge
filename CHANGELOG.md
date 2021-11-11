@@ -43,6 +43,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   use of `patch_directory`.
 - The bitsery wrap dependency was updated to version 5.2.2.
 - The function2 wrap dependency was updated to version 4.2.0.
+- The tomlplusplus wrap dependency was updated to version 2.5.0.
 
 ## [3.6.0] - 2021-10-15
 
