@@ -43,7 +43,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   use of `patch_directory`.
 - The bitsery wrap dependency was updated to version 5.2.2.
 - The function2 wrap dependency was updated to version 4.2.0.
-- The tomlplusplus wrap dependency was updated to version 2.5.0.
+- The tomlplusplus wrap dependency was updated to slightly after version 2.5.0
+  because of an [issue](https://github.com/marzer/tomlplusplus/issues/121) with
+  their `meson.build` file that breaks compatibility with Meson 0.60.0.
 
 ## [3.6.0] - 2021-10-15
 
