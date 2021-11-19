@@ -50,9 +50,9 @@ are not available for your distro yet.**
 
 | Host                           | VST2               | VST3                                                                 |
 | ------------------------------ | ------------------ | -------------------------------------------------------------------- |
-| Bitwig Studio 4.0.7/4.1 beta 1 | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| REAPER 6.40                    | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Carla 2.4.0                    | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Bitwig Studio 4.0.7/4.1 beta 5 | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| REAPER 6.42                    | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Carla 2.4.1                    | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Qtractor 0.9.24                | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Renoise 3.3.2                  | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly |
 | Waveform 11.5.17               | :heavy_check_mark: | :heavy_check_mark:                                                   |
