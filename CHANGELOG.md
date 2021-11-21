@@ -10,42 +10,44 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added an environment variable to choose a different directory for yabridge to
-  store its sockets and other temporary files in. This is only needed when
-  running the Wine process under a separate namespace. If you don't know that
-  you need this, then you probably don't need this!
+- Added an environment variable for changing the directory yabridge stores its
+  sockets and other temporary files in. This is only useful when running the
+  Wine process under a separate namespace. If you don't know what this means,
+  then you probably don't need this!
 
 ### Changed
 
 - Added a workaround for a new
   [bug](https://bugs.winehq.org/show_bug.cgi?id=51919) in Wine 6.20 that would
   cause compilation to fail by redefining common variable names used in the
-  standard library.
+  standard library. This issue has since been fixed in Wine 6.21 and up.
 
 ### Fixed
 
-- The socket endpoint used by a plugin group host process to accept new
-  connections now gets removed when the group host process shuts down.
-  Previously this would leave behind a file in the temporary directory.
 - Fixed the VST3 version of _IK Multimedia's T-RackS 5_ causing offline
   rendering to stall indefinitely. This could happen when exporting or bouncing
-  audio in **Bitwig Studio 4.1** or in **REAPER**. That plugin deadlocks when it
-  receives timer events while doing offline audio processing, so we now prevent
-  that from happening.
+  audio in **Bitwig Studio 4.1**, **Ardour** and in **REAPER**. Those plugins
+  deadlock when they receives timer events while doing offline audio processing,
+  so we now prevent that from happening.
+- The socket endpoints used by plugin group host processes to accept new
+  connections now get removed when those processes shut down. Previously this
+  would leave behind a file in the temporary directory.
 
 ### Packaging notes
 
 - All Meson wraps now use `wrap-git` instead of downloading tarballs from
   GitHub. Previously the bitsery and function2 wraps would use source tarballs.
-- The patch overlays for the bitsery and function2 wraps are now in regular
-  directories instead of being in tarballs committed to yabridge's repository.
-  This means that building now requires **Meson 0.55** or later because of the
-  use of `patch_directory`.
+- The `meson.build` patch overlays for the bitsery and function2 wraps are no
+  longer stored in tarballs committed to yabridge's repository. Instead, they
+  are now regular directories in the `subprojects/packagefiles` directory. This
+  means that building yabridge with these wraps now requires **Meson 0.55** or
+  later because of the use of `patch_directory`.
 - The bitsery wrap dependency was updated to version 5.2.2.
 - The function2 wrap dependency was updated to version 4.2.0.
 - The tomlplusplus wrap dependency was updated to slightly after version 2.5.0
   because of an [issue](https://github.com/marzer/tomlplusplus/issues/121) with
-  their `meson.build` file that breaks compatibility with Meson 0.60.0.
+  their `meson.build` file that breaks compatibility with Meson 0.60.0 on older
+  versions.
 
 ## [3.6.0] - 2021-10-15
 
