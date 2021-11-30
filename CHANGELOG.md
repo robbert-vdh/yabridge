@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed sluggish UIs in _Output's Thermal_ and likely a handful of other
+  JUCE-based plugins. These plugins would emit hundreds to thousands of events
+  when the GUI changes. Yabridge now detects this, and removes the throttling we
+  have in place to prevent certain other plugins from getting stuck in infinite
+  loops.
+
 ## [3.7.0] - 2021-11-21
 
 ### Added

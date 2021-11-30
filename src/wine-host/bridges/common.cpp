@@ -31,6 +31,22 @@
  */
 constexpr int max_win32_messages = 20;
 
+/**
+ * Some JUCE based plugins however send thousands of `WM_USER+123` events
+ * at once from the GUI. So while the limit from `win32_message_limit`
+ * needs to exist, it also causes some other plugins to feel sluggish.
+ * When we encounter these events, we'll assume we're dealing with a JUCE
+ * plugin and increase the limit. Examples of affected plugins are:
+ *
+ * - Thermal by Output
+ */
+constexpr int extended_max_win32_messages = 8192;
+/**
+ * The Win32 message ID that needs to trigger the behaviour described for
+ * `juce_win32_message_limit`.
+ */
+constexpr unsigned int juce_message_id = WM_USER + 123;
+
 HostBridge::HostBridge(MainContext& main_context,
                        boost::filesystem::path plugin_path,
                        pid_t parent_pid)
@@ -45,9 +61,14 @@ HostBridge::~HostBridge() noexcept {}
 void HostBridge::handle_events() noexcept {
     MSG msg;
 
-    for (int i = 0;
-         i < max_win32_messages && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
+    int limit = max_win32_messages;
+    for (int i = 0; i < limit && PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
          i++) {
+        // HACK: See the docstring on `juce_win32_message_limit`
+        if (msg.message == juce_message_id) {
+            limit = extended_max_win32_messages;
+        }
+
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
