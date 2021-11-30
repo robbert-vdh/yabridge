@@ -48,16 +48,16 @@ running either of those versions, then you'll need to either upgrade to a later
 version or [downgrade](#downgrading-wine) to Wine Staging 6.14 if those versions
 are not available for your distro yet.**
 
-| Host                           | VST2               | VST3                                                                 |
-| ------------------------------ | ------------------ | -------------------------------------------------------------------- |
-| Bitwig Studio 4.0.7/4.1 beta 5 | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| REAPER 6.42                    | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Carla 2.4.1                    | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Qtractor 0.9.24                | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Renoise 3.3.2                  | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly |
-| Waveform 11.5.17               | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Ardour 6.9                     | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Mixbus 7.0.140                 | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Host                | VST2               | VST3                                                                 |
+| ------------------- | ------------------ | -------------------------------------------------------------------- |
+| Bitwig Studio 4.1.0 | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| REAPER 6.42         | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Carla 2.4.1         | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Qtractor 0.9.24     | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Renoise 3.3.2       | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly |
+| Waveform 11.5.17    | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Ardour 6.9          | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Mixbus 7.0.140      | :heavy_check_mark: | :heavy_check_mark:                                                   |
 
 Please let me know if there are any issues with other hosts.
 
