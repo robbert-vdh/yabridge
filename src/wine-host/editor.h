@@ -35,17 +35,6 @@
 #include "xdnd-proxy.h"
 
 /**
- * The maximum number of Win32 messages to handle per message loop. This is
- * needed because otherwise some plugins can run into an infinite loop. I've
- * observed this with:
- *
- * - Waves plugins
- * - Melda plugins when having multiple editor windows open within a single
- *   plugin group
- */
-constexpr int max_win32_messages [[maybe_unused]] = 20;
-
-/**
  * The most significant bit in an X11 event's response type is used to indicate
  * the event source.
  */

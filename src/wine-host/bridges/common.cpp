@@ -20,6 +20,17 @@
 
 #include "../editor.h"
 
+/**
+ * The maximum number of Win32 messages to handle per message loop. This is
+ * needed because otherwise some plugins can run into an infinite loop. I've
+ * observed this with:
+ *
+ * - Waves plugins
+ * - Melda plugins when having multiple editor windows open within a single
+ *   plugin group
+ */
+constexpr int max_win32_messages = 20;
+
 HostBridge::HostBridge(MainContext& main_context,
                        boost::filesystem::path plugin_path,
                        pid_t parent_pid)
