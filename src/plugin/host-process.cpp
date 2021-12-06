@@ -67,10 +67,10 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
       host(
           launch_host(host_path,
                       plugin_type_to_string(host_request.plugin_type),
-#ifdef WITH_WINEDBG
-                      // Winedbg flattens all command line arguments to a single
-                      // space separate Win32 command line, so we need to do our
-                      // own quoting.
+#if defined(WITH_WINEDBG) && defined(WINEDBG_LEGACY_ARGUMENT_QUOTING)
+                      // Old versions of winedbg flattened all command line
+                      // arguments to a single space separated Win32 command
+                      // line, so we had to do our own quoting
                       "\"" + plugin_info.windows_plugin_path + "\"",
 #else
                       host_request.plugin_path,

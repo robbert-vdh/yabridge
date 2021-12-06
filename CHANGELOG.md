@@ -8,6 +8,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Added support for Wine 6.23's new fixed winedbg command line argument
+  handling.
+
 ### Fixed
 
 - Fixed sluggish UIs in _Output's Thermal_ and likely a handful of other

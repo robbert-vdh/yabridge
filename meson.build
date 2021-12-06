@@ -139,6 +139,10 @@ if wine_version.returncode() == 0
     message('- Using the cdecl calling convention')
     compiler_options += '-DWINE_USE_CDECL'
   endif
+  if wine_version.stdout().version_compare('<6.23') and with_winedbg
+    message('- Using legacy winedbg argument quoting')
+    compiler_options += '-DWINEDBG_LEGACY_ARGUMENT_QUOTING'
+  endif
 else
   warning('Unable to determine the current Wine version')
 endif
