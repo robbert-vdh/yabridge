@@ -898,6 +898,10 @@ offers these two environment variables to control yabridge's logging facilities:
   More detailed information about these debug levels can be found in
   `src/common/logging.h`.
 
+See the [bug report
+template](https://github.com/robbert-vdh/yabridge/blob/master/.github/ISSUE_TEMPLATE/bug_report.yml)
+for an example of how to use this.
+
 Wine's own [logging facilities](https://wiki.winehq.org/Debug_Channels) can also
 be very helpful when diagnosing problems. In particular the `+message`,
 `+module` and `+relay` channels are very useful to trace the execution path
