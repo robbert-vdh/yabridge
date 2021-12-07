@@ -20,6 +20,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   when the GUI changes. Yabridge now detects this, and removes the throttling we
   have in place to prevent certain other plugins from getting stuck in infinite
   loops.
+- Fixed Wine version detection in the build configuration.
 
 ## [3.7.0] - 2021-11-21
 

@@ -126,12 +126,10 @@ endif
 # should _not_ be specified for the same reason. We'll try to figure out the
 # current Wine version and add this calling convention based on that. Also,
 # printing the configure-time Wine version might be useful in diagnosing build
-# issues so we'll do just that. The regexp looks a bit weird because of the
-# lookahead. That's purely for aesthetics so we don't end up printing trailing
-# dots when parsing Wine version strings like `wine-6.4.r0.g7ec998e1 ( TkG Staging Esync Fsync )`.
+# issues so we'll do just that.
 #
 # https://bugs.winehq.org/show_bug.cgi?id=49138
-wine_version = run_command('sh', '-c', '''wine --version | grep --only-matching -P '[0-9]+\.[0-9.]+?(?=\.)?' | head -n1''')
+wine_version = run_command('sh', '-c', '''wine --version | grep --only-matching -P '[0-9]+\.[0-9]+' | head -n1''')
 if wine_version.returncode() == 0
   message('Targetting Wine @0@'.format(wine_version.stdout()))
   if wine_version.stdout().version_compare('>=5.7') and \
