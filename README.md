@@ -770,7 +770,7 @@ running `echo $SHELL` in a terminal.
   `~/.config/fish/config.fish` or some file in `~/.config/fish/conf.d/`:
 
   ```shell
-  set -gx WINEFSYNC=1
+  set -gx WINEFSYNC 1
   # Or if you're changing your PATH:
   set -gp fish_user_paths ~/directory/with/yabridge/binaries
   ```
