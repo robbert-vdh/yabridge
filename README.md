@@ -42,12 +42,6 @@ while also staying easy to debug and maintain.
 Yabridge has been tested under the following hosts using Wine Staging
 7.0-rc1:
 
-**Wine 6.15 and 6.16 would not work with yabridge because of Wine bug
-[\#51596](https://bugs.winehq.org/show_bug.cgi?id=51596).** **If you are still
-running either of those versions, then you'll need to either upgrade to a later
-version or [downgrade](#downgrading-wine) to Wine Staging 6.14 if those versions
-are not available for your distro yet.**
-
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
 | Bitwig Studio 4.1.1 | :heavy_check_mark: | :heavy_check_mark:                                                   |
@@ -69,10 +63,6 @@ Please let me know if there are any issues with other hosts.
    versions provided by those distro's repositories may be too old to be used
    with yabridge. On other distros you should be able to just install
    `wine-staging` using your distro's package manager.
-
-   **Please note that yabridge would not work with Wine 6.15 and 6.16, so make
-   sure you're running either Wine Staging 6.17 or 6.14.** **[See
-   above](#tested-with) for more information.**
 
    For a general overview on how to use Wine to install Windows applications,
    check out Wine's [user
@@ -586,10 +576,6 @@ have permission to do so yet. Examples of this are:
 If your problem is not listed here, then feel free to post on the [issue
 tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask about it in
 the yabridge [Discord](https://discord.gg/pyNeweqadf).
-
-- **Please note that yabridge would not work with Wine 6.15 and 6.16, so make
-  sure you're running either Wine Staging 6.17 or 6.14.** **[See
-  above](#tested-with) for more information.**
 
 - Both yabridgectl and yabridge try to diagnose many common issues for you. If
   you're running into crashes or other issues, then try launching your DAW from
