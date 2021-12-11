@@ -40,7 +40,7 @@ while also staying easy to debug and maintain.
 ## Tested with
 
 Yabridge has been tested under the following hosts using Wine Staging
-6.23:
+7.0-rc1:
 
 **Wine 6.15 and 6.16 would not work with yabridge because of Wine bug
 [\#51596](https://bugs.winehq.org/show_bug.cgi?id=51596).** **If you are still
