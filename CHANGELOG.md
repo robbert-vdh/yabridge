@@ -20,6 +20,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   when the GUI changes. Yabridge now detects this, and removes the throttling we
   have in place to prevent certain other plugins from getting stuck in infinite
   loops.
+- Fixed **DrumCore 3** crashing when trying to drag grooves from the plugin to
+  other applications. This happened because of an integer underflow in that
+  plugin, causing the number of reported drag-and-drop formats to be magnitudes
+  higher than yabridge's indicated maximum.
 - Fixed Wine version detection in the build configuration.
 
 ## [3.7.0] - 2021-11-21

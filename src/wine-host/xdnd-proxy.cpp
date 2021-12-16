@@ -790,6 +790,11 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                      &num_formats);
     enumerator->Release();
 
+    // NOTE: This DrumCore 3 plugin reports 4294967282 for `num_formats` which
+    //       is uh a lot more than 16. So to prevent causing a segfault here we
+    //       need to manually cap `num_formats` to 16.
+    num_formats = std::min(num_formats, static_cast<unsigned int>(16));
+
     // NOTE: MeldaProduction plugins don't return any supported formats for some
     //       reason, so we'll hardcode a HDROP
     if (num_formats == 0) {
