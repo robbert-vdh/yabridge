@@ -270,7 +270,7 @@ follows:
 
 - On Arch and Manjaro, you can install the latest master branch version of
   yabridge by installing the
-  [yabridge-git](https://aur.archlinux.org/packages/yabridge-git/)and
+  [yabridge-git](https://aur.archlinux.org/packages/yabridge-git/) and
   [yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/) AUR
   packages.
 - Otherwise, you can find development builds on the [automated build
