@@ -40,11 +40,11 @@ while also staying easy to debug and maintain.
 ## Tested with
 
 Yabridge has been tested under the following hosts using Wine Staging
-7.0-rc1:
+7.0-rc2:
 
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
-| Bitwig Studio 4.1.1 | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Bitwig Studio 4.1.2 | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | REAPER 6.42         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Carla 2.4.1         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Qtractor 0.9.24     | :heavy_check_mark: | :heavy_check_mark:                                                   |
