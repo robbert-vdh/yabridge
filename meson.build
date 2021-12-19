@@ -228,7 +228,8 @@ endif
 # and 64-bit versions
 
 boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
-bitsery_dep = dependency('bitsery', version : '>=5.2.0')
+# Bitsery's CMake build definition is capitalized for some reason
+bitsery_dep = dependency('bitsery', 'Bitsery', version : '>=5.2.0')
 function2_dep = dependency('function2', version : '>=4.0.0')
 threads_dep = dependency('threads')
 tomlplusplus_dep = dependency('tomlplusplus', version : '>=2.0.0')
