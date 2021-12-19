@@ -12,6 +12,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added support for Wine 6.23's new fixed winedbg command line argument
   handling.
+- Changed the build and cross-compilation definitions to allow
+  repository-packaged CMake build configurations to be used for the bitsery and
+  function2 dependencies.
 
 ### Fixed
 
