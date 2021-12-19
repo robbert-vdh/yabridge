@@ -228,8 +228,16 @@ endif
 # and 64-bit versions
 
 boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
-# Bitsery's CMake build definition is capitalized for some reason
-bitsery_dep = dependency('bitsery', 'Bitsery', version : '>=5.2.0')
+if meson.version().version_compare('>=0.60')
+  # Bitsery's CMake build definition is capitalized for some reason
+  bitsery_dep = dependency('bitsery', 'Bitsery', version : '>=5.2.0')
+else
+  # Mmeson <=0.6.0 didn't support multiple names for a dependency, and since at
+  # the moment this is only relevant for packing on Arch btw, it's probably
+  # better to remove this conditional later than it is to bump the minimum Meson
+  # version now.
+  bitsery_dep = dependency('bitsery', version : '>=5.2.0')
+endif
 function2_dep = dependency('function2', version : '>=4.0.0')
 threads_dep = dependency('threads')
 tomlplusplus_dep = dependency('tomlplusplus', version : '>=2.0.0')
