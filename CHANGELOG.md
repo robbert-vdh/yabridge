@@ -29,6 +29,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   higher than yabridge's indicated maximum.
 - Fixed Wine version detection in the build configuration.
 
+### Packaging notes
+
+- We now target VST3 SDK version 3.7.4 with git tag `v3.7.4_build_25-patched`.
+
 ## [3.7.0] - 2021-11-21
 
 ### Added
