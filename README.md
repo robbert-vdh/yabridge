@@ -74,8 +74,8 @@ Please let me know if there are any issues with other hosts.
    be up to date, and some may also not be compiled with support for 32-bit
    plugins.
 
-   - On **Arch** and **Manjaro** yabridge and yabridgectl are packaged in the
-     official repositories under the
+   - On **Arch** and **Manjaro**, yabridge and yabridgectl can be installed from
+     the official repositories using the
      [`yabridge`](https://archlinux.org/packages/multilib/x86_64/yabridge/) and
      [`yabridgectl`](https://archlinux.org/packages/multilib/x86_64/yabridgectl/)
      packages.
