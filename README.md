@@ -68,24 +68,17 @@ Please let me know if there are any issues with other hosts.
    check out Wine's [user
    guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
 
-1. You can install yabridge and yabridgectl using a prebuilt binary, through the
-   AUR, from a distro package, or by building from source. Keep in mind that the
-   distro packages mentioned below may not always be up to date, and they may
-   also not be compiled with support for 32-bit plugins.
+1. You can install yabridge and its yabridgectl companion utility using a
+   prebuilt binary, through the AUR, from a distro package, or by building from
+   source. Keep in mind that the distro packages mentioned below may not always
+   be up to date, and some may also not be compiled with support for 32-bit
+   plugins.
 
-   - On **Arch** and **Manjaro**, you can install yabridge using the official
-     AUR packages. You have three options here:
-
-     - [yabridge-bin](https://aur.archlinux.org/packages/yabridge-bin/) simply
-       installs the latest prebuilt release of yabridge and yabridgectl for you
-       with no need to compile anything.
-     - The [yabridge](https://aur.archlinux.org/packages/yabridge/) and
-       [yabridgectl](https://aur.archlinux.org/packages/yabridgectl/) packages
-       will build yabridge and yabridgectl from the latest release.
-     - The [yabridge-git](https://aur.archlinux.org/packages/yabridge-git/) and
-       [yabridgectl-git](https://aur.archlinux.org/packages/yabridgectl-git/)
-       packages will build yabridge and yabridgectl from the current git master
-       branch.
+   - On **Arch** and **Manjaro** yabridge and yabridgectl are packaged in the
+     official repositories under the
+     [`yabridge`](https://archlinux.org/packages/multilib/x86_64/yabridge/) and
+     [`yabridgectl`](https://archlinux.org/packages/multilib/x86_64/yabridgectl/)
+     packages.
 
    - On **Fedora**, you can install yabridge and yabridgectl from a
      [COPR](https://copr.fedorainfracloud.org/coprs/patrickl/yabridge/packages/).
