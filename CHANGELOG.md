@@ -28,6 +28,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   plugin, causing the number of reported drag-and-drop formats to be magnitudes
   higher than yabridge's indicated maximum.
 - Fixed Wine version detection in the build configuration.
+- Fixed VST3 connection point proxies not being disconnected properly. This code
+  path is not being used for any of the current Linux VST3 hosts, so this did
+  not yet cause any issues.
 
 ### Packaging notes
 

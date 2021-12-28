@@ -348,8 +348,7 @@ void Vst3Bridge::run() {
                 } else {
                     const tresult result =
                         this_instance.interfaces.connection_point->disconnect(
-                            object_instances.at(*request.other_instance_id)
-                                .connection_point_proxy);
+                            this_instance.connection_point_proxy);
                     this_instance.connection_point_proxy.reset();
 
                     return result;
