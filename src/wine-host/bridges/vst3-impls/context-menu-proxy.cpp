@@ -34,7 +34,7 @@ Vst3ContextMenuProxyImpl::~Vst3ContextMenuProxyImpl() noexcept {
     bridge.send_message(
         Vst3ContextMenuProxy::Destruct{.owner_instance_id = owner_instance_id(),
                                        .context_menu_id = context_menu_id()});
-    bridge.unregister_context_menu(owner_instance_id(), context_menu_id());
+    bridge.unregister_context_menu(*this);
 }
 
 tresult PLUGIN_API

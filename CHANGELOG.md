@@ -31,6 +31,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed VST3 connection point proxies not being disconnected properly. This code
   path is not being used for any of the current Linux VST3 hosts, so this did
   not yet cause any issues.
+- Rewritten the VST3 object handling to prevent some theoretical data races when
+  the host inserts or removes plug instances while other instances of that
+  plugin are processing audio.
 
 ### Packaging notes
 

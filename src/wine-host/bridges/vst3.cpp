@@ -112,7 +112,7 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
 }
 
 bool Vst3Bridge::inhibits_event_loop() noexcept {
-    std::lock_guard lock(object_instances_mutex);
+    std::shared_lock lock(object_instances_mutex);
 
     for (const auto& [instance_id, instance] : object_instances) {
         // HACK: IK Multimedia's T-RackS 5 will deadlock if it receives a timer
@@ -129,11 +129,6 @@ bool Vst3Bridge::inhibits_event_loop() noexcept {
 void Vst3Bridge::run() {
     set_realtime_priority(true);
 
-    // XXX: In theory all of thise should be safe assuming the host doesn't do
-    //      anything weird. We're using mutexes when inserting and removing
-    //      things, but for correctness we should have a multiple-readers
-    //      single-writer style lock since concurrent reads and writes can also
-    //      be unsafe.
     sockets.host_vst_control.receive_messages(
         std::nullopt,
         overload{
@@ -150,10 +145,11 @@ void Vst3Bridge::run() {
                         // drop it here as well, along with the `IPlugFrame`
                         // proxy object it may have received in
                         // `IPlugView::setFrame()`.
-                        object_instances.at(request.owner_instance_id)
-                            .plug_view_instance.reset();
-                        object_instances.at(request.owner_instance_id)
-                            .plug_frame_proxy.reset();
+                        const auto& [instance, _] =
+                            get_instance(request.owner_instance_id);
+
+                        instance.plug_view_instance.reset();
+                        instance.plug_frame_proxy.reset();
                     })
                     .wait();
 
@@ -218,12 +214,13 @@ void Vst3Bridge::run() {
                 }
 
                 const size_t instance_id = register_object_instance(object);
+                const auto& [instance, _] = get_instance(instance_id);
 
                 // This is where the magic happens. Here we deduce which
                 // interfaces are supported by this object so we can create
                 // a one-to-one proxy of it.
-                return Vst3PluginProxy::ConstructArgs(
-                    object_instances.at(instance_id).object, instance_id);
+                return Vst3PluginProxy::ConstructArgs(instance.object,
+                                                      instance_id);
             },
             [&](const Vst3PluginProxy::Destruct& request)
                 -> Vst3PluginProxy::Destruct::Response {
@@ -232,45 +229,46 @@ void Vst3Bridge::run() {
             },
             [&](Vst3PluginProxy::SetState& request)
                 -> Vst3PluginProxy::SetState::Response {
-                const Vst3PluginInterfaces& interfaces =
-                    object_instances.at(request.instance_id).interfaces;
-
                 // We need to run `getState()` from the main thread, so we might
                 // as well do the same thing with `setState()`. See below.
                 // NOTE: We also try to handle mutual recursion here, in case
                 //       this happens during a resize
                 return do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                    const auto& [instance, _] =
+                        get_instance(request.instance_id);
+
                     // This same function is defined in both `IComponent` and
                     // `IEditController`, so the host is calling one or the
                     // other
-                    if (interfaces.component) {
-                        return interfaces.component->setState(&request.state);
+                    if (instance.interfaces.component) {
+                        return instance.interfaces.component->setState(
+                            &request.state);
                     } else {
-                        return interfaces.edit_controller->setState(
+                        return instance.interfaces.edit_controller->setState(
                             &request.state);
                     }
                 });
             },
             [&](Vst3PluginProxy::GetState& request)
                 -> Vst3PluginProxy::GetState::Response {
-                const Vst3PluginInterfaces& interfaces =
-                    object_instances.at(request.instance_id).interfaces;
-
                 // NOTE: The VST3 version of Algonaut Atlas doesn't restore
                 //       state unless this function is run from the GUI thread
                 // NOTE: This also requires mutual recursion because REAPER will
                 //       call `getState()` while opening a popup menu
                 const tresult result =
                     do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
                         // This same function is defined in both `IComponent`
                         // and `IEditController`, so the host is calling one or
                         // the other
-                        if (interfaces.component) {
-                            return interfaces.component->getState(
+                        if (instance.interfaces.component) {
+                            return instance.interfaces.component->getState(
                                 &request.state);
                         } else {
-                            return interfaces.edit_controller->getState(
-                                &request.state);
+                            return instance.interfaces.edit_controller
+                                ->getState(&request.state);
                         }
                     });
 
@@ -280,24 +278,24 @@ void Vst3Bridge::run() {
             [&](YaAudioPresentationLatency::SetAudioPresentationLatencySamples&
                     request) -> YaAudioPresentationLatency::
                                  SetAudioPresentationLatencySamples::Response {
-                                     return object_instances
-                                         .at(request.instance_id)
-                                         .interfaces.audio_presentation_latency
+                                     const auto& [instance, _] =
+                                         get_instance(request.instance_id);
+
+                                     return instance.interfaces
+                                         .audio_presentation_latency
                                          ->setAudioPresentationLatencySamples(
                                              request.dir, request.bus_index,
                                              request.latency_in_samples);
                                  },
             [&](YaAutomationState::SetAutomationState& request)
                 -> YaAutomationState::SetAutomationState::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.automation_state->setAutomationState(
-                        request.state);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.automation_state->setAutomationState(
+                    request.state);
             },
             [&](YaConnectionPoint::Connect& request)
                 -> YaConnectionPoint::Connect::Response {
-                Vst3PluginInstance& this_instance =
-                    object_instances.at(request.instance_id);
-
                 // If the host directly connected the underlying objects then we
                 // can directly connect them as well. Some hosts, like Ardour
                 // and Mixbus, will place a proxy between the two plugins This
@@ -311,8 +309,10 @@ void Vst3Bridge::run() {
                 return std::visit(
                     overload{
                         [&](const native_size_t& other_instance_id) -> tresult {
-                            const Vst3PluginInstance& other_instance =
-                                object_instances.at(other_instance_id);
+                            const auto& [this_instance, _] =
+                                get_instance(request.instance_id);
+                            const auto& [other_instance, _2] =
+                                get_instance(other_instance_id);
 
                             return this_instance.interfaces.connection_point
                                 ->connect(
@@ -320,6 +320,9 @@ void Vst3Bridge::run() {
                         },
                         [&](Vst3ConnectionPointProxy::ConstructArgs& args)
                             -> tresult {
+                            const auto& [this_instance, _] =
+                                get_instance(request.instance_id);
+
                             this_instance.connection_point_proxy =
                                 Steinberg::owned(
                                     new Vst3ConnectionPointProxyImpl(
@@ -332,15 +335,15 @@ void Vst3Bridge::run() {
             },
             [&](const YaConnectionPoint::Disconnect& request)
                 -> YaConnectionPoint::Disconnect::Response {
-                Vst3PluginInstance& this_instance =
-                    object_instances.at(request.instance_id);
+                const auto& [this_instance, _] =
+                    get_instance(request.instance_id);
 
                 // If the objects were connected directly we can also disconnect
                 // them directly. Otherwise we'll disconnect them from our proxy
                 // object and then destroy that proxy object.
                 if (request.other_instance_id) {
-                    const Vst3PluginInstance& other_instance =
-                        object_instances.at(*request.other_instance_id);
+                    const auto& [other_instance, _2] =
+                        get_instance(*request.other_instance_id);
 
                     return this_instance.interfaces.connection_point
                         ->disconnect(
@@ -356,9 +359,6 @@ void Vst3Bridge::run() {
             },
             [&](const YaConnectionPoint::Notify& request)
                 -> YaConnectionPoint::Notify::Response {
-                const Vst3PluginInstance& this_instance =
-                    object_instances.at(request.instance_id);
-
                 // NOTE: We're using a few tricks here to pass through a pointer
                 //       to the _original_ `IMessage` object passed to a
                 //       connection proxy. This is needed because some plugins
@@ -375,36 +375,45 @@ void Vst3Bridge::run() {
                 //       solution for this (and bypassing Ardour's connection
                 //       proxies sort of goes against the idea behind yabridge)
                 return do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                    const auto& [this_instance, _] =
+                        get_instance(request.instance_id);
+
                     return this_instance.interfaces.connection_point->notify(
                         request.message_ptr.get_original());
                 });
             },
             [&](YaContextMenuTarget::ExecuteMenuItem& request)
                 -> YaContextMenuTarget::ExecuteMenuItem::Response {
-                return object_instances.at(request.owner_instance_id)
-                    .registered_context_menus.at(request.context_menu_id)
+                const auto& [instance, _] =
+                    get_instance(request.owner_instance_id);
+
+                return instance.registered_context_menus
+                    .at(request.context_menu_id)
                     .get()
                     .context_menu_targets[request.target_tag]
                     ->executeMenuItem(request.tag);
             },
             [&](YaEditController::SetComponentState& request)
                 -> YaEditController::SetComponentState::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.edit_controller->setComponentState(
-                        &request.state);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.edit_controller->setComponentState(
+                    &request.state);
             },
             [&](const YaEditController::GetParameterCount& request)
                 -> YaEditController::GetParameterCount::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.edit_controller->getParameterCount();
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.edit_controller->getParameterCount();
             },
             [&](YaEditController::GetParameterInfo& request)
                 -> YaEditController::GetParameterInfo::Response {
                 Steinberg::Vst::ParameterInfo info{};
+                const auto& [instance, _] = get_instance(request.instance_id);
+
                 const tresult result =
-                    object_instances.at(request.instance_id)
-                        .interfaces.edit_controller->getParameterInfo(
-                            request.param_index, info);
+                    instance.interfaces.edit_controller->getParameterInfo(
+                        request.param_index, info);
 
                 return YaEditController::GetParameterInfoResponse{
                     .result = result, .info = std::move(info)};
@@ -412,10 +421,11 @@ void Vst3Bridge::run() {
             [&](const YaEditController::GetParamStringByValue& request)
                 -> YaEditController::GetParamStringByValue::Response {
                 Steinberg::Vst::String128 string{0};
+                const auto& [instance, _] = get_instance(request.instance_id);
+
                 const tresult result =
-                    object_instances.at(request.instance_id)
-                        .interfaces.edit_controller->getParamStringByValue(
-                            request.id, request.value_normalized, string);
+                    instance.interfaces.edit_controller->getParamStringByValue(
+                        request.id, request.value_normalized, string);
 
                 return YaEditController::GetParamStringByValueResponse{
                     .result = result,
@@ -424,33 +434,39 @@ void Vst3Bridge::run() {
             [&](const YaEditController::GetParamValueByString& request)
                 -> YaEditController::GetParamValueByString::Response {
                 Steinberg::Vst::ParamValue value_normalized;
+                const auto& [instance, _] = get_instance(request.instance_id);
+
                 const tresult result =
-                    object_instances.at(request.instance_id)
-                        .interfaces.edit_controller->getParamValueByString(
-                            request.id,
-                            const_cast<Steinberg::Vst::TChar*>(
-                                u16string_to_tchar_pointer(request.string)),
-                            value_normalized);
+                    instance.interfaces.edit_controller->getParamValueByString(
+                        request.id,
+                        const_cast<Steinberg::Vst::TChar*>(
+                            u16string_to_tchar_pointer(request.string)),
+                        value_normalized);
 
                 return YaEditController::GetParamValueByStringResponse{
                     .result = result, .value_normalized = value_normalized};
             },
             [&](const YaEditController::NormalizedParamToPlain& request)
                 -> YaEditController::NormalizedParamToPlain::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.edit_controller->normalizedParamToPlain(
-                        request.id, request.value_normalized);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.edit_controller
+                    ->normalizedParamToPlain(request.id,
+                                             request.value_normalized);
             },
             [&](const YaEditController::PlainParamToNormalized& request)
                 -> YaEditController::PlainParamToNormalized::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.edit_controller->plainParamToNormalized(
-                        request.id, request.plain_value);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.edit_controller
+                    ->plainParamToNormalized(request.id, request.plain_value);
             },
             [&](const YaEditController::GetParamNormalized& request)
                 -> YaEditController::GetParamNormalized::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.edit_controller->getParamNormalized(request.id);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.edit_controller->getParamNormalized(
+                    request.id);
             },
             [&](const YaEditController::SetParamNormalized& request)
                 -> YaEditController::SetParamNormalized::Response {
@@ -460,15 +476,16 @@ void Vst3Bridge::run() {
                 //       relay the parameter change the plugin has just
                 //       announced.
                 return do_mutual_recursion_on_off_thread([&]() -> tresult {
-                    return object_instances.at(request.instance_id)
-                        .interfaces.edit_controller->setParamNormalized(
-                            request.id, request.value);
+                    const auto& [instance, _] =
+                        get_instance(request.instance_id);
+
+                    return instance.interfaces.edit_controller
+                        ->setParamNormalized(request.id, request.value);
                 });
             },
             [&](YaEditController::SetComponentHandler& request)
                 -> YaEditController::SetComponentHandler::Response {
-                Vst3PluginInstance& instance =
-                    object_instances.at(request.instance_id);
+                const auto& [instance, _] = get_instance(request.instance_id);
 
                 // If the host passed a valid component handler, then we'll
                 // create a proxy object for the component handler and pass that
@@ -488,63 +505,76 @@ void Vst3Bridge::run() {
             },
             [&](const YaEditController::CreateView& request)
                 -> YaEditController::CreateView::Response {
-                Vst3PluginInstance& instance =
-                    object_instances.at(request.instance_id);
-
                 // Instantiate the object from the GUI thread
-                main_context
-                    .run_in_context([&]() -> void {
-                        Steinberg::IPtr<Steinberg::IPlugView> plug_view(
-                            Steinberg::owned(
-                                instance.interfaces.edit_controller->createView(
-                                    request.name.c_str())));
+                const auto plug_view_args =
+                    main_context
+                        .run_in_context(
+                            [&]() -> std::optional<
+                                      Vst3PlugViewProxy::ConstructArgs> {
+                                const auto& [instance, _] =
+                                    get_instance(request.instance_id);
 
-                        if (plug_view) {
-                            instance.plug_view_instance.emplace(plug_view);
-                        } else {
-                            instance.plug_view_instance.reset();
-                        }
-                    })
-                    .wait();
+                                Steinberg::IPtr<Steinberg::IPlugView> plug_view(
+                                    Steinberg::owned(
+                                        instance.interfaces.edit_controller
+                                            ->createView(
+                                                request.name.c_str())));
 
-                // We'll create a proxy so the host can call functions on this
-                // `IPlugView` object
-                return YaEditController::CreateViewResponse{
-                    .plug_view_args =
-                        (instance.plug_view_instance
-                             ? std::make_optional<
-                                   Vst3PlugViewProxy::ConstructArgs>(
-                                   instance.plug_view_instance->plug_view,
-                                   request.instance_id)
-                             : std::nullopt)};
+                                if (plug_view) {
+                                    instance.plug_view_instance.emplace(
+                                        plug_view);
+
+                                    // We'll create a proxy so the host can call
+                                    // functions on this `IPlugView` object
+                                    return std::make_optional<
+                                        Vst3PlugViewProxy::ConstructArgs>(
+                                        instance.plug_view_instance->plug_view,
+                                        request.instance_id);
+                                } else {
+                                    instance.plug_view_instance.reset();
+
+                                    return std::nullopt;
+                                }
+                            })
+                        .get();
+
+                return YaEditController::CreateViewResponse{.plug_view_args =
+                                                                plug_view_args};
             },
             [&](const YaEditController2::SetKnobMode& request)
                 -> YaEditController2::SetKnobMode::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.edit_controller_2->setKnobMode(request.mode);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.edit_controller_2->setKnobMode(
+                    request.mode);
             },
             [&](const YaEditController2::OpenHelp& request)
                 -> YaEditController2::OpenHelp::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.edit_controller_2->openHelp(request.only_check);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.edit_controller_2->openHelp(
+                    request.only_check);
             },
             [&](const YaEditController2::OpenAboutBox& request)
                 -> YaEditController2::OpenAboutBox::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.edit_controller_2->openAboutBox(
-                        request.only_check);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.edit_controller_2->openAboutBox(
+                    request.only_check);
             },
             [&](const YaEditControllerHostEditing::BeginEditFromHost& request)
                 -> YaEditControllerHostEditing::BeginEditFromHost::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.edit_controller_host_editing->beginEditFromHost(
-                        request.param_id);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.edit_controller_host_editing
+                    ->beginEditFromHost(request.param_id);
             },
             [&](const YaEditControllerHostEditing::EndEditFromHost& request)
                 -> YaEditControllerHostEditing::EndEditFromHost::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.edit_controller_host_editing->endEditFromHost(
-                        request.param_id);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.edit_controller_host_editing
+                    ->endEditFromHost(request.param_id);
             },
             [&](YaInfoListener::SetChannelContextInfos& request)
                 -> YaInfoListener::SetChannelContextInfos::Response {
@@ -553,42 +583,50 @@ void Vst3Bridge::run() {
                 // main thread
                 return main_context
                     .run_in_context([&]() -> tresult {
-                        return object_instances.at(request.instance_id)
-                            .interfaces.info_listener->setChannelContextInfos(
-                                &request.list);
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.interfaces.info_listener
+                            ->setChannelContextInfos(&request.list);
                     })
                     .get();
             },
             [&](const YaKeyswitchController::GetKeyswitchCount& request)
                 -> YaKeyswitchController::GetKeyswitchCount::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.keyswitch_controller->getKeyswitchCount(
-                        request.bus_index, request.channel);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.keyswitch_controller
+                    ->getKeyswitchCount(request.bus_index, request.channel);
             },
             [&](const YaKeyswitchController::GetKeyswitchInfo& request)
                 -> YaKeyswitchController::GetKeyswitchInfo::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
                 Steinberg::Vst::KeyswitchInfo info{};
                 const tresult result =
-                    object_instances.at(request.instance_id)
-                        .interfaces.keyswitch_controller->getKeyswitchInfo(
-                            request.bus_index, request.channel,
-                            request.key_switch_index, info);
+                    instance.interfaces.keyswitch_controller->getKeyswitchInfo(
+                        request.bus_index, request.channel,
+                        request.key_switch_index, info);
 
                 return YaKeyswitchController::GetKeyswitchInfoResponse{
                     .result = result, .info = std::move(info)};
             },
             [&](const YaMidiLearn::OnLiveMIDIControllerInput& request)
                 -> YaMidiLearn::OnLiveMIDIControllerInput::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.midi_learn->onLiveMIDIControllerInput(
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.midi_learn
+                    ->onLiveMIDIControllerInput(
                         request.bus_index, request.channel, request.midi_cc);
             },
             [&](const YaMidiMapping::GetMidiControllerAssignment& request)
                 -> YaMidiMapping::GetMidiControllerAssignment::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
                 Steinberg::Vst::ParamID id;
                 const tresult result =
-                    object_instances.at(request.instance_id)
-                        .interfaces.midi_mapping->getMidiControllerAssignment(
+                    instance.interfaces.midi_mapping
+                        ->getMidiControllerAssignment(
                             request.bus_index, request.channel,
                             request.midi_controller_number, id);
 
@@ -596,22 +634,24 @@ void Vst3Bridge::run() {
                     .result = result, .id = id};
             },
             [&](const YaNoteExpressionController::GetNoteExpressionCount&
-                    request) -> YaNoteExpressionController::
-                                 GetNoteExpressionCount::Response {
-                                     return object_instances
-                                         .at(request.instance_id)
-                                         .interfaces.note_expression_controller
-                                         ->getNoteExpressionCount(
-                                             request.bus_index,
-                                             request.channel);
-                                 },
+                    request)
+                -> YaNoteExpressionController::GetNoteExpressionCount::
+                    Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.interfaces.note_expression_controller
+                            ->getNoteExpressionCount(request.bus_index,
+                                                     request.channel);
+                    },
             [&](const YaNoteExpressionController::GetNoteExpressionInfo&
                     request)
                 -> YaNoteExpressionController::GetNoteExpressionInfo::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
                 Steinberg::Vst::NoteExpressionTypeInfo info{};
                 const tresult result =
-                    object_instances.at(request.instance_id)
-                        .interfaces.note_expression_controller
+                    instance.interfaces.note_expression_controller
                         ->getNoteExpressionInfo(
                             request.bus_index, request.channel,
                             request.note_expression_index, info);
@@ -624,10 +664,12 @@ void Vst3Bridge::run() {
                     GetNoteExpressionStringByValue& request)
                 -> YaNoteExpressionController::GetNoteExpressionStringByValue::
                     Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
                         Steinberg::Vst::String128 string{0};
                         const tresult result =
-                            object_instances.at(request.instance_id)
-                                .interfaces.note_expression_controller
+                            instance.interfaces.note_expression_controller
                                 ->getNoteExpressionStringByValue(
                                     request.bus_index, request.channel,
                                     request.id, request.value_normalized,
@@ -642,10 +684,12 @@ void Vst3Bridge::run() {
                     GetNoteExpressionValueByString& request)
                 -> YaNoteExpressionController::GetNoteExpressionValueByString::
                     Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
                         Steinberg::Vst::NoteExpressionValue value_normalized;
                         const tresult result =
-                            object_instances.at(request.instance_id)
-                                .interfaces.note_expression_controller
+                            instance.interfaces.note_expression_controller
                                 ->getNoteExpressionValueByString(
                                     request.bus_index, request.channel,
                                     request.id,
@@ -661,11 +705,14 @@ void Vst3Bridge::run() {
                     request)
                 -> YaNoteExpressionPhysicalUIMapping::GetNotePhysicalUIMapping::
                     Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
                         Steinberg::Vst::PhysicalUIMapList reconstructed_list =
                             request.list.get();
                         const tresult result =
-                            object_instances.at(request.instance_id)
-                                .interfaces.note_expression_physical_ui_mapping
+                            instance.interfaces
+                                .note_expression_physical_ui_mapping
                                 ->getPhysicalUIMapping(request.bus_index,
                                                        request.channel,
                                                        reconstructed_list);
@@ -677,11 +724,14 @@ void Vst3Bridge::run() {
                     },
             [&](const YaParameterFinder::FindParameter& request)
                 -> YaParameterFinder::FindParameter::Response {
+                const auto& [instance, _] =
+                    get_instance(request.owner_instance_id);
+
                 Steinberg::Vst::ParamID result_tag;
                 const tresult result =
-                    object_instances.at(request.owner_instance_id)
-                        .plug_view_instance->parameter_finder->findParameter(
-                            request.x_pos, request.y_pos, result_tag);
+                    instance.plug_view_instance->parameter_finder
+                        ->findParameter(request.x_pos, request.y_pos,
+                                        result_tag);
 
                 return YaParameterFinder::FindParameterResponse{
                     .result = result, .result_tag = result_tag};
@@ -690,10 +740,12 @@ void Vst3Bridge::run() {
                     request)
                 -> YaParameterFunctionName::GetParameterIDFromFunctionName::
                     Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
                         Steinberg::Vst::ParamID param_id;
                         const tresult result =
-                            object_instances.at(request.instance_id)
-                                .interfaces.parameter_function_name
+                            instance.interfaces.parameter_function_name
                                 ->getParameterIDFromFunctionName(
                                     request.unit_id,
                                     request.function_name.c_str(), param_id);
@@ -704,6 +756,9 @@ void Vst3Bridge::run() {
                     },
             [&](const YaPlugView::IsPlatformTypeSupported& request)
                 -> YaPlugView::IsPlatformTypeSupported::Response {
+                const auto& [instance, _] =
+                    get_instance(request.owner_instance_id);
+
                 // The host will of course want to pass an X11 window ID for the
                 // plugin to embed itself in, so we'll have to translate this to
                 // a HWND
@@ -712,14 +767,13 @@ void Vst3Bridge::run() {
                         ? Steinberg::kPlatformTypeHWND
                         : request.type;
 
-                return object_instances.at(request.owner_instance_id)
-                    .plug_view_instance->plug_view->isPlatformTypeSupported(
-                        type.c_str());
+                return instance.plug_view_instance->plug_view
+                    ->isPlatformTypeSupported(type.c_str());
             },
             [&](const YaPlugView::Attached& request)
                 -> YaPlugView::Attached::Response {
-                Vst3PluginInstance& instance =
-                    object_instances.at(request.owner_instance_id);
+                const auto& [instance, _] =
+                    get_instance(request.owner_instance_id);
 
                 const std::string type =
                     request.type == Steinberg::kPlatformTypeX11EmbedWindowID
@@ -733,7 +787,7 @@ void Vst3Bridge::run() {
                 // Creating the window and having the plugin embed in it should
                 // be done in the main UI thread
                 return main_context
-                    .run_in_context([&]() -> tresult {
+                    .run_in_context([&, &instance = instance]() -> tresult {
                         Editor& editor_instance = instance.editor.emplace(
                             main_context, config, generic_logger, x11_handle);
                         const tresult result =
@@ -761,11 +815,11 @@ void Vst3Bridge::run() {
             },
             [&](const YaPlugView::Removed& request)
                 -> YaPlugView::Removed::Response {
-                Vst3PluginInstance& instance =
-                    object_instances.at(request.owner_instance_id);
-
                 return main_context
                     .run_in_context([&]() -> tresult {
+                        const auto& [instance, _] =
+                            get_instance(request.owner_instance_id);
+
                         // Cleanup is handled through RAII
                         const tresult result =
                             instance.plug_view_instance->plug_view->removed();
@@ -781,9 +835,11 @@ void Vst3Bridge::run() {
                 // redraw, they all have to be called from the UI thread
                 return main_context
                     .run_in_context([&]() -> tresult {
-                        return object_instances.at(request.owner_instance_id)
-                            .plug_view_instance->plug_view->onWheel(
-                                request.distance);
+                        const auto& [instance, _] =
+                            get_instance(request.owner_instance_id);
+
+                        return instance.plug_view_instance->plug_view->onWheel(
+                            request.distance);
                     })
                     .get();
             },
@@ -791,10 +847,12 @@ void Vst3Bridge::run() {
                 -> YaPlugView::OnKeyDown::Response {
                 return main_context
                     .run_in_context([&]() -> tresult {
-                        return object_instances.at(request.owner_instance_id)
-                            .plug_view_instance->plug_view->onKeyDown(
-                                request.key, request.key_code,
-                                request.modifiers);
+                        const auto& [instance, _] =
+                            get_instance(request.owner_instance_id);
+
+                        return instance.plug_view_instance->plug_view
+                            ->onKeyDown(request.key, request.key_code,
+                                        request.modifiers);
                     })
                     .get();
             },
@@ -802,26 +860,26 @@ void Vst3Bridge::run() {
                 -> YaPlugView::OnKeyUp::Response {
                 return main_context
                     .run_in_context([&]() -> tresult {
-                        return object_instances.at(request.owner_instance_id)
-                            .plug_view_instance->plug_view->onKeyUp(
-                                request.key, request.key_code,
-                                request.modifiers);
+                        const auto& [instance, _] =
+                            get_instance(request.owner_instance_id);
+
+                        return instance.plug_view_instance->plug_view->onKeyUp(
+                            request.key, request.key_code, request.modifiers);
                     })
                     .get();
             },
             [&](YaPlugView::GetSize& request) -> YaPlugView::GetSize::Response {
-                Vst3PluginInstance& instance =
-                    object_instances.at(request.owner_instance_id);
-
                 // Melda plugins will refuse to open dialogs of this function is
                 // not run from the GUI thread. Oh and they also deadlock if
                 // audio processing gets initialized at the same time as this
                 // function, not sure why.
-                std::lock_guard lock(instance.get_size_mutex);
-
                 Steinberg::ViewRect size{};
                 const tresult result =
                     do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                        const auto& [instance, _] =
+                            get_instance(request.owner_instance_id);
+                        std::lock_guard lock(instance.get_size_mutex);
+
                         return instance.plug_view_instance->plug_view->getSize(
                             &size);
                     });
@@ -830,9 +888,6 @@ void Vst3Bridge::run() {
                                                    .size = std::move(size)};
             },
             [&](YaPlugView::OnSize& request) -> YaPlugView::OnSize::Response {
-                Vst3PluginInstance& instance =
-                    object_instances.at(request.owner_instance_id);
-
                 // HACK: This function has to be run from the UI thread since
                 //       the plugin probably wants to redraw when it gets
                 //       resized. The issue here is that this function can be
@@ -843,6 +898,9 @@ void Vst3Bridge::run() {
                 //       response to the message it sent. See the docstring of
                 //       this function for more information on how this works.
                 return do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                    const auto& [instance, _] =
+                        get_instance(request.owner_instance_id);
+
                     const tresult result =
                         instance.plug_view_instance->plug_view->onSize(
                             &request.new_size);
@@ -864,37 +922,41 @@ void Vst3Bridge::run() {
                 -> YaPlugView::OnFocus::Response {
                 return main_context
                     .run_in_context([&]() -> tresult {
-                        return object_instances.at(request.owner_instance_id)
-                            .plug_view_instance->plug_view->onFocus(
-                                request.state);
+                        const auto& [instance, _] =
+                            get_instance(request.owner_instance_id);
+
+                        return instance.plug_view_instance->plug_view->onFocus(
+                            request.state);
                     })
                     .get();
             },
             [&](YaPlugView::SetFrame& request)
                 -> YaPlugView::SetFrame::Response {
-                // If the host passed a valid `IPlugFrame*`, then We'll create a
-                // proxy object for the `IPlugFrame` object and pass that to the
-                // `setFrame()` function. The lifetime of this object is tied to
-                // that of the actual `IPlugFrame` object we're passing this
-                // proxy to. IF the host passed a null pointer (which seems to
-                // be common when terminating plugins) we'll do the same thing
-                // here.
-                object_instances.at(request.owner_instance_id)
-                    .plug_frame_proxy =
-                    request.plug_frame_args
-                        ? Steinberg::owned(new Vst3PlugFrameProxyImpl(
-                              *this, std::move(*request.plug_frame_args)))
-                        : nullptr;
-
                 // This likely doesn't have to be run from the GUI thread, but
                 // since 80% of the `IPlugView` functions have to be we'll do it
                 // here anyways
                 return main_context
                     .run_in_context([&]() -> tresult {
-                        return object_instances.at(request.owner_instance_id)
-                            .plug_view_instance->plug_view->setFrame(
-                                object_instances.at(request.owner_instance_id)
-                                    .plug_frame_proxy);
+                        const auto& [instance, _] =
+                            get_instance(request.owner_instance_id);
+
+                        // If the host passed a valid `IPlugFrame*`, then We'll
+                        // create a proxy object for the `IPlugFrame` object and
+                        // pass that to the `setFrame()` function. The lifetime
+                        // of this object is tied to that of the actual
+                        // `IPlugFrame` object we're passing this proxy to. IF
+                        // the host passed a null pointer (which seems to be
+                        // common when terminating plugins) we'll do the same
+                        // thing here.
+                        instance.plug_frame_proxy =
+                            request.plug_frame_args
+                                ? Steinberg::owned(new Vst3PlugFrameProxyImpl(
+                                      *this,
+                                      std::move(*request.plug_frame_args)))
+                                : nullptr;
+
+                        return instance.plug_view_instance->plug_view->setFrame(
+                            instance.plug_frame_proxy);
                     })
                     .get();
             },
@@ -903,17 +965,21 @@ void Vst3Bridge::run() {
                 // To prevent weird behaviour we'll perform all size related
                 // functions from the GUI thread, including this one
                 return do_mutual_recursion_on_gui_thread([&]() -> tresult {
-                    return object_instances.at(request.owner_instance_id)
-                        .plug_view_instance->plug_view->canResize();
+                    const auto& [instance, _] =
+                        get_instance(request.owner_instance_id);
+
+                    return instance.plug_view_instance->plug_view->canResize();
                 });
             },
             [&](YaPlugView::CheckSizeConstraint& request)
                 -> YaPlugView::CheckSizeConstraint::Response {
                 const tresult result =
                     do_mutual_recursion_on_gui_thread([&]() -> tresult {
-                        return object_instances.at(request.owner_instance_id)
-                            .plug_view_instance->plug_view->checkSizeConstraint(
-                                &request.rect);
+                        const auto& [instance, _] =
+                            get_instance(request.owner_instance_id);
+
+                        return instance.plug_view_instance->plug_view
+                            ->checkSizeConstraint(&request.rect);
                     });
 
                 return YaPlugView::CheckSizeConstraintResponse{
@@ -933,9 +999,10 @@ void Vst3Bridge::run() {
                         } else {
                             return main_context
                                 .run_in_context([&]() -> tresult {
-                                    return object_instances
-                                        .at(request.owner_instance_id)
-                                        .plug_view_instance
+                                    const auto& [instance, _] =
+                                        get_instance(request.owner_instance_id);
+
+                                    return instance.plug_view_instance
                                         ->plug_view_content_scale_support
                                         ->setContentScaleFactor(request.factor);
                                 })
@@ -944,119 +1011,129 @@ void Vst3Bridge::run() {
                     },
             [&](Vst3PluginProxy::Initialize& request)
                 -> Vst3PluginProxy::Initialize::Response {
-                Vst3PluginInstance& instance =
-                    object_instances.at(request.instance_id);
-
-                // We'll create a proxy object for the host context passed by
-                // the host and pass that to the initialize function. The
-                // lifetime of this object is tied to that of the actual plugin
-                // object we're proxying for.
-                instance.host_context_proxy =
-                    Steinberg::owned(new Vst3HostContextProxyImpl(
-                        *this, std::move(request.host_context_args)));
-
                 // Since plugins might want to start timers in
                 // `IPlugView::{initialize,terminate}`, we'll run these
                 // functions from the main GUI thread
                 return main_context
-                    .run_in_context(
-                        [&]() -> Vst3PluginProxy::InitializeResponse {
-                            // The plugin may try to spawn audio worker threads
-                            // during its initialization
-                            set_realtime_priority(true);
-                            // This static cast is required to upcast to
-                            // `FUnknown*`
-                            const tresult result =
-                                instance.interfaces.plugin_base->initialize(
-                                    static_cast<YaHostApplication*>(
-                                        instance.host_context_proxy));
-                            set_realtime_priority(false);
+                    .run_in_context([&]()
+                                        -> Vst3PluginProxy::InitializeResponse {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
 
-                            // HACK: Waves plugins for some reason only add
-                            //       `IEditController` to their query interface
-                            //       after `IPluginBase::initialize()` has been
-                            //       called, so we need to update the list of
-                            //       supported interfaces at this point. This
-                            //       needs to be done on both the Wine and the
-                            //       plugin since, so we also need to return an
-                            //       updated list of supported interfaces.
-                            instance.interfaces =
-                                Vst3PluginInterfaces(instance.object);
+                        // We'll create a proxy object for the host context
+                        // passed by the host and pass that to the initialize
+                        // function. The lifetime of this object is tied to that
+                        // of the actual plugin object we're proxying for.
+                        instance.host_context_proxy =
+                            Steinberg::owned(new Vst3HostContextProxyImpl(
+                                *this, std::move(request.host_context_args)));
 
-                            Vst3PluginProxy::ConstructArgs updated_interfaces(
-                                instance.object, request.instance_id);
+                        // The plugin may try to spawn audio worker threads
+                        // during its initialization
+                        set_realtime_priority(true);
+                        // This static cast is required to upcast to
+                        // `FUnknown*`
+                        const tresult result =
+                            instance.interfaces.plugin_base->initialize(
+                                static_cast<YaHostApplication*>(
+                                    instance.host_context_proxy));
+                        set_realtime_priority(false);
 
-                            // The Win32 message loop will not be run up to this
-                            // point to prevent plugins with partially
-                            // initialized states from misbehaving
-                            instance.is_initialized = true;
+                        // HACK: Waves plugins for some reason only add
+                        //       `IEditController` to their query interface
+                        //       after `IPluginBase::initialize()` has been
+                        //       called, so we need to update the list of
+                        //       supported interfaces at this point. This
+                        //       needs to be done on both the Wine and the
+                        //       plugin since, so we also need to return an
+                        //       updated list of supported interfaces.
+                        instance.interfaces =
+                            Vst3PluginInterfaces(instance.object);
 
-                            return Vst3PluginProxy::InitializeResponse{
-                                .result = result,
-                                .updated_plugin_interfaces =
-                                    updated_interfaces};
-                        })
+                        Vst3PluginProxy::ConstructArgs updated_interfaces(
+                            instance.object, request.instance_id);
+
+                        // The Win32 message loop will not be run up to this
+                        // point to prevent plugins with partially
+                        // initialized states from misbehaving
+                        instance.is_initialized = true;
+
+                        return Vst3PluginProxy::InitializeResponse{
+                            .result = result,
+                            .updated_plugin_interfaces = updated_interfaces};
+                    })
                     .get();
             },
             [&](const YaPluginBase::Terminate& request)
                 -> YaPluginBase::Terminate::Response {
                 return main_context
                     .run_in_context([&]() -> tresult {
-                        return object_instances.at(request.instance_id)
-                            .interfaces.plugin_base->terminate();
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.interfaces.plugin_base->terminate();
                     })
                     .get();
             },
             [&](const YaProgramListData::ProgramDataSupported& request)
                 -> YaProgramListData::ProgramDataSupported::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.program_list_data->programDataSupported(
-                        request.list_id);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.program_list_data
+                    ->programDataSupported(request.list_id);
             },
             [&](const YaProcessContextRequirements::
                     GetProcessContextRequirements& request)
                 -> YaProcessContextRequirements::GetProcessContextRequirements::
                     Response {
-                        return object_instances.at(request.instance_id)
-                            .interfaces.process_context_requirements
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.interfaces.process_context_requirements
                             ->getProcessContextRequirements();
                     },
             [&](YaProgramListData::GetProgramData& request)
                 -> YaProgramListData::GetProgramData::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
                 const tresult result =
-                    object_instances.at(request.instance_id)
-                        .interfaces.program_list_data->getProgramData(
-                            request.list_id, request.program_index,
-                            &request.data);
+                    instance.interfaces.program_list_data->getProgramData(
+                        request.list_id, request.program_index, &request.data);
 
                 return YaProgramListData::GetProgramDataResponse{
                     .result = result, .data = std::move(request.data)};
             },
             [&](YaProgramListData::SetProgramData& request)
                 -> YaProgramListData::SetProgramData::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.program_list_data->setProgramData(
-                        request.list_id, request.program_index, &request.data);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.program_list_data->setProgramData(
+                    request.list_id, request.program_index, &request.data);
             },
             [&](const YaUnitData::UnitDataSupported& request)
                 -> YaUnitData::UnitDataSupported::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.unit_data->unitDataSupported(request.unit_id);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.unit_data->unitDataSupported(
+                    request.unit_id);
             },
             [&](YaUnitData::GetUnitData& request)
                 -> YaUnitData::GetUnitData::Response {
-                const tresult result = object_instances.at(request.instance_id)
-                                           .interfaces.unit_data->getUnitData(
-                                               request.unit_id, &request.data);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                const tresult result =
+                    instance.interfaces.unit_data->getUnitData(request.unit_id,
+                                                               &request.data);
 
                 return YaUnitData::GetUnitDataResponse{
                     .result = result, .data = std::move(request.data)};
             },
             [&](YaUnitData::SetUnitData& request)
                 -> YaUnitData::SetUnitData::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.unit_data->setUnitData(request.unit_id,
-                                                       &request.data);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.unit_data->setUnitData(
+                    request.unit_id, &request.data);
             },
             [&](YaPluginFactory3::SetHostContext& request)
                 -> YaPluginFactory3::SetHostContext::Response {
@@ -1075,31 +1152,36 @@ void Vst3Bridge::run() {
             },
             [&](const YaUnitInfo::GetUnitCount& request)
                 -> YaUnitInfo::GetUnitCount::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.unit_info->getUnitCount();
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.unit_info->getUnitCount();
             },
             [&](const YaUnitInfo::GetUnitInfo& request)
                 -> YaUnitInfo::GetUnitInfo::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
                 Steinberg::Vst::UnitInfo info{};
-                const tresult result = object_instances.at(request.instance_id)
-                                           .interfaces.unit_info->getUnitInfo(
-                                               request.unit_index, info);
+                const tresult result =
+                    instance.interfaces.unit_info->getUnitInfo(
+                        request.unit_index, info);
 
                 return YaUnitInfo::GetUnitInfoResponse{.result = result,
                                                        .info = std::move(info)};
             },
             [&](const YaUnitInfo::GetProgramListCount& request)
                 -> YaUnitInfo::GetProgramListCount::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.unit_info->getProgramListCount();
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.unit_info->getProgramListCount();
             },
             [&](const YaUnitInfo::GetProgramListInfo& request)
                 -> YaUnitInfo::GetProgramListInfo::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
                 Steinberg::Vst::ProgramListInfo info{};
                 const tresult result =
-                    object_instances.at(request.instance_id)
-                        .interfaces.unit_info->getProgramListInfo(
-                            request.list_index, info);
+                    instance.interfaces.unit_info->getProgramListInfo(
+                        request.list_index, info);
 
                 return YaUnitInfo::GetProgramListInfoResponse{
                     .result = result, .info = std::move(info)};
@@ -1113,9 +1195,11 @@ void Vst3Bridge::run() {
                 //       same thread when that happens.
                 const tresult result =
                     do_mutual_recursion_on_off_thread([&]() -> tresult {
-                        return object_instances.at(request.instance_id)
-                            .interfaces.unit_info->getProgramName(
-                                request.list_id, request.program_index, name);
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.interfaces.unit_info->getProgramName(
+                            request.list_id, request.program_index, name);
                     });
 
                 return YaUnitInfo::GetProgramNameResponse{
@@ -1123,12 +1207,13 @@ void Vst3Bridge::run() {
             },
             [&](const YaUnitInfo::GetProgramInfo& request)
                 -> YaUnitInfo::GetProgramInfo::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
                 Steinberg::Vst::String128 attribute_value{0};
                 const tresult result =
-                    object_instances.at(request.instance_id)
-                        .interfaces.unit_info->getProgramInfo(
-                            request.list_id, request.program_index,
-                            request.attribute_id.c_str(), attribute_value);
+                    instance.interfaces.unit_info->getProgramInfo(
+                        request.list_id, request.program_index,
+                        request.attribute_id.c_str(), attribute_value);
 
                 return YaUnitInfo::GetProgramInfoResponse{
                     .result = result,
@@ -1137,58 +1222,67 @@ void Vst3Bridge::run() {
             },
             [&](const YaUnitInfo::HasProgramPitchNames& request)
                 -> YaUnitInfo::HasProgramPitchNames::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.unit_info->hasProgramPitchNames(
-                        request.list_id, request.program_index);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.unit_info->hasProgramPitchNames(
+                    request.list_id, request.program_index);
             },
             [&](const YaUnitInfo::GetProgramPitchName& request)
                 -> YaUnitInfo::GetProgramPitchName::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
                 Steinberg::Vst::String128 name{0};
                 const tresult result =
-                    object_instances.at(request.instance_id)
-                        .interfaces.unit_info->getProgramPitchName(
-                            request.list_id, request.program_index,
-                            request.midi_pitch, name);
+                    instance.interfaces.unit_info->getProgramPitchName(
+                        request.list_id, request.program_index,
+                        request.midi_pitch, name);
 
                 return YaUnitInfo::GetProgramPitchNameResponse{
                     .result = result, .name = tchar_pointer_to_u16string(name)};
             },
             [&](const YaUnitInfo::GetSelectedUnit& request)
                 -> YaUnitInfo::GetSelectedUnit::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.unit_info->getSelectedUnit();
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.unit_info->getSelectedUnit();
             },
             [&](const YaUnitInfo::SelectUnit& request)
                 -> YaUnitInfo::SelectUnit::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.unit_info->selectUnit(request.unit_id);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.unit_info->selectUnit(
+                    request.unit_id);
             },
             [&](const YaUnitInfo::GetUnitByBus& request)
                 -> YaUnitInfo::GetUnitByBus::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
                 Steinberg::Vst::UnitID unit_id;
                 const tresult result =
-                    object_instances.at(request.instance_id)
-                        .interfaces.unit_info->getUnitByBus(
-                            request.type, request.dir, request.bus_index,
-                            request.channel, unit_id);
+                    instance.interfaces.unit_info->getUnitByBus(
+                        request.type, request.dir, request.bus_index,
+                        request.channel, unit_id);
 
                 return YaUnitInfo::GetUnitByBusResponse{.result = result,
                                                         .unit_id = unit_id};
             },
             [&](YaUnitInfo::SetUnitProgramData& request)
                 -> YaUnitInfo::SetUnitProgramData::Response {
-                return object_instances.at(request.instance_id)
-                    .interfaces.unit_info->setUnitProgramData(
-                        request.list_or_unit_id, request.program_index,
-                        &request.data);
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.interfaces.unit_info->setUnitProgramData(
+                    request.list_or_unit_id, request.program_index,
+                    &request.data);
             },
             [&](YaXmlRepresentationController::GetXmlRepresentationStream&
                     request)
                 -> YaXmlRepresentationController::GetXmlRepresentationStream::
                     Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
                         const tresult result =
-                            object_instances.at(request.instance_id)
-                                .interfaces.xml_representation_controller
+                            instance.interfaces.xml_representation_controller
                                 ->getXmlRepresentationStream(request.info,
                                                              &request.stream);
 
@@ -1202,7 +1296,8 @@ void Vst3Bridge::run() {
 
 bool Vst3Bridge::maybe_resize_editor(size_t instance_id,
                                      const Steinberg::ViewRect& new_size) {
-    Vst3PluginInstance& instance = object_instances.at(instance_id);
+    const auto& [instance, _] = get_instance(instance_id);
+
     if (instance.editor) {
         instance.editor->resize(new_size.getWidth(), new_size.getHeight());
         return true;
@@ -1212,22 +1307,23 @@ bool Vst3Bridge::maybe_resize_editor(size_t instance_id,
 }
 
 void Vst3Bridge::register_context_menu(Vst3ContextMenuProxyImpl& context_menu) {
-    std::lock_guard lock(object_instances.at(context_menu.owner_instance_id())
-                             .registered_context_menus_mutex);
+    const auto& [owner_instance, _] =
+        get_instance(context_menu.owner_instance_id());
+    std::lock_guard lock(owner_instance.registered_context_menus_mutex);
 
-    object_instances.at(context_menu.owner_instance_id())
-        .registered_context_menus.emplace(
-            context_menu.context_menu_id(),
-            std::ref<Vst3ContextMenuProxyImpl>(context_menu));
+    owner_instance.registered_context_menus.emplace(
+        context_menu.context_menu_id(),
+        std::ref<Vst3ContextMenuProxyImpl>(context_menu));
 }
 
-void Vst3Bridge::unregister_context_menu(size_t object_instance_id,
-                                         size_t context_menu_id) {
-    std::lock_guard lock(
-        object_instances.at(object_instance_id).registered_context_menus_mutex);
+void Vst3Bridge::unregister_context_menu(
+    Vst3ContextMenuProxyImpl& context_menu) {
+    const auto& [owner_instance, _] =
+        get_instance(context_menu.owner_instance_id());
+    std::lock_guard lock(owner_instance.registered_context_menus_mutex);
 
-    object_instances.at(object_instance_id)
-        .registered_context_menus.erase(context_menu_id);
+    owner_instance.registered_context_menus.erase(
+        context_menu.context_menu_id());
 }
 
 void Vst3Bridge::close_sockets() {
@@ -1238,10 +1334,18 @@ size_t Vst3Bridge::generate_instance_id() noexcept {
     return current_instance_id.fetch_add(1);
 }
 
+std::pair<Vst3PluginInstance&, std::shared_lock<std::shared_mutex>>
+Vst3Bridge::get_instance(size_t instance_id) noexcept {
+    std::shared_lock lock(object_instances_mutex);
+
+    return std::pair<Vst3PluginInstance&, std::shared_lock<std::shared_mutex>>(
+        object_instances.at(instance_id), std::move(lock));
+}
+
 AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
     size_t instance_id,
     const Steinberg::Vst::ProcessSetup& setup) {
-    auto& instance = object_instances.at(instance_id);
+    const auto& [instance, _] = get_instance(instance_id);
 
     const Steinberg::IPtr<Steinberg::Vst::IComponent> component =
         instance.interfaces.component;
@@ -1336,7 +1440,7 @@ AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
     set_bus_pointers(
         instance.process_buffers_input_pointers,
         instance.process_buffers->config.input_offsets,
-        [&](uint32_t bus, uint32_t channel) -> void* {
+        [&, &instance = instance](uint32_t bus, uint32_t channel) -> void* {
             if (double_precision) {
                 return instance.process_buffers->input_channel_ptr<double>(
                     bus, channel);
@@ -1348,7 +1452,7 @@ AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
     set_bus_pointers(
         instance.process_buffers_output_pointers,
         instance.process_buffers->config.output_offsets,
-        [&](uint32_t bus, uint32_t channel) -> void* {
+        [&, &instance = instance](uint32_t bus, uint32_t channel) -> void* {
             if (double_precision) {
                 return instance.process_buffers->output_channel_ptr<double>(
                     bus, channel);
@@ -1363,7 +1467,7 @@ AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
 
 size_t Vst3Bridge::register_object_instance(
     Steinberg::IPtr<Steinberg::FUnknown> object) {
-    std::lock_guard lock(object_instances_mutex);
+    std::unique_lock lock(object_instances_mutex);
 
     const size_t instance_id = generate_instance_id();
     object_instances.emplace(instance_id, std::move(object));
@@ -1392,14 +1496,17 @@ size_t Vst3Bridge::register_object_instance(
                 overload{
                     [&](YaAudioProcessor::SetBusArrangements& request)
                         -> YaAudioProcessor::SetBusArrangements::Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
                         // HACK: WA Production Imperfect VST3 somehow requires
                         //       `inputs` to be a valid pointer, even if there
                         //       are no inputs.
                         Steinberg::Vst::SpeakerArrangement empty_arrangement =
                             0b00000000;
 
-                        return object_instances.at(request.instance_id)
-                            .interfaces.audio_processor->setBusArrangements(
+                        return instance.interfaces.audio_processor
+                            ->setBusArrangements(
                                 request.num_ins > 0 ? request.inputs.data()
                                                     : &empty_arrangement,
                                 request.num_ins,
@@ -1409,30 +1516,39 @@ size_t Vst3Bridge::register_object_instance(
                     },
                     [&](YaAudioProcessor::GetBusArrangement& request)
                         -> YaAudioProcessor::GetBusArrangement::Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
                         Steinberg::Vst::SpeakerArrangement arr{};
                         const tresult result =
-                            object_instances.at(request.instance_id)
-                                .interfaces.audio_processor->getBusArrangement(
-                                    request.dir, request.index, arr);
+                            instance.interfaces.audio_processor
+                                ->getBusArrangement(request.dir, request.index,
+                                                    arr);
 
                         return YaAudioProcessor::GetBusArrangementResponse{
                             .result = result, .arr = arr};
                     },
                     [&](const YaAudioProcessor::CanProcessSampleSize& request)
                         -> YaAudioProcessor::CanProcessSampleSize::Response {
-                        return object_instances.at(request.instance_id)
-                            .interfaces.audio_processor->canProcessSampleSize(
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.interfaces.audio_processor
+                            ->canProcessSampleSize(
                                 request.symbolic_sample_size);
                     },
                     [&](const YaAudioProcessor::GetLatencySamples& request)
                         -> YaAudioProcessor::GetLatencySamples::Response {
-                        return object_instances.at(request.instance_id)
-                            .interfaces.audio_processor->getLatencySamples();
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.interfaces.audio_processor
+                            ->getLatencySamples();
                     },
                     [&](YaAudioProcessor::SetupProcessing& request)
                         -> YaAudioProcessor::SetupProcessing::Response {
-                        Vst3PluginInstance& instance =
-                            object_instances.at(request.instance_id);
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
 
                         // See the comment in
                         // `Vst3Bridge::inhibits_event_loop()`
@@ -1441,9 +1557,8 @@ size_t Vst3Bridge::register_object_instance(
                             Steinberg::Vst::kOffline;
 
                         const tresult result =
-                            object_instances.at(request.instance_id)
-                                .interfaces.audio_processor->setupProcessing(
-                                    request.setup);
+                            instance.interfaces.audio_processor
+                                ->setupProcessing(request.setup);
 
                         // We'll set up the shared audio buffers on the Wine
                         // side after the plugin has finished doing their setup.
@@ -1461,9 +1576,8 @@ size_t Vst3Bridge::register_object_instance(
                     },
                     [&](const YaAudioProcessor::SetProcessing& request)
                         -> YaAudioProcessor::SetProcessing::Response {
-                        Vst3PluginInstance& instance =
-                            object_instances.at(request.instance_id);
-
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
                         // HACK: MeldaProduction plugins for some reason cannot
                         //       handle it if this function is called from the
                         //       audio thread while at the same time
@@ -1494,9 +1608,8 @@ size_t Vst3Bridge::register_object_instance(
                                 true, *request.new_realtime_priority);
                         }
 
-                        Vst3PluginInstance& instance =
-                            object_instances.at(request.instance_id);
-
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
                         // Most plugins will already enable FTZ, but there are a
                         // handful of plugins that don't that suffer from
                         // extreme DSP load increases when they start producing
@@ -1518,60 +1631,75 @@ size_t Vst3Bridge::register_object_instance(
                     },
                     [&](const YaAudioProcessor::GetTailSamples& request)
                         -> YaAudioProcessor::GetTailSamples::Response {
-                        return object_instances.at(request.instance_id)
-                            .interfaces.audio_processor->getTailSamples();
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.interfaces.audio_processor
+                            ->getTailSamples();
                     },
                     [&](const YaComponent::GetControllerClassId& request)
                         -> YaComponent::GetControllerClassId::Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
                         Steinberg::TUID cid{0};
                         const tresult result =
-                            object_instances.at(request.instance_id)
-                                .interfaces.component->getControllerClassId(
-                                    cid);
+                            instance.interfaces.component->getControllerClassId(
+                                cid);
 
                         return YaComponent::GetControllerClassIdResponse{
                             .result = result, .editor_cid = cid};
                     },
                     [&](const YaComponent::SetIoMode& request)
                         -> YaComponent::SetIoMode::Response {
-                        return object_instances.at(request.instance_id)
-                            .interfaces.component->setIoMode(request.mode);
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.interfaces.component->setIoMode(
+                            request.mode);
                     },
                     [&](const YaComponent::GetBusCount& request)
                         -> YaComponent::GetBusCount::Response {
-                        return object_instances.at(request.instance_id)
-                            .interfaces.component->getBusCount(request.type,
-                                                               request.dir);
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.interfaces.component->getBusCount(
+                            request.type, request.dir);
                     },
                     [&](YaComponent::GetBusInfo& request)
                         -> YaComponent::GetBusInfo::Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
                         Steinberg::Vst::BusInfo bus{};
                         const tresult result =
-                            object_instances.at(request.instance_id)
-                                .interfaces.component->getBusInfo(
-                                    request.type, request.dir, request.index,
-                                    bus);
+                            instance.interfaces.component->getBusInfo(
+                                request.type, request.dir, request.index, bus);
 
                         return YaComponent::GetBusInfoResponse{
                             .result = result, .bus = std::move(bus)};
                     },
                     [&](YaComponent::GetRoutingInfo& request)
                         -> YaComponent::GetRoutingInfo::Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
                         Steinberg::Vst::RoutingInfo out_info{};
                         const tresult result =
-                            object_instances.at(request.instance_id)
-                                .interfaces.component->getRoutingInfo(
-                                    request.in_info, out_info);
+                            instance.interfaces.component->getRoutingInfo(
+                                request.in_info, out_info);
 
                         return YaComponent::GetRoutingInfoResponse{
                             .result = result, .out_info = std::move(out_info)};
                     },
                     [&](const YaComponent::ActivateBus& request)
                         -> YaComponent::ActivateBus::Response {
-                        return object_instances.at(request.instance_id)
-                            .interfaces.component->activateBus(
-                                request.type, request.dir, request.index,
-                                request.state);
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.interfaces.component->activateBus(
+                            request.type, request.dir, request.index,
+                            request.state);
                     },
                     [&](const YaComponent::SetActive& request)
                         -> YaComponent::SetActive::Response {
@@ -1585,9 +1713,11 @@ size_t Vst3Bridge::register_object_instance(
                         //       calls.
                         return do_mutual_recursion_on_off_thread(
                             [&]() -> tresult {
-                                return object_instances.at(request.instance_id)
-                                    .interfaces.component->setActive(
-                                        request.state);
+                                const auto& [instance, _] =
+                                    get_instance(request.instance_id);
+
+                                return instance.interfaces.component->setActive(
+                                    request.state);
                             });
                     },
                     [&](const YaPrefetchableSupport::GetPrefetchableSupport&
@@ -1596,9 +1726,11 @@ size_t Vst3Bridge::register_object_instance(
                             Response {
                                 Steinberg::Vst::PrefetchableSupport
                                     prefetchable;
+                                const auto& [instance, _] =
+                                    get_instance(request.instance_id);
+
                                 const tresult result =
-                                    object_instances.at(request.instance_id)
-                                        .interfaces.prefetchable_support
+                                    instance.interfaces.prefetchable_support
                                         ->getPrefetchableSupport(prefetchable);
 
                                 return YaPrefetchableSupport::
@@ -1621,8 +1753,8 @@ size_t Vst3Bridge::register_object_instance(
 void Vst3Bridge::unregister_object_instance(size_t instance_id) {
     // Tear the dedicated audio processing socket down again if we
     // created one while handling `Vst3PluginProxy::Construct`
-    if (object_instances.at(instance_id).interfaces.audio_processor ||
-        object_instances.at(instance_id).interfaces.component) {
+    if (const auto& [instance, _] = get_instance(instance_id);
+        instance.interfaces.audio_processor || instance.interfaces.component) {
         sockets.remove_audio_processor(instance_id);
     }
 
@@ -1636,7 +1768,7 @@ void Vst3Bridge::unregister_object_instance(size_t instance_id) {
     //      the plugin side gets deallocated.
     main_context
         .run_in_context([&, instance_id]() -> void {
-            std::lock_guard lock(object_instances_mutex);
+            std::unique_lock lock(object_instances_mutex);
             object_instances.erase(instance_id);
         })
         .wait();

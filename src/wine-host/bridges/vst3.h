@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <map>
+#include <shared_mutex>
 #include <string>
 
 #include <public.sdk/source/vst/hosting/module.h>
@@ -319,8 +320,7 @@ class Vst3Bridge : public HostBridge {
      * is called from the destructor of `Vst3ContextMenuProxyImpl` just before
      * the object gets freed.
      */
-    void unregister_context_menu(size_t object_instance_id,
-                                 size_t context_menu_id);
+    void unregister_context_menu(Vst3ContextMenuProxyImpl& context_menu);
 
    protected:
     void close_sockets() override;
@@ -440,6 +440,15 @@ class Vst3Bridge : public HostBridge {
     size_t generate_instance_id() noexcept;
 
     /**
+     * Fetch the plugin instance along with a lock valid for the instance's
+     * lifetime. This is mostly just to save some boilerplate everywhere. Use
+     * C++17's structured binding as syntactic sugar to not have to deal with
+     * the lock handle.
+     */
+    std::pair<Vst3PluginInstance&, std::shared_lock<std::shared_mutex>>
+    get_instance(size_t instance_id) noexcept;
+
+    /**
      * Sets up the shared memory audio buffers for a plugin instance plugin
      * instance and return the configuration so the native plugin can connect to
      * it as well.
@@ -504,7 +513,15 @@ class Vst3Bridge : public HostBridge {
      * up.
      */
     std::unordered_map<size_t, Vst3PluginInstance> object_instances;
-    std::mutex object_instances_mutex;
+    /**
+     * In theory all object handling is safe iff the host also doesn't do
+     * anything weird even without locks. The only time a data race can occur is
+     * when the host removes or inserts a plugin while also interacting with
+     * other plugins on different threads. Since the lock should never be
+     * contested, we should also not get a measurable performance penalty from
+     * making double sure nothing can go wrong.
+     */
+    std::shared_mutex object_instances_mutex;
 
     /**
      * Used in `send_mutually_recursive_message()` to be able to execute
