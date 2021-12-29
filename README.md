@@ -533,9 +533,8 @@ include:
 
 Aside from that, these are some known caveats:
 
-- Most recent **iZotope** plugins don't have a functional GUI in a typical out
-  of the box Wine setup because of missing dependencies. Please let me know if
-  you know which dependencies are needed for these plugins to render correctly.
+- **iZotope** plugins can't be authorized because of missing functionality in
+  Wine's crypt32 implementation.
 - MIDI key labels for VST2 plugins (commonly used for drum machines and
   multisamplers) will not be updated after the host first asks for them since
   VST 2.4 has no way to let the host know that those labels have been updated.
