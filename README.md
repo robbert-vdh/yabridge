@@ -40,7 +40,7 @@ while also staying easy to debug and maintain.
 ## Tested with
 
 Yabridge has been tested under the following hosts using Wine Staging
-7.0-rc2:
+7.0-rc3:
 
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
@@ -49,7 +49,7 @@ Yabridge has been tested under the following hosts using Wine Staging
 | Carla 2.4.1         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Qtractor 0.9.24     | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Renoise 3.3.2       | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly |
-| Waveform 11.5.17    | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Waveform 11.5.18    | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Ardour 6.9          | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Mixbus 7.0.140      | :heavy_check_mark: | :heavy_check_mark:                                                   |
 
