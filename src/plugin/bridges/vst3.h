@@ -222,6 +222,11 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * anything weird even without locks, but we'll still prevent adding or
      * removing instances while accessing other instances at the same time
      * anyways. See `Vst3Bridge::object_instances_mutex` for more details.
+     *
+     * TODO: At some point replace this with a multiple reader single writer
+     *       lock based by a spinlock. Because this lock is rarely contested
+     *       `get_proxy()` never yields to the scheduler during audio
+     *       processing, but it's still something we should avoid at all costs.
      */
     std::shared_mutex plugin_proxies_mutex;
 

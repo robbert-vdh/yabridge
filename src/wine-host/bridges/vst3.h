@@ -520,6 +520,11 @@ class Vst3Bridge : public HostBridge {
      * other plugins on different threads. Since the lock should never be
      * contested, we should also not get a measurable performance penalty from
      * making double sure nothing can go wrong.
+     *
+     * TODO: At some point replace this with a multiple reader single writer
+     *       lock based by a spinlock. Because this lock is rarely contested
+     *       `get_instance()` never yields to the scheduler during audio
+     *       processing, but it's still something we should avoid at all costs.
      */
     std::shared_mutex object_instances_mutex;
 
