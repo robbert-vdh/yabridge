@@ -23,7 +23,7 @@
 Vst3ComponentHandlerProxyImpl::Vst3ComponentHandlerProxyImpl(
     Vst3Bridge& bridge,
     Vst3ComponentHandlerProxy::ConstructArgs&& args) noexcept
-    : Vst3ComponentHandlerProxy(std::move(args)), bridge(bridge) {
+    : Vst3ComponentHandlerProxy(std::move(args)), bridge_(bridge) {
     // The lifecycle of this object is managed together with that of the plugin
     // object instance this host context got passed to
 }
@@ -32,15 +32,16 @@ tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::queryInterface(const Steinberg::TUID _iid,
                                               void** obj) {
     const tresult result = Vst3ComponentHandlerProxy::queryInterface(_iid, obj);
-    bridge.logger.log_query_interface("In IComponentHandler::queryInterface()",
-                                      result, Steinberg::FUID::fromTUID(_iid));
+    bridge_.logger_.log_query_interface(
+        "In IComponentHandler::queryInterface()", result,
+        Steinberg::FUID::fromTUID(_iid));
 
     return result;
 }
 
 tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::beginEdit(Steinberg::Vst::ParamID id) {
-    return bridge.send_message(YaComponentHandler::BeginEdit{
+    return bridge_.send_message(YaComponentHandler::BeginEdit{
         .owner_instance_id = owner_instance_id(), .id = id});
 }
 
@@ -51,7 +52,7 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::performEdit(
     //       `IEditController::setParamNormalized()` after this `performEdit()`,
     //       so we need to be able to receive that
     //       `IEditController::setParamNormalized()` on the same thread.
-    return bridge.send_mutually_recursive_message(
+    return bridge_.send_mutually_recursive_message(
         YaComponentHandler::PerformEdit{
             .owner_instance_id = owner_instance_id(),
             .id = id,
@@ -60,26 +61,26 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::performEdit(
 
 tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::endEdit(Steinberg::Vst::ParamID id) {
-    return bridge.send_message(YaComponentHandler::EndEdit{
+    return bridge_.send_message(YaComponentHandler::EndEdit{
         .owner_instance_id = owner_instance_id(), .id = id});
 }
 
 tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::restartComponent(int32 flags) {
-    return bridge.send_mutually_recursive_message(
+    return bridge_.send_mutually_recursive_message(
         YaComponentHandler::RestartComponent{
             .owner_instance_id = owner_instance_id(), .flags = flags});
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::setDirty(TBool state) {
-    return bridge.send_message(YaComponentHandler2::SetDirty{
+    return bridge_.send_message(YaComponentHandler2::SetDirty{
         .owner_instance_id = owner_instance_id(), .state = state});
 }
 
 tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::requestOpenEditor(Steinberg::FIDString name) {
     if (name) {
-        return bridge.send_message(YaComponentHandler2::RequestOpenEditor{
+        return bridge_.send_message(YaComponentHandler2::RequestOpenEditor{
             .owner_instance_id = owner_instance_id(), .name = name});
     } else {
         std::cerr << "WARNING: Null pointer passed to "
@@ -90,12 +91,12 @@ Vst3ComponentHandlerProxyImpl::requestOpenEditor(Steinberg::FIDString name) {
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::startGroupEdit() {
-    return bridge.send_message(YaComponentHandler2::StartGroupEdit{
+    return bridge_.send_message(YaComponentHandler2::StartGroupEdit{
         .owner_instance_id = owner_instance_id()});
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::finishGroupEdit() {
-    return bridge.send_message(YaComponentHandler2::FinishGroupEdit{
+    return bridge_.send_message(YaComponentHandler2::FinishGroupEdit{
         .owner_instance_id = owner_instance_id()});
 }
 
@@ -108,13 +109,13 @@ Vst3ComponentHandlerProxyImpl::createContextMenu(
     //      parameter being zero' was a typo and that they mean passign a null
     //      pointer.
     CreateContextMenuResponse response =
-        bridge.send_message(YaComponentHandler3::CreateContextMenu{
+        bridge_.send_message(YaComponentHandler3::CreateContextMenu{
             .owner_instance_id = owner_instance_id(),
             .param_id = (paramID ? std::optional(*paramID) : std::nullopt)});
 
     if (response.context_menu_args) {
         return new Vst3ContextMenuProxyImpl(
-            bridge, std::move(*response.context_menu_args));
+            bridge_, std::move(*response.context_menu_args));
     } else {
         return nullptr;
     }
@@ -125,7 +126,7 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::requestBusActivation(
     Steinberg::Vst::BusDirection dir,
     int32 index,
     TBool state) {
-    return bridge.send_message(
+    return bridge_.send_message(
         YaComponentHandlerBusActivation::RequestBusActivation{
             .owner_instance_id = owner_instance_id(),
             .type = type,
@@ -138,7 +139,7 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::start(
     ProgressType type,
     const Steinberg::tchar* optionalDescription,
     ID& outID) {
-    const StartResponse response = bridge.send_message(YaProgress::Start{
+    const StartResponse response = bridge_.send_message(YaProgress::Start{
         .owner_instance_id = owner_instance_id(),
         .type = type,
         .optional_description =
@@ -155,20 +156,20 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::start(
 tresult PLUGIN_API
 Vst3ComponentHandlerProxyImpl::update(ID id,
                                       Steinberg::Vst::ParamValue normValue) {
-    return bridge.send_message(
+    return bridge_.send_message(
         YaProgress::Update{.owner_instance_id = owner_instance_id(),
                            .id = id,
                            .norm_value = normValue});
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::finish(ID id) {
-    return bridge.send_message(
+    return bridge_.send_message(
         YaProgress::Finish{.owner_instance_id = owner_instance_id(), .id = id});
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitSelection(
     Steinberg::Vst::UnitID unitId) {
-    return bridge.send_message(YaUnitHandler::NotifyUnitSelection{
+    return bridge_.send_message(YaUnitHandler::NotifyUnitSelection{
         .owner_instance_id = owner_instance_id(), .unit_id = unitId});
 }
 
@@ -178,7 +179,7 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyProgramListChange(
     // NOTE: When a plugin calls this, Ardour will fetch the new program names
     //       with `IUnitInfo::getProgramName()`. TEOTE requires this to be
     //       called from the same thread.
-    return bridge.send_mutually_recursive_message(
+    return bridge_.send_mutually_recursive_message(
         YaUnitHandler::NotifyProgramListChange{
             .owner_instance_id = owner_instance_id(),
             .list_id = listId,
@@ -186,6 +187,6 @@ tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyProgramListChange(
 }
 
 tresult PLUGIN_API Vst3ComponentHandlerProxyImpl::notifyUnitByBusChange() {
-    return bridge.send_message(YaUnitHandler2::NotifyUnitByBusChange{
+    return bridge_.send_message(YaUnitHandler2::NotifyUnitByBusChange{
         .owner_instance_id = owner_instance_id()});
 }

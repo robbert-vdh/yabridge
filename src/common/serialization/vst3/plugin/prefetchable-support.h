@@ -60,7 +60,7 @@ class YaPrefetchableSupport : public Steinberg::Vst::IPrefetchableSupport {
      */
     YaPrefetchableSupport(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * The response code and returned bus information for a call to
@@ -97,7 +97,7 @@ class YaPrefetchableSupport : public Steinberg::Vst::IPrefetchableSupport {
         Steinberg::Vst::PrefetchableSupport& prefetchable /*out*/) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

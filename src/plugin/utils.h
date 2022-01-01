@@ -70,7 +70,7 @@ struct PluginInfo {
     PluginInfo(PluginType plugin_type, bool prefer_32bit_vst3 = false);
 
     /**
-     * Create the environment for the plugin host based on `wine_prefix`. If
+     * Create the environment for the plugin host based on `wine_prefix_`. If
      * `WINEPREFIX` was already set then nothing will be changed. Otherwise
      * we'll set `WINEPREFIX` to the detected Wine prefix, or it will be left
      * unset if we could not detect a prefix.
@@ -96,27 +96,27 @@ struct PluginInfo {
      */
     std::string wine_version() const;
 
-    const PluginType plugin_type;
+    const PluginType plugin_type_;
 
     /**
      * The path to our `.so` file. For VST3 plugins this is *not* the VST3
      * module (since that has to be bundle on Linux) but rather the .so file
      * contained in that bundle.
      */
-    const boost::filesystem::path native_library_path;
+    const boost::filesystem::path native_library_path_;
 
    private:
     /**
      * The path to the Windows library (`.dll` or `.vst3`, not to be confused
      * with a `.vst3` bundle) that we're targeting. This should **not** be
-     * passed to the plugin host and `windows_plugin_path` should be used
+     * passed to the plugin host and `windows_plugin_path_` should be used
      * instead. We store this intermediate value so we can determine the
      * plugin's architecture.
      */
-    const boost::filesystem::path windows_library_path;
+    const boost::filesystem::path windows_library_path_;
 
    public:
-    const LibArchitecture plugin_arch;
+    const LibArchitecture plugin_arch_;
 
     /**
      * The path to the plugin (`.dll` or module) we're going to in the Wine
@@ -132,20 +132,20 @@ struct PluginInfo {
      *
      * https://developer.steinberg.help/pages/viewpage.action?pageId=9798275
      */
-    const boost::filesystem::path windows_plugin_path;
+    const boost::filesystem::path windows_plugin_path_;
 
     /**
-     * The Wine prefix to use for hosting `windows_plugin_path`. If the
+     * The Wine prefix to use for hosting `windows_plugin_path_`. If the
      * `WINEPREFIX` environment variable is set, then that will be used as an
      * override. Otherwise, we'll try to find the Wine prefix
-     * `windows_plugin_path` is located in. The detection works by looking for a
-     * directory containing a directory called `dosdevices`. If the plugin is
+     * `windows_plugin_path_` is located in. The detection works by looking for
+     * a directory containing a directory called `dosdevices`. If the plugin is
      * not inside of a Wine prefix, this will be left empty, and the default
      * prefix will be used instead.
      */
     const std::
         variant<OverridenWinePrefix, boost::filesystem::path, DefaultWinePrefix>
-            wine_prefix;
+            wine_prefix_;
 };
 
 /**

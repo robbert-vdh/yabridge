@@ -37,5 +37,5 @@ class Vst3ConnectionPointProxyImpl : public Vst3ConnectionPointProxy {
     tresult PLUGIN_API notify(Steinberg::Vst::IMessage* message) override;
 
    private:
-    Vst3Bridge& bridge;
+    Vst3Bridge& bridge_;
 };

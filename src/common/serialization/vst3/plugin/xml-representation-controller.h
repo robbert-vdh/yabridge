@@ -67,7 +67,7 @@ class YaXmlRepresentationController
      */
     YaXmlRepresentationController(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * The response code and written state for a call to
@@ -111,7 +111,7 @@ class YaXmlRepresentationController
                                Steinberg::IBStream* stream /*out*/) = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

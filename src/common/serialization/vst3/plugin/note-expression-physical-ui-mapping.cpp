@@ -25,4 +25,4 @@ YaNoteExpressionPhysicalUIMapping::ConstructArgs::ConstructArgs(
 
 YaNoteExpressionPhysicalUIMapping::YaNoteExpressionPhysicalUIMapping(
     ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

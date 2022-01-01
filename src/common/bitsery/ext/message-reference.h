@@ -48,7 +48,7 @@ class MessageReference {
      *   won't be touched.
      */
     MessageReference(std::optional<T>& backing_object)
-        : backing_object(backing_object){};
+        : backing_object_(backing_object){};
 
     template <typename Ser, typename Fnc>
     void serialize(Ser& ser,
@@ -59,15 +59,15 @@ class MessageReference {
 
     template <typename Des, typename Fnc>
     void deserialize(Des& des, ::MessageReference<T>& object_ref, Fnc&&) const {
-        if (!backing_object) {
-            backing_object.emplace();
+        if (!backing_object_) {
+            backing_object_.emplace();
         }
 
         // Since we cannot directly deserialize into a reference, we'll
         // deserialize into this (persistent) backing object and then point the
         // reference to this object.
-        des.object(*backing_object);
-        object_ref = *backing_object;
+        des.object(*backing_object_);
+        object_ref = *backing_object_;
     }
 
    private:
@@ -75,7 +75,7 @@ class MessageReference {
      * This contains the actual `T` we'll deserialize into so we can point the
      * reference to that object after deserializing.
      */
-    std::optional<T>& backing_object;
+    std::optional<T>& backing_object_;
 };
 
 }  // namespace ext

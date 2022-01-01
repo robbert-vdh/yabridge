@@ -61,7 +61,7 @@ class YaPluginBase : public Steinberg::IPluginBase {
      */
     YaPluginBase(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     // The request and response for `IPluginBase::initialize()` is defined
     // within `Vst3PluginProxy` because it (thanks to Waves) requires all
@@ -86,7 +86,7 @@ class YaPluginBase : public Steinberg::IPluginBase {
     virtual tresult PLUGIN_API terminate() override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

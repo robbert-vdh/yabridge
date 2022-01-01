@@ -123,18 +123,18 @@ class Vst3ContextMenuProxy : public YaContextMenu {
      * Get the instance ID of the owner of this object.
      */
     inline size_t owner_instance_id() const noexcept {
-        return arguments.owner_instance_id;
+        return arguments_.owner_instance_id;
     }
 
     /**
      * Get the unique ID for this context menu.
      */
     inline size_t context_menu_id() const noexcept {
-        return arguments.context_menu_id;
+        return arguments_.context_menu_id;
     }
 
    private:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

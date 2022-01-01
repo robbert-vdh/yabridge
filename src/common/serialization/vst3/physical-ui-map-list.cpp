@@ -22,21 +22,21 @@ YaPhysicalUIMapList::YaPhysicalUIMapList() noexcept {}
 
 YaPhysicalUIMapList::YaPhysicalUIMapList(
     const Steinberg::Vst::PhysicalUIMapList& list) noexcept
-    : maps(list.map, list.map + list.count) {}
+    : maps_(list.map, list.map + list.count) {}
 
 Steinberg::Vst::PhysicalUIMapList YaPhysicalUIMapList::get() noexcept {
     return Steinberg::Vst::PhysicalUIMapList{
-        .count = static_cast<Steinberg::uint32>(maps.size()),
-        .map = maps.data()};
+        .count = static_cast<Steinberg::uint32>(maps_.size()),
+        .map = maps_.data()};
 }
 
 void YaPhysicalUIMapList::write_back(
     Steinberg::Vst::PhysicalUIMapList& list) const {
-    assert(list.count == maps.size());
+    assert(list.count == maps_.size());
 
     // Write the note expression IDs as updated by the plugin (if the plugin
     // updated them) back to the original list we've read from
     for (Steinberg::uint32 i = 0; i < list.count; i++) {
-        list.map[i].noteExpressionTypeID = maps[i].noteExpressionTypeID;
+        list.map[i].noteExpressionTypeID = maps_[i].noteExpressionTypeID;
     }
 }

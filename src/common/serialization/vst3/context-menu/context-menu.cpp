@@ -23,4 +23,4 @@ YaContextMenu::ConstructArgs::ConstructArgs(
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IContextMenu>(object)) {}
 
 YaContextMenu::YaContextMenu(ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

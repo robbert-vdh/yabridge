@@ -72,9 +72,9 @@ class YaMessagePtr : public Steinberg::Vst::IMessage {
 
     template <typename S>
     void serialize(S& s) {
-        s.ext(message_id, bitsery::ext::InPlaceOptional{},
+        s.ext(message_id_, bitsery::ext::InPlaceOptional{},
               [](S& s, std::string& id) { s.text1b(id, 1024); });
-        s.value8b(original_message_ptr);
+        s.value8b(original_message_ptr_);
     }
 
    private:
@@ -82,19 +82,19 @@ class YaMessagePtr : public Steinberg::Vst::IMessage {
      * The implementation that comes with the SDK returns a null pointer when
      * the ID has not yet been set, so we'll do the same thing.
      */
-    std::optional<std::string> message_id;
+    std::optional<std::string> message_id_;
 
     /**
      * The pointer to the message passed during the constructor, as a 64-bit
      * unsigned integer. This way we can retrieve the original object after a
      * round trip.
      */
-    native_size_t original_message_ptr = 0;
+    native_size_t original_message_ptr_ = 0;
 
     /**
      * An empty attribute list, in case the host checks this for some reason.
      */
-    YaAttributeList attribute_list;
+    YaAttributeList attribute_list_;
 };
 
 /**
@@ -138,7 +138,7 @@ class YaMessage : public Steinberg::Vst::IMessage {
      * The implementation that comes with the SDK returns a null pointer when
      * the ID has not yet been set, so we'll do the same thing.
      */
-    std::optional<std::string> message_id;
+    std::optional<std::string> message_id_;
 
-    YaAttributeList attribute_list;
+    YaAttributeList attribute_list_;
 };

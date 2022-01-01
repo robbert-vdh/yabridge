@@ -63,7 +63,7 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
      */
     YaHostApplication(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * The response code and resulting value for a call to
@@ -114,7 +114,7 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
                                               void** obj) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

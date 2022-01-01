@@ -24,7 +24,7 @@ Vst3PluginFactoryProxy::ConstructArgs::ConstructArgs(
 
 Vst3PluginFactoryProxy::Vst3PluginFactoryProxy(ConstructArgs&& args) noexcept
     : YaPluginFactory3(std::move(args.plugin_factory_args)),
-      arguments(std::move(args)){FUNKNOWN_CTOR}
+      arguments_(std::move(args)){FUNKNOWN_CTOR}
 
       // clang-format just doesn't understand these macros, I guess
       Vst3PluginFactoryProxy::~Vst3PluginFactoryProxy() noexcept {

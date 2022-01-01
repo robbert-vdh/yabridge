@@ -24,14 +24,15 @@
 Vst3PluginFactoryProxyImpl::Vst3PluginFactoryProxyImpl(
     Vst3PluginBridge& bridge,
     Vst3PluginFactoryProxy::ConstructArgs&& args) noexcept
-    : Vst3PluginFactoryProxy(std::move(args)), bridge(bridge) {}
+    : Vst3PluginFactoryProxy(std::move(args)), bridge_(bridge) {}
 
 tresult PLUGIN_API
 Vst3PluginFactoryProxyImpl::queryInterface(const Steinberg::TUID _iid,
                                            void** obj) {
     const tresult result = Vst3PluginFactoryProxy::queryInterface(_iid, obj);
-    bridge.logger.log_query_interface("In IPluginFactory::queryInterface()",
-                                      result, Steinberg::FUID::fromTUID(_iid));
+    bridge_.logger_.log_query_interface("In IPluginFactory::queryInterface()",
+                                        result,
+                                        Steinberg::FUID::fromTUID(_iid));
 
     return result;
 }
@@ -63,16 +64,16 @@ Vst3PluginFactoryProxyImpl::createInstance(Steinberg::FIDString cid,
     } else {
         // When the host requests an interface we do not (yet) implement, we'll
         // print a recognizable log message
-        bridge.logger.log_query_interface("In IPluginFactory::createInstance()",
-                                          Steinberg::kNotImplemented,
-                                          requested_iid);
+        bridge_.logger_.log_query_interface(
+            "In IPluginFactory::createInstance()", Steinberg::kNotImplemented,
+            requested_iid);
 
         *obj = nullptr;
         return Steinberg::kNotImplemented;
     }
 
     std::variant<Vst3PluginProxy::ConstructArgs, UniversalTResult> result =
-        bridge.send_mutually_recursive_message(Vst3PluginProxy::Construct{
+        bridge_.send_mutually_recursive_message(Vst3PluginProxy::Construct{
             .cid = cid_array, .requested_interface = requested_interface});
 
     return std::visit(
@@ -83,7 +84,7 @@ Vst3PluginFactoryProxyImpl::createInstance(Steinberg::FIDString cid,
                 // reference count of 1), and then the receiving side will use
                 // `Steinberg::owned()` to adopt it to an `IPtr<T>`.
                 Vst3PluginProxyImpl* proxy_object =
-                    new Vst3PluginProxyImpl(bridge, std::move(args));
+                    new Vst3PluginProxyImpl(bridge_, std::move(args));
 
                 // We return a properly downcasted version of the proxy object
                 // we just created
@@ -111,18 +112,18 @@ Vst3PluginFactoryProxyImpl::setHostContext(Steinberg::FUnknown* context) {
         // interfaces as `context`, and then we'll store `context` in this
         // object. We can then use it to handle callbacks made by the Windows
         // VST3 plugin to this context.
-        host_context = context;
+        host_context_ = context;
 
         // Automatically converted smart pointers for when the plugin performs a
         // callback later
-        host_application = host_context;
-        plug_interface_support = host_context;
+        host_application_ = host_context_;
+        plug_interface_support_ = host_context_;
 
-        return bridge.send_message(YaPluginFactory3::SetHostContext{
+        return bridge_.send_message(YaPluginFactory3::SetHostContext{
             .host_context_args = Vst3HostContextProxy::ConstructArgs(
-                host_context, std::nullopt)});
+                host_context_, std::nullopt)});
     } else {
-        bridge.logger.log(
+        bridge_.logger_.log(
             "WARNING: Null pointer passed to "
             "'IPluginFactory3::setHostContext()'");
         return Steinberg::kInvalidArgument;

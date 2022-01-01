@@ -98,11 +98,11 @@ class Vst3HostContextProxy : public YaHostApplication,
      * global host context passed to the module's plugin factory.
      */
     inline std::optional<size_t> owner_instance_id() const noexcept {
-        return arguments.owner_instance_id;
+        return arguments_.owner_instance_id;
     }
 
    private:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

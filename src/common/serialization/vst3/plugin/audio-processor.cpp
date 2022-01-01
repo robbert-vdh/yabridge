@@ -24,4 +24,4 @@ YaAudioProcessor::ConstructArgs::ConstructArgs(
           Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor>(object)) {}
 
 YaAudioProcessor::YaAudioProcessor(ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

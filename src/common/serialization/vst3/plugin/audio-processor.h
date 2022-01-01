@@ -62,7 +62,7 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
      */
     YaAudioProcessor(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to
@@ -305,7 +305,7 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
     virtual uint32 PLUGIN_API getTailSamples() override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

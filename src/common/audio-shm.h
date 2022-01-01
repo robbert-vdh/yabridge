@@ -135,11 +135,11 @@ class AudioShmBuffer {
     void resize(const Config& new_config);
 
     inline size_t num_input_channels(const uint32_t bus) const {
-        return config.input_offsets[bus].size();
+        return config_.input_offsets[bus].size();
     }
 
     inline size_t num_output_channels(const uint32_t bus) const {
-        return config.output_offsets[bus].size();
+        return config_.output_offsets[bus].size();
     }
 
     /**
@@ -149,15 +149,15 @@ class AudioShmBuffer {
      */
     template <typename T>
     T* input_channel_ptr(const uint32_t bus, const uint32_t channel) noexcept {
-        return reinterpret_cast<T*>(buffer.get_address()) +
-               config.input_offsets[bus][channel];
+        return reinterpret_cast<T*>(buffer_.get_address()) +
+               config_.input_offsets[bus][channel];
     }
 
     template <typename T>
     const T* input_channel_ptr(const uint32_t bus,
                                const uint32_t channel) const noexcept {
-        return reinterpret_cast<const T*>(buffer.get_address()) +
-               config.input_offsets[bus][channel];
+        return reinterpret_cast<const T*>(buffer_.get_address()) +
+               config_.input_offsets[bus][channel];
     }
 
     /**
@@ -167,18 +167,18 @@ class AudioShmBuffer {
      */
     template <typename T>
     T* output_channel_ptr(const uint32_t bus, const uint32_t channel) noexcept {
-        return reinterpret_cast<T*>(buffer.get_address()) +
-               config.output_offsets[bus][channel];
+        return reinterpret_cast<T*>(buffer_.get_address()) +
+               config_.output_offsets[bus][channel];
     }
 
     template <typename T>
     const T* output_channel_ptr(const uint32_t bus,
                                 const uint32_t channel) const noexcept {
-        return reinterpret_cast<const T*>(buffer.get_address()) +
-               config.output_offsets[bus][channel];
+        return reinterpret_cast<const T*>(buffer_.get_address()) +
+               config_.output_offsets[bus][channel];
     }
 
-    Config config;
+    Config config_;
 
    private:
     /**
@@ -186,8 +186,8 @@ class AudioShmBuffer {
      */
     void setup_mapping();
 
-    boost::interprocess::shared_memory_object shm;
-    boost::interprocess::mapped_region buffer;
+    boost::interprocess::shared_memory_object shm_;
+    boost::interprocess::mapped_region buffer_;
 
-    bool is_moved = false;
+    bool is_moved_ = false;
 };

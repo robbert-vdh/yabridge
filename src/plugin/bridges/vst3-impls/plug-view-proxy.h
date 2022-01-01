@@ -73,7 +73,7 @@ class RunLoopTasks : public Steinberg::Linux::IEventHandler {
      * This pointer is cast from `plug_frame` once `IPlugView::setFrame()` has
      * been called.
      */
-    Steinberg::FUnknownPtr<Steinberg::Linux::IRunLoop> run_loop;
+    Steinberg::FUnknownPtr<Steinberg::Linux::IRunLoop> run_loop_;
 
     /**
      * Tasks that should be executed in the next `IRunLoop` event handler call.
@@ -82,8 +82,8 @@ class RunLoopTasks : public Steinberg::Linux::IEventHandler {
      *
      * @see RunLoopTasks::schedule
      */
-    std::vector<fu2::unique_function<void()>> tasks;
-    std::mutex tasks_mutex;
+    std::vector<fu2::unique_function<void()>> tasks_;
+    std::mutex tasks_mutex_;
 
     /**
      * A dumy Unix domain socket file descriptor used to signal that there is a
@@ -93,12 +93,12 @@ class RunLoopTasks : public Steinberg::Linux::IEventHandler {
      * XXX: This should be backed by eventfd instead, but Ardour doesn't support
      *      that
      */
-    int socket_read_fd = -1;
+    int socket_read_fd_ = -1;
     /**
      * The other side of `socket_read_fd`. We'll write to this when we want the
      * hsot to call our event handler.
      */
-    int socket_write_fd = -1;
+    int socket_write_fd_ = -1;
 };
 
 class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
@@ -131,9 +131,9 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
      *
      * This works similarly to
      * `Vst3Bridge::do_mutual_recursion_or_handle_in_main_context`, except that
-     * we can post tasks to `run_loop_tasks` instead of executing them directly
-     * in `main_context` when no mutually recursive function calls are happening
-     * right now.
+     * we can post tasks to `run_loop_tasks_` instead of executing them directly
+     * in `main_context_` when no mutually recursive function calls are
+     * happening right now.
      *
      * @see Vst3HostBridge::send_mutually_recursive_message
      */
@@ -148,15 +148,15 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
         // registered to the host's run loop, if that exists. Finally if the
         // host does not support `IRunLoop`, then we'll just run `fn` directly.
         if (const auto result =
-                bridge.maybe_run_on_mutual_recursion_thread(fn)) {
+                bridge_.maybe_run_on_mutual_recursion_thread(fn)) {
             return *result;
         }
 
-        if (run_loop_tasks) {
+        if (run_loop_tasks_) {
             std::packaged_task<Result()> do_call(std::forward<F>(fn));
             std::future<Result> do_call_response = do_call.get_future();
 
-            run_loop_tasks->schedule(std::move(do_call));
+            run_loop_tasks_->schedule(std::move(do_call));
 
             return do_call_response.get();
         } else {
@@ -198,10 +198,10 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
      * `IPlugView::setFrame()`. When the plugin makes a callback on the
      * `IPlugFrame` proxy object, we'll pass the call through to this object.
      */
-    Steinberg::IPtr<Steinberg::IPlugFrame> plug_frame;
+    Steinberg::IPtr<Steinberg::IPlugFrame> plug_frame_;
 
    private:
-    Vst3PluginBridge& bridge;
+    Vst3PluginBridge& bridge_;
 
     /**
      * If the host supports `IRunLoop`, we'll use this to run certain tasks from
@@ -210,7 +210,7 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
      *
      * This will be an `std::nullopt` if the hostdoes not support `IRunLoop`.
      */
-    std::optional<RunLoopTasks> run_loop_tasks;
+    std::optional<RunLoopTasks> run_loop_tasks_;
 
     // Caches
 
@@ -225,6 +225,6 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
      * resizing a lot laggier than they would have to be, so as a compromise
      * we'll remember this value for the duration of the resize.
      */
-    TimedValueCache<tresult> can_resize_cache;
-    std::mutex can_resize_cache_mutex;
+    TimedValueCache<tresult> can_resize_cache_;
+    std::mutex can_resize_cache_mutex_;
 };

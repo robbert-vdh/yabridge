@@ -23,4 +23,4 @@ YaUnitInfo::ConstructArgs::ConstructArgs(
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IUnitInfo>(object)) {}
 
 YaUnitInfo::YaUnitInfo(ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

@@ -28,12 +28,12 @@ YaProcessData::YaProcessData() noexcept
     // belongs to an actual process data object, because with these changes it's
     // no longer possible to deserialize those results into a new ad-hoc created
     // object.
-    : response_object{.outputs = &outputs,
-                      .output_parameter_changes = &output_parameter_changes,
-                      .output_events = &output_events},
+    : response_object_{.outputs = &outputs_,
+                       .output_parameter_changes = &output_parameter_changes_,
+                       .output_events = &output_events_},
       // This needs to be zero initialized so we can safely call
       // `create_response()` on the plugin side
-      reconstructed_process_data() {}
+      reconstructed_process_data_() {}
 
 void YaProcessData::repopulate(const Steinberg::Vst::ProcessData& process_data,
                                AudioShmBuffer& shared_audio_buffers) {
@@ -41,26 +41,26 @@ void YaProcessData::repopulate(const Steinberg::Vst::ProcessData& process_data,
     // not use `push_back`/`emplace_back` anywhere. Resizing vectors and
     // modifying them in place performs much better because that avoids
     // destroying and creating objects most of the time.
-    process_mode = process_data.processMode;
-    symbolic_sample_size = process_data.symbolicSampleSize;
-    num_samples = process_data.numSamples;
+    process_mode_ = process_data.processMode;
+    symbolic_sample_size_ = process_data.symbolicSampleSize;
+    num_samples_ = process_data.numSamples;
 
     // The actual audio is stored in an accompanying `AudioShmBuffer` object, so
     // these inputs and outputs objects are only used to serialize metadata
     // about the input and output audio bus buffers
-    inputs.resize(process_data.numInputs);
+    inputs_.resize(process_data.numInputs);
     for (int bus = 0; bus < process_data.numInputs; bus++) {
         // NOTE: The host might provide more input channels than what the plugin
         //       asked for. Carla does this for some reason. We should just
         //       ignore these.
-        inputs[bus].numChannels = std::min(
+        inputs_[bus].numChannels = std::min(
             static_cast<int32>(shared_audio_buffers.num_input_channels(bus)),
             process_data.inputs[bus].numChannels);
-        inputs[bus].silenceFlags = process_data.inputs[bus].silenceFlags;
+        inputs_[bus].silenceFlags = process_data.inputs[bus].silenceFlags;
 
         // We copy the actual input audio for every bus to the shared memory
         // object
-        for (int channel = 0; channel < inputs[bus].numChannels; channel++) {
+        for (int channel = 0; channel < inputs_[bus].numChannels; channel++) {
             if (process_data.symbolicSampleSize == Steinberg::Vst::kSample64) {
                 std::copy_n(process_data.inputs[bus].channelBuffers64[channel],
                             process_data.numSamples,
@@ -75,68 +75,70 @@ void YaProcessData::repopulate(const Steinberg::Vst::ProcessData& process_data,
         }
     }
 
-    outputs.resize(process_data.numOutputs);
+    outputs_.resize(process_data.numOutputs);
     for (int bus = 0; bus < process_data.numOutputs; bus++) {
         // NOTE: The host might provide more output channels than what the
         //       plugin asked for. Carla does this for some reason. We should
         //       just ignore these.
-        outputs[bus].numChannels = std::min(
+        outputs_[bus].numChannels = std::min(
             static_cast<int32>(shared_audio_buffers.num_output_channels(bus)),
             process_data.outputs[bus].numChannels);
-        outputs[bus].silenceFlags = process_data.outputs[bus].silenceFlags;
+        outputs_[bus].silenceFlags = process_data.outputs[bus].silenceFlags;
     }
 
     // Even though `ProcessData::inputParamterChanges` is mandatory, the VST3
     // validator will pass a null pointer here
     if (process_data.inputParameterChanges) {
-        input_parameter_changes.repopulate(*process_data.inputParameterChanges);
+        input_parameter_changes_.repopulate(
+            *process_data.inputParameterChanges);
     } else {
-        input_parameter_changes.clear();
+        input_parameter_changes_.clear();
     }
 
     // The existence of the output parameter changes object indicates whether or
     // not the host provides this for the plugin
     if (process_data.outputParameterChanges) {
-        if (!output_parameter_changes) {
-            output_parameter_changes.emplace();
+        if (!output_parameter_changes_) {
+            output_parameter_changes_.emplace();
         }
     } else {
-        output_parameter_changes.reset();
+        output_parameter_changes_.reset();
     }
 
     if (process_data.inputEvents) {
-        if (!input_events) {
-            input_events.emplace();
+        if (!input_events_) {
+            input_events_.emplace();
         }
-        input_events->repopulate(*process_data.inputEvents);
+        input_events_->repopulate(*process_data.inputEvents);
     } else {
-        input_events.reset();
+        input_events_.reset();
     }
 
     // Same for the output events
     if (process_data.outputEvents) {
-        if (!output_events) {
-            output_events.emplace();
+        if (!output_events_) {
+            output_events_.emplace();
         }
     } else {
-        output_events.reset();
+        output_events_.reset();
     }
 
     if (process_data.processContext) {
-        process_context.emplace(*process_data.processContext);
+        process_context_.emplace(*process_data.processContext);
     } else {
-        process_context.reset();
+        process_context_.reset();
     }
 }
 
 Steinberg::Vst::ProcessData& YaProcessData::reconstruct(
     std::vector<std::vector<void*>>& input_pointers,
     std::vector<std::vector<void*>>& output_pointers) {
-    reconstructed_process_data.processMode = process_mode;
-    reconstructed_process_data.symbolicSampleSize = symbolic_sample_size;
-    reconstructed_process_data.numSamples = num_samples;
-    reconstructed_process_data.numInputs = static_cast<int32>(inputs.size());
-    reconstructed_process_data.numOutputs = static_cast<int32>(outputs.size());
+    reconstructed_process_data_.processMode = process_mode_;
+    reconstructed_process_data_.symbolicSampleSize = symbolic_sample_size_;
+    reconstructed_process_data_.numSamples = num_samples_;
+    reconstructed_process_data_.numInputs = static_cast<int32>(inputs_.size());
+    reconstructed_process_data_.numOutputs =
+        static_cast<int32>(outputs_.size());
 
     // The actual audio data is contained within a shared memory object, and the
     // input and output pointers point to regions in that object. These pointers
@@ -146,70 +148,71 @@ Steinberg::Vst::ProcessData& YaProcessData::reconstruct(
     //       `channelBuffers64` to point at that buffer as long as we do the
     //       same thing on both the native plugin side and on the Wine plugin
     //       host
-    assert(inputs.size() <= input_pointers.size() &&
-           outputs.size() <= output_pointers.size());
-    for (size_t bus = 0; bus < inputs.size(); bus++) {
-        inputs[bus].channelBuffers32 =
+    assert(inputs_.size() <= input_pointers.size() &&
+           outputs_.size() <= output_pointers.size());
+    for (size_t bus = 0; bus < inputs_.size(); bus++) {
+        inputs_[bus].channelBuffers32 =
             reinterpret_cast<float**>(input_pointers[bus].data());
     }
-    for (size_t bus = 0; bus < outputs.size(); bus++) {
-        outputs[bus].channelBuffers32 =
+    for (size_t bus = 0; bus < outputs_.size(); bus++) {
+        outputs_[bus].channelBuffers32 =
             reinterpret_cast<float**>(output_pointers[bus].data());
     }
 
-    reconstructed_process_data.inputs = inputs.data();
-    reconstructed_process_data.outputs = outputs.data();
+    reconstructed_process_data_.inputs = inputs_.data();
+    reconstructed_process_data_.outputs = outputs_.data();
 
-    reconstructed_process_data.inputParameterChanges = &input_parameter_changes;
+    reconstructed_process_data_.inputParameterChanges =
+        &input_parameter_changes_;
 
-    if (output_parameter_changes) {
-        output_parameter_changes->clear();
-        reconstructed_process_data.outputParameterChanges =
-            &*output_parameter_changes;
+    if (output_parameter_changes_) {
+        output_parameter_changes_->clear();
+        reconstructed_process_data_.outputParameterChanges =
+            &*output_parameter_changes_;
     } else {
-        reconstructed_process_data.outputParameterChanges = nullptr;
+        reconstructed_process_data_.outputParameterChanges = nullptr;
     }
 
-    if (input_events) {
-        reconstructed_process_data.inputEvents = &*input_events;
+    if (input_events_) {
+        reconstructed_process_data_.inputEvents = &*input_events_;
     } else {
-        reconstructed_process_data.inputEvents = nullptr;
+        reconstructed_process_data_.inputEvents = nullptr;
     }
 
-    if (output_events) {
-        output_events->clear();
-        reconstructed_process_data.outputEvents = &*output_events;
+    if (output_events_) {
+        output_events_->clear();
+        reconstructed_process_data_.outputEvents = &*output_events_;
     } else {
-        reconstructed_process_data.outputEvents = nullptr;
+        reconstructed_process_data_.outputEvents = nullptr;
     }
 
-    if (process_context) {
-        reconstructed_process_data.processContext = &*process_context;
+    if (process_context_) {
+        reconstructed_process_data_.processContext = &*process_context_;
     } else {
-        reconstructed_process_data.processContext = nullptr;
+        reconstructed_process_data_.processContext = nullptr;
     }
 
-    return reconstructed_process_data;
+    return reconstructed_process_data_;
 }
 
 YaProcessData::Response& YaProcessData::create_response() noexcept {
     // NOTE: We return an object that only contains references to these original
     //       fields to avoid any copies or moves
-    return response_object;
+    return response_object_;
 }
 
 void YaProcessData::write_back_outputs(
     Steinberg::Vst::ProcessData& process_data,
     const AudioShmBuffer& shared_audio_buffers) {
-    assert(static_cast<int32>(outputs.size()) == process_data.numOutputs);
+    assert(static_cast<int32>(outputs_.size()) == process_data.numOutputs);
     for (int bus = 0; bus < process_data.numOutputs; bus++) {
-        process_data.outputs[bus].silenceFlags = outputs[bus].silenceFlags;
+        process_data.outputs[bus].silenceFlags = outputs_[bus].silenceFlags;
 
         // NOTE: Some hosts, like Carla, provide more output channels than what
         //       the plugin wants. We'll have already capped
         //       `outputs[bus].numChannels` to the number of channels requested
         //       by the plugin during `YaProcessData::repopulate()`.
-        for (int channel = 0; channel < outputs[bus].numChannels; channel++) {
+        for (int channel = 0; channel < outputs_[bus].numChannels; channel++) {
             // We copy the output audio for every bus from the shared memory
             // object back to the buffer provided by the host
             if (process_data.symbolicSampleSize == Steinberg::Vst::kSample64) {
@@ -228,12 +231,12 @@ void YaProcessData::write_back_outputs(
         }
     }
 
-    if (output_parameter_changes && process_data.outputParameterChanges) {
-        output_parameter_changes->write_back_outputs(
+    if (output_parameter_changes_ && process_data.outputParameterChanges) {
+        output_parameter_changes_->write_back_outputs(
             *process_data.outputParameterChanges);
     }
 
-    if (output_events && process_data.outputEvents) {
-        output_events->write_back_outputs(*process_data.outputEvents);
+    if (output_events_ && process_data.outputEvents) {
+        output_events_->write_back_outputs(*process_data.outputEvents);
     }
 }

@@ -19,7 +19,7 @@
 Vst3ConnectionPointProxy::Vst3ConnectionPointProxy(
     ConstructArgs&& args) noexcept
     : YaConnectionPoint(std::move(args.connection_point_args)),
-      arguments(std::move(args)){FUNKNOWN_CTOR}
+      arguments_(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3ConnectionPointProxy::~Vst3ConnectionPointProxy() noexcept {
     FUNKNOWN_DTOR

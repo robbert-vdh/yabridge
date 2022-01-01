@@ -23,4 +23,4 @@ YaMidiLearn::ConstructArgs::ConstructArgs(
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IMidiLearn>(object)) {}
 
 YaMidiLearn::YaMidiLearn(ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

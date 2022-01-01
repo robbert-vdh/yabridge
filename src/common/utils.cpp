@@ -224,25 +224,25 @@ std::string xml_escape(std::string string) {
 }
 
 ScopedFlushToZero::ScopedFlushToZero() noexcept {
-    old_ftz_mode = _MM_GET_FLUSH_ZERO_MODE();
+    old_ftz_mode_ = _MM_GET_FLUSH_ZERO_MODE();
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 }
 
 ScopedFlushToZero::~ScopedFlushToZero() noexcept {
-    if (old_ftz_mode) {
-        _MM_SET_FLUSH_ZERO_MODE(*old_ftz_mode);
+    if (old_ftz_mode_) {
+        _MM_SET_FLUSH_ZERO_MODE(*old_ftz_mode_);
     }
 }
 
 ScopedFlushToZero::ScopedFlushToZero(ScopedFlushToZero&& o) noexcept
-    : old_ftz_mode(std::move(o.old_ftz_mode)) {
-    o.old_ftz_mode.reset();
+    : old_ftz_mode_(std::move(o.old_ftz_mode_)) {
+    o.old_ftz_mode_.reset();
 }
 
 ScopedFlushToZero& ScopedFlushToZero::operator=(
     ScopedFlushToZero&& o) noexcept {
-    old_ftz_mode = std::move(o.old_ftz_mode);
-    o.old_ftz_mode.reset();
+    old_ftz_mode_ = std::move(o.old_ftz_mode_);
+    o.old_ftz_mode_.reset();
 
     return *this;
 }

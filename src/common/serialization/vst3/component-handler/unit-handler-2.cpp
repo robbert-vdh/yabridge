@@ -24,4 +24,4 @@ YaUnitHandler2::ConstructArgs::ConstructArgs(
 }
 
 YaUnitHandler2::YaUnitHandler2(ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

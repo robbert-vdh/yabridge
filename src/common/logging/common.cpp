@@ -51,11 +51,11 @@ Logger::Logger(std::shared_ptr<std::ostream> stream,
                bool editor_tracing,
                std::string prefix,
                bool prefix_timestamp)
-    : verbosity(verbosity_level),
-      editor_tracing(editor_tracing),
-      stream(stream),
-      prefix(prefix),
-      prefix_timestamp(prefix_timestamp) {}
+    : verbosity_(verbosity_level),
+      editor_tracing_(editor_tracing),
+      stream_(stream),
+      prefix_(prefix),
+      prefix_timestamp_(prefix_timestamp) {}
 
 Logger Logger::create_from_environment(std::string prefix,
                                        std::shared_ptr<std::ostream> stream,
@@ -126,7 +126,7 @@ Logger Logger::create_exception_logger() {
 void Logger::log(const std::string& message) {
     std::ostringstream formatted_message;
 
-    if (prefix_timestamp) {
+    if (prefix_timestamp_) {
         const auto current_time = std::chrono::system_clock::now();
         const time_t timestamp =
             std::chrono::system_clock::to_time_t(current_time);
@@ -140,12 +140,12 @@ void Logger::log(const std::string& message) {
         formatted_message << std::put_time(&tm, "%T") << " ";
     }
 
-    formatted_message << prefix;
+    formatted_message << prefix_;
     formatted_message << message;
     // Flushing a stringstream doesn't do anything, but we need to put a
     // linefeed in this string stream rather writing it sprightly to the output
     // stream to prevent two messages from being put on the same row
     formatted_message << std::endl;
 
-    *stream << formatted_message.str() << std::flush;
+    *stream_ << formatted_message.str() << std::flush;
 }

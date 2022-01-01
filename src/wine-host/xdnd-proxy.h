@@ -48,9 +48,9 @@ class X11Window {
     template <std::invocable<std::shared_ptr<xcb_connection_t>, xcb_window_t> F>
     X11Window(std::shared_ptr<xcb_connection_t> x11_connection,
               F&& create_window_fn)
-        : x11_connection(x11_connection),
-          window(xcb_generate_id(x11_connection.get())) {
-        create_window_fn(x11_connection, window);
+        : x11_connection_(x11_connection),
+          window_(xcb_generate_id(x11_connection.get())) {
+        create_window_fn(x11_connection, window_);
         xcb_flush(x11_connection.get());
     }
 
@@ -66,13 +66,13 @@ class X11Window {
     X11Window& operator=(X11Window&&) noexcept;
 
    private:
-    std::shared_ptr<xcb_connection_t> x11_connection;
+    std::shared_ptr<xcb_connection_t> x11_connection_;
 
    public:
-    xcb_window_t window;
+    xcb_window_t window_;
 
    private:
-    bool is_moved = false;
+    bool is_moved_ = false;
 };
 
 /**
@@ -106,8 +106,8 @@ class WineXdndProxy {
 
        public:
         /**
-         * Reduces the reference count by one, and frees `proxy` if this was the
-         * last handle.
+         * Reduces the reference count by one, and frees `proxy_` if this was
+         * the last handle.
          */
         ~Handle() noexcept;
 
@@ -118,7 +118,7 @@ class WineXdndProxy {
         Handle& operator=(Handle&&) noexcept = default;
 
        private:
-        WineXdndProxy* proxy;
+        WineXdndProxy* proxy_;
 
         friend WineXdndProxy;
     };
@@ -231,19 +231,19 @@ class WineXdndProxy {
      * that created the window. So we cannot just reuse the connection from the
      * editor.
      */
-    std::shared_ptr<xcb_connection_t> x11_connection;
+    std::shared_ptr<xcb_connection_t> x11_connection_;
 
     /**
      * We need an unmapped 1x1 proxy window to send and receive client messages
      * for the XDND protocol.
      */
-    X11Window proxy_window;
+    X11Window proxy_window_;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-attributes"
     std::unique_ptr<std::remove_pointer_t<HWINEVENTHOOK>,
                     std::decay_t<decltype(&UnhookWinEvent)>>
-        hook_handle;
+        hook_handle_;
 #pragma GCC diagnostic pop
 
     /**
@@ -251,13 +251,13 @@ class WineXdndProxy {
      * cancels it, and then immediately starts a new one. We need to make sure
      * that we only handle a single drag-and-drop operation at a time.
      */
-    std::atomic_bool drag_active = false;
+    std::atomic_bool drag_active_ = false;
 
     /**
      * The files that are currently being dragged, stored as in `text/uri-list`
      * format (i.e. a list of URIs, each ending with a line feed)
      */
-    std::string dragged_files_uri_list;
+    std::string dragged_files_uri_list_;
 
     /**
      * Wine's tracker window for tracking the drag-and-drop operation. When the
@@ -265,45 +265,45 @@ class WineXdndProxy {
      * potential for weird race conditions where the plugin may still think
      * we're doing drag-and-drop.
      */
-    HWND tracker_window;
+    HWND tracker_window_;
 
     /**
      * We need to poll for mouse position changes from another thread, because
      * when the drag-and-drop operation starts Wine will be blocking the GUI
      * thread, so we cannot rely on the normal event loop.
      */
-    Win32Thread xdnd_handler;
+    Win32Thread xdnd_handler_;
 
     /**
      * The X11 root window.
      */
-    xcb_window_t root_window;
+    xcb_window_t root_window_;
 
     /**
      * The X11 keycode for the escape key. We need to figure this out once when
      * the first drag-and-drop operation happens.
      */
-    std::optional<xcb_keycode_t> escape_keycode;
+    std::optional<xcb_keycode_t> escape_keycode_;
 
     // These are the atoms used for the XDND protocol, as described by
     // https://www.freedesktop.org/wiki/Specifications/XDND/#atomsandproperties
-    xcb_atom_t xcb_xdnd_selection;
-    xcb_atom_t xcb_xdnd_aware_property;
-    xcb_atom_t xcb_xdnd_proxy_property;
-    xcb_atom_t xcb_xdnd_drop_message;
-    xcb_atom_t xcb_xdnd_enter_message;
-    xcb_atom_t xcb_xdnd_finished_message;
-    xcb_atom_t xcb_xdnd_position_message;
-    xcb_atom_t xcb_xdnd_status_message;
-    xcb_atom_t xcb_xdnd_leave_message;
+    xcb_atom_t xcb_xdnd_selection_;
+    xcb_atom_t xcb_xdnd_aware_property_;
+    xcb_atom_t xcb_xdnd_proxy_property_;
+    xcb_atom_t xcb_xdnd_drop_message_;
+    xcb_atom_t xcb_xdnd_enter_message_;
+    xcb_atom_t xcb_xdnd_finished_message_;
+    xcb_atom_t xcb_xdnd_position_message_;
+    xcb_atom_t xcb_xdnd_status_message_;
+    xcb_atom_t xcb_xdnd_leave_message_;
 
     // XDND specifies various actions for drag-and-drop, but since the file is
     // technically still owned by the plugin we'll just stick with copies to be
     // safe
-    xcb_atom_t xcb_xdnd_copy_action;
+    xcb_atom_t xcb_xdnd_copy_action_;
 
     // Mime types for use in XDND, we'll only support dragging links since that
     // is the foramt the Windows OLE drag-and-drop provides us
-    xcb_atom_t xcb_mime_text_uri_list;
-    xcb_atom_t xcb_mime_text_plain;
+    xcb_atom_t xcb_mime_text_uri_list_;
+    xcb_atom_t xcb_mime_text_plain_;
 };

@@ -61,52 +61,53 @@ std::string create_logger_prefix(const fs::path& socket_path);
 
 StdIoCapture::StdIoCapture(boost::asio::io_context& io_context,
                            int file_descriptor)
-    : pipe(io_context),
-      target_fd(file_descriptor),
-      original_fd_copy(dup(file_descriptor)) {
+    : pipe_(io_context),
+      target_fd_(file_descriptor),
+      original_fd_copy_(dup(file_descriptor)) {
     // We'll use the second element of these two file descriptors to reopen
     // `file_descriptor`, and the first one to read the captured contents from
-    if (::pipe(pipe_fd) != 0) {
+    if (::pipe(pipe_fd_) != 0) {
         throw std::system_error(errno, std::system_category());
     }
 
     // We've already created a copy of the original file descriptor, so we can
     // reopen it using the newly created pipe
-    dup2(pipe_fd[1], target_fd);
-    close(pipe_fd[1]);
+    dup2(pipe_fd_[1], target_fd_);
+    close(pipe_fd_[1]);
 
-    pipe.assign(pipe_fd[0]);
+    pipe_.assign(pipe_fd_[0]);
 }
 
 StdIoCapture::~StdIoCapture() noexcept {
     // Restore the original file descriptor and close the pipe. The other wend
     // was already closed in the constructor.
-    dup2(original_fd_copy, target_fd);
-    close(original_fd_copy);
-    close(pipe_fd[0]);
+    dup2(original_fd_copy_, target_fd_);
+    close(original_fd_copy_);
+    close(pipe_fd_[0]);
 }
 
 GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
-    : logger(Logger::create_from_environment(
+    : logger_(Logger::create_from_environment(
           create_logger_prefix(group_socket_path))),
-      main_context(),
-      stdio_context(),
-      stdout_redirect(stdio_context, STDOUT_FILENO),
-      stderr_redirect(stdio_context, STDERR_FILENO),
-      group_socket_endpoint(group_socket_path.string()),
-      group_socket_acceptor(create_acceptor_if_inactive(main_context.context,
-                                                        group_socket_endpoint)),
-      shutdown_timer(main_context.context) {
+      main_context_(),
+      stdio_context_(),
+      stdout_redirect_(stdio_context_, STDOUT_FILENO),
+      stderr_redirect_(stdio_context_, STDERR_FILENO),
+      group_socket_endpoint_(group_socket_path.string()),
+      group_socket_acceptor_(
+          create_acceptor_if_inactive(main_context_.context_,
+                                      group_socket_endpoint_)),
+      shutdown_timer_(main_context_.context_) {
     // Write this process's original STDOUT and STDERR streams to the logger
-    logger.async_log_pipe_lines(stdout_redirect.pipe, stdout_buffer,
-                                "[STDOUT] ");
-    logger.async_log_pipe_lines(stderr_redirect.pipe, stderr_buffer,
-                                "[STDERR] ");
+    logger_.async_log_pipe_lines(stdout_redirect_.pipe_, stdout_buffer_,
+                                 "[STDOUT] ");
+    logger_.async_log_pipe_lines(stderr_redirect_.pipe_, stderr_buffer_,
+                                 "[STDERR] ");
 
-    stdio_handler = Win32Thread([&]() {
+    stdio_handler_ = Win32Thread([&]() {
         pthread_setname_np(pthread_self(), "group-stdio");
 
-        stdio_context.run();
+        stdio_context_.run();
     });
 }
 
@@ -114,15 +115,15 @@ GroupBridge::~GroupBridge() noexcept {
     // Our fancy `Vst2Sockets` and `Vst3Sockets` clean up after themselves, but
     // here we need to do it manually
     // TODO: Encapsulate this, destructors are evil
-    fs::remove(group_socket_endpoint.path());
+    fs::remove(group_socket_endpoint_.path());
 
-    stdio_context.stop();
+    stdio_context_.stop();
 }
 
 bool GroupBridge::is_event_loop_inhibited() noexcept {
-    std::lock_guard lock(active_plugins_mutex);
+    std::lock_guard lock(active_plugins_mutex_);
 
-    for (auto& [parameters, value] : active_plugins) {
+    for (auto& [parameters, value] : active_plugins_) {
         auto& [thread, bridge] = value;
         if (bridge->inhibits_event_loop()) {
             return true;
@@ -135,7 +136,7 @@ bool GroupBridge::is_event_loop_inhibited() noexcept {
 void GroupBridge::handle_plugin_run(size_t plugin_id, HostBridge* bridge) {
     // Blocks this thread until the plugin shuts down
     bridge->run();
-    logger.log("'" + bridge->plugin_path.string() + "' has exited");
+    logger_.log("'" + bridge->plugin_path_.string() + "' has exited");
 
     // After the plugin has exited we'll remove this thread's plugin from the
     // active plugins. This is done within the IO context because the call to
@@ -143,12 +144,12 @@ void GroupBridge::handle_plugin_run(size_t plugin_id, HostBridge* bridge) {
     // potentially corrupt our heap. This way we can also properly join the
     // thread again. If no active plugins remain, then we'll terminate the
     // process.
-    main_context.schedule_task([this, plugin_id]() {
-        std::lock_guard lock(active_plugins_mutex);
+    main_context_.schedule_task([this, plugin_id]() {
+        std::lock_guard lock(active_plugins_mutex_);
 
         // The join is implicit because we're using Win32Thread (which mimics
         // std::jthread)
-        active_plugins.erase(plugin_id);
+        active_plugins_.erase(plugin_id);
     });
 
     // Defer actually shutting down the process to allow for fast plugin
@@ -164,23 +165,23 @@ void GroupBridge::handle_incoming_connections() {
     // shut the process down again.
     maybe_schedule_shutdown(5s);
 
-    logger.log(
+    logger_.log(
         "Group host is up and running, now accepting incoming connections");
-    main_context.run();
+    main_context_.run();
 }
 
 void GroupBridge::accept_requests() {
-    group_socket_acceptor.async_accept(
+    group_socket_acceptor_.async_accept(
         [&](const boost::system::error_code& error,
             boost::asio::local::stream_protocol::socket socket) {
-            std::lock_guard lock(active_plugins_mutex);
+            std::lock_guard lock(active_plugins_mutex_);
 
             // Stop the whole process when the socket gets closed unexpectedly
             if (error.failed()) {
-                logger.log("Error while listening for incoming connections:");
-                logger.log(error.message());
+                logger_.log("Error while listening for incoming connections:");
+                logger_.log(error.message());
 
-                main_context.stop();
+                main_context_.stop();
             }
 
             // Read the parameters, and then host the plugin in this process
@@ -195,27 +196,27 @@ void GroupBridge::accept_requests() {
             // The plugin has to be initiated on the IO context's thread because
             // this has to be done on the same thread that's handling messages,
             // and all window messages have to be handled from the same thread.
-            logger.log("Received request to host " +
-                       plugin_type_to_string(request.plugin_type) +
-                       " plugin at '" + request.plugin_path +
-                       "' using socket endpoint base directory '" +
-                       request.endpoint_base_dir + "'");
+            logger_.log("Received request to host " +
+                        plugin_type_to_string(request.plugin_type) +
+                        " plugin at '" + request.plugin_path +
+                        "' using socket endpoint base directory '" +
+                        request.endpoint_base_dir + "'");
             try {
                 // Cancel the (initial) shutdown timer, since the plugin may
                 // take longer to initialize if it is new
-                shutdown_timer.cancel();
+                shutdown_timer_.cancel();
 
                 std::unique_ptr<HostBridge> bridge = nullptr;
                 switch (request.plugin_type) {
                     case PluginType::vst2:
                         bridge = std::make_unique<Vst2Bridge>(
-                            main_context, request.plugin_path,
+                            main_context_, request.plugin_path,
                             request.endpoint_base_dir, request.parent_pid);
                         break;
                     case PluginType::vst3:
 #ifdef WITH_VST3
                         bridge = std::make_unique<Vst3Bridge>(
-                            main_context, request.plugin_path,
+                            main_context_, request.plugin_path,
                             request.endpoint_base_dir, request.parent_pid);
 #else
                         throw std::runtime_error(
@@ -230,8 +231,8 @@ void GroupBridge::accept_requests() {
                         break;
                 }
 
-                logger.log("Finished initializing '" + request.plugin_path +
-                           "'");
+                logger_.log("Finished initializing '" + request.plugin_path +
+                            "'");
 
                 // Start listening for dispatcher events sent to the plugin's
                 // socket on another thread. Parts of the actual event handling
@@ -244,8 +245,8 @@ void GroupBridge::accept_requests() {
                 // when using the Spitfire plugins, as they will block the
                 // message loop until `effOpen()` has been called and thus
                 // prevent this lock from happening.
-                const size_t plugin_id = next_plugin_id.fetch_add(1);
-                active_plugins[plugin_id] = std::pair(
+                const size_t plugin_id = next_plugin_id_.fetch_add(1);
+                active_plugins_[plugin_id] = std::pair(
                     Win32Thread([this, plugin_id, plugin_ptr = bridge.get()]() {
                         const std::string thread_name =
                             "worker-" + std::to_string(plugin_id);
@@ -255,9 +256,9 @@ void GroupBridge::accept_requests() {
                     }),
                     std::move(bridge));
             } catch (const std::exception& error) {
-                logger.log("Error while initializing '" + request.plugin_path +
-                           "':");
-                logger.log(error.what());
+                logger_.log("Error while initializing '" + request.plugin_path +
+                            "':");
+                logger_.log(error.what());
 
                 maybe_schedule_shutdown(5s);
             }
@@ -267,9 +268,9 @@ void GroupBridge::accept_requests() {
 }
 
 void GroupBridge::async_handle_events() {
-    main_context.async_handle_events(
+    main_context_.async_handle_events(
         [&]() {
-            std::lock_guard lock(active_plugins_mutex);
+            std::lock_guard lock(active_plugins_mutex_);
 
             // Keep the loop responsive by not handling too many events at once.
             // All X11 events are handled from a Win32 timer so they'll still be
@@ -319,23 +320,23 @@ boost::asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
 
 void GroupBridge::maybe_schedule_shutdown(
     std::chrono::steady_clock::duration delay) {
-    std::lock_guard lock(shutdown_timer_mutex);
+    std::lock_guard lock(shutdown_timer_mutex_);
 
-    shutdown_timer.expires_after(delay);
-    shutdown_timer.async_wait([this](const boost::system::error_code& error) {
+    shutdown_timer_.expires_after(delay);
+    shutdown_timer_.async_wait([this](const boost::system::error_code& error) {
         // A previous timer gets canceled automatically when another plugin
         // exits
         if (error.failed()) {
             return;
         }
 
-        std::lock_guard lock(active_plugins_mutex);
-        if (active_plugins.size() == 0) {
-            logger.log(
+        std::lock_guard lock(active_plugins_mutex_);
+        if (active_plugins_.size() == 0) {
+            logger_.log(
                 "All plugins have exited, shutting down the group process");
 
             // The whole process will exit in `group-host.cpp` because of this
-            main_context.stop();
+            main_context_.stop();
         }
     });
 }

@@ -266,11 +266,11 @@ class YaEventList : public Steinberg::Vst::IEventList {
 
     template <typename S>
     void serialize(S& s) {
-        s.container(events, 1 << 16);
+        s.container(events_, 1 << 16);
     }
 
    private:
-    boost::container::small_vector<YaEvent, 64> events;
+    boost::container::small_vector<YaEvent, 64> events_;
 };
 
 #pragma GCC diagnostic pop

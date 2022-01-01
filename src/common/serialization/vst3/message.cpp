@@ -19,10 +19,10 @@
 YaMessagePtr::YaMessagePtr() noexcept {FUNKNOWN_CTOR}
 
 YaMessagePtr::YaMessagePtr(IMessage& message)
-    : message_id(message.getMessageID()
-                     ? std::make_optional<std::string>(message.getMessageID())
-                     : std::nullopt),
-      original_message_ptr(static_cast<native_size_t>(
+    : message_id_(message.getMessageID()
+                      ? std::make_optional<std::string>(message.getMessageID())
+                      : std::nullopt),
+      original_message_ptr_(static_cast<native_size_t>(
           reinterpret_cast<size_t>(&message))){FUNKNOWN_CTOR}
 
       YaMessagePtr::~YaMessagePtr() noexcept {
@@ -39,12 +39,12 @@ IMPLEMENT_FUNKNOWN_METHODS(YaMessagePtr,
 Steinberg::Vst::IMessage* YaMessagePtr::get_original() const noexcept {
     // See the docstrings on `YaMessage` and `YaMessagePtr`
     return reinterpret_cast<IMessage*>(
-        static_cast<size_t>(original_message_ptr));
+        static_cast<size_t>(original_message_ptr_));
 }
 
 Steinberg::FIDString PLUGIN_API YaMessagePtr::getMessageID() {
-    if (message_id) {
-        return message_id->c_str();
+    if (message_id_) {
+        return message_id_->c_str();
     } else {
         return nullptr;
     }
@@ -52,14 +52,14 @@ Steinberg::FIDString PLUGIN_API YaMessagePtr::getMessageID() {
 
 void PLUGIN_API YaMessagePtr::setMessageID(Steinberg::FIDString id /*in*/) {
     if (id) {
-        message_id = id;
+        message_id_ = id;
     } else {
-        message_id.reset();
+        message_id_.reset();
     }
 }
 
 Steinberg::Vst::IAttributeList* PLUGIN_API YaMessagePtr::getAttributes() {
-    return &attribute_list;
+    return &attribute_list_;
 }
 
 YaMessage::YaMessage() noexcept {FUNKNOWN_CTOR}
@@ -76,8 +76,8 @@ IMPLEMENT_FUNKNOWN_METHODS(YaMessage,
 #pragma GCC diagnostic pop
 
 Steinberg::FIDString PLUGIN_API YaMessage::getMessageID() {
-    if (message_id) {
-        return message_id->c_str();
+    if (message_id_) {
+        return message_id_->c_str();
     } else {
         return nullptr;
     }
@@ -85,12 +85,12 @@ Steinberg::FIDString PLUGIN_API YaMessage::getMessageID() {
 
 void PLUGIN_API YaMessage::setMessageID(Steinberg::FIDString id /*in*/) {
     if (id) {
-        message_id = id;
+        message_id_ = id;
     } else {
-        message_id.reset();
+        message_id_.reset();
     }
 }
 
 Steinberg::Vst::IAttributeList* PLUGIN_API YaMessage::getAttributes() {
-    return &attribute_list;
+    return &attribute_list_;
 }

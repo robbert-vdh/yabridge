@@ -44,10 +44,10 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
 
         if (size > 0) {
             int32 num_bytes_read = 0;
-            buffer.resize(size);
+            buffer_.resize(size);
             stream->seek(old_position,
                          Steinberg::IBStream::IStreamSeekMode::kIBSeekSet);
-            stream->read(buffer.data(), static_cast<int32>(size),
+            stream->read(buffer_.data(), static_cast<int32>(size),
                          &num_bytes_read);
             assert(num_bytes_read == 0 || num_bytes_read == size);
         }
@@ -62,20 +62,20 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
     // based meta data
     if (Steinberg::FUnknownPtr<Steinberg::Vst::IStreamAttributes>
             stream_attributes = stream) {
-        supports_stream_attributes = true;
+        supports_stream_attributes_ = true;
 
         Steinberg::Vst::String128 vst_string{0};
         if (stream_attributes->getFileName(vst_string) ==
             Steinberg::kResultOk) {
-            file_name.emplace(tchar_pointer_to_u16string(vst_string));
+            file_name_.emplace(tchar_pointer_to_u16string(vst_string));
         }
 
         if (Steinberg::IPtr<Steinberg::Vst::IAttributeList>
                 stream_attributes_list = stream_attributes->getAttributes()) {
-            attributes.emplace(YaAttributeList::read_stream_attributes(
+            attributes_.emplace(YaAttributeList::read_stream_attributes(
                 stream_attributes_list));
         } else {
-            attributes.emplace();
+            attributes_.emplace();
         }
     }
 }
@@ -97,7 +97,7 @@ tresult PLUGIN_API YaBStream::queryInterface(Steinberg::FIDString _iid,
                     Steinberg::ISizeableStream)
 
     // TODO: We don't have any logging for this
-    if (supports_stream_attributes) {
+    if (supports_stream_attributes_) {
         QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IStreamAttributes::iid,
                         Steinberg::Vst::IStreamAttributes)
     }
@@ -114,24 +114,24 @@ tresult YaBStream::write_back(Steinberg::IBStream* stream) const {
     // A `stream->seek(0, kIBSeekSet)` breaks restoring states in Bitwig. Not
     // sure if Bitwig is prepending a header or if this is expected behaviour.
     int32 num_bytes_written = 0;
-    if (stream->write(const_cast<uint8_t*>(buffer.data()),
-                      static_cast<int32>(buffer.size()),
+    if (stream->write(const_cast<uint8_t*>(buffer_.data()),
+                      static_cast<int32>(buffer_.size()),
                       &num_bytes_written) == Steinberg::kResultOk) {
         // Some implementations will return `kResultFalse` when writing 0 bytes
         assert(num_bytes_written == 0 ||
-               static_cast<size_t>(num_bytes_written) == buffer.size());
+               static_cast<size_t>(num_bytes_written) == buffer_.size());
     }
 
     // Write back any attributes written by the plugin if the host supports
     // preset meta data
     if (Steinberg::FUnknownPtr<Steinberg::Vst::IStreamAttributes>
             stream_attributes = stream;
-        stream_attributes && attributes) {
+        stream_attributes && attributes_) {
         if (Steinberg::IPtr<Steinberg::Vst::IAttributeList>
                 stream_attributes_list = stream_attributes->getAttributes()) {
             // XXX: If the host somehow preset some attributes, then we're also
             //      writing those back. This should not cause any issues though.
-            attributes->write_back(stream_attributes_list);
+            attributes_->write_back(stream_attributes_list);
         }
     }
 
@@ -139,7 +139,7 @@ tresult YaBStream::write_back(Steinberg::IBStream* stream) const {
 }
 
 size_t YaBStream::size() const noexcept {
-    return buffer.size();
+    return buffer_.size();
 }
 
 tresult PLUGIN_API YaBStream::read(void* buffer,
@@ -151,12 +151,12 @@ tresult PLUGIN_API YaBStream::read(void* buffer,
 
     const int64_t bytes_to_read =
         std::min(static_cast<int64_t>(numBytes),
-                 static_cast<int64_t>(this->buffer.size()) - seek_position);
+                 static_cast<int64_t>(buffer_.size()) - seek_position_);
 
     if (bytes_to_read > 0) {
-        std::copy_n(&this->buffer[seek_position], bytes_to_read,
+        std::copy_n(&buffer_[seek_position_], bytes_to_read,
                     reinterpret_cast<uint8_t*>(buffer));
-        seek_position += bytes_to_read;
+        seek_position_ += bytes_to_read;
     }
 
     if (numBytesRead) {
@@ -173,14 +173,14 @@ tresult PLUGIN_API YaBStream::write(void* buffer,
         return Steinberg::kInvalidArgument;
     }
 
-    if (seek_position + numBytes > static_cast<int64_t>(this->buffer.size())) {
-        this->buffer.resize(seek_position + numBytes);
+    if (seek_position_ + numBytes > static_cast<int64_t>(buffer_.size())) {
+        buffer_.resize(seek_position_ + numBytes);
     }
 
     std::copy_n(reinterpret_cast<uint8_t*>(buffer), numBytes,
-                &this->buffer[seek_position]);
+                &buffer_[seek_position_]);
 
-    seek_position += numBytes;
+    seek_position_ += numBytes;
     if (numBytesWritten) {
         *numBytesWritten = numBytes;
     }
@@ -192,23 +192,23 @@ tresult PLUGIN_API YaBStream::write(void* buffer,
 tresult PLUGIN_API YaBStream::seek(int64 pos, int32 mode, int64* result) {
     switch (mode) {
         case kIBSeekSet:
-            seek_position = pos;
+            seek_position_ = pos;
             break;
         case kIBSeekCur:
-            seek_position += pos;
+            seek_position_ += pos;
             break;
         case kIBSeekEnd:
-            seek_position = static_cast<int64_t>(buffer.size()) + pos;
+            seek_position_ = static_cast<int64_t>(buffer_.size()) + pos;
             break;
         default:
             return Steinberg::kInvalidArgument;
             break;
     }
 
-    seek_position = std::clamp(seek_position, static_cast<int64_t>(0),
-                               static_cast<int64_t>(buffer.size()));
+    seek_position_ = std::clamp(seek_position_, static_cast<int64_t>(0),
+                                static_cast<int64_t>(buffer_.size()));
     if (result) {
-        *result = static_cast<int64>(seek_position);
+        *result = static_cast<int64>(seek_position_);
     }
 
     return Steinberg::kResultOk;
@@ -216,7 +216,7 @@ tresult PLUGIN_API YaBStream::seek(int64 pos, int32 mode, int64* result) {
 
 tresult PLUGIN_API YaBStream::tell(int64* pos) {
     if (pos) {
-        *pos = seek_position;
+        *pos = seek_position_;
         return Steinberg::kResultOk;
     } else {
         return Steinberg::kInvalidArgument;
@@ -224,19 +224,19 @@ tresult PLUGIN_API YaBStream::tell(int64* pos) {
 }
 
 tresult PLUGIN_API YaBStream::getStreamSize(int64& size) {
-    size = static_cast<int64>(buffer.size());
+    size = static_cast<int64>(buffer_.size());
     return Steinberg::kResultOk;
 }
 
 tresult PLUGIN_API YaBStream::setStreamSize(int64 size) {
-    buffer.resize(size);
+    buffer_.resize(size);
     return Steinberg::kResultOk;
 }
 
 tresult PLUGIN_API YaBStream::getFileName(Steinberg::Vst::String128 name) {
-    if (name && file_name) {
-        std::copy(file_name->begin(), file_name->end(), name);
-        name[file_name->size()] = 0;
+    if (name && file_name_) {
+        std::copy(file_name_->begin(), file_name_->end(), name);
+        name[file_name_->size()] = 0;
 
         return Steinberg::kResultOk;
     } else {
@@ -245,8 +245,8 @@ tresult PLUGIN_API YaBStream::getFileName(Steinberg::Vst::String128 name) {
 }
 
 Steinberg::Vst::IAttributeList* PLUGIN_API YaBStream::getAttributes() {
-    if (attributes) {
-        return &*attributes;
+    if (attributes_) {
+        return &*attributes_;
     } else {
         return nullptr;
     }

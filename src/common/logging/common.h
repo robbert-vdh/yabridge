@@ -195,7 +195,7 @@ class Logger {
      */
     template <invocable_returning<std::string> F>
     void log_trace(F&& fn) {
-        if (verbosity >= Verbosity::all_events) [[unlikely]] {
+        if (verbosity_ >= Verbosity::all_events) [[unlikely]] {
             log(fn());
         }
     }
@@ -209,7 +209,7 @@ class Logger {
      */
     template <invocable_returning<std::string> F>
     void log_editor_trace(F&& fn) {
-        if (editor_tracing) [[unlikely]] {
+        if (editor_tracing_) [[unlikely]] {
             log(fn());
         }
     }
@@ -218,28 +218,28 @@ class Logger {
      * The verbosity level of this logger instance. Based on this certain
      * messages may or may not be shown.
      */
-    const Verbosity verbosity;
+    const Verbosity verbosity_;
 
     /**
      * If this is set to true, then we'll print debug traces for the plugin
      * editor.
      */
-    const bool editor_tracing;
+    const bool editor_tracing_;
 
    private:
     /**
      * The output stream to write the log messages to. Typically either STDERR
      * or a file stream.
      */
-    std::shared_ptr<std::ostream> stream;
+    std::shared_ptr<std::ostream> stream_;
 
     /**
      * A prefix that gets prepended before every message.
      */
-    const std::string prefix;
+    const std::string prefix_;
 
     /**
      * Whether the log messages should be prefixed with a time stamp.
      */
-    const bool prefix_timestamp;
+    const bool prefix_timestamp_;
 };

@@ -74,7 +74,7 @@ class HostBridge {
      * function doesn't have any per-plugin behavior, only a single invocation
      * of this is needed when hosting multiple plugins. This is run on a timer
      * in the same IO context as the one that handles the events, i.e.
-     * `main_context`.
+     * `main_context_`.
      *
      * Because of the way the Win32 API works we have to process events on the
      * same thread as the one the window was created on, and that thread is the
@@ -98,7 +98,7 @@ class HostBridge {
     /**
      * The path to the .dll being loaded in the Wine plugin host.
      */
-    const boost::filesystem::path plugin_path;
+    const boost::filesystem::path plugin_path_;
 
    protected:
     /**
@@ -114,7 +114,7 @@ class HostBridge {
      * message handling can be performed from a single thread, even when hosting
      * multiple plugins.
      */
-    MainContext& main_context;
+    MainContext& main_context_;
 
     /**
      * A logger, just like we have on the plugin side. This is normally not
@@ -123,7 +123,7 @@ class HostBridge {
      *
      * @see Logger::create_wine_stderr
      */
-    Logger generic_logger;
+    Logger generic_logger_;
 
    private:
     /**
@@ -133,11 +133,11 @@ class HostBridge {
      * if this process is still alive, and close the sockets if it is not to
      * prevent dangling processes.
      */
-    const pid_t parent_pid;
+    const pid_t parent_pid_;
 
     /**
      * A guard that, while in scope, will cause `shutdown_if_dangling()` to
      * periodically be called.
      */
-    MainContext::WatchdogGuard watchdog_guard;
+    MainContext::WatchdogGuard watchdog_guard_;
 };

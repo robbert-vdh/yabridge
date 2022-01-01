@@ -60,7 +60,7 @@ class YaProgramListData : public Steinberg::Vst::IProgramListData {
      */
     YaProgramListData(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to
@@ -156,7 +156,7 @@ class YaProgramListData : public Steinberg::Vst::IProgramListData {
                    Steinberg::IBStream* data) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

@@ -26,4 +26,4 @@ YaNoteExpressionController::ConstructArgs::ConstructArgs(
 
 YaNoteExpressionController::YaNoteExpressionController(
     ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

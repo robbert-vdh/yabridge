@@ -156,24 +156,24 @@ class YaProcessData {
 
     template <typename S>
     void serialize(S& s) {
-        s.value4b(process_mode);
-        s.value4b(symbolic_sample_size);
-        s.value4b(num_samples);
+        s.value4b(process_mode_);
+        s.value4b(symbolic_sample_size_);
+        s.value4b(num_samples_);
 
         // Both of these fields only store metadata. The actual audio is sent
         // using an accompanying `AudioShmBuffer` object.
-        s.container(inputs, max_num_speakers);
-        s.container(outputs, max_num_speakers);
+        s.container(inputs_, max_num_speakers);
+        s.container(outputs_, max_num_speakers);
 
         // The output parameter changes and events will remain empty on the
         // plugin side, so by serializing them we merely indicate to the Wine
         // plugin host whether the host supports them or not
-        s.object(input_parameter_changes);
-        s.ext(output_parameter_changes, bitsery::ext::InPlaceOptional{});
-        s.ext(input_events, bitsery::ext::InPlaceOptional{});
-        s.ext(output_events, bitsery::ext::InPlaceOptional{});
+        s.object(input_parameter_changes_);
+        s.ext(output_parameter_changes_, bitsery::ext::InPlaceOptional{});
+        s.ext(input_events_, bitsery::ext::InPlaceOptional{});
+        s.ext(output_events_, bitsery::ext::InPlaceOptional{});
 
-        s.ext(process_context, bitsery::ext::InPlaceOptional{});
+        s.ext(process_context_, bitsery::ext::InPlaceOptional{});
 
         // We of course won't serialize the `reconstructed_process_data` and all
         // of the `output*` fields defined below it
@@ -185,7 +185,7 @@ class YaProcessData {
     /**
      * The processing mode copied directly from the input struct.
      */
-    int32 process_mode;
+    int32 process_mode_;
 
     /**
      * The symbolic sample size (see `Steinberg::Vst::SymbolicSampleSizes`) is
@@ -193,12 +193,12 @@ class YaProcessData {
      * union of array of either single or double precision floating point
      * arrays. This field determines which of those variants should be used.
      */
-    int32 symbolic_sample_size;
+    int32 symbolic_sample_size_;
 
     /**
      * The number of samples in each audio buffer.
      */
-    int32 num_samples;
+    int32 num_samples_;
 
     /**
      * This contains metadata about the input buffers for every bus. During
@@ -206,7 +206,7 @@ class YaProcessData {
      * be set to point to our shared memory surface that holds the actual audio
      * data.
      */
-    boost::container::small_vector<Steinberg::Vst::AudioBusBuffers, 8> inputs;
+    boost::container::small_vector<Steinberg::Vst::AudioBusBuffers, 8> inputs_;
 
     /**
      * This contains metadata about the output buffers for every bus. During
@@ -214,35 +214,35 @@ class YaProcessData {
      * be set to point to our shared memory surface that holds the actual audio
      * data.
      */
-    boost::container::small_vector<Steinberg::Vst::AudioBusBuffers, 8> outputs;
+    boost::container::small_vector<Steinberg::Vst::AudioBusBuffers, 8> outputs_;
 
     /**
      * Incoming parameter changes.
      */
-    YaParameterChanges input_parameter_changes;
+    YaParameterChanges input_parameter_changes_;
 
     /**
      * If the host supports it, this will allow the plugin to output parameter
      * changes. Otherwise we'll also pass a null pointer to the plugin.
      */
-    std::optional<YaParameterChanges> output_parameter_changes;
+    std::optional<YaParameterChanges> output_parameter_changes_;
 
     /**
      * Incoming events.
      */
-    std::optional<YaEventList> input_events;
+    std::optional<YaEventList> input_events_;
 
     /**
      * If the host supports it, this will allow the plugin to output events,
      * such as note events. Otherwise we'll also pass a null pointer to the
      * plugin.
      */
-    std::optional<YaEventList> output_events;
+    std::optional<YaEventList> output_events_;
 
     /**
      * Some more information about the project and transport.
      */
-    std::optional<Steinberg::Vst::ProcessContext> process_context;
+    std::optional<Steinberg::Vst::ProcessContext> process_context_;
 
    private:
     // These last few members are used on the Wine plugin host side to
@@ -260,12 +260,12 @@ class YaProcessData {
      *       directly receive data into this object, avoiding the need for any
      *       allocations.
      */
-    Response response_object;
+    Response response_object_;
 
     /**
      * The process data we reconstruct from the other fields during `get()`.
      */
-    Steinberg::Vst::ProcessData reconstructed_process_data;
+    Steinberg::Vst::ProcessData reconstructed_process_data_;
 };
 
 namespace Steinberg {

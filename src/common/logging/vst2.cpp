@@ -18,7 +18,7 @@
 
 #include <sstream>
 
-Vst2Logger::Vst2Logger(Logger& generic_logger) : logger(generic_logger) {}
+Vst2Logger::Vst2Logger(Logger& generic_logger) : logger_(generic_logger) {}
 
 std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
     if (is_dispatch) {
@@ -333,7 +333,7 @@ std::optional<std::string> opcode_to_string(bool is_dispatch, int opcode) {
 }
 
 void Vst2Logger::log_get_parameter(int index) {
-    if (logger.verbosity >= Logger::Verbosity::most_events) [[unlikely]] {
+    if (logger_.verbosity_ >= Logger::Verbosity::most_events) [[unlikely]] {
         std::ostringstream message;
         message << ">> getParameter() " << index;
 
@@ -342,7 +342,7 @@ void Vst2Logger::log_get_parameter(int index) {
 }
 
 void Vst2Logger::log_get_parameter_response(float value) {
-    if (logger.verbosity >= Logger::Verbosity::most_events) [[unlikely]] {
+    if (logger_.verbosity_ >= Logger::Verbosity::most_events) [[unlikely]] {
         std::ostringstream message;
         message << "   getParameter() :: " << value;
 
@@ -351,7 +351,7 @@ void Vst2Logger::log_get_parameter_response(float value) {
 }
 
 void Vst2Logger::log_set_parameter(int index, float value) {
-    if (logger.verbosity >= Logger::Verbosity::most_events) [[unlikely]] {
+    if (logger_.verbosity_ >= Logger::Verbosity::most_events) [[unlikely]] {
         std::ostringstream message;
         message << ">> setParameter() " << index << " = " << value;
 
@@ -360,7 +360,7 @@ void Vst2Logger::log_set_parameter(int index, float value) {
 }
 
 void Vst2Logger::log_set_parameter_response() {
-    if (logger.verbosity >= Logger::Verbosity::most_events) [[unlikely]] {
+    if (logger_.verbosity_ >= Logger::Verbosity::most_events) [[unlikely]] {
         log("   setParameter() :: OK");
     }
 }
@@ -373,7 +373,7 @@ void Vst2Logger::log_event(
     const Vst2Event::Payload& payload,
     float option,
     const std::optional<Vst2Event::Payload>& value_payload) {
-    if (logger.verbosity >= Logger::Verbosity::most_events) [[unlikely]] {
+    if (logger_.verbosity_ >= Logger::Verbosity::most_events) [[unlikely]] {
         if (should_filter_event(is_dispatch, opcode)) {
             return;
         }
@@ -402,7 +402,7 @@ void Vst2Logger::log_event(
                 overload{
                     [](const auto&) {},
                     [&](const DynamicSpeakerArrangement& speaker_arrangement) {
-                        message << "<" << speaker_arrangement.speakers.size()
+                        message << "<" << speaker_arrangement.speakers_.size()
                                 << " input_speakers>, ";
                     }},
                 *value_payload);
@@ -428,16 +428,16 @@ void Vst2Logger::log_event(
                 },
                 [&](const AEffect&) { message << "nullptr"; },
                 [&](const DynamicVstEvents& events) {
-                    message << "<" << events.events.size() << " midi_events";
-                    if (!events.sysex_data.empty()) {
-                        message << ", including " << events.sysex_data.size()
+                    message << "<" << events.events_.size() << " midi_events";
+                    if (!events.sysex_data_.empty()) {
+                        message << ", including " << events.sysex_data_.size()
                                 << " sysex_events>";
                     } else {
                         message << ">";
                     }
                 },
                 [&](const DynamicSpeakerArrangement& speaker_arrangement) {
-                    message << "<" << speaker_arrangement.speakers.size()
+                    message << "<" << speaker_arrangement.speakers_.size()
                             << " output_speakers>";
                 },
                 [&](const VstIOProperties&) { message << "<io_properties>"; },
@@ -469,7 +469,7 @@ void Vst2Logger::log_event_response(
     const Vst2EventResult::Payload& payload,
     const std::optional<Vst2EventResult::Payload>& value_payload,
     bool from_cache) {
-    if (logger.verbosity >= Logger::Verbosity::most_events) [[unlikely]] {
+    if (logger_.verbosity_ >= Logger::Verbosity::most_events) [[unlikely]] {
         if (should_filter_event(is_dispatch, opcode)) {
             return;
         }
@@ -490,7 +490,7 @@ void Vst2Logger::log_event_response(
                 overload{
                     [](const auto&) {},
                     [&](const DynamicSpeakerArrangement& speaker_arrangement) {
-                        message << ", <" << speaker_arrangement.speakers.size()
+                        message << ", <" << speaker_arrangement.speakers_.size()
                                 << " input_speakers>";
                     }},
                 *value_payload);
@@ -518,7 +518,7 @@ void Vst2Logger::log_event_response(
                             << " bytes>";
                 },
                 [&](const DynamicSpeakerArrangement& speaker_arrangement) {
-                    message << ", <" << speaker_arrangement.speakers.size()
+                    message << ", <" << speaker_arrangement.speakers_.size()
                             << " output_speakers>";
                 },
                 [&](const VstIOProperties&) { message << ", <io_properties>"; },
@@ -550,7 +550,7 @@ void Vst2Logger::log_event_response(
 
 bool Vst2Logger::should_filter_event(bool is_dispatch,
                                      int opcode) const noexcept {
-    if (logger.verbosity >= Logger::Verbosity::all_events) {
+    if (logger_.verbosity_ >= Logger::Verbosity::all_events) {
         return false;
     }
 

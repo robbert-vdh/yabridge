@@ -61,7 +61,7 @@ class YaPlugView : public Steinberg::IPlugView {
      */
     YaPlugView(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to
@@ -365,7 +365,7 @@ class YaPlugView : public Steinberg::IPlugView {
     checkSizeConstraint(Steinberg::ViewRect* rect) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

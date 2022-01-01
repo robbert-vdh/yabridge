@@ -25,4 +25,4 @@ YaInfoListener::ConstructArgs::ConstructArgs(
               object)) {}
 
 YaInfoListener::YaInfoListener(ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

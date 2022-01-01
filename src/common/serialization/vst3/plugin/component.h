@@ -62,7 +62,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
      */
     YaComponent(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * The response code and returned CID for a call to
@@ -281,7 +281,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
     getState(Steinberg::IBStream* state) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

@@ -70,7 +70,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * have to manually increase the reference count here for every plugin
      * factory instance we return.
      *
-     * @see plugin_factory
+     * @see plugin_factory_
      */
     Steinberg::IPluginFactory* get_plugin_factory();
 
@@ -93,7 +93,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * @param proxy_object The proxy object so we can access its host context
      *   and unique instance identifier.
      *
-     * @see plugin_proxies
+     * @see plugin_proxies_
      */
     void register_plugin_proxy(Vst3PluginProxyImpl& proxy_object);
 
@@ -105,19 +105,19 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * @param proxy_object The proxy object so we can access its unique instance
      *   identifier.
      *
-     * @see plugin_proxies
+     * @see plugin_proxies_
      */
     void unregister_plugin_proxy(Vst3PluginProxyImpl& proxy_object);
 
     /**
      * Send a control message to the Wine plugin host return the response. This
-     * is a shorthand for `sockets.host_vst_control.send_message` for use in
+     * is a shorthand for `sockets_.host_vst_control_.send_message()` for use in
      * VST3 interface implementations.
      */
     template <typename T>
     typename T::Response send_message(const T& object) {
-        return sockets.host_vst_control.send_message(
-            object, std::pair<Vst3Logger&, bool>(logger, true));
+        return sockets_.host_vst_control_.send_message(
+            object, std::pair<Vst3Logger&, bool>(logger_, true));
     }
 
     /**
@@ -128,8 +128,8 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      */
     template <typename T>
     typename T::Response send_audio_processor_message(const T& object) {
-        return sockets.send_audio_processor_message(
-            object, std::pair<Vst3Logger&, bool>(logger, true));
+        return sockets_.send_audio_processor_message(
+            object, std::pair<Vst3Logger&, bool>(logger_, true));
     }
 
     /**
@@ -142,9 +142,9 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
     typename T::Response& receive_audio_processor_message_into(
         const T& object,
         typename T::Response& response_object) {
-        return sockets.receive_audio_processor_message_into(
+        return sockets_.receive_audio_processor_message_into(
             object, response_object,
-            std::pair<Vst3Logger&, bool>(logger, true));
+            std::pair<Vst3Logger&, bool>(logger_, true));
     }
 
     /**
@@ -161,7 +161,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      */
     template <typename T>
     typename T::Response send_mutually_recursive_message(const T& object) {
-        return mutual_recursion.fork([&]() { return send_message(object); });
+        return mutual_recursion_.fork([&]() { return send_message(object); });
     }
 
     /**
@@ -178,21 +178,21 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
     template <std::invocable F>
     std::optional<std::invoke_result_t<F>> maybe_run_on_mutual_recursion_thread(
         F&& fn) {
-        return mutual_recursion.maybe_handle(std::forward<F>(fn));
+        return mutual_recursion_.maybe_handle(std::forward<F>(fn));
     }
 
     /**
      * The logging facility used for this instance of yabridge. Wraps around
      * `PluginBridge::generic_logger`.
      */
-    Vst3Logger logger;
+    Vst3Logger logger_;
 
    private:
     /**
      * Handles callbacks from the plugin to the host over the
-     * `vst_host_callback` sockets.
+     * `vst_host_callback_` sockets.
      */
-    std::jthread host_callback_handler;
+    std::jthread host_callback_handler_;
 
     /**
      * Our plugin factory. All information about the plugin and its supported
@@ -202,7 +202,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      *
      * @related get_plugin_factory
      */
-    Steinberg::IPtr<Vst3PluginFactoryProxyImpl> plugin_factory = nullptr;
+    Steinberg::IPtr<Vst3PluginFactoryProxyImpl> plugin_factory_ = nullptr;
 
     /**
      * All VST3 plugin objects we created from this plugin. We keep track of
@@ -215,7 +215,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * the destructor.
      */
     std::unordered_map<size_t, std::reference_wrapper<Vst3PluginProxyImpl>>
-        plugin_proxies;
+        plugin_proxies_;
 
     /**
      * In theory all object handling is safe iff the host also doesn't do
@@ -228,12 +228,12 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      *       `get_proxy()` never yields to the scheduler during audio
      *       processing, but it's still something we should avoid at all costs.
      */
-    std::shared_mutex plugin_proxies_mutex;
+    std::shared_mutex plugin_proxies_mutex_;
 
     /**
      * Used in `Vst3Bridge::send_mutually_recursive_message()` to be able to
      * execute functions from that same calling thread while we're waiting for a
      * response. This is used in `Vst3PlugViewProxyImpl::run_loop_tasks()`.
      */
-    MutualRecursionHelper<std::jthread> mutual_recursion;
+    MutualRecursionHelper<std::jthread> mutual_recursion_;
 };

@@ -63,7 +63,7 @@ class YaEditController : public Steinberg::Vst::IEditController {
      */
     YaEditController(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to
@@ -399,7 +399,7 @@ class YaEditController : public Steinberg::Vst::IEditController {
     createView(Steinberg::FIDString name) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

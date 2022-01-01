@@ -230,7 +230,9 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
      * Get this object's instance ID. Used in `IConnectionPoint` to identify and
      * connect specific objects.
      */
-    inline size_t instance_id() const noexcept { return arguments.instance_id; }
+    inline size_t instance_id() const noexcept {
+        return arguments_.instance_id;
+    }
 
     // These have to be defined here instead of in `YaPluginBase` because we
     // need to reference the `ConstructArgs`
@@ -343,7 +345,7 @@ class Vst3PluginProxy : public YaAudioPresentationLatency,
     void update_supported_interfaces(ConstructArgs&& updated_interfaces);
 
    private:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

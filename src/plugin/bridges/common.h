@@ -79,50 +79,50 @@ class PluginBridge {
     PluginBridge(PluginType plugin_type, F&& create_socket_instance)
         // This is still correct for VST3 plugins because we can configure an
         // entire directory (the module's bundle) at once
-        : config(load_config_for(get_this_file_location())),
-          info(plugin_type, config.vst3_prefer_32bit),
-          io_context(),
-          sockets(create_socket_instance(io_context, info)),
-          generic_logger(Logger::create_from_environment(
-              create_logger_prefix(sockets.base_dir))),
-          plugin_host(
-              config.group
+        : config_(load_config_for(get_this_file_location())),
+          info_(plugin_type, config_.vst3_prefer_32bit),
+          io_context_(),
+          sockets_(create_socket_instance(io_context_, info_)),
+          generic_logger_(Logger::create_from_environment(
+              create_logger_prefix(sockets_.base_dir_))),
+          plugin_host_(
+              config_.group
                   ? std::unique_ptr<HostProcess>(std::make_unique<GroupHost>(
-                        io_context,
-                        generic_logger,
-                        config,
-                        sockets,
-                        info,
+                        io_context_,
+                        generic_logger_,
+                        config_,
+                        sockets_,
+                        info_,
                         HostRequest{
                             .plugin_type = plugin_type,
-                            .plugin_path = info.windows_plugin_path.string(),
-                            .endpoint_base_dir = sockets.base_dir.string(),
+                            .plugin_path = info_.windows_plugin_path_.string(),
+                            .endpoint_base_dir = sockets_.base_dir_.string(),
                             .parent_pid = getpid()}))
                   : std::unique_ptr<HostProcess>(
                         std::make_unique<IndividualHost>(
-                            io_context,
-                            generic_logger,
-                            config,
-                            sockets,
-                            info,
-                            HostRequest{
-                                .plugin_type = plugin_type,
-                                .plugin_path =
-                                    info.windows_plugin_path.string(),
-                                .endpoint_base_dir = sockets.base_dir.string(),
-                                .parent_pid = getpid()}))),
-          has_realtime_priority(has_realtime_priority_promise.get_future()),
-          wine_io_handler([&]() {
+                            io_context_,
+                            generic_logger_,
+                            config_,
+                            sockets_,
+                            info_,
+                            HostRequest{.plugin_type = plugin_type,
+                                        .plugin_path =
+                                            info_.windows_plugin_path_.string(),
+                                        .endpoint_base_dir =
+                                            sockets_.base_dir_.string(),
+                                        .parent_pid = getpid()}))),
+          has_realtime_priority_(has_realtime_priority_promise_.get_future()),
+          wine_io_handler_([&]() {
               // We no longer run this thread with realtime scheduling because
               // plugins that produce a lot of FIXMEs could in theory cause
               // dropouts that way, but we still need to run this from a thread
               // to check whether we support it
-              has_realtime_priority_promise.set_value(
+              has_realtime_priority_promise_.set_value(
                   set_realtime_priority(true));
               set_realtime_priority(false);
               pthread_setname_np(pthread_self(), "wine-stdio");
 
-              io_context.run();
+              io_context_.run();
           }) {}
 
     virtual ~PluginBridge() noexcept {};
@@ -139,14 +139,15 @@ class PluginBridge {
                  << " (32-bit build)"
 #endif
                  << std::endl;
-        init_msg << "host:          '" << plugin_host->path().string() << "'"
+        init_msg << "host:          '" << plugin_host_->path().string() << "'"
                  << std::endl;
-        init_msg << "plugin:        '" << info.windows_plugin_path.string()
+        init_msg << "plugin:        '" << info_.windows_plugin_path_.string()
                  << "'" << std::endl;
         init_msg << "plugin type:   '"
-                 << plugin_type_to_string(info.plugin_type) << "'" << std::endl;
+                 << plugin_type_to_string(info_.plugin_type_) << "'"
+                 << std::endl;
         init_msg << "realtime:      ";
-        if (has_realtime_priority.get()) {
+        if (has_realtime_priority_.get()) {
             // Warn if `RLIMIT_RTTIME` is set to some low value. This can happen
             // when using PipeWire.
             if (auto rttime_limit = get_rttime_limit()) {
@@ -225,7 +226,7 @@ class PluginBridge {
                 << "memlock limit: 'WARNING: Could not fetch RLIMIT_MEMLOCK'"
                 << std::endl;
         }
-        init_msg << "sockets:       '" << sockets.base_dir.string() << "'"
+        init_msg << "sockets:       '" << sockets_.base_dir_.string() << "'"
                  << std::endl;
 
         init_msg << "wine prefix:   '";
@@ -239,10 +240,10 @@ class PluginBridge {
                 },
                 [&](const DefaultWinePrefix&) { init_msg << "<default>"; },
             },
-            info.wine_prefix);
+            info_.wine_prefix_);
         init_msg << "'" << std::endl;
 
-        init_msg << "wine version:  '" << info.wine_version() << "'"
+        init_msg << "wine version:  '" << info_.wine_version() << "'"
                  << std::endl;
         init_msg << std::endl;
 
@@ -251,21 +252,21 @@ class PluginBridge {
         // useful but it'll be very noisy and it's likely going to be clear from
         // the shown values anyways.
         init_msg << "config from:   '";
-        if (config.matched_file && config.matched_pattern) {
-            init_msg << config.matched_file->string() << ", section \""
-                     << *config.matched_pattern << "\"";
+        if (config_.matched_file && config_.matched_pattern) {
+            init_msg << config_.matched_file->string() << ", section \""
+                     << *config_.matched_pattern << "\"";
         } else {
             init_msg << "<defaults>";
         }
         init_msg << "'" << std::endl;
 
         init_msg << "hosting mode:  '";
-        if (config.group) {
-            init_msg << "plugin group \"" << *config.group << "\"";
+        if (config_.group) {
+            init_msg << "plugin group \"" << *config_.group << "\"";
         } else {
             init_msg << "individually";
         }
-        switch (info.plugin_arch) {
+        switch (info_.plugin_arch_) {
             case LibArchitecture::dll_32:
                 init_msg << ", 32-bit";
                 break;
@@ -277,33 +278,33 @@ class PluginBridge {
 
         init_msg << "other options: ";
         std::vector<std::string> other_options;
-        if (config.disable_pipes) {
+        if (config_.disable_pipes) {
             other_options.push_back(
                 "hack: pipes disabled, plugin output will go to \"" +
-                config.disable_pipes->string() + "\"");
+                config_.disable_pipes->string() + "\"");
         }
-        if (config.editor_coordinate_hack) {
+        if (config_.editor_coordinate_hack) {
             other_options.push_back("editor: coordinate hack");
         }
-        if (config.editor_force_dnd) {
+        if (config_.editor_force_dnd) {
             other_options.push_back("editor: force drag-and-drop");
         }
-        if (config.editor_xembed) {
+        if (config_.editor_xembed) {
             other_options.push_back("editor: XEmbed");
         }
-        if (config.frame_rate) {
+        if (config_.frame_rate) {
             std::ostringstream option;
             option << "frame rate: " << std::setprecision(2)
-                   << *config.frame_rate << " fps";
+                   << *config_.frame_rate << " fps";
             other_options.push_back(option.str());
         }
-        if (config.hide_daw) {
+        if (config_.hide_daw) {
             other_options.push_back("hack: hide DAW name");
         }
-        if (config.vst3_no_scaling) {
+        if (config_.vst3_no_scaling) {
             other_options.push_back("vst3: no GUI scaling");
         }
-        if (config.vst3_prefer_32bit) {
+        if (config_.vst3_prefer_32bit) {
             other_options.push_back("vst3: prefer 32-bit");
         }
         if (!other_options.empty()) {
@@ -315,14 +316,14 @@ class PluginBridge {
         // To make debugging easier, we'll print both unrecognized options (that
         // might be left over when an option gets removed) as well as options
         // have the wrong argument types
-        if (!config.invalid_options.empty()) {
+        if (!config_.invalid_options.empty()) {
             init_msg << "invalid arguments: "
-                     << join_quoted_strings(config.invalid_options)
+                     << join_quoted_strings(config_.invalid_options)
                      << " (check the readme for more information)" << std::endl;
         }
-        if (!config.unknown_options.empty()) {
+        if (!config_.unknown_options.empty()) {
             init_msg << "unrecognized options: "
-                     << join_quoted_strings(config.unknown_options)
+                     << join_quoted_strings(config_.unknown_options)
                      << std::endl;
         }
         init_msg << std::endl;
@@ -345,7 +346,7 @@ class PluginBridge {
         init_msg << std::endl;
 
         for (std::string line = ""; std::getline(init_msg, line);) {
-            generic_logger.log(line);
+            generic_logger_.log(line);
         }
     }
 
@@ -367,14 +368,14 @@ class PluginBridge {
         // and throw when it is not. The alternative would be to rewrite this to
         // using `async_accept`, Boost.Asio timers, and another IO context, but
         // I feel like this a much simpler solution.
-        host_watchdog_handler = std::jthread([&](std::stop_token st) {
+        host_watchdog_handler_ = std::jthread([&](std::stop_token st) {
             using namespace std::literals::chrono_literals;
 
             pthread_setname_np(pthread_self(), "watchdog");
 
             while (!st.stop_requested()) {
-                if (!plugin_host->running()) {
-                    generic_logger.log(
+                if (!plugin_host_->running()) {
+                    generic_logger_.log(
                         "The Wine host process has exited unexpectedly. Check "
                         "the output above for more information.");
 
@@ -396,9 +397,9 @@ class PluginBridge {
         });
 #endif
 
-        sockets.connect();
+        sockets_.connect();
 #ifndef WITH_WINEDBG
-        host_watchdog_handler.request_stop();
+        host_watchdog_handler_.request_stop();
 #endif
     }
 
@@ -410,13 +411,13 @@ class PluginBridge {
      */
     void warn_on_version_mismatch(const std::string& host_version) {
         if (host_version != yabridge_git_version) {
-            generic_logger.log(
+            generic_logger_.log(
                 "WARNING: The host application's version does not match");
-            generic_logger.log(
+            generic_logger_.log(
                 "         this plugin's. If you just updated yabridge, then");
-            generic_logger.log(
+            generic_logger_.log(
                 "         you may need rerun 'yabridgectl sync' first to");
-            generic_logger.log("         update your plugins.");
+            generic_logger_.log("         update your plugins.");
 
             send_notification(
                 "Version mismatch",
@@ -432,24 +433,24 @@ class PluginBridge {
      *
      * @see ../utils.h:load_config_for
      */
-    Configuration config;
+    Configuration config_;
 
     /**
      * Information about the plugin we're bridging.
      */
-    const PluginInfo info;
+    const PluginInfo info_;
 
-    boost::asio::io_context io_context;
+    boost::asio::io_context io_context_;
 
     /**
      * The sockets used for communication with the Wine process.
      *
-     * @remark `sockets.connect()` should not be called directly.
+     * @remark `sockets_.connect()` should not be called directly.
      * `connect_sockets_guarded()` should be used instead.
      *
      * @see PluginBridge::connect_sockets_guarded
      */
-    TSockets sockets;
+    TSockets sockets_;
 
     /**
      * The logging facility used for this instance of yabridge. See
@@ -457,20 +458,20 @@ class PluginBridge {
      *
      * @see Logger::create_from_env
      */
-    Logger generic_logger;
+    Logger generic_logger_;
 
     /**
      * The Wine process hosting our plugins. In the case of group hosts a
      * `PluginBridge` instance doesn't actually own a process, but rather either
      * spawns a new detached process or it connects to an existing one.
      */
-    std::unique_ptr<HostProcess> plugin_host;
+    std::unique_ptr<HostProcess> plugin_host_;
 
    private:
     /**
-     * The promise belonging to `has_realtime_priority` below.
+     * The promise belonging to `has_realtime_priority_` below.
      */
-    std::promise<bool> has_realtime_priority_promise;
+    std::promise<bool> has_realtime_priority_promise_;
 
    public:
     /**
@@ -480,13 +481,13 @@ class PluginBridge {
      * that's initializing the plugin because some DAWs may do that from the UI
      * thread.
      */
-    std::future<bool> has_realtime_priority;
+    std::future<bool> has_realtime_priority_;
 
     /**
-     * Runs the Boost.Asio `io_context` thread for logging the Wine process
+     * Runs the Boost.Asio `io_context_` thread for logging the Wine process
      * STDOUT and STDERR messages.
      */
-    std::jthread wine_io_handler;
+    std::jthread wine_io_handler_;
 
    private:
     /**
@@ -496,5 +497,5 @@ class PluginBridge {
      * detach the thread as it has to check whether the VST host is still
      * running.
      */
-    std::jthread host_watchdog_handler;
+    std::jthread host_watchdog_handler_;
 };

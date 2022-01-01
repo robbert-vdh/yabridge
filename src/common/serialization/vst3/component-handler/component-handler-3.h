@@ -61,7 +61,7 @@ class YaComponentHandler3 : public Steinberg::Vst::IComponentHandler3 {
      */
     YaComponentHandler3(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * The arguments needed to create a proxy object for the context menu
@@ -110,7 +110,7 @@ class YaComponentHandler3 : public Steinberg::Vst::IComponentHandler3 {
                       const Steinberg::Vst::ParamID* paramID) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

@@ -62,7 +62,7 @@ class YaNoteExpressionPhysicalUIMapping
      */
     YaNoteExpressionPhysicalUIMapping(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * The response code and returned info for a call to
@@ -115,7 +115,7 @@ class YaNoteExpressionPhysicalUIMapping
                          Steinberg::Vst::PhysicalUIMapList& list) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

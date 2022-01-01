@@ -107,7 +107,7 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
      */
     YaConnectionPoint(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to `IConnectionPoint::connect(other)` to
@@ -204,7 +204,7 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
     notify(Steinberg::Vst::IMessage* message) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

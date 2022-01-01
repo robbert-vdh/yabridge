@@ -21,14 +21,15 @@
 Vst3ConnectionPointProxyImpl::Vst3ConnectionPointProxyImpl(
     Vst3Bridge& bridge,
     Vst3ConnectionPointProxy::ConstructArgs&& args) noexcept
-    : Vst3ConnectionPointProxy(std::move(args)), bridge(bridge) {}
+    : Vst3ConnectionPointProxy(std::move(args)), bridge_(bridge) {}
 
 tresult PLUGIN_API
 Vst3ConnectionPointProxyImpl::queryInterface(const Steinberg::TUID _iid,
                                              void** obj) {
     const tresult result = Vst3ConnectionPointProxy::queryInterface(_iid, obj);
-    bridge.logger.log_query_interface("In IConnectionPoint::queryInterface()",
-                                      result, Steinberg::FUID::fromTUID(_iid));
+    bridge_.logger_.log_query_interface("In IConnectionPoint::queryInterface()",
+                                        result,
+                                        Steinberg::FUID::fromTUID(_iid));
 
     return result;
 }
@@ -56,7 +57,7 @@ Vst3ConnectionPointProxyImpl::notify(Steinberg::Vst::IMessage* message) {
         // need to use our mutual recursion mechanism. Luckily only Ardour uses
         // connection proxies, so if this ends up breaking something it will
         // only affect Ardour.
-        return bridge.send_mutually_recursive_message(
+        return bridge_.send_mutually_recursive_message(
             YaConnectionPoint::Notify{.instance_id = owner_instance_id(),
                                       .message_ptr = YaMessagePtr(*message)});
     } else {

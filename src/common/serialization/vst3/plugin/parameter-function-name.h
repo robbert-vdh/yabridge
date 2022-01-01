@@ -61,7 +61,7 @@ class YaParameterFunctionName : public Steinberg::Vst::IParameterFunctionName {
      */
     YaParameterFunctionName(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * The response code and returned parameter ID for a call to
@@ -106,7 +106,7 @@ class YaParameterFunctionName : public Steinberg::Vst::IParameterFunctionName {
         Steinberg::Vst::ParamID& paramID) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

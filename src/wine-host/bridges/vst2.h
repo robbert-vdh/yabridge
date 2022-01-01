@@ -49,7 +49,7 @@ class Vst2Bridge : public HostBridge {
      *   dangling Wine processes.
      *
      * @note The object has to be constructed from the same thread that calls
-     *   `main_context.run()`.
+     *   `main_context_.run()`.
      *
      * @throw std::runtime_error Thrown when the VST plugin could not be loaded,
      *   or if communication could not be set up.
@@ -103,14 +103,14 @@ class Vst2Bridge : public HostBridge {
      * This only has to be used instead of directly writing to `std::cerr` when
      * the message should be hidden on lower verbosity levels.
      */
-    Vst2Logger logger;
+    Vst2Logger logger_;
 
     /**
      * The configuration for this instance of yabridge based on the `.so` file
      * that got loaded by the host. This configuration gets loaded on the plugin
      * side, and then sent over to the Wine host as part of the startup process.
      */
-    Configuration config;
+    Configuration config_;
 
     /**
      * A shared memory object we'll write the input audio buffers to on the
@@ -123,21 +123,21 @@ class Vst2Bridge : public HostBridge {
      * size and the processing precision indicated by the host so we know how
      * large this buffer needs to be in advance.
      */
-    std::optional<AudioShmBuffer> process_buffers;
+    std::optional<AudioShmBuffer> process_buffers_;
 
     /**
      * Pointers to the input channels in process_buffers so we can pass them to
      * the plugin. These can be either `float*` or `double*`, so we sadly have
      * to use void pointers here.
      */
-    std::vector<void*> process_buffers_input_pointers;
+    std::vector<void*> process_buffers_input_pointers_;
 
     /**
      * Pointers to the output channels in process_buffers so we can pass them to
      * the plugin. These can be either `float*` or `double*`, so we sadly have
      * to use void pointers here.
      */
-    std::vector<void*> process_buffers_output_pointers;
+    std::vector<void*> process_buffers_output_pointers_;
 
     /**
      * The maximum number of samples the host will pass to the plugin during
@@ -149,14 +149,14 @@ class Vst2Bridge : public HostBridge {
      * called. In that case we'll use the value obtained through
      * `audioMasterGetBlockSize()` instead.
      */
-    std::optional<uint32_t> max_samples_per_block;
+    std::optional<uint32_t> max_samples_per_block_;
 
     /**
      * Whether the host is going to send double precision audio or not. This
      * will only be the case if the host has called `effSetProcessPrecision()`
      * with `kVstProcessPrecision64` before the call to `effMainsChanged()`.
      */
-    bool double_precision = false;
+    bool double_precision_ = false;
 
     /**
      * We'll store the last transport information obtained from the host as a
@@ -165,9 +165,9 @@ class Vst2Bridge : public HostBridge {
      * communication, we'll prefetch the current transport information in the
      * plugin as part of the audio processing call.
      *
-     * @see cached_time_info
+     * @see cached_time_info_
      */
-    VstTimeInfo last_time_info;
+    VstTimeInfo last_time_info_;
 
     /**
      * This will temporarily cache the current time info during an audio
@@ -175,13 +175,13 @@ class Vst2Bridge : public HostBridge {
      * Some faulty plugins may even request this information for every sample,
      * which would otherwise cause a very noticeable performance hit.
      */
-    ScopedValueCache<VstTimeInfo> time_info_cache;
+    ScopedValueCache<VstTimeInfo> time_info_cache_;
 
     /**
      * Some plugins will also ask for the current process level during audio
      * processing, so we'll also prefetch that to prevent expensive callbacks.
      */
-    ScopedValueCache<int> process_level_cache;
+    ScopedValueCache<int> process_level_cache_;
 
     // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
 #pragma GCC diagnostic push
@@ -192,7 +192,7 @@ class Vst2Bridge : public HostBridge {
      * Boost.DLL to work here, so we'll just load the VST plugisn by hand.
      */
     std::unique_ptr<std::remove_pointer_t<HMODULE>, decltype(&FreeLibrary)>
-        plugin_handle;
+        plugin_handle_;
 
 #pragma GCC diagnostic pop
 
@@ -200,23 +200,23 @@ class Vst2Bridge : public HostBridge {
      * The loaded plugin's `AEffect` struct, obtained using the above library
      * handle.
      */
-    AEffect* plugin;
+    AEffect* plugin_;
 
     /**
      * Whether `effOpen()` has already been called. Used in
      * `HostBridge::inhibits_event_loop` to work around a bug in T-RackS 5.
      */
-    bool is_initialized = false;
+    bool is_initialized_ = false;
 
     /**
      * The thread that responds to `getParameter` and `setParameter` requests.
      */
-    Win32Thread parameters_handler;
+    Win32Thread parameters_handler_;
     /**
      * The thread that handles calls to `processReplacing` (and `process` as a
      * fallback) and `processDoubleReplacing`.
      */
-    Win32Thread process_replacing_handler;
+    Win32Thread process_replacing_handler_;
 
     /**
      * All sockets used for communicating with this specific plugin.
@@ -225,14 +225,14 @@ class Vst2Bridge : public HostBridge {
      *       sockets will be closed first, and we can then safely wait for the
      *       threads to exit.
      */
-    Vst2Sockets<Win32Thread> sockets;
+    Vst2Sockets<Win32Thread> sockets_;
 
     /**
      * The plugin editor window. Allows embedding the plugin's editor into a
      * Wine window, and embedding that Wine window into a window provided by the
      * host. Should be empty when the editor is not open.
      */
-    std::optional<Editor> editor;
+    std::optional<Editor> editor_;
 
     /**
      * The MIDI events that have been received **and processed** since the last
@@ -246,7 +246,7 @@ class Vst2Bridge : public HostBridge {
      * `effProcessEvents()` call.
      */
     boost::container::small_vector<DynamicVstEvents, 1>
-        next_audio_buffer_midi_events;
+        next_audio_buffer_midi_events_;
     /**
      * Whether `next_audio_buffer_midi_events` should be cleared before
      * inserting new events.
@@ -256,12 +256,12 @@ class Vst2Bridge : public HostBridge {
      *       event to stay alive if there have not been any new MIDI events
      *       during the current processing cycle.
      */
-    bool should_clear_midi_events = false;
+    bool should_clear_midi_events_ = false;
     /**
      * Mutex for locking the above event queue, since recieving and processing
      * now happens in two different threads.
      */
-    std::mutex next_buffer_midi_events_mutex;
+    std::mutex next_buffer_midi_events_mutex_;
 
     /**
      * Used to allow the responses to host callbacks to be handled on the same
@@ -272,8 +272,8 @@ class Vst2Bridge : public HostBridge {
      * See `mutually_recursive_callbacks` and
      * `safe_mutually_recursive_requests` in the implementation file for more
      * information on the callbacks where we want to use
-     * `mutual_recursion.fork()` to send them in a new thread, and the responses
-     * that have to be handled with `mutual_recursion.handle()`.
+     * `mutual_recursion_.fork()` to send them in a new thread, and the
+     * responses that have to be handled with `mutual_recursion_.handle()`.
      */
-    MutualRecursionHelper<Win32Thread> mutual_recursion;
+    MutualRecursionHelper<Win32Thread> mutual_recursion_;
 };

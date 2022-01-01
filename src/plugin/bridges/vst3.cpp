@@ -30,12 +30,12 @@ Vst3PluginBridge::Vst3PluginBridge()
           [](boost::asio::io_context& io_context, const PluginInfo& info) {
               return Vst3Sockets<std::jthread>(
                   io_context,
-                  generate_endpoint_base(info.native_library_path.filename()
+                  generate_endpoint_base(info.native_library_path_.filename()
                                              .replace_extension("")
                                              .string()),
                   true);
           }),
-      logger(generic_logger) {
+      logger_(generic_logger_) {
     log_init_message();
 
     // This will block until all sockets have been connected to by the Wine VST
@@ -47,12 +47,12 @@ Vst3PluginBridge::Vst3PluginBridge()
     // messaging mechanism is how we relay the VST3 communication protocol. As a
     // first thing, the Wine VST host will ask us for a copy of the
     // configuration.
-    host_callback_handler = std::jthread([&]() {
+    host_callback_handler_ = std::jthread([&]() {
         set_realtime_priority(true);
         pthread_setname_np(pthread_self(), "host-callbacks");
 
-        sockets.vst_host_callback.receive_messages(
-            std::pair<Vst3Logger&, bool>(logger, false),
+        sockets_.vst_host_callback_.receive_messages(
+            std::pair<Vst3Logger&, bool>(logger_, false),
             overload{
                 [&](const Vst3ContextMenuProxy::Destruct& request)
                     -> Vst3ContextMenuProxy::Destruct::Response {
@@ -68,14 +68,14 @@ Vst3PluginBridge::Vst3PluginBridge()
                     -> WantsConfiguration::Response {
                     warn_on_version_mismatch(request.host_version);
 
-                    return config;
+                    return config_;
                 },
                 [&](const YaComponentHandler::BeginEdit& request)
                     -> YaComponentHandler::BeginEdit::Response {
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.component_handler->beginEdit(
+                    return proxy_object.component_handler_->beginEdit(
                         request.id);
                 },
                 [&](const YaComponentHandler::PerformEdit& request)
@@ -83,7 +83,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.component_handler->performEdit(
+                    return proxy_object.component_handler_->performEdit(
                         request.id, request.value_normalized);
                 },
                 [&](const YaComponentHandler::EndEdit& request)
@@ -91,7 +91,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.component_handler->endEdit(request.id);
+                    return proxy_object.component_handler_->endEdit(request.id);
                 },
                 [&](const YaComponentHandler::RestartComponent& request)
                     -> YaComponentHandler::RestartComponent::Response {
@@ -102,7 +102,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                     // of our caches whenever a plugin requests a restart
                     proxy_object.clear_caches();
 
-                    return proxy_object.component_handler->restartComponent(
+                    return proxy_object.component_handler_->restartComponent(
                         request.flags);
                 },
                 [&](const YaComponentHandler2::SetDirty& request)
@@ -110,7 +110,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.component_handler_2->setDirty(
+                    return proxy_object.component_handler_2_->setDirty(
                         request.state);
                 },
                 [&](const YaComponentHandler2::RequestOpenEditor& request)
@@ -118,7 +118,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.component_handler_2->requestOpenEditor(
+                    return proxy_object.component_handler_2_->requestOpenEditor(
                         request.name.c_str());
                 },
                 [&](const YaComponentHandler2::StartGroupEdit& request)
@@ -126,14 +126,14 @@ Vst3PluginBridge::Vst3PluginBridge()
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.component_handler_2->startGroupEdit();
+                    return proxy_object.component_handler_2_->startGroupEdit();
                 },
                 [&](const YaComponentHandler2::FinishGroupEdit& request)
                     -> YaComponentHandler2::FinishGroupEdit::Response {
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.component_handler_2->finishGroupEdit();
+                    return proxy_object.component_handler_2_->finishGroupEdit();
                 },
                 [&](const YaComponentHandler3::CreateContextMenu& request)
                     -> YaComponentHandler3::CreateContextMenu::Response {
@@ -146,13 +146,15 @@ Vst3PluginBridge::Vst3PluginBridge()
                     //      (and only) `IPlugView*` instance returned by the
                     //      plugin.
                     Vst3PlugViewProxyImpl* plug_view =
-                        proxy_object.last_created_plug_view;
+                        proxy_object.last_created_plug_view_;
 
                     Steinberg::IPtr<Steinberg::Vst::IContextMenu> context_menu =
                         Steinberg::owned(
-                            proxy_object.component_handler_3->createContextMenu(
-                                plug_view, request.param_id ? &*request.param_id
-                                                            : nullptr));
+                            proxy_object.component_handler_3_
+                                ->createContextMenu(plug_view,
+                                                    request.param_id
+                                                        ? &*request.param_id
+                                                        : nullptr));
 
                     if (context_menu) {
                         const size_t context_menu_id =
@@ -176,7 +178,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                                                  request.owner_instance_id);
 
                                          return proxy_object
-                                             .component_handler_bus_activation
+                                             .component_handler_bus_activation_
                                              ->requestBusActivation(
                                                  request.type, request.dir,
                                                  request.index, request.state);
@@ -186,7 +188,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.context_menus
+                    return proxy_object.context_menus_
                         .at(request.context_menu_id)
                         .menu->getItemCount();
                 },
@@ -196,7 +198,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                         get_proxy(request.owner_instance_id);
 
                     Vst3PluginProxyImpl::ContextMenu& context_menu =
-                        proxy_object.context_menus.at(request.context_menu_id);
+                        proxy_object.context_menus_.at(request.context_menu_id);
 
                     if (request.target) {
                         context_menu.targets[request.item.tag] =
@@ -217,7 +219,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                         get_proxy(request.owner_instance_id);
 
                     Vst3PluginProxyImpl::ContextMenu& context_menu =
-                        proxy_object.context_menus.at(request.context_menu_id);
+                        proxy_object.context_menus_.at(request.context_menu_id);
 
                     if (const auto it =
                             context_menu.targets.find(request.item.tag);
@@ -236,9 +238,9 @@ Vst3PluginBridge::Vst3PluginBridge()
 
                     // REAPER requires this to be run from its provided event
                     // loop or else it will likely segfault at some point
-                    return proxy_object.last_created_plug_view->run_gui_task(
+                    return proxy_object.last_created_plug_view_->run_gui_task(
                         [&, &proxy_object = proxy_object]() -> tresult {
-                            return proxy_object.context_menus
+                            return proxy_object.context_menus_
                                 .at(request.context_menu_id)
                                 .menu->popup(request.x, request.y);
                         });
@@ -248,7 +250,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                     const auto& [proxy_object, _] =
                         get_proxy(request.instance_id);
 
-                    return proxy_object.connection_point_proxy->notify(
+                    return proxy_object.connection_point_proxy_->notify(
                         &request.message_ptr);
                 },
                 [&](const YaHostApplication::GetName& request)
@@ -263,7 +265,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                     //       under some other host. We do this here to stay
                     //       consistent with the VST2 version, where it has to
                     //       be done on the plugin's side.
-                    if (config.hide_daw) {
+                    if (config_.hide_daw) {
                         // This is the only sane-ish way to copy a c-style
                         // string to an UTF-16 string buffer
                         Steinberg::UString128(product_name_override)
@@ -279,10 +281,11 @@ Vst3PluginBridge::Vst3PluginBridge()
                                 get_proxy(*request.owner_instance_id);
 
                             result =
-                                proxy_object.host_application->getName(name);
+                                proxy_object.host_application_->getName(name);
                         } else {
                             result =
-                                plugin_factory->host_application->getName(name);
+                                plugin_factory_->host_application_->getName(
+                                    name);
                         }
                     }
 
@@ -302,12 +305,12 @@ Vst3PluginBridge::Vst3PluginBridge()
                     //      (and only) `IPlugView*` instance returned by the
                     //      plugin.
                     Vst3PlugViewProxyImpl* plug_view =
-                        proxy_object.last_created_plug_view;
+                        proxy_object.last_created_plug_view_;
 
                     // REAPER requires this to be run from its provided event
                     // loop or else it will likely segfault at some point
                     return plug_view->run_gui_task([&]() -> tresult {
-                        return plug_view->plug_frame->resizeView(
+                        return plug_view->plug_frame_->resizeView(
                             plug_view, &request.new_size);
                     });
                 },
@@ -323,11 +326,11 @@ Vst3PluginBridge::Vst3PluginBridge()
                                 const auto& [proxy_object, _] =
                                     get_proxy(*request.owner_instance_id);
 
-                                return proxy_object.plug_interface_support
+                                return proxy_object.plug_interface_support_
                                     ->isPlugInterfaceSupported(
                                         request.iid.get_native_uid().data());
                             } else {
-                                return plugin_factory->plug_interface_support
+                                return plugin_factory_->plug_interface_support_
                                     ->isPlugInterfaceSupported(
                                         request.iid.get_native_uid().data());
                             }
@@ -338,7 +341,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                         get_proxy(request.owner_instance_id);
 
                     Steinberg::Vst::IProgress::ID out_id;
-                    const tresult result = proxy_object.progress->start(
+                    const tresult result = proxy_object.progress_->start(
                         request.type,
                         request.optional_description
                             ? u16string_to_tchar_pointer(
@@ -354,22 +357,22 @@ Vst3PluginBridge::Vst3PluginBridge()
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.progress->update(request.id,
-                                                         request.norm_value);
+                    return proxy_object.progress_->update(request.id,
+                                                          request.norm_value);
                 },
                 [&](const YaProgress::Finish& request)
                     -> YaProgress::Finish::Response {
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.progress->finish(request.id);
+                    return proxy_object.progress_->finish(request.id);
                 },
                 [&](const YaUnitHandler::NotifyUnitSelection& request)
                     -> YaUnitHandler::NotifyUnitSelection::Response {
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.unit_handler->notifyUnitSelection(
+                    return proxy_object.unit_handler_->notifyUnitSelection(
                         request.unit_id);
                 },
                 [&](const YaUnitHandler::NotifyProgramListChange& request)
@@ -377,7 +380,7 @@ Vst3PluginBridge::Vst3PluginBridge()
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.unit_handler->notifyProgramListChange(
+                    return proxy_object.unit_handler_->notifyProgramListChange(
                         request.list_id, request.program_index);
                 },
                 [&](const YaUnitHandler2::NotifyUnitByBusChange& request)
@@ -385,7 +388,8 @@ Vst3PluginBridge::Vst3PluginBridge()
                     const auto& [proxy_object, _] =
                         get_proxy(request.owner_instance_id);
 
-                    return proxy_object.unit_handler_2->notifyUnitByBusChange();
+                    return proxy_object.unit_handler_2_
+                        ->notifyUnitByBusChange();
                 },
             });
     });
@@ -394,8 +398,8 @@ Vst3PluginBridge::Vst3PluginBridge()
 Vst3PluginBridge::~Vst3PluginBridge() noexcept {
     try {
         // Drop all work make sure all sockets are closed
-        plugin_host->terminate();
-        io_context.stop();
+        plugin_host_->terminate();
+        io_context_.stop();
     } catch (const boost::system::system_error&) {
         // It could be that the sockets have already been closed or that the
         // process has already exited (at which point we probably won't be
@@ -409,56 +413,56 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
     // the plugin factory with an `IPtr` ourselves so it cannot be freed before
     // `Vst3PluginBridge` gets freed. This is needed for REAPER as REAPER does
     // not call `ModuleExit()`.
-    if (!plugin_factory) {
+    if (!plugin_factory_) {
         // Set up the plugin factory, since this is the first thing the host
         // will request after loading the module. Host callback handlers should
         // have started before this since the Wine plugin host will request a
         // copy of the configuration during its initialization.
         Vst3PluginFactoryProxy::ConstructArgs factory_args =
-            sockets.host_vst_control.send_message(
+            sockets_.host_vst_control_.send_message(
                 Vst3PluginFactoryProxy::Construct{},
-                std::pair<Vst3Logger&, bool>(logger, true));
-        plugin_factory = Steinberg::owned(
+                std::pair<Vst3Logger&, bool>(logger_, true));
+        plugin_factory_ = Steinberg::owned(
             new Vst3PluginFactoryProxyImpl(*this, std::move(factory_args)));
     }
 
     // Because we're returning a raw pointer, we have to increase the reference
     // count ourselves
-    plugin_factory->addRef();
+    plugin_factory_->addRef();
 
-    return plugin_factory;
+    return plugin_factory_;
 }
 
 std::pair<Vst3PluginProxyImpl&, std::shared_lock<std::shared_mutex>>
 Vst3PluginBridge::get_proxy(size_t instance_id) noexcept {
-    std::shared_lock lock(plugin_proxies_mutex);
+    std::shared_lock lock(plugin_proxies_mutex_);
 
     return std::pair<Vst3PluginProxyImpl&, std::shared_lock<std::shared_mutex>>(
-        plugin_proxies.at(instance_id).get(), std::move(lock));
+        plugin_proxies_.at(instance_id).get(), std::move(lock));
 }
 
 void Vst3PluginBridge::register_plugin_proxy(
     Vst3PluginProxyImpl& proxy_object) {
-    std::unique_lock lock(plugin_proxies_mutex);
+    std::unique_lock lock(plugin_proxies_mutex_);
 
-    plugin_proxies.emplace(proxy_object.instance_id(),
-                           std::ref<Vst3PluginProxyImpl>(proxy_object));
+    plugin_proxies_.emplace(proxy_object.instance_id(),
+                            std::ref<Vst3PluginProxyImpl>(proxy_object));
 
     // For optimization reaons we use dedicated sockets for functions that will
     // be run in the audio processing loop
     if (proxy_object.YaAudioProcessor::supported() ||
         proxy_object.YaComponent::supported()) {
-        sockets.add_audio_processor_and_connect(proxy_object.instance_id());
+        sockets_.add_audio_processor_and_connect(proxy_object.instance_id());
     }
 }
 
 void Vst3PluginBridge::unregister_plugin_proxy(
     Vst3PluginProxyImpl& proxy_object) {
-    std::lock_guard lock(plugin_proxies_mutex);
+    std::lock_guard lock(plugin_proxies_mutex_);
 
-    plugin_proxies.erase(proxy_object.instance_id());
+    plugin_proxies_.erase(proxy_object.instance_id());
     if (proxy_object.YaAudioProcessor::supported() ||
         proxy_object.YaComponent::supported()) {
-        sockets.remove_audio_processor(proxy_object.instance_id());
+        sockets_.remove_audio_processor(proxy_object.instance_id());
     }
 }

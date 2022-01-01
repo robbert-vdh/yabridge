@@ -21,7 +21,7 @@
 Vst3PlugFrameProxyImpl::Vst3PlugFrameProxyImpl(
     Vst3Bridge& bridge,
     Vst3PlugFrameProxy::ConstructArgs&& args) noexcept
-    : Vst3PlugFrameProxy(std::move(args)), bridge(bridge) {
+    : Vst3PlugFrameProxy(std::move(args)), bridge_(bridge) {
     // The lifecycle of this object is managed together with that of the plugin
     // object instance this host context got passed to
 }
@@ -29,8 +29,9 @@ Vst3PlugFrameProxyImpl::Vst3PlugFrameProxyImpl(
 tresult PLUGIN_API
 Vst3PlugFrameProxyImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
     const tresult result = Vst3PlugFrameProxy::queryInterface(_iid, obj);
-    bridge.logger.log_query_interface("In IPlugFrame::queryInterface()", result,
-                                      Steinberg::FUID::fromTUID(_iid));
+    bridge_.logger_.log_query_interface("In IPlugFrame::queryInterface()",
+                                        result,
+                                        Steinberg::FUID::fromTUID(_iid));
 
     return result;
 }
@@ -46,12 +47,12 @@ Vst3PlugFrameProxyImpl::resizeView(Steinberg::IPlugView* /*view*/,
         // Resize the editor wrapper window in advance. We will do another
         // resize automatically on `IPlugView::onSize()`, but this should make
         // resizes look a bit smoother.
-        bridge.maybe_resize_editor(owner_instance_id(), *newSize);
+        bridge_.maybe_resize_editor(owner_instance_id(), *newSize);
 
         // We have to use this special sending function here so we can handle
         // calls to `IPlugView::onSize()` from this same thread (the UI thread).
         // See the docstring for more information.
-        return bridge.send_mutually_recursive_message(YaPlugFrame::ResizeView{
+        return bridge_.send_mutually_recursive_message(YaPlugFrame::ResizeView{
             .owner_instance_id = owner_instance_id(), .new_size = *newSize});
     } else {
         std::cerr

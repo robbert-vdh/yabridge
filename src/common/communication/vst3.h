@@ -264,10 +264,10 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
                     get_request_variant(request));
             };
 
-        this->receive_multi(logging
-                                ? std::optional(std::ref(logging->first.logger))
-                                : std::nullopt,
-                            process_message);
+        this->receive_multi(
+            logging ? std::optional(std::ref(logging->first.logger_))
+                    : std::nullopt,
+            process_message);
     }
 };
 
@@ -314,31 +314,31 @@ class Vst3Sockets final : public Sockets {
                 const boost::filesystem::path& endpoint_base_dir,
                 bool listen)
         : Sockets(endpoint_base_dir),
-          host_vst_control(io_context,
-                           (base_dir / "host_vst_control.sock").string(),
-                           listen),
-          vst_host_callback(io_context,
-                            (base_dir / "vst_host_callback.sock").string(),
+          host_vst_control_(io_context,
+                            (base_dir_ / "host_vst_control_.sock").string(),
                             listen),
-          io_context(io_context) {}
+          vst_host_callback_(io_context,
+                             (base_dir_ / "vst_host_callback_.sock").string(),
+                             listen),
+          io_context_(io_context) {}
 
     // NOLINTNEXTLINE(clang-analyzer-optin.cplusplus.VirtualCall)
     ~Vst3Sockets() noexcept override { close(); }
 
     void connect() override {
-        host_vst_control.connect();
-        vst_host_callback.connect();
+        host_vst_control_.connect();
+        vst_host_callback_.connect();
     }
 
     void close() override {
         // Manually close all sockets so we break out of any blocking operations
         // that may still be active
-        host_vst_control.close();
-        vst_host_callback.close();
+        host_vst_control_.close();
+        vst_host_callback_.close();
 
         // This map should be empty at this point, but who knows
-        std::lock_guard lock(audio_processor_sockets_mutex);
-        for (auto& [instance_id, socket] : audio_processor_sockets) {
+        std::lock_guard lock(audio_processor_sockets_mutex_);
+        for (auto& [instance_id, socket] : audio_processor_sockets_) {
             socket.close();
         }
     }
@@ -351,15 +351,15 @@ class Vst3Sockets final : public Sockets {
      * @param instance_id The object instance identifier of the socket.
      */
     void add_audio_processor_and_connect(size_t instance_id) {
-        std::lock_guard lock(audio_processor_sockets_mutex);
-        audio_processor_sockets.try_emplace(
-            instance_id, io_context,
-            (base_dir / ("host_vst_audio_processor_" +
-                         std::to_string(instance_id) + ".sock"))
+        std::lock_guard lock(audio_processor_sockets_mutex_);
+        audio_processor_sockets_.try_emplace(
+            instance_id, io_context_,
+            (base_dir_ / ("host_vst_audio_processor_" +
+                          std::to_string(instance_id) + ".sock"))
                 .string(),
             false);
 
-        audio_processor_sockets.at(instance_id).connect();
+        audio_processor_sockets_.at(instance_id).connect();
     }
 
     /**
@@ -385,28 +385,28 @@ class Vst3Sockets final : public Sockets {
         std::promise<void>& socket_listening_latch,
         F&& callback) {
         {
-            std::lock_guard lock(audio_processor_sockets_mutex);
-            audio_processor_sockets.try_emplace(
-                instance_id, io_context,
-                (base_dir / ("host_vst_audio_processor_" +
-                             std::to_string(instance_id) + ".sock"))
+            std::lock_guard lock(audio_processor_sockets_mutex_);
+            audio_processor_sockets_.try_emplace(
+                instance_id, io_context_,
+                (base_dir_ / ("host_vst_audio_processor_" +
+                              std::to_string(instance_id) + ".sock"))
                     .string(),
                 true);
         }
 
         socket_listening_latch.set_value();
-        audio_processor_sockets.at(instance_id).connect();
+        audio_processor_sockets_.at(instance_id).connect();
 
         // This `true` indicates that we want to reuse our serialization and
         // receiving buffers for all calls. This slightly reduces the amount of
         // allocations in the audio processing loop.
-        audio_processor_sockets.at(instance_id)
+        audio_processor_sockets_.at(instance_id)
             .template receive_messages<true>(std::nullopt,
                                              std::forward<F>(callback));
     }
 
     /**
-     * If `instance_id` is in `audio_processor_sockets`, then close its socket
+     * If `instance_id` is in `audio_processor_sockets_`, then close its socket
      * and remove it from the map. This is called from the destructor of
      * `Vst3PluginProxyImpl` on the plugin side and when handling
      * `Vst3PluginProxy::Destruct` on the Wine plugin host side.
@@ -417,10 +417,10 @@ class Vst3Sockets final : public Sockets {
      *   wasn't in the map.
      */
     bool remove_audio_processor(size_t instance_id) {
-        std::lock_guard lock(audio_processor_sockets_mutex);
-        if (audio_processor_sockets.contains(instance_id)) {
-            audio_processor_sockets.at(instance_id).close();
-            audio_processor_sockets.erase(instance_id);
+        std::lock_guard lock(audio_processor_sockets_mutex_);
+        if (audio_processor_sockets_.contains(instance_id)) {
+            audio_processor_sockets_.at(instance_id).close();
+            audio_processor_sockets_.erase(instance_id);
 
             return true;
         } else {
@@ -485,14 +485,14 @@ class Vst3Sockets final : public Sockets {
      * This will be listened on by the Wine plugin host when it calls
      * `receive_multi()`.
      */
-    Vst3MessageHandler<Thread, ControlRequest> host_vst_control;
+    Vst3MessageHandler<Thread, ControlRequest> host_vst_control_;
 
     /**
      * For sending callbacks from the plugin back to the host. After we have a
      * better idea of what our communication model looks like we'll probably
      * want to provide an abstraction similar to `Vst2EventHandler`.
      */
-    Vst3MessageHandler<Thread, CallbackRequest> vst_host_callback;
+    Vst3MessageHandler<Thread, CallbackRequest> vst_host_callback_;
 
    private:
     /**
@@ -508,12 +508,12 @@ class Vst3Sockets final : public Sockets {
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
         thread_local SerializationBuffer<256> audio_processor_buffer{};
 
-        return audio_processor_sockets.at(instance_id)
+        return audio_processor_sockets_.at(instance_id)
             .receive_into(object, response_object, logging,
                           audio_processor_buffer);
     }
 
-    boost::asio::io_context& io_context;
+    boost::asio::io_context& io_context_;
 
     /**
      * Every `IAudioProcessor` or `IComponent` instance (which likely implements
@@ -528,6 +528,6 @@ class Vst3Sockets final : public Sockets {
      */
     std::unordered_map<size_t,
                        Vst3MessageHandler<Thread, AudioProcessorRequest>>
-        audio_processor_sockets;
-    std::mutex audio_processor_sockets_mutex;
+        audio_processor_sockets_;
+    std::mutex audio_processor_sockets_mutex_;
 };

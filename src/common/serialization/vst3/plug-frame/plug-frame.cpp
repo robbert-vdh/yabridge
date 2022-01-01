@@ -23,4 +23,4 @@ YaPlugFrame::ConstructArgs::ConstructArgs(
     : supported(Steinberg::FUnknownPtr<Steinberg::IPlugFrame>(object)) {}
 
 YaPlugFrame::YaPlugFrame(ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

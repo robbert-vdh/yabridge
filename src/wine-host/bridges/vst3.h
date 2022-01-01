@@ -328,12 +328,12 @@ class Vst3Bridge : public HostBridge {
    public:
     /**
      * Send a callback message to the host return the response. This is a
-     * shorthand for `sockets.vst_host_callback.send_message` for use in VST3
+     * shorthand for `sockets.vst_host_callback_.send_message` for use in VST3
      * interface implementations.
      */
     template <typename T>
     typename T::Response send_message(const T& object) {
-        return sockets.vst_host_callback.send_message(object, std::nullopt);
+        return sockets_.vst_host_callback_.send_message(object, std::nullopt);
     }
 
     /**
@@ -373,11 +373,11 @@ class Vst3Bridge : public HostBridge {
      */
     template <typename T>
     typename T::Response send_mutually_recursive_message(const T& object) {
-        if (main_context.is_gui_thread()) {
-            return mutual_recursion.fork(
+        if (main_context_.is_gui_thread()) {
+            return mutual_recursion_.fork(
                 [&]() { return send_message(object); });
         } else {
-            return audio_thread_mutual_recursion.fork(
+            return audio_thread_mutual_recursion_.fork(
                 [&]() { return send_message(object); });
         }
     }
@@ -388,7 +388,7 @@ class Vst3Bridge : public HostBridge {
      * functions on the GUI thread. If another thread is currently calling that
      * function (from the UI thread), then we'll execute `fn` from the UI thread
      * using the IO context started in the above function. Otherwise `f` will be
-     * run on the UI thread through `main_context` as usual.
+     * run on the UI thread through `main_context_` as usual.
      *
      * @see Vst3Bridge::send_mutually_recursive_message
      */
@@ -398,10 +398,10 @@ class Vst3Bridge : public HostBridge {
         // then we'll call `fn` from that same thread. Otherwise we'll just
         // submit it to the main IO context.
         if (const auto result =
-                mutual_recursion.maybe_handle(std::forward<F>(fn))) {
+                mutual_recursion_.maybe_handle(std::forward<F>(fn))) {
             return *result;
         } else {
-            return main_context.run_in_context(std::forward<F>(fn)).get();
+            return main_context_.run_in_context(std::forward<F>(fn)).get();
         }
     }
 
@@ -413,11 +413,11 @@ class Vst3Bridge : public HostBridge {
      */
     template <std::invocable F>
     std::invoke_result_t<F> do_mutual_recursion_on_off_thread(F&& fn) {
-        if (const auto result = audio_thread_mutual_recursion.maybe_handle(
+        if (const auto result = audio_thread_mutual_recursion_.maybe_handle(
                 std::forward<F>(fn))) {
             return *result;
         } else {
-            return mutual_recursion.handle(std::forward<F>(fn));
+            return mutual_recursion_.handle(std::forward<F>(fn));
         }
     }
 
@@ -429,7 +429,7 @@ class Vst3Bridge : public HostBridge {
      * This only has to be used instead of directly writing to `std::cerr` when
      * the message should be hidden on lower verbosity levels.
      */
-    Vst3Logger logger;
+    Vst3Logger logger_;
 
    private:
     /**
@@ -458,15 +458,15 @@ class Vst3Bridge : public HostBridge {
         const Steinberg::Vst::ProcessSetup& setup);
 
     /**
-     * Assign a unique identifier to an object and add it to `object_instances`.
-     * This will also set up listeners for `IAudioProcessor` and `IComponent`
-     * function calls.
+     * Assign a unique identifier to an object and add it to
+     * `object_instances_`. This will also set up listeners for
+     * `IAudioProcessor` and `IComponent` function calls.
      */
     size_t register_object_instance(
         Steinberg::IPtr<Steinberg::FUnknown> object);
 
     /**
-     * Remove an object from `object_instances`. Will also tear down the
+     * Remove an object from `object_instances_`. Will also tear down the
      * `IAudioProcessor`/`IComponent` socket if it had one.
      */
     void unregister_object_instance(size_t instance_id);
@@ -476,9 +476,9 @@ class Vst3Bridge : public HostBridge {
      * that got loaded by the host. This configuration gets loaded on the plugin
      * side, and then sent over to the Wine host as part of the startup process.
      */
-    Configuration config;
+    Configuration config_;
 
-    std::shared_ptr<VST3::Hosting::Module> module;
+    std::shared_ptr<VST3::Hosting::Module> module_;
 
     /**
      * All sockets used for communicating with this specific plugin.
@@ -487,7 +487,7 @@ class Vst3Bridge : public HostBridge {
      *       sockets will be closed first, and we can then safely wait for the
      *       threads to exit.
      */
-    Vst3Sockets<Win32Thread> sockets;
+    Vst3Sockets<Win32Thread> sockets_;
 
     /**
      * Used to assign unique identifiers to instances created for
@@ -495,13 +495,13 @@ class Vst3Bridge : public HostBridge {
      *
      * @related enerate_instance_id
      */
-    std::atomic_size_t current_instance_id;
+    std::atomic_size_t current_instance_id_;
 
     /**
      * The host context proxy object if we got passed a host context during a
      * call to `IPluginFactory3::setHostContext()` by the host.
      */
-    Steinberg::IPtr<Vst3HostContextProxy> plugin_factory_host_context;
+    Steinberg::IPtr<Vst3HostContextProxy> plugin_factory_host_context_;
 
     /**
      * These are all the objects we have created through the Windows VST3
@@ -512,7 +512,7 @@ class Vst3Bridge : public HostBridge {
      * will cause all pointers to it to get dropped and the object to be cleaned
      * up.
      */
-    std::unordered_map<size_t, Vst3PluginInstance> object_instances;
+    std::unordered_map<size_t, Vst3PluginInstance> object_instances_;
     /**
      * In theory all object handling is safe iff the host also doesn't do
      * anything weird even without locks. The only time a data race can occur is
@@ -526,7 +526,7 @@ class Vst3Bridge : public HostBridge {
      *       `get_instance()` never yields to the scheduler during audio
      *       processing, but it's still something we should avoid at all costs.
      */
-    std::shared_mutex object_instances_mutex;
+    std::shared_mutex object_instances_mutex_;
 
     /**
      * Used in `send_mutually_recursive_message()` to be able to execute
@@ -535,7 +535,7 @@ class Vst3Bridge : public HostBridge {
      * `do_mutual_recursion_on_off_thread()`) while we're waiting for a
      * response.
      */
-    MutualRecursionHelper<Win32Thread> mutual_recursion;
+    MutualRecursionHelper<Win32Thread> mutual_recursion_;
 
     /**
      * The same thing as above, but just for the pair of
@@ -553,5 +553,5 @@ class Vst3Bridge : public HostBridge {
      *       mutexes), but they may not interfere with the GUI thread if
      *       `IComponentHandler::performEdit()` wasn't called from there.
      */
-    MutualRecursionHelper<Win32Thread> audio_thread_mutual_recursion;
+    MutualRecursionHelper<Win32Thread> audio_thread_mutual_recursion_;
 };

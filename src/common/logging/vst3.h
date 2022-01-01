@@ -35,7 +35,7 @@ class Vst3Logger {
     /**
      * @see Logger::log
      */
-    inline void log(const std::string& message) { logger.log(message); }
+    inline void log(const std::string& message) { logger_.log(message); }
 
     /**
      * Log calls to `FUnknown::queryInterface`. This will separately log about
@@ -350,10 +350,10 @@ class Vst3Logger {
      */
     template <invocable_returning<std::string> F>
     inline void log_trace(F&& fn) {
-        logger.log_trace(std::forward<F>(fn));
+        logger_.log_trace(std::forward<F>(fn));
     }
 
-    Logger& logger;
+    Logger& logger_;
 
    private:
     /**
@@ -367,7 +367,7 @@ class Vst3Logger {
     bool log_request_base(bool is_host_vst,
                           Logger::Verbosity min_verbosity,
                           F callback) {
-        if (logger.verbosity >= min_verbosity) [[unlikely]] {
+        if (logger_.verbosity_ >= min_verbosity) [[unlikely]] {
             std::ostringstream message;
             if (is_host_vst) {
                 message << "[host -> vst] >> ";

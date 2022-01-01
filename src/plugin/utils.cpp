@@ -52,19 +52,19 @@ std::variant<OverridenWinePrefix, fs::path, DefaultWinePrefix> find_wine_prefix(
     fs::path windows_plugin_path);
 
 PluginInfo::PluginInfo(PluginType plugin_type, bool prefer_32bit_vst3)
-    : plugin_type(plugin_type),
-      native_library_path(get_this_file_location()),
+    : plugin_type_(plugin_type),
+      native_library_path_(get_this_file_location()),
       // As explained in the docstring, this is the actual Windows library. For
       // VST3 plugins that come in a module we should be loading that module
       // instead of the `.vst3` file within in, which is where
       // `windows_plugin_path` comes in.
-      windows_library_path(find_plugin_library(native_library_path,
-                                               plugin_type,
-                                               prefer_32bit_vst3)),
-      plugin_arch(find_dll_architecture(windows_library_path)),
-      windows_plugin_path(
-          normalize_plugin_path(windows_library_path, plugin_type)),
-      wine_prefix(find_wine_prefix(windows_plugin_path)) {}
+      windows_library_path_(find_plugin_library(native_library_path_,
+                                                plugin_type,
+                                                prefer_32bit_vst3)),
+      plugin_arch_(find_dll_architecture(windows_library_path_)),
+      windows_plugin_path_(
+          normalize_plugin_path(windows_library_path_, plugin_type)),
+      wine_prefix_(find_wine_prefix(windows_plugin_path_)) {}
 
 bp::environment PluginInfo::create_host_env() const {
     bp::environment env = boost::this_process::environment();
@@ -79,7 +79,7 @@ bp::environment PluginInfo::create_host_env() const {
                    },
                    [](const DefaultWinePrefix&) {},
                },
-               wine_prefix);
+               wine_prefix_);
 
     return env;
 }
@@ -94,7 +94,7 @@ boost::filesystem::path PluginInfo::normalize_wine_prefix() const {
                 return fs::path(env.at("HOME").to_string()) / ".wine";
             },
         },
-        wine_prefix);
+        wine_prefix_);
 }
 
 std::string PluginInfo::wine_version() const {

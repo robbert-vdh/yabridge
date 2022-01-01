@@ -100,12 +100,12 @@ YaPluginFactory3::ConstructArgs::ConstructArgs(
 }
 
 YaPluginFactory3::YaPluginFactory3(ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}
 
 tresult PLUGIN_API
 YaPluginFactory3::getFactoryInfo(Steinberg::PFactoryInfo* info) {
-    if (info && arguments.factory_info) {
-        *info = *arguments.factory_info;
+    if (info && arguments_.factory_info) {
+        *info = *arguments_.factory_info;
         return Steinberg::kResultOk;
     } else {
         return Steinberg::kNotInitialized;
@@ -113,19 +113,19 @@ YaPluginFactory3::getFactoryInfo(Steinberg::PFactoryInfo* info) {
 }
 
 int32 PLUGIN_API YaPluginFactory3::countClasses() {
-    return arguments.num_classes;
+    return arguments_.num_classes;
 }
 
 tresult PLUGIN_API YaPluginFactory3::getClassInfo(Steinberg::int32 index,
                                                   Steinberg::PClassInfo* info) {
-    if (index >= static_cast<int32>(arguments.class_infos_1.size())) {
+    if (index >= static_cast<int32>(arguments_.class_infos_1.size())) {
         return Steinberg::kInvalidArgument;
     }
 
     // We will have already converted these class IDs to the native
     // representation in `YaPluginFactory3::ConstructArgs`
-    if (arguments.class_infos_1[index]) {
-        *info = *arguments.class_infos_1[index];
+    if (arguments_.class_infos_1[index]) {
+        *info = *arguments_.class_infos_1[index];
         return Steinberg::kResultOk;
     } else {
         return Steinberg::kResultFalse;
@@ -134,14 +134,14 @@ tresult PLUGIN_API YaPluginFactory3::getClassInfo(Steinberg::int32 index,
 
 tresult PLUGIN_API
 YaPluginFactory3::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
-    if (index >= static_cast<int32>(arguments.class_infos_2.size())) {
+    if (index >= static_cast<int32>(arguments_.class_infos_2.size())) {
         return Steinberg::kInvalidArgument;
     }
 
     // We will have already converted these class IDs to the native
     // representation in `YaPluginFactory3::ConstructArgs`
-    if (arguments.class_infos_2[index]) {
-        *info = *arguments.class_infos_2[index];
+    if (arguments_.class_infos_2[index]) {
+        *info = *arguments_.class_infos_2[index];
         return Steinberg::kResultOk;
     } else {
         return Steinberg::kResultFalse;
@@ -151,14 +151,14 @@ YaPluginFactory3::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
 tresult PLUGIN_API
 YaPluginFactory3::getClassInfoUnicode(int32 index,
                                       Steinberg::PClassInfoW* info) {
-    if (index >= static_cast<int32>(arguments.class_infos_unicode.size())) {
+    if (index >= static_cast<int32>(arguments_.class_infos_unicode.size())) {
         return Steinberg::kInvalidArgument;
     }
 
     // We will have already converted these class IDs to the native
     // representation in `YaPluginFactory3::ConstructArgs`
-    if (arguments.class_infos_unicode[index]) {
-        *info = *arguments.class_infos_unicode[index];
+    if (arguments_.class_infos_unicode[index]) {
+        *info = *arguments_.class_infos_unicode[index];
         return Steinberg::kResultOk;
     } else {
         return Steinberg::kResultFalse;

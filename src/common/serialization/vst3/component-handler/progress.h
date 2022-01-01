@@ -60,7 +60,7 @@ class YaProgress : public Steinberg::Vst::IProgress {
      */
     YaProgress(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * The response code and returned ID for a call to `IProgress::start(type,
@@ -154,7 +154,7 @@ class YaProgress : public Steinberg::Vst::IProgress {
     virtual tresult PLUGIN_API finish(ID id) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

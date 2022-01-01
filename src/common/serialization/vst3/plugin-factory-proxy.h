@@ -80,7 +80,7 @@ class Vst3PluginFactoryProxy : public YaPluginFactory3 {
     DECLARE_FUNKNOWN_METHODS
 
    private:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

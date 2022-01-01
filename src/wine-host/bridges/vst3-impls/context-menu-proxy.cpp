@@ -21,7 +21,7 @@
 Vst3ContextMenuProxyImpl::Vst3ContextMenuProxyImpl(
     Vst3Bridge& bridge,
     Vst3ContextMenuProxy::ConstructArgs&& args) noexcept
-    : Vst3ContextMenuProxy(std::move(args)), bridge(bridge) {
+    : Vst3ContextMenuProxy(std::move(args)), bridge_(bridge) {
     bridge.register_context_menu(*this);
 }
 
@@ -31,24 +31,25 @@ Vst3ContextMenuProxyImpl::~Vst3ContextMenuProxyImpl() noexcept {
     // NOTE: This can actually throw (e.g. out of memory or the socket got
     //       closed). But if that were to happen, then we wouldn't be able to
     //       recover from it anyways.
-    bridge.send_message(
+    bridge_.send_message(
         Vst3ContextMenuProxy::Destruct{.owner_instance_id = owner_instance_id(),
                                        .context_menu_id = context_menu_id()});
-    bridge.unregister_context_menu(*this);
+    bridge_.unregister_context_menu(*this);
 }
 
 tresult PLUGIN_API
 Vst3ContextMenuProxyImpl::queryInterface(const Steinberg::TUID _iid,
                                          void** obj) {
     const tresult result = Vst3ContextMenuProxy::queryInterface(_iid, obj);
-    bridge.logger.log_query_interface("In IContextMenu::queryInterface()",
-                                      result, Steinberg::FUID::fromTUID(_iid));
+    bridge_.logger_.log_query_interface("In IContextMenu::queryInterface()",
+                                        result,
+                                        Steinberg::FUID::fromTUID(_iid));
 
     return result;
 }
 
 int32 PLUGIN_API Vst3ContextMenuProxyImpl::getItemCount() {
-    return bridge.send_message(
+    return bridge_.send_message(
         YaContextMenu::GetItemCount{.owner_instance_id = owner_instance_id(),
                                     .context_menu_id = context_menu_id()});
 }
@@ -60,11 +61,11 @@ tresult PLUGIN_API Vst3ContextMenuProxyImpl::getItem(
     // XXX: Should the plugin be able to get targets created by the host this
     //      way? We'll just assume that this function won't ever be called by
     //      the plugin (but we'll implement a basic version anyways).
-    if (index < 0 || index >= static_cast<int32>(items.size())) {
+    if (index < 0 || index >= static_cast<int32>(items_.size())) {
         return Steinberg::kInvalidArgument;
     } else {
-        item = items[index];
-        *target = context_menu_targets[item.tag];
+        item = items_[index];
+        *target = context_menu_targets_[item.tag];
 
         return Steinberg::kResultOk;
     }
@@ -75,7 +76,7 @@ Vst3ContextMenuProxyImpl::addItem(const Steinberg::Vst::IContextMenuItem& item,
                                   Steinberg::Vst::IContextMenuTarget* target) {
     // TODO: I haven't come across a plugin that adds its own items, so this
     //       hasn't been tested yet
-    const tresult result = bridge.send_message(YaContextMenu::AddItem{
+    const tresult result = bridge_.send_message(YaContextMenu::AddItem{
         .owner_instance_id = owner_instance_id(),
         .context_menu_id = context_menu_id(),
         .item = item,
@@ -85,8 +86,8 @@ Vst3ContextMenuProxyImpl::addItem(const Steinberg::Vst::IContextMenuItem& item,
                     : std::nullopt)});
 
     if (result == Steinberg::kResultOk) {
-        items.push_back(item);
-        context_menu_targets[item.tag] = target;
+        items_.push_back(item);
+        context_menu_targets_[item.tag] = target;
     }
 
     return result;
@@ -95,21 +96,21 @@ Vst3ContextMenuProxyImpl::addItem(const Steinberg::Vst::IContextMenuItem& item,
 tresult PLUGIN_API Vst3ContextMenuProxyImpl::removeItem(
     const Steinberg::Vst::IContextMenuItem& item,
     Steinberg::Vst::IContextMenuTarget* /*target*/) {
-    const tresult result = bridge.send_message(
+    const tresult result = bridge_.send_message(
         YaContextMenu::RemoveItem{.owner_instance_id = owner_instance_id(),
                                   .context_menu_id = context_menu_id(),
                                   .item = item});
 
     if (result == Steinberg::kResultOk) {
-        items.erase(
+        items_.erase(
             std::remove_if(
-                items.begin(), items.end(),
+                items_.begin(), items_.end(),
                 [&](const Steinberg::Vst::IContextMenuItem& candidate_item) {
                     // They didn't implement `operator==` on the struct
                     return candidate_item.tag == item.tag;
                 }),
-            items.end());
-        context_menu_targets.erase(item.tag);
+            items_.end());
+        context_menu_targets_.erase(item.tag);
     }
 
     return result;
@@ -120,7 +121,7 @@ tresult PLUGIN_API Vst3ContextMenuProxyImpl::popup(Steinberg::UCoord x,
     // NOTE: This requires mutual recursion, because REAPER will call
     //       `getState()` whle the context menu is open, and `getState()` also
     //       has to be handled from the GUi thread
-    return bridge.send_mutually_recursive_message(
+    return bridge_.send_mutually_recursive_message(
         YaContextMenu::Popup{.owner_instance_id = owner_instance_id(),
                              .context_menu_id = context_menu_id(),
                              .x = x,

@@ -24,4 +24,4 @@ YaEditController::ConstructArgs::ConstructArgs(
           Steinberg::FUnknownPtr<Steinberg::Vst::IEditController>(object)) {}
 
 YaEditController::YaEditController(ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

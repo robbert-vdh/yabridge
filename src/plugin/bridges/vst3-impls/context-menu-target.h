@@ -34,5 +34,5 @@ class YaContextMenuTargetImpl : public YaContextMenuTarget {
     tresult PLUGIN_API executeMenuItem(int32 tag) override;
 
    private:
-    Vst3PluginBridge& bridge;
+    Vst3PluginBridge& bridge_;
 };

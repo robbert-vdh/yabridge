@@ -59,7 +59,7 @@ class YaEditController2 : public Steinberg::Vst::IEditController2 {
      */
     YaEditController2(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to `IEditController2::setKnobMode(mode)`
@@ -123,7 +123,7 @@ class YaEditController2 : public Steinberg::Vst::IEditController2 {
     virtual tresult PLUGIN_API openAboutBox(TBool onlyCheck) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

@@ -78,14 +78,14 @@ class YaParameterChanges : public Steinberg::Vst::IParameterChanges {
 
     template <typename S>
     void serialize(S& s) {
-        s.container(queues, 1 << 16);
+        s.container(queues_, 1 << 16);
     }
 
    private:
     /**
      * The parameter value changes queues.
      */
-    boost::container::small_vector<YaParamValueQueue, 16> queues;
+    boost::container::small_vector<YaParamValueQueue, 16> queues_;
 };
 
 #pragma GCC diagnostic pop

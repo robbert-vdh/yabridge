@@ -23,6 +23,5 @@ YaPlugInterfaceSupport::ConstructArgs::ConstructArgs(
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IPlugInterfaceSupport>(
           object)) {}
 
-YaPlugInterfaceSupport::YaPlugInterfaceSupport(
-    ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+YaPlugInterfaceSupport::YaPlugInterfaceSupport(ConstructArgs&& args) noexcept
+    : arguments_(std::move(args)) {}

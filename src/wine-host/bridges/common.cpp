@@ -50,11 +50,11 @@ constexpr unsigned int juce_message_id = WM_USER + 123;
 HostBridge::HostBridge(MainContext& main_context,
                        boost::filesystem::path plugin_path,
                        pid_t parent_pid)
-    : plugin_path(plugin_path),
-      main_context(main_context),
-      generic_logger(Logger::create_wine_stderr()),
-      parent_pid(parent_pid),
-      watchdog_guard(main_context.register_watchdog(*this)) {}
+    : plugin_path_(plugin_path),
+      main_context_(main_context),
+      generic_logger_(Logger::create_wine_stderr()),
+      parent_pid_(parent_pid),
+      watchdog_guard_(main_context.register_watchdog(*this)) {}
 
 HostBridge::~HostBridge() noexcept {}
 
@@ -81,7 +81,7 @@ void HostBridge::shutdown_if_dangling() {
     // `recv()`), then we'll close the sockets here so that the plugin bridge
     // exits gracefully. This will be periodically called from `MainContext`'s
     // watchdog thread.
-    if (!pid_running(parent_pid)) {
+    if (!pid_running(parent_pid_)) {
         std::cerr << "WARNING: The native plugin host seems to have died."
                   << std::endl;
         std::cerr << "         This bridge will shut down now." << std::endl;

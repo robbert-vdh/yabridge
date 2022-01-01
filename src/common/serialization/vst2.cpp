@@ -37,17 +37,17 @@ AEffect& update_aeffect(AEffect& plugin,
 DynamicVstEvents::DynamicVstEvents() noexcept {}
 
 DynamicVstEvents::DynamicVstEvents(const VstEvents& c_events)
-    : events(c_events.numEvents) {
+    : events_(c_events.numEvents) {
     // Copy from the C-style array into a vector for serialization
     for (int i = 0; i < c_events.numEvents; i++) {
-        events[i] = *c_events.events[i];
+        events_[i] = *c_events.events[i];
 
         // If we encounter a SysEx event, also store the payload data in an
         // associative list (so we can potentially still avoid allocations)
         const auto sysex_event =
             reinterpret_cast<VstMidiSysExEvent*>(c_events.events[i]);
         if (sysex_event->type == kVstSysExType) {
-            sysex_data.emplace_back(
+            sysex_data_.emplace_back(
                 i, std::string(sysex_event->sysexDump, sysex_event->byteSize));
         }
     }
@@ -58,9 +58,9 @@ VstEvents& DynamicVstEvents::as_c_events() {
     // `VstEvents` struct by hand on the heap since it's actually a dynamically
     // sized object. If we encountered any SysEx events, then we'll need to
     // update the pointers in `events` to point to the correct data location.
-    for (const auto& [event_idx, data] : sysex_data) {
+    for (const auto& [event_idx, data] : sysex_data_) {
         auto& sysex_event =
-            reinterpret_cast<VstMidiSysExEvent&>(events[event_idx]);
+            reinterpret_cast<VstMidiSysExEvent&>(events_[event_idx]);
         sysex_event.sysexDump = const_cast<char*>(data.data());
     }
 
@@ -72,16 +72,16 @@ VstEvents& DynamicVstEvents::as_c_events() {
     static_assert(std::extent_v<decltype(VstEvents::events)> == 1);
     const size_t buffer_size =
         sizeof(VstEvents) +
-        ((events.size() - 1) *
+        ((events_.size() - 1) *
          sizeof(VstEvent*));  // NOLINT(bugprone-sizeof-expression)
-    vst_events_buffer.resize(buffer_size);
+    vst_events_buffer_.resize(buffer_size);
 
     // Now we can populate the VLA with pointers to the objects in the `events`
     // vector
     VstEvents* vst_events =
-        reinterpret_cast<VstEvents*>(vst_events_buffer.data());
-    vst_events->numEvents = static_cast<int>(events.size());
-    std::transform(events.begin(), events.end(), vst_events->events,
+        reinterpret_cast<VstEvents*>(vst_events_buffer_.data());
+    vst_events->numEvents = static_cast<int>(events_.size());
+    std::transform(events_.begin(), events_.end(), vst_events->events,
                    [](VstEvent& event) -> VstEvent* { return &event; });
 
     return *vst_events;
@@ -91,10 +91,10 @@ DynamicSpeakerArrangement::DynamicSpeakerArrangement() noexcept {}
 
 DynamicSpeakerArrangement::DynamicSpeakerArrangement(
     const VstSpeakerArrangement& speaker_arrangement)
-    : flags(speaker_arrangement.flags),
-      speakers(speaker_arrangement.num_speakers) {
+    : flags_(speaker_arrangement.flags),
+      speakers_(speaker_arrangement.num_speakers) {
     // Copy from the C-style array into a vector for serialization
-    speakers.assign(
+    speakers_.assign(
         &speaker_arrangement.speakers[0],
         &speaker_arrangement.speakers[speaker_arrangement.num_speakers]);
 }
@@ -106,17 +106,18 @@ VstSpeakerArrangement& DynamicSpeakerArrangement::as_c_speaker_arrangement() {
     static_assert(std::extent_v<decltype(VstSpeakerArrangement::speakers)> ==
                   2);
     const size_t buffer_size = sizeof(VstSpeakerArrangement) +
-                               ((speakers.size() - 2) * sizeof(VstSpeaker));
-    speaker_arrangement_buffer.resize(buffer_size);
+                               ((speakers_.size() - 2) * sizeof(VstSpeaker));
+    speaker_arrangement_buffer_.resize(buffer_size);
 
     // Now we'll just copy over the elements from our vector to the VLA in this
     // struct
     VstSpeakerArrangement* speaker_arrangement =
         reinterpret_cast<VstSpeakerArrangement*>(
-            speaker_arrangement_buffer.data());
-    speaker_arrangement->flags = flags;
-    speaker_arrangement->num_speakers = static_cast<int>(speakers.size());
-    std::copy(speakers.begin(), speakers.end(), speaker_arrangement->speakers);
+            speaker_arrangement_buffer_.data());
+    speaker_arrangement->flags = flags_;
+    speaker_arrangement->num_speakers = static_cast<int>(speakers_.size());
+    std::copy(speakers_.begin(), speakers_.end(),
+              speaker_arrangement->speakers);
 
     return *speaker_arrangement;
 }
@@ -125,5 +126,5 @@ std::vector<uint8_t>& DynamicSpeakerArrangement::as_raw_data() {
     // This will populate the buffer for us with the struct data
     as_c_speaker_arrangement();
 
-    return speaker_arrangement_buffer;
+    return speaker_arrangement_buffer_;
 }

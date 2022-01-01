@@ -53,10 +53,10 @@ class YaPhysicalUIMapList {
 
     template <typename S>
     void serialize(S& s) {
-        s.container(maps, 1 << 31);
+        s.container(maps_, 1 << 31);
     }
 
-    std::vector<Steinberg::Vst::PhysicalUIMap> maps;
+    std::vector<Steinberg::Vst::PhysicalUIMap> maps_;
 };
 
 namespace Steinberg {

@@ -225,8 +225,9 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
     }
 
     /**
-     * Spawn a new thread to listen for extra connections to `endpoint`, and
-     * then start a blocking loop that handles events from the primary `socket`.
+     * Spawn a new thread to listen for extra connections to `endpoint_`, and
+     * then start a blocking loop that handles events from the primary
+     * `socket_`.
      *
      * The specified function will be used to create an `Vst2EventResult` from
      * an `Vst2Event`. This is almost always uses `passthrough_event()`, which
@@ -273,7 +274,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
             };
 
         this->receive_multi(
-            logging ? std::optional(std::ref(logging->first.logger))
+            logging ? std::optional(std::ref(logging->first.logger_))
                     : std::nullopt,
             [&](boost::asio::local::stream_protocol::socket& socket) {
                 process_event(socket, true);
@@ -345,41 +346,42 @@ class Vst2Sockets final : public Sockets {
                 const boost::filesystem::path& endpoint_base_dir,
                 bool listen)
         : Sockets(endpoint_base_dir),
-          host_vst_dispatch(io_context,
-                            (base_dir / "host_vst_dispatch.sock").string(),
-                            listen),
-          vst_host_callback(io_context,
-                            (base_dir / "vst_host_callback.sock").string(),
-                            listen),
-          host_vst_parameters(io_context,
-                              (base_dir / "host_vst_parameters.sock").string(),
-                              listen),
-          host_vst_process_replacing(
+          host_vst_dispatch_(io_context,
+                             (base_dir_ / "host_vst_dispatch.sock").string(),
+                             listen),
+          vst_host_callback_(io_context,
+                             (base_dir_ / "vst_host_callback_.sock").string(),
+                             listen),
+          host_vst_parameters_(
               io_context,
-              (base_dir / "host_vst_process_replacing.sock").string(),
+              (base_dir_ / "host_vst_parameters.sock").string(),
               listen),
-          host_vst_control(io_context,
-                           (base_dir / "host_vst_control.sock").string(),
-                           listen) {}
+          host_vst_process_replacing_(
+              io_context,
+              (base_dir_ / "host_vst_process_replacing.sock").string(),
+              listen),
+          host_vst_control_(io_context,
+                            (base_dir_ / "host_vst_control_.sock").string(),
+                            listen) {}
 
     ~Vst2Sockets() noexcept override { close(); }
 
     void connect() override {
-        host_vst_dispatch.connect();
-        vst_host_callback.connect();
-        host_vst_parameters.connect();
-        host_vst_process_replacing.connect();
-        host_vst_control.connect();
+        host_vst_dispatch_.connect();
+        vst_host_callback_.connect();
+        host_vst_parameters_.connect();
+        host_vst_process_replacing_.connect();
+        host_vst_control_.connect();
     }
 
     void close() override {
         // Manually close all sockets so we break out of any blocking operations
         // that may still be active
-        host_vst_dispatch.close();
-        vst_host_callback.close();
-        host_vst_parameters.close();
-        host_vst_process_replacing.close();
-        host_vst_control.close();
+        host_vst_dispatch_.close();
+        vst_host_callback_.close();
+        host_vst_parameters_.close();
+        host_vst_process_replacing_.close();
+        host_vst_control_.close();
     }
 
     // The naming convention for these sockets is `<from>_<to>_<event>`. For
@@ -391,29 +393,29 @@ class Vst2Sockets final : public Sockets {
      * The socket that forwards all `dispatcher()` calls from the VST host to
      * the plugin.
      */
-    Vst2EventHandler<Thread> host_vst_dispatch;
+    Vst2EventHandler<Thread> host_vst_dispatch_;
     /**
      * The socket that forwards all `audioMaster()` calls from the Windows VST
      * plugin to the host.
      */
-    Vst2EventHandler<Thread> vst_host_callback;
+    Vst2EventHandler<Thread> vst_host_callback_;
     /**
      * Used for both `getParameter` and `setParameter` since they mostly
      * overlap.
      */
-    SocketHandler host_vst_parameters;
+    SocketHandler host_vst_parameters_;
     /**
      * Used for processing audio usign the `process()`, `processReplacing()` and
      * `processDoubleReplacing()` functions.
      */
-    SocketHandler host_vst_process_replacing;
+    SocketHandler host_vst_process_replacing_;
     /**
      * A control socket that sends data that is not suitable for the other
      * sockets. At the moment this is only used to, on startup, send the Windows
      * VST plugin's `AEffect` object to the native VST plugin, and to then send
-     * the configuration (from `config`) back to the Wine host.
+     * the configuration (from `config_`) back to the Wine host.
      */
-    SocketHandler host_vst_control;
+    SocketHandler host_vst_control_;
 };
 
 /**

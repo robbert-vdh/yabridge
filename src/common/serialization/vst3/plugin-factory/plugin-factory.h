@@ -125,15 +125,15 @@ class YaPluginFactory3 : public Steinberg::IPluginFactory3 {
     YaPluginFactory3(ConstructArgs&& args) noexcept;
 
     inline bool supports_plugin_factory() const noexcept {
-        return arguments.supports_plugin_factory;
+        return arguments_.supports_plugin_factory;
     }
 
     inline bool supports_plugin_factory_2() const noexcept {
-        return arguments.supports_plugin_factory_2;
+        return arguments_.supports_plugin_factory_2;
     }
 
     inline bool supports_plugin_factory_3() const noexcept {
-        return arguments.supports_plugin_factory_3;
+        return arguments_.supports_plugin_factory_3;
     }
 
     // All of these functiosn returning class information are fetched once on
@@ -182,7 +182,7 @@ class YaPluginFactory3 : public Steinberg::IPluginFactory3 {
     setHostContext(Steinberg::FUnknown* context) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

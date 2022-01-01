@@ -31,7 +31,7 @@ enum class LibArchitecture { dll_32, dll_64 };
 
 /**
  * A tag to differentiate between different plugin types.
- * `plugin_tyep_to_string()` and `plugin_type_from_string()` can be used to
+ * `plugin_type_to_string()` and `plugin_type_from_string()` can be used to
  * convert these values to and from strings. The string form is used as a
  * command line argument for the individual Wine host applications, and the enum
  * form is passed directly in `HostRequest`.

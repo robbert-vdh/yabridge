@@ -43,7 +43,7 @@ constexpr uint8_t xcb_event_type_mask = 0b0111'1111;
 /**
  * The name of the X11 property that indicates whether a window supports
  * drag-and-drop. If the `editor_force_dnd` option is enabled we'll remove this
- * property from all of `parent_window`'s ancestors to work around a bug in
+ * property from all of `parent_window_`'s ancestors to work around a bug in
  * REAPER.
  */
 constexpr char xdnd_aware_property_name[] = "XdndAware";
@@ -108,16 +108,16 @@ class DeferredWin32Window {
                         HWND window) noexcept;
 
     /**
-     * Post a `WM_CLOSE` message to the `handle`'s message queue as described
+     * Post a `WM_CLOSE` message to the `handle_`'s message queue as described
      * above.
      */
     ~DeferredWin32Window() noexcept;
 
-    const HWND handle;
+    const HWND handle_;
 
    private:
-    MainContext& main_context;
-    std::shared_ptr<xcb_connection_t> x11_connection;
+    MainContext& main_context_;
+    std::shared_ptr<xcb_connection_t> x11_connection_;
 };
 
 /**
@@ -141,7 +141,7 @@ class DeferredWin32Window {
  * because of the issues mentioned above.
  *
  * In yabridge 3.5.0 we added another layer to the embedding structure. This is
- * to prevent the host from directly using the size of `wine_window`, which has
+ * to prevent the host from directly using the size of `wine_window_`, which has
  * a client area the size of the entire root window so the window can resized
  * and fullscreened at will. Some hosts, like Carla 2.3.1 (this didn't happen in
  * earlier versions), may directly resize their editor window depending on the
@@ -179,7 +179,7 @@ class Editor {
      *   plugins to periodically call `effEditIdle` from the message loop
      *   thread, even when the GUI is blocked.
      *
-     * @see win32_window
+     * @see win32_window_
      */
     Editor(
         MainContext& main_context,
@@ -189,7 +189,7 @@ class Editor {
         std::optional<fu2::unique_function<void()>> timer_proc = std::nullopt);
 
     /**
-     * Resize the `wrapper_window` to this new size. We need to manually call
+     * Resize the `wrapper_window_` to this new size. We need to manually call
      * this whenever the plugin requests a resize, or when the host resizes the
      * window (using the plugin API). Before yabridge 3.5.0 this was implicit.
      */
@@ -232,8 +232,8 @@ class Editor {
      *
      * NOTE: There's a little bit of special behaviour in here. When the shift
      *       key is held while grabbing input focus, then we'll focus
-     *       `wine_window` directly instead of focussing `wrapper_window`. This
-     *       allows you to temporarily override the default focus grabbing
+     *       `wine_window_` directly instead of focussing `wrapper_window_`.
+     *       This allows you to temporarily override the default focus grabbing
      *       behaviour, allowing you to use the space key in plugins GUIs in
      *       Bitwig and to enter text in Voxengo settings and license dialogs.
      *       This can also help with plugins that use popups but still rely on
@@ -241,7 +241,7 @@ class Editor {
      *       popups.
      *
      * @param grab Whether to grab input focus (if `true`) or to give back input
-     *   focus to `host_window` (if `false`).
+     *   focus to `host_window_` (if `false`).
      */
     void set_input_focus(bool grab) const;
 
@@ -249,23 +249,23 @@ class Editor {
      * Run the X11 event loop plus the timer proc function passed to the
      * constructor, if one was passed.
      *
-     * @see idle_timer
-     * @see idle_timer_proc
+     * @see idle_timer_
+     * @see idle_timer_proc_
      */
     void run_timer_proc();
 
     /**
-     * Whether to reposition `win32_window` to (0, 0) every time the window
+     * Whether to reposition `win32_window_` to (0, 0) every time the window
      * resizes. This can help with buggy plugins that use the (top level)
      * window's screen coordinates when drawing their GUI.
      */
-    const bool use_coordinate_hack = false;
+    const bool use_coordinate_hack_;
 
     /**
      * Whether to use XEmbed instead of yabridge's normal window embedded. Wine
      * with XEmbed tends to cause rendering issues, so it's disabled by default.
      */
-    const bool use_xembed = false;
+    const bool use_xembed_;
 
    private:
     /**
@@ -280,7 +280,7 @@ class Editor {
      * Get the current cursor position, in Win32 screen coordinates. This is
      * needed for our `LeaveNotify` handling because `GetCursorPos()` only
      * updates once every 100 ms. This takes the X11 mouse cursor position, and
-     * then adds to that the difference between `wine_window`'s X11 coordinates
+     * then adds to that the difference between `wine_window_`'s X11 coordinates
      * and its Win32 coordinates. This is kind of a workaround for Wine's
      * X11drv's `root_to_virtual_screen()` function not being exposed.
      *
@@ -290,7 +290,7 @@ class Editor {
 
     /**
      * Returns `true` if the currently active window (as per
-     * `_NET_ACTIVE_WINDOW`) contains `wine_window`. If the window manager does
+     * `_NET_ACTIVE_WINDOW`) contains `wine_window_`. If the window manager does
      * not support this hint, this will always return false.
      *
      * @see Editor::supports_ewmh_active_window
@@ -298,7 +298,7 @@ class Editor {
     bool is_wine_window_active() const;
 
     /**
-     * After `parent_window` gets reparented, we may need to redetect which
+     * After `parent_window_` gets reparented, we may need to redetect which
      * toplevel-ish window the host is using and adjust the events we're
      * subscribed to accordingly.
      */
@@ -322,7 +322,7 @@ class Editor {
     void do_reparent(xcb_window_t child, xcb_window_t new_parent) const;
 
     /**
-     * Start the XEmbed procedure when `use_xembed` is enabled. This should be
+     * Start the XEmbed procedure when `use_xembed_` is enabled. This should be
      * rerun whenever visibility changes.
      */
     void do_xembed() const;
@@ -330,18 +330,18 @@ class Editor {
     /**
      * The logger instance we will print debug tracing information to.
      */
-    Logger& logger;
+    Logger& logger_;
 
     /**
      * Every editor window gets its own X11 connection.
      */
-    std::shared_ptr<xcb_connection_t> x11_connection;
+    std::shared_ptr<xcb_connection_t> x11_connection_;
 
     /**
      * A handle for our Wine->X11 drag-and-drop proxy. We only have one of these
      * per process, and it gets freed again when the last handle gets dropped.
      */
-    WineXdndProxy::Handle dnd_proxy_handle;
+    WineXdndProxy::Handle dnd_proxy_handle_;
 
     /**
      * The Wine window's client area, or the maximum size of that window. This
@@ -352,61 +352,61 @@ class Editor {
      * the host resize the X11 parent window it's been embedded in instead,
      * resizing will feel smooth and native.
      */
-    const Size client_area;
+    const Size client_area_;
 
     /**
      * The handle for the window created through Wine that the plugin uses to
      * embed itself in.
      */
-    DeferredWin32Window win32_window;
+    DeferredWin32Window win32_window_;
 
     /**
      * A timer we'll use to periodically run the X11 event loop plus
-     * `idle_timer_proc`, if that is set. We handle X11 events from within the
+     * `idle_timer_proc_`, if that is set. We handle X11 events from within the
      * Win32 event loop because that allows us to still process those while the
      * GUI is blocked. Additionally for VST2 plugins we also need this
-     * `idle_timer_proc`, as they expected the host to periodically send an idle
-     * event. We used to just pass through the calls from the host before
+     * `idle_timer_proc_`, as they expected the host to periodically send an
+     * idle event. We used to just pass through the calls from the host before
      * yabridge 3.x, but doing it ourselves here makes things m much more
      * manageable and we'd still need a timer anyways for when the GUI is
      * blocked.
      */
-    Win32Timer idle_timer;
+    Win32Timer idle_timer_;
 
     /**
      * A function to call when the Win32 timer procs. This is used to
      * periodically call `handle_x11_events()`, as well as `effEditIdle()` for
      * VST2 plugins even if the GUI is being blocked.
      */
-    fu2::unique_function<void()> idle_timer_proc;
+    fu2::unique_function<void()> idle_timer_proc_;
 
     /**
      * The atom corresponding to `WM_STATE`.
      */
-    xcb_atom_t xcb_wm_state_property;
+    xcb_atom_t xcb_wm_state_property_;
 
     /**
      * The window handle of the editor window created by the DAW.
      */
-    const xcb_window_t parent_window;
+    const xcb_window_t parent_window_;
     /**
-     * A window that sits between `parent_window` and `wine_window`. The entire
-     * purpose of this is to prevent the host from responding to the
-     * `ConfigureNotify` events we send to `wine_window` when the host
-     * subscribes to `SubStructureNotify` events on `parent_window`.
+     * A window that sits between `parent_window_` and `wine_window_`. The
+     * entire purpose of this is to prevent the host from responding to the
+     * `ConfigureNotify` events we send to `wine_window_` when the host
+     * subscribes to `SubStructureNotify` events on `parent_window_`.
      */
-    X11Window wrapper_window;
+    X11Window wrapper_window_;
     /**
-     * The X11 window handle of the window belonging to `win32_window`.
+     * The X11 window handle of the window belonging to `win32_window_`.
      */
-    const xcb_window_t wine_window;
+    const xcb_window_t wine_window_;
     /**
-     * The toplevel X11 window `parent_window` is contained in, or
-     * `parent_window` if the host doesn't do any fancy window embedding. We'll
-     * find this by looking for the topmost ancestor window of `parent_window`
+     * The toplevel X11 window `parent_window_` is contained in, or
+     * `parent_window_` if the host doesn't do any fancy window embedding. We'll
+     * find this by looking for the topmost ancestor window of `parent_window_`
      * that has `WM_STATE` set. This is similar to how `xprop` and `xwininfo`
      * select windows. In most cases this is going to be the same as
-     * `parent_window`, but some DAWs (such as REAPER) embed `parent_window`
+     * `parent_window_`, but some DAWs (such as REAPER) embed `parent_window_`
      * into another window. We have to listen for configuration changes on this
      * topmost window to know when the window is being dragged around, and when
      * returning keyboard focus to the host we'll focus this window.
@@ -420,21 +420,21 @@ class Editor {
      *       reason REAPER will only process keyboard input for that window when
      *       the mouse is within the window.
      */
-    xcb_window_t host_window;
+    xcb_window_t host_window_;
 
     /**
      * The atom corresponding to `_NET_ACTIVE_WINDOW`.
      */
-    xcb_atom_t active_window_property;
+    xcb_atom_t active_window_property_;
     /**
      * Whether the root window supports the `_NET_ACTIVE_WINDOW` hint. We'll
      * check this once and then cache the results in
      * `supports_ewmh_active_window()`.
      */
-    mutable std::optional<bool> supports_ewmh_active_window_cache;
+    mutable std::optional<bool> supports_ewmh_active_window_cache_;
 
     /**
      * The atom corresponding to `_XEMBED`.
      */
-    xcb_atom_t xcb_xembed_message;
+    xcb_atom_t xcb_xembed_message_;
 };

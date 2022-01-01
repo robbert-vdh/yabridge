@@ -23,15 +23,15 @@ YaParameterChanges::~YaParameterChanges() noexcept {
 }
 
 void YaParameterChanges::clear() noexcept {
-    queues.clear();
+    queues_.clear();
 }
 
 void YaParameterChanges::repopulate(
     Steinberg::Vst::IParameterChanges& original_queues) {
     // Copy over all parameter changne queues
-    queues.resize(original_queues.getParameterCount());
+    queues_.resize(original_queues.getParameterCount());
     for (int i = 0; i < original_queues.getParameterCount(); i++) {
-        queues[i].repopulate(*original_queues.getParameterData(i));
+        queues_[i].repopulate(*original_queues.getParameterData(i));
     }
 }
 
@@ -43,16 +43,16 @@ IMPLEMENT_FUNKNOWN_METHODS(YaParameterChanges,
 #pragma GCC diagnostic pop
 
 size_t YaParameterChanges::num_parameters() const {
-    return queues.size();
+    return queues_.size();
 }
 
 void YaParameterChanges::write_back_outputs(
     Steinberg::Vst::IParameterChanges& output_queues) const {
-    for (auto& queue : queues) {
+    for (auto& queue : queues_) {
         // We don't need this, but the SDK requires us to need this
         int32 output_queue_index;
         if (Steinberg::Vst::IParamValueQueue* output_queue =
-                output_queues.addParameterData(queue.parameter_id,
+                output_queues.addParameterData(queue.parameter_id_,
                                                output_queue_index)) {
             queue.write_back_outputs(*output_queue);
         }
@@ -60,13 +60,13 @@ void YaParameterChanges::write_back_outputs(
 }
 
 int32 PLUGIN_API YaParameterChanges::getParameterCount() {
-    return static_cast<int32>(queues.size());
+    return static_cast<int32>(queues_.size());
 }
 
 Steinberg::Vst::IParamValueQueue* PLUGIN_API
 YaParameterChanges::getParameterData(int32 index) {
-    if (index < static_cast<int32>(queues.size())) {
-        return &queues[index];
+    if (index < static_cast<int32>(queues_.size())) {
+        return &queues_[index];
     } else {
         return nullptr;
     }
@@ -75,12 +75,12 @@ YaParameterChanges::getParameterData(int32 index) {
 Steinberg::Vst::IParamValueQueue* PLUGIN_API
 YaParameterChanges::addParameterData(const Steinberg::Vst::ParamID& id,
                                      int32& index /*out*/) {
-    index = static_cast<int32>(queues.size());
+    index = static_cast<int32>(queues_.size());
 
     // Tiny hack, resizing avoids calling the constructor the second time we
     // resize the vector to the same size
-    queues.resize(queues.size() + 1);
-    queues[index].clear_for_parameter(id);
+    queues_.resize(queues_.size() + 1);
+    queues_[index].clear_for_parameter(id);
 
-    return &queues[index];
+    return &queues_[index];
 }

@@ -40,7 +40,7 @@ Vst3ComponentHandlerProxy::Vst3ComponentHandlerProxy(
       YaProgress(std::move(args.progress_args)),
       YaUnitHandler(std::move(args.unit_handler_args)),
       YaUnitHandler2(std::move(args.unit_handler_2_args)),
-      arguments(std::move(args)){FUNKNOWN_CTOR}
+      arguments_(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3ComponentHandlerProxy::~Vst3ComponentHandlerProxy() noexcept {
     FUNKNOWN_DTOR

@@ -27,7 +27,7 @@ YaContextMenuTarget::ConstructArgs::ConstructArgs(
       tag(tag) {}
 
 YaContextMenuTarget::YaContextMenuTarget(ConstructArgs&& args) noexcept
-    : arguments(std::move(args)){FUNKNOWN_CTOR}
+    : arguments_(std::move(args)){FUNKNOWN_CTOR}
 
       YaContextMenuTarget::~YaContextMenuTarget() noexcept {
     FUNKNOWN_DTOR

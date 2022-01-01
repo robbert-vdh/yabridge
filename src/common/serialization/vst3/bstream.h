@@ -90,37 +90,37 @@ class YaBStream : public Steinberg::IBStream,
 
     template <typename S>
     void serialize(S& s) {
-        s.container1b(buffer, max_vector_stream_size);
+        s.container1b(buffer_, max_vector_stream_size);
         // The seek position should always be initialized at 0
 
-        s.value1b(supports_stream_attributes);
-        s.ext(file_name, bitsery::ext::InPlaceOptional{},
+        s.value1b(supports_stream_attributes_);
+        s.ext(file_name_, bitsery::ext::InPlaceOptional{},
               [](S& s, std::u16string& name) {
                   s.text2b(name, std::extent_v<Steinberg::Vst::String128>);
               });
-        s.ext(attributes, bitsery::ext::InPlaceOptional{});
+        s.ext(attributes_, bitsery::ext::InPlaceOptional{});
     }
 
     /**
      * Whether this stream supports `IStreamAttributes`. This will be true if we
      * copied a stream provided by the host that also supported meta data.
      */
-    bool supports_stream_attributes = false;
+    bool supports_stream_attributes_ = false;
 
     /**
      * The stream's name, if this stream supports stream attributes.
      */
-    std::optional<std::u16string> file_name;
+    std::optional<std::u16string> file_name_;
 
     /**
      * The stream's meta data if we've copied from a stream that supports meta
      * data.
      */
-    std::optional<YaAttributeList> attributes;
+    std::optional<YaAttributeList> attributes_;
 
    private:
-    std::vector<uint8_t> buffer;
-    int64_t seek_position = 0;
+    std::vector<uint8_t> buffer_;
+    int64_t seek_position_ = 0;
 };
 
 #pragma GCC diagnostic pop

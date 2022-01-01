@@ -81,24 +81,24 @@ class Win32Thread {
      */
     template <typename Function, typename... Args>
     Win32Thread(Function fn, Args... args)
-        : handle(CreateThread(
-                     nullptr,
-                     0,
-                     reinterpret_cast<LPTHREAD_START_ROUTINE>(
-                         win32_thread_trampoline),
-                     // `std::function` does not support functions with move
-                     // captures the function has to be copy-constructable.
-                     // Function2's unique_function lets us capture and move our
-                     // arguments to the lambda so we don't end up with dangling
-                     // references.
-                     new fu2::unique_function<void()>(
-                         [f = std::move(fn),
-                          ... args = std::move(args)]() mutable {
-                             f(std::move(args)...);
-                         }),
-                     0,
-                     nullptr),
-                 CloseHandle) {}
+        : handle_(CreateThread(
+                      nullptr,
+                      0,
+                      reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                          win32_thread_trampoline),
+                      // `std::function` does not support functions with move
+                      // captures the function has to be copy-constructable.
+                      // Function2's unique_function lets us capture and move
+                      // our arguments to the lambda so we don't end up with
+                      // dangling references.
+                      new fu2::unique_function<void()>(
+                          [f = std::move(fn),
+                           ... args = std::move(args)]() mutable {
+                              f(std::move(args)...);
+                          }),
+                      0,
+                      nullptr),
+                  CloseHandle) {}
 
     /**
      * Join (or wait on, since this is WIn32) the thread on shutdown, just like
@@ -122,7 +122,7 @@ class Win32Thread {
      * class was constructed with the default constructor.
      */
     std::unique_ptr<std::remove_pointer_t<HANDLE>, decltype(&CloseHandle)>
-        handle;
+        handle_;
 
 #pragma GCC diagnostic pop
 };
@@ -147,8 +147,8 @@ class Win32Timer {
     Win32Timer& operator=(Win32Timer&&) noexcept;
 
    private:
-    HWND window_handle;
-    std::optional<size_t> timer_id;
+    HWND window_handle_;
+    std::optional<size_t> timer_id_;
 };
 
 /**
@@ -176,7 +176,7 @@ class MainContext {
 
     /**
      * Drop all future work from the IO context. This does not necessarily mean
-     * that the thread that called `main_context.run()` immediatly returns.
+     * that the thread that called `main_context_.run()` immediatly returns.
      */
     void stop() noexcept;
 
@@ -209,19 +209,20 @@ class MainContext {
         /**
          * Used to facilitate moves.
          */
-        bool is_active = true;
+        bool is_active_ = true;
 
         /**
          * The bridge that we will add to the watchdog list when this object
          * gets created, and that we'll remove from the list again when this
          * object gets destroyed.
          */
-        HostBridge* bridge;
+        HostBridge* bridge_;
 
         // References to the same two fields on `MainContext`, so we don't have
         // to use `friend`
-        std::reference_wrapper<std::unordered_set<HostBridge*>> watched_bridges;
-        std::reference_wrapper<std::mutex> watched_bridges_mutex;
+        std::reference_wrapper<std::unordered_set<HostBridge*>>
+            watched_bridges_;
+        std::reference_wrapper<std::mutex> watched_bridges_mutex_;
     };
 
     /**
@@ -239,7 +240,7 @@ class MainContext {
      * that called `MainContext::run()`.
      */
     inline bool is_gui_thread() const noexcept {
-        return GetCurrentThreadId() == gui_thread_id.value_or(0);
+        return GetCurrentThreadId() == gui_thread_id_.value_or(0);
     }
 
     /**
@@ -253,7 +254,7 @@ class MainContext {
 
         std::packaged_task<Result()> call_fn(std::forward<F>(fn));
         std::future<Result> result = call_fn.get_future();
-        boost::asio::dispatch(context, std::move(call_fn));
+        boost::asio::dispatch(context_, std::move(call_fn));
 
         return result;
     }
@@ -265,7 +266,7 @@ class MainContext {
      */
     template <std::invocable F>
     void schedule_task(F&& fn) {
-        boost::asio::post(context, std::forward<F>(fn));
+        boost::asio::post(context_, std::forward<F>(fn));
     }
 
     /**
@@ -289,10 +290,10 @@ class MainContext {
     void async_handle_events(F handler, P predicate) {
         // Try to keep a steady framerate, but add in delays to let other events
         // get handled if the GUI message handling somehow takes very long.
-        events_timer.expires_at(
-            std::max(events_timer.expiry() + timer_interval,
-                     std::chrono::steady_clock::now() + timer_interval / 4));
-        events_timer.async_wait(
+        events_timer_.expires_at(
+            std::max(events_timer_.expiry() + timer_interval_,
+                     std::chrono::steady_clock::now() + timer_interval_ / 4));
+        events_timer_.async_wait(
             [&, handler, predicate](const boost::system::error_code& error) {
                 if (error.failed()) {
                     return;
@@ -310,7 +311,7 @@ class MainContext {
      * The raw IO context. Used to bind our sockets onto. Running things within
      * this IO context should be done with the functions above.
      */
-    boost::asio::io_context context;
+    boost::asio::io_context context_;
 
    private:
     /**
@@ -328,12 +329,12 @@ class MainContext {
      * The **Windows** thread ID the context is running on, which will be our
      * GUI thread. Will be a nullopt until `MainContext::run()` has been called.
      */
-    std::optional<uint32_t> gui_thread_id;
+    std::optional<uint32_t> gui_thread_id_;
 
     /**
      * The timer used to periodically handle X11 events and Win32 messages.
      */
-    boost::asio::steady_timer events_timer;
+    boost::asio::steady_timer events_timer_;
 
     /**
      * The time between timer ticks in `async_handle_events`. This gets
@@ -342,13 +343,13 @@ class MainContext {
      *
      * @see update_timer_interval
      */
-    std::chrono::steady_clock::duration timer_interval =
+    std::chrono::steady_clock::duration timer_interval_ =
         std::chrono::milliseconds(1000) / 60;
 
     /**
      * The IO context used for the watchdog described below.
      */
-    boost::asio::io_context watchdog_context;
+    boost::asio::io_context watchdog_context_;
 
     /**
      * The timer used to periodically check if the host processes are still
@@ -356,20 +357,20 @@ class MainContext {
      * itself) when the host has exited and the sockets are somehow not closed
      * yet..
      */
-    boost::asio::steady_timer watchdog_timer;
+    boost::asio::steady_timer watchdog_timer_;
 
     /**
      * All of the bridges we're watching as part of our watchdog. We're storing
      * pointers for efficiency's sake, since reference wrappers don't implement
      * any comparison operators.
      */
-    std::unordered_set<HostBridge*> watched_bridges;
-    std::mutex watched_bridges_mutex;
+    std::unordered_set<HostBridge*> watched_bridges_;
+    std::mutex watched_bridges_mutex_;
 
     /**
      * The thread where we run our watchdog timer, to shut down plugins after
      * the native plugin host process they're supposed to be connected to has
      * died.
      */
-    Win32Thread watchdog_handler;
+    Win32Thread watchdog_handler_;
 };

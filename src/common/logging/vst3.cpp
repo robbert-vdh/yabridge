@@ -29,10 +29,10 @@
 std::string format_bstream(const YaBStream& stream) {
     std::ostringstream formatted;
     formatted << "<IBStream* ";
-    if (stream.supports_stream_attributes && stream.attributes) {
+    if (stream.supports_stream_attributes_ && stream.attributes_) {
         formatted << "with meta data [";
         for (bool first = true;
-             const auto& key_type : stream.attributes->keys_and_types()) {
+             const auto& key_type : stream.attributes_->keys_and_types()) {
             if (!first) {
                 formatted << ", ";
             }
@@ -42,27 +42,27 @@ std::string format_bstream(const YaBStream& stream) {
         }
         formatted << "] ";
     }
-    if (stream.file_name) {
-        formatted << "for \"" << VST3::StringConvert::convert(*stream.file_name)
-                  << "\" ";
+    if (stream.file_name_) {
+        formatted << "for \""
+                  << VST3::StringConvert::convert(*stream.file_name_) << "\" ";
     }
     formatted << "containing " << stream.size() << " bytes>";
 
     return formatted.str();
 }
 
-Vst3Logger::Vst3Logger(Logger& generic_logger) : logger(generic_logger) {}
+Vst3Logger::Vst3Logger(Logger& generic_logger) : logger_(generic_logger) {}
 
 void Vst3Logger::log_query_interface(
     const char* where,
     tresult result,
     const std::optional<Steinberg::FUID>& uid) {
-    if (logger.verbosity >= Logger::Verbosity::all_events) [[unlikely]] {
+    if (logger_.verbosity_ >= Logger::Verbosity::all_events) [[unlikely]] {
         std::ostringstream message;
         std::string uid_string = uid ? format_uid(*uid) : "<unknown_pointer>";
 
         if (result == Steinberg::kResultOk) {
-            if (logger.verbosity >= Logger::Verbosity::most_events) {
+            if (logger_.verbosity_ >= Logger::Verbosity::most_events) {
                 message << "[query interface] " << where << ": " << uid_string;
                 log(message.str());
             }
@@ -518,7 +518,7 @@ bool Vst3Logger::log_request(
                    "busIndex = "
                 << request.bus_index << ", channel = " << request.channel
                 << ", list = ";
-        for (bool first = true; const auto& mapping : request.list.maps) {
+        for (bool first = true; const auto& mapping : request.list.maps_) {
             if (!first) {
                 message << ", ";
             }
@@ -1012,7 +1012,7 @@ bool Vst3Logger::log_request(
             std::ostringstream num_input_channels;
             num_input_channels << "[";
             for (bool is_first = true;
-                 const auto& buffers : request.data.inputs) {
+                 const auto& buffers : request.data.inputs_) {
                 num_input_channels << (is_first ? "" : ", ")
                                    << buffers.numChannels;
                 if (buffers.silenceFlags > 0 &&
@@ -1029,7 +1029,7 @@ bool Vst3Logger::log_request(
             std::ostringstream num_output_channels;
             num_output_channels << "[";
             for (bool is_first = true;
-                 const auto& buffers : request.data.outputs) {
+                 const auto& buffers : request.data.outputs_) {
                 num_output_channels << (is_first ? "" : ", ")
                                     << buffers.numChannels;
                 if (buffers.silenceFlags > 0 &&
@@ -1048,30 +1048,30 @@ bool Vst3Logger::log_request(
                        "input_channels = "
                     << num_input_channels.str()
                     << ", output_channels = " << num_output_channels.str()
-                    << ", num_samples = " << request.data.num_samples
+                    << ", num_samples = " << request.data.num_samples_
                     << ", input_parameter_changes = <IParameterChanges* for "
-                    << request.data.input_parameter_changes.num_parameters()
+                    << request.data.input_parameter_changes_.num_parameters()
                     << " parameters>, output_parameter_changes = "
-                    << (request.data.output_parameter_changes
+                    << (request.data.output_parameter_changes_
                             ? "<IParameterChanges*>"
                             : "nullptr")
                     << ", input_events = ";
-            if (request.data.input_events) {
+            if (request.data.input_events_) {
                 message << "<IEventList* with "
-                        << request.data.input_events->num_events()
+                        << request.data.input_events_->num_events()
                         << " events>";
             } else {
                 message << "<nullptr>";
             }
             message << ", output_events = "
-                    << (request.data.output_events ? "<IEventList*>"
-                                                   : "<nullptr>")
+                    << (request.data.output_events_ ? "<IEventList*>"
+                                                    : "<nullptr>")
                     << ", process_context = "
-                    << (request.data.process_context ? "<ProcessContext*>"
-                                                     : "<nullptr>")
-                    << ", process_mode = " << request.data.process_mode
+                    << (request.data.process_context_ ? "<ProcessContext*>"
+                                                      : "<nullptr>")
+                    << ", process_mode = " << request.data.process_mode_
                     << ", symbolic_sample_size = "
-                    << request.data.symbolic_sample_size << ">)";
+                    << request.data.symbolic_sample_size_ << ">)";
         });
 }
 
@@ -1607,7 +1607,7 @@ void Vst3Logger::log_response(
         message << response.result.string();
         if (response.result == Steinberg::kResultOk) {
             message << ", [";
-            for (bool first = true; const auto& mapping : response.list.maps) {
+            for (bool first = true; const auto& mapping : response.list.maps_) {
                 if (!first) {
                     message << ", ";
                 }

@@ -24,4 +24,4 @@ YaProgramListData::ConstructArgs::ConstructArgs(
           Steinberg::FUnknownPtr<Steinberg::Vst::IProgramListData>(object)) {}
 
 YaProgramListData::YaProgramListData(ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

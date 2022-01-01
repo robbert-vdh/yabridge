@@ -79,18 +79,18 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
      * Get the instance ID of the owner of this object.
      */
     inline size_t owner_instance_id() const noexcept {
-        return arguments.owner_instance_id;
+        return arguments_.owner_instance_id;
     }
 
     /**
      * Get the unique ID for the context menu this target belongs to.
      */
-    inline size_t context_menu_id() const { return arguments.context_menu_id; }
+    inline size_t context_menu_id() const { return arguments_.context_menu_id; }
 
     /**
      * Get the tag of the menu item this target was passed to.
      */
-    inline int32 target_tag() const { return arguments.tag; }
+    inline int32 target_tag() const { return arguments_.tag; }
 
     /*
      * Message to pass through a call to
@@ -122,7 +122,7 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
     virtual tresult PLUGIN_API executeMenuItem(int32 tag) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

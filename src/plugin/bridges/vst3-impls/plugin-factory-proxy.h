@@ -43,16 +43,16 @@ class Vst3PluginFactoryProxyImpl : public Vst3PluginFactoryProxy {
     // The following pointers are cast from `host_context` if
     // `IPluginFactory3::setHostContext()` has been called
 
-    Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication> host_application;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication> host_application_;
     Steinberg::FUnknownPtr<Steinberg::Vst::IPlugInterfaceSupport>
-        plug_interface_support;
+        plug_interface_support_;
 
    private:
-    Vst3PluginBridge& bridge;
+    Vst3PluginBridge& bridge_;
 
     /**
      * An host context if we get passed one through
      * `IPluginFactory3::setHostContext()`.
      */
-    Steinberg::IPtr<Steinberg::FUnknown> host_context;
+    Steinberg::IPtr<Steinberg::FUnknown> host_context_;
 };

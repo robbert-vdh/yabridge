@@ -41,7 +41,7 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
           [](boost::asio::io_context& io_context, const PluginInfo& info) {
               return Vst2Sockets<std::jthread>(
                   io_context,
-                  generate_endpoint_base(info.native_library_path.filename()
+                  generate_endpoint_base(info.native_library_path_.filename()
                                              .replace_extension("")
                                              .string()),
                   true);
@@ -49,9 +49,9 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
       // All the fields should be zero initialized because
       // `Vst2PluginInstance::vstAudioMasterCallback` from Bitwig's plugin
       // bridge will crash otherwise
-      plugin(),
-      host_callback_function(host_callback),
-      logger(generic_logger) {
+      plugin_(),
+      host_callback_function_(host_callback),
+      logger_(generic_logger_) {
     log_init_message();
 
     // This will block until all sockets have been connected to by the Wine VST
@@ -60,23 +60,23 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
 
     // Set up all pointers for our `AEffect` struct. We will fill this with data
     // from the VST plugin loaded in Wine at the end of this constructor.
-    plugin.ptr3 = this;
-    plugin.dispatcher = dispatch_proxy;
-    plugin.process = process_proxy;
-    plugin.setParameter = set_parameter_proxy;
-    plugin.getParameter = get_parameter_proxy;
-    plugin.processReplacing = process_replacing_proxy;
-    plugin.processDoubleReplacing = process_double_replacing_proxy;
+    plugin_.ptr3 = this;
+    plugin_.dispatcher = dispatch_proxy;
+    plugin_.process = process_proxy;
+    plugin_.setParameter = set_parameter_proxy;
+    plugin_.getParameter = get_parameter_proxy;
+    plugin_.processReplacing = process_replacing_proxy;
+    plugin_.processDoubleReplacing = process_double_replacing_proxy;
 
     // For our communication we use simple threads and blocking operations
     // instead of asynchronous IO since communication has to be handled in
     // lockstep anyway
-    host_callback_handler = std::jthread([&]() {
+    host_callback_handler_ = std::jthread([&]() {
         set_realtime_priority(true);
         pthread_setname_np(pthread_self(), "host-callbacks");
 
-        sockets.vst_host_callback.receive_events(
-            std::pair<Vst2Logger&, bool>(logger, false),
+        sockets_.vst_host_callback_.receive_events(
+            std::pair<Vst2Logger&, bool>(logger_, false),
             [&](Vst2Event& event, bool /*on_main_thread*/) {
                 switch (event.opcode) {
                     // MIDI events sent from the plugin back to the host are
@@ -87,9 +87,9 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                     // actually send them to the host at the end of the
                     // `process_replacing()` function.
                     case audioMasterProcessEvents: {
-                        std::lock_guard lock(incoming_midi_events_mutex);
+                        std::lock_guard lock(incoming_midi_events_mutex_);
 
-                        incoming_midi_events.push_back(
+                        incoming_midi_events_.push_back(
                             std::get<DynamicVstEvents>(event.payload));
 
                         return Vst2EventResult{.return_value = 1,
@@ -102,9 +102,9 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                     // store the last resize request and then only pass it to
                     // the host when it calls `effEditIdle()`.
                     case audioMasterSizeWindow: {
-                        std::lock_guard lock(incoming_resize_mutex);
+                        std::lock_guard lock(incoming_resize_mutex_);
 
-                        incoming_resize = std::pair(event.index, event.value);
+                        incoming_resize_ = std::pair(event.index, event.value);
 
                         return Vst2EventResult{.return_value = 1,
                                                .payload = nullptr,
@@ -120,11 +120,13 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                     //       initialization, and at that point we will not yet
                     //       have sent the configuration to the plugin.
                     case audioMasterGetProductString: {
-                        if (config.hide_daw) {
-                            logger.log("The plugin asked for the host's name.");
-                            logger.log("Reporting \"" +
-                                       std::string(product_name_override) +
-                                       "\" instead of the actual host's name.");
+                        if (config_.hide_daw) {
+                            logger_.log(
+                                "The plugin asked for the host's name.");
+                            logger_.log(
+                                "Reporting \"" +
+                                std::string(product_name_override) +
+                                "\" instead of the actual host's name.");
 
                             return Vst2EventResult{
                                 .return_value = 1,
@@ -133,10 +135,10 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                         }
                     } break;
                     case audioMasterGetVendorString: {
-                        if (config.hide_daw) {
-                            logger.log(
+                        if (config_.hide_daw) {
+                            logger_.log(
                                 "The plugin asked for the host's vendor.");
-                            logger.log(
+                            logger_.log(
                                 "Reporting \"" +
                                 std::string(vendor_name_override) +
                                 "\" instead of the actual host's vendor.");
@@ -148,14 +150,14 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                         }
                     } break;
                     case audioMasterDeadBeef:
-                        logger.log("");
-                        logger.log(
+                        logger_.log("");
+                        logger_.log(
                             "   The plugin wants to use REAPER's host vendor");
-                        logger.log(
+                        logger_.log(
                             "   extensions which currently aren't supported "
                             "by");
-                        logger.log("   yabridge. Ignoring the request.");
-                        logger.log("");
+                        logger_.log("   yabridge. Ignoring the request.");
+                        logger_.log("");
 
                         return Vst2EventResult{.return_value = 0,
                                                .payload = nullptr,
@@ -163,7 +165,7 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
                         break;
                 }
 
-                return passthrough_event(&plugin, host_callback_function,
+                return passthrough_event(&plugin_, host_callback_function_,
                                          event);
             });
     });
@@ -174,7 +176,7 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
     // over the `dispatcher()` socket. This would happen whenever the plugin
     // calls `audioMasterIOChanged()` and after the host calls `effOpen()`.
     const auto initialization_data =
-        sockets.host_vst_control.receive_single<Vst2EventResult>();
+        sockets_.host_vst_control_.receive_single<Vst2EventResult>();
 
     const auto initialized_plugin =
         std::get<AEffect>(initialization_data.payload);
@@ -184,19 +186,19 @@ Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
 
     // After receiving the `AEffect` values we'll want to send the configuration
     // back to complete the startup process
-    sockets.host_vst_control.send(config);
+    sockets_.host_vst_control_.send(config_);
 
-    update_aeffect(plugin, initialized_plugin);
+    update_aeffect(plugin_, initialized_plugin);
 }
 
 Vst2PluginBridge::~Vst2PluginBridge() noexcept {
     try {
         // Drop all work make sure all sockets are closed
-        plugin_host->terminate();
+        plugin_host_->terminate();
 
         // The `stop()` method will cause the IO context to just drop all of its
         // outstanding work immediately
-        io_context.stop();
+        io_context_.stop();
     } catch (const boost::system::system_error&) {
         // It could be that the sockets have already been closed or that the
         // process has already exited (at which point we probably won't be
@@ -210,10 +212,10 @@ class DispatchDataConverter : public DefaultDataConverter {
                           std::vector<uint8_t>& chunk_data,
                           AEffect& plugin,
                           VstRect& editor_rectangle) noexcept
-        : process_buffers(process_buffers),
-          chunk(chunk_data),
-          plugin(plugin),
-          rect(editor_rectangle) {}
+        : process_buffers_(process_buffers),
+          chunk_(chunk_data),
+          plugin_(plugin),
+          rect_(editor_rectangle) {}
 
     Vst2Event::Payload read_data(const int opcode,
                                  const int index,
@@ -376,16 +378,16 @@ class DispatchDataConverter : public DefaultDataConverter {
                 // any notification about this.
                 const auto& updated_plugin =
                     std::get<AEffect>(response.payload);
-                update_aeffect(plugin, updated_plugin);
+                update_aeffect(plugin_, updated_plugin);
             } break;
             case effMainsChanged: {
                 if (const auto* audio_buffer_config =
                         std::get_if<AudioShmBuffer::Config>(
                             &response.payload)) {
-                    if (!process_buffers) {
-                        process_buffers.emplace(*audio_buffer_config);
+                    if (!process_buffers_) {
+                        process_buffers_.emplace(*audio_buffer_config);
                     } else {
-                        process_buffers->resize(*audio_buffer_config);
+                        process_buffers_->resize(*audio_buffer_config);
                     }
                 }
             } break;
@@ -397,9 +399,9 @@ class DispatchDataConverter : public DefaultDataConverter {
                 }
 
                 const auto& new_rect = std::get<VstRect>(response.payload);
-                rect = new_rect;
+                rect_ = new_rect;
 
-                *static_cast<VstRect**>(data) = &rect;
+                *static_cast<VstRect**>(data) = &rect_;
             } break;
             case effGetChunk: {
                 // Write the chunk data to some publically accessible place in
@@ -407,9 +409,9 @@ class DispatchDataConverter : public DefaultDataConverter {
                 // data pointer
                 const auto& buffer =
                     std::get<ChunkData>(response.payload).buffer;
-                chunk.assign(buffer.begin(), buffer.end());
+                chunk_.assign(buffer.begin(), buffer.end());
 
-                *static_cast<uint8_t**>(data) = chunk.data();
+                *static_cast<uint8_t**>(data) = chunk_.data();
             } break;
             case effGetInputProperties:
             case effGetOutputProperties: {
@@ -492,10 +494,10 @@ class DispatchDataConverter : public DefaultDataConverter {
     }
 
    private:
-    std::optional<AudioShmBuffer>& process_buffers;
-    std::vector<uint8_t>& chunk;
-    AEffect& plugin;
-    VstRect& rect;
+    std::optional<AudioShmBuffer>& process_buffers_;
+    std::vector<uint8_t>& chunk_;
+    AEffect& plugin_;
+    VstRect& rect_;
 };
 
 intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
@@ -510,19 +512,19 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
     //       been a release that contains the fix yet. This should be removed
     //       once Ardour 6.0 gets released.
     //       https://tracker.ardour.org/view.php?id=7668
-    if (plugin.magic == 0) [[unlikely]] {
-        logger.log_event(true, opcode, index, value, nullptr, option,
-                         std::nullopt);
-        logger.log(
+    if (plugin_.magic == 0) [[unlikely]] {
+        logger_.log_event(true, opcode, index, value, nullptr, option,
+                          std::nullopt);
+        logger_.log(
             "   Warning: The host has dispatched an event before the plugin "
             "has finished initializing, ignoring the event. (are we running "
             "Ardour 5.X?)");
-        logger.log_event_response(true, opcode, 0, nullptr, std::nullopt);
+        logger_.log_event_response(true, opcode, 0, nullptr, std::nullopt);
         return 0;
     }
 
-    DispatchDataConverter converter(process_buffers, chunk_data, plugin,
-                                    editor_rectangle);
+    DispatchDataConverter converter(process_buffers_, chunk_data_, plugin_,
+                                    editor_rectangle_);
 
     switch (opcode) {
         case effClose: {
@@ -533,13 +535,13 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
             intptr_t return_value = 0;
             try {
                 // TODO: Add some kind of timeout?
-                return_value = sockets.host_vst_dispatch.send_event(
-                    converter, std::pair<Vst2Logger&, bool>(logger, true),
+                return_value = sockets_.host_vst_dispatch_.send_event(
+                    converter, std::pair<Vst2Logger&, bool>(logger_, true),
                     opcode, index, value, data, option);
             } catch (const boost::system::system_error&) {
                 // Thrown when the socket gets closed because the VST plugin
                 // loaded into the Wine process crashed during shutdown
-                logger.log("The plugin crashed during shutdown, ignoring");
+                logger_.log("The plugin crashed during shutdown, ignoring");
             }
 
             delete this;
@@ -555,26 +557,26 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
             // from a non-GUI thread (which could cause issues), or we would
             // need a timer anyways to proc the function when the GUI is being
             // blocked by for instance an open dropdown.
-            logger.log_event(true, opcode, index, value, nullptr, option,
-                             std::nullopt);
+            logger_.log_event(true, opcode, index, value, nullptr, option,
+                              std::nullopt);
 
             // REAPER requires `audioMasterSizeWindow()` calls to be done from
             // the GUI thread. In every other host this doesn't make a
             // difference, but in REAPER the FX window only resizes when this is
             // called from here.
             {
-                std::unique_lock lock(incoming_resize_mutex);
-                if (incoming_resize) {
-                    const auto& [width, height] = *incoming_resize;
-                    incoming_resize.reset();
+                std::unique_lock lock(incoming_resize_mutex_);
+                if (incoming_resize_) {
+                    const auto& [width, height] = *incoming_resize_;
+                    incoming_resize_.reset();
                     lock.unlock();
 
-                    host_callback_function(&plugin, audioMasterSizeWindow,
-                                           width, height, nullptr, 0.0);
+                    host_callback_function_(&plugin_, audioMasterSizeWindow,
+                                            width, height, nullptr, 0.0);
                 }
             }
 
-            logger.log_event_response(true, opcode, 0, nullptr, std::nullopt);
+            logger_.log_event_response(true, opcode, 0, nullptr, std::nullopt);
             return 0;
         }; break;
         case effCanDo: {
@@ -585,20 +587,20 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
             //       window ID to `effEditOpen`. This is of course not going to
             //       work when the GUI is handled using Wine so we'll ignore it.
             if (query == "hasCockosViewAsConfig") {
-                logger.log_event(true, opcode, index, value, query, option,
-                                 std::nullopt);
+                logger_.log_event(true, opcode, index, value, query, option,
+                                  std::nullopt);
 
-                logger.log("");
-                logger.log(
+                logger_.log("");
+                logger_.log(
                     "   The host has requested libSwell GUI support, which is");
-                logger.log("   not supported when using Wine.");
-                logger.log(
+                logger_.log("   not supported when using Wine.");
+                logger_.log(
                     "   You can safely ignore this message; this is normal");
-                logger.log("   when using REAPER.");
-                logger.log("");
+                logger_.log("   when using REAPER.");
+                logger_.log("");
 
-                logger.log_event_response(true, opcode, -1, nullptr,
-                                          std::nullopt);
+                logger_.log_event_response(true, opcode, -1, nullptr,
+                                           std::nullopt);
                 return -1;
             }
         } break;
@@ -609,8 +611,8 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
     // and loading plugin state it's much better to have bitsery or our
     // receiving function temporarily allocate a large enough buffer rather than
     // to have a bunch of allocated memory sitting around doing nothing.
-    return sockets.host_vst_dispatch.send_event(
-        converter, std::pair<Vst2Logger&, bool>(logger, true), opcode, index,
+    return sockets_.host_vst_dispatch_.send_event(
+        converter, std::pair<Vst2Logger&, bool>(logger_, true), opcode, index,
         value, data, option);
 }
 
@@ -630,8 +632,8 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     //       VeSTige headers, let's just set all of them!
     const VstTimeInfo* returned_time_info =
         reinterpret_cast<const VstTimeInfo*>(
-            host_callback_function(&plugin, audioMasterGetTime, 0,
-                                   ~static_cast<intptr_t>(0), nullptr, 0.0));
+            host_callback_function_(&plugin_, audioMasterGetTime, 0,
+                                    ~static_cast<intptr_t>(0), nullptr, 0.0));
     if (returned_time_info) {
         request.current_time_info = *returned_time_info;
     } else {
@@ -640,16 +642,16 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
 
     // Some plugisn also ask for the current process level, so we'll prefetch
     // that information as well
-    request.current_process_level = static_cast<int>(host_callback_function(
-        &plugin, audioMasterGetCurrentProcessLevel, 0, 0, nullptr, 0.0));
+    request.current_process_level = static_cast<int>(host_callback_function_(
+        &plugin_, audioMasterGetCurrentProcessLevel, 0, 0, nullptr, 0.0));
 
     // We'll synchronize the scheduling priority of the audio thread on the Wine
     // plugin host with that of the host's audio thread every once in a while
     const time_t now = time(nullptr);
-    if (now > last_audio_thread_priority_synchronization +
+    if (now > last_audio_thread_priority_synchronization_ +
                   audio_thread_priority_synchronization_interval) {
         request.new_realtime_priority = get_realtime_priority();
-        last_audio_thread_priority_synchronization = now;
+        last_audio_thread_priority_synchronization_ = now;
     } else {
         request.new_realtime_priority.reset();
     }
@@ -675,25 +677,25 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
 
     // The host should have called `effMainsChanged()` before sending audio to
     // process
-    assert(process_buffers);
-    for (int channel = 0; channel < plugin.numInputs; channel++) {
-        T* input_channel = process_buffers->input_channel_ptr<T>(0, channel);
+    assert(process_buffers_);
+    for (int channel = 0; channel < plugin_.numInputs; channel++) {
+        T* input_channel = process_buffers_->input_channel_ptr<T>(0, channel);
         std::copy_n(inputs[channel], sample_frames, input_channel);
     }
 
     // After writing audio to the shared memory buffers, we'll send the
     // processing request parameters to the Wine plugin host so it can start
     // processing audio. This is why we don't need any explicit synchronisation.
-    sockets.host_vst_process_replacing.send(request);
+    sockets_.host_vst_process_replacing_.send(request);
 
     // From the Wine side we'll send a zero byte struct back as an
     // acknowledgement that audio processing has finished. At this point the
     // audio will have been written to our buffers.
-    sockets.host_vst_process_replacing.receive_single<Ack>();
+    sockets_.host_vst_process_replacing_.receive_single<Ack>();
 
-    for (int channel = 0; channel < plugin.numOutputs; channel++) {
+    for (int channel = 0; channel < plugin_.numOutputs; channel++) {
         const T* output_channel =
-            process_buffers->output_channel_ptr<T>(0, channel);
+            process_buffers_->output_channel_ptr<T>(0, channel);
 
         if constexpr (replacing) {
             std::copy_n(output_channel, sample_frames, outputs[channel]);
@@ -720,13 +722,13 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     // prevent these events from getting delayed by a sample we'll process them
     // after the plugin is done processing audio rather than during the time
     // we're still waiting on the plugin.
-    std::lock_guard lock(incoming_midi_events_mutex);
-    for (DynamicVstEvents& events : incoming_midi_events) {
-        host_callback_function(&plugin, audioMasterProcessEvents, 0, 0,
-                               &events.as_c_events(), 0.0);
+    std::lock_guard lock(incoming_midi_events_mutex_);
+    for (DynamicVstEvents& events : incoming_midi_events_) {
+        host_callback_function_(&plugin_, audioMasterProcessEvents, 0, 0,
+                                &events.as_c_events(), 0.0);
     }
 
-    incoming_midi_events.clear();
+    incoming_midi_events_.clear();
 }
 
 void Vst2PluginBridge::process(AEffect* /*plugin*/,
@@ -736,31 +738,31 @@ void Vst2PluginBridge::process(AEffect* /*plugin*/,
     // Technically either `Vst2PluginBridge::process()` or
     // `Vst2PluginBridge::process_replacing()` could actually call the other
     // function on the plugin depending on what the plugin supports.
-    logger.log_trace([]() { return ">> process() :: start"; });
+    logger_.log_trace([]() { return ">> process() :: start"; });
     do_process<float, false>(inputs, outputs, sample_frames);
-    logger.log_trace([]() { return "   process() :: end"; });
+    logger_.log_trace([]() { return "   process() :: end"; });
 }
 
 void Vst2PluginBridge::process_replacing(AEffect* /*plugin*/,
                                          float** inputs,
                                          float** outputs,
                                          int sample_frames) {
-    logger.log_trace([]() { return ">> processReplacing() :: start"; });
+    logger_.log_trace([]() { return ">> processReplacing() :: start"; });
     do_process<float, true>(inputs, outputs, sample_frames);
-    logger.log_trace([]() { return "   processReplacing() :: end"; });
+    logger_.log_trace([]() { return "   processReplacing() :: end"; });
 }
 
 void Vst2PluginBridge::process_double_replacing(AEffect* /*plugin*/,
                                                 double** inputs,
                                                 double** outputs,
                                                 int sample_frames) {
-    logger.log_trace([]() { return ">> processDoubleReplacing() :: start"; });
+    logger_.log_trace([]() { return ">> processDoubleReplacing() :: start"; });
     do_process<double, true>(inputs, outputs, sample_frames);
-    logger.log_trace([]() { return "   processDoubleReplacing() :: end"; });
+    logger_.log_trace([]() { return "   processDoubleReplacing() :: end"; });
 }
 
 float Vst2PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
-    logger.log_get_parameter(index);
+    logger_.log_get_parameter(index);
 
     const Parameter request{index, std::nullopt};
     ParameterResult response;
@@ -768,14 +770,14 @@ float Vst2PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
     // Prevent race conditions from `getParameter()` and `setParameter()` being
     // called at the same time since  they share the same socket
     {
-        std::lock_guard lock(parameters_mutex);
-        sockets.host_vst_parameters.send(request);
+        std::lock_guard lock(parameters_mutex_);
+        sockets_.host_vst_parameters_.send(request);
 
         response =
-            sockets.host_vst_parameters.receive_single<ParameterResult>();
+            sockets_.host_vst_parameters_.receive_single<ParameterResult>();
     }
 
-    logger.log_get_parameter_response(*response.value);
+    logger_.log_get_parameter_response(*response.value);
 
     return *response.value;
 }
@@ -783,20 +785,20 @@ float Vst2PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
 void Vst2PluginBridge::set_parameter(AEffect* /*plugin*/,
                                      int index,
                                      float value) {
-    logger.log_set_parameter(index, value);
+    logger_.log_set_parameter(index, value);
 
     const Parameter request{index, value};
     ParameterResult response;
 
     {
-        std::lock_guard lock(parameters_mutex);
-        sockets.host_vst_parameters.send(request);
+        std::lock_guard lock(parameters_mutex_);
+        sockets_.host_vst_parameters_.send(request);
 
         response =
-            sockets.host_vst_parameters.receive_single<ParameterResult>();
+            sockets_.host_vst_parameters_.receive_single<ParameterResult>();
     }
 
-    logger.log_set_parameter_response();
+    logger_.log_set_parameter_response();
 
     // This should not contain any values and just serve as an acknowledgement
     assert(!response.value);

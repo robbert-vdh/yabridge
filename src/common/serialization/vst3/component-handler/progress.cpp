@@ -23,4 +23,4 @@ YaProgress::ConstructArgs::ConstructArgs(
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IProgress>(object)) {}
 
 YaProgress::YaProgress(ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

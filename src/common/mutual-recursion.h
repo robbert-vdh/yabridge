@@ -86,8 +86,8 @@ class MutualRecursionHelper {
         std::shared_ptr<boost::asio::io_context> current_io_context =
             std::make_shared<boost::asio::io_context>();
         {
-            std::unique_lock lock(mutual_recursion_contexts_mutex);
-            mutual_recursion_contexts.push_back(current_io_context);
+            std::unique_lock lock(mutual_recursion_contexts_mutex_);
+            mutual_recursion_contexts_.push_back(current_io_context);
         }
 
         // Instead of directly stopping the IO context, we'll reset this work
@@ -106,11 +106,11 @@ class MutualRecursionHelper {
             // the other side). By resetting the work guard we do not cancel any
             // pending tasks, but `current_io_context->run()` will stop blocking
             // eventually.
-            std::lock_guard lock(mutual_recursion_contexts_mutex);
+            std::lock_guard lock(mutual_recursion_contexts_mutex_);
             work_guard.reset();
-            mutual_recursion_contexts.erase(
-                std::find(mutual_recursion_contexts.begin(),
-                          mutual_recursion_contexts.end(), current_io_context));
+            mutual_recursion_contexts_.erase(std::find(
+                mutual_recursion_contexts_.begin(),
+                mutual_recursion_contexts_.end(), current_io_context));
 
             response_promise.set_value(response);
         });
@@ -158,8 +158,9 @@ class MutualRecursionHelper {
     std::optional<std::invoke_result_t<F>> maybe_handle(F&& fn) {
         using Result = std::invoke_result_t<F>;
 
-        std::unique_lock mutual_recursion_lock(mutual_recursion_contexts_mutex);
-        if (mutual_recursion_contexts.empty()) {
+        std::unique_lock mutual_recursion_lock(
+            mutual_recursion_contexts_mutex_);
+        if (mutual_recursion_contexts_.empty()) {
             return std::nullopt;
         }
 
@@ -167,7 +168,7 @@ class MutualRecursionHelper {
         // pretend that we're not doing any async things here
         std::packaged_task<Result()> do_call(std::forward<F>(fn));
         std::future<Result> do_call_response = do_call.get_future();
-        boost::asio::dispatch(*mutual_recursion_contexts.back(),
+        boost::asio::dispatch(*mutual_recursion_contexts_.back(),
                               std::move(do_call));
         mutual_recursion_lock.unlock();
 
@@ -186,6 +187,6 @@ class MutualRecursionHelper {
      * recursion going on.
      */
     std::vector<std::shared_ptr<boost::asio::io_context>>
-        mutual_recursion_contexts;
-    std::mutex mutual_recursion_contexts_mutex;
+        mutual_recursion_contexts_;
+    std::mutex mutual_recursion_contexts_mutex_;
 };

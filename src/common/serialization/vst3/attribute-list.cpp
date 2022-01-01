@@ -91,16 +91,16 @@ IMPLEMENT_FUNKNOWN_METHODS(YaAttributeList,
 
 std::vector<std::string> YaAttributeList::keys_and_types() const {
     std::vector<std::string> result{};
-    for (const auto& [key, value] : attrs_int) {
+    for (const auto& [key, value] : attrs_int_) {
         result.push_back("\"" + key + "\" (int)");
     }
-    for (const auto& [key, value] : attrs_float) {
+    for (const auto& [key, value] : attrs_float_) {
         result.push_back("\"" + key + "\" (float)");
     }
-    for (const auto& [key, value] : attrs_string) {
+    for (const auto& [key, value] : attrs_string_) {
         result.push_back("\"" + key + "\" (string)");
     }
-    for (const auto& [key, value] : attrs_binary) {
+    for (const auto& [key, value] : attrs_binary_) {
         result.push_back("\"" + key + "\" (binary)");
     }
 
@@ -113,16 +113,16 @@ tresult YaAttributeList::write_back(
         return Steinberg::kInvalidArgument;
     }
 
-    for (const auto& [key, value] : attrs_int) {
+    for (const auto& [key, value] : attrs_int_) {
         stream->setInt(key.c_str(), value);
     }
-    for (const auto& [key, value] : attrs_float) {
+    for (const auto& [key, value] : attrs_float_) {
         stream->setFloat(key.c_str(), value);
     }
-    for (const auto& [key, value] : attrs_string) {
+    for (const auto& [key, value] : attrs_string_) {
         stream->setString(key.c_str(), u16string_to_tchar_pointer(value));
     }
-    for (const auto& [key, value] : attrs_binary) {
+    for (const auto& [key, value] : attrs_binary_) {
         stream->setBinary(key.c_str(), value.data(), value.size());
     }
 
@@ -180,12 +180,12 @@ YaAttributeList YaAttributeList::read_stream_attributes(
 }
 
 tresult PLUGIN_API YaAttributeList::setInt(AttrID id, int64 value) {
-    attrs_int[id] = value;
+    attrs_int_[id] = value;
     return Steinberg::kResultOk;
 }
 
 tresult PLUGIN_API YaAttributeList::getInt(AttrID id, int64& value) {
-    if (const auto it = attrs_int.find(id); it != attrs_int.end()) {
+    if (const auto it = attrs_int_.find(id); it != attrs_int_.end()) {
         value = it->second;
         return Steinberg::kResultOk;
     } else {
@@ -194,12 +194,12 @@ tresult PLUGIN_API YaAttributeList::getInt(AttrID id, int64& value) {
 }
 
 tresult PLUGIN_API YaAttributeList::setFloat(AttrID id, double value) {
-    attrs_float[id] = value;
+    attrs_float_[id] = value;
     return Steinberg::kResultOk;
 }
 
 tresult PLUGIN_API YaAttributeList::getFloat(AttrID id, double& value) {
-    if (const auto it = attrs_float.find(id); it != attrs_float.end()) {
+    if (const auto it = attrs_float_.find(id); it != attrs_float_.end()) {
         value = it->second;
         return Steinberg::kResultOk;
     } else {
@@ -213,7 +213,7 @@ YaAttributeList::setString(AttrID id, const Steinberg::Vst::TChar* string) {
         return Steinberg::kInvalidArgument;
     }
 
-    attrs_string[id] = tchar_pointer_to_u16string(string);
+    attrs_string_[id] = tchar_pointer_to_u16string(string);
     return Steinberg::kResultOk;
 }
 
@@ -224,7 +224,7 @@ tresult PLUGIN_API YaAttributeList::getString(AttrID id,
         return Steinberg::kInvalidArgument;
     }
 
-    if (const auto it = attrs_string.find(id); it != attrs_string.end()) {
+    if (const auto it = attrs_string_.find(id); it != attrs_string_.end()) {
         // We may only copy `sizeInBytes / 2` UTF-16 characters to `string`,
         // We'll also have to make sure it's null terminated, so we'll reserve
         // another byte for that.
@@ -249,13 +249,13 @@ tresult PLUGIN_API YaAttributeList::setBinary(AttrID id,
     }
 
     const uint8_t* data_bytes = static_cast<const uint8_t*>(data);
-    attrs_binary[id].assign(data_bytes, data_bytes + sizeInBytes);
+    attrs_binary_[id].assign(data_bytes, data_bytes + sizeInBytes);
     return Steinberg::kResultOk;
 }
 tresult PLUGIN_API YaAttributeList::getBinary(AttrID id,
                                               const void*& data,
                                               uint32& sizeInBytes) {
-    if (const auto it = attrs_binary.find(id); it != attrs_binary.end()) {
+    if (const auto it = attrs_binary_.find(id); it != attrs_binary_.end()) {
         data = it->second.data();
         sizeInBytes = it->second.size();
         return Steinberg::kResultOk;

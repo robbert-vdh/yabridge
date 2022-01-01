@@ -18,20 +18,21 @@
 
 YaContextMenuTargetImpl::YaContextMenuTargetImpl(Vst3PluginBridge& bridge,
                                                  ConstructArgs&& args) noexcept
-    : YaContextMenuTarget(std::move(args)), bridge(bridge) {}
+    : YaContextMenuTarget(std::move(args)), bridge_(bridge) {}
 
 tresult PLUGIN_API
 YaContextMenuTargetImpl::queryInterface(const Steinberg::TUID _iid,
                                         void** obj) {
     const tresult result = YaContextMenuTarget::queryInterface(_iid, obj);
-    bridge.logger.log_query_interface("In IContextMenuTarget::queryInterface()",
-                                      result, Steinberg::FUID::fromTUID(_iid));
+    bridge_.logger_.log_query_interface(
+        "In IContextMenuTarget::queryInterface()", result,
+        Steinberg::FUID::fromTUID(_iid));
 
     return result;
 }
 
 tresult PLUGIN_API YaContextMenuTargetImpl::executeMenuItem(int32 tag) {
-    return bridge.send_message(YaContextMenuTarget::ExecuteMenuItem{
+    return bridge_.send_message(YaContextMenuTarget::ExecuteMenuItem{
         .owner_instance_id = owner_instance_id(),
         .context_menu_id = context_menu_id(),
         .target_tag = target_tag(),

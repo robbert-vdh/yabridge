@@ -98,11 +98,11 @@ class WineUID {
 
     template <typename S>
     void serialize(S& s) {
-        s.container1b(uid);
+        s.container1b(uid_);
     }
 
    protected:
-    ArrayUID uid;
+    ArrayUID uid_;
 };
 
 /**
@@ -131,15 +131,15 @@ class NativeUID {
     /**
      * Get a reference to the proper native UID.
      */
-    inline const ArrayUID& native_uid() const noexcept { return uid; };
+    inline const ArrayUID& native_uid() const noexcept { return uid_; };
 
     template <typename S>
     void serialize(S& s) {
-        s.container1b(uid);
+        s.container1b(uid_);
     }
 
    protected:
-    ArrayUID uid;
+    ArrayUID uid_;
 };
 
 /**
@@ -151,17 +151,17 @@ template <typename T>
 class PrimitiveWrapper {
    public:
     PrimitiveWrapper() noexcept {}
-    PrimitiveWrapper(T value) noexcept : value(value) {}
+    PrimitiveWrapper(T value) noexcept : value_(value) {}
 
-    operator T() const noexcept { return value; }
+    operator T() const noexcept { return value_; }
 
     template <typename S>
     void serialize(S& s) {
-        s.template value<sizeof(T)>(value);
+        s.template value<sizeof(T)>(value_);
     }
 
    private:
-    T value;
+    T value_;
 };
 
 /**
@@ -195,7 +195,7 @@ class UniversalTResult {
 
     template <typename S>
     void serialize(S& s) {
-        s.value4b(universal_result);
+        s.value4b(universal_result_);
     }
 
    private:
@@ -218,5 +218,5 @@ class UniversalTResult {
 
     static Value to_universal_result(tresult native_result) noexcept;
 
-    Value universal_result;
+    Value universal_result_;
 };

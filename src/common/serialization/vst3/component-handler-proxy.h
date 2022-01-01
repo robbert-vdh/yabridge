@@ -114,11 +114,11 @@ class Vst3ComponentHandlerProxy : public YaComponentHandler,
      * Get the instance ID of the owner of this object.
      */
     inline size_t owner_instance_id() const noexcept {
-        return arguments.owner_instance_id;
+        return arguments_.owner_instance_id;
     }
 
    private:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

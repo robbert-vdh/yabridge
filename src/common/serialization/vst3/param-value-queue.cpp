@@ -24,20 +24,20 @@ YaParamValueQueue::~YaParamValueQueue() noexcept {
 
 void YaParamValueQueue::clear_for_parameter(
     Steinberg::Vst::ParamID parameter_id) noexcept {
-    this->parameter_id = parameter_id;
-    queue.clear();
+    parameter_id_ = parameter_id;
+    queue_.clear();
 }
 
 void YaParamValueQueue::repopulate(
     Steinberg::Vst::IParamValueQueue& original_queue) {
-    parameter_id = original_queue.getParameterId();
+    parameter_id_ = original_queue.getParameterId();
 
     // Copy over all points to our vector
-    queue.resize(original_queue.getPointCount());
+    queue_.resize(original_queue.getPointCount());
     for (int i = 0; i < original_queue.getPointCount(); i++) {
         // We're skipping the assertions here and just assume that the function
         // returns `kResultOk`
-        original_queue.getPoint(i, queue[i].first, queue[i].second);
+        original_queue.getPoint(i, queue_[i].first, queue_[i].second);
     }
 }
 
@@ -52,27 +52,27 @@ void YaParamValueQueue::write_back_outputs(
     Steinberg::Vst::IParamValueQueue& output_queue) const {
     // We don't need this value
     int32 index;
-    for (const auto& [sample_offset, value] : queue) {
+    for (const auto& [sample_offset, value] : queue_) {
         // We don't check for `kResultOk` here
         output_queue.addPoint(sample_offset, value, index);
     }
 }
 
 Steinberg::Vst::ParamID PLUGIN_API YaParamValueQueue::getParameterId() {
-    return parameter_id;
+    return parameter_id_;
 }
 
 int32 PLUGIN_API YaParamValueQueue::getPointCount() {
-    return static_cast<int32>(queue.size());
+    return static_cast<int32>(queue_.size());
 }
 
 tresult PLUGIN_API
 YaParamValueQueue::getPoint(int32 index,
                             int32& sampleOffset /*out*/,
                             Steinberg::Vst::ParamValue& value /*out*/) {
-    if (index < static_cast<int32>(queue.size())) {
-        sampleOffset = queue[index].first;
-        value = queue[index].second;
+    if (index < static_cast<int32>(queue_.size())) {
+        sampleOffset = queue_[index].first;
+        value = queue_[index].second;
 
         return Steinberg::kResultOk;
     } else {
@@ -82,8 +82,8 @@ YaParamValueQueue::getPoint(int32 index,
 tresult PLUGIN_API YaParamValueQueue::addPoint(int32 sampleOffset,
                                                Steinberg::Vst::ParamValue value,
                                                int32& index /*out*/) {
-    index = static_cast<int32>(queue.size());
-    queue.push_back({sampleOffset, value});
+    index = static_cast<int32>(queue_.size());
+    queue_.push_back({sampleOffset, value});
 
     return Steinberg::kResultOk;
 }

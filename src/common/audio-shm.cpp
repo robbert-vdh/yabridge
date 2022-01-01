@@ -21,10 +21,10 @@
 #include "logging/common.h"
 
 AudioShmBuffer::AudioShmBuffer(const Config& config)
-    : config(config),
-      shm(boost::interprocess::open_or_create,
-          config.name.c_str(),
-          boost::interprocess::read_write) {
+    : config_(config),
+      shm_(boost::interprocess::open_or_create,
+           config.name.c_str(),
+           boost::interprocess::read_write) {
     setup_mapping();
 }
 
@@ -32,35 +32,35 @@ AudioShmBuffer::~AudioShmBuffer() noexcept {
     // If either side drops this object then the buffer should always be
     // removed, so we'll do it on both sides to reduce the chance that we leak
     // shared memory
-    if (!is_moved) {
-        boost::interprocess::shared_memory_object::remove(config.name.c_str());
+    if (!is_moved_) {
+        boost::interprocess::shared_memory_object::remove(config_.name.c_str());
     }
 }
 
 AudioShmBuffer::AudioShmBuffer(AudioShmBuffer&& o) noexcept
-    : config(std::move(o.config)),
-      shm(std::move(o.shm)),
-      buffer(std::move(o.buffer)) {
-    o.is_moved = true;
+    : config_(std::move(o.config_)),
+      shm_(std::move(o.shm_)),
+      buffer_(std::move(o.buffer_)) {
+    o.is_moved_ = true;
 }
 
 AudioShmBuffer& AudioShmBuffer::operator=(AudioShmBuffer&& o) noexcept {
-    config = std::move(o.config);
-    shm = std::move(o.shm);
-    buffer = std::move(o.buffer);
-    o.is_moved = true;
+    config_ = std::move(o.config_);
+    shm_ = std::move(o.shm_);
+    buffer_ = std::move(o.buffer_);
+    o.is_moved_ = true;
 
     return *this;
 }
 
 void AudioShmBuffer::resize(const Config& new_config) {
-    if (new_config.name != config.name) {
+    if (new_config.name != config_.name) {
         throw std::invalid_argument("Expected buffer configuration for \"" +
-                                    config.name + "\", got \"" +
+                                    config_.name + "\", got \"" +
                                     new_config.name + "\"");
     }
 
-    config = new_config;
+    config_ = new_config;
     setup_mapping();
 }
 
@@ -68,10 +68,10 @@ void AudioShmBuffer::setup_mapping() {
     try {
         // Apparently you get a `Resource temporarily unavailable` when calling
         // `ftruncate()` with a size of 0 on shared memory
-        if (config.size > 0) {
-            shm.truncate(config.size);
-            buffer = boost::interprocess::mapped_region(
-                shm, boost::interprocess::read_write, 0, config.size, nullptr,
+        if (config_.size > 0) {
+            shm_.truncate(config_.size);
+            buffer_ = boost::interprocess::mapped_region(
+                shm_, boost::interprocess::read_write, 0, config_.size, nullptr,
                 MAP_LOCKED);
         }
     } catch (const boost::interprocess::interprocess_exception& error) {

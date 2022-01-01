@@ -48,7 +48,7 @@ extern "C" VST_EXPORT AEffect* VSTPluginMain(
         // received.
         Vst2PluginBridge* bridge = new Vst2PluginBridge(host_callback);
 
-        return &bridge->plugin;
+        return &bridge->plugin_;
     } catch (const std::exception& error) {
         Logger logger = Logger::create_exception_logger();
 

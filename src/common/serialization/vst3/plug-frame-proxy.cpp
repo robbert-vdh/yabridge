@@ -25,7 +25,7 @@ Vst3PlugFrameProxy::ConstructArgs::ConstructArgs(
 
 Vst3PlugFrameProxy::Vst3PlugFrameProxy(ConstructArgs&& args) noexcept
     : YaPlugFrame(std::move(args.plug_frame_args)),
-      arguments(std::move(args)){FUNKNOWN_CTOR}
+      arguments_(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3PlugFrameProxy::~Vst3PlugFrameProxy() noexcept {
     FUNKNOWN_DTOR

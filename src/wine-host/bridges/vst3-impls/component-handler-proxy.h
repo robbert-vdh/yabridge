@@ -75,5 +75,5 @@ class Vst3ComponentHandlerProxyImpl : public Vst3ComponentHandlerProxy {
     tresult PLUGIN_API notifyUnitByBusChange() override;
 
    private:
-    Vst3Bridge& bridge;
+    Vst3Bridge& bridge_;
 };

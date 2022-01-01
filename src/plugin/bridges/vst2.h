@@ -126,13 +126,13 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      * VST host during initialization and then passed as a pointer to the Linux
      * native VST host from the Linux VST plugin's entry point.
      */
-    AEffect plugin;
+    AEffect plugin_;
 
    private:
     /**
      * The thread that handles host callbacks.
      */
-    std::jthread host_callback_handler;
+    std::jthread host_callback_handler_;
 
     /**
      * A mutex to prevent multiple simultaneous calls to `getParameter()` and
@@ -140,18 +140,18 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      * For `dispatch()` and `audioMaster()` there's some more complex logic for
      * this in `Vst2EventHandler`.
      */
-    std::mutex parameters_mutex;
+    std::mutex parameters_mutex_;
 
     /**
      * The callback function passed by the host to the VST plugin instance.
      */
-    audioMasterCallback host_callback_function;
+    audioMasterCallback host_callback_function_;
 
     /**
      * The logging facility used for this instance of yabridge. Wraps around
      * `PluginBridge::generic_logger`.
      */
-    Vst2Logger logger;
+    Vst2Logger logger_;
 
     /**
      * A shared memory object that contains both the input and output audio
@@ -165,14 +165,14 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      *
      * This will be a nullopt until `effMainsChanged` has been called.
      */
-    std::optional<AudioShmBuffer> process_buffers;
+    std::optional<AudioShmBuffer> process_buffers_;
 
     /**
      * We'll periodically synchronize the Wine host's audio thread priority with
      * that of the host. Since the overhead from doing so does add up, we'll
      * only do this every once in a while.
      */
-    time_t last_audio_thread_priority_synchronization = 0;
+    time_t last_audio_thread_priority_synchronization_ = 0;
 
     /**
      * The VST host can query a plugin for arbitrary binary data such as
@@ -180,12 +180,12 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      * that data. This vector is where we store the chunk data for the last
      * `effGetChunk` event.
      */
-    std::vector<uint8_t> chunk_data;
+    std::vector<uint8_t> chunk_data_;
     /**
      * The VST host will expect to be returned a pointer to a struct that stores
      * the dimensions of the editor window.
      */
-    VstRect editor_rectangle;
+    VstRect editor_rectangle_;
 
     /**
      * Sending MIDI events sent to the host by the plugin using
@@ -196,12 +196,12 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      * we receive so we can send them to host on the audio thread at the end of
      * `process_replacing()`.
      */
-    boost::container::small_vector<DynamicVstEvents, 1> incoming_midi_events;
+    boost::container::small_vector<DynamicVstEvents, 1> incoming_midi_events_;
     /**
      * Mutex for locking the above event queue, since recieving and processing
      * now happens in two different threads.
      */
-    std::mutex incoming_midi_events_mutex;
+    std::mutex incoming_midi_events_mutex_;
 
     /**
      * REAPER requires us to call `audioMasterSizeWidnow()` from the same thread
@@ -211,6 +211,6 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      * `audioMasterSizeWindow`. If this contains a value, we'll then call
      * `audioMasterSizeWindow()` with the new size during `effEditIdle()`.
      */
-    std::optional<std::pair<int, int>> incoming_resize;
-    std::mutex incoming_resize_mutex;
+    std::optional<std::pair<int, int>> incoming_resize_;
+    std::mutex incoming_resize_mutex_;
 };

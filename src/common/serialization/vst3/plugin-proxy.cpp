@@ -75,7 +75,7 @@ Vst3PluginProxy::Vst3PluginProxy(ConstructArgs&& args) noexcept
       YaUnitInfo(std::move(args.unit_info_args)),
       YaXmlRepresentationController(
           std::move(args.xml_representation_controller_args)),
-      arguments(std::move(args)){FUNKNOWN_CTOR}
+      arguments_(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3PluginProxy::~Vst3PluginProxy() noexcept {
     FUNKNOWN_DTOR
@@ -204,47 +204,47 @@ tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
 
 void Vst3PluginProxy::update_supported_interfaces(
     ConstructArgs&& updated_interfaces) {
-    assert(arguments.instance_id == updated_interfaces.instance_id);
+    assert(arguments_.instance_id == updated_interfaces.instance_id);
 
     // NOTE: This has to be kept in sync with `Vst3PluginProxy`'s constructor
-    YaAudioPresentationLatency::arguments =
+    YaAudioPresentationLatency::arguments_ =
         std::move(updated_interfaces.audio_presentation_latency_args);
-    YaAudioProcessor::arguments =
+    YaAudioProcessor::arguments_ =
         std::move(updated_interfaces.audio_processor_args);
-    YaAutomationState::arguments =
+    YaAutomationState::arguments_ =
         std::move(updated_interfaces.automation_state_args);
-    YaComponent::arguments = std::move(updated_interfaces.component_args);
-    YaConnectionPoint::arguments =
+    YaComponent::arguments_ = std::move(updated_interfaces.component_args);
+    YaConnectionPoint::arguments_ =
         std::move(updated_interfaces.connection_point_args);
-    YaEditController::arguments =
+    YaEditController::arguments_ =
         std::move(updated_interfaces.edit_controller_args);
-    YaEditController2::arguments =
+    YaEditController2::arguments_ =
         std::move(updated_interfaces.edit_controller_2_args);
-    YaEditControllerHostEditing::arguments =
+    YaEditControllerHostEditing::arguments_ =
         std::move(updated_interfaces.edit_controller_host_editing_args);
-    YaInfoListener::arguments =
+    YaInfoListener::arguments_ =
         std::move(updated_interfaces.info_listener_args);
-    YaKeyswitchController::arguments =
+    YaKeyswitchController::arguments_ =
         std::move(updated_interfaces.keyswitch_controller_args);
-    YaMidiLearn::arguments = std::move(updated_interfaces.midi_learn_args);
-    YaMidiMapping::arguments = std::move(updated_interfaces.midi_mapping_args);
-    YaNoteExpressionController::arguments =
+    YaMidiLearn::arguments_ = std::move(updated_interfaces.midi_learn_args);
+    YaMidiMapping::arguments_ = std::move(updated_interfaces.midi_mapping_args);
+    YaNoteExpressionController::arguments_ =
         std::move(updated_interfaces.note_expression_controller_args);
-    YaNoteExpressionPhysicalUIMapping::arguments =
+    YaNoteExpressionPhysicalUIMapping::arguments_ =
         std::move(updated_interfaces.note_expression_physical_ui_mapping_args);
-    YaParameterFunctionName::arguments =
+    YaParameterFunctionName::arguments_ =
         std::move(updated_interfaces.parameter_function_name_args);
-    YaPluginBase::arguments = std::move(updated_interfaces.plugin_base_args);
-    YaPrefetchableSupport::arguments =
+    YaPluginBase::arguments_ = std::move(updated_interfaces.plugin_base_args);
+    YaPrefetchableSupport::arguments_ =
         std::move(updated_interfaces.prefetchable_support_args);
-    YaProcessContextRequirements::arguments =
+    YaProcessContextRequirements::arguments_ =
         std::move(updated_interfaces.process_context_requirements_args);
-    YaProgramListData::arguments =
+    YaProgramListData::arguments_ =
         std::move(updated_interfaces.program_list_data_args);
-    YaUnitData::arguments = std::move(updated_interfaces.unit_data_args);
-    YaUnitInfo::arguments = std::move(updated_interfaces.unit_info_args);
-    YaXmlRepresentationController::arguments =
+    YaUnitData::arguments_ = std::move(updated_interfaces.unit_data_args);
+    YaUnitInfo::arguments_ = std::move(updated_interfaces.unit_info_args);
+    YaXmlRepresentationController::arguments_ =
         std::move(updated_interfaces.xml_representation_controller_args);
 
-    arguments = std::move(updated_interfaces);
+    arguments_ = std::move(updated_interfaces);
 }

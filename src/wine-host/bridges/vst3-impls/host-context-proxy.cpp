@@ -24,7 +24,7 @@
 Vst3HostContextProxyImpl::Vst3HostContextProxyImpl(
     Vst3Bridge& bridge,
     Vst3HostContextProxy::ConstructArgs&& args) noexcept
-    : Vst3HostContextProxy(std::move(args)), bridge(bridge) {
+    : Vst3HostContextProxy(std::move(args)), bridge_(bridge) {
     // The lifecycle of this object is managed together with that of the plugin
     // object instance this host context got passed to
 }
@@ -33,8 +33,8 @@ tresult PLUGIN_API
 Vst3HostContextProxyImpl::queryInterface(const Steinberg::TUID _iid,
                                          void** obj) {
     const tresult result = Vst3HostContextProxy::queryInterface(_iid, obj);
-    bridge.logger.log_query_interface("In FUnknown::queryInterface()", result,
-                                      Steinberg::FUID::fromTUID(_iid));
+    bridge_.logger_.log_query_interface("In FUnknown::queryInterface()", result,
+                                        Steinberg::FUID::fromTUID(_iid));
 
     return result;
 }
@@ -43,7 +43,7 @@ tresult PLUGIN_API
 Vst3HostContextProxyImpl::getName(Steinberg::Vst::String128 name) {
     if (name) {
         const GetNameResponse response =
-            bridge.send_message(YaHostApplication::GetName{
+            bridge_.send_message(YaHostApplication::GetName{
                 .owner_instance_id = owner_instance_id()});
 
         std::copy(response.name.begin(), response.name.end(), name);
@@ -51,7 +51,7 @@ Vst3HostContextProxyImpl::getName(Steinberg::Vst::String128 name) {
 
         return response.result;
     } else {
-        bridge.logger.log(
+        bridge_.logger_.log(
             "WARNING: Null pointer passed to 'IHostApplication::getName()'");
         return Steinberg::kInvalidArgument;
     }
@@ -86,8 +86,8 @@ Vst3HostContextProxyImpl::createInstance(Steinberg::TUID /*cid*/,
     }
 
     const Steinberg::FUID uid = Steinberg::FUID::fromTUID(_iid);
-    bridge.logger.log_query_interface("In IHostApplication::createInstance()",
-                                      response, uid);
+    bridge_.logger_.log_query_interface("In IHostApplication::createInstance()",
+                                        response, uid);
 
     return response;
 }
@@ -95,12 +95,12 @@ Vst3HostContextProxyImpl::createInstance(Steinberg::TUID /*cid*/,
 tresult PLUGIN_API
 Vst3HostContextProxyImpl::isPlugInterfaceSupported(const Steinberg::TUID _iid) {
     if (_iid) {
-        return bridge.send_message(
+        return bridge_.send_message(
             YaPlugInterfaceSupport::IsPlugInterfaceSupported{
                 .owner_instance_id = owner_instance_id(),
                 .iid = *reinterpret_cast<const Steinberg::TUID*>(&_iid)});
     } else {
-        bridge.logger.log(
+        bridge_.logger_.log(
             "WARNING: Null pointer passed to "
             "'IPlugInterfaceSupport::isPlugInterfaceSupported()'");
         return Steinberg::kInvalidArgument;

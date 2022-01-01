@@ -23,6 +23,5 @@ YaPrefetchableSupport::ConstructArgs::ConstructArgs(
     : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IPrefetchableSupport>(
           object)) {}
 
-YaPrefetchableSupport::YaPrefetchableSupport(
-    ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+YaPrefetchableSupport::YaPrefetchableSupport(ConstructArgs&& args) noexcept
+    : arguments_(std::move(args)) {}

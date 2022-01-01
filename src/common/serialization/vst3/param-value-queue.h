@@ -80,9 +80,9 @@ class alignas(16) YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
 
     template <typename S>
     void serialize(S& s) {
-        s.value4b(parameter_id);
+        s.value4b(parameter_id_);
         // TODO: Does bitsery have a built in way to serialize pairs?
-        s.container(queue, 1 << 16, [](S& s, std::pair<int32, double>& pair) {
+        s.container(queue_, 1 << 16, [](S& s, std::pair<int32, double>& pair) {
             s.value4b(pair.first);
             s.value8b(pair.second);
         });
@@ -91,7 +91,7 @@ class alignas(16) YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
     /**
      * For `IParamValueQueue::getParameterId`.
      */
-    Steinberg::Vst::ParamID parameter_id;
+    Steinberg::Vst::ParamID parameter_id_;
 
    private:
     /**
@@ -104,7 +104,7 @@ class alignas(16) YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
      */
     boost::container::small_vector<std::pair<int32, Steinberg::Vst::ParamValue>,
                                    16>
-        queue;
+        queue_;
 };
 
 #pragma GCC diagnostic pop

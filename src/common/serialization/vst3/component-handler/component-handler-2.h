@@ -59,7 +59,7 @@ class YaComponentHandler2 : public Steinberg::Vst::IComponentHandler2 {
      */
     YaComponentHandler2(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to `IComponentHandler2::setDirty(state)`
@@ -138,7 +138,7 @@ class YaComponentHandler2 : public Steinberg::Vst::IComponentHandler2 {
     virtual tresult PLUGIN_API finishGroupEdit() override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

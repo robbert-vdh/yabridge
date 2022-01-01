@@ -59,7 +59,7 @@ class YaPlugFrame : public Steinberg::IPlugFrame {
      */
     YaPlugFrame(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to `IPlugFrame::resizeView(<plug_view>,
@@ -88,7 +88,7 @@ class YaPlugFrame : public Steinberg::IPlugFrame {
                Steinberg::ViewRect* newSize) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

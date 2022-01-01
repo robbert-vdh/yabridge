@@ -92,22 +92,22 @@ class YaAttributeList : public Steinberg::Vst::IAttributeList {
 
     template <typename S>
     void serialize(S& s) {
-        s.ext(attrs_int, bitsery::ext::StdMap{1 << 20},
+        s.ext(attrs_int_, bitsery::ext::StdMap{1 << 20},
               [](S& s, std::string& key, int64& value) {
                   s.text1b(key, 1024);
                   s.value8b(value);
               });
-        s.ext(attrs_float, bitsery::ext::StdMap{1 << 20},
+        s.ext(attrs_float_, bitsery::ext::StdMap{1 << 20},
               [](S& s, std::string& key, double& value) {
                   s.text1b(key, 1024);
                   s.value8b(value);
               });
-        s.ext(attrs_string, bitsery::ext::StdMap{1 << 20},
+        s.ext(attrs_string_, bitsery::ext::StdMap{1 << 20},
               [](S& s, std::string& key, std::u16string& value) {
                   s.text1b(key, 1024);
                   s.text2b(value, 1 << 20);
               });
-        s.ext(attrs_binary, bitsery::ext::StdMap{1 << 20},
+        s.ext(attrs_binary_, bitsery::ext::StdMap{1 << 20},
               [](S& s, std::string& key, std::vector<uint8_t>& value) {
                   s.text1b(key, 1024);
                   s.container1b(value, 1 << 20);
@@ -115,10 +115,10 @@ class YaAttributeList : public Steinberg::Vst::IAttributeList {
     }
 
    private:
-    std::unordered_map<std::string, int64> attrs_int;
-    std::unordered_map<std::string, double> attrs_float;
-    std::unordered_map<std::string, std::u16string> attrs_string;
-    std::unordered_map<std::string, std::vector<uint8_t>> attrs_binary;
+    std::unordered_map<std::string, int64> attrs_int_;
+    std::unordered_map<std::string, double> attrs_float_;
+    std::unordered_map<std::string, std::u16string> attrs_string_;
+    std::unordered_map<std::string, std::vector<uint8_t>> attrs_binary_;
 };
 
 #pragma GCC diagnostic pop

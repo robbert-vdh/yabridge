@@ -26,4 +26,4 @@ YaEditControllerHostEditing::ConstructArgs::ConstructArgs(
 
 YaEditControllerHostEditing::YaEditControllerHostEditing(
     ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

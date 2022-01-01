@@ -62,7 +62,7 @@ class YaProcessContextRequirements
      */
     YaProcessContextRequirements(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to
@@ -83,7 +83,7 @@ class YaProcessContextRequirements
     virtual uint32 PLUGIN_API getProcessContextRequirements() override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

@@ -29,11 +29,11 @@ HostProcess::HostProcess(boost::asio::io_context& io_context,
                          Logger& logger,
                          const Configuration& config,
                          Sockets& sockets)
-    : stdout_pipe(io_context),
-      stderr_pipe(io_context),
-      config(config),
-      sockets(sockets),
-      logger(logger) {
+    : stdout_pipe_(io_context),
+      stderr_pipe_(io_context),
+      config_(config),
+      sockets_(sockets),
+      logger_(logger) {
     // See the comment above the `on_exec_setup` in `launch_host()`
     if (config.disable_pipes) {
         logger.log("");
@@ -44,9 +44,9 @@ HostProcess::HostProcess(boost::asio::io_context& io_context,
         // Print the Wine host's STDOUT and STDERR streams to the log file. This
         // should be done before trying to accept the sockets as otherwise we
         // will miss all output.
-        logger.async_log_pipe_lines(stdout_pipe, stdout_buffer,
+        logger.async_log_pipe_lines(stdout_pipe_, stdout_buffer_,
                                     "[Wine STDOUT] ");
-        logger.async_log_pipe_lines(stderr_pipe, stderr_buffer,
+        logger.async_log_pipe_lines(stderr_pipe_, stderr_buffer_,
                                     "[Wine STDERR] ");
     }
 }
@@ -60,12 +60,12 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
                                const PluginInfo& plugin_info,
                                const HostRequest& host_request)
     : HostProcess(io_context, logger, config, sockets),
-      plugin_info(plugin_info),
-      host_path(find_vst_host(plugin_info.native_library_path,
-                              plugin_info.plugin_arch,
-                              false)),
-      host(
-          launch_host(host_path,
+      plugin_info_(plugin_info),
+      host_path_(find_vst_host(plugin_info.native_library_path_,
+                               plugin_info.plugin_arch_,
+                               false)),
+      host_(
+          launch_host(host_path_,
                       plugin_type_to_string(host_request.plugin_type),
 #if defined(WITH_WINEDBG) && defined(WINEDBG_LEGACY_ARGUMENT_QUOTING)
                       // Old versions of winedbg flattened all command line
@@ -92,13 +92,13 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
 }
 
 fs::path IndividualHost::path() {
-    return host_path;
+    return host_path_;
 }
 
 bool IndividualHost::running() {
     // NOTE: `boost::process::child::running()` still considers zombies as
     //       running, so it's useless for our purposes.
-    return pid_running(host.id());
+    return pid_running(host_.id());
 }
 
 void IndividualHost::terminate() {
@@ -107,12 +107,12 @@ void IndividualHost::terminate() {
     //       by that process, so if we don't manually close the sockets there
     //       will still be threads listening on those sockets which in turn also
     //       prevents us from joining our `std::jthread`s on the plugin side.
-    sockets.close();
+    sockets_.close();
 
-    host.terminate();
+    host_.terminate();
     // NOTE: This leaves a zombie, because Boost.Process will actually not call
     //       `wait()` after we have terminated the process.
-    host.wait();
+    host_.wait();
 }
 
 GroupHost::GroupHost(boost::asio::io_context& io_context,
@@ -122,10 +122,10 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
                      const PluginInfo& plugin_info,
                      const HostRequest& host_request)
     : HostProcess(io_context, logger, config, sockets),
-      plugin_info(plugin_info),
-      host_path(find_vst_host(plugin_info.native_library_path,
-                              plugin_info.plugin_arch,
-                              true)) {
+      plugin_info_(plugin_info),
+      host_path_(find_vst_host(plugin_info.native_library_path_,
+                               plugin_info.plugin_arch_,
+                               true)) {
     // When using plugin groups, we'll first try to connect to an existing group
     // host process and ask it to host our plugin. If no such process exists,
     // then we'll start a new process. In the event that multiple yabridge
@@ -134,10 +134,10 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
     // other processes will exit. When a plugin's host process has exited, it
     // will try to connect to the socket once more in the case that another
     // process is now listening on it.
-    const fs::path endpoint_base_dir = sockets.base_dir;
+    const fs::path endpoint_base_dir = sockets.base_dir_;
     const fs::path group_socket_path = generate_group_endpoint(
         *config.group, plugin_info.normalize_wine_prefix(),
-        plugin_info.plugin_arch);
+        plugin_info.plugin_arch_);
     const auto connect = [&io_context, host_request, endpoint_base_dir,
                           group_socket_path]() {
         boost::asio::local::stream_protocol::socket group_socket(io_context);
@@ -157,12 +157,12 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
         // because it should run independently of this yabridge instance as
         // it will likely outlive it.
         bp::child group_host =
-            launch_host(host_path, group_socket_path,
+            launch_host(host_path_, group_socket_path,
                         bp::env = plugin_info.create_host_env());
         group_host.detach();
 
         const pid_t group_host_pid = group_host.id();
-        group_host_connect_handler =
+        group_host_connect_handler_ =
             std::jthread([this, connect, group_host_pid]() {
                 set_realtime_priority(true);
                 pthread_setname_np(pthread_self(), "group-connect");
@@ -191,26 +191,26 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
                 try {
                     connect();
                 } catch (const boost::system::system_error&) {
-                    startup_failed = true;
+                    startup_failed_ = true;
                 }
             });
     }
 }
 
 fs::path GroupHost::path() {
-    return host_path;
+    return host_path_;
 }
 
 bool GroupHost::running() noexcept {
     // When we are unable to connect to a new or existing group host process,
     // then we'll consider the startup failed and we'll allow the initialization
     // process to terminate.
-    return !startup_failed;
+    return !startup_failed_;
 }
 
 void GroupHost::terminate() {
     // There's no need to manually terminate group host processes as they will
     // shut down automatically after all plugins have exited. Manually closing
     // the sockets will cause the associated plugin to exit.
-    sockets.close();
+    sockets_.close();
 }

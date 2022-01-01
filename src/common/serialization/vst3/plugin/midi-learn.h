@@ -59,7 +59,7 @@ class YaMidiLearn : public Steinberg::Vst::IMidiLearn {
      */
     YaMidiLearn(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to
@@ -90,7 +90,7 @@ class YaMidiLearn : public Steinberg::Vst::IMidiLearn {
                               Steinberg::Vst::CtrlNumber midiCC) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

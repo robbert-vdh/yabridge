@@ -59,7 +59,7 @@ class YaUnitHandler2 : public Steinberg::Vst::IUnitHandler2 {
      */
     YaUnitHandler2(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to
@@ -80,7 +80,7 @@ class YaUnitHandler2 : public Steinberg::Vst::IUnitHandler2 {
     virtual tresult PLUGIN_API notifyUnitByBusChange() override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

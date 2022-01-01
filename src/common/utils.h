@@ -176,7 +176,7 @@ class ScopedFlushToZero {
      * don't accidentally end up disabling FTZ somewhere where it should be
      * enabled.
      */
-    std::optional<unsigned int> old_ftz_mode;
+    std::optional<unsigned int> old_ftz_mode_;
 };
 
 /**
@@ -204,7 +204,7 @@ class ScopedValueCache {
      * Return the cached value, if we're currently caching a value. Will return
      * a null pointer when this is not the case.
      */
-    const T* get() const noexcept { return value ? &*value : nullptr; }
+    const T* get() const noexcept { return value_ ? &*value_ : nullptr; }
 
     /**
      * A guard that will reset the cached value on the `ScopedValueCache` when
@@ -213,29 +213,29 @@ class ScopedValueCache {
     class Guard {
        public:
         Guard(std::optional<T>& cached_value) noexcept
-            : cached_value(cached_value) {}
+            : cached_value_(cached_value) {}
         ~Guard() noexcept {
-            if (is_active) {
-                cached_value.get().reset();
+            if (is_active_) {
+                cached_value_.get().reset();
             }
         }
 
         Guard(const Guard&) = delete;
         Guard& operator=(const Guard&) = delete;
 
-        Guard(Guard&& o) noexcept : cached_value(std::move(o.cached_value)) {
-            o.is_active = false;
+        Guard(Guard&& o) noexcept : cached_value_(std::move(o.cached_value_)) {
+            o.is_active_ = false;
         }
         Guard& operator=(Guard&& o) noexcept {
-            cached_value = std::move(o.cached_value);
-            o.is_active = false;
+            cached_value_ = std::move(o.cached_value_);
+            o.is_active_ = false;
 
             return *this;
         }
 
        private:
-        bool is_active = true;
-        std::reference_wrapper<std::optional<T>> cached_value;
+        bool is_active_ = true;
+        std::reference_wrapper<std::optional<T>> cached_value_;
     };
 
     /**
@@ -248,9 +248,9 @@ class ScopedValueCache {
      * @throw std::runtime_error When we are already caching a value.
      */
     Guard set(T new_value) noexcept {
-        value = std::move(new_value);
+        value_ = std::move(new_value);
 
-        return Guard(value);
+        return Guard(value_);
     }
 
    private:
@@ -258,7 +258,7 @@ class ScopedValueCache {
      * The current value, if `set()` has been called and the guard is still
      * active.
      */
-    std::optional<T> value;
+    std::optional<T> value_;
 };
 
 /**
@@ -279,7 +279,7 @@ class TimedValueCache {
      */
     const T* get() const noexcept {
         const time_t now = time(nullptr);
-        return now <= valid_until ? &value : nullptr;
+        return now <= valid_until_ ? &value_ : nullptr;
     }
 
     /**
@@ -290,9 +290,9 @@ class TimedValueCache {
      */
     const T* get_and_keep_alive(unsigned int lifetime_seconds) noexcept {
         const time_t now = time(nullptr);
-        if (now <= valid_until) {
-            valid_until = now + lifetime_seconds;
-            return &value;
+        if (now <= valid_until_) {
+            valid_until_ = now + lifetime_seconds;
+            return &value_;
         } else {
             return nullptr;
         }
@@ -302,11 +302,11 @@ class TimedValueCache {
      * Set the cached value for `lifetime_seconds` seconds.
      */
     void set(T value, unsigned int lifetime_seconds) noexcept {
-        this->value = value;
-        valid_until = time(nullptr) + lifetime_seconds;
+        value_ = value;
+        valid_until_ = time(nullptr) + lifetime_seconds;
     }
 
    private:
-    T value;
-    time_t valid_until = 0;
+    T value_;
+    time_t valid_until_ = 0;
 };

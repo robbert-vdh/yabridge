@@ -115,12 +115,12 @@ class MessageReference {
      * `0x1337420` so it's at least obvious where it's coming from if we get a
      * segfault caused by a read to that address.
      */
-    MessageReference() noexcept : object(reinterpret_cast<T*>(0x1337420)) {}
+    MessageReference() noexcept : object_(reinterpret_cast<T*>(0x1337420)) {}
 
     /**
      * Store a reference in this object.
      */
-    MessageReference(T& object) noexcept : object(&object) {}
+    MessageReference(T& object) noexcept : object_(&object) {}
 
     using Response = typename T::Response;
 
@@ -128,12 +128,12 @@ class MessageReference {
      * Get the reference to the object. This is the same interface as
      * `std::reference_wrapper<T>`.
      */
-    T& get() const noexcept { return *object; }
-    constexpr operator T&() const noexcept { return *object; }
+    T& get() const noexcept { return *object_; }
+    constexpr operator T&() const noexcept { return *object_; }
 
     // You cannot serialize a reference directly, use the Bitsery extension
     // mentioned above instead
 
    private:
-    T* object;
+    T* object_;
 };

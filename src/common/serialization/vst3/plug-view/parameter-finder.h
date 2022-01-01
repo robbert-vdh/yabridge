@@ -59,7 +59,7 @@ class YaParameterFinder : public Steinberg::Vst::IParameterFinder {
      */
     YaParameterFinder(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * The response code and editor size returned by a call to
@@ -102,7 +102,7 @@ class YaParameterFinder : public Steinberg::Vst::IParameterFinder {
                   Steinberg::Vst::ParamID& resultTag /*out*/) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

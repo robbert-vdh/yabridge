@@ -59,7 +59,7 @@ class YaUnitHandler : public Steinberg::Vst::IUnitHandler {
      */
     YaUnitHandler(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to
@@ -109,7 +109,7 @@ class YaUnitHandler : public Steinberg::Vst::IUnitHandler {
                             int32 programIndex) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

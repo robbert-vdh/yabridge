@@ -71,8 +71,8 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      *
      * See the bottom of this class for more information on what we're caching.
      *
-     * @see clear_bus_cache
-     * @see function_result_cache
+     * @see clear_bus_cache_
+     * @see function_result_cache_
      */
     void clear_caches() noexcept;
 
@@ -309,7 +309,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * callback on a component handler proxy object, we'll pass the call through
      * to this object.
      */
-    Steinberg::IPtr<Steinberg::Vst::IComponentHandler> component_handler;
+    Steinberg::IPtr<Steinberg::Vst::IComponentHandler> component_handler_;
 
     /**
      * If the host places a proxy between two objects in
@@ -320,15 +320,15 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * IDs this way, we'll still connect the objects directly on the Wine plugin
      * host side. So far this is only needed for Ardour.
      */
-    std::optional<size_t> connected_instance_id;
+    std::optional<size_t> connected_instance_id_;
 
     /**
      * If we cannot manage to bypass the connection proxy as mentioned in the
-     * docstring of `connected_instance_id`, then we'll store the host's
+     * docstring of `connected_instance_id_`, then we'll store the host's
      * connection point proxy here and we'll proxy that proxy, if that makes any
      * sense.
      */
-    Steinberg::IPtr<Steinberg::Vst::IConnectionPoint> connection_point_proxy;
+    Steinberg::IPtr<Steinberg::Vst::IConnectionPoint> connection_point_proxy_;
 
     /**
      * An unmanaged, raw pointer to the `IPlugView` instance returned in our
@@ -340,7 +340,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      *      currently only defines a single type of view so that shouldn't be an
      *      issue
      */
-    Vst3PlugViewProxyImpl* last_created_plug_view = nullptr;
+    Vst3PlugViewProxyImpl* last_created_plug_view_ = nullptr;
 
     /**
      * A pointer to a context menu returned by the host as a response to a call
@@ -373,28 +373,28 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * @see Vst3PluginProxyImpl::register_context_menu
      * @see Vst3PluginProxyImpl::unregister_context_menu
      */
-    std::map<size_t, ContextMenu> context_menus;
-    std::mutex context_menus_mutex;
+    std::map<size_t, ContextMenu> context_menus_;
+    std::mutex context_menus_mutex_;
 
     // The following pointers are cast from `host_context` if
     // `IPluginBase::initialize()` has been called
 
-    Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication> host_application;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IHostApplication> host_application_;
     Steinberg::FUnknownPtr<Steinberg::Vst::IPlugInterfaceSupport>
-        plug_interface_support;
+        plug_interface_support_;
 
     // The following pointers are cast from `component_handler` if
     // `IEditController::setComponentHandler()` has been called
 
     Steinberg::FUnknownPtr<Steinberg::Vst::IComponentHandler2>
-        component_handler_2;
+        component_handler_2_;
     Steinberg::FUnknownPtr<Steinberg::Vst::IComponentHandler3>
-        component_handler_3;
+        component_handler_3_;
     Steinberg::FUnknownPtr<Steinberg::Vst::IComponentHandlerBusActivation>
-        component_handler_bus_activation;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IProgress> progress;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler> unit_handler;
-    Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler2> unit_handler_2;
+        component_handler_bus_activation_;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IProgress> progress_;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler> unit_handler_;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IUnitHandler2> unit_handler_2_;
 
    private:
     /**
@@ -409,11 +409,11 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * manually flush this cache when the stores information potentially becomes
      * invalid.
      *
-     * @see processing_bus_cache
+     * @see processing_bus_cache_
      */
     void clear_bus_cache() noexcept;
 
-    Vst3PluginBridge& bridge;
+    Vst3PluginBridge& bridge_;
 
     /**
      * An host context if we get passed one through `IPluginBase::initialize()`.
@@ -422,14 +422,14 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * all plugin instances so we should not have to store it here separately,
      * but for the sake of correctness we will.
      */
-    Steinberg::IPtr<Steinberg::FUnknown> host_context;
+    Steinberg::IPtr<Steinberg::FUnknown> host_context_;
 
     /**
      * We'll periodically synchronize the Wine host's audio thread priority with
      * that of the host. Since the overhead from doing so does add up, we'll
      * only do this every once in a while.
      */
-    time_t last_audio_thread_priority_synchronization = 0;
+    time_t last_audio_thread_priority_synchronization_ = 0;
 
     /**
      * Used to assign unique identifiers to context menus created by
@@ -437,7 +437,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      *
      * @related Vst3PluginProxyImpl::register_context_menu
      */
-    std::atomic_size_t current_context_menu_id;
+    std::atomic_size_t current_context_menu_id_;
 
     /**
      * We'll reuse the request objects for the audio processor so we can keep
@@ -449,16 +449,16 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * from and to existing objects without having to copy or reallocate them.
      *
      * To reduce the amount of copying during audio processing we'll write the
-     * audio data to a shared memory object stored in `process_buffers` first.
+     * audio data to a shared memory object stored in `process_buffers_` first.
      */
-    YaAudioProcessor::Process process_request;
+    YaAudioProcessor::Process process_request_;
 
     /**
      * The response object we'll get in return when we send the
-     * `process_request` object above to the Wine plugin host. This object also
+     * `process_request_` object above to the Wine plugin host. This object also
      * contains heap data, so we also want to reuse this.
      */
-    YaAudioProcessor::ProcessResponse process_response;
+    YaAudioProcessor::ProcessResponse process_response_;
 
     /**
      * A shared memory object to share audio buffers between the native plugin
@@ -469,7 +469,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      *
      * This will be set up during `IAudioProcessor::setupProcessing()`.
      */
-    std::optional<AudioShmBuffer> process_buffers;
+    std::optional<AudioShmBuffer> process_buffers_;
 
     // Caches
 
@@ -480,7 +480,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * values should be immutable until the plugin tells the host that this
      * information has changed).
      *
-     * @see processing_bus_cache
+     * @see processing_bus_cache_
      */
     struct BusInfoCache {
         // `std::unordered_map` would be better here, but tuples aren't hashable
@@ -508,10 +508,10 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * Since this information is immutable during audio processing, this cache
      * will only be available at those times.
      *
-     * @see clear_bus_cache
+     * @see clear_bus_cache_
      */
-    std::optional<BusInfoCache> processing_bus_cache;
-    std::mutex processing_bus_cache_mutex;
+    std::optional<BusInfoCache> processing_bus_cache_;
+    std::mutex processing_bus_cache_mutex_;
 
     /**
      * A cache for several function calls that should be safe to cache since
@@ -519,7 +519,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * calls until the plugin tells the host that parameter information has
      * changed.
      *
-     * @see function_result_cache
+     * @see function_result_cache_
      */
     struct FunctionResultCache {
         /**
@@ -551,6 +551,6 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      *
      * @see clear_caches
      */
-    FunctionResultCache function_result_cache;
-    std::mutex function_result_cache_mutex;
+    FunctionResultCache function_result_cache_;
+    std::mutex function_result_cache_mutex_;
 };

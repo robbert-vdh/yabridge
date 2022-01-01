@@ -57,14 +57,14 @@ class Vst3ContextMenuProxyImpl : public Vst3ContextMenuProxy {
      */
     std::unordered_map<int32,
                        Steinberg::IPtr<Steinberg::Vst::IContextMenuTarget>>
-        context_menu_targets;
+        context_menu_targets_;
 
    private:
-    Vst3Bridge& bridge;
+    Vst3Bridge& bridge_;
 
     /**
      * The items passed when to `addItem` calls made by the plugin. This way we
      * can call these same targets later.
      */
-    std::vector<Steinberg::Vst::IContextMenuItem> items;
+    std::vector<Steinberg::Vst::IContextMenuItem> items_;
 };

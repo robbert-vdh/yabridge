@@ -28,7 +28,7 @@ Vst3ContextMenuProxy::ConstructArgs::ConstructArgs(
 
 Vst3ContextMenuProxy::Vst3ContextMenuProxy(ConstructArgs&& args) noexcept
     : YaContextMenu(std::move(args.context_menu_args)),
-      arguments(std::move(args)){FUNKNOWN_CTOR}
+      arguments_(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3ContextMenuProxy::~Vst3ContextMenuProxy() noexcept {
     FUNKNOWN_DTOR

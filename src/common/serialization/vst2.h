@@ -120,9 +120,10 @@ class alignas(16) DynamicVstEvents {
      * host can call `effProcessEvents()` multiple times, but in practice this
      * of course doesn't happen. In case the host or plugin sent SysEx data, we
      * will need to update the `dumpBytes` field to point to the data stored in
-     * the `sysex_data` field before dumping everything to `vst_events_buffer`.
+     * the `sysex_data_` field before dumping everything to
+     * `vst_events_buffer_`.
      */
-    boost::container::small_vector<VstEvent, 64> events;
+    boost::container::small_vector<VstEvent, 64> events_;
 
     /**
      * If the host or a plugin sends SysEx data, then we will store that data
@@ -133,13 +134,13 @@ class alignas(16) DynamicVstEvents {
      * Boost.Container, so this will have to do.
      */
     boost::container::small_vector<std::pair<native_size_t, std::string>, 8>
-        sysex_data;
+        sysex_data_;
 
     template <typename S>
     void serialize(S& s) {
-        s.container(events, max_midi_events,
+        s.container(events_, max_midi_events,
                     [](S& s, VstEvent& event) { s.container1b(event.dump); });
-        s.container(sysex_data, max_midi_events,
+        s.container(sysex_data_, max_midi_events,
                     [](S& s, std::pair<native_size_t, std::string>& pair) {
                         s.value8b(pair.first);
                         s.text1b(pair.second, max_buffer_size);
@@ -165,7 +166,7 @@ class alignas(16) DynamicVstEvents {
         sizeof(VstEvents) +
             ((64 - 1) *
              sizeof(VstEvent*))>  // NOLINT(bugprone-sizeof-expression)
-        vst_events_buffer;
+        vst_events_buffer_;
 };
 
 /**
@@ -204,19 +205,19 @@ class alignas(16) DynamicSpeakerArrangement {
     /**
      * The flags field from `VstSpeakerArrangement`
      */
-    int flags;
+    int flags_;
 
     /**
      * Information about the speakers in a particular input or output
      * configuration.
      */
-    std::vector<VstSpeaker> speakers;
+    std::vector<VstSpeaker> speakers_;
 
     template <typename S>
     void serialize(S& s) {
-        s.value4b(flags);
+        s.value4b(flags_);
         s.container(
-            speakers, max_audio_channels,
+            speakers_, max_audio_channels,
             [](S& s, VstSpeaker& speaker) { s.container1b(speaker.data); });
     }
 
@@ -230,7 +231,7 @@ class alignas(16) DynamicSpeakerArrangement {
      * We build this object in a byte sized vector to make allocating enough
      * heap space easy and safe.
      */
-    std::vector<uint8_t> speaker_arrangement_buffer;
+    std::vector<uint8_t> speaker_arrangement_buffer_;
 };
 
 /**

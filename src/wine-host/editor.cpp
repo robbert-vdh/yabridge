@@ -57,7 +57,7 @@ constexpr size_t idle_timer_id = 1337;
 
 /**
  * The X11 event mask for the host window, which in most DAWs except for Ardour
- * and REAPER will be the same as `parent_window`.
+ * and REAPER will be the same as `parent_window_`.
  */
 constexpr uint32_t host_event_mask =
     XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_VISIBILITY_CHANGE;
@@ -65,7 +65,7 @@ constexpr uint32_t host_event_mask =
 /**
  * The X11 event mask for the parent window. We'll use this for input focus
  * grabbing (we'll receive the `EnterNotify` and `LeaveNotify` events for
- * `wrapper_window`). We also need this structure notify here as well to detect
+ * `wrapper_window_`). We also need this structure notify here as well to detect
  * reparents.
  */
 constexpr uint32_t parent_event_mask =
@@ -93,8 +93,8 @@ constexpr uint32_t wrapper_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY |
 constexpr char active_window_property_name[] = "_NET_ACTIVE_WINDOW";
 
 /**
- * We'll use this property to filter windows for `host_window`. Like `xprop` and
- * `xwininfo`, we'll only consider windows with this property set.
+ * We'll use this property to filter windows for `host_window_`. Like `xprop`
+ * and `xwininfo`, we'll only consider windows with this property set.
  */
 constexpr char wm_state_property_name[] = "WM_STATE";
 
@@ -120,7 +120,7 @@ static const HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
 
 /**
  * Find the the ancestors for the given window. This returns a list of window
- * IDs that starts wit h`starting_at`, and then iteratively contains the parent
+ * IDs that starts with `starting_at`, and then iteratively contains the parent
  * of the previous window in the list until we reach the root window. The
  * topmost window (i.e. the window closest to the root in the window stack) will
  * be the last window in this list.
@@ -136,9 +136,9 @@ boost::container::small_vector<xcb_window_t, 8> find_ancestor_windows(
     xcb_window_t starting_at);
 
 /**
- * Figure out which window is used by the host to embed `parent_window` in. In
- * most cases this will be the same as `parent_window`, but for instance Ardour
- * and REAPER will have `parent_window` embedded inside of another window. It's
+ * Figure out which window is used by the host to embed `parent_window_` in. In
+ * most cases this will be the same as `parent_window_`, but for instance Ardour
+ * and REAPER will have `parent_window_` embedded inside of another window. It's
  * sadly not as easy as just taking the topmost window from
  * `find_ancestor_windows()`, as the topmost window may not be a 'normal' window
  * that shows up the window manager. For validity we'll simply look for
@@ -198,9 +198,9 @@ DeferredWin32Window::DeferredWin32Window(
     MainContext& main_context,
     std::shared_ptr<xcb_connection_t> x11_connection,
     HWND window) noexcept
-    : handle(window),
-      main_context(main_context),
-      x11_connection(x11_connection) {}
+    : handle_(window),
+      main_context_(main_context),
+      x11_connection_(x11_connection) {}
 
 DeferredWin32Window::~DeferredWin32Window() noexcept {
     // NOTE: For some rason, Wine will sometimes try to delete a window twice if
@@ -210,10 +210,10 @@ DeferredWin32Window::~DeferredWin32Window() noexcept {
     //       error every time you close such a plugin's editor, and in other
     //       DAWs I've also seen it happen from time to time.
     try {
-        const xcb_window_t wine_window = get_x11_handle(handle);
+        const xcb_window_t wine_window = get_x11_handle(handle_);
         const xcb_window_t root_window =
-            get_root_window(*x11_connection, wine_window);
-        xcb_reparent_window(x11_connection.get(), wine_window, root_window, 0,
+            get_root_window(*x11_connection_, wine_window);
+        xcb_reparent_window(x11_connection_.get(), wine_window, root_window, 0,
                             0);
     } catch (const std::runtime_error& error) {
         // If we can't reparent the window (or, well, fetch the root window),
@@ -229,28 +229,28 @@ DeferredWin32Window::~DeferredWin32Window() noexcept {
     //      worlds solution that works as expected in every host I've tested.
     try {
         std::shared_ptr<boost::asio::steady_timer> destroy_timer =
-            std::make_shared<boost::asio::steady_timer>(main_context.context);
+            std::make_shared<boost::asio::steady_timer>(main_context_.context_);
         destroy_timer->expires_after(1s);
 
         // Note that we capture a copy of `destroy_timer` here. This way we
         // don't have to manage the timer instance ourselves as it will just
         // clean itself up after this lambda gets called.
-        destroy_timer->async_wait([destroy_timer, handle = this->handle,
-                                   x11_connection = this->x11_connection](
-                                      const boost::system::error_code& error) {
-            if (error.failed()) {
-                return;
-            }
+        destroy_timer->async_wait(
+            [destroy_timer, handle = handle_, x11_connection = x11_connection_](
+                const boost::system::error_code& error) {
+                if (error.failed()) {
+                    return;
+                }
 
-            // This is the flush for the reparent done above. We'll also do this
-            // as late as possible to prevent the window from being drawn in the
-            // meantime, as that would cause flickering.
-            xcb_flush(x11_connection.get());
+                // This is the flush for the reparent done above. We'll also do
+                // this as late as possible to prevent the window from being
+                // drawn in the meantime, as that would cause flickering.
+                xcb_flush(x11_connection.get());
 
-            // The actual destroying will happen as part of the Win32 message
-            // loop
-            PostMessage(handle, WM_CLOSE, 0, 0);
-        });
+                // The actual destroying will happen as part of the Win32
+                // message loop
+                PostMessage(handle, WM_CLOSE, 0, 0);
+            });
     } catch (const std::bad_alloc&) {
         // If we can't allocate the timer, then we probably have bigger worries
         // than not cleaning up a window
@@ -262,62 +262,62 @@ Editor::Editor(MainContext& main_context,
                Logger& logger,
                const size_t parent_window_handle,
                std::optional<fu2::unique_function<void()>> timer_proc)
-    : use_coordinate_hack(config.editor_coordinate_hack),
-      use_xembed(config.editor_xembed),
-      logger(logger),
-      x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
-      dnd_proxy_handle(WineXdndProxy::get_handle()),
-      client_area(get_maximum_screen_dimensions(*x11_connection)),
+    : use_coordinate_hack_(config.editor_coordinate_hack),
+      use_xembed_(config.editor_xembed),
+      logger_(logger),
+      x11_connection_(xcb_connect(nullptr, nullptr), xcb_disconnect),
+      dnd_proxy_handle_(WineXdndProxy::get_handle()),
+      client_area_(get_maximum_screen_dimensions(*x11_connection_)),
       // Create a window without any decoratiosn for easy embedding. The
       // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to
       // be drawn without any decorations (making resizes behave as you'd
       // expect) and also causes mouse coordinates to be relative to the window
       // itself.
-      win32_window(main_context,
-                   x11_connection,
-                   CreateWindowEx(WS_EX_TOOLWINDOW,
-                                  reinterpret_cast<LPCSTR>(get_window_class()),
-                                  "yabridge plugin",
-                                  WS_POPUP,
-                                  // NOTE: With certain DEs/WMs (notably,
-                                  //       Cinnamon), Wine does not render the
-                                  //       window at all when using a primary
-                                  //       display that's positioned to the
-                                  //       right of another display. Presumably
-                                  //       it tries to manually clip the client
-                                  //       rendered client area to the physical
-                                  //       display. During the reparenting and
-                                  //       `fix_local_coordinates()` the window
-                                  //       will be moved to `(0, 0)` anyways,
-                                  //       but setting its initial position
-                                  //       according to the primary display
-                                  //       fixes these rendering issues.
-                                  GetSystemMetrics(SM_XVIRTUALSCREEN),
-                                  GetSystemMetrics(SM_YVIRTUALSCREEN),
-                                  client_area.width,
-                                  client_area.height,
-                                  nullptr,
-                                  nullptr,
-                                  GetModuleHandle(nullptr),
-                                  this)),
-      idle_timer(
-          Win32Timer(win32_window.handle,
+      win32_window_(main_context,
+                    x11_connection_,
+                    CreateWindowEx(WS_EX_TOOLWINDOW,
+                                   reinterpret_cast<LPCSTR>(get_window_class()),
+                                   "yabridge plugin",
+                                   WS_POPUP,
+                                   // NOTE: With certain DEs/WMs (notably,
+                                   //       Cinnamon), Wine does not render the
+                                   //       window at all when using a primary
+                                   //       display that's positioned to the
+                                   //       right of another display. Presumably
+                                   //       it tries to manually clip the client
+                                   //       rendered client area to the physical
+                                   //       display. During the reparenting and
+                                   //       `fix_local_coordinates()` the window
+                                   //       will be moved to `(0, 0)` anyways,
+                                   //       but setting its initial position
+                                   //       according to the primary display
+                                   //       fixes these rendering issues.
+                                   GetSystemMetrics(SM_XVIRTUALSCREEN),
+                                   GetSystemMetrics(SM_YVIRTUALSCREEN),
+                                   client_area_.width,
+                                   client_area_.height,
+                                   nullptr,
+                                   nullptr,
+                                   GetModuleHandle(nullptr),
+                                   this)),
+      idle_timer_(
+          Win32Timer(win32_window_.handle_,
                      idle_timer_id,
                      std::chrono::duration_cast<std::chrono::milliseconds>(
                          config.event_loop_interval())
                          .count())),
-      idle_timer_proc([this, timer_proc = std::move(timer_proc)]() mutable {
+      idle_timer_proc_([this, timer_proc = std::move(timer_proc)]() mutable {
           handle_x11_events();
           if (timer_proc) {
               (*timer_proc)();
           }
       }),
-      xcb_wm_state_property(
-          get_atom_by_name(*x11_connection, wm_state_property_name)),
-      parent_window(parent_window_handle),
-      wrapper_window(
-          x11_connection,
-          [parent_window = parent_window](
+      xcb_wm_state_property_(
+          get_atom_by_name(*x11_connection_, wm_state_property_name)),
+      parent_window_(parent_window_handle),
+      wrapper_window_(
+          x11_connection_,
+          [parent_window = parent_window_](
               std::shared_ptr<xcb_connection_t> x11_connection,
               xcb_window_t window) {
               xcb_generic_error_t* error = nullptr;
@@ -333,29 +333,31 @@ Editor::Editor(MainContext& main_context,
                                 XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                 XCB_COPY_FROM_PARENT, 0, nullptr);
           }),
-      wine_window(get_x11_handle(win32_window.handle)),
-      host_window(find_host_window(*x11_connection,
-                                   parent_window,
-                                   xcb_wm_state_property)
-                      .value_or(parent_window)) {
-    logger.log_editor_trace(
-        [&]() { return "DEBUG: host_window: " + std::to_string(host_window); });
+      wine_window_(get_x11_handle(win32_window_.handle_)),
+      host_window_(find_host_window(*x11_connection_,
+                                    parent_window_,
+                                    xcb_wm_state_property_)
+                       .value_or(parent_window_)) {
     logger.log_editor_trace([&]() {
-        return "DEBUG: parent_window: " + std::to_string(parent_window);
+        return "DEBUG: host_window: " + std::to_string(host_window_);
+    });
+    logger.log_editor_trace([&]() {
+        return "DEBUG: parent_window: " + std::to_string(parent_window_);
     });
     logger.log_editor_trace([&]() {
         return "DEBUG: wrapper_window: " +
-               std::to_string(wrapper_window.window);
+               std::to_string(wrapper_window_.window_);
     });
-    logger.log_editor_trace(
-        [&]() { return "DEBUG: wine_window: " + std::to_string(wine_window); });
+    logger.log_editor_trace([&]() {
+        return "DEBUG: wine_window: " + std::to_string(wine_window_);
+    });
 
     // Used for input focus grabbing to only grab focus when the window is
     // active. In case the atom does not exist or the WM does not support this
     // hint, we'll print a warning and fall back to grabbing focus when the user
     // clicks on the window (which should trigger a `WM_PARENTNOTIFY`).
-    active_window_property =
-        get_atom_by_name(*x11_connection, active_window_property_name);
+    active_window_property_ =
+        get_atom_by_name(*x11_connection_, active_window_property_name);
     if (!supports_ewmh_active_window()) {
         std::cerr << "WARNING: The current window manager does not support the"
                   << std::endl;
@@ -366,22 +368,23 @@ Editor::Editor(MainContext& main_context,
     }
 
     // If the `editor_force_dnd` option is set, we'll strip `XdndAware` from all
-    // of `wine_window`'s ancestors (including `parent_window`) to forcefully
+    // of `wine_window_`'s ancestors (including `parent_window_`) to forcefully
     // enable drag-and-drop support in REAPER. See the docstring on
     // `Configuration::editor_force_dnd` and the option description in the
     // readme for more information.
     if (config.editor_force_dnd) {
         const xcb_atom_t xcb_xdnd_aware_property =
-            get_atom_by_name(*x11_connection, xdnd_aware_property_name);
+            get_atom_by_name(*x11_connection_, xdnd_aware_property_name);
         for (const xcb_window_t& window :
-             find_ancestor_windows(*x11_connection, parent_window)) {
-            xcb_delete_property(x11_connection.get(), window,
+             find_ancestor_windows(*x11_connection_, parent_window_)) {
+            xcb_delete_property(x11_connection_.get(), window,
                                 xcb_xdnd_aware_property);
         }
     }
 
     // When using XEmbed we'll need the atoms for the corresponding properties
-    xcb_xembed_message = get_atom_by_name(*x11_connection, xembed_message_name);
+    xcb_xembed_message_ =
+        get_atom_by_name(*x11_connection_, xembed_message_name);
 
     // When not using XEmbed, Wine will interpret any local coordinates as
     // global coordinates. To work around this we'll tell the Wine window it's
@@ -394,24 +397,24 @@ Editor::Editor(MainContext& main_context,
     // release input focus as necessary. And lastly we'll look out for
     // reparents, so we can make sure that the window does not get stolen by the
     // window manager and that we correctly handle the host reparenting
-    // `parent_window` themselves.
+    // `parent_window_` themselves.
     // If we do enable XEmbed support, we'll also listen for visibility changes
     // and trigger the embedding when the window becomes visible
-    xcb_change_window_attributes(x11_connection.get(), host_window,
+    xcb_change_window_attributes(x11_connection_.get(), host_window_,
                                  XCB_CW_EVENT_MASK, &host_event_mask);
-    xcb_change_window_attributes(x11_connection.get(), parent_window,
+    xcb_change_window_attributes(x11_connection_.get(), parent_window_,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
-    xcb_change_window_attributes(x11_connection.get(), wrapper_window.window,
+    xcb_change_window_attributes(x11_connection_.get(), wrapper_window_.window_,
                                  XCB_CW_EVENT_MASK, &wrapper_event_mask);
-    xcb_flush(x11_connection.get());
+    xcb_flush(x11_connection_.get());
 
     // First reparent our dumb wrapper window to the host's window, and then
     // embed the Wine window into our wrapper window
-    do_reparent(wrapper_window.window, parent_window);
-    xcb_map_window(x11_connection.get(), wrapper_window.window);
-    xcb_flush(x11_connection.get());
+    do_reparent(wrapper_window_.window_, parent_window_);
+    xcb_map_window(x11_connection_.get(), wrapper_window_.window_);
+    xcb_flush(x11_connection_.get());
 
-    if (use_xembed) {
+    if (use_xembed_) {
         // This call alone doesn't do anything. We need to call this function a
         // second time on visibility change because Wine's XEmbed implementation
         // does not work properly (which is why we remvoed XEmbed support in the
@@ -422,14 +425,14 @@ Editor::Editor(MainContext& main_context,
         // of using the XEmbed protocol, we'll register a few events and manage
         // the child window ourselves. This is a hack to work around the issue's
         // described in `Editor`'s docstring'.
-        do_reparent(wine_window, wrapper_window.window);
+        do_reparent(wine_window_, wrapper_window_.window_);
 
-        ShowWindow(win32_window.handle, SW_SHOWNORMAL);
+        ShowWindow(win32_window_.handle_, SW_SHOWNORMAL);
     }
 }
 
 void Editor::resize(uint16_t width, uint16_t height) {
-    logger.log_editor_trace([&]() {
+    logger_.log_editor_trace([&]() {
         return "DEBUG: Resizing wrapper window to " + std::to_string(width) +
                "x" + std::to_string(height);
     });
@@ -437,9 +440,9 @@ void Editor::resize(uint16_t width, uint16_t height) {
     const uint16_t value_mask =
         XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
     const std::array<uint32_t, 2> values{width, height};
-    xcb_configure_window(x11_connection.get(), wrapper_window.window,
+    xcb_configure_window(x11_connection_.get(), wrapper_window_.window_,
                          value_mask, values.data());
-    xcb_flush(x11_connection.get());
+    xcb_flush(x11_connection_.get());
 
     // When the `editor_coordinate_hack` option is enabled, we will make sure
     // that the window is actually placed at (0, 0) coordinates. Otherwise some
@@ -448,11 +451,11 @@ void Editor::resize(uint16_t width, uint16_t height) {
     // because they look at the (top level) window's screen coordinates instead
     // of their own relative coordinates. We don't do by default as this also
     // interferes with resize handles.
-    if (use_coordinate_hack) {
-        logger.log_editor_trace([]() {
+    if (use_coordinate_hack_) {
+        logger_.log_editor_trace([]() {
             return "DEBUG: Resetting Wine window position back to (0, 0)";
         });
-        SetWindowPos(win32_window.handle, nullptr, 0, 0, 0, 0,
+        SetWindowPos(win32_window_.handle_, nullptr, 0, 0, 0, 0,
                      SWP_NOSIZE | SWP_NOREDRAW | SWP_NOACTIVATE |
                          SWP_NOCOPYBITS | SWP_NOOWNERZORDER | SWP_DEFERERASE);
 
@@ -467,12 +470,12 @@ void Editor::resize(uint16_t width, uint16_t height) {
 
 void Editor::handle_x11_events() noexcept {
     // NOTE: Ardour will unmap the window instead of closing the editor. When
-    //       the window is unmapped `wine_window` doesn't exist and any X11
+    //       the window is unmapped `wine_window_` doesn't exist and any X11
     //       function calls involving it will fail. All functions called from
     //       here should be able to handle that cleanly.
     try {
         std::unique_ptr<xcb_generic_event_t> generic_event;
-        while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
+        while (generic_event.reset(xcb_poll_for_event(x11_connection_.get())),
                generic_event != nullptr) {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
@@ -481,17 +484,17 @@ void Editor::handle_x11_events() noexcept {
             switch (event_type) {
                 // NOTE: When reopening a closed editor window in REAPER, REAPER
                 //       will initialize the editor first, and only then will it
-                //       reparent `parent_window` to a new FX window. This means
-                //       that `host_window` will be the same as `parent_window`
-                //       in REAPER if you reopen a plugin GUI, which breaks our
-                //       input focus handling. To work around this, we will just
-                //       check if the host's window has changed whenever the
-                //       parent window gets reparented.
+                //       reparent `parent_window_` to a new FX window. This
+                //       means that `host_window_` will be the same as
+                //       `parent_window_` in REAPER if you reopen a plugin GUI,
+                //       which breaks our input focus handling. To work around
+                //       this, we will just check if the host's window has
+                //       changed whenever the parent window gets reparented.
                 case XCB_REPARENT_NOTIFY: {
                     const auto event =
                         reinterpret_cast<xcb_reparent_notify_event_t*>(
                             generic_event.get());
-                    logger.log_editor_trace([&]() {
+                    logger_.log_editor_trace([&]() {
                         return "DEBUG: ReparentNotify for window " +
                                std::to_string(event->window) +
                                " to new parent " +
@@ -505,8 +508,8 @@ void Editor::handle_x11_events() noexcept {
                 // We're listening for `ConfigureNotify` events on the host's
                 //  window (i.e. the window that's actually going to get dragged
                 //  around the by the user). In most cases this is the same as
-                //  `parent_window`. When either this window gets moved, or when
-                //  the user moves his mouse over our window, the local
+                //  `parent_window_`. When either this window gets moved, or
+                //  when the user moves his mouse over our window, the local
                 //  coordinates should be updated. The additional `EnterWindow`
                 //  check is sometimes necessary for using multiple editor
                 //  windows within a single plugin group.
@@ -514,15 +517,15 @@ void Editor::handle_x11_events() noexcept {
                     const auto event =
                         reinterpret_cast<xcb_configure_notify_event_t*>(
                             generic_event.get());
-                    logger.log_editor_trace([&]() {
+                    logger_.log_editor_trace([&]() {
                         return "DEBUG: ConfigureNotify for window " +
                                std::to_string(event->window);
                     });
 
-                    if (event->window == host_window ||
-                        event->window == parent_window ||
-                        event->window == wrapper_window.window) {
-                        if (!use_xembed) {
+                    if (event->window == host_window_ ||
+                        event->window == parent_window_ ||
+                        event->window == wrapper_window_.window_) {
+                        if (!use_xembed_) {
                             fix_local_coordinates();
                         }
                     }
@@ -534,14 +537,14 @@ void Editor::handle_x11_events() noexcept {
                     const auto event =
                         reinterpret_cast<xcb_visibility_notify_event_t*>(
                             generic_event.get());
-                    logger.log_editor_trace([&]() {
+                    logger_.log_editor_trace([&]() {
                         return "DEBUG: VisibilityNotify for window " +
                                std::to_string(event->window);
                     });
 
-                    if (event->window == host_window ||
-                        event->window == parent_window) {
-                        if (use_xembed) {
+                    if (event->window == host_window_ ||
+                        event->window == parent_window_) {
+                        if (use_xembed_) {
                             do_xembed();
                         }
                     }
@@ -564,7 +567,7 @@ void Editor::handle_x11_events() noexcept {
                             : reinterpret_cast<xcb_focus_in_event_t*>(
                                   generic_event.get())
                                   ->event;
-                    logger.log_editor_trace([&]() {
+                    logger_.log_editor_trace([&]() {
                         return "DEBUG: "s +
                                (event_type == XCB_ENTER_NOTIFY ? "EnterNotify"
                                                                : "FocusIn") +
@@ -575,9 +578,9 @@ void Editor::handle_x11_events() noexcept {
                                ")";
                     });
 
-                    if (window == parent_window ||
-                        window == wrapper_window.window) {
-                        if (!use_xembed) {
+                    if (window == parent_window_ ||
+                        window == wrapper_window_.window_) {
+                        if (!use_xembed_) {
                             fix_local_coordinates();
                         }
 
@@ -617,14 +620,14 @@ void Editor::handle_x11_events() noexcept {
                     //
                     //       This function is sadly not exposed, so instead we
                     //       will get the root window cursor position, and then
-                    //       add to that the difference between `wine_window`'s
+                    //       add to that the difference between `wine_window_`'s
                     //       root-relative X11 position and its Win32 position.
                     //       The alternative is sleeping for 100 milliseconds,
                     //       but this is faster.
                     const std::optional<POINT> windows_pointer_pos =
                         get_current_pointer_position();
 
-                    logger.log_editor_trace([&]() {
+                    logger_.log_editor_trace([&]() {
                         std::ostringstream message;
                         message << "DEBUG: LeaveNotify for window "
                                 << event->child;
@@ -660,7 +663,7 @@ void Editor::handle_x11_events() noexcept {
                     // with an actual Win32 dropdown menu). Without this check
                     // these fake dropdowns would immediately close when
                     // hovering over them.
-                    if (event->child == wrapper_window.window &&
+                    if (event->child == wrapper_window_.window_ &&
                         supports_ewmh_active_window() &&
                         is_wine_window_active() &&
                         !is_cursor_in_wine_window(windows_pointer_pos)) {
@@ -680,7 +683,7 @@ void Editor::handle_x11_events() noexcept {
                                                  xcb_key_release_event_t>);
                     const auto event = reinterpret_cast<xcb_key_press_event_t*>(
                         generic_event.get());
-                    logger.log_editor_trace([&]() {
+                    logger_.log_editor_trace([&]() {
                         return "DEBUG: "s +
                                (is_synthetic_event ? "synthetic " : "") +
                                (event_type == XCB_KEY_PRESS ? "KeyPress"
@@ -691,7 +694,7 @@ void Editor::handle_x11_events() noexcept {
                     });
 
                     if (is_synthetic_event &&
-                        event->event == wrapper_window.window) {
+                        event->event == wrapper_window_.window_) {
                         const uint32_t event_mask =
                             event_type == XCB_KEY_PRESS
                                 ? XCB_EVENT_MASK_KEY_PRESS
@@ -703,16 +706,16 @@ void Editor::handle_x11_events() noexcept {
                         // needed, but it feels like the right thing to do. All
                         // other fields can stay the same.
                         event->response_type = event_type;
-                        event->event = wine_window;
+                        event->event = wine_window_;
 
-                        xcb_send_event(x11_connection.get(), true, wine_window,
-                                       event_mask,
+                        xcb_send_event(x11_connection_.get(), true,
+                                       wine_window_, event_mask,
                                        reinterpret_cast<const char*>(event));
-                        xcb_flush(x11_connection.get());
+                        xcb_flush(x11_connection_.get());
                     }
                 } break;
                 default: {
-                    logger.log_editor_trace([&]() {
+                    logger_.log_editor_trace([&]() {
                         return "DEBUG: Unhandled X11 event " +
                                std::to_string(event_type);
                     });
@@ -725,11 +728,11 @@ void Editor::handle_x11_events() noexcept {
 }
 
 HWND Editor::get_win32_handle() const noexcept {
-    return win32_window.handle;
+    return win32_window_.handle_;
 }
 
 void Editor::fix_local_coordinates() const {
-    if (use_xembed) {
+    if (use_xembed_) {
         return;
     }
 
@@ -744,7 +747,7 @@ void Editor::fix_local_coordinates() const {
     // window created by the plugin itself. In this case it doesn't matter that
     // the Win32 window is larger than the part of the client area the plugin
     // draws to since any excess will be clipped off by the parent window.
-    const xcb_window_t root = get_root_window(*x11_connection, parent_window);
+    const xcb_window_t root = get_root_window(*x11_connection_, parent_window_);
 
     // We can't directly use the `event.x` and `event.y` coordinates because the
     // parent window may also be embedded inside another window.
@@ -752,41 +755,41 @@ void Editor::fix_local_coordinates() const {
     //       plugins they forgot to add a separate parent window that's already
     //       offset correctly. Instead, they'll have the plugin embed itself
     //       inside directly inside of the dialog, and Waveform then moves the
-    //       window 27 pixels down. That's why we cannot use `parent_window`
+    //       window 27 pixels down. That's why we cannot use `parent_window_`
     //       here.
     xcb_generic_error_t* error = nullptr;
     const xcb_translate_coordinates_cookie_t translate_cookie =
-        xcb_translate_coordinates(x11_connection.get(), wrapper_window.window,
-                                  root, 0, 0);
+        xcb_translate_coordinates(x11_connection_.get(),
+                                  wrapper_window_.window_, root, 0, 0);
     const std::unique_ptr<xcb_translate_coordinates_reply_t>
         translated_coordinates(xcb_translate_coordinates_reply(
-            x11_connection.get(), translate_cookie, &error));
+            x11_connection_.get(), translate_cookie, &error));
     THROW_X11_ERROR(error);
 
     xcb_configure_notify_event_t translated_event{};
     translated_event.response_type = XCB_CONFIGURE_NOTIFY;
-    translated_event.event = wine_window;
-    translated_event.window = wine_window;
+    translated_event.event = wine_window_;
+    translated_event.window = wine_window_;
     // This should be set to the same sizes the window was created on. Since
     // we're not using `SetWindowPos` to resize the Window, Wine can get a bit
     // confused when we suddenly report a different client area size. Without
     // this certain plugins (such as those by Valhalla DSP) would break.
-    translated_event.width = client_area.width;
-    translated_event.height = client_area.height;
+    translated_event.width = client_area_.width;
+    translated_event.height = client_area_.height;
     translated_event.x = translated_coordinates->dst_x;
     translated_event.y = translated_coordinates->dst_y;
 
-    logger.log_editor_trace([&]() {
+    logger_.log_editor_trace([&]() {
         return "DEBUG: Spoofing local coordinates to (" +
                std::to_string(translated_event.x) + ", " +
                std::to_string(translated_event.y) + ")";
     });
 
     xcb_send_event(
-        x11_connection.get(), false, wine_window,
+        x11_connection_.get(), false, wine_window_,
         XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
         reinterpret_cast<char*>(&translated_event));
-    xcb_flush(x11_connection.get());
+    xcb_flush(x11_connection_.get());
 }
 
 void Editor::set_input_focus(bool grab) const {
@@ -798,36 +801,36 @@ void Editor::set_input_focus(bool grab) const {
     //       properly, as they don't grab input focus themselves.
     const xcb_window_t focus_target =
         grab ? (get_active_modifiers().value_or(0) & XCB_MOD_MASK_SHIFT
-                    ? wine_window
-                    : parent_window)
-             : host_window;
+                    ? wine_window_
+                    : parent_window_)
+             : host_window_;
 
     xcb_generic_error_t* error = nullptr;
     const xcb_get_input_focus_cookie_t focus_cookie =
-        xcb_get_input_focus(x11_connection.get());
+        xcb_get_input_focus(x11_connection_.get());
     const std::unique_ptr<xcb_get_input_focus_reply_t> focus_reply(
-        xcb_get_input_focus_reply(x11_connection.get(), focus_cookie, &error));
+        xcb_get_input_focus_reply(x11_connection_.get(), focus_cookie, &error));
     THROW_X11_ERROR(error);
 
     // Calling `set_input_focus(true)` can trigger another `FocusIn` event,
     // which will then once again call `set_input_focus(true)`. To work around
     // this we prevent unnecessary repeat keyboard focus grabs. One thing that
     // slightly complicates this is the use of unmapped input proxy windows.
-    // When `host_window` gets foccused, some hosts will reassign input focus to
-    // such a proxy window. To avoid fighting over focus, when grabbing focus we
-    // don't just check whether `current_focus` and `focus_target` are the same
-    // window but we'll also allow `current_focus` to be a child of
+    // When `host_window_` gets foccused, some hosts will reassign input focus
+    // to such a proxy window. To avoid fighting over focus, when grabbing focus
+    // we don't just check whether `current_focus` and `focus_target` are the
+    // same window but we'll also allow `current_focus` to be a child of
     // `focus_target`.
     const xcb_window_t current_focus = focus_reply->focus;
     if (current_focus == focus_target ||
-        (grab && is_child_window_or_same(*x11_connection, current_focus,
+        (grab && is_child_window_or_same(*x11_connection_, current_focus,
                                          focus_target))) {
-        logger.log_editor_trace([&]() {
+        logger_.log_editor_trace([&]() {
             std::string reason = "unknown reason";
             if (current_focus == focus_target) {
                 reason = "already focused";
             } else if (grab &&
-                       is_child_window_or_same(*x11_connection, current_focus,
+                       is_child_window_or_same(*x11_connection_, current_focus,
                                                focus_target)) {
                 reason = "current focus " + std::to_string(current_focus) +
                          " is a child of " + std::to_string(focus_target);
@@ -841,7 +844,7 @@ void Editor::set_input_focus(bool grab) const {
     }
 
     // Explicitly request input focus when the user interacts with the window.
-    // Without this, `host_window` will capture all keyboard events in most
+    // Without this, `host_window_` will capture all keyboard events in most
     // hosts. Ideally we would just do this whenever the child window calls
     // `SetFocus()` (or no handling should be necessary), but as far as I'm
     // aware there is no way to do this. Right now we will grab input focus when
@@ -854,33 +857,33 @@ void Editor::set_input_focus(bool grab) const {
     //      `IPlugView::onKey{Down,Up}` should handle all keyboard events. But
     //      in practice a lot of hosts don't use that, so we still need to grab
     //      focus ourselves.
-    logger.log_editor_trace([&]() {
+    logger_.log_editor_trace([&]() {
         return "DEBUG: Setting input focus to window " +
                std::to_string(focus_target);
     });
 
-    xcb_set_input_focus(x11_connection.get(), XCB_INPUT_FOCUS_PARENT,
+    xcb_set_input_focus(x11_connection_.get(), XCB_INPUT_FOCUS_PARENT,
                         focus_target, XCB_CURRENT_TIME);
-    xcb_flush(x11_connection.get());
+    xcb_flush(x11_connection_.get());
 }
 
 void Editor::run_timer_proc() {
-    idle_timer_proc();
+    idle_timer_proc_();
 }
 
 std::optional<uint16_t> Editor::get_active_modifiers() const noexcept {
     xcb_generic_error_t* error = nullptr;
     const xcb_query_pointer_cookie_t query_pointer_cookie =
-        xcb_query_pointer(x11_connection.get(), wine_window);
+        xcb_query_pointer(x11_connection_.get(), wine_window_);
     const std::unique_ptr<xcb_query_pointer_reply_t> query_pointer_reply(
-        xcb_query_pointer_reply(x11_connection.get(), query_pointer_cookie,
+        xcb_query_pointer_reply(x11_connection_.get(), query_pointer_cookie,
                                 &error));
     if (error) {
         free(error);
         return std::nullopt;
     }
 
-    logger.log_editor_trace([&]() {
+    logger_.log_editor_trace([&]() {
         return "DEBUG: Active keyboard modifiers: " +
                std::to_string(query_pointer_reply->mask);
     });
@@ -891,9 +894,9 @@ std::optional<uint16_t> Editor::get_active_modifiers() const noexcept {
 std::optional<POINT> Editor::get_current_pointer_position() const noexcept {
     xcb_generic_error_t* error = nullptr;
     const xcb_query_pointer_cookie_t query_pointer_cookie =
-        xcb_query_pointer(x11_connection.get(), wine_window);
+        xcb_query_pointer(x11_connection_.get(), wine_window_);
     const std::unique_ptr<xcb_query_pointer_reply_t> query_pointer_reply(
-        xcb_query_pointer_reply(x11_connection.get(), query_pointer_cookie,
+        xcb_query_pointer_reply(x11_connection_.get(), query_pointer_cookie,
                                 &error));
     if (error) {
         free(error);
@@ -901,19 +904,19 @@ std::optional<POINT> Editor::get_current_pointer_position() const noexcept {
     }
 
     // We know the mouse coordinates relative to the root window, and we know
-    // the mouse coordinates relative to `wine_window`, so we can skip a request
-    // by calculating Wine window's coordinates ourself.
+    // the mouse coordinates relative to `wine_window_`, so we can skip a
+    // request by calculating Wine window's coordinates ourself.
     const uint16_t x11_x_pos =
         query_pointer_reply->root_x - query_pointer_reply->win_x;
     const uint16_t x11_y_pos =
         query_pointer_reply->root_y - query_pointer_reply->win_y;
 
     // We need to offset the root-relative pointer position with the difference
-    // between `wine_window`'s X11 and Win32 coordinates. Wine sadly does not
+    // between `wine_window_`'s X11 and Win32 coordinates. Wine sadly does not
     // expose a function that just lets us translate X11 coordinates into
     // Windows coordinates.
     RECT win32_pos{};
-    if (!GetWindowRect(win32_window.handle, &win32_pos)) {
+    if (!GetWindowRect(win32_window_.handle_, &win32_pos)) {
         return std::nullopt;
     }
 
@@ -932,85 +935,87 @@ bool Editor::is_wine_window_active() const {
     // change when the window gets moved to another screen, so we won't cache
     // this).
     const xcb_window_t root_window =
-        get_root_window(*x11_connection, wine_window);
+        get_root_window(*x11_connection_, wine_window_);
 
     xcb_generic_error_t* error = nullptr;
     const xcb_get_property_cookie_t property_cookie =
-        xcb_get_property(x11_connection.get(), false, root_window,
-                         active_window_property, XCB_ATOM_WINDOW, 0, 1);
+        xcb_get_property(x11_connection_.get(), false, root_window,
+                         active_window_property_, XCB_ATOM_WINDOW, 0, 1);
     const std::unique_ptr<xcb_get_property_reply_t> property_reply(
-        xcb_get_property_reply(x11_connection.get(), property_cookie, &error));
+        xcb_get_property_reply(x11_connection_.get(), property_cookie, &error));
     THROW_X11_ERROR(error);
 
     const xcb_window_t active_window = *static_cast<xcb_window_t*>(
         xcb_get_property_value(property_reply.get()));
 
-    return is_child_window_or_same(*x11_connection, wine_window, active_window);
+    return is_child_window_or_same(*x11_connection_, wine_window_,
+                                   active_window);
 }
 
 void Editor::redetect_host_window() noexcept {
     const xcb_window_t new_host_window =
-        find_host_window(*x11_connection, parent_window, xcb_wm_state_property)
-            .value_or(parent_window);
-    if (new_host_window == host_window) {
+        find_host_window(*x11_connection_, parent_window_,
+                         xcb_wm_state_property_)
+            .value_or(parent_window_);
+    if (new_host_window == host_window_) {
         return;
     }
 
-    logger.log_editor_trace([&]() {
+    logger_.log_editor_trace([&]() {
         return "DEBUG: new host_window: " + std::to_string(new_host_window);
     });
 
     // We need to readjust the event masks for the new host window, keeping the
     // (very probable) possibility in mind that the old host window is the same
     // as the parent window or that the parent window now is the host window.
-    if (host_window != parent_window) {
+    if (host_window_ != parent_window_) {
         constexpr uint32_t no_event_mask = XCB_EVENT_MASK_NO_EVENT;
-        xcb_change_window_attributes(x11_connection.get(), host_window,
+        xcb_change_window_attributes(x11_connection_.get(), host_window_,
                                      XCB_CW_EVENT_MASK, &no_event_mask);
     }
 
-    if (new_host_window == parent_window) {
-        xcb_change_window_attributes(x11_connection.get(), new_host_window,
+    if (new_host_window == parent_window_) {
+        xcb_change_window_attributes(x11_connection_.get(), new_host_window,
                                      XCB_CW_EVENT_MASK, &parent_event_mask);
     } else {
-        xcb_change_window_attributes(x11_connection.get(), new_host_window,
+        xcb_change_window_attributes(x11_connection_.get(), new_host_window,
                                      XCB_CW_EVENT_MASK, &host_event_mask);
     }
 
-    host_window = new_host_window;
-    xcb_flush(x11_connection.get());
+    host_window_ = new_host_window;
+    xcb_flush(x11_connection_.get());
 }
 
 bool Editor::supports_ewmh_active_window() const {
-    if (supports_ewmh_active_window_cache) {
-        return *supports_ewmh_active_window_cache;
+    if (supports_ewmh_active_window_cache_) {
+        return *supports_ewmh_active_window_cache_;
     }
 
     // It could be that the `_NET_ACTIVE_WINDOW` atom exists (because it was
     // created by another application) but that the root window does not have
     // the property
-    if (active_window_property == XCB_ATOM_NONE) {
-        supports_ewmh_active_window_cache = false;
+    if (active_window_property_ == XCB_ATOM_NONE) {
+        supports_ewmh_active_window_cache_ = false;
         return false;
     }
 
     const xcb_window_t root_window =
-        get_root_window(*x11_connection, wine_window);
+        get_root_window(*x11_connection_, wine_window_);
 
     // If the `_NET_ACTIVE_WINDOW` property does not exist on the root window,
     // the returned property type will be `XCB_ATOM_NONE` as specified in the
     // X11 manual
     xcb_generic_error_t* error = nullptr;
     const xcb_get_property_cookie_t property_cookie =
-        xcb_get_property(x11_connection.get(), false, root_window,
-                         active_window_property, XCB_ATOM_WINDOW, 0, 1);
+        xcb_get_property(x11_connection_.get(), false, root_window,
+                         active_window_property_, XCB_ATOM_WINDOW, 0, 1);
     const std::unique_ptr<xcb_get_property_reply_t> property_reply(
-        xcb_get_property_reply(x11_connection.get(), property_cookie, &error));
+        xcb_get_property_reply(x11_connection_.get(), property_cookie, &error));
     THROW_X11_ERROR(error);
 
     const bool active_window_property_exists =
         property_reply->type != XCB_ATOM_NONE;
-    supports_ewmh_active_window_cache = active_window_property_exists;
+    supports_ewmh_active_window_cache_ = active_window_property_exists;
 
     return active_window_property_exists;
 }
@@ -1023,7 +1028,7 @@ void Editor::send_xembed_message(xcb_window_t window,
                                  uint32_t data2) const noexcept {
     xcb_client_message_event_t event{};
     event.response_type = XCB_CLIENT_MESSAGE;
-    event.type = xcb_xembed_message;
+    event.type = xcb_xembed_message_;
     event.window = window;
     event.format = 32;
     event.data.data32[0] = XCB_CURRENT_TIME;
@@ -1032,15 +1037,15 @@ void Editor::send_xembed_message(xcb_window_t window,
     event.data.data32[3] = data1;
     event.data.data32[4] = data2;
 
-    xcb_send_event(x11_connection.get(), false, window, XCB_EVENT_MASK_NO_EVENT,
-                   reinterpret_cast<char*>(&event));
+    xcb_send_event(x11_connection_.get(), false, window,
+                   XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&event));
 }
 
 void Editor::do_reparent(xcb_window_t child, xcb_window_t new_parent) const {
     const xcb_void_cookie_t reparent_cookie = xcb_reparent_window_checked(
-        x11_connection.get(), child, new_parent, 0, 0);
+        x11_connection_.get(), child, new_parent, 0, 0);
     if (std::unique_ptr<xcb_generic_error_t> reparent_error(
-            xcb_request_check(x11_connection.get(), reparent_cookie));
+            xcb_request_check(x11_connection_.get(), reparent_cookie));
         reparent_error) {
         // When the reparent fails, we always want to log this, regardless of
         // whether or not `YABRIDGE_DEBUG_LEVEL` contains `+editor`
@@ -1057,9 +1062,9 @@ void Editor::do_reparent(xcb_window_t child, xcb_window_t new_parent) const {
         // fail according to the spec in advance
         xcb_generic_error_t* error = nullptr;
         const xcb_query_pointer_cookie_t query_pointer_cookie =
-            xcb_query_pointer(x11_connection.get(), child);
+            xcb_query_pointer(x11_connection_.get(), child);
         const std::unique_ptr<xcb_query_pointer_reply_t> query_pointer_reply(
-            xcb_query_pointer_reply(x11_connection.get(), query_pointer_cookie,
+            xcb_query_pointer_reply(x11_connection_.get(), query_pointer_cookie,
                                     &error));
         if (error) {
             free(error);
@@ -1076,37 +1081,37 @@ void Editor::do_reparent(xcb_window_t child, xcb_window_t new_parent) const {
             }
         }
     } else {
-        logger.log_editor_trace([&]() {
+        logger_.log_editor_trace([&]() {
             return "DEBUG: Reparenting " + std::to_string(child) + " to " +
                    std::to_string(new_parent) + " succeeded";
         });
     }
 
-    xcb_flush(x11_connection.get());
+    xcb_flush(x11_connection_.get());
 }
 
 void Editor::do_xembed() const {
-    if (!use_xembed) {
+    if (!use_xembed_) {
         return;
     }
 
     // If we're embedding using XEmbed, then we'll have to go through the whole
     // XEmbed dance here. See the spec for more information on how this works:
     // https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html#lifecycle
-    do_reparent(wine_window, wrapper_window.window);
+    do_reparent(wine_window_, wrapper_window_.window_);
 
     // Let the Wine window know it's being embedded into the parent window
-    send_xembed_message(wine_window, xembed_embedded_notify_msg, 0,
-                        wrapper_window.window, xembed_protocol_version);
-    send_xembed_message(wine_window, xembed_focus_in_msg, xembed_focus_first, 0,
-                        0);
-    send_xembed_message(wine_window, xembed_window_activate_msg, 0, 0, 0);
-    xcb_flush(x11_connection.get());
+    send_xembed_message(wine_window_, xembed_embedded_notify_msg, 0,
+                        wrapper_window_.window_, xembed_protocol_version);
+    send_xembed_message(wine_window_, xembed_focus_in_msg, xembed_focus_first,
+                        0, 0);
+    send_xembed_message(wine_window_, xembed_window_activate_msg, 0, 0, 0);
+    xcb_flush(x11_connection_.get());
 
-    xcb_map_window(x11_connection.get(), wine_window);
-    xcb_flush(x11_connection.get());
+    xcb_map_window(x11_connection_.get(), wine_window_);
+    xcb_flush(x11_connection_.get());
 
-    ShowWindow(win32_window.handle, SW_SHOWNORMAL);
+    ShowWindow(win32_window_.handle_, SW_SHOWNORMAL);
 }
 
 LRESULT CALLBACK window_proc(HWND handle,
@@ -1137,7 +1142,7 @@ LRESULT CALLBACK window_proc(HWND handle,
         case WM_WINDOWPOSCHANGING: {
             auto editor = reinterpret_cast<Editor*>(
                 GetWindowLongPtr(handle, GWLP_USERDATA));
-            if (!editor || editor->use_xembed) {
+            if (!editor || editor->use_xembed_) {
                 break;
             }
 
@@ -1190,7 +1195,7 @@ LRESULT CALLBACK window_proc(HWND handle,
             }
         } break;
         // NOTE: Needed for our `is_cursor_in_wine_window()` implementation. Our
-        //       `win32_window` extends way past the visible plugin GUI. And
+        //       `win32_window_` extends way past the visible plugin GUI. And
         //       even though it will appear nicely clipped on screen,
         //       `WindowFromPoint()` would still return our window when hovering
         //       to the right or bottom of a plugin GUI, even if there's another

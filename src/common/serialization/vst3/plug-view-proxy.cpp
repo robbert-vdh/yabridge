@@ -31,7 +31,7 @@ Vst3PlugViewProxy::Vst3PlugViewProxy(ConstructArgs&& args) noexcept
       YaParameterFinder(std::move(args.parameter_finder_args)),
       YaPlugViewContentScaleSupport(
           std::move(args.plug_view_content_scale_support_args)),
-      arguments(std::move(args)){FUNKNOWN_CTOR}
+      arguments_(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3PlugViewProxy::~Vst3PlugViewProxy() noexcept {
     FUNKNOWN_DTOR

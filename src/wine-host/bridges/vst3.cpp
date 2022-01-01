@@ -91,30 +91,30 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
                        std::string endpoint_base_dir,
                        pid_t parent_pid)
     : HostBridge(main_context, plugin_dll_path, parent_pid),
-      logger(generic_logger),
-      sockets(main_context.context, endpoint_base_dir, false) {
+      logger_(generic_logger_),
+      sockets_(main_context.context_, endpoint_base_dir, false) {
     std::string error;
-    module = VST3::Hosting::Win32Module::create(plugin_dll_path, error);
-    if (!module) {
+    module_ = VST3::Hosting::Win32Module::create(plugin_dll_path, error);
+    if (!module_) {
         throw std::runtime_error("Could not load the VST3 module for '" +
                                  plugin_dll_path + "': " + error);
     }
 
-    sockets.connect();
+    sockets_.connect();
 
     // Fetch this instance's configuration from the plugin to finish the setup
     // process
-    config = sockets.vst_host_callback.send_message(
+    config_ = sockets_.vst_host_callback_.send_message(
         WantsConfiguration{.host_version = yabridge_git_version}, std::nullopt);
 
     // Allow this plugin to configure the main context's tick rate
-    main_context.update_timer_interval(config.event_loop_interval());
+    main_context.update_timer_interval(config_.event_loop_interval());
 }
 
 bool Vst3Bridge::inhibits_event_loop() noexcept {
-    std::shared_lock lock(object_instances_mutex);
+    std::shared_lock lock(object_instances_mutex_);
 
-    for (const auto& [instance_id, instance] : object_instances) {
+    for (const auto& [instance_id, instance] : object_instances_) {
         // HACK: IK Multimedia's T-RackS 5 will deadlock if it receives a timer
         //       proc during offline processing, so we need to prevent that from
         //       happening.
@@ -129,17 +129,17 @@ bool Vst3Bridge::inhibits_event_loop() noexcept {
 void Vst3Bridge::run() {
     set_realtime_priority(true);
 
-    sockets.host_vst_control.receive_messages(
+    sockets_.host_vst_control_.receive_messages(
         std::nullopt,
         overload{
             [&](const Vst3PluginFactoryProxy::Construct&)
                 -> Vst3PluginFactoryProxy::Construct::Response {
                 return Vst3PluginFactoryProxy::ConstructArgs(
-                    module->getFactory().get());
+                    module_->getFactory().get());
             },
             [&](const Vst3PlugViewProxy::Destruct& request)
                 -> Vst3PlugViewProxy::Destruct::Response {
-                main_context
+                main_context_
                     .run_in_context([&]() -> void {
                         // When the pointer gets dropped by the host, we want to
                         // drop it here as well, along with the `IPlugFrame`
@@ -169,7 +169,7 @@ void Vst3Bridge::run() {
                 // immediatly starts timers or something (even though it
                 // shouldn't)
                 Steinberg::IPtr<Steinberg::FUnknown> object =
-                    main_context
+                    main_context_
                         .run_in_context(
                             [&]() -> Steinberg::IPtr<Steinberg::FUnknown> {
                                 Steinberg::IPtr<Steinberg::FUnknown> result;
@@ -185,7 +185,7 @@ void Vst3Bridge::run() {
                                     case Vst3PluginProxy::Construct::Interface::
                                         IComponent:
                                         result =
-                                            module->getFactory()
+                                            module_->getFactory()
                                                 .createInstance<
                                                     Steinberg::Vst::IComponent>(
                                                     cid);
@@ -193,7 +193,7 @@ void Vst3Bridge::run() {
                                     case Vst3PluginProxy::Construct::Interface::
                                         IEditController:
                                         result =
-                                            module->getFactory()
+                                            module_->getFactory()
                                                 .createInstance<
                                                     Steinberg::Vst::
                                                         IEditController>(cid);
@@ -390,7 +390,7 @@ void Vst3Bridge::run() {
                 return instance.registered_context_menus
                     .at(request.context_menu_id)
                     .get()
-                    .context_menu_targets[request.target_tag]
+                    .context_menu_targets_[request.target_tag]
                     ->executeMenuItem(request.tag);
             },
             [&](YaEditController::SetComponentState& request)
@@ -507,7 +507,7 @@ void Vst3Bridge::run() {
                 -> YaEditController::CreateView::Response {
                 // Instantiate the object from the GUI thread
                 const auto plug_view_args =
-                    main_context
+                    main_context_
                         .run_in_context(
                             [&]() -> std::optional<
                                       Vst3PlugViewProxy::ConstructArgs> {
@@ -581,7 +581,7 @@ void Vst3Bridge::run() {
                 // Melodyne wants to immediately update the GUI upon receiving
                 // certain channel context data, so this has to be run from the
                 // main thread
-                return main_context
+                return main_context_
                     .run_in_context([&]() -> tresult {
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
@@ -786,10 +786,11 @@ void Vst3Bridge::run() {
 
                 // Creating the window and having the plugin embed in it should
                 // be done in the main UI thread
-                return main_context
+                return main_context_
                     .run_in_context([&, &instance = instance]() -> tresult {
                         Editor& editor_instance = instance.editor.emplace(
-                            main_context, config, generic_logger, x11_handle);
+                            main_context_, config_, generic_logger_,
+                            x11_handle);
                         const tresult result =
                             instance.plug_view_instance->plug_view->attached(
                                 editor_instance.get_win32_handle(),
@@ -815,7 +816,7 @@ void Vst3Bridge::run() {
             },
             [&](const YaPlugView::Removed& request)
                 -> YaPlugView::Removed::Response {
-                return main_context
+                return main_context_
                     .run_in_context([&]() -> tresult {
                         const auto& [instance, _] =
                             get_instance(request.owner_instance_id);
@@ -833,7 +834,7 @@ void Vst3Bridge::run() {
                 -> YaPlugView::OnWheel::Response {
                 // Since all of these `IPlugView::on*` functions can cause a
                 // redraw, they all have to be called from the UI thread
-                return main_context
+                return main_context_
                     .run_in_context([&]() -> tresult {
                         const auto& [instance, _] =
                             get_instance(request.owner_instance_id);
@@ -845,7 +846,7 @@ void Vst3Bridge::run() {
             },
             [&](const YaPlugView::OnKeyDown& request)
                 -> YaPlugView::OnKeyDown::Response {
-                return main_context
+                return main_context_
                     .run_in_context([&]() -> tresult {
                         const auto& [instance, _] =
                             get_instance(request.owner_instance_id);
@@ -858,7 +859,7 @@ void Vst3Bridge::run() {
             },
             [&](const YaPlugView::OnKeyUp& request)
                 -> YaPlugView::OnKeyUp::Response {
-                return main_context
+                return main_context_
                     .run_in_context([&]() -> tresult {
                         const auto& [instance, _] =
                             get_instance(request.owner_instance_id);
@@ -920,7 +921,7 @@ void Vst3Bridge::run() {
             },
             [&](const YaPlugView::OnFocus& request)
                 -> YaPlugView::OnFocus::Response {
-                return main_context
+                return main_context_
                     .run_in_context([&]() -> tresult {
                         const auto& [instance, _] =
                             get_instance(request.owner_instance_id);
@@ -935,7 +936,7 @@ void Vst3Bridge::run() {
                 // This likely doesn't have to be run from the GUI thread, but
                 // since 80% of the `IPlugView` functions have to be we'll do it
                 // here anyways
-                return main_context
+                return main_context_
                     .run_in_context([&]() -> tresult {
                         const auto& [instance, _] =
                             get_instance(request.owner_instance_id);
@@ -988,7 +989,7 @@ void Vst3Bridge::run() {
             [&](YaPlugViewContentScaleSupport::SetContentScaleFactor& request)
                 -> YaPlugViewContentScaleSupport::SetContentScaleFactor::
                     Response {
-                        if (config.vst3_no_scaling) {
+                        if (config_.vst3_no_scaling) {
                             std::cerr << "The host requested the editor GUI to "
                                          "be scaled by a factor of "
                                       << request.factor
@@ -997,7 +998,7 @@ void Vst3Bridge::run() {
                                       << std::endl;
                             return Steinberg::kNotImplemented;
                         } else {
-                            return main_context
+                            return main_context_
                                 .run_in_context([&]() -> tresult {
                                     const auto& [instance, _] =
                                         get_instance(request.owner_instance_id);
@@ -1014,7 +1015,7 @@ void Vst3Bridge::run() {
                 // Since plugins might want to start timers in
                 // `IPlugView::{initialize,terminate}`, we'll run these
                 // functions from the main GUI thread
-                return main_context
+                return main_context_
                     .run_in_context([&]()
                                         -> Vst3PluginProxy::InitializeResponse {
                         const auto& [instance, _] =
@@ -1066,7 +1067,7 @@ void Vst3Bridge::run() {
             },
             [&](const YaPluginBase::Terminate& request)
                 -> YaPluginBase::Terminate::Response {
-                return main_context
+                return main_context_
                     .run_in_context([&]() -> tresult {
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
@@ -1137,18 +1138,18 @@ void Vst3Bridge::run() {
             },
             [&](YaPluginFactory3::SetHostContext& request)
                 -> YaPluginFactory3::SetHostContext::Response {
-                plugin_factory_host_context =
+                plugin_factory_host_context_ =
                     Steinberg::owned(new Vst3HostContextProxyImpl(
                         *this, std::move(request.host_context_args)));
 
                 Steinberg::FUnknownPtr<Steinberg::IPluginFactory3> factory_3(
-                    module->getFactory().get());
+                    module_->getFactory().get());
                 assert(factory_3);
 
                 // This static cast is required to upcast to `FUnknown*`
                 return factory_3->setHostContext(
                     static_cast<YaHostApplication*>(
-                        plugin_factory_host_context));
+                        plugin_factory_host_context_));
             },
             [&](const YaUnitInfo::GetUnitCount& request)
                 -> YaUnitInfo::GetUnitCount::Response {
@@ -1327,19 +1328,19 @@ void Vst3Bridge::unregister_context_menu(
 }
 
 void Vst3Bridge::close_sockets() {
-    sockets.close();
+    sockets_.close();
 }
 
 size_t Vst3Bridge::generate_instance_id() noexcept {
-    return current_instance_id.fetch_add(1);
+    return current_instance_id_.fetch_add(1);
 }
 
 std::pair<Vst3PluginInstance&, std::shared_lock<std::shared_mutex>>
 Vst3Bridge::get_instance(size_t instance_id) noexcept {
-    std::shared_lock lock(object_instances_mutex);
+    std::shared_lock lock(object_instances_mutex_);
 
     return std::pair<Vst3PluginInstance&, std::shared_lock<std::shared_mutex>>(
-        object_instances.at(instance_id), std::move(lock));
+        object_instances_.at(instance_id), std::move(lock));
 }
 
 AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
@@ -1403,7 +1404,7 @@ AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
     // when this request returns we'll do the same thing on the native plugin
     // side
     AudioShmBuffer::Config buffer_config{
-        .name = sockets.base_dir.filename().string() + "-" +
+        .name = sockets_.base_dir_.filename().string() + "-" +
                 std::to_string(instance_id),
         .size = buffer_size,
         .input_offsets = std::move(input_bus_offsets),
@@ -1439,7 +1440,7 @@ AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
 
     set_bus_pointers(
         instance.process_buffers_input_pointers,
-        instance.process_buffers->config.input_offsets,
+        instance.process_buffers->config_.input_offsets,
         [&, &instance = instance](uint32_t bus, uint32_t channel) -> void* {
             if (double_precision) {
                 return instance.process_buffers->input_channel_ptr<double>(
@@ -1451,7 +1452,7 @@ AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
         });
     set_bus_pointers(
         instance.process_buffers_output_pointers,
-        instance.process_buffers->config.output_offsets,
+        instance.process_buffers->config_.output_offsets,
         [&, &instance = instance](uint32_t bus, uint32_t channel) -> void* {
             if (double_precision) {
                 return instance.process_buffers->output_channel_ptr<double>(
@@ -1467,19 +1468,19 @@ AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
 
 size_t Vst3Bridge::register_object_instance(
     Steinberg::IPtr<Steinberg::FUnknown> object) {
-    std::unique_lock lock(object_instances_mutex);
+    std::unique_lock lock(object_instances_mutex_);
 
     const size_t instance_id = generate_instance_id();
-    object_instances.emplace(instance_id, std::move(object));
+    object_instances_.emplace(instance_id, std::move(object));
 
     // If the object supports `IComponent` or `IAudioProcessor`,
     // then we'll set up a dedicated thread for function calls for
     // those interfaces.
-    if (object_instances.at(instance_id).interfaces.audio_processor ||
-        object_instances.at(instance_id).interfaces.component) {
+    if (object_instances_.at(instance_id).interfaces.audio_processor ||
+        object_instances_.at(instance_id).interfaces.component) {
         std::promise<void> socket_listening_latch;
 
-        object_instances.at(instance_id)
+        object_instances_.at(instance_id)
             .audio_processor_handler = Win32Thread([&, instance_id]() {
             set_realtime_priority(true);
 
@@ -1491,7 +1492,7 @@ size_t Vst3Bridge::register_object_instance(
                 "audio-" + std::to_string(instance_id);
             pthread_setname_np(pthread_self(), thread_name.c_str());
 
-            sockets.add_audio_processor_and_listen(
+            sockets_.add_audio_processor_and_listen(
                 instance_id, socket_listening_latch,
                 overload{
                     [&](YaAudioProcessor::SetBusArrangements& request)
@@ -1755,7 +1756,7 @@ void Vst3Bridge::unregister_object_instance(size_t instance_id) {
     // created one while handling `Vst3PluginProxy::Construct`
     if (const auto& [instance, _] = get_instance(instance_id);
         instance.interfaces.audio_processor || instance.interfaces.component) {
-        sockets.remove_audio_processor(instance_id);
+        sockets_.remove_audio_processor(instance_id);
     }
 
     // Remove the instance from within the main IO context so
@@ -1766,10 +1767,10 @@ void Vst3Bridge::unregister_object_instance(size_t instance_id) {
     //      Win32 timer in between where the above closure is being
     //      executed and when the actual host application context on
     //      the plugin side gets deallocated.
-    main_context
+    main_context_
         .run_in_context([&, instance_id]() -> void {
-            std::unique_lock lock(object_instances_mutex);
-            object_instances.erase(instance_id);
+            std::unique_lock lock(object_instances_mutex_);
+            object_instances_.erase(instance_id);
         })
         .wait();
 }

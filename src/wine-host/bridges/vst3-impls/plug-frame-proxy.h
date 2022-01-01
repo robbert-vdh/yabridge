@@ -35,5 +35,5 @@ class Vst3PlugFrameProxyImpl : public Vst3PlugFrameProxy {
                                   Steinberg::ViewRect* newSize) override;
 
    private:
-    Vst3Bridge& bridge;
+    Vst3Bridge& bridge_;
 };

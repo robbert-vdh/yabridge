@@ -90,31 +90,32 @@ std::optional<xcb_keycode_t> find_escape_keycode(
     xcb_connection_t& x11_connection);
 
 X11Window::~X11Window() noexcept {
-    if (!is_moved) {
-        xcb_destroy_window(x11_connection.get(), window);
-        xcb_flush(x11_connection.get());
+    if (!is_moved_) {
+        xcb_destroy_window(x11_connection_.get(), window_);
+        xcb_flush(x11_connection_.get());
     }
 }
 
 X11Window::X11Window(X11Window&& o) noexcept
-    : x11_connection(std::move(o.x11_connection)), window(std::move(o.window)) {
-    o.is_moved = true;
+    : x11_connection_(std::move(o.x11_connection_)),
+      window_(std::move(o.window_)) {
+    o.is_moved_ = true;
 }
 X11Window& X11Window::operator=(X11Window&& o) noexcept {
     if (&o != this) {
-        x11_connection = std::move(o.x11_connection);
-        window = std::move(o.window);
+        x11_connection_ = std::move(o.x11_connection_);
+        window_ = std::move(o.window_);
 
-        o.is_moved = true;
+        o.is_moved_ = true;
     }
 
     return *this;
 }
 
 WineXdndProxy::WineXdndProxy()
-    : x11_connection(xcb_connect(nullptr, nullptr), xcb_disconnect),
-      proxy_window(
-          x11_connection,
+    : x11_connection_(xcb_connect(nullptr, nullptr), xcb_disconnect),
+      proxy_window_(
+          x11_connection_,
           [](std::shared_ptr<xcb_connection_t> x11_connection,
              xcb_window_t window) {
               const xcb_screen_t* screen =
@@ -126,7 +127,7 @@ WineXdndProxy::WineXdndProxy()
                                 XCB_WINDOW_CLASS_INPUT_ONLY,
                                 XCB_COPY_FROM_PARENT, 0, nullptr);
           }),
-      hook_handle(
+      hook_handle_(
           SetWinEventHook(EVENT_OBJECT_CREATE,
                           EVENT_OBJECT_CREATE,
                           nullptr,
@@ -137,46 +138,47 @@ WineXdndProxy::WineXdndProxy()
           UnhookWinEvent) {
     // XDND uses a whole load of atoms for its messages, properties, and
     // selections
-    xcb_xdnd_selection = get_atom_by_name(*x11_connection, xdnd_selection_name);
-    xcb_xdnd_aware_property =
-        get_atom_by_name(*x11_connection, xdnd_aware_property_name);
-    xcb_xdnd_proxy_property =
-        get_atom_by_name(*x11_connection, xdnd_proxy_property_name);
-    xcb_xdnd_drop_message =
-        get_atom_by_name(*x11_connection, xdnd_drop_message_name);
-    xcb_xdnd_enter_message =
-        get_atom_by_name(*x11_connection, xdnd_enter_message_name);
-    xcb_xdnd_finished_message =
-        get_atom_by_name(*x11_connection, xdnd_finished_message_name);
-    xcb_xdnd_position_message =
-        get_atom_by_name(*x11_connection, xdnd_position_message_name);
-    xcb_xdnd_status_message =
-        get_atom_by_name(*x11_connection, xdnd_status_message_name);
-    xcb_xdnd_leave_message =
-        get_atom_by_name(*x11_connection, xdnd_leave_message_name);
+    xcb_xdnd_selection_ =
+        get_atom_by_name(*x11_connection_, xdnd_selection_name);
+    xcb_xdnd_aware_property_ =
+        get_atom_by_name(*x11_connection_, xdnd_aware_property_name);
+    xcb_xdnd_proxy_property_ =
+        get_atom_by_name(*x11_connection_, xdnd_proxy_property_name);
+    xcb_xdnd_drop_message_ =
+        get_atom_by_name(*x11_connection_, xdnd_drop_message_name);
+    xcb_xdnd_enter_message_ =
+        get_atom_by_name(*x11_connection_, xdnd_enter_message_name);
+    xcb_xdnd_finished_message_ =
+        get_atom_by_name(*x11_connection_, xdnd_finished_message_name);
+    xcb_xdnd_position_message_ =
+        get_atom_by_name(*x11_connection_, xdnd_position_message_name);
+    xcb_xdnd_status_message_ =
+        get_atom_by_name(*x11_connection_, xdnd_status_message_name);
+    xcb_xdnd_leave_message_ =
+        get_atom_by_name(*x11_connection_, xdnd_leave_message_name);
 
-    xcb_xdnd_copy_action =
-        get_atom_by_name(*x11_connection, xdnd_copy_action_name);
+    xcb_xdnd_copy_action_ =
+        get_atom_by_name(*x11_connection_, xdnd_copy_action_name);
 
-    xcb_mime_text_uri_list =
-        get_atom_by_name(*x11_connection, mime_text_uri_list_name);
-    xcb_mime_text_plain =
-        get_atom_by_name(*x11_connection, mime_text_plain_name);
+    xcb_mime_text_uri_list_ =
+        get_atom_by_name(*x11_connection_, mime_text_uri_list_name);
+    xcb_mime_text_plain_ =
+        get_atom_by_name(*x11_connection_, mime_text_plain_name);
 }
 
-WineXdndProxy::Handle::Handle(WineXdndProxy* proxy) : proxy(proxy) {}
+WineXdndProxy::Handle::Handle(WineXdndProxy* proxy) : proxy_(proxy) {}
 
 WineXdndProxy::Handle::~Handle() noexcept {
     if (instance_reference_count.fetch_sub(1) == 1) {
-        delete proxy;
+        delete proxy_;
     }
 }
 
-WineXdndProxy::Handle::Handle(const Handle& o) noexcept : proxy(o.proxy) {
+WineXdndProxy::Handle::Handle(const Handle& o) noexcept : proxy_(o.proxy_) {
     instance_reference_count += 1;
 }
 
-WineXdndProxy::Handle::Handle(Handle&& o) noexcept : proxy(o.proxy) {
+WineXdndProxy::Handle::Handle(Handle&& o) noexcept : proxy_(o.proxy_) {
     instance_reference_count += 1;
 }
 
@@ -199,43 +201,44 @@ void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
 
     // NOTE: Needed for a quirk in MT-PowerDrumkit
     bool expected = false;
-    if (!drag_active.compare_exchange_strong(expected, true)) {
+    if (!drag_active_.compare_exchange_strong(expected, true)) {
         throw std::runtime_error("A drag-and-drop operation is already active");
     }
 
-    const xcb_setup_t* x11_setup = xcb_get_setup(x11_connection.get());
-    root_window = xcb_setup_roots_iterator(x11_setup).data->root;
+    const xcb_setup_t* x11_setup = xcb_get_setup(x11_connection_.get());
+    root_window_ = xcb_setup_roots_iterator(x11_setup).data->root;
 
     // When XDND starts, we need to start listening for mouse events so we can
     // react when the mouse cursor hovers over a target that supports XDND. The
     // actual file contents will be transferred over X11 selections. See the
     // spec for a description of the entire process:
     // https://www.freedesktop.org/wiki/Specifications/XDND/#atomsandproperties
-    xcb_set_selection_owner(x11_connection.get(), proxy_window.window,
-                            xcb_xdnd_selection, XCB_CURRENT_TIME);
+    xcb_set_selection_owner(x11_connection_.get(), proxy_window_.window_,
+                            xcb_xdnd_selection_, XCB_CURRENT_TIME);
 
     // Escape key presses are supposed to cancel the drag-and-drop operation, so
     // we will try to grab this key since Wine actually isn't doing that (they
     // only listen for key pressed on their own windows). If we can't grab the
     // keyboard, then it's not a huge deal. Oh and we also need to figure out
     // what keycode the escape key corresponds to first.
-    if (!escape_keycode) {
-        escape_keycode = find_escape_keycode(*x11_connection);
+    if (!escape_keycode_) {
+        escape_keycode_ = find_escape_keycode(*x11_connection_);
     }
-    if (escape_keycode) {
-        xcb_grab_key(x11_connection.get(), false, root_window, XCB_GRAB_ANY,
-                     *escape_keycode, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    if (escape_keycode_) {
+        xcb_grab_key(x11_connection_.get(), false, root_window_, XCB_GRAB_ANY,
+                     *escape_keycode_, XCB_GRAB_MODE_ASYNC,
+                     XCB_GRAB_MODE_ASYNC);
     }
 
-    xcb_flush(x11_connection.get());
+    xcb_flush(x11_connection_.get());
 
     // We will transfer the files in `text/uri-list` format, so a string of URIs
     // separated by line feeds. When the target window requests the selection to
     // be converted, they will ask us to write this to a property on their
     // window
     constexpr char file_protocol[] = "file://";
-    dragged_files_uri_list.clear();
-    dragged_files_uri_list.reserve(std::accumulate(
+    dragged_files_uri_list_.clear();
+    dragged_files_uri_list_.reserve(std::accumulate(
         file_paths.begin(), file_paths.end(), 0,
         [](size_t size, const auto& path) {
             // Account for the protocol, the trailing line feed, and URL
@@ -244,9 +247,9 @@ void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
                    static_cast<size_t>(static_cast<double>(path.size()) * 1.2);
         }));
     for (const auto& path : file_paths) {
-        dragged_files_uri_list.append(file_protocol);
-        dragged_files_uri_list.append(url_encode_path(path.string()));
-        dragged_files_uri_list.push_back('\n');
+        dragged_files_uri_list_.append(file_protocol);
+        dragged_files_uri_list_.append(url_encode_path(path.string()));
+        dragged_files_uri_list_.push_back('\n');
     }
 
     // Normally at this point you would grab the mouse pointer and track what
@@ -255,20 +258,20 @@ void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
     // the left mouse button gets released. Because Wine is also blocking the
     // GUI thread, we need to do our XDND polling from another thread. Luckily
     // the X11 API is thread safe.
-    this->tracker_window = tracker_window;
-    xdnd_handler = Win32Thread([&]() { run_xdnd_loop(); });
+    tracker_window_ = tracker_window;
+    xdnd_handler_ = Win32Thread([&]() { run_xdnd_loop(); });
 }
 
 void WineXdndProxy::end_xdnd() {
-    if (escape_keycode) {
-        xcb_ungrab_key(x11_connection.get(), *escape_keycode, root_window,
+    if (escape_keycode_) {
+        xcb_ungrab_key(x11_connection_.get(), *escape_keycode_, root_window_,
                        XCB_GRAB_ANY);
     }
-    xcb_set_selection_owner(x11_connection.get(), XCB_NONE, xcb_xdnd_selection,
-                            XCB_CURRENT_TIME);
-    xcb_flush(x11_connection.get());
+    xcb_set_selection_owner(x11_connection_.get(), XCB_NONE,
+                            xcb_xdnd_selection_, XCB_CURRENT_TIME);
+    xcb_flush(x11_connection_.get());
 
-    drag_active = false;
+    drag_active_ = false;
 }
 
 // FIXME: For some reason you get a -Wmaybe-uninitialized false positive with
@@ -298,25 +301,25 @@ void WineXdndProxy::run_xdnd_loop() {
 
     auto maybe_leave_last_window = [&]() {
         if (last_xdnd_window) {
-            send_xdnd_message(*last_xdnd_window, xcb_xdnd_leave_message, 0, 0,
+            send_xdnd_message(*last_xdnd_window, xcb_xdnd_leave_message_, 0, 0,
                               0, 0);
             next_position_message_position.reset();
             last_window_accepted_status = false;
             waiting_for_status_message = false;
 
-            xcb_flush(x11_connection.get());
+            xcb_flush(x11_connection_.get());
         }
     };
 
     auto maybe_send_spooled_position_message = [&]() {
         if (next_position_message_position && !waiting_for_status_message) {
-            send_xdnd_message(*last_xdnd_window, xcb_xdnd_position_message, 0,
+            send_xdnd_message(*last_xdnd_window, xcb_xdnd_position_message_, 0,
                               *next_position_message_position, XCB_CURRENT_TIME,
-                              xcb_xdnd_copy_action);
+                              xcb_xdnd_copy_action_);
             next_position_message_position.reset();
             waiting_for_status_message = true;
 
-            xcb_flush(x11_connection.get());
+            xcb_flush(x11_connection_.get());
         }
     };
 
@@ -374,7 +377,7 @@ void WineXdndProxy::run_xdnd_loop() {
         std::this_thread::sleep_for(1ms);
 
         std::unique_ptr<xcb_generic_event_t> generic_event;
-        while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
+        while (generic_event.reset(xcb_poll_for_event(x11_connection_.get())),
                generic_event != nullptr) {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
@@ -385,7 +388,7 @@ void WineXdndProxy::run_xdnd_loop() {
                     const auto event = reinterpret_cast<xcb_key_press_event_t*>(
                         generic_event.get());
 
-                    if (escape_keycode && event->detail == *escape_keycode) {
+                    if (escape_keycode_ && event->detail == *escape_keycode_) {
                         escape_pressed = true;
                     }
                 } break;
@@ -399,7 +402,7 @@ void WineXdndProxy::run_xdnd_loop() {
                         reinterpret_cast<xcb_client_message_event_t*>(
                             generic_event.get());
 
-                    if (event->type == xcb_xdnd_status_message) {
+                    if (event->type == xcb_xdnd_status_message_) {
                         handle_xdnd_status_message(*event);
                     }
                 } break;
@@ -417,7 +420,7 @@ void WineXdndProxy::run_xdnd_loop() {
         // separately, as we still need to keep track of the pointer
         // coordinates.
         const std::unique_ptr<xcb_query_pointer_reply_t> xdnd_window_query =
-            query_xdnd_aware_window_at_pointer(root_window);
+            query_xdnd_aware_window_at_pointer(root_window_);
         if (!xdnd_window_query) {
             continue;
         }
@@ -469,10 +472,10 @@ void WineXdndProxy::run_xdnd_loop() {
             //       the spec dates from 2002, but JUCE only supports version 3.
             //       We'll just pretend no other changes are required.
             send_xdnd_message(
-                xdnd_window_query->child, xcb_xdnd_enter_message,
+                xdnd_window_query->child, xcb_xdnd_enter_message_,
                 std::clamp(static_cast<int>(*supported_xdnd_version), 3, 5)
                     << 24,
-                xcb_mime_text_uri_list, xcb_mime_text_plain, XCB_NONE);
+                xcb_mime_text_uri_list_, xcb_mime_text_plain_, XCB_NONE);
         }
 
         // When the pointer is being moved inside of a window, we should
@@ -486,8 +489,8 @@ void WineXdndProxy::run_xdnd_loop() {
             (xdnd_window_query->root_x << 16) | xdnd_window_query->root_y;
         if (!waiting_for_status_message) {
             send_xdnd_message(xdnd_window_query->child,
-                              xcb_xdnd_position_message, 0, position,
-                              XCB_CURRENT_TIME, xcb_xdnd_copy_action);
+                              xcb_xdnd_position_message_, 0, position,
+                              XCB_CURRENT_TIME, xcb_xdnd_copy_action_);
             waiting_for_status_message = true;
         } else {
             next_position_message_position = position;
@@ -495,7 +498,7 @@ void WineXdndProxy::run_xdnd_loop() {
 
         // For efficiency's sake we'll only flush all of the client messages
         // we're sending once at the end of every cycle
-        xcb_flush(x11_connection.get());
+        xcb_flush(x11_connection_.get());
 
         last_xdnd_window = xdnd_window_query->child;
     }
@@ -531,7 +534,7 @@ void WineXdndProxy::run_xdnd_loop() {
         std::this_thread::sleep_for(1ms);
 
         std::unique_ptr<xcb_generic_event_t> generic_event;
-        while (generic_event.reset(xcb_poll_for_event(x11_connection.get())),
+        while (generic_event.reset(xcb_poll_for_event(x11_connection_.get())),
                generic_event != nullptr) {
             const uint8_t event_type =
                 generic_event->response_type & xcb_event_type_mask;
@@ -546,11 +549,11 @@ void WineXdndProxy::run_xdnd_loop() {
                         reinterpret_cast<xcb_client_message_event_t*>(
                             generic_event.get());
 
-                    if (event->type == xcb_xdnd_status_message) {
+                    if (event->type == xcb_xdnd_status_message_) {
                         // We may have to wait for the last `XdndStatus` to be
                         // sent by the target window
                         handle_xdnd_status_message(*event);
-                    } else if (event->type == xcb_xdnd_finished_message) {
+                    } else if (event->type == xcb_xdnd_finished_message_) {
                         // At this point we're done here, and we can clean up
                         // and terminate this thread
                         drop_finished = true;
@@ -566,14 +569,14 @@ void WineXdndProxy::run_xdnd_loop() {
         // window accepts or denies the drop
         if (!waiting_for_status_message) {
             if (last_window_accepted_status) {
-                send_xdnd_message(*last_xdnd_window, xcb_xdnd_drop_message, 0,
+                send_xdnd_message(*last_xdnd_window, xcb_xdnd_drop_message_, 0,
                                   XCB_CURRENT_TIME, 0, 0);
             } else {
                 maybe_leave_last_window();
                 drop_finished = true;
             }
 
-            xcb_flush(x11_connection.get());
+            xcb_flush(x11_connection_.get());
 
             // We obviously don't want to spam the other client
             waiting_for_status_message = true;
@@ -583,7 +586,7 @@ void WineXdndProxy::run_xdnd_loop() {
     // Make sure the Windows drag-and-drop operation doesn't get stuck for
     // whatever reason (it shouldn't but who knows)
     if (drop_finished) {
-        PostMessageW(tracker_window, WM_KEYDOWN, VK_ESCAPE, 0);
+        PostMessageW(tracker_window_, WM_KEYDOWN, VK_ESCAPE, 0);
     }
 
     end_xdnd();
@@ -598,9 +601,9 @@ WineXdndProxy::query_xdnd_aware_window_at_pointer(
     xcb_query_pointer_cookie_t query_pointer_cookie;
     std::unique_ptr<xcb_query_pointer_reply_t> query_pointer_reply = nullptr;
     while (true) {
-        query_pointer_cookie = xcb_query_pointer(x11_connection.get(), window);
+        query_pointer_cookie = xcb_query_pointer(x11_connection_.get(), window);
         query_pointer_reply.reset(xcb_query_pointer_reply(
-            x11_connection.get(), query_pointer_cookie, &error));
+            x11_connection_.get(), query_pointer_cookie, &error));
         if (error) {
             free(error);
             break;
@@ -626,10 +629,10 @@ std::optional<uint8_t> WineXdndProxy::is_xdnd_aware(
 
     xcb_generic_error_t* error = nullptr;
     const xcb_get_property_cookie_t property_cookie =
-        xcb_get_property(x11_connection.get(), false, window,
-                         xcb_xdnd_aware_property, XCB_ATOM_ATOM, 0, 1);
+        xcb_get_property(x11_connection_.get(), false, window,
+                         xcb_xdnd_aware_property_, XCB_ATOM_ATOM, 0, 1);
     const std::unique_ptr<xcb_get_property_reply_t> property_reply(
-        xcb_get_property_reply(x11_connection.get(), property_cookie, &error));
+        xcb_get_property_reply(x11_connection_.get(), property_cookie, &error));
     if (error) {
         free(error);
         return std::nullopt;
@@ -649,10 +652,10 @@ std::optional<xcb_window_t> WineXdndProxy::get_xdnd_proxy(
     xcb_window_t window) const noexcept {
     xcb_generic_error_t* error = nullptr;
     const xcb_get_property_cookie_t property_cookie =
-        xcb_get_property(x11_connection.get(), false, window,
-                         xcb_xdnd_proxy_property, XCB_ATOM_WINDOW, 0, 1);
+        xcb_get_property(x11_connection_.get(), false, window,
+                         xcb_xdnd_proxy_property_, XCB_ATOM_WINDOW, 0, 1);
     const std::unique_ptr<xcb_get_property_reply_t> property_reply(
-        xcb_get_property_reply(x11_connection.get(), property_cookie, &error));
+        xcb_get_property_reply(x11_connection_.get(), property_cookie, &error));
     if (error) {
         free(error);
         return std::nullopt;
@@ -689,14 +692,14 @@ void WineXdndProxy::send_xdnd_message(xcb_window_t window,
     event.window = window;
     event.format = 32;
     // THis is the source window, so the other side cna reply
-    event.data.data32[0] = proxy_window.window;
+    event.data.data32[0] = proxy_window_.window_;
     event.data.data32[1] = data1;
     event.data.data32[2] = data2;
     event.data.data32[3] = data3;
     event.data.data32[4] = data4;
 
     // Make sure to respect `XdndProxy` only here, as explaiend in the spec
-    xcb_send_event(x11_connection.get(), false,
+    xcb_send_event(x11_connection_.get(), false,
                    get_xdnd_proxy(window).value_or(window),
                    XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&event));
 }
@@ -705,22 +708,22 @@ void WineXdndProxy::send_xdnd_message(xcb_window_t window,
 
 void WineXdndProxy::handle_convert_selection(
     const xcb_selection_request_event_t& event) {
-    xcb_change_property(x11_connection.get(), XCB_PROP_MODE_REPLACE,
+    xcb_change_property(x11_connection_.get(), XCB_PROP_MODE_REPLACE,
                         event.requestor, event.property, event.target, 8,
-                        dragged_files_uri_list.size(),
-                        dragged_files_uri_list.c_str());
-    xcb_flush(x11_connection.get());
+                        dragged_files_uri_list_.size(),
+                        dragged_files_uri_list_.c_str());
+    xcb_flush(x11_connection_.get());
 
     xcb_selection_notify_event_t selection_notify_event{};
     selection_notify_event.response_type = XCB_SELECTION_NOTIFY;
     selection_notify_event.requestor = event.requestor;
-    selection_notify_event.selection = xcb_xdnd_selection;
+    selection_notify_event.selection = xcb_xdnd_selection_;
     selection_notify_event.target = event.target;
     selection_notify_event.property = event.property;
 
-    xcb_send_event(x11_connection.get(), false, event.requestor, XCB_NONE,
+    xcb_send_event(x11_connection_.get(), false, event.requestor, XCB_NONE,
                    reinterpret_cast<const char*>(&selection_notify_event));
-    xcb_flush(x11_connection.get());
+    xcb_flush(x11_connection_.get());
 }
 
 /**

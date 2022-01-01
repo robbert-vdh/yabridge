@@ -90,8 +90,8 @@ class HostProcess {
 #else
             host_path,
 #endif  // WITH_WINEDBG
-            boost::process::std_out = stdout_pipe,
-            boost::process::std_err = stderr_pipe,
+            boost::process::std_out = stdout_pipe_,
+            boost::process::std_err = stderr_pipe_,
             // NOTE: If the Wine process outlives the host, then it may cause
             //       issues if our process is still keeping the host's file
             //       descriptors alive that. This can prevent Ardour from
@@ -113,9 +113,9 @@ class HostProcess {
                     }
 
                     // See above
-                    if (config.disable_pipes) {
+                    if (config_.disable_pipes) {
                         const int redirect_fd =
-                            open(config.disable_pipes->c_str(),
+                            open(config_.disable_pipes->c_str(),
                                  O_CREAT | O_APPEND | O_WRONLY, 0640);
 
                         assert(redirect_fd != -1);
@@ -147,31 +147,31 @@ class HostProcess {
     /**
      * The STDOUT stream of the Wine process we can forward to the logger.
      */
-    patched_async_pipe stdout_pipe;
+    patched_async_pipe stdout_pipe_;
     /**
      * The STDERR stream of the Wine process we can forward to the logger.
      */
-    patched_async_pipe stderr_pipe;
+    patched_async_pipe stderr_pipe_;
 
     /**
      * The current plugin instance's configuration.
      */
-    const Configuration& config;
+    const Configuration& config_;
 
     /**
      * The associated sockets for the plugin we're hosting. This is used to
      * terminate the plugin.
      */
-    Sockets& sockets;
+    Sockets& sockets_;
 
    private:
     /**
      * The logger the Wine output will be written to.
      */
-    Logger& logger;
+    Logger& logger_;
 
-    boost::asio::streambuf stdout_buffer;
-    boost::asio::streambuf stderr_buffer;
+    boost::asio::streambuf stdout_buffer_;
+    boost::asio::streambuf stderr_buffer_;
 };
 
 /**
@@ -212,9 +212,9 @@ class IndividualHost : public HostProcess {
     void terminate() override;
 
    private:
-    const PluginInfo& plugin_info;
-    boost::filesystem::path host_path;
-    boost::process::child host;
+    const PluginInfo& plugin_info_;
+    boost::filesystem::path host_path_;
+    boost::process::child host_;
 };
 
 /**
@@ -260,8 +260,8 @@ class GroupHost : public HostProcess {
     void terminate() override;
 
    private:
-    const PluginInfo& plugin_info;
-    boost::filesystem::path host_path;
+    const PluginInfo& plugin_info_;
+    boost::filesystem::path host_path_;
 
     /**
      * We want to either connect to an existing group host process, or spawn a
@@ -279,7 +279,7 @@ class GroupHost : public HostProcess {
      * When this last step also fails, then we'll say that startup has failed
      * and we will terminate the plugin initialization process.
      */
-    std::atomic_bool startup_failed;
+    std::atomic_bool startup_failed_;
 
     /**
      * A thread that waits for the group host to have started and then ask it to
@@ -290,5 +290,5 @@ class GroupHost : public HostProcess {
      * TODO: Replace the polling with inotify to prevent delays and to reduce
      *       wasting resources
      */
-    std::jthread group_host_connect_handler;
+    std::jthread group_host_connect_handler_;
 };

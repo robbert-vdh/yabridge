@@ -288,7 +288,7 @@ class Sockets {
      * @see Sockets::connect
      */
     Sockets(const boost::filesystem::path& endpoint_base_dir)
-        : base_dir(endpoint_base_dir) {}
+        : base_dir_(endpoint_base_dir) {}
 
     /**
      * Shuts down and closes all sockets and then cleans up the directory
@@ -306,14 +306,15 @@ class Sockets {
             //       this should never be needed, but if it is, then I'm glad
             //       we'll have it!
             const boost::filesystem::path temp_dir = get_temporary_directory();
-            if (base_dir.string().starts_with(temp_dir.string())) {
-                boost::filesystem::remove_all(base_dir);
+            if (base_dir_.string().starts_with(temp_dir.string())) {
+                boost::filesystem::remove_all(base_dir_);
             } else {
                 Logger logger = Logger::create_exception_logger();
 
                 logger.log("");
                 logger.log("WARNING: Unexpected socket base directory found,");
-                logger.log("         not removing '" + base_dir.string() + "'");
+                logger.log("         not removing '" + base_dir_.string() +
+                           "'");
                 logger.log("");
             }
         } catch (const boost::filesystem::filesystem_error&) {
@@ -350,7 +351,7 @@ class Sockets {
      * The base directory for our socket endpoints. All `*_endpoint` variables
      * below are files within this directory.
      */
-    const boost::filesystem::path base_dir;
+    const boost::filesystem::path base_dir_;
 };
 
 /**
@@ -373,11 +374,11 @@ class SocketHandler {
     SocketHandler(boost::asio::io_context& io_context,
                   boost::asio::local::stream_protocol::endpoint endpoint,
                   bool listen)
-        : endpoint(endpoint), socket(io_context) {
+        : endpoint_(endpoint), socket_(io_context) {
         if (listen) {
             boost::filesystem::create_directories(
                 boost::filesystem::path(endpoint.path()).parent_path());
-            acceptor.emplace(io_context, endpoint);
+            acceptor_.emplace(io_context, endpoint);
         }
     }
 
@@ -387,10 +388,10 @@ class SocketHandler {
      * side or connect to the sockets on the Wine side.
      */
     void connect() {
-        if (acceptor) {
-            acceptor->accept(socket);
+        if (acceptor_) {
+            acceptor_->accept(socket_);
         } else {
-            socket.connect(endpoint);
+            socket_.connect(endpoint_);
         }
     }
 
@@ -401,9 +402,9 @@ class SocketHandler {
     void close() {
         // The shutdown can fail when the socket is already closed
         boost::system::error_code err;
-        socket.shutdown(
+        socket_.shutdown(
             boost::asio::local::stream_protocol::socket::shutdown_both, err);
-        socket.close();
+        socket_.close();
     }
 
     /**
@@ -427,7 +428,7 @@ class SocketHandler {
      */
     template <typename T>
     inline void send(const T& object, SerializationBufferBase& buffer) {
-        write_object(socket, object, buffer);
+        write_object(socket_, object, buffer);
     }
 
     /**
@@ -437,7 +438,7 @@ class SocketHandler {
      */
     template <typename T>
     inline void send(const T& object) {
-        write_object(socket, object);
+        write_object(socket_, object);
     }
 
     /**
@@ -471,7 +472,7 @@ class SocketHandler {
      */
     template <typename T>
     inline T& receive_single(T& object, SerializationBufferBase& buffer) {
-        return read_object<T>(socket, object, buffer);
+        return read_object<T>(socket_, object, buffer);
     }
 
     /**
@@ -482,7 +483,7 @@ class SocketHandler {
      */
     template <typename T>
     inline T receive_single() {
-        return read_object<T>(socket);
+        return read_object<T>(socket_);
     }
 
     /**
@@ -521,14 +522,14 @@ class SocketHandler {
     }
 
    private:
-    boost::asio::local::stream_protocol::endpoint endpoint;
-    boost::asio::local::stream_protocol::socket socket;
+    boost::asio::local::stream_protocol::endpoint endpoint_;
+    boost::asio::local::stream_protocol::socket socket_;
 
     /**
      * Will be used in `connect()` on the listening side to establish the
      * connection.
      */
-    std::optional<boost::asio::local::stream_protocol::acceptor> acceptor;
+    std::optional<boost::asio::local::stream_protocol::acceptor> acceptor_;
 };
 
 /**
@@ -574,11 +575,11 @@ class AdHocSocketHandler {
     AdHocSocketHandler(boost::asio::io_context& io_context,
                        boost::asio::local::stream_protocol::endpoint endpoint,
                        bool listen)
-        : io_context(io_context), endpoint(endpoint), socket(io_context) {
+        : io_context_(io_context), endpoint_(endpoint), socket_(io_context) {
         if (listen) {
             boost::filesystem::create_directories(
                 boost::filesystem::path(endpoint.path()).parent_path());
-            acceptor.emplace(io_context, endpoint);
+            acceptor_.emplace(io_context, endpoint);
         }
     }
 
@@ -589,17 +590,17 @@ class AdHocSocketHandler {
      * side or connect to the sockets on the Wine side
      */
     void connect() {
-        if (acceptor) {
-            acceptor->accept(socket);
+        if (acceptor_) {
+            acceptor_->accept(socket_);
 
             // As mentioned in `acceptor's` docstring, this acceptor will be
             // recreated in `receive_multi()` on another context, and
             // potentially on the other side of the connection in the case
-            // where we're handling `vst_host_callback` VST2 events
-            acceptor.reset();
-            boost::filesystem::remove(endpoint.path());
+            // where we're handling `vst_host_callback_` VST2 events
+            acceptor_.reset();
+            boost::filesystem::remove(endpoint_.path());
         } else {
-            socket.connect(endpoint);
+            socket_.connect(endpoint_);
         }
     }
 
@@ -610,11 +611,11 @@ class AdHocSocketHandler {
     void close() {
         // The shutdown can fail when the socket is already closed
         boost::system::error_code err;
-        socket.shutdown(
+        socket_.shutdown(
             boost::asio::local::stream_protocol::socket::shutdown_both, err);
-        socket.close();
+        socket_.close();
 
-        while (currently_listening) {
+        while (currently_listening_) {
             // If another thread is currently calling `receive_multi()`, we'll
             // spinlock until that function has exited. We would otherwise get a
             // use-after-free when this object is destroyed from another thread.
@@ -650,25 +651,25 @@ class AdHocSocketHandler {
         //      ad hoc socket spawning mechanism gets used. If some hosts
         //      for instance consistently and repeatedly trigger this then
         //      we might be able to do some optimizations there.
-        std::unique_lock lock(write_mutex, std::try_to_lock);
+        std::unique_lock lock(write_mutex_, std::try_to_lock);
         if (lock.owns_lock()) {
             // This was used to always block when sending the first message,
             // because the other side may not be listening for additional
             // connections yet
             if constexpr (returns_void) {
-                callback(socket);
-                sent_first_event = true;
+                callback(socket_);
+                sent_first_event_ = true;
             } else {
-                auto result = callback(socket);
-                sent_first_event = true;
+                auto result = callback(socket_);
+                sent_first_event_ = true;
 
                 return result;
             }
         } else {
             try {
                 boost::asio::local::stream_protocol::socket secondary_socket(
-                    io_context);
-                secondary_socket.connect(endpoint);
+                    io_context_);
+                secondary_socket.connect(endpoint_);
 
                 return callback(secondary_socket);
             } catch (const boost::system::system_error&) {
@@ -684,15 +685,15 @@ class AdHocSocketHandler {
                 // `connect()`. If we get here at any other point then it
                 // means that the plugin side is no longer listening on the
                 // sockets, and we should thus just exit.
-                if (!sent_first_event) {
-                    std::lock_guard lock(write_mutex);
+                if (!sent_first_event_) {
+                    std::lock_guard lock(write_mutex_);
 
                     if constexpr (returns_void) {
-                        callback(socket);
-                        sent_first_event = true;
+                        callback(socket_);
+                        sent_first_event_ = true;
                     } else {
-                        auto result = callback(socket);
-                        sent_first_event = true;
+                        auto result = callback(socket_);
+                        sent_first_event_ = true;
 
                         return result;
                     }
@@ -728,8 +729,8 @@ class AdHocSocketHandler {
         // We use this flag to have the `close()` function wait for the this
         // function to exit, to prevent use-after-frees when destroying this
         // object from another thread.
-        assert(!currently_listening);
-        currently_listening = true;
+        assert(!currently_listening_);
+        currently_listening_ = true;
 
         // As described above we'll handle incoming requests for `socket` on
         // this thread. We'll also listen for incoming connections on `endpoint`
@@ -741,7 +742,7 @@ class AdHocSocketHandler {
 
         // The previous acceptor has already been shut down by
         // `AdHocSocketHandler::connect()`
-        acceptor.emplace(secondary_context, endpoint);
+        acceptor_.emplace(secondary_context, endpoint_);
 
         // This works the exact same was as `active_plugins` and
         // `next_plugin_id` in `GroupBridge`
@@ -749,7 +750,7 @@ class AdHocSocketHandler {
         std::atomic_size_t next_request_id{};
         std::mutex active_secondary_requests_mutex{};
         accept_requests(
-            *acceptor, logger,
+            *acceptor_, logger,
             [&](boost::asio::local::stream_protocol::socket secondary_socket) {
                 const size_t request_id = next_request_id.fetch_add(1);
 
@@ -786,7 +787,7 @@ class AdHocSocketHandler {
         // socket shuts down
         while (true) {
             try {
-                primary_callback(socket);
+                primary_callback(socket_);
             } catch (const boost::system::system_error&) {
                 // This happens when the sockets got closed because the plugin
                 // is being shut down
@@ -799,9 +800,9 @@ class AdHocSocketHandler {
         // from the IO context
         std::lock_guard lock(active_secondary_requests_mutex);
         secondary_context.stop();
-        acceptor.reset();
+        acceptor_.reset();
 
-        currently_listening = false;
+        currently_listening_ = false;
     }
 
     /**
@@ -861,22 +862,22 @@ class AdHocSocketHandler {
      * bound to this context. In `receive_multi()` we'll create a new IO context
      * since we want to do all listening there on a dedicated thread.
      */
-    boost::asio::io_context& io_context;
+    boost::asio::io_context& io_context_;
 
-    boost::asio::local::stream_protocol::endpoint endpoint;
-    boost::asio::local::stream_protocol::socket socket;
+    boost::asio::local::stream_protocol::endpoint endpoint_;
+    boost::asio::local::stream_protocol::socket socket_;
 
     /**
      * This acceptor will be used once synchronously on the listening side
      * during `Sockets::connect()`. When `AdHocSocketHandler::receive_multi()`
      * is then called, we'll recreate the acceptor to asynchronously listen for
      * new incoming socket connections on `endpoint` using. This is important,
-     * because on the case of `Vst2Sockets`'s' `vst_host_callback` the acceptor
+     * because on the case of `Vst2Sockets`'s' `vst_host_callback_` the acceptor
      * is first accepts an initial socket on the plugin side (like all sockets),
      * but all additional incoming connections of course have to be listened for
      * on the plugin side.
      */
-    std::optional<boost::asio::local::stream_protocol::acceptor> acceptor;
+    std::optional<boost::asio::local::stream_protocol::acceptor> acceptor_;
 
     /**
      * After the socket gets closed, we do some cleanup at the end of
@@ -886,13 +887,13 @@ class AdHocSocketHandler {
      * near instantly, we'll just do a spinlock here instead of using condition
      * variables.
      */
-    std::atomic_bool currently_listening = false;
+    std::atomic_bool currently_listening_ = false;
 
     /**
      * A mutex that locks the primary `socket`. If this is locked, then any new
      * events will be sent over a new socket instead.
      */
-    std::mutex write_mutex;
+    std::mutex write_mutex_;
 
     /**
      * Indicates whether or not the remove has processed an event we sent from
@@ -901,5 +902,5 @@ class AdHocSocketHandler {
      * sockets, we want it to always wait for the sockets to come online, but
      * this fallback behaviour should only happen during initialization.
      */
-    std::atomic_bool sent_first_event = false;
+    std::atomic_bool sent_first_event_ = false;
 };

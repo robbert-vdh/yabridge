@@ -61,7 +61,7 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
      */
     YaContextMenu(ConstructArgs&& args) noexcept;
 
-    inline bool supported() const noexcept { return arguments.supported; }
+    inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
      * Message to pass through a call to `IContextMenu::getItemCount()` to the
@@ -179,7 +179,7 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
                                      Steinberg::UCoord y) override = 0;
 
    protected:
-    ConstructArgs arguments;
+    ConstructArgs arguments_;
 };
 
 #pragma GCC diagnostic pop

@@ -26,4 +26,4 @@ YaAudioPresentationLatency::ConstructArgs::ConstructArgs(
 
 YaAudioPresentationLatency::YaAudioPresentationLatency(
     ConstructArgs&& args) noexcept
-    : arguments(std::move(args)) {}
+    : arguments_(std::move(args)) {}

@@ -68,60 +68,60 @@ const Steinberg::Vst::TChar* u16string_to_tchar_pointer(
 
 WineUID::WineUID() noexcept {}
 WineUID::WineUID(const Steinberg::TUID& tuid) noexcept
-    : uid(std::to_array(tuid)) {}
+    : uid_(std::to_array(tuid)) {}
 
 ArrayUID WineUID::get_native_uid() const noexcept {
     // We need to shuffle the first 8 bytes around to convert between the
     // COM-compatible and non COM-compatible formats described by the
     // `INLINE_UID` macro. See that macro as a reference for the transformations
     // we're applying here.
-    ArrayUID converted_uid = uid;
+    ArrayUID converted_uid = uid_;
 
-    converted_uid[0] = uid[3];
-    converted_uid[1] = uid[2];
-    converted_uid[2] = uid[1];
-    converted_uid[3] = uid[0];
+    converted_uid[0] = uid_[3];
+    converted_uid[1] = uid_[2];
+    converted_uid[2] = uid_[1];
+    converted_uid[3] = uid_[0];
 
-    converted_uid[4] = uid[5];
-    converted_uid[5] = uid[4];
-    converted_uid[6] = uid[7];
-    converted_uid[7] = uid[6];
+    converted_uid[4] = uid_[5];
+    converted_uid[5] = uid_[4];
+    converted_uid[6] = uid_[7];
+    converted_uid[7] = uid_[6];
 
     return converted_uid;
 }
 
 NativeUID::NativeUID() noexcept {}
 NativeUID::NativeUID(const Steinberg::TUID& tuid) noexcept
-    : uid(std::to_array(tuid)) {}
+    : uid_(std::to_array(tuid)) {}
 
 ArrayUID NativeUID::get_wine_uid() const noexcept {
     // This transformation is actually the same as the one in
     // `WineUID::get_native_uid()`, but we'll spell it out here in full for
     // understandability's sake.
-    ArrayUID converted_uid = uid;
+    ArrayUID converted_uid = uid_;
 
-    converted_uid[0] = uid[3];
-    converted_uid[1] = uid[2];
-    converted_uid[2] = uid[1];
-    converted_uid[3] = uid[0];
+    converted_uid[0] = uid_[3];
+    converted_uid[1] = uid_[2];
+    converted_uid[2] = uid_[1];
+    converted_uid[3] = uid_[0];
 
-    converted_uid[4] = uid[5];
-    converted_uid[5] = uid[4];
-    converted_uid[6] = uid[7];
-    converted_uid[7] = uid[6];
+    converted_uid[4] = uid_[5];
+    converted_uid[5] = uid_[4];
+    converted_uid[6] = uid_[7];
+    converted_uid[7] = uid_[6];
 
     return converted_uid;
 }
 
 UniversalTResult::UniversalTResult() noexcept
-    : universal_result(Value::kResultFalse) {}
+    : universal_result_(Value::kResultFalse) {}
 
 UniversalTResult::UniversalTResult(tresult native_result) noexcept
-    : universal_result(to_universal_result(native_result)) {}
+    : universal_result_(to_universal_result(native_result)) {}
 
 UniversalTResult::operator tresult() const noexcept {
     static_assert(Steinberg::kResultOk == Steinberg::kResultTrue);
-    switch (universal_result) {
+    switch (universal_result_) {
         case Value::kNoInterface:
             return Steinberg::kNoInterface;
             break;
@@ -155,7 +155,7 @@ UniversalTResult::operator tresult() const noexcept {
 
 std::string UniversalTResult::string() const {
     static_assert(Steinberg::kResultOk == Steinberg::kResultTrue);
-    switch (universal_result) {
+    switch (universal_result_) {
         case Value::kNoInterface:
             return "kNoInterface";
             break;

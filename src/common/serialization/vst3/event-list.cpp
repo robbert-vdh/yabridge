@@ -183,31 +183,31 @@ YaEventList::YaEventList() noexcept {
 }
 
 void YaEventList::clear() noexcept {
-    events.clear();
+    events_.clear();
 }
 
 void YaEventList::repopulate(Steinberg::Vst::IEventList& event_list) {
     // Copy over all events. Everything gets converted to `YaEvent`s. We sadly
     // can't construct these in place because we don't know the event type yet.
-    events.clear();
-    events.reserve(event_list.getEventCount());
+    events_.clear();
+    events_.reserve(event_list.getEventCount());
     for (int i = 0; i < event_list.getEventCount(); i++) {
         // We're skipping the `kResultOk` assertions here
         Steinberg::Vst::Event event;
         event_list.getEvent(i, event);
-        events.emplace_back(event);
+        events_.emplace_back(event);
     }
 }
 
 YaEventList::~YaEventList() noexcept {FUNKNOWN_DTOR}
 
 size_t YaEventList::num_events() const noexcept {
-    return events.size();
+    return events_.size();
 }
 
 void YaEventList::write_back_outputs(
     Steinberg::Vst::IEventList& output_events) const {
-    for (auto& event : events) {
+    for (auto& event : events_) {
         Steinberg::Vst::Event reconstructed_event = event.get();
         output_events.addEvent(reconstructed_event);
     }
@@ -221,25 +221,25 @@ IMPLEMENT_FUNKNOWN_METHODS(YaEventList,
 #pragma GCC diagnostic pop
 
 int32 PLUGIN_API YaEventList::getEventCount() {
-    return static_cast<int32>(events.size());
+    return static_cast<int32>(events_.size());
 }
 
 tresult PLUGIN_API YaEventList::getEvent(int32 index,
                                          Steinberg::Vst::Event& e /*out*/) {
-    if (index < 0 || index >= static_cast<int32>(events.size())) {
+    if (index < 0 || index >= static_cast<int32>(events_.size())) {
         return Steinberg::kInvalidArgument;
     }
 
     // Reconstructing an event is cheap, but some events may contain pointers to
     // heap data stored within the `events` vector so this event will still have
     // the same lifetime as this class
-    e = events[index].get();
+    e = events_[index].get();
 
     return Steinberg::kResultOk;
 }
 
 tresult PLUGIN_API YaEventList::addEvent(Steinberg::Vst::Event& e /*in*/) {
-    events.push_back(e);
+    events_.push_back(e);
 
     return Steinberg::kResultOk;
 }
