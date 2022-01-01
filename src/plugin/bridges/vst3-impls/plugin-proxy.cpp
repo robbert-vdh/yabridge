@@ -1,5 +1,5 @@
 // yabridge: a Wine VST bridge
-// Copyright (C) 2020-2021 Robbert van der Helm
+// Copyright (C) 2020-2022 Robbert van der Helm
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "plugin-proxy.h"
+
+#include <pluginterfaces/vst/ivstmidicontrollers.h>
 
 #include "plug-view-proxy.h"
 
