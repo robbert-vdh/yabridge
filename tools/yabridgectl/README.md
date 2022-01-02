@@ -29,19 +29,6 @@ directory instead.
 yabridgectl set --path=<path/to/directory/containing/yabridge/files>
 ```
 
-### Installation methods
-
-Yabridge can be set up using either copies or symlinks. By default, yabridgectl
-will use the copy-based installation method since this will work with any host,
-and there's usually no reason to use symlinks anymore. If you are using a DAW
-that supports individually sandboxed plugins such as Bitwig Studio, then you can
-choose between using copies and symlinks using the command below. Make sure to
-rerun `yabridgectl sync` after changing this setting.
-
-```shell
-yabridgectl set --method=<copy|symlink>
-```
-
 ### Managing directories
 
 Yabridgectl can manage multiple Windows plugin install locations for you.
@@ -86,38 +73,6 @@ yabridgectl sync
 yabridgectl sync --prune
 # Set up yabridge or update for all plugins, even if it would not be necessary
 yabridgectl sync --force
-```
-
-## Alternatives
-
-If you want to script your own installation behaviour and don't feel like using
-yabridgectl, then you could use one of the below bash snippets instead to set up
-yabridge for VST2 plugins. This approach is slightly less robust and does not
-perform any problem detection or status reporting, but it will get you started.
-Doing the same thing for VST3 plugins is much more complicated and it involves
-[merged
-bundle](https://developer.steinberg.help/display/VST/Plug-in+Format+Structure#PluginFormatStructure-MergedBundle)
-with the Windows VST3 module symlinked in, so it's recommended to have
-yabridgectl do that for you.
-
-```shell
-# For use with symlinks
-yabridge_home=$HOME/.local/share/yabridge
-plugin_dir="$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"
-
-find -L "$plugin_dir" -type f -iname '*.dll' -print0 |
-  xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main') && printf '{}\0'" |
-  sed -z 's/\.dll$/.so/' |
-  xargs -0 -n1 ln -sf "$yabridge_home/libyabridge.so"
-
-# For use with copies
-yabridge_home=$HOME/.local/share/yabridge
-plugin_dir="$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"
-
-find -L "$plugin_dir" -type f -iname '*.dll' -print0 |
-  xargs -0 -P$(nproc) -I{} bash -c "(winedump -j export '{}' | grep -qE 'VSTPluginMain|main') && printf '{}\0'" |
-  sed -z 's/\.dll$/.so/' |
-  xargs -0 -n1 cp "$yabridge_home/libyabridge.so"
 ```
 
 ## Building from source
