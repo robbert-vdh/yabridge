@@ -590,16 +590,14 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   up yourself](https://jackaudio.org/faq/linux_rt_config.html).
 
 - Using PipeWire's JACK implementation might cause certain plugins to crash with
-  the out of the box configuration. PipeWire versions before 0.32.0 used rtkit
-  instead of regular realtime scheduling, and both PipeWire and rtkit would
-  impose a low limit on the maximum amount of CPU time a realtime process may
-  use at a time (`RLIMIT_RTTIME`). This would cause plugins that take a long
-  time to initialize to crash. With PipeWire 0.32.0 you only need to change a
-  single configuration file to prevent this from happening. Simply copy
+  the out of the box configuration, and yabridge will warn you about this in
+  advance. With PipeWire 0.32.0 you only need to change a single configuration
+  file to prevent this from happening. Simply copy
   `/usr/share/pipewire/jack.conf` to `~/.config/pipewire/jack.conf`, uncomment
   the `rt.time.soft` and `rt.time.hard` arguments for the
-  `libpipewire-module-rt` module, and then set both to `-1`. Alternatively, you
-  can also use regular JACK2 or straight ALSA instead of PipeWire.
+  `libpipewire-module-rt` module, and then set both to `-1`. Alternatively, give
+  [this](https://github.com/robbert-vdh/dotfiles#pipewire) optimized PipeWire
+  configuration a try.
 
 - If you have the `WINEPREFIX` environment variable set and you _don't_ want all
   of your plugins to use that specific Wine prefix, then you should unset it to
