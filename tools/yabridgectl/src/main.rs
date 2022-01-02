@@ -341,7 +341,7 @@ fn match_in_path_list<'a>(path: &Path, candidates: &'a HashSet<&Path>) -> Result
     let normalized_path_str = normalized_path
         .to_str()
         .expect("Input path contains invalid characters");
-    let normalized_path_without_slash = if normalized_path_str.ends_with("/") {
+    let normalized_path_without_slash = if normalized_path_str.ends_with('/') {
         Path::new(normalized_path_str.trim_end_matches('/'))
     } else {
         normalized_path.as_path()
