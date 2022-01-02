@@ -35,6 +35,17 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   the host inserts or removes plug instances while other instances of that
   plugin are processing audio.
 
+### yabridgectl
+
+- Deprecated support for the symlink-based installation method in yabridgectl
+  and removed all remaining mentions of it from the documentation. This feature
+  has for all intents and purposes already been obselete since yabridge 2.1.0,
+  but the option was still available. With modern file systems supporting
+  reflinks, there's zero reason to use this feature anymore, and enabling it can
+  lead to a number of surprises. Yabridgectl will now print a warning upon
+  syncing when using the symlink installation method, and the feature will be
+  removed completely in yabridge 4.0.
+
 ### Packaging notes
 
 - We now target VST3 SDK version 3.7.4 with git tag `v3.7.4_build_25-patched`.

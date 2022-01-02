@@ -97,6 +97,8 @@ pub enum InstallationMethod {
     /// This will create a symlink to `libyabridge-{vst2,vst3}.so` for every VST2 plugin `.dll` file
     /// or VST3 module in the plugin directories. Now that yabridge also searches in
     /// `~/.local/share/yabridge` since yabridge 2.1 this option is not really needed anymore.
+    ///
+    /// TODO: This feature has been deprecated, remove it in yabridge 4.0
     Symlink,
 }
 

@@ -231,6 +231,20 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         None => None,
     };
 
+    if config.method == InstallationMethod::Symlink {
+        eprintln!(
+            "{}",
+            utils::wrap(&format!(
+                "{}: The symlink-based installation method is currently active. This \
+                 will likely result in unexpected behavior, and the feature will be removed \
+                 entirely in a later version of yabridgectl. You can revert back \
+                 to the copy-based installation method by running '{}'.\n",
+                "WARNING".yellow().bold(),
+                "yabridgectl set --method=copy".bright_white()
+            ))
+        );
+    }
+
     if let Some((libyabridge_vst3_path, _)) = &files.libyabridge_vst3 {
         println!("Setting up VST2 and VST3 plugins using:");
         println!("- {}", files.libyabridge_vst2.display());

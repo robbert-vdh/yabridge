@@ -119,15 +119,18 @@ fn main() -> Result<()> {
         )
         .subcommand(
             App::new("set")
-                .about("Change the installation method or yabridge path (advanced)")
+                .about("Change the yabridge path (advanced)")
                 .display_order(200)
                 .setting(AppSettings::ArgRequiredElseHelp)
                 .arg(
                     Arg::new("method")
                         .long("method")
-                        .about("The installation method to use")
+                        .about("The installation method to use (deprecated)")
                         .long_about(&format!(
-                            "The installation method to use. \
+                            "This feature has been deprecated in yabridgectl 3.7.1 and should \
+                             not be used anymore. \
+                             \n\n\
+                             The installation method to use. \
                              '{}' works in every situation but it requires you to modify your PATH \
                              environment variable so yabridge is able to find 'yabridge-host.exe'. \
                              'yabridgectl sync' whenever you update yabridge. You'll also have to \
