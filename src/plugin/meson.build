@@ -81,7 +81,6 @@ vst3_plugin_sources = files(
   '../common/plugins.cpp',
   '../common/utils.cpp',
   'bridges/vst3.cpp',
-  'bridges/vst3-impls/context-menu-target.cpp',
   'bridges/vst3-impls/plugin-factory-proxy.cpp',
   'bridges/vst3-impls/plug-view-proxy.cpp',
   'bridges/vst3-impls/plugin-proxy.cpp',

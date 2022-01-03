@@ -18,8 +18,8 @@
 
 #include <pluginterfaces/base/ustring.h>
 
+#include "../../common/serialization/vst3-impls/context-menu-target.h"
 #include "../../common/serialization/vst3.h"
-#include "vst3-impls/context-menu-target.h"
 #include "vst3-impls/plugin-proxy.h"
 
 using namespace std::literals::string_literals;

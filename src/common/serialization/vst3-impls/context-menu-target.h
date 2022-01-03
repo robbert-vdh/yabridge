@@ -16,23 +16,42 @@
 
 #pragma once
 
-#include "../vst3.h"
+#include "../vst3/context-menu-target.h"
 
+/**
+ * This implementation used to live in `src/plugin/bridges/vst3-impls`, but
+ * since plugins can also call context menu items added by the host this is
+ * needed on both sides.
+ */
+template <typename Bridge>
 class YaContextMenuTargetImpl : public YaContextMenuTarget {
    public:
-    YaContextMenuTargetImpl(Vst3PluginBridge& bridge,
-                            ConstructArgs&& args) noexcept;
+    YaContextMenuTargetImpl(Bridge& bridge, ConstructArgs&& args) noexcept
+        : YaContextMenuTarget(std::move(args)), bridge_(bridge) {}
 
     /**
      * We'll override the query interface to log queries for interfaces we do
      * not (yet) support.
      */
     tresult PLUGIN_API queryInterface(const Steinberg::TUID _iid,
-                                      void** obj) override;
+                                      void** obj) override {
+        const tresult result = YaContextMenuTarget::queryInterface(_iid, obj);
+        bridge_.logger_.log_query_interface(
+            "In IContextMenuTarget::queryInterface()", result,
+            Steinberg::FUID::fromTUID(_iid));
+
+        return result;
+    }
 
     // From `IContextMenuTarget`
-    tresult PLUGIN_API executeMenuItem(int32 tag) override;
+    tresult PLUGIN_API executeMenuItem(int32 tag) override {
+        return bridge_.send_message(YaContextMenuTarget::ExecuteMenuItem{
+            .owner_instance_id = owner_instance_id(),
+            .context_menu_id = context_menu_id(),
+            .target_tag = target_tag(),
+            .tag = tag});
+    }
 
    private:
-    Vst3PluginBridge& bridge_;
+    Bridge& bridge_;
 };
