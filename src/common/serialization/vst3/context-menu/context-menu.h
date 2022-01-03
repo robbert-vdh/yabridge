@@ -29,6 +29,9 @@
 /**
  * Wraps around `IContextMenu` for serialization purposes. This is instantiated
  * as part of `Vst3ContextMenuProxy`.
+ *
+ * Plugins can also call context menu items created by the host, in which case
+ * we'll proxy that call through to the host.
  */
 class YaContextMenu : public Steinberg::Vst::IContextMenu {
    public:
@@ -49,9 +52,18 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
          */
         bool supported;
 
+        /**
+         * The context menu items prepopulated by the host so the plugin can
+         * call them. These items will receive `YaContextMenuTarget` proxy
+         * targets in `Vst3ContextMenuProxyImpl`, so when the plugin calls them
+         * it will dispatch a call to the host instead.
+         */
+        std::vector<Steinberg::Vst::IContextMenuItem> items;
+
         template <typename S>
         void serialize(S& s) {
             s.value1b(supported);
+            s.container(items, 1 << 16);
         }
     };
 
@@ -63,28 +75,10 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
 
     inline bool supported() const noexcept { return arguments_.supported; }
 
-    /**
-     * Message to pass through a call to `IContextMenu::getItemCount()` to the
-     * corresponding context menu instance returned by the host.
-     */
-    struct GetItemCount {
-        using Response = PrimitiveWrapper<int32>;
-
-        native_size_t owner_instance_id;
-        native_size_t context_menu_id;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(owner_instance_id);
-            s.value8b(context_menu_id);
-        }
-    };
-
+    // Since we pass along a list of initial items, we don't need to proxy this
+    // unless the host somehow adds more items after the plugin adds an item
     virtual int32 PLUGIN_API getItemCount() override = 0;
-
-    // XXX: Can a plugin call this to get items created by the host? Why would
-    //      they do that? We should find a host/plugin combination that supports
-    //      `IComponentHandler3` first.
+    // Plugins can also call context menu items created by the host
     virtual tresult PLUGIN_API
     getItem(int32 index,
             Steinberg::Vst::IContextMenuItem& item /*out*/,

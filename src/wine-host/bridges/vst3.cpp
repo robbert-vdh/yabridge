@@ -387,10 +387,13 @@ void Vst3Bridge::run() {
                 const auto& [instance, _] =
                     get_instance(request.owner_instance_id);
 
+                // This is of course only used for calling plugin defined
+                // targets from the host, this will never be called when the
+                // host calls their own targets for whatever reason
                 return instance.registered_context_menus
                     .at(request.context_menu_id)
                     .get()
-                    .context_menu_targets_[request.target_tag]
+                    .plugin_targets_[request.target_tag]
                     ->executeMenuItem(request.tag);
             },
             [&](YaEditController::SetComponentState& request)

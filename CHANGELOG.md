@@ -8,6 +8,17 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added support for VST3 plugins interacting directly with the host's context
+  menu items. Most plugins that use VST3's context menu support let the host
+  handle drawing the actual menu, but it's also possible for plugins to
+  incorporate the host's menu items into their own custom context menu. So far
+  this feature has only been tested with [Surge
+  XT](https://github.com/surge-synthesizer/surge)'s Windows VST3 version since
+  very few if any other plugins do this right now, but other plugins may start
+  doing this too in the future.
+
 ### Changed
 
 - Added support for Wine 6.23's new fixed winedbg command line argument

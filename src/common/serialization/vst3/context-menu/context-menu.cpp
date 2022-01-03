@@ -20,7 +20,24 @@ YaContextMenu::ConstructArgs::ConstructArgs() noexcept {}
 
 YaContextMenu::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object) noexcept
-    : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IContextMenu>(object)) {}
+    : supported(Steinberg::FUnknownPtr<Steinberg::Vst::IContextMenu>(object)) {
+    Steinberg::FUnknownPtr<Steinberg::Vst::IContextMenu> context_menu(object);
+    if (context_menu) {
+        // Can't trust plugins to check for null pointers, so we'll just always
+        // pass something
+        Steinberg::Vst::IContextMenuTarget* dummyTarget = nullptr;
+
+        // Prepopulate the context menu with these targets
+        // NOTE: Bitwig does not actually set the tags here, so host menu items
+        //       need to be identified through their item ID, not through the
+        //       tag
+        items.resize(context_menu->getItemCount());
+        for (size_t i = 0; i < items.size(); i++) {
+            context_menu->getItem(static_cast<int32>(i), items[i],
+                                  &dummyTarget);
+        }
+    }
+}
 
 YaContextMenu::YaContextMenu(ConstructArgs&& args) noexcept
     : arguments_(std::move(args)) {}

@@ -18,11 +18,32 @@
 
 #include <iostream>
 
+#include "../../common/serialization/vst3-impls/context-menu-target.h"
+
 Vst3ContextMenuProxyImpl::Vst3ContextMenuProxyImpl(
     Vst3Bridge& bridge,
-    Vst3ContextMenuProxy::ConstructArgs&& args) noexcept
-    : Vst3ContextMenuProxy(std::move(args)), bridge_(bridge) {
+    Vst3ContextMenuProxy::ConstructArgs&& args)
+    : Vst3ContextMenuProxy(std::move(args)),
+      bridge_(bridge),
+      items_(std::move(YaContextMenu::arguments_.items)) {
     bridge.register_context_menu(*this);
+
+    // The host has likely prepopulated the context menu with its own items. In
+    // that case we should create proxy targets for those so the plugin can call
+    // those menu items.
+    const int32 num_items = static_cast<int32>(items_.size());
+    for (int32 item_idx = 0; item_idx < num_items; item_idx++) {
+        auto& item = items_[item_idx];
+
+        // NOTE: These host targets are indexed by the item's index because
+        //       Bitwig doesn't assign tags to their own menu items
+        host_targets_[item_idx] = Steinberg::owned(new YaContextMenuTargetImpl(
+            bridge, YaContextMenuTarget::ConstructArgs{
+                        .owner_instance_id = owner_instance_id(),
+                        .context_menu_id = context_menu_id(),
+                        .item_id = static_cast<int32>(item_idx),
+                        .tag = item.tag}));
+    }
 }
 
 Vst3ContextMenuProxyImpl::~Vst3ContextMenuProxyImpl() noexcept {
@@ -49,9 +70,7 @@ Vst3ContextMenuProxyImpl::queryInterface(const Steinberg::TUID _iid,
 }
 
 int32 PLUGIN_API Vst3ContextMenuProxyImpl::getItemCount() {
-    return bridge_.send_message(
-        YaContextMenu::GetItemCount{.owner_instance_id = owner_instance_id(),
-                                    .context_menu_id = context_menu_id()});
+    return static_cast<int32>(items_.size());
 }
 
 tresult PLUGIN_API Vst3ContextMenuProxyImpl::getItem(
@@ -63,31 +82,56 @@ tresult PLUGIN_API Vst3ContextMenuProxyImpl::getItem(
     //      the plugin (but we'll implement a basic version anyways).
     if (index < 0 || index >= static_cast<int32>(items_.size())) {
         return Steinberg::kInvalidArgument;
-    } else {
-        item = items_[index];
-        *target = context_menu_targets_[item.tag];
+    }
 
-        return Steinberg::kResultOk;
+    item = items_[index];
+    if (target) {
+        // The item is either a context menu item prepopulated by the host or an
+        // item created by the plugin itself
+        if (auto plugin_target = plugin_targets_.find(item.tag);
+            plugin_target != plugin_targets_.end()) {
+            *target = plugin_target->second;
+            return Steinberg::kResultOk;
+        } else if (auto proxy_target = host_targets_.find(index);
+                   // NOTE: These proxy targets are indexed by the item's index
+                   //       because Bitwig doesn't assign tags to their context
+                   //       menu items
+                   proxy_target != host_targets_.end()) {
+            *target = proxy_target->second;
+            return Steinberg::kResultOk;
+        } else {
+            *target = nullptr;
+            return Steinberg::kResultFalse;
+        }
+    } else {
+        std::cerr << "WARNING: Null pointer passed to 'IContextMenu::getItem()'"
+                  << std::endl;
+        return Steinberg::kInvalidArgument;
     }
 }
 
 tresult PLUGIN_API
 Vst3ContextMenuProxyImpl::addItem(const Steinberg::Vst::IContextMenuItem& item,
                                   Steinberg::Vst::IContextMenuTarget* target) {
-    // TODO: I haven't come across a plugin that adds its own items, so this
-    //       hasn't been tested yet
+    // TODO: I haven't come across a plugin that adds its own items to the
+    //       host's context menu, so this hasn't been tested yet
     const tresult result = bridge_.send_message(YaContextMenu::AddItem{
         .owner_instance_id = owner_instance_id(),
         .context_menu_id = context_menu_id(),
         .item = item,
-        .target =
-            (target ? std::make_optional<YaContextMenuTarget::ConstructArgs>(
-                          owner_instance_id(), context_menu_id(), item.tag)
-                    : std::nullopt)});
+        .target = (target ? std::optional(YaContextMenuTarget::ConstructArgs{
+                                .owner_instance_id = owner_instance_id(),
+                                .context_menu_id = context_menu_id(),
+                                // This item ID isn't actually used here because
+                                // it's only needed to work around a Bitwig bug
+                                // when calling host menu items from a plugin
+                                .item_id = static_cast<int32>(items_.size()),
+                                .tag = item.tag})
+                          : std::nullopt)});
 
     if (result == Steinberg::kResultOk) {
         items_.push_back(item);
-        context_menu_targets_[item.tag] = target;
+        plugin_targets_[item.tag] = target;
     }
 
     return result;
@@ -110,7 +154,12 @@ tresult PLUGIN_API Vst3ContextMenuProxyImpl::removeItem(
                     return candidate_item.tag == item.tag;
                 }),
             items_.end());
-        context_menu_targets_.erase(item.tag);
+
+        // The target can be either a proxy target or a target added by the
+        // plugin
+        if (plugin_targets_.erase(item.tag) == 0) {
+            host_targets_.erase(item.tag);
+        }
     }
 
     return result;
@@ -120,7 +169,7 @@ tresult PLUGIN_API Vst3ContextMenuProxyImpl::popup(Steinberg::UCoord x,
                                                    Steinberg::UCoord y) {
     // NOTE: This requires mutual recursion, because REAPER will call
     //       `getState()` whle the context menu is open, and `getState()` also
-    //       has to be handled from the GUi thread
+    //       has to be handled from the GUI thread
     return bridge_.send_mutually_recursive_message(
         YaContextMenu::Popup{.owner_instance_id = owner_instance_id(),
                              .context_menu_id = context_menu_id(),

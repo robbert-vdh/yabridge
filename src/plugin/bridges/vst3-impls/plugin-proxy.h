@@ -353,13 +353,14 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
         Steinberg::IPtr<Steinberg::Vst::IContextMenu> menu;
 
         /**
-         * All targets we pass to `IContextMenu::addItem`. We'll store them per
+         * All targets passed to `IContextMenu::addItem`. We'll store them per
          * item tag, so we can drop them together with the menu. We probably
          * don't have to use smart pointers for this, but the docs are missing a
          * lot of details o how this should be implemented and there's no
          * example implementation around.
          */
-        std::unordered_map<int32, Steinberg::IPtr<YaContextMenuTarget>> targets;
+        std::unordered_map<int32, Steinberg::IPtr<YaContextMenuTarget>>
+            plugin_targets;
     };
 
     /**

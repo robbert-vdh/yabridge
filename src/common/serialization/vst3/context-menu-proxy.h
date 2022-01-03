@@ -49,7 +49,7 @@ class Vst3ContextMenuProxy : public YaContextMenu {
          */
         ConstructArgs(Steinberg::IPtr<FUnknown> object,
                       size_t owner_instance_id,
-                      size_t context_menu_id) noexcept;
+                      size_t context_menu_id);
 
         /**
          * The unique instance identifier of the proxy object instance this

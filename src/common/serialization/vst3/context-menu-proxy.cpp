@@ -21,7 +21,7 @@ Vst3ContextMenuProxy::ConstructArgs::ConstructArgs() noexcept {}
 Vst3ContextMenuProxy::ConstructArgs::ConstructArgs(
     Steinberg::IPtr<Steinberg::FUnknown> object,
     size_t owner_instance_id,
-    size_t context_menu_id) noexcept
+    size_t context_menu_id)
     : owner_instance_id(owner_instance_id),
       context_menu_id(context_menu_id),
       context_menu_args(object) {}

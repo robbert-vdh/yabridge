@@ -183,15 +183,6 @@ Vst3PluginBridge::Vst3PluginBridge()
                                                  request.type, request.dir,
                                                  request.index, request.state);
                                      },
-                [&](const YaContextMenu::GetItemCount& request)
-                    -> YaContextMenu::GetItemCount::Response {
-                    const auto& [proxy_object, _] =
-                        get_proxy(request.owner_instance_id);
-
-                    return proxy_object.context_menus_
-                        .at(request.context_menu_id)
-                        .menu->getItemCount();
-                },
                 [&](YaContextMenu::AddItem& request)
                     -> YaContextMenu::AddItem::Response {
                     const auto& [proxy_object, _] =
@@ -201,13 +192,13 @@ Vst3PluginBridge::Vst3PluginBridge()
                         proxy_object.context_menus_.at(request.context_menu_id);
 
                     if (request.target) {
-                        context_menu.targets[request.item.tag] =
+                        context_menu.plugin_targets[request.item.tag] =
                             Steinberg::owned(new YaContextMenuTargetImpl(
                                 *this, std::move(*request.target)));
 
                         return context_menu.menu->addItem(
                             request.item,
-                            context_menu.targets[request.item.tag]);
+                            context_menu.plugin_targets[request.item.tag]);
                     } else {
                         return context_menu.menu->addItem(request.item,
                                                           nullptr);
@@ -222,8 +213,8 @@ Vst3PluginBridge::Vst3PluginBridge()
                         proxy_object.context_menus_.at(request.context_menu_id);
 
                     if (const auto it =
-                            context_menu.targets.find(request.item.tag);
-                        it != context_menu.targets.end()) {
+                            context_menu.plugin_targets.find(request.item.tag);
+                        it != context_menu.plugin_targets.end()) {
                         return context_menu.menu->removeItem(request.item,
                                                              it->second);
                     } else {
@@ -244,6 +235,30 @@ Vst3PluginBridge::Vst3PluginBridge()
                                 .at(request.context_menu_id)
                                 .menu->popup(request.x, request.y);
                         });
+                },
+                [&](YaContextMenuTarget::ExecuteMenuItem& request)
+                    -> YaContextMenuTarget::ExecuteMenuItem::Response {
+                    const auto& [proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    // This is of course only used for calling host defined
+                    // targets from the plugin, this will never be called when
+                    // the plugin calls their own targets for whatever reason
+                    Steinberg::Vst::IContextMenuItem item;
+                    Steinberg::Vst::IContextMenuTarget* target = nullptr;
+                    Steinberg::IPtr<Steinberg::Vst::IContextMenu> menu =
+                        proxy.context_menus_.at(request.context_menu_id).menu;
+                    if (menu->getItem(request.item_id, item, &target) ==
+                            Steinberg::kResultOk &&
+                        target) {
+                        return target->executeMenuItem(request.tag);
+                    } else {
+                        logger_.log(
+                            "WARNING: A IContextMenuTarget::ExecuteMenuItem "
+                            "from the plugin could not be handled");
+
+                        return Steinberg::kInvalidArgument;
+                    }
                 },
                 [&](YaConnectionPoint::Notify& request)
                     -> YaConnectionPoint::Notify::Response {

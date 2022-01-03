@@ -20,9 +20,8 @@
 
 class Vst3ContextMenuProxyImpl : public Vst3ContextMenuProxy {
    public:
-    Vst3ContextMenuProxyImpl(
-        Vst3Bridge& bridge,
-        Vst3ContextMenuProxy::ConstructArgs&& args) noexcept;
+    Vst3ContextMenuProxyImpl(Vst3Bridge& bridge,
+                             Vst3ContextMenuProxy::ConstructArgs&& args);
 
     /**
      * When the reference count reaches zero and this destructor is called,
@@ -52,19 +51,35 @@ class Vst3ContextMenuProxyImpl : public Vst3ContextMenuProxy {
     tresult PLUGIN_API popup(Steinberg::UCoord x, Steinberg::UCoord y) override;
 
     /**
-     * The targets passed when to `addItem` calls made by the plugin. This way
+     * The targets passed when to `addItem()` calls made by the plugin. This way
      * we can call these same targets later. The key here is the item's tag.
+     *
+     * If `getItem()` returns a context menu item with a tag that is not in this
+     * map then it's from an item belonging to the host, and we'll return a
+     * proxy target that would call the host's target instead.
      */
     std::unordered_map<int32,
                        Steinberg::IPtr<Steinberg::Vst::IContextMenuTarget>>
-        context_menu_targets_;
+        plugin_targets_;
 
    private:
     Vst3Bridge& bridge_;
 
     /**
+     * As mentioned above, these are the targets belonging to context items
+     * prepopulated by the host. Because Bitwig doesn't assign a tag to its own
+     * context menu items all of these this map is indexed by the **item id**.
+     * Calling one of these sends a message to the host to call the
+     * corresponding menu item.
+     */
+    std::unordered_map<int32, Steinberg::IPtr<YaContextMenuTarget>>
+        host_targets_;
+
+    /**
      * The items passed when to `addItem` calls made by the plugin. This way we
      * can call these same targets later.
+     *
+     * This will be initialized with targets created by the host.
      */
     std::vector<Steinberg::Vst::IContextMenuItem> items_;
 };

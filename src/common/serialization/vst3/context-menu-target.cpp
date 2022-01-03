@@ -16,16 +16,6 @@
 
 #include "context-menu-target.h"
 
-YaContextMenuTarget::ConstructArgs::ConstructArgs() noexcept {}
-
-YaContextMenuTarget::ConstructArgs::ConstructArgs(
-    native_size_t owner_instance_id,
-    native_size_t context_menu_id,
-    int32 tag) noexcept
-    : owner_instance_id(owner_instance_id),
-      context_menu_id(context_menu_id),
-      tag(tag) {}
-
 YaContextMenuTarget::YaContextMenuTarget(ConstructArgs&& args) noexcept
     : arguments_(std::move(args)){FUNKNOWN_CTOR}
 

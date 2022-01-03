@@ -260,10 +260,10 @@ using CallbackRequest =
                  // `IConnectionPoint::notify` calls through
                  // there
                  YaConnectionPoint::Notify,
-                 YaContextMenu::GetItemCount,
                  YaContextMenu::AddItem,
                  YaContextMenu::RemoveItem,
                  YaContextMenu::Popup,
+                 YaContextMenuTarget::ExecuteMenuItem,
                  YaHostApplication::GetName,
                  YaPlugFrame::ResizeView,
                  YaPlugInterfaceSupport::IsPlugInterfaceSupported,

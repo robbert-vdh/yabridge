@@ -22,6 +22,9 @@
  * This implementation used to live in `src/plugin/bridges/vst3-impls`, but
  * since plugins can also call context menu items added by the host this is
  * needed on both sides.
+ *
+ * NOTE: Bitwig does not actually set the tags here, so host menu items need to
+ *       be identified through their item ID, not through the tag.
  */
 template <typename Bridge>
 class YaContextMenuTargetImpl : public YaContextMenuTarget {
@@ -45,11 +48,16 @@ class YaContextMenuTargetImpl : public YaContextMenuTarget {
 
     // From `IContextMenuTarget`
     tresult PLUGIN_API executeMenuItem(int32 tag) override {
-        return bridge_.send_message(YaContextMenuTarget::ExecuteMenuItem{
-            .owner_instance_id = owner_instance_id(),
-            .context_menu_id = context_menu_id(),
-            .target_tag = target_tag(),
-            .tag = tag});
+        // NOTE: This requires mutual recursion, because REAPER will call
+        //       `getState()` whle the context menu is open, and `getState()`
+        //       also has to be handled from the GUI thread
+        return bridge_.send_mutually_recursive_message(
+            YaContextMenuTarget::ExecuteMenuItem{
+                .owner_instance_id = owner_instance_id(),
+                .context_menu_id = context_menu_id(),
+                .item_id = item_id(),
+                .target_tag = target_tag(),
+                .tag = tag});
     }
 
    private:

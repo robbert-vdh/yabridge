@@ -37,30 +37,26 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
      * `YaContextMenuTargetImpl`.
      */
     struct ConstructArgs {
-        ConstructArgs() noexcept;
-
-        /**
-         * Read from an existing object. We will try to mimic this object, so
-         * we'll support any interfaces this object also supports.
-         *
-         * @param owner_instance_id The object instance that this target's
-         * context menu belongs to.
-         * @param context_menu_id The unique ID of the context menu requested by
-         *   `owwner_instance_id`.
-         * @param tag The tag of the menu item this target belongs to.
-         */
-        ConstructArgs(native_size_t owner_instance_id,
-                      native_size_t context_menu_id,
-                      int32 tag) noexcept;
-
         native_size_t owner_instance_id;
         native_size_t context_menu_id;
+        /**
+         * The ID of the menu item this target belongs to, only used when
+         * calling host targets from the plugin.
+         *
+         * NOTE: Needed to work around a Bitwig bug, see the comment in
+         *       `ExecuteMenuItem`
+         */
+        int32 item_id;
+        /**
+         * The tag of the menu item this target belongs to.
+         */
         int32 tag;
 
         template <typename S>
         void serialize(S& s) {
             s.value8b(owner_instance_id);
             s.value8b(context_menu_id);
+            s.value4b(item_id);
             s.value4b(tag);
         }
     };
@@ -88,6 +84,12 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
     inline size_t context_menu_id() const { return arguments_.context_menu_id; }
 
     /**
+     * Get the ID of the menu item this target was obtained from. This value is
+     * only actually used when calling host context menu items from a plugin.
+     */
+    inline int32 item_id() const { return arguments_.item_id; }
+
+    /**
      * Get the tag of the menu item this target was passed to.
      */
     inline int32 target_tag() const { return arguments_.tag; }
@@ -103,8 +105,22 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
         native_size_t owner_instance_id;
         native_size_t context_menu_id;
         /**
-         * The tag this target was passed for. This should be the same as `tag`,
-         * but it doesn't have to be.
+         * The menu item ID this target belongs to.
+         *
+         * This is used when calling host context menu items from the plugin's
+         * side.
+         *
+         * NOTE: This is needed because Bitwig identifies its own menu items by
+         *       opaque ID, and not through the tag. They use 0 for all tags.
+         */
+        int32 item_id;
+        /**
+         * The tag of the target this method was called on. Presumably this
+         * would always be the same as the `tag` argument passed to this
+         * function, but it doesn't have to be.
+         *
+         * This is used when calling plugin context menu items from the host's
+         * side.
          */
         int32 target_tag;
 
@@ -114,6 +130,7 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
         void serialize(S& s) {
             s.value8b(owner_instance_id);
             s.value8b(context_menu_id);
+            s.value4b(item_id);
             s.value4b(target_tag);
             s.value4b(tag);
         }
