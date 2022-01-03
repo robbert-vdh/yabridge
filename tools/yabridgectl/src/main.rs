@@ -127,7 +127,7 @@ fn main() -> Result<()> {
                         .long("method")
                         .about("The installation method to use (deprecated)")
                         .long_about(&format!(
-                            "This feature has been deprecated in yabridgectl 3.7.1 and should \
+                            "This feature has been deprecated in yabridgectl 3.8.0 and should \
                              not be used anymore. \
                              \n\n\
                              The installation method to use. \
