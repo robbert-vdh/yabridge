@@ -82,7 +82,7 @@ IndividualHost::IndividualHost(boost::asio::io_context& io_context,
                       std::to_string(getpid()),
                       bp::env = plugin_info.create_host_env())) {
 #ifdef WITH_WINEDBG
-    if (plugin_info.windows_plugin_path.string().find('"') !=
+    if (plugin_info.windows_plugin_path_.string().find('"') !=
         std::string::npos) {
         logger.log(
             "Warning: plugin paths containing double quotes won't be properly "
