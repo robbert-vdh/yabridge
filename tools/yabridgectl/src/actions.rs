@@ -532,10 +532,16 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         println!();
     }
 
+    // Don't mind the ugly format string, the existence of the symlink-based installation method
+    // should be hidden as much as possible until it gets removed in yabridge 4.0
     println!(
-        "Finished setting up {} plugins using {} ({} new), skipped {} non-plugin .dll files",
+        "Finished setting up {} plugins{} ({} new), skipped {} non-plugin .dll files",
         managed_plugins.len(),
-        config.method.plural_name(),
+        if config.method == InstallationMethod::Copy {
+            String::new()
+        } else {
+            format!(" using {}", config.method.plural_name())
+        },
         new_plugins.len(),
         num_skipped_files
     );
