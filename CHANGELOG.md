@@ -56,6 +56,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   lead to a number of surprises. Yabridgectl will now print a warning upon
   syncing when using the symlink installation method, and the feature will be
   removed completely in yabridge 4.0.
+- Blacklisted symlinks and files contained within symlinked directories are now
+  handled correctly when syncing.
 
 ### Packaging notes
 

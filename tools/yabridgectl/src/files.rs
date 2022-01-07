@@ -348,7 +348,15 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
     for (file_idx, entry) in WalkDir::new(directory)
         .follow_links(true)
         .into_iter()
-        .filter_entry(|e| !blacklist.contains(e.path()))
+        .filter_entry(|e| {
+            // The blacklist entries are canonicalized to resolve symlinks and to normalize slashes,
+            // so we should do the same thing here as well
+            if let Ok(p) = e.path().canonicalize() {
+                !blacklist.contains(p.as_path())
+            } else {
+                true
+            }
+        })
         .filter_map(|e| e.ok())
         .filter(|e| !e.file_type().is_dir())
         .enumerate()
