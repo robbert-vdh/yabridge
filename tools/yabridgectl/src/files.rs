@@ -351,11 +351,10 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
         .filter_entry(|e| {
             // The blacklist entries are canonicalized to resolve symlinks and to normalize slashes,
             // so we should do the same thing here as well
-            if let Ok(p) = e.path().canonicalize() {
-                !blacklist.contains(p.as_path())
-            } else {
-                true
-            }
+            e.path()
+                .canonicalize()
+                .map(|p| !blacklist.contains(p.as_path()))
+                .unwrap_or(false)
         })
         .filter_map(|e| e.ok())
         .filter(|e| !e.file_type().is_dir())
