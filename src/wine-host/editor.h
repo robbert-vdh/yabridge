@@ -196,6 +196,13 @@ class Editor {
     void resize(uint16_t width, uint16_t height);
 
     /**
+     * Show the window, should be called after the plugin has embedded itself.
+     * There's absolutely zero reason why this can't be done in the constructor
+     * or in `do_xembed()`, but it needs to be. Thanks Waves.
+     */
+    void show() noexcept;
+
+    /**
      * Handle X11 events sent to the window our editor is embedded in.
      */
     void handle_x11_events() noexcept;

@@ -426,8 +426,6 @@ Editor::Editor(MainContext& main_context,
         // the child window ourselves. This is a hack to work around the issue's
         // described in `Editor`'s docstring'.
         do_reparent(wine_window_, wrapper_window_.window_);
-
-        ShowWindow(win32_window_.handle_, SW_SHOWNORMAL);
     }
 }
 
@@ -466,6 +464,10 @@ void Editor::resize(uint16_t width, uint16_t height) {
         // row).
         fix_local_coordinates();
     }
+}
+
+void Editor::show() noexcept {
+    ShowWindow(win32_window_.handle_, SW_SHOWNORMAL);
 }
 
 void Editor::handle_x11_events() noexcept {
@@ -1110,8 +1112,6 @@ void Editor::do_xembed() const {
 
     xcb_map_window(x11_connection_.get(), wine_window_);
     xcb_flush(x11_connection_.get());
-
-    ShowWindow(win32_window_.handle_, SW_SHOWNORMAL);
 }
 
 LRESULT CALLBACK window_proc(HWND handle,

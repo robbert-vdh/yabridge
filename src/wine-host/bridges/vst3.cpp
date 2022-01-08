@@ -809,6 +809,14 @@ void Vst3Bridge::run() {
                                 instance.editor->resize(size.getWidth(),
                                                         size.getHeight());
                             }
+
+                            // NOTE: There's zero reason why the window couldn't
+                            //       already be visible from the start, but
+                            //       Waves V13 VST3 plugins think it would be a
+                            //       splendid idea to randomly dereference null
+                            //       pointers when the window is already
+                            //       visible. Thanks Waves.
+                            instance.editor->show();
                         } else {
                             instance.editor.reset();
                         }

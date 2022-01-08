@@ -29,6 +29,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed _Waves_ V13 VST3 plugins crashing when opening the GUI. These plugins
+  thought it would be a great idea to randomly dereference null pointers if the
+  window they're embedded in is already visible. A day's worth of debugging well
+  spent. Even after this, the V13 plugins are a bit unstable under Wine in
+  general. So as always, if you can avoid them, that would be for the best.
 - Fixed sluggish UIs in _Output's Thermal_ and likely a handful of other
   JUCE-based plugins. These plugins would emit hundreds to thousands of events
   when the GUI changes. Yabridge now detects this, and removes the throttling we

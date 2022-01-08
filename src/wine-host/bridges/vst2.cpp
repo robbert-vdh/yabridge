@@ -743,6 +743,12 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
                 plugin->dispatcher(plugin, opcode, index, value,
                                    editor_instance.get_win32_handle(), option);
 
+            // NOTE: There's zero reason why the window couldn't already be
+            //       visible from the start, but Waves V13 VST3 plugins think it
+            //       would be a splendid idea to randomly dereference null
+            //       pointers when the window is already visible. Thanks Waves.
+            editor_instance.show();
+
             return result;
         } break;
         case effEditClose: {
