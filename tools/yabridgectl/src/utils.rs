@@ -118,7 +118,10 @@ pub fn get_elf_architecture(path: &Path) -> Result<LibArchitecture> {
     match machine_arch {
         0x03 => Ok(LibArchitecture::Lib32), // x86
         0x3E => Ok(LibArchitecture::Lib64), // AMD x86-64
-        _ => Err(anyhow!("'{}' is not a recognized ELF machine ISA")),
+        _ => Err(anyhow!(
+            "'{}' is not a recognized ELF machine ISA",
+            machine_arch
+        )),
     }
 }
 
