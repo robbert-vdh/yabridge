@@ -60,7 +60,7 @@ fn main() -> Result<()> {
                 .display_order(1)
                 .arg(
                     Arg::new("path")
-                        .about("Path to a directory containing Windows VST plugins")
+                        .help("Path to a directory containing Windows VST plugins")
                         .validator(validate_path)
                         .takes_value(true)
                         .required(true),
@@ -72,7 +72,7 @@ fn main() -> Result<()> {
                 .display_order(2)
                 .arg(
                     Arg::new("path")
-                        .about("Path to a previously added directory")
+                        .help("Path to a previously added directory")
                         .validator(|path| match_in_path_list(Path::new(path), &plugin_directories))
                         .takes_value(true)
                         .required(true),
@@ -96,25 +96,25 @@ fn main() -> Result<()> {
                     Arg::new("force")
                         .short('f')
                         .long("force")
-                        .about("Always update files, even not necessary"),
+                        .help("Always update files, even not necessary"),
                 )
                 .arg(
                     Arg::new("no-verify")
                         .short('n')
                         .long("no-verify")
-                        .about("Skip post-installation setup checks"),
+                        .help("Skip post-installation setup checks"),
                 )
                 .arg(
                     Arg::new("prune")
                         .short('p')
                         .long("prune")
-                        .about("Remove unrelated or leftover .so files"),
+                        .help("Remove unrelated or leftover .so files"),
                 )
                 .arg(
                     Arg::new("verbose")
                         .short('v')
                         .long("verbose")
-                        .about("Print information about plugins being set up or skipped"),
+                        .help("Print information about plugins being set up or skipped"),
                 ),
         )
         .subcommand(
@@ -125,8 +125,8 @@ fn main() -> Result<()> {
                 .arg(
                     Arg::new("method")
                         .long("method")
-                        .about("The installation method to use (deprecated)")
-                        .long_about(&format!(
+                        .help("The installation method to use (deprecated)")
+                        .long_help(format!(
                             "This feature has been deprecated in yabridgectl 3.8.0 and should \
                              not be used anymore. \
                              \n\n\
@@ -140,7 +140,7 @@ fn main() -> Result<()> {
                              variables or to manual updates.",
                             "copy".bright_white(),
                             "symlink".bright_white()
-                        ))
+                        ).as_ref())
                         .setting(clap::ArgSettings::NextLineHelp)
                         .possible_values(&["copy", "symlink"])
                         .takes_value(true),
@@ -148,8 +148,8 @@ fn main() -> Result<()> {
                 .arg(
                     Arg::new("path")
                         .long("path")
-                        .about("Path to the directory containing 'libyabridge-{vst2,vst3}.so'")
-                        .long_about(
+                        .help("Path to the directory containing 'libyabridge-{vst2,vst3}.so'")
+                        .long_help(
                             "Path to the directory containing 'libyabridge-{vst2,vst3}.so'. If this \
                              is not set, then yabridgectl will look in both '/usr/lib' and \
                              '~/.local/share/yabridge' by default.",
@@ -160,8 +160,8 @@ fn main() -> Result<()> {
                 .arg(
                     Arg::new("path_auto")
                         .long("path-auto")
-                        .about("Automatically locate yabridge's files")
-                        .long_about(
+                        .help("Automatically locate yabridge's files")
+                        .long_help(
                             "Automatically locate yabridge's files. This can be used after manually \
                              setting a path with the '--path' option to revert back to the default \
                              auto detection behaviour.",
@@ -169,8 +169,8 @@ fn main() -> Result<()> {
                 ).arg(
                     Arg::new("no_verify")
                         .long("no-verify")
-                        .about("Always skip post-installation setup checks")
-                        .long_about(
+                        .help("Always skip post-installation setup checks")
+                        .long_help(
                             "Always skip post-installation setup checks. This can be set temporarily \
                              by passing the '--no-verify' option to 'yabridgectl sync'.",
                         )
@@ -195,7 +195,7 @@ fn main() -> Result<()> {
                         .display_order(1)
                         .arg(
                             Arg::new("path")
-                                .about("Path to a file or a directory")
+                                .help("Path to a file or a directory")
                                 .validator(validate_path)
                                 .takes_value(true)
                                 .required(true),
@@ -207,7 +207,7 @@ fn main() -> Result<()> {
                         .display_order(2)
                         .arg(
                             Arg::new("path")
-                                .about("Path to a previously added file or directory")
+                                .help("Path to a previously added file or directory")
                                 .validator(|path| match_in_path_list(Path::new(path), &blacklist_entries))
                                 .validator(validate_path)
                                 .takes_value(true)
