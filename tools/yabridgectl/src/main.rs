@@ -60,8 +60,8 @@ fn main() -> Result<()> {
                 .display_order(1)
                 .arg(
                     Arg::new("path")
-                        .help("Path to a directory containing Windows VST plugins")
-                        .validator(validate_path)
+                        .help("Path to a directory containing Windows VST2 or VST3 plugins")
+                        .validator(validate_directory)
                         .takes_value(true)
                         .required(true),
                 ),
@@ -298,6 +298,18 @@ fn main() -> Result<()> {
             _ => unreachable!(),
         },
         _ => unreachable!(),
+    }
+}
+
+/// Verify that a path exists and that is is either a directory or a symlink to a directory.
+fn validate_directory(path: &str) -> Result<(), String> {
+    validate_path(path)?;
+
+    let path = Path::new(path);
+    if path.is_dir() {
+        Ok(())
+    } else {
+        Err(format!("'{}' is not a directory", path.display()))
     }
 }
 

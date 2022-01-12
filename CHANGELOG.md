@@ -53,6 +53,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### yabridgectl
 
+- Yabridgectl's help text received some new colors.
+- Disallowed adding (symlinks to) individual files with `yabridgectl add`.
+  Yabridgectl was never intended to be used that way, and while it does sort of
+  work, it will lead to certain surprises down the line.
 - Deprecated support for the symlink-based installation method in yabridgectl
   and removed all remaining mentions of it from the documentation. This feature
   has for all intents and purposes already been obselete since yabridge 2.1.0,
