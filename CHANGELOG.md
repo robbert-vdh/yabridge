@@ -71,6 +71,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Packaging notes
 
 - We now target VST3 SDK version 3.7.4 with git tag `v3.7.4_build_25-patched`.
+- Yabridgectl now uses Rust 2021 and requires rustc 1.56 or newer to build.
 
 ## [3.7.0] - 2021-11-21
 

@@ -142,7 +142,7 @@ fn main() -> Result<()> {
                             "symlink".bright_white()
                         ).as_ref())
                         .setting(clap::ArgSettings::NextLineHelp)
-                        .possible_values(&["copy", "symlink"])
+                        .possible_values(["copy", "symlink"])
                         .takes_value(true),
                 )
                 .arg(
@@ -174,7 +174,7 @@ fn main() -> Result<()> {
                             "Always skip post-installation setup checks. This can be set temporarily \
                              by passing the '--no-verify' option to 'yabridgectl sync'.",
                         )
-                        .possible_values(&["true", "false"])
+                        .possible_values(["true", "false"])
                         .takes_value(true),
                 ),
         )
