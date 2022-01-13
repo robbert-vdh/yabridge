@@ -354,13 +354,13 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         eprintln!(
                             "{}",
                             utils::wrap(&format!(
-                            "{}: The {} version of '{}' has already been provided by another Wine \
-                             prefix, skipping '{}'\n",
-                            "WARNING".red(),
-                            module.architecture,
-                            module.target_bundle_home().display(),
-                            module.original_module_path().display(),
-                        ))
+                                "{}: The {} version of '{}' has already been provided by another Wine \
+                                prefix, skipping '{}'\n",
+                                "WARNING".red(),
+                                module.architecture,
+                                module.target_bundle_home().display(),
+                                module.original_module_path().display(),
+                            ))
                         );
 
                         continue;
