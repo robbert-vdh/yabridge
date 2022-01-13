@@ -40,12 +40,12 @@ while also staying easy to debug and maintain.
 ## Tested with
 
 Yabridge has been tested under the following hosts using Wine Staging
-7.0-rc3:
+7.0-rc4:
 
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
-| Bitwig Studio 4.1.2 | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| REAPER 6.42         | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Bitwig Studio 4.1.3 | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| REAPER 6.43         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Carla 2.4.1         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Qtractor 0.9.24     | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Renoise 3.3.2       | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly |
