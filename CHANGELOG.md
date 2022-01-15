@@ -17,7 +17,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   this feature has only been tested with [Surge
   XT](https://github.com/surge-synthesizer/surge)'s Windows VST3 version since
   very few if any other plugins do this right now, but other plugins may start
-  doing this too in the future.
+  doing this as well in the future.
 
 ### Changed
 
@@ -33,46 +33,50 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   thought it would be a great idea to randomly dereference null pointers if the
   window they're embedded in is already visible. A day's worth of debugging well
   spent. Even after this, the V13 plugins are a bit unstable under Wine in
-  general. So as always, if you can avoid them, that would be for the best.
+  general, and they will likely crash when reopening the editor a couple of
+  times or when removing them. So as always, if you can avoid Waves, that would
+  be for the best.
 - Fixed sluggish UIs in _Output's Thermal_ and likely a handful of other
-  JUCE-based plugins. These plugins would emit hundreds to thousands of events
-  when the GUI changes. Yabridge now detects this, and removes the throttling we
-  have in place to prevent certain other plugins from getting stuck in infinite
-  loops.
+  JUCE-based plugins with a lot of parameters. These plugins would emit hundreds
+  to thousands of events when the GUI changes. Yabridge now detects this, and
+  relaxes the throttling we have in place to prevent certain other plugins from
+  getting stuck in infinite loops.
 - Fixed _DrumCore 3_ crashing when trying to drag grooves from the plugin to
   other applications. This happened because of an integer underflow in that
   plugin, causing the number of reported drag-and-drop formats to be magnitudes
   higher than yabridge's indicated maximum.
 - Fixed Wine version detection in the build configuration.
-- Fixed VST3 connection point proxies not being disconnected properly. This code
-  path is not being used for any of the current Linux VST3 hosts, so this did
-  not yet cause any issues.
+- Fixed VST3 connection point proxies not being disconnected properly. The code
+  path for this is not being used for any of the current Linux VST3 hosts, so
+  this won't have caused any issues.
 - Rewritten the VST3 object handling to prevent some theoretical data races when
   the host inserts or removes plug instances while other instances of that
   plugin are processing audio.
 
 ### yabridgectl
 
-- Yabridgectl's help text received some new colors.
-- Disallowed adding (symlinks to) individual files with `yabridgectl add`.
-  Yabridgectl was never intended to be used that way, and while it does sort of
-  work, it will lead to certain surprises down the line.
+- Yabridgectl's help text received some shiny new colors.
+- Disallowed adding individual files or symlinks to individual files with
+  `yabridgectl add`. Yabridgectl was never intended to be used that way and
+  while it does sort of work, it will lead to a number of surprises down the
+  line.
 - Deprecated support for the symlink-based installation method in yabridgectl
   and removed all remaining mentions of it from the documentation. This feature
-  has for all intents and purposes already been obselete since yabridge 2.1.0,
-  but the option was still available. With modern file systems supporting
-  reflinks, there's zero reason to use this feature anymore, and enabling it can
-  lead to a number of surprises. Yabridgectl will now print a warning upon
-  syncing when using the symlink installation method, and the feature will be
-  removed completely in yabridge 4.0.
-- Blacklisted symlinks and files contained within symlinked directories are now
-  handled correctly when syncing.
+  has for all intents and purposes already been made obselete in yabridge 2.1.0,
+  but the option still remained available. Enabling this option would lead to a
+  lot of surprises because of the way Linux's dynamic linker works. And with
+  modern file systems supporting reflinks and yabridge falling back to searching
+  for binaries in `~/.local/share/yabridge`, there's zero reason to use this
+  feature anymore. Yabridgectl will now print a warning upon syncing when the
+  symlink installation method has been enabled, and the feature will be removed
+  completely in yabridge 4.0.
+- Blacklisted symlinks and symlinked directories are now handled correctly when
+  syncing.
 
 ### Packaging notes
 
 - The tomlplusplus wrap dependency has been updated to version 3.0.1 because of
-  breaking API changes in version 3.0 and Arch was already shipping that
-  version.
+  breaking API changes in version 3.0.
 - We now target VST3 SDK version 3.7.4 with git tag `v3.7.4_build_25-patched`.
 - Yabridgectl now uses Rust 2021 and requires rustc 1.56 or newer to build.
 
