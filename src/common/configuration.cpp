@@ -84,7 +84,7 @@ Configuration::Configuration(const fs::path& config_path,
                 if (const auto parsed_value = value.as_string()) {
                     group = parsed_value->get();
                 } else {
-                    invalid_options.emplace_back(std::string());
+                    invalid_options.emplace_back(key);
                 }
             } else if (key == "disable_pipes") {
                 // This option can be either enabled or disable with a boolean,
