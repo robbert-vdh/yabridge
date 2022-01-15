@@ -129,7 +129,10 @@ endif
 # issues so we'll do just that.
 #
 # https://bugs.winehq.org/show_bug.cgi?id=49138
-wine_version = run_command('sh', '-c', '''wine --version | grep --only-matching -P '[0-9]+\.[0-9]+' | head -n1''')
+wine_version = run_command(
+  'sh', '-c', '''wine --version | grep --only-matching -P '[0-9]+\.[0-9]+' | head -n1''',
+  check : false
+)
 if wine_version.returncode() == 0
   message('Targetting Wine @0@'.format(wine_version.stdout()))
   if wine_version.stdout().version_compare('>=5.7') and \

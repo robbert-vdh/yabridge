@@ -13,12 +13,8 @@ vst3_include_dir = vst3.get_variable('include_dir')
 # instead of 'windows.h' like how the file is actually called.
 # message(vst3_include_dir)
 vst3_sdk_base_dir = vst3.get_variable('sdk_base_dir')
-patch_result = run_command('../../../tools/patch-vst3-sdk.sh', vst3_sdk_base_dir)
-if patch_result.returncode() == 0
-  message(patch_result.stdout())
-else
-  error('Error while trying to patch the VST3 SDK:\n' + patch_result.stderr())
-endif
+patch_result = run_command('../../../tools/patch-vst3-sdk.sh', vst3_sdk_base_dir, check : true)
+message(patch_result.stdout())
 
 # We'll create a dependency for the plugin SDK for our native VST3 plugin
 vst3_base_native = static_library(
