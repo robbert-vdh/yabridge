@@ -535,6 +535,10 @@ Aside from that, these are some known caveats:
 
 - **iZotope** plugins can't be authorized because of missing functionality in
   Wine's crypt32 implementation.
+- **Waves** V13 VST3 plugins have memory issues, at least under Wine. They will
+  likely randomly crash at some point. If you can avoid Waves, that would be for
+  the best. Otherwise, try the V12 versions of the plugins if you still have a
+  license for them.
 - MIDI key labels for VST2 plugins (commonly used for drum machines and
   multisamplers) will not be updated after the host first asks for them since
   VST 2.4 has no way to let the host know that those labels have been updated.
