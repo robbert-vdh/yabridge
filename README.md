@@ -45,9 +45,9 @@ Yabridge has been tested under the following hosts using Wine Staging
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
 | Bitwig Studio 4.1.3 | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| REAPER 6.43         | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| REAPER 6.45         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Carla 2.4.1         | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Qtractor 0.9.24     | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Qtractor 0.9.25     | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Renoise 3.3.2       | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly |
 | Waveform 11.5.18    | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Ardour 6.9          | :heavy_check_mark: | :heavy_check_mark:                                                   |
