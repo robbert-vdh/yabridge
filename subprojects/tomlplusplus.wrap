@@ -1,9 +1,7 @@
 [wrap-git]
 url = https://github.com/marzer/tomlplusplus.git
-# This is tag v2.5.0 plus a couple of additional commits because of issues with
-# their meson.build that breaks the build with Meson 0.60
-# https://github.com/marzer/tomlplusplus/issues/121
-revision = 47216c8a73d77e7431ec536fb3e251aed06cc420
+# Tag v3.0.1
+revision = 8e669aa6990e0ed219c169d491472d749f54c393
 depth = 1
 
 [provide]

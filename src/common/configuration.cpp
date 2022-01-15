@@ -40,35 +40,35 @@ Configuration::Configuration(const fs::path& config_path,
     // so otherwise we'll get the tables sorted by key instead.
     toml::table table = toml::parse_file(config_path.string());
 
-    // I wasn't able to wade through the template soup to come up with a better
-    // way to sort this by location, so please feel free to correct this if you
-    // know of a better way! The source locations has to be stored inside of the
-    // vector itself because the `node.source()` on the copies stored in this
-    // vector won't contain the proper location after we've iterated through
-    // `table`.
-    std::vector<std::tuple<std::string, toml::source_region, toml::table>>
-        sorted_tables{};
+    // This table stores its children in an ordered map and it will thus be
+    // sorted lexicographically. For our uses we want sections from the start of
+    // the file to have precedence over later sections, so we need to sort the
+    // tables by source location first.
+    std::vector<std::tuple<toml::key, toml::table>> sorted_tables{};
     for (auto [pattern, node] : table) {
         if (const toml::table* config = node.as_table()) {
-            sorted_tables.push_back(
-                std::make_tuple(pattern, config->source(), *config));
+            sorted_tables.push_back(std::make_tuple(pattern, *config));
         }
     }
     std::sort(sorted_tables.begin(), sorted_tables.end(),
               [](const auto& a, const auto& b) {
-                  const auto& [a_pattern, a_source, a_table] = a;
-                  const auto& [b_pattern, b_source, b_table] = b;
+                  const auto& [a_pattern, a_table] = a;
+                  const auto& [b_pattern, b_table] = b;
 
-                  return a_source.begin.line < b_source.begin.line;
+                  return a_pattern.source().begin.line <
+                         b_pattern.source().begin.line;
               });
 
+    // This is the path of the current .so file relative to this `yabridge.toml`
+    // file
     const fs::path relative_path =
         yabridge_path.lexically_relative(config_path.parent_path());
-    for (const auto& [pattern, source, table] : sorted_tables) {
+    for (const auto& [pattern, table] : sorted_tables) {
         // First try to match the glob pattern, allow matching an entire
         // directory for ease of use. If none of the patterns in the file match
         // the plugin path then everything will be left at the defaults.
-        if (fnmatch(pattern.c_str(), relative_path.c_str(),
+        const std::string key(pattern.str());
+        if (fnmatch(key.c_str(), relative_path.c_str(),
                     FNM_PATHNAME | FNM_LEADING_DIR) != 0) {
             continue;
         }
@@ -84,7 +84,7 @@ Configuration::Configuration(const fs::path& config_path,
                 if (const auto parsed_value = value.as_string()) {
                     group = parsed_value->get();
                 } else {
-                    invalid_options.push_back(key);
+                    invalid_options.emplace_back(std::string());
                 }
             } else if (key == "disable_pipes") {
                 // This option can be either enabled or disable with a boolean,
@@ -99,25 +99,25 @@ Configuration::Configuration(const fs::path& config_path,
                 } else if (const auto parsed_value = value.as_string()) {
                     disable_pipes = parsed_value->get();
                 } else {
-                    invalid_options.push_back(key);
+                    invalid_options.emplace_back(key);
                 }
             } else if (key == "editor_coordinate_hack") {
                 if (const auto parsed_value = value.as_boolean()) {
                     editor_coordinate_hack = parsed_value->get();
                 } else {
-                    invalid_options.push_back(key);
+                    invalid_options.emplace_back(key);
                 }
             } else if (key == "editor_force_dnd") {
                 if (const auto parsed_value = value.as_boolean()) {
                     editor_force_dnd = parsed_value->get();
                 } else {
-                    invalid_options.push_back(key);
+                    invalid_options.emplace_back(key);
                 }
             } else if (key == "editor_xembed") {
                 if (const auto parsed_value = value.as_boolean()) {
                     editor_xembed = parsed_value->get();
                 } else {
-                    invalid_options.push_back(key);
+                    invalid_options.emplace_back(key);
                 }
             } else if (key == "frame_rate") {
                 if (const auto parsed_value = value.as_floating_point()) {
@@ -128,28 +128,28 @@ Configuration::Configuration(const fs::path& config_path,
                     // values and integers here
                     frame_rate = parsed_value->get();
                 } else {
-                    invalid_options.push_back(key);
+                    invalid_options.emplace_back(key);
                 }
             } else if (key == "hide_daw") {
                 if (const auto parsed_value = value.as_boolean()) {
                     hide_daw = parsed_value->get();
                 } else {
-                    invalid_options.push_back(key);
+                    invalid_options.emplace_back(key);
                 }
             } else if (key == "vst3_no_scaling") {
                 if (const auto parsed_value = value.as_boolean()) {
                     vst3_no_scaling = parsed_value->get();
                 } else {
-                    invalid_options.push_back(key);
+                    invalid_options.emplace_back(key);
                 }
             } else if (key == "vst3_prefer_32bit") {
                 if (const auto parsed_value = value.as_boolean()) {
                     vst3_prefer_32bit = parsed_value->get();
                 } else {
-                    invalid_options.push_back(key);
+                    invalid_options.emplace_back(key);
                 }
             } else {
-                unknown_options.push_back(key);
+                unknown_options.emplace_back(key);
             }
         }
 

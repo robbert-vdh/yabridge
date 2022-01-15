@@ -70,6 +70,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Packaging notes
 
+- The tomlplusplus wrap dependency has been updated to version 3.0.1 because of
+  breaking API changes in version 3.0 and Arch was already shipping that
+  version.
 - We now target VST3 SDK version 3.7.4 with git tag `v3.7.4_build_25-patched`.
 - Yabridgectl now uses Rust 2021 and requires rustc 1.56 or newer to build.
 
