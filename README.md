@@ -580,7 +580,7 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   there instead.
 
 - If yabridge prints errors or warnings about memory locking limits, then that
-  means that you have not yet set up realtime priviliges for your user. Setting
+  means that you have not yet set up realtime privileges for your user. Setting
   the memlock limit to unlimited (or -1) is usually part of this process. How
   you should do this will depend on your distro. On _Arch_ and _Manjaro_, you
   will need to install the `realtime-privileges` package, add your user to the
@@ -593,13 +593,19 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   to the `audio` group and reboot. In any other case you may need to [set this
   up yourself](https://jackaudio.org/faq/linux_rt_config.html).
 
-- Using PipeWire's JACK implementation might cause certain plugins to crash with
-  the out of the box configuration, and yabridge will warn you about this in
-  advance. With PipeWire 0.32.0 you only need to change a single configuration
-  file to prevent this from happening. Simply copy
-  `/usr/share/pipewire/jack.conf` to `~/.config/pipewire/jack.conf`, uncomment
-  the `rt.time.soft` and `rt.time.hard` arguments for the
-  `libpipewire-module-rt` module, and then set both to `-1`. Alternatively, give
+- The above process also applies to warnings about low `RLIMIT_RTTIME` values
+  when using PipeWire's JACK implementation. If you don't change this, then
+  certain slow loading plugins may crash during initialization or at any other
+  time. Starting with PipeWire 0.3.44, you only need to make sure your user has
+  realtime privileges to resolve this warning. If your user does not have these
+  permissions, then PipeWire will use RTKit instead of regular realtime
+  scheduling which requires this limit to be set for it to work.
+
+  With PipeWire 0.3.32 through 0.3.43 you'll need to change a configuration file
+  to prevent this from happening. Simply copy `/usr/share/pipewire/jack.conf` to
+  `~/.config/pipewire/jack.conf`, uncomment the `rt.time.soft` and
+  `rt.time.hard` arguments for the `libpipewire-module-rt` module, and then set
+  both to `-1`. Alternatively, give
   [this](https://github.com/robbert-vdh/dotfiles#pipewire) optimized PipeWire
   configuration a try.
 

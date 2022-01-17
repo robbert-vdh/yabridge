@@ -171,10 +171,11 @@ class PluginBridge {
                         "RLIMIT_RTTIME is set to " +
                             std::to_string(*rttime_limit) +
                             " us. This can happen when using PipeWire's JACK "
-                            "backend with the default settings. Some plugins "
-                            "may crash during initialization because of this, "
-                            "so it's recommended to either increase or to "
-                            "remove this limit. Check the readme for "
+                            "backend with RTKit instead of regular realtime "
+                            "scheduling. Some plugins may crash during "
+                            "initialization because of this, so it's "
+                            "recommended to set up proper realtime privileges "
+                            "for your user. Check the readme for "
                             "instructions on how to do that.",
                         false);
                 } else {

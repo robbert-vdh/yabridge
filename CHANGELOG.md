@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Change the low `RLIMIT_RTTIME` warning to mention setting up realtime
+  priviliges instead of changing PipeWire's config now that PipeWire MRs
+  [!1118](https://gitlab.freedesktop.org/pipewire/pipewire/-/merge_requests/1118)
+  and
+  [!1120](https://gitlab.freedesktop.org/pipewire/pipewire/-/merge_requests/1120)
+  have been merged.
+
 ## [3.8.0] - 2022-01-15
 
 ### Added
