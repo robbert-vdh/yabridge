@@ -74,6 +74,8 @@ Please let me know if there are any issues with other hosts.
    be up to date, and some may also not be compiled with support for 32-bit
    plugins.
 
+   <a href="https://repology.org/project/yabridge/versions" target="_blank" rel="noopener" title="Packaging status"><img align="right" src="https://repology.org/badge/vertical-allrepos/yabridge.svg"></a>
+
    - On **Arch** and **Manjaro**, yabridge and yabridgectl can be installed from
      the official repositories using the
      [`yabridge`](https://archlinux.org/packages/multilib/x86_64/yabridge/) and
