@@ -39,8 +39,7 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging
-7.0-rc6:
+Yabridge has been tested under the following hosts using Wine Staging 7.0:
 
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
