@@ -43,7 +43,7 @@ Yabridge has been tested under the following hosts using Wine Staging 7.0:
 
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
-| Bitwig Studio 4.1.3 | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Bitwig Studio 4.1.4 | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | REAPER 6.45         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Carla 2.4.1         | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Qtractor 0.9.25     | :heavy_check_mark: | :heavy_check_mark:                                                   |
