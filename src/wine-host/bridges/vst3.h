@@ -249,8 +249,8 @@ struct Vst3PluginInstance {
     /**
      * Whether the plugin instance is currently in offline processing mode or
      * not. Needed as a HACK for IK Multimedia's T-RackS 5 because those plugins
-     * will deadlock if they receive a timer proc on the Win32 message loop
-     * while doing offline processing.
+     * will deadlock if they don't process audio from the GUI thread while doing
+     * offline processing.
      */
     bool is_offline_processing = false;
 };

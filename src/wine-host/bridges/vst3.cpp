@@ -115,10 +115,7 @@ bool Vst3Bridge::inhibits_event_loop() noexcept {
     std::shared_lock lock(object_instances_mutex_);
 
     for (const auto& [instance_id, instance] : object_instances_) {
-        // HACK: IK Multimedia's T-RackS 5 will deadlock if it receives a timer
-        //       proc during offline processing, so we need to prevent that from
-        //       happening.
-        if (!instance.is_initialized || instance.is_offline_processing) {
+        if (!instance.is_initialized) {
             return true;
         }
     }
@@ -1562,8 +1559,8 @@ size_t Vst3Bridge::register_object_instance(
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
 
-                        // See the comment in
-                        // `Vst3Bridge::inhibits_event_loop()`
+                        // See the comment in the
+                        // `YaAudioProcessor::Process` handler
                         instance.is_offline_processing =
                             request.setup.processMode ==
                             Steinberg::Vst::kOffline;
@@ -1631,11 +1628,28 @@ size_t Vst3Bridge::register_object_instance(
                         // The actual audio is stored in the shared memory
                         // buffers, so the reconstruction function will need to
                         // know where it should point the `AudioBusBuffers` to
-                        const tresult result =
-                            instance.interfaces.audio_processor->process(
-                                request.data.reconstruct(
-                                    instance.process_buffers_input_pointers,
-                                    instance.process_buffers_output_pointers));
+                        // HACK: IK-Multimedia's T-RackS 5 will hang if audio
+                        //       processing is done from the audio thread while
+                        //       the plugin is in offline processing mode. Yes
+                        //       that's as silly as it sounds.
+                        tresult result;
+                        auto& reconstructed = request.data.reconstruct(
+                            instance.process_buffers_input_pointers,
+                            instance.process_buffers_output_pointers);
+                        if (instance.is_offline_processing) {
+                            result = main_context_
+                                         .run_in_context([&instance = instance,
+                                                          &reconstructed]() {
+                                             return instance.interfaces
+                                                 .audio_processor->process(
+                                                     reconstructed);
+                                         })
+                                         .get();
+                        } else {
+                            result =
+                                instance.interfaces.audio_processor->process(
+                                    reconstructed);
+                        }
 
                         return YaAudioProcessor::ProcessResponse{
                             .result = result,

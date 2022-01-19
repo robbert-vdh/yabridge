@@ -17,6 +17,16 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   [!1120](https://gitlab.freedesktop.org/pipewire/pipewire/-/merge_requests/1120)
   have been merged.
 
+### Fixed
+
+- Fixed the VST3 version of _IK Multimedia's T-RackS 5_ producing silence while
+  doing offline rendering. This could happen when exporting or bouncing audio in
+  **Bitwig Studio 4.1**, **Ardour** and in **REAPER**. These plugins apparently
+  need to process audio from the main GUI thread when in offline rendering mode.
+  If you try to process audio from the...audio thread, then they will produce
+  silence and hang afterwards (which a fix in yabridge 3.7.0 previously
+  addressed).
+
 ## [3.8.0] - 2022-01-15
 
 ### Added
