@@ -27,6 +27,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   silence and hang afterwards (which a fix in yabridge 3.7.0 previously
   addressed).
 
+### yabridgectl
+
+- `yabridgectl status` no longer mentions anything about installation methods if
+  you're using the normal, copy-based installation method. This is a follow-up
+  to the changes made in yabridgectl 3.8.0.
+
 ## [3.8.0] - 2022-01-15
 
 ### Added

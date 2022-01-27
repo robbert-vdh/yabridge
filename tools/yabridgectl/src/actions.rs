@@ -124,7 +124,7 @@ pub fn show_status(config: &Config) -> Result<()> {
                     .unwrap_or_else(|| "<not found>".red().to_string())
             );
             println!(
-                "yabridge-host-32.exe: {}\n",
+                "yabridge-host-32.exe: {}",
                 files
                     .yabridge_host_32_exe
                     .as_ref()
@@ -134,10 +134,15 @@ pub fn show_status(config: &Config) -> Result<()> {
             );
         }
         Err(err) => {
-            println!("Could not find yabridge's files: {}\n", err);
+            println!("Could not find yabridge's files: {}", err);
         }
     }
-    println!("installation method: {}", config.method);
+
+    // Since the symlink-based installation method is deprecated, don't even mention installation
+    // methods if it's currently set to copies
+    if config.method != InstallationMethod::Copy {
+        println!("\ninstallation method: {}", config.method)
+    }
 
     for (path, search_results) in results {
         // Always print these paths with trailing slashes for consistency's sake because paths can
