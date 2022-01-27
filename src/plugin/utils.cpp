@@ -164,7 +164,7 @@ fs::path find_plugin_library(const fs::path& this_plugin_path,
         } break;
         case PluginType::vst3: {
             // A VST3 plugin in Linux always has to be inside of a bundle (=
-            // directory) named `X.vst3` that contains a static object
+            // directory) named `X.vst3` that contains a shared object
             // `X.vst3/Contents/x86_64-linux/X.so`. On Linux `X.so` is not
             // allowed to be standalone, so for yabridge this should also always
             // be installed this way.
