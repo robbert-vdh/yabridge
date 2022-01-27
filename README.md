@@ -536,6 +536,8 @@ Aside from that, these are some known caveats:
 
 - **iZotope** plugins can't be authorized because of missing functionality in
   Wine's crypt32 implementation.
+- **D16 Group** plugins also can't be authorized in current versions of Wine as
+  they don't recall their authorization status correctly.
 - **Waves** V13 VST3 plugins have memory issues, at least under Wine. They will
   likely randomly crash at some point. If you can avoid Waves, that would be for
   the best. Otherwise, try the V12 versions of the plugins if you still have a
