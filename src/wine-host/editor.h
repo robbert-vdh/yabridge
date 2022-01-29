@@ -269,6 +269,12 @@ class Editor {
     const bool use_coordinate_hack_;
 
     /**
+     * Whether the `editor_force_dnd` workaround for REAPER should be activated.
+     * See the implementation in `editor.cpp` for more details.
+     */
+    const bool use_force_dnd_;
+
+    /**
      * Whether to use XEmbed instead of yabridge's normal window embedded. Wine
      * with XEmbed tends to cause rendering issues, so it's disabled by default.
      */

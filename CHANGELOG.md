@@ -19,6 +19,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fix the **REAPER**-specific `editor_force_dnd` option not working correctly
+  when using the `Track -> Insert virtual instrument on new track...` option.
+  When this happens, REAPER creates the plugin's window offscreen first and it
+  will only create the FX window once the plugin is ready.
 - Fixed the VST3 version of _IK Multimedia's T-RackS 5_ producing silence while
   doing offline rendering. This could happen when exporting or bouncing audio in
   **Bitwig Studio 4.1**, **Ardour** and in **REAPER**. These plugins apparently

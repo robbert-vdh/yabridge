@@ -263,6 +263,7 @@ Editor::Editor(MainContext& main_context,
                const size_t parent_window_handle,
                std::optional<fu2::unique_function<void()>> timer_proc)
     : use_coordinate_hack_(config.editor_coordinate_hack),
+      use_force_dnd_(config.editor_force_dnd),
       use_xembed_(config.editor_xembed),
       logger_(logger),
       x11_connection_(xcb_connect(nullptr, nullptr), xcb_disconnect),
@@ -365,21 +366,6 @@ Editor::Editor(MainContext& main_context,
                   << "' property. Falling back to a" << std::endl;
         std::cerr << "         less reliable keyboard input grabbing method."
                   << std::endl;
-    }
-
-    // If the `editor_force_dnd` option is set, we'll strip `XdndAware` from all
-    // of `wine_window_`'s ancestors (including `parent_window_`) to forcefully
-    // enable drag-and-drop support in REAPER. See the docstring on
-    // `Configuration::editor_force_dnd` and the option description in the
-    // readme for more information.
-    if (config.editor_force_dnd) {
-        const xcb_atom_t xcb_xdnd_aware_property =
-            get_atom_by_name(*x11_connection_, xdnd_aware_property_name);
-        for (const xcb_window_t& window :
-             find_ancestor_windows(*x11_connection_, parent_window_)) {
-            xcb_delete_property(x11_connection_.get(), window,
-                                xcb_xdnd_aware_property);
-        }
     }
 
     // When using XEmbed we'll need the atoms for the corresponding properties
@@ -492,6 +478,9 @@ void Editor::handle_x11_events() noexcept {
                 //       which breaks our input focus handling. To work around
                 //       this, we will just check if the host's window has
                 //       changed whenever the parent window gets reparented.
+                //       REAPER does the same thing when inserting a plugin on a
+                //       new track with the `Track -> Insert virtual instrument
+                //       on new track...` option.
                 case XCB_REPARENT_NOTIFY: {
                     const auto event =
                         reinterpret_cast<xcb_reparent_notify_event_t*>(
@@ -506,6 +495,33 @@ void Editor::handle_x11_events() noexcept {
                     });
 
                     redetect_host_window();
+
+                    // If the `editor_force_dnd` option is set, we'll strip
+                    // `XdndAware` from all of `wine_window_`'s ancestors
+                    // (including `parent_window_`) to forcefully enable
+                    // drag-and-drop support in REAPER. See the docstring on
+                    // `Configuration::editor_force_dnd` and the option
+                    // description in the readme for more information.
+                    // NOTE: This also needs to be done here for the same reason
+                    //       as the one mentioned above
+                    if (use_force_dnd_) {
+                        logger_.log_editor_trace([&]() {
+                            return "DEBUG: Removing XdndAware properties from "
+                                   "window " +
+                                   std::to_string(parent_window_) +
+                                   " and all of its ancestors";
+                        });
+
+                        const xcb_atom_t xcb_xdnd_aware_property =
+                            get_atom_by_name(*x11_connection_,
+                                             xdnd_aware_property_name);
+                        for (const xcb_window_t& window : find_ancestor_windows(
+                                 *x11_connection_, parent_window_)) {
+                            xcb_delete_property(x11_connection_.get(), window,
+                                                xcb_xdnd_aware_property);
+                        }
+                    }
+
                 } break;
                 // We're listening for `ConfigureNotify` events on the host's
                 //  window (i.e. the window that's actually going to get dragged
