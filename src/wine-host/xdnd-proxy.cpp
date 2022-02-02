@@ -752,7 +752,7 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
 
     // Don't handle windows that weren't created in this process, because
     // otherwise we obviously cannot access the `IDataObject` object
-    uint32_t process_id = 0;
+    DWORD process_id = 0;
     GetWindowThreadProcessId(hwnd, &process_id);
     if (process_id != GetCurrentProcessId()) {
         return;
@@ -788,7 +788,7 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
     // With this information we will set up XDND with those file paths, so we
     // can drop the files onto native applications.
     std::array<FORMATETC, 16> supported_formats{};
-    unsigned int num_formats = 0;
+    ULONG num_formats = 0;
     enumerator->Next(supported_formats.size(), supported_formats.data(),
                      &num_formats);
     enumerator->Release();
@@ -796,7 +796,7 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
     // NOTE: This DrumCore 3 plugin reports 4294967282 for `num_formats` which
     //       is uh a lot more than 16. So to prevent causing a segfault here we
     //       need to manually cap `num_formats` to 16.
-    num_formats = std::min(num_formats, static_cast<unsigned int>(16));
+    num_formats = std::min(num_formats, static_cast<ULONG>(16));
 
     // NOTE: MeldaProduction plugins don't return any supported formats for some
     //       reason, so we'll hardcode a HDROP
