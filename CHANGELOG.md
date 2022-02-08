@@ -16,6 +16,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   and
   [!1120](https://gitlab.freedesktop.org/pipewire/pipewire/-/merge_requests/1120)
   have been merged.
+- Prevented yabridge's ad-hoc socket acceptors from inheriting realtime
+  scheduling when spawned from audio threads. In practice this should not make
+  any difference as these threads are sleeping all the time except for under
+  very specific circumstances.
 
 ### Fixed
 

@@ -102,6 +102,12 @@ std::optional<int> get_realtime_priority() noexcept;
  *
  * @return Whether the operation was successful or not. This will fail if the
  *   user does not have the privileges to set realtime priorities.
+ *
+ * TODO: At some point, consider using `SCHED_RESET_ON_FORK` instead of manually
+ *       disabling this when we don't want realtime scheduling to propagate.
+ *       That would require a bit of careful analysis because we do want it to
+ *       propagate to a Windows plugin's audio threads, and I don't think
+ *       there's a way to go back once you've set `SCHED_RESET_ON_FORK`.
  */
 bool set_realtime_priority(bool sched_fifo, int priority = 5) noexcept;
 

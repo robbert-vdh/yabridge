@@ -780,6 +780,9 @@ class AdHocSocketHandler {
         Thread secondary_requests_handler([&]() {
             pthread_setname_np(pthread_self(), "adhoc-acceptor");
 
+            // Any secondary threads should not be realtime
+            set_realtime_priority(false);
+
             secondary_context.run();
         });
 
