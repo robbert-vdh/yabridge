@@ -599,18 +599,12 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
 - The above process also applies to warnings about low `RLIMIT_RTTIME` values
   when using PipeWire's JACK implementation. If you don't change this, then
   certain slow loading plugins may crash during initialization or at any other
-  time. Starting with PipeWire 0.3.44, you only need to make sure your user has
-  realtime privileges to resolve this warning. If your user does not have these
-  permissions, then PipeWire will use RTKit instead of regular realtime
-  scheduling which requires this limit to be set for it to work.
-
-  With PipeWire 0.3.32 through 0.3.43 you'll need to change a configuration file
-  to prevent this from happening. Simply copy `/usr/share/pipewire/jack.conf` to
-  `~/.config/pipewire/jack.conf`, uncomment the `rt.time.soft` and
-  `rt.time.hard` arguments for the `libpipewire-module-rt` module, and then set
-  both to `-1`. Alternatively, give
-  [this](https://github.com/robbert-vdh/dotfiles#pipewire) optimized PipeWire
-  configuration a try.
+  time. **Starting with PipeWire 0.3.44, you only need to make sure your user
+  has realtime privileges to resolve this warning.** If your user does not have
+  these permissions, then PipeWire will use RTKit instead of regular realtime
+  scheduling which requires this limit to be set for it to work. You may also
+  want to give [this](https://github.com/robbert-vdh/dotfiles#pipewire)
+  optimized PipeWire configuration a try.
 
 - If you have the `WINEPREFIX` environment variable set and you _don't_ want all
   of your plugins to use that specific Wine prefix, then you should unset it to
