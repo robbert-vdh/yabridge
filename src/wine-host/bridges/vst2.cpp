@@ -730,18 +730,23 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
                     plugin->dispatcher(plugin, effEditIdle, 0, 0, nullptr, 0.0);
                 });
 
-            // Make sure the wrapper window has the correct initial size. The
-            // plugin can later change this size using `audioMasterSizeWindow`.
-            VstRect* editor_rect = nullptr;
-            plugin->dispatcher(plugin, effEditGetRect, 0, 0, &editor_rect, 0.0);
-            if (editor_rect) {
-                editor_->resize(editor_rect->right - editor_rect->left,
-                                editor_rect->bottom - editor_rect->top);
-            }
-
             const intptr_t result =
                 plugin->dispatcher(plugin, opcode, index, value,
                                    editor_instance.get_win32_handle(), option);
+
+            // Make sure the wrapper window has the correct initial size. The
+            // plugin can later change this size using `audioMasterSizeWindow`.
+            // NOTE: Every single plugin handles `effEditGetRect` before
+            //       `effEditOpen` fine. Except for this one single plugin:
+            //       https://codefn42.com/randarp/index.html
+            VstRect* editor_rect = nullptr;
+            plugin->dispatcher(plugin, effEditGetRect, 0, 0, &editor_rect, 0.0);
+            if (editor_rect) {
+                std::cerr << editor_rect->right << std::endl;
+                std::cerr << editor_rect->bottom << std::endl;
+                editor_->resize(editor_rect->right - editor_rect->left,
+                                editor_rect->bottom - editor_rect->top);
+            }
 
             // NOTE: There's zero reason why the window couldn't already be
             //       visible from the start, but Waves V13 VST3 plugins think it

@@ -34,6 +34,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   If you try to process audio from the...audio thread, then they will produce
   silence and hang afterwards (which a fix in yabridge 3.7.0 previously
   addressed).
+- Worked around a bug in the _RandARP_ VST2 plugin where the plugin would report
+  that its editor window is 0 by 0 pixels.
 - Fixed building under (the currently upcoming) Wine 7.2 because of definition
   changes to Wine's numeric types.
 
