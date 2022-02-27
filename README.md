@@ -272,11 +272,13 @@ follows:
   Before you can download these files, you need log in to GitHub. Then simply
   select the latest commit with a green checkmark next to it, scroll down the
   build page, and download the latest yabridge and yabridgectl binaries that
-  match your system. You'll need to extract these files twice, since GitHub
-  automatically puts the tarball inside of a .zip archive. Then simply overwrite
-  the existing files in `~/.local/share/yabridge` with the ones from the
-  `yabridge` directory, and replace `~/.local/share/yabridge/yabridgectl` with
-  the new `yabridgectl/yabridgectl` binary. It's also possible to use these
+  match your system. You can also access the very latest build from [this
+  page](https://nightly.link/robbert-vdh/yabridge/workflows/build/master)
+  without logging in to GitHub. You'll need to extract these files twice, since
+  GitHub automatically puts the tarball inside of a .zip archive. Then simply
+  overwrite the existing files in `~/.local/share/yabridge` with the ones from
+  the `yabridge` directory, and replace `~/.local/share/yabridge/yabridgectl`
+  with the new `yabridgectl/yabridgectl` binary. It's also possible to use these
   builds if you're using a distro package, but then you should remove the
   package first in order to avoid conflicts.
 
