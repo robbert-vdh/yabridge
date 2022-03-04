@@ -839,10 +839,18 @@ void Editor::set_input_focus(bool grab) const {
     // we don't just check whether `current_focus` and `focus_target` are the
     // same window but we'll also allow `current_focus` to be a child of
     // `focus_target`.
+    // NOTE: To make matters even more complicated, the focused window can also
+    //       be `None` or `PoointerRoot`. In a normal Xorg setup this will never
+    //       happen, but apparently Crostini does some strange things and it can
+    //       happen there. Since those flags aren't valid windows, we must avoid
+    //       calling `is_child_window_or_same()` in those cases.
+    //       https://github.com/robbert-vdh/yabridge/issues/167
     const xcb_window_t current_focus = focus_reply->focus;
     if (current_focus == focus_target ||
-        (grab && is_child_window_or_same(*x11_connection_, current_focus,
-                                         focus_target))) {
+        (grab && current_focus != XCB_INPUT_FOCUS_NONE &&
+         current_focus != XCB_INPUT_FOCUS_POINTER_ROOT &&
+         is_child_window_or_same(*x11_connection_, current_focus,
+                                 focus_target))) {
         logger_.log_editor_trace([&]() {
             std::string reason = "unknown reason";
             if (current_focus == focus_target) {
