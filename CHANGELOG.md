@@ -15,36 +15,38 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   [!1118](https://gitlab.freedesktop.org/pipewire/pipewire/-/merge_requests/1118)
   and
   [!1120](https://gitlab.freedesktop.org/pipewire/pipewire/-/merge_requests/1120)
-  have been merged.
+  have been merged and PipeWire can use regular realtime scheduling without
+  imposing any resource limits out of the box.
 - Prevented yabridge's ad-hoc socket acceptors from inheriting realtime
-  scheduling when spawned from audio threads. In practice this should not make
-  any difference as these threads are sleeping all the time except for under
-  very specific circumstances.
+  scheduling when spawned from audio threads. In practice this should not have
+  caused any noticeable effects as these threads are sleeping all the time
+  except for under very specific circumstances.
 
 ### Fixed
 
-- Fix the **REAPER**-specific `editor_force_dnd` option not working correctly
+- Fixed the **REAPER**-specific `editor_force_dnd` option not working correctly
   when using the `Track -> Insert virtual instrument on new track...` option.
-  When this happens, REAPER creates the plugin's window offscreen first and it
-  will only create the FX window once the plugin is ready.
-- Fixed the VST3 version of _IK Multimedia's T-RackS 5_ producing silence while
-  doing offline rendering. This could happen when exporting or bouncing audio in
-  **Bitwig Studio 4.1**, **Ardour** and in **REAPER**. These plugins apparently
-  need to process audio from the main GUI thread when in offline rendering mode.
-  If you try to process audio from the...audio thread, then they will produce
-  silence and hang afterwards (which a fix in yabridge 3.7.0 previously
-  addressed).
+  When using this option REAPER will first embed the plugin in an offscreen
+  plugin window and it will only then create the actual FX window and embed the
+  other window in it.
+- Fixed the VST3 version of _IK Multimedia's T-RackS 5_ producing silent output
+  when doing offline rendering. This could happen when exporting or bouncing
+  audio in **Bitwig Studio 4.1+**, **Ardour** and in **REAPER**. These plugins
+  apparently need to process audio from the main GUI thread when in offline
+  rendering mode. If you try to process audio from the...audio thread, then they
+  will produce silence and hang afterwards (which a fix in yabridge 3.7.0
+  previously addressed).
 - Fixed crashes when opening plugin editors under **Crostini** on ChromeOS due
   to non-standard X11 implementations.
 - Worked around a bug in the _RandARP_ VST2 plugin where the plugin would report
   that its editor window is 0 by 0 pixels.
-- Fixed building under (the currently upcoming) Wine 7.2 because of definition
-  changes to Wine's numeric types.
+- Fixed building under Wine 7.2 and up because of changes to the definitions of
+  Wine's numerical types.
 
 ### yabridgectl
 
 - `yabridgectl status` no longer mentions anything about installation methods if
-  you're using the normal, copy-based installation method. This is a follow-up
+  you're using the regular, copy-based installation method. This is a follow-up
   to the changes made in yabridgectl 3.8.0.
 
 ## [3.8.0] - 2022-01-15
