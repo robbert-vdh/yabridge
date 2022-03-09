@@ -28,10 +28,12 @@ void YaParameterChanges::clear() noexcept {
 
 void YaParameterChanges::repopulate(
     Steinberg::Vst::IParameterChanges& original_queues) {
-    // Copy over all parameter changne queues
-    queues_.resize(original_queues.getParameterCount());
-    for (int i = 0; i < original_queues.getParameterCount(); i++) {
-        queues_[i].repopulate(*original_queues.getParameterData(i));
+    // Copy over all parameter change queues
+    const size_t num_queues = original_queues.getParameterCount();
+    queues_.resize(num_queues);
+    for (size_t i = 0; i < num_queues; i++) {
+        queues_[i].repopulate(
+            *original_queues.getParameterData(static_cast<int>(i)));
     }
 }
 
