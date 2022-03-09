@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed an obscure issue with VST3 plugins crashing in **Ardour** on
+  Arch/Manjaro because of misreported parameter queue lengths.
+
 ## [3.8.1] - 2022-03-08
 
 ### Changed
