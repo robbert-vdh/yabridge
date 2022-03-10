@@ -39,18 +39,18 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging 7.3:
+Yabridge has been tested under the following hosts using Wine Staging 7.4:
 
-| Host                           | VST2               | VST3                                                                 |
-| ------------------------------ | ------------------ | -------------------------------------------------------------------- |
-| Bitwig Studio 4.1.6/4.2 beta 4 | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| REAPER 6.51                    | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Carla 2.4.2                    | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Qtractor 0.9.25                | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Renoise 3.3.2                  | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly |
-| Waveform 11.5.18               | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Ardour 6.9                     | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Mixbus 7.0.140                 | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Host              | VST2               | VST3                                                                 |
+| ----------------- | ------------------ | -------------------------------------------------------------------- |
+| Bitwig Studio 4.2 | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| REAPER 6.51       | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Carla 2.4.2       | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Qtractor 0.9.25   | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Renoise 3.3.2     | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly |
+| Waveform 11.5.18  | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Ardour 6.9        | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Mixbus 7.0.140    | :heavy_check_mark: | :heavy_check_mark:                                                   |
 
 Please let me know if there are any issues with other hosts.
 
