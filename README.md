@@ -82,7 +82,7 @@ Please let me know if there are any issues with other hosts.
      packages.
 
    - On **Fedora**, you can install yabridge and yabridgectl from a
-     [COPR](https://copr.fedorainfracloud.org/coprs/patrickl/yabridge/packages/).
+     [COPR](https://copr.fedorainfracloud.org/coprs/patrickl/yabridge/).
    - On the **OpenSUSE** distros, yabridge and yabridgectl are packaged by
      [GeekosDAW](https://geekosdaw.tuxfamily.org/en/).
    - On **NixOS**, yabridge and yabridgectl are in the repositories.
