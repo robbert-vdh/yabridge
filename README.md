@@ -557,20 +557,9 @@ Aside from that, these are some known caveats:
   XEmbed [compatibility option](#compatibility-options) may help, but Wine's
   XEmbed implementation also introduces other rendering issues.
 
-There are also some extension features for both VST2.4 and VST3 that have not
-been implemented yet because I either haven't seen them used or because we don't
-have permission to do so yet. Examples of this are:
-
-- Vendor specific VST2.4 extensions (for instance, for
-  [REAPER](https://www.reaper.fm/sdk/vst/vst_ext.php), though most of these
-  extension functions will work out of the box without any modifications).
-- The [Presonus extensions](https://presonussoftware.com/en_US/developer) to the
-  VST3 interfaces. All of these extensions have been superseded by official VST3
-  interfaces in later versions of the VST3 SDK.
-- VST3 plugin support for
-  [ARA](https://www.celemony.com/en/service1/about-celemony/technologies). The
-  ARA SDK has recently been [open source](https://github.com/Celemony/ARA_SDK),
-  so we can now finally start working on this.
+There are also some third party extension features for both VST2.4 and VST3 that
+have not been implemented yet. See the [roadmap](./ROADMAP.md) for a list of
+future plans.
 
 ## Troubleshooting common issues
 
