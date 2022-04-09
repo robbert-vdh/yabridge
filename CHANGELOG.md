@@ -13,6 +13,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed an obscure issue with VST3 plugins crashing in **Ardour** on
   Arch/Manjaro because of misreported parameter queue lengths.
 
+### yabridgectl
+
+- Handle plugins with mixed or uppercase `.dll` or `.vst3` extensions. Hopefully
+  this is not needed though!
+
 ## [3.8.1] - 2022-03-08
 
 ### Changed

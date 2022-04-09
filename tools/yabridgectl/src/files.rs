@@ -371,17 +371,18 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
             )
         }
 
-        match entry.path().extension().and_then(|os| os.to_str()) {
-            Some("dll") => dll_files.push(entry.into_path()),
-            Some("vst3") => vst3_files.push(entry.into_path()),
-            Some("so") => {
+        if let Some(ext) = entry.path().extension().and_then(|os| os.to_str()) {
+            if ext.eq_ignore_ascii_case("dll") {
+                dll_files.push(entry.into_path())
+            } else if ext.eq_ignore_ascii_case("vst3") {
+                vst3_files.push(entry.into_path())
+            } else if ext.eq_ignore_ascii_case("so") {
                 if entry.path_is_symlink() {
                     so_files.push(NativeFile::Symlink(entry.into_path()));
                 } else {
                     so_files.push(NativeFile::Regular(entry.into_path()));
                 }
             }
-            _ => (),
         }
     }
 
