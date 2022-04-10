@@ -228,17 +228,17 @@ DeferredWin32Window::~DeferredWin32Window() noexcept {
     //      `IPlugView::~IPlugView`. Delaying this seems to be a best of both
     //      worlds solution that works as expected in every host I've tested.
     try {
-        std::shared_ptr<boost::asio::steady_timer> destroy_timer =
-            std::make_shared<boost::asio::steady_timer>(main_context_.context_);
+        std::shared_ptr<asio::steady_timer> destroy_timer =
+            std::make_shared<asio::steady_timer>(main_context_.context_);
         destroy_timer->expires_after(1s);
 
         // Note that we capture a copy of `destroy_timer` here. This way we
         // don't have to manage the timer instance ourselves as it will just
         // clean itself up after this lambda gets called.
         destroy_timer->async_wait(
-            [destroy_timer, handle = handle_, x11_connection = x11_connection_](
-                const boost::system::error_code& error) {
-                if (error.failed()) {
+            [destroy_timer, handle = handle_,
+             x11_connection = x11_connection_](const std::error_code& error) {
+                if (error) {
                     return;
                 }
 

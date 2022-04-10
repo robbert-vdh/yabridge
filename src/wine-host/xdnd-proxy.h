@@ -18,7 +18,7 @@
 
 #include <memory>
 
-#include "boost-fix.h"
+#include "asio-fix.h"
 
 // Use the native version of xcb
 #pragma push_macro("_WIN32")

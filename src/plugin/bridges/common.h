@@ -74,7 +74,7 @@ class PluginBridge {
      *   found, or if it could not locate and load a VST3 module.
      */
     template <invocable_returning<TSockets,
-                                  boost::asio::io_context&,
+                                  asio::io_context&,
                                   const PluginInfo&> F>
     PluginBridge(PluginType plugin_type, F&& create_socket_instance)
         // This is still correct for VST3 plugins because we can configure an
@@ -367,7 +367,7 @@ class PluginBridge {
         // sockets and we'll be hanging here indefinitely. To prevent this,
         // we'll periodically poll whether the Wine process is still running,
         // and throw when it is not. The alternative would be to rewrite this to
-        // using `async_accept`, Boost.Asio timers, and another IO context, but
+        // using `async_accept`, Asio timers, and another IO context, but
         // I feel like this a much simpler solution.
         host_watchdog_handler_ = std::jthread([&](std::stop_token st) {
             using namespace std::literals::chrono_literals;
@@ -441,7 +441,7 @@ class PluginBridge {
      */
     const PluginInfo info_;
 
-    boost::asio::io_context io_context_;
+    asio::io_context io_context_;
 
     /**
      * The sockets used for communication with the Wine process.
@@ -485,7 +485,7 @@ class PluginBridge {
     std::future<bool> has_realtime_priority_;
 
     /**
-     * Runs the Boost.Asio `io_context_` thread for logging the Wine process
+     * Runs the Asio `io_context_` thread for logging the Wine process
      * STDOUT and STDERR messages.
      */
     std::jthread wine_io_handler_;

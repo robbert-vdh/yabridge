@@ -22,7 +22,6 @@
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/process/io.hpp>
 #include <boost/process/pipe.hpp>
-#include <boost/process/posix.hpp>
 #include <boost/process/search_path.hpp>
 #include <boost/process/system.hpp>
 #include <sstream>
@@ -466,7 +465,7 @@ bool send_notification(const std::string& title,
                            << "\">"
                            << xml_escape(this_library.filename().string())
                            << "</a>";
-        } catch (const boost::system::system_error&) {
+        } catch (const std::system_error&) {
             // I don't think this can fail in the way we're using it, but the
             // last thing we want is our notification informing the user of an
             // exception to trigger another exception

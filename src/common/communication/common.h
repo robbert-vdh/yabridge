@@ -24,12 +24,12 @@
 #include <bitsery/traits/vector.h>
 
 #ifdef __WINE__
-#include "../wine-host/boost-fix.h"
+#include "../wine-host/asio-fix.h"
 #endif
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/local/stream_protocol.hpp>
-#include <boost/asio/read.hpp>
-#include <boost/asio/write.hpp>
+#include <asio/io_context.hpp>
+#include <asio/local/stream_protocol.hpp>
+#include <asio/read.hpp>
+#include <asio/write.hpp>
 #include <boost/container/small_vector.hpp>
 #include <ghc/filesystem.hpp>
 
@@ -79,51 +79,49 @@ using SerializationBuffer = boost::container::small_vector<uint8_t, N>;
  */
 using SerializationBufferBase = boost::container::small_vector_base<uint8_t>;
 
-namespace boost {
 namespace asio {
 
 template <typename PodType, typename Allocator>
-inline BOOST_ASIO_MUTABLE_BUFFER buffer(
+inline ASIO_MUTABLE_BUFFER buffer(
     boost::container::small_vector_base<PodType, Allocator>& data)
-    BOOST_ASIO_NOEXCEPT {
-    return BOOST_ASIO_MUTABLE_BUFFER(
+    ASIO_NOEXCEPT {
+    return ASIO_MUTABLE_BUFFER(
         data.size() ? &data[0] : 0, data.size() * sizeof(PodType)
-#if defined(BOOST_ASIO_ENABLE_BUFFER_DEBUGGING)
+#if defined(ASIO_ENABLE_BUFFER_DEBUGGING)
                                         ,
         detail::buffer_debug_check<typename boost::container::small_vector_base<
             PodType, Allocator>::iterator>(data.begin())
-#endif  // BOOST_ASIO_ENABLE_BUFFER_DEBUGGING
+#endif  // ASIO_ENABLE_BUFFER_DEBUGGING
     );
 }
 
-// These are copied verbatim `boost::asio::buffer(std::vector<PodType,
+// These are copied verbatim `asio::buffer(std::vector<PodType,
 // Allocator>&, std::size_t)`, since `boost::container::small_vector` is
 // compatible with the STL vector.
 template <typename PodType, typename Allocator>
-inline BOOST_ASIO_MUTABLE_BUFFER buffer(
+inline ASIO_MUTABLE_BUFFER buffer(
     boost::container::small_vector_base<PodType, Allocator>& data,
-    std::size_t max_size_in_bytes) BOOST_ASIO_NOEXCEPT {
-    return BOOST_ASIO_MUTABLE_BUFFER(
+    std::size_t max_size_in_bytes) ASIO_NOEXCEPT {
+    return ASIO_MUTABLE_BUFFER(
         data.size() ? &data[0] : 0,
         data.size() * sizeof(PodType) < max_size_in_bytes
             ? data.size() * sizeof(PodType)
             : max_size_in_bytes
-#if defined(BOOST_ASIO_ENABLE_BUFFER_DEBUGGING)
+#if defined(ASIO_ENABLE_BUFFER_DEBUGGING)
         ,
         detail::buffer_debug_check<typename boost::container::small_vector_base<
             PodType, Allocator>::iterator>(data.begin())
-#endif  // BOOST_ASIO_ENABLE_BUFFER_DEBUGGING
+#endif  // ASIO_ENABLE_BUFFER_DEBUGGING
     );
 }
 
 }  // namespace asio
-}  // namespace boost
 
 /**
  * Serialize an object using bitsery and write it to a socket. This will write
  * both the size of the serialized object and the object itself over the socket.
  *
- * @param socket The Boost.Asio socket to write to.
+ * @param socket The Asio socket to write to.
  * @param object The object to write to the stream.
  * @param buffer The buffer to write to. This is useful for sending audio and
  *   chunk data since that can vary in size by a lot.
@@ -149,10 +147,9 @@ inline void write_object(Socket& socket,
     //       bit bridge. This won't make any function difference aside from the
     //       32-bit host application having to convert between 64 and 32 bit
     //       integers.
-    boost::asio::write(socket,
-                       boost::asio::buffer(std::array<uint64_t, 1>{size}));
+    asio::write(socket, asio::buffer(std::array<uint64_t, 1>{size}));
     const size_t bytes_written =
-        boost::asio::write(socket, boost::asio::buffer(buffer, size));
+        asio::write(socket, asio::buffer(buffer, size));
     assert(bytes_written == size);
 }
 
@@ -171,7 +168,7 @@ inline void write_object(Socket& socket, const T& object) {
  * Deserialize an object by reading it from a socket. This should be used
  * together with `write_object`. This will block until the object is available.
  *
- * @param socket The Boost.Asio socket to read from.
+ * @param socket The Asio socket to read from.
  * @param object The object to serialize into. There are also overrides that
  *   create a new default initialized `T`
  * @param buffer The buffer to read into. This is useful for sending audio and
@@ -180,7 +177,7 @@ inline void write_object(Socket& socket, const T& object) {
  * @return The deserialized object.
  *
  * @throw std::runtime_error If the conversion to an object was not successful.
- * @throw boost::system::system_error If the socket is closed or gets closed
+ * @throw std::system_error If the socket is closed or gets closed
  *   while reading.
  *
  * @relates write_object
@@ -191,18 +188,17 @@ inline T& read_object(Socket& socket,
                       SerializationBufferBase& buffer) {
     // See the note above on the use of `uint64_t` instead of `size_t`
     std::array<uint64_t, 1> message_length;
-    boost::asio::read(socket, boost::asio::buffer(message_length),
-                      boost::asio::transfer_exactly(sizeof(message_length)));
+    asio::read(socket, asio::buffer(message_length),
+               asio::transfer_exactly(sizeof(message_length)));
 
     // Make sure the buffer is large enough
     const size_t size = message_length[0];
     buffer.resize(size);
 
-    // `boost::asio::read/write` will handle all the packet splitting and
+    // `asio::read/write` will handle all the packet splitting and
     // merging for us, since local domain sockets have packet limits somewhere
     // in the hundreds of kilobytes
-    boost::asio::read(socket, boost::asio::buffer(buffer),
-                      boost::asio::transfer_exactly(size));
+    asio::read(socket, asio::buffer(buffer), asio::transfer_exactly(size));
 
     auto [_, success] =
         bitsery::quickDeserialization<InputAdapter<SerializationBufferBase>>(
@@ -371,8 +367,8 @@ class SocketHandler {
      *
      * @see Sockets::connect
      */
-    SocketHandler(boost::asio::io_context& io_context,
-                  boost::asio::local::stream_protocol::endpoint endpoint,
+    SocketHandler(asio::io_context& io_context,
+                  asio::local::stream_protocol::endpoint endpoint,
                   bool listen)
         : endpoint_(endpoint), socket_(io_context) {
         if (listen) {
@@ -397,13 +393,13 @@ class SocketHandler {
 
     /**
      * Close the socket. Both sides that are actively listening will be thrown a
-     * `boost::system_error` when this happens.
+     * `std::system_error` when this happens.
      */
     void close() {
         // The shutdown can fail when the socket is already closed
-        boost::system::error_code err;
-        socket_.shutdown(
-            boost::asio::local::stream_protocol::socket::shutdown_both, err);
+        std::error_code err;
+        socket_.shutdown(asio::local::stream_protocol::socket::shutdown_both,
+                         err);
         socket_.close();
     }
 
@@ -414,7 +410,7 @@ class SocketHandler {
      * @param buffer The buffer to use for the serialization. This is used to
      *   prevent excess allocations when sending audio.
      *
-     * @throw boost::system::system_error If the socket is closed or gets closed
+     * @throw std::system_error If the socket is closed or gets closed
      *   during sending.
      *
      * @warning This operation is not atomic, and calling this function with the
@@ -454,7 +450,7 @@ class SocketHandler {
      *
      * @throw std::runtime_error If the conversion to an object was not
      *   successful.
-     * @throw boost::system::system_error If the socket is closed or gets closed
+     * @throw std::system_error If the socket is closed or gets closed
      *   while reading.
      *
      * @note This function can safely be called within the lambda of
@@ -513,7 +509,7 @@ class SocketHandler {
                 receive_single<T>(object, buffer);
 
                 callback(object, buffer);
-            } catch (const boost::system::system_error&) {
+            } catch (const std::system_error&) {
                 // This happens when the sockets got closed because the plugin
                 // is being shut down
                 break;
@@ -522,14 +518,14 @@ class SocketHandler {
     }
 
    private:
-    boost::asio::local::stream_protocol::endpoint endpoint_;
-    boost::asio::local::stream_protocol::socket socket_;
+    asio::local::stream_protocol::endpoint endpoint_;
+    asio::local::stream_protocol::socket socket_;
 
     /**
      * Will be used in `connect()` on the listening side to establish the
      * connection.
      */
-    std::optional<boost::asio::local::stream_protocol::acceptor> acceptor_;
+    std::optional<asio::local::stream_protocol::acceptor> acceptor_;
 };
 
 /**
@@ -572,8 +568,8 @@ class AdHocSocketHandler {
      *
      * @see Sockets::connect
      */
-    AdHocSocketHandler(boost::asio::io_context& io_context,
-                       boost::asio::local::stream_protocol::endpoint endpoint,
+    AdHocSocketHandler(asio::io_context& io_context,
+                       asio::local::stream_protocol::endpoint endpoint,
                        bool listen)
         : io_context_(io_context), endpoint_(endpoint), socket_(io_context) {
         if (listen) {
@@ -606,13 +602,13 @@ class AdHocSocketHandler {
 
     /**
      * Close the socket. Both sides that are actively listening will be thrown a
-     * `boost::system_error` when this happens.
+     * `std::system_error` when this happens.
      */
     void close() {
         // The shutdown can fail when the socket is already closed
-        boost::system::error_code err;
-        socket_.shutdown(
-            boost::asio::local::stream_protocol::socket::shutdown_both, err);
+        std::error_code err;
+        socket_.shutdown(asio::local::stream_protocol::socket::shutdown_both,
+                         err);
         socket_.close();
 
         while (currently_listening_) {
@@ -637,15 +633,15 @@ class AdHocSocketHandler {
      *   socket. This is either the primary `socket`, or a new ad hock socket if
      *   this function is currently being called from another thread.
      */
-    template <std::invocable<boost::asio::local::stream_protocol::socket&> F>
-    std::invoke_result_t<F, boost::asio::local::stream_protocol::socket&> send(
+    template <std::invocable<asio::local::stream_protocol::socket&> F>
+    std::invoke_result_t<F, asio::local::stream_protocol::socket&> send(
         F&& callback) {
         // A bit of template and constexpr nastiness to allow us to either
         // return a value from the callback (for when writing the response to a
         // new object) or to return void (when we deserialize into an existing
         // object)
-        constexpr bool returns_void = std::is_void_v<std::invoke_result_t<
-            F, boost::asio::local::stream_protocol::socket&>>;
+        constexpr bool returns_void = std::is_void_v<
+            std::invoke_result_t<F, asio::local::stream_protocol::socket&>>;
 
         // XXX: Maybe at some point we should benchmark how often this
         //      ad hoc socket spawning mechanism gets used. If some hosts
@@ -667,12 +663,12 @@ class AdHocSocketHandler {
             }
         } else {
             try {
-                boost::asio::local::stream_protocol::socket secondary_socket(
+                asio::local::stream_protocol::socket secondary_socket(
                     io_context_);
                 secondary_socket.connect(endpoint_);
 
                 return callback(secondary_socket);
-            } catch (const boost::system::system_error&) {
+            } catch (const std::system_error&) {
                 // So, what do we do when noone is listening on the endpoint
                 // yet? This can happen with plugin groups when the Wine
                 // host process does an `audioMaster()` call before the
@@ -721,8 +717,8 @@ class AdHocSocketHandler {
      *   same thing as `primary_callback`, but secondary sockets may need some
      *   different handling.
      */
-    template <std::invocable<boost::asio::local::stream_protocol::socket&> F,
-              std::invocable<boost::asio::local::stream_protocol::socket&> G>
+    template <std::invocable<asio::local::stream_protocol::socket&> F,
+              std::invocable<asio::local::stream_protocol::socket&> G>
     void receive_multi(std::optional<std::reference_wrapper<Logger>> logger,
                        F&& primary_callback,
                        G&& secondary_callback) {
@@ -738,7 +734,7 @@ class AdHocSocketHandler {
         // thread to handle the request. When `socket` closes and this loop
         // breaks, the listener and any still active threads will be cleaned up
         // before this function exits.
-        boost::asio::io_context secondary_context{};
+        asio::io_context secondary_context{};
 
         // The previous acceptor has already been shut down by
         // `AdHocSocketHandler::connect()`
@@ -751,21 +747,21 @@ class AdHocSocketHandler {
         std::mutex active_secondary_requests_mutex{};
         accept_requests(
             *acceptor_, logger,
-            [&](boost::asio::local::stream_protocol::socket secondary_socket) {
+            [&](asio::local::stream_protocol::socket secondary_socket) {
                 const size_t request_id = next_request_id.fetch_add(1);
 
                 // We have to make sure to keep moving these sockets into the
                 // threads that will handle them
                 std::lock_guard lock(active_secondary_requests_mutex);
                 active_secondary_requests[request_id] = Thread(
-                    [&, request_id](boost::asio::local::stream_protocol::socket
-                                        secondary_socket) {
+                    [&, request_id](
+                        asio::local::stream_protocol::socket secondary_socket) {
                         secondary_callback(secondary_socket);
 
                         // When we have processed this request, we'll join the
                         // thread again with the thread that's handling
                         // `secondary_context`
-                        boost::asio::post(secondary_context, [&, request_id]() {
+                        asio::post(secondary_context, [&, request_id]() {
                             std::lock_guard lock(
                                 active_secondary_requests_mutex);
 
@@ -791,7 +787,7 @@ class AdHocSocketHandler {
         while (true) {
             try {
                 primary_callback(socket_);
-            } catch (const boost::system::system_error&) {
+            } catch (const std::system_error&) {
                 // This happens when the sockets got closed because the plugin
                 // is being shut down
                 break;
@@ -814,7 +810,7 @@ class AdHocSocketHandler {
      *
      * @overload
      */
-    template <std::invocable<boost::asio::local::stream_protocol::socket&> F>
+    template <std::invocable<asio::local::stream_protocol::socket&> F>
     void receive_multi(std::optional<std::reference_wrapper<Logger>> logger,
                        F&& callback) {
         receive_multi(logger, callback, std::forward<F>(callback));
@@ -831,16 +827,15 @@ class AdHocSocketHandler {
      *   should only be passed on the plugin side.
      * @param callback A function that handles the new socket connection.
      */
-    template <std::invocable<boost::asio::local::stream_protocol::socket> F>
-    void accept_requests(
-        boost::asio::local::stream_protocol::acceptor& acceptor,
-        std::optional<std::reference_wrapper<Logger>> logger,
-        F&& callback) {
+    template <std::invocable<asio::local::stream_protocol::socket> F>
+    void accept_requests(asio::local::stream_protocol::acceptor& acceptor,
+                         std::optional<std::reference_wrapper<Logger>> logger,
+                         F&& callback) {
         acceptor.async_accept(
             [&, logger, callback](
-                const boost::system::error_code& error,
-                boost::asio::local::stream_protocol::socket secondary_socket) {
-                if (error.failed()) {
+                const std::error_code& error,
+                asio::local::stream_protocol::socket secondary_socket) {
+                if (error) {
                     // On the Wine side it's expected that the primary socket
                     // connection will be dropped during shutdown, so we can
                     // silently ignore any related socket errors on the Wine
@@ -865,10 +860,10 @@ class AdHocSocketHandler {
      * bound to this context. In `receive_multi()` we'll create a new IO context
      * since we want to do all listening there on a dedicated thread.
      */
-    boost::asio::io_context& io_context_;
+    asio::io_context& io_context_;
 
-    boost::asio::local::stream_protocol::endpoint endpoint_;
-    boost::asio::local::stream_protocol::socket socket_;
+    asio::local::stream_protocol::endpoint endpoint_;
+    asio::local::stream_protocol::socket socket_;
 
     /**
      * This acceptor will be used once synchronously on the listening side
@@ -880,7 +875,7 @@ class AdHocSocketHandler {
      * but all additional incoming connections of course have to be listened for
      * on the plugin side.
      */
-    std::optional<boost::asio::local::stream_protocol::acceptor> acceptor_;
+    std::optional<asio::local::stream_protocol::acceptor> acceptor_;
 
     /**
      * After the socket gets closed, we do some cleanup at the end of

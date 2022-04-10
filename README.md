@@ -770,6 +770,7 @@ the following dependencies:
 
 The following dependencies are included in the repository as a Meson wrap:
 
+- [Asio](http://think-async.com/Asio/)
 - [bitsery](https://github.com/fraillt/bitsery)
 - [function2](https://github.com/Naios/function2)
 - [`ghc::filesystem`](https://github.com/gulrak/filesystem)

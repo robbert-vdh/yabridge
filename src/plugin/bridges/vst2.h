@@ -18,7 +18,7 @@
 
 #include <vestige/aeffectx.h>
 
-#include <boost/asio/io_context.hpp>
+#include <asio/io_context.hpp>
 #include <thread>
 
 #include "../../common/communication/vst2.h"

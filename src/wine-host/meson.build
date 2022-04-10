@@ -10,6 +10,7 @@ if is_64bit_system
   host_64bit_deps = [
     configuration_dep,
 
+    asio_dep,
     boost_dep,
     bitsery_dep,
     function2_dep,
@@ -35,6 +36,7 @@ if with_bitbridge
   host_32bit_deps = [
     configuration_dep,
 
+    asio_dep,
     boost_dep,
     ghc_filesystem_dep,
     bitsery_dep,

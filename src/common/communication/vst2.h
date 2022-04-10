@@ -86,7 +86,7 @@ class DefaultDataConverter {
      * specific opcodes to allow mutually recursive calling sequences.
      */
     virtual Vst2EventResult send_event(
-        boost::asio::local::stream_protocol::socket& socket,
+        asio::local::stream_protocol::socket& socket,
         const Vst2Event& event,
         SerializationBufferBase& buffer) const;
 };
@@ -137,8 +137,8 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
      *
      * @see Sockets::connect
      */
-    Vst2EventHandler(boost::asio::io_context& io_context,
-                     boost::asio::local::stream_protocol::endpoint endpoint,
+    Vst2EventHandler(asio::io_context& io_context,
+                     asio::local::stream_protocol::endpoint endpoint,
                      bool listen)
         : AdHocSocketHandler<Thread>(io_context, endpoint, listen) {}
 
@@ -206,7 +206,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
         // that potentially need to have their responses handled on the same
         // calling thread (i.e. mutual recursion).
         const Vst2EventResult response = this->send(
-            [&](boost::asio::local::stream_protocol::socket& socket) {
+            [&](asio::local::stream_protocol::socket& socket) {
                 return data_converter.send_event(socket, event,
                                                  serialization_buffer());
             });
@@ -250,7 +250,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
         // Reading, processing, and writing back event data from the sockets
         // works in the same way regardless of which socket we're using
         const auto process_event =
-            [&](boost::asio::local::stream_protocol::socket& socket,
+            [&](asio::local::stream_protocol::socket& socket,
                 bool on_main_thread) {
                 SerializationBufferBase& buffer = serialization_buffer();
 
@@ -276,10 +276,10 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
         this->receive_multi(
             logging ? std::optional(std::ref(logging->first.logger_))
                     : std::nullopt,
-            [&](boost::asio::local::stream_protocol::socket& socket) {
+            [&](asio::local::stream_protocol::socket& socket) {
                 process_event(socket, true);
             },
-            [&](boost::asio::local::stream_protocol::socket& socket) {
+            [&](asio::local::stream_protocol::socket& socket) {
                 process_event(socket, false);
             });
     }
@@ -342,7 +342,7 @@ class Vst2Sockets final : public Sockets {
      *
      * @see Vst2Sockets::connect
      */
-    Vst2Sockets(boost::asio::io_context& io_context,
+    Vst2Sockets(asio::io_context& io_context,
                 const ghc::filesystem::path& endpoint_base_dir,
                 bool listen)
         : Sockets(endpoint_base_dir),

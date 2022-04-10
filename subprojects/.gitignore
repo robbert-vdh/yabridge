@@ -1,6 +1,7 @@
 /*/*
 
 # The above pattern doesn't match submodules
+/asio
 /bitsery
 /function2
 /ghc_filesystem
@@ -8,6 +9,7 @@
 /vst3
 
 # And we obviously don't want to ignore our overlays
+!/packagefiles/asio
 !/packagefiles/bitsery
 !/packagefiles/function2
 !/packagefiles/ghc_filesystem

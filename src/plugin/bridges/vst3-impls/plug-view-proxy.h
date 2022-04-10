@@ -32,7 +32,7 @@ class RunLoopTasks : public Steinberg::Linux::IEventHandler {
    public:
     /**
      * Register an event handler in the host's run loop so we can schedule tasks
-     * to be run from there. This works very much like how we use Boost.Asio IO
+     * to be run from there. This works very much like how we use Asio IO
      * contexts everywhere else to run functions on other threads. All of this
      * is backed by a dummy Unix domain socket, although REAPER will call the
      * event handler regardless of whether the file descriptor is ready or not.

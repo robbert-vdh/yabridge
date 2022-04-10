@@ -27,7 +27,7 @@ using namespace std::literals::string_literals;
 Vst3PluginBridge::Vst3PluginBridge()
     : PluginBridge(
           PluginType::vst3,
-          [](boost::asio::io_context& io_context, const PluginInfo& info) {
+          [](asio::io_context& io_context, const PluginInfo& info) {
               return Vst3Sockets<std::jthread>(
                   io_context,
                   generate_endpoint_base(info.native_library_path_.filename()
@@ -415,7 +415,7 @@ Vst3PluginBridge::~Vst3PluginBridge() noexcept {
         // Drop all work make sure all sockets are closed
         plugin_host_->terminate();
         io_context_.stop();
-    } catch (const boost::system::system_error&) {
+    } catch (const std::system_error&) {
         // It could be that the sockets have already been closed or that the
         // process has already exited (at which point we probably won't be
         // executing this, but maybe if all the stars align)

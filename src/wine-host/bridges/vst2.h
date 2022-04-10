@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../boost-fix.h"
+#include "../asio-fix.h"
 
 #include <vestige/aeffectx.h>
 #include <windows.h>

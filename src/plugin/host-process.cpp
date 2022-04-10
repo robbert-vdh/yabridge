@@ -16,7 +16,7 @@
 
 #include "host-process.h"
 
-#include <boost/asio/read_until.hpp>
+#include <asio/read_until.hpp>
 #include <boost/process/env.hpp>
 #include <boost/process/start_dir.hpp>
 
@@ -25,7 +25,7 @@
 namespace bp = boost::process;
 namespace fs = ghc::filesystem;
 
-HostProcess::HostProcess(boost::asio::io_context& io_context,
+HostProcess::HostProcess(asio::io_context& io_context,
                          Logger& logger,
                          const Configuration& config,
                          Sockets& sockets)
@@ -53,7 +53,7 @@ HostProcess::HostProcess(boost::asio::io_context& io_context,
 
 HostProcess::~HostProcess() noexcept {}
 
-IndividualHost::IndividualHost(boost::asio::io_context& io_context,
+IndividualHost::IndividualHost(asio::io_context& io_context,
                                Logger& logger,
                                const Configuration& config,
                                Sockets& sockets,
@@ -115,7 +115,7 @@ void IndividualHost::terminate() {
     host_.wait();
 }
 
-GroupHost::GroupHost(boost::asio::io_context& io_context,
+GroupHost::GroupHost(asio::io_context& io_context,
                      Logger& logger,
                      const Configuration& config,
                      Sockets& sockets,
@@ -140,7 +140,7 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
         plugin_info.plugin_arch_);
     const auto connect = [&io_context, host_request, endpoint_base_dir,
                           group_socket_path]() {
-        boost::asio::local::stream_protocol::socket group_socket(io_context);
+        asio::local::stream_protocol::socket group_socket(io_context);
         group_socket.connect(group_socket_path.string());
 
         write_object(group_socket, host_request);
@@ -151,7 +151,7 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
     try {
         // Request an existing group host process to host our plugin
         connect();
-    } catch (const boost::system::system_error&) {
+    } catch (const std::system_error&) {
         // In case we could not connect to the socket, then we'll start a
         // new group host process. This process is detached immediately
         // because it should run independently of this yabridge instance as
@@ -178,7 +178,7 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
                     try {
                         connect();
                         return;
-                    } catch (const boost::system::system_error&) {
+                    } catch (const std::system_error&) {
                         // Keep trying to connect until either connection gets
                         // accepted or the group host crashes
                     }
@@ -191,7 +191,7 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
                 // connect once more, before concluding that we failed.
                 try {
                     connect();
-                } catch (const boost::system::system_error&) {
+                } catch (const std::system_error&) {
                     startup_failed_ = true;
                 }
             });

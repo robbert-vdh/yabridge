@@ -38,7 +38,7 @@ Vst2PluginBridge& get_bridge_instance(const AEffect& plugin) noexcept {
 Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
     : PluginBridge(
           PluginType::vst2,
-          [](boost::asio::io_context& io_context, const PluginInfo& info) {
+          [](asio::io_context& io_context, const PluginInfo& info) {
               return Vst2Sockets<std::jthread>(
                   io_context,
                   generate_endpoint_base(info.native_library_path_.filename()
@@ -199,7 +199,7 @@ Vst2PluginBridge::~Vst2PluginBridge() noexcept {
         // The `stop()` method will cause the IO context to just drop all of its
         // outstanding work immediately
         io_context_.stop();
-    } catch (const boost::system::system_error&) {
+    } catch (const std::system_error&) {
         // It could be that the sockets have already been closed or that the
         // process has already exited (at which point we probably won't be
         // executing this, but maybe if all the stars align)
@@ -538,7 +538,7 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
                 return_value = sockets_.host_vst_dispatch_.send_event(
                     converter, std::pair<Vst2Logger&, bool>(logger_, true),
                     opcode, index, value, data, option);
-            } catch (const boost::system::system_error&) {
+            } catch (const std::system_error&) {
                 // Thrown when the socket gets closed because the VST plugin
                 // loaded into the Wine process crashed during shutdown
                 logger_.log("The plugin crashed during shutdown, ignoring");

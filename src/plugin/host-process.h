@@ -18,8 +18,8 @@
 
 #include <thread>
 
-#include <boost/asio/local/stream_protocol.hpp>
-#include <boost/asio/streambuf.hpp>
+#include <asio/local/stream_protocol.hpp>
+#include <asio/streambuf.hpp>
 #include <boost/process/child.hpp>
 #include <boost/process/extend.hpp>
 #include <boost/process/io.hpp>
@@ -91,8 +91,11 @@ class HostProcess {
             // FIXME: Replace Boost.Filesystem
             host_path.string(),
 #endif  // WITH_WINEDBG
-            boost::process::std_out = stdout_pipe_,
-            boost::process::std_err = stderr_pipe_,
+        // FIXME: This won't work with our patched async_pipe version
+        // boost::process::std_out = stdout_pipe_,
+        // boost::process::std_err = stderr_pipe_,
+            patched_async_pipe_out<1, -1>(stdout_pipe_),
+            patched_async_pipe_out<2, -1>(stderr_pipe_),
             // NOTE: If the Wine process outlives the host, then it may cause
             //       issues if our process is still keeping the host's file
             //       descriptors alive that. This can prevent Ardour from
@@ -140,7 +143,7 @@ class HostProcess {
      *   with the plugin. When the plugin shuts down, we'll close all of the
      *   sockets used by the plugin.
      */
-    HostProcess(boost::asio::io_context& io_context,
+    HostProcess(asio::io_context& io_context,
                 Logger& logger,
                 const Configuration& config,
                 Sockets& sockets);
@@ -171,8 +174,8 @@ class HostProcess {
      */
     Logger& logger_;
 
-    boost::asio::streambuf stdout_buffer_;
-    boost::asio::streambuf stderr_buffer_;
+    asio::streambuf stdout_buffer_;
+    asio::streambuf stderr_buffer_;
 };
 
 /**
@@ -201,7 +204,7 @@ class IndividualHost : public HostProcess {
      * @throw std::runtime_error When `plugin_path` does not point to a valid
      *   32-bit or 64-bit .dll file.
      */
-    IndividualHost(boost::asio::io_context& io_context,
+    IndividualHost(asio::io_context& io_context,
                    Logger& logger,
                    const Configuration& config,
                    Sockets& sockets,
@@ -249,7 +252,7 @@ class GroupHost : public HostProcess {
      * @param host_request The information about the plugin we should launch a
      *   host process for. This object will be sent to the group host process.
      */
-    GroupHost(boost::asio::io_context& io_context,
+    GroupHost(asio::io_context& io_context,
               Logger& logger,
               const Configuration& config,
               Sockets& sockets,

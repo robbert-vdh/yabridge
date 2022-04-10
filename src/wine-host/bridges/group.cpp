@@ -16,7 +16,7 @@
 
 #include "group.h"
 
-#include "../boost-fix.h"
+#include "../asio-fix.h"
 
 #include <unistd.h>
 #include <regex>
@@ -49,23 +49,23 @@ using namespace std::literals::chrono_literals;
  * @throw std::runtime_error If another process is already listening on the
  *        endpoint.
  */
-boost::asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
-    boost::asio::io_context& io_context,
-    boost::asio::local::stream_protocol::endpoint& endpoint);
+asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
+    asio::io_context& io_context,
+    asio::local::stream_protocol::endpoint& endpoint);
 
 /**
  * Create a logger prefix containing the group name based on the socket path.
  */
 std::string create_logger_prefix(const fs::path& socket_path);
 
-StdIoCapture::StdIoCapture(boost::asio::io_context& io_context,
-                           int file_descriptor)
+StdIoCapture::StdIoCapture(asio::io_context& io_context, int file_descriptor)
     : pipe_(io_context),
       target_fd_(file_descriptor),
       original_fd_copy_(dup(file_descriptor)) {
     // We'll use the second element of these two file descriptors to reopen
     // `file_descriptor`, and the first one to read the captured contents from
     if (::pipe(pipe_fd_) != 0) {
+        std::cerr << "Could not create pipe" << std::endl;
         throw std::system_error(errno, std::system_category());
     }
 
@@ -171,12 +171,12 @@ void GroupBridge::handle_incoming_connections() {
 
 void GroupBridge::accept_requests() {
     group_socket_acceptor_.async_accept(
-        [&](const boost::system::error_code& error,
-            boost::asio::local::stream_protocol::socket socket) {
+        [&](const std::error_code& error,
+            asio::local::stream_protocol::socket socket) {
             std::lock_guard lock(active_plugins_mutex_);
 
             // Stop the whole process when the socket gets closed unexpectedly
-            if (error.failed()) {
+            if (error) {
                 logger_.log("Error while listening for incoming connections:");
                 logger_.log(error.message());
 
@@ -284,14 +284,13 @@ void GroupBridge::async_handle_events() {
         [&]() { return !is_event_loop_inhibited(); });
 }
 
-boost::asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
-    boost::asio::io_context& io_context,
-    boost::asio::local::stream_protocol::endpoint& endpoint) {
+asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
+    asio::io_context& io_context,
+    asio::local::stream_protocol::endpoint& endpoint) {
     // First try to listen on the endpoint normally
     try {
-        return boost::asio::local::stream_protocol::acceptor(io_context,
-                                                             endpoint);
-    } catch (const boost::system::system_error&) {
+        return asio::local::stream_protocol::acceptor(io_context, endpoint);
+    } catch (const std::system_error&) {
         // If this failed, then either there is a stale socket file or another
         // process is already is already listening. In the last case we will
         // simply throw so the other process can handle the request.
@@ -312,8 +311,7 @@ boost::asio::local::stream_protocol::acceptor create_acceptor_if_inactive(
 
         // At this point we can remove the stale socket and start listening
         fs::remove(endpoint_path);
-        return boost::asio::local::stream_protocol::acceptor(io_context,
-                                                             endpoint);
+        return asio::local::stream_protocol::acceptor(io_context, endpoint);
     }
 }
 
@@ -322,10 +320,10 @@ void GroupBridge::maybe_schedule_shutdown(
     std::lock_guard lock(shutdown_timer_mutex_);
 
     shutdown_timer_.expires_after(delay);
-    shutdown_timer_.async_wait([this](const boost::system::error_code& error) {
+    shutdown_timer_.async_wait([this](const std::error_code& error) {
         // A previous timer gets canceled automatically when another plugin
         // exits
-        if (error.failed()) {
+        if (error) {
             return;
         }
 

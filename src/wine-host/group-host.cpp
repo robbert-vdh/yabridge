@@ -76,19 +76,17 @@ __cdecl
 
         // Blocks the main thread until all plugins have exited
         bridge.handle_incoming_connections();
-    } catch (const boost::system::system_error& error) {
+    } catch (const std::system_error& error) {
         // If another process is already listening on the socket, we'll just
         // print a message and exit quietly. This could happen if the host
         // starts multiple yabridge instances that all use the same plugin group
         // at the same time.
+        // The same error is also used if we could not create a pipe. Since that
+        // error is so rare, we'll just print to STDERR before that happens to
+        // differentiate the two cases.
         std::cerr << "Another process is already listening on this group's "
                      "socket, connecting to the existing process:"
                   << std::endl;
-        std::cerr << error.what() << std::endl;
-
-        return 0;
-    } catch (const std::system_error& error) {
-        std::cerr << "Could not create pipe:" << std::endl;
         std::cerr << error.what() << std::endl;
 
         return 0;

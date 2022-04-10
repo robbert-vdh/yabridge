@@ -21,10 +21,10 @@
 #include <type_traits>
 
 #ifdef __WINE__
-#include "../wine-host/boost-fix.h"
+#include "../wine-host/asio-fix.h"
 #endif
-#include <boost/asio/dispatch.hpp>
-#include <boost/asio/io_context.hpp>
+#include <asio/dispatch.hpp>
+#include <asio/io_context.hpp>
 
 /**
  * A helper to allow mutually recursive calling sequences with remote function
@@ -83,8 +83,8 @@ class MutualRecursionHelper {
         // as we need to support multiple levels of mutual recursion. This can
         // for instance happen during `IPlugView::attached() ->
         // IPlugFrame::resizeView() -> IPlugView::onSize()`.
-        std::shared_ptr<boost::asio::io_context> current_io_context =
-            std::make_shared<boost::asio::io_context>();
+        std::shared_ptr<asio::io_context> current_io_context =
+            std::make_shared<asio::io_context>();
         {
             std::unique_lock lock(mutual_recursion_contexts_mutex_);
             mutual_recursion_contexts_.push_back(current_io_context);
@@ -93,7 +93,7 @@ class MutualRecursionHelper {
         // Instead of directly stopping the IO context, we'll reset this work
         // guard instead. This prevents us from accidentally cancelling any
         // outstanding tasks.
-        auto work_guard = boost::asio::make_work_guard(*current_io_context);
+        auto work_guard = asio::make_work_guard(*current_io_context);
 
         // We will call the function from another thread so we can handle calls
         // to `handle()`/`maybe_handle()` from this thread
@@ -168,7 +168,7 @@ class MutualRecursionHelper {
         // pretend that we're not doing any async things here
         std::packaged_task<Result()> do_call(std::forward<F>(fn));
         std::future<Result> do_call_response = do_call.get_future();
-        boost::asio::dispatch(*mutual_recursion_contexts_.back(),
+        asio::dispatch(*mutual_recursion_contexts_.back(),
                               std::move(do_call));
         mutual_recursion_lock.unlock();
 
@@ -186,7 +186,7 @@ class MutualRecursionHelper {
      * active one. If the stack is empty, then there's currently no mutual
      * recursion going on.
      */
-    std::vector<std::shared_ptr<boost::asio::io_context>>
+    std::vector<std::shared_ptr<asio::io_context>>
         mutual_recursion_contexts_;
     std::mutex mutual_recursion_contexts_mutex_;
 };

@@ -46,7 +46,7 @@ compiler_options = [
   '-fvisibility-inlines-hidden',
   # Disable the use of concepts in Boost.Asio until Boost 1.73 gets released
   # https://github.com/boostorg/asio/issues/312
-  # TODO: Rename after switching to non-Boost ASIO
+  # TODO: Rename after switching out Boost.Process
   '-DBOOST_ASIO_DISABLE_CONCEPTS',
   # Boost.Process's auto detection for vfork() support doesn't seem to work
   # TODO: Remove after adding our own library
@@ -232,6 +232,7 @@ endif
 # These are all headers-only libraries, and thus won't require separate 32-bit
 # and 64-bit versions
 
+asio_dep = dependency('asio', version : '>=1.22.0')
 boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
 if meson.version().version_compare('>=0.60')
   # Bitsery's CMake build definition is capitalized for some reason
@@ -295,6 +296,7 @@ shared_library(
   dependencies : [
     configuration_dep,
 
+    asio_dep,
     boost_dep,
     with_32bit_libraries
       ? boost_filesystem_32bit_dep
@@ -320,6 +322,7 @@ if with_vst3
     dependencies : [
       configuration_dep,
 
+      asio_dep,
       boost_dep,
       with_32bit_libraries
         ? boost_filesystem_32bit_dep

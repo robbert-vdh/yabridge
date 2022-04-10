@@ -17,6 +17,7 @@
 #include "common.h"
 
 #include <random>
+#include <sstream>
 
 #include "../utils.h"
 

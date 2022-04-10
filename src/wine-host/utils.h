@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "boost-fix.h"
+#include "asio-fix.h"
 
 #include <future>
 #include <memory>
@@ -24,8 +24,8 @@
 #include <unordered_set>
 
 #include <windows.h>
-#include <boost/asio/dispatch.hpp>
-#include <boost/asio/io_context.hpp>
+#include <asio/dispatch.hpp>
+#include <asio/io_context.hpp>
 #include <function2/function2.hpp>
 
 #include "../common/utils.h"
@@ -152,7 +152,7 @@ class Win32Timer {
 };
 
 /**
- * A wrapper around `boost::asio::io_context()` to serve as the application's
+ * A wrapper around `asio::io_context()` to serve as the application's
  * main IO context, run from the GUI thread. A single instance is shared for all
  * plugins in a plugin group so that several important events can be handled on
  * the main thread, which can be required because in the Win32 model all GUI
@@ -254,7 +254,7 @@ class MainContext {
 
         std::packaged_task<Result()> call_fn(std::forward<F>(fn));
         std::future<Result> result = call_fn.get_future();
-        boost::asio::dispatch(context_, std::move(call_fn));
+        asio::dispatch(context_, std::move(call_fn));
 
         return result;
     }
@@ -266,7 +266,7 @@ class MainContext {
      */
     template <std::invocable F>
     void schedule_task(F&& fn) {
-        boost::asio::post(context_, std::forward<F>(fn));
+        asio::post(context_, std::forward<F>(fn));
     }
 
     /**
@@ -294,8 +294,8 @@ class MainContext {
             std::max(events_timer_.expiry() + timer_interval_,
                      std::chrono::steady_clock::now() + timer_interval_ / 4));
         events_timer_.async_wait(
-            [&, handler, predicate](const boost::system::error_code& error) {
-                if (error.failed()) {
+            [&, handler, predicate](const std::error_code& error) {
+                if (error) {
                     return;
                 }
 
@@ -311,7 +311,7 @@ class MainContext {
      * The raw IO context. Used to bind our sockets onto. Running things within
      * this IO context should be done with the functions above.
      */
-    boost::asio::io_context context_;
+    asio::io_context context_;
 
    private:
     /**
@@ -334,7 +334,7 @@ class MainContext {
     /**
      * The timer used to periodically handle X11 events and Win32 messages.
      */
-    boost::asio::steady_timer events_timer_;
+    asio::steady_timer events_timer_;
 
     /**
      * The time between timer ticks in `async_handle_events`. This gets
@@ -349,7 +349,7 @@ class MainContext {
     /**
      * The IO context used for the watchdog described below.
      */
-    boost::asio::io_context watchdog_context_;
+    asio::io_context watchdog_context_;
 
     /**
      * The timer used to periodically check if the host processes are still
@@ -357,7 +357,7 @@ class MainContext {
      * itself) when the host has exited and the sockets are somehow not closed
      * yet..
      */
-    boost::asio::steady_timer watchdog_timer_;
+    asio::steady_timer watchdog_timer_;
 
     /**
      * All of the bridges we're watching as part of our watchdog. We're storing

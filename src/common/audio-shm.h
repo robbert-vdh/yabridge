@@ -19,7 +19,7 @@
 #include <vector>
 
 #ifdef __WINE__
-#include "../wine-host/boost-fix.h"
+#include "../wine-host/asio-fix.h"
 #endif
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/interprocess/shared_memory_object.hpp>

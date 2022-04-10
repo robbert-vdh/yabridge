@@ -21,12 +21,21 @@
 #include <ostream>
 
 #ifdef __WINE__
-#include "../wine-host/boost-fix.h"
+#include "../wine-host/asio-fix.h"
 #endif
 
-#include <boost/asio/read_until.hpp>
-#include <boost/asio/streambuf.hpp>
+#include <asio/read_until.hpp>
+#include <asio/streambuf.hpp>
+
+// FIXME: Remove when we get rid of the patched_async_pipe
+#include <asio/io_context.hpp>
+#include <asio/posix/stream_descriptor.hpp>
+#include <asio/post.hpp>
+
+// FIXME: Get rid of Boost.Process and all of the wrangling below
 #include <boost/process/async_pipe.hpp>
+#include <boost/process/detail/posix/pipe_out.hpp>
+#include <boost/process/posix.hpp>
 
 #include "../utils.h"
 
@@ -39,12 +48,200 @@
  *
  * Check if this is still needed for other distros after Arch starts packaging
  * Boost 1.73.
+ *
+ * FIXME: This has been adopted to work with standalone Asio, we should replace
+ *        this when we replace Boost.Process
  */
-class patched_async_pipe : public boost::process::async_pipe {
-   public:
-    using boost::process::async_pipe::async_pipe;
+class patched_async_pipe {
+    ::asio::posix::stream_descriptor _source;
+    ::asio::posix::stream_descriptor _sink;
 
+   public:
+    typedef int native_handle_type;
+    typedef ::asio::posix::stream_descriptor handle_type;
     typedef typename handle_type::executor_type executor_type;
+
+    executor_type get_executor() { return _source.get_executor(); }
+
+    inline patched_async_pipe(asio::io_context& ios)
+        : patched_async_pipe(ios, ios) {}
+
+    inline patched_async_pipe(asio::io_context& ios_source,
+                              asio::io_context& ios_sink)
+        : _source(ios_source), _sink(ios_sink) {
+        int fds[2];
+        if (::pipe(fds) == -1)
+            boost::process::detail::throw_last_error("pipe(2) failed");
+
+        _source.assign(fds[0]);
+        _sink.assign(fds[1]);
+    };
+
+    inline patched_async_pipe(const patched_async_pipe& lhs);
+    patched_async_pipe(patched_async_pipe&& lhs)
+        : _source(std::move(lhs._source)), _sink(std::move(lhs._sink)) {
+        lhs._source =
+            ::asio::posix::stream_descriptor{lhs._source.get_executor()};
+        lhs._sink = ::asio::posix::stream_descriptor{lhs._sink.get_executor()};
+    }
+
+    template <class CharT, class Traits = std::char_traits<CharT>>
+    explicit patched_async_pipe(
+        ::asio::io_context& ios_source,
+        ::asio::io_context& ios_sink,
+        const boost::process::detail::posix::basic_pipe<CharT, Traits>& p)
+        : _source(ios_source, p.native_source()),
+          _sink(ios_sink, p.native_sink()) {}
+
+    template <class CharT, class Traits = std::char_traits<CharT>>
+    explicit patched_async_pipe(
+        asio::io_context& ios,
+        const boost::process::detail::posix::basic_pipe<CharT, Traits>& p)
+        : patched_async_pipe(ios, ios, p) {}
+
+    template <class CharT, class Traits = std::char_traits<CharT>>
+    inline patched_async_pipe& operator=(
+        const boost::process::detail::posix::basic_pipe<CharT, Traits>& p);
+    inline patched_async_pipe& operator=(const patched_async_pipe& rhs);
+
+    inline patched_async_pipe& operator=(patched_async_pipe&& lhs);
+
+    ~patched_async_pipe() {
+        std::error_code ec;
+        close(ec);
+    }
+
+    template <class CharT, class Traits = std::char_traits<CharT>>
+    inline explicit
+    operator boost::process::detail::posix::basic_pipe<CharT, Traits>() const;
+
+    void cancel() {
+        if (_sink.is_open())
+            _sink.cancel();
+        if (_source.is_open())
+            _source.cancel();
+    }
+
+    void close() {
+        if (_sink.is_open())
+            _sink.close();
+        if (_source.is_open())
+            _source.close();
+    }
+    void close(std::error_code& ec) {
+        if (_sink.is_open())
+            _sink.close(ec);
+        if (_source.is_open())
+            _source.close(ec);
+    }
+
+    bool is_open() const { return _sink.is_open() || _source.is_open(); }
+    void async_close() {
+        if (_sink.is_open())
+            asio::post(_sink.get_executor(), [this] { _sink.close(); });
+        if (_source.is_open())
+            asio::post(_source.get_executor(), [this] { _source.close(); });
+    }
+
+    template <typename MutableBufferSequence>
+    std::size_t read_some(const MutableBufferSequence& buffers) {
+        return _source.read_some(buffers);
+    }
+    template <typename MutableBufferSequence>
+    std::size_t write_some(const MutableBufferSequence& buffers) {
+        return _sink.write_some(buffers);
+    }
+
+    template <typename MutableBufferSequence>
+    std::size_t read_some(const MutableBufferSequence& buffers,
+                          std::error_code& ec) noexcept {
+        return _source.read_some(buffers, ec);
+    }
+    template <typename MutableBufferSequence>
+    std::size_t write_some(const MutableBufferSequence& buffers,
+                           std::error_code& ec) noexcept {
+        return _sink.write_some(buffers, ec);
+    }
+
+    native_handle_type native_source() const {
+        return const_cast<asio::posix::stream_descriptor&>(_source)
+            .native_handle();
+    }
+    native_handle_type native_sink() const {
+        return const_cast<asio::posix::stream_descriptor&>(_sink)
+            .native_handle();
+    }
+
+    template <typename MutableBufferSequence, typename ReadHandler>
+    ASIO_INITFN_RESULT_TYPE(ReadHandler, void(std::error_code, std::size_t))
+    async_read_some(const MutableBufferSequence& buffers,
+                    ReadHandler&& handler) {
+        return _source.async_read_some(buffers,
+                                       std::forward<ReadHandler>(handler));
+    }
+
+    template <typename ConstBufferSequence, typename WriteHandler>
+    ASIO_INITFN_RESULT_TYPE(WriteHandler, void(std::error_code, std::size_t))
+    async_write_some(const ConstBufferSequence& buffers,
+                     WriteHandler&& handler) {
+        return _sink.async_write_some(buffers,
+                                      std::forward<WriteHandler>(handler));
+    }
+
+    const handle_type& sink() const& { return _sink; }
+    const handle_type& source() const& { return _source; }
+
+    handle_type&& sink() && { return std::move(_sink); }
+    handle_type&& source() && { return std::move(_source); }
+
+    handle_type source(::asio::io_context& ios) && {
+        ::asio::posix::stream_descriptor stolen(ios, _source.release());
+        return stolen;
+    }
+    handle_type sink(::asio::io_context& ios) && {
+        ::asio::posix::stream_descriptor stolen(ios, _sink.release());
+        return stolen;
+    }
+
+    handle_type source(::asio::io_context& ios) const& {
+        auto source_in = const_cast<::asio::posix::stream_descriptor&>(_source)
+                             .native_handle();
+        return ::asio::posix::stream_descriptor(ios, ::dup(source_in));
+    }
+    handle_type sink(::asio::io_context& ios) const& {
+        auto sink_in = const_cast<::asio::posix::stream_descriptor&>(_sink)
+                           .native_handle();
+        return ::asio::posix::stream_descriptor(ios, ::dup(sink_in));
+    }
+};
+
+// Even more of a mess, we can't use the nice `bp::std_out = ...`/`bp::std_err =
+// ...` syntax anymore.
+template <int p1, int p2>
+struct patched_async_pipe_out
+    : public boost::process::detail::posix::pipe_out<p1, p2> {
+    patched_async_pipe& pipe;
+    template <typename AsyncPipe>
+    patched_async_pipe_out(AsyncPipe& p)
+        : boost::process::detail::posix::pipe_out<p1, p2>(p.native_sink(),
+                                                          p.native_source()),
+          pipe(p) {}
+
+    template <typename Pipe, typename Executor>
+    static void close(Pipe& pipe, Executor&) {
+        std::error_code ec;
+        std::move(pipe).sink().close(ec);
+    }
+
+    template <typename Executor>
+    void on_error(Executor& exec, const std::error_code&) {
+        close(pipe, exec);
+    }
+
+    template <typename Executor>
+    void on_success(Executor& exec) {
+        close(pipe, exec);
+    }
 };
 
 /**
@@ -160,21 +357,21 @@ class Logger {
      * Write output from an async pipe to the log on a line by line basis.
      * Useful for logging the Wine process's STDOUT and STDERR streams.
      *
-     * @param pipe Some Boost.Asio stream that can be read from. Probably either
+     * @param pipe Some Asio stream that can be read from. Probably either
      *   `patched_async_pipe` or a stream descriptor.
      * @param buffer The buffer that will be used to read from `pipe`.
      * @param prefix Text to prepend to the line before writing to the log.
      */
     template <typename T>
     void async_log_pipe_lines(T& pipe,
-                              boost::asio::streambuf& buffer,
+                              asio::streambuf& buffer,
                               std::string prefix = "") {
-        boost::asio::async_read_until(
+        asio::async_read_until(
             pipe, buffer, '\n',
-            [&, prefix](const boost::system::error_code& error, size_t) {
+            [&, prefix](const std::error_code& error, size_t) {
                 // When we get an error code then that likely means that the
                 // pipe has been clsoed and we have reached the end of the file
-                if (error.failed()) {
+                if (error) {
                     return;
                 }
 

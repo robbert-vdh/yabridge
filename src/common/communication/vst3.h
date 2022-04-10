@@ -57,8 +57,8 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
      *
      * @see Sockets::connect
      */
-    Vst3MessageHandler(boost::asio::io_context& io_context,
-                       boost::asio::local::stream_protocol::endpoint endpoint,
+    Vst3MessageHandler(asio::io_context& io_context,
+                       asio::local::stream_protocol::endpoint endpoint,
                        bool listen)
         : AdHocSocketHandler<Thread>(io_context, endpoint, listen) {}
 
@@ -138,7 +138,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         // messages from arriving out of order. `AdHocSocketHandler::send()`
         // will either use a long-living primary socket, or if that's currently
         // in use it will spawn a new socket for us.
-        this->send([&](boost::asio::local::stream_protocol::socket& socket) {
+        this->send([&](asio::local::stream_protocol::socket& socket) {
             write_object(socket, Request(object), buffer);
             read_object<TResponse>(socket, response_object, buffer);
         });
@@ -205,7 +205,7 @@ class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
         // we receive works in the same way regardless of which socket we're
         // using
         const auto process_message =
-            [&](boost::asio::local::stream_protocol::socket& socket) {
+            [&](asio::local::stream_protocol::socket& socket) {
                 // The persistent buffer is only used when the
                 // `persistent_buffers` template value is enabled, but we'll
                 // always use the thread local persistent object. Because of
@@ -310,7 +310,7 @@ class Vst3Sockets final : public Sockets {
      *
      * @see Vst3Sockets::connect
      */
-    Vst3Sockets(boost::asio::io_context& io_context,
+    Vst3Sockets(asio::io_context& io_context,
                 const ghc::filesystem::path& endpoint_base_dir,
                 bool listen)
         : Sockets(endpoint_base_dir),
@@ -513,7 +513,7 @@ class Vst3Sockets final : public Sockets {
                           audio_processor_buffer);
     }
 
-    boost::asio::io_context& io_context_;
+    asio::io_context& io_context_;
 
     /**
      * Every `IAudioProcessor` or `IComponent` instance (which likely implements
