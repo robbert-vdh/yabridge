@@ -343,7 +343,7 @@ class Vst2Sockets final : public Sockets {
      * @see Vst2Sockets::connect
      */
     Vst2Sockets(boost::asio::io_context& io_context,
-                const boost::filesystem::path& endpoint_base_dir,
+                const ghc::filesystem::path& endpoint_base_dir,
                 bool listen)
         : Sockets(endpoint_base_dir),
           host_vst_dispatch_(io_context,

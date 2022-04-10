@@ -23,7 +23,7 @@
 #include "../common/utils.h"
 
 namespace bp = boost::process;
-namespace fs = boost::filesystem;
+namespace fs = ghc::filesystem;
 
 HostProcess::HostProcess(boost::asio::io_context& io_context,
                          Logger& logger,
@@ -157,7 +157,8 @@ GroupHost::GroupHost(boost::asio::io_context& io_context,
         // because it should run independently of this yabridge instance as
         // it will likely outlive it.
         bp::child group_host =
-            launch_host(host_path_, group_socket_path,
+            // FIXME: Boost.Filesystem conversion
+            launch_host(host_path_, group_socket_path.string(),
                         bp::env = plugin_info.create_host_env());
         group_host.detach();
 

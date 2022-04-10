@@ -19,11 +19,7 @@
 #include <optional>
 
 #include <sys/resource.h>
-
-#ifdef __WINE__
-#include "../wine-host/boost-fix.h"
-#endif
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 /**
  * The interval in seconds between synchronizing the Wine plugin host's audio
@@ -79,7 +75,7 @@ overload(Ts...) -> overload<Ts...>;
  * Return the path to the directory for story temporary files. This will be
  * `$XDG_RUNTIME_DIR` if set, and `/tmp` otherwise.
  */
-boost::filesystem::path get_temporary_directory();
+ghc::filesystem::path get_temporary_directory();
 
 /**
  * Get the current thread's scheduling priority if the thread is using

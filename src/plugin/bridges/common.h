@@ -236,7 +236,7 @@ class PluginBridge {
                 [&](const OverridenWinePrefix& prefix) {
                     init_msg << prefix.value.string() << " <overridden>";
                 },
-                [&](const boost::filesystem::path& prefix) {
+                [&](const ghc::filesystem::path& prefix) {
                     init_msg << prefix.string();
                 },
                 [&](const DefaultWinePrefix&) { init_msg << "<default>"; },

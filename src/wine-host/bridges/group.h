@@ -123,7 +123,7 @@ class GroupBridge {
      *   STDOUT and STDERR streams of the current process will be redirected to
      *   a pipe so they can be properly written to a log file.
      */
-    explicit GroupBridge(boost::filesystem::path group_socket_path);
+    explicit GroupBridge(ghc::filesystem::path group_socket_path);
 
     ~GroupBridge() noexcept;
 

@@ -19,7 +19,7 @@
 #include <fstream>
 #include <sstream>
 
-namespace fs = boost::filesystem;
+namespace fs = ghc::filesystem;
 
 LibArchitecture find_dll_architecture(const fs::path& plugin_path) {
     std::ifstream file(plugin_path, std::ifstream::binary | std::ifstream::in);

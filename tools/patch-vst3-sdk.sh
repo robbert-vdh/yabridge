@@ -68,10 +68,9 @@ replace_char16 "using Converter = std::wstring_convert<std::codecvt_utf8_utf16<c
 sed -i 's/\bgeneric_u8string\b/generic_string/g' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
 
 # libstdc++fs doesn't work under Winelib, for whatever reason that might be.
-# We'll patch the Win32 module loading to use Boost.Filesystem instead.
-sed -i 's/^#include <\(experimental\/\)\?filesystem>$/#include <boost\/filesystem.hpp>/' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
-sed -i 's/^namespace filesystem = std\(::experimental\)\?::filesystem;$/namespace filesystem = boost::filesystem;/' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
-sed -i 's/\bfile_type::directory\b/file_type::directory_file/g' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
+# We'll patch the Win32 module loading to use `ghc::filesystem` instead.
+sed -i 's/^#include <\(experimental\/\)\?filesystem>$/#include <ghc\/filesystem.hpp>/' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
+sed -i 's/^namespace filesystem = std\(::experimental\)\?::filesystem;$/namespace filesystem = ghc::filesystem;/' "$sdk_directory/public.sdk/source/vst/hosting/module_win32.cpp"
 
 # Wine uses the narrow versions of everything by default, and in Unity builds
 # we need to explicitly use the UTF-16 version here.

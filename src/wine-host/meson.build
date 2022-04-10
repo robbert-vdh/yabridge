@@ -11,9 +11,9 @@ if is_64bit_system
     configuration_dep,
 
     boost_dep,
-    boost_filesystem_64bit_dep,
     bitsery_dep,
     function2_dep,
+    ghc_filesystem_dep,
     rt_dep,
     tomlplusplus_dep,
     wine_ole32_dep,
@@ -36,7 +36,7 @@ if with_bitbridge
     configuration_dep,
 
     boost_dep,
-    boost_filesystem_32bit_dep,
+    ghc_filesystem_dep,
     bitsery_dep,
     function2_dep,
     rt_dep,

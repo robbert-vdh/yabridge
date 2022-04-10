@@ -26,7 +26,7 @@
 
 #include "utils.h"
 
-namespace fs = boost::filesystem;
+namespace fs = ghc::filesystem;
 
 Configuration::Configuration() noexcept {}
 

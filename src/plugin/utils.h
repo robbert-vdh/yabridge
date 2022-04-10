@@ -34,7 +34,7 @@ struct DefaultWinePrefix {};
  * environment variable.
  */
 struct OverridenWinePrefix {
-    boost::filesystem::path value;
+    ghc::filesystem::path value;
 };
 
 /**
@@ -81,7 +81,7 @@ struct PluginInfo {
      * Return the path to the actual Wine prefix in use, taking into account
      * `WINEPREFIX` overrides and the default `~/.wine` fallback.
      */
-    boost::filesystem::path normalize_wine_prefix() const;
+    ghc::filesystem::path normalize_wine_prefix() const;
 
     /**
      * Return the installed Wine version. This is obtained by from `wine
@@ -103,7 +103,7 @@ struct PluginInfo {
      * module (since that has to be bundle on Linux) but rather the .so file
      * contained in that bundle.
      */
-    const boost::filesystem::path native_library_path_;
+    const ghc::filesystem::path native_library_path_;
 
    private:
     /**
@@ -113,7 +113,7 @@ struct PluginInfo {
      * instead. We store this intermediate value so we can determine the
      * plugin's architecture.
      */
-    const boost::filesystem::path windows_library_path_;
+    const ghc::filesystem::path windows_library_path_;
 
    public:
     const LibArchitecture plugin_arch_;
@@ -132,7 +132,7 @@ struct PluginInfo {
      *
      * https://developer.steinberg.help/pages/viewpage.action?pageId=9798275
      */
-    const boost::filesystem::path windows_plugin_path_;
+    const ghc::filesystem::path windows_plugin_path_;
 
     /**
      * The Wine prefix to use for hosting `windows_plugin_path_`. If the
@@ -144,7 +144,7 @@ struct PluginInfo {
      * prefix will be used instead.
      */
     const std::
-        variant<OverridenWinePrefix, boost::filesystem::path, DefaultWinePrefix>
+        variant<OverridenWinePrefix, ghc::filesystem::path, DefaultWinePrefix>
             wine_prefix_;
 };
 
@@ -174,7 +174,7 @@ std::string join_quoted_strings(std::vector<std::string>& strings);
  * @return A prefix string for log messages.
  */
 std::string create_logger_prefix(
-    const boost::filesystem::path& endpoint_base_dir);
+    const ghc::filesystem::path& endpoint_base_dir);
 
 /**
  * Finds the Wine VST host (either `yabridge-host.exe` or `yabridge-host.exe`
@@ -197,8 +197,8 @@ std::string create_logger_prefix(
  * @return The a path to the VST host, if found.
  * @throw std::runtime_error If the Wine VST host could not be found.
  */
-boost::filesystem::path find_vst_host(
-    const boost::filesystem::path& this_plugin_path,
+ghc::filesystem::path find_vst_host(
+    const ghc::filesystem::path& this_plugin_path,
     LibArchitecture plugin_arch,
     bool use_plugin_groups);
 
@@ -220,9 +220,9 @@ boost::filesystem::path find_vst_host(
  * @return A socket endpoint path that corresponds to the format described
  *   above.
  */
-boost::filesystem::path generate_group_endpoint(
+ghc::filesystem::path generate_group_endpoint(
     const std::string& group_name,
-    const boost::filesystem::path& wine_prefix,
+    const ghc::filesystem::path& wine_prefix,
     const LibArchitecture architecture);
 
 /**
@@ -233,6 +233,8 @@ boost::filesystem::path generate_group_endpoint(
  * environment variable can be a big hurdle if you've never done anything like
  * that before. And since this is the recommended installation location, it
  * makes sense to also search there by default.
+ *
+ * FIXME: Replace Boost.Filesystem
  */
 std::vector<boost::filesystem::path> get_augmented_search_path();
 
@@ -240,7 +242,7 @@ std::vector<boost::filesystem::path> get_augmented_search_path();
  * Return a path to this `.so` file. This can be used to find out from where
  * this link to or copy of `libyabridge-{vst2,vst3}.so` was loaded.
  */
-boost::filesystem::path get_this_file_location();
+ghc::filesystem::path get_this_file_location();
 
 /**
  * Load the configuration that belongs to a copy of or symlink to
@@ -263,7 +265,7 @@ boost::filesystem::path get_this_file_location();
  *
  * @see Configuration
  */
-Configuration load_config_for(const boost::filesystem::path& yabridge_path);
+Configuration load_config_for(const ghc::filesystem::path& yabridge_path);
 
 /**
  * Send a desktop notification using `notify-send`. Used for diagnostics when a
@@ -299,14 +301,14 @@ bool send_notification(const std::string& title,
  * @return The path to the *file* found, or `std::nullopt` if the file could not
  *   be found.
  */
-template <invocable_returning<bool, const boost::filesystem::path&> F =
-              bool(const boost::filesystem::path&)>
-std::optional<boost::filesystem::path> find_dominating_file(
+template <invocable_returning<bool, const ghc::filesystem::path&> F =
+              bool(const ghc::filesystem::path&)>
+std::optional<ghc::filesystem::path> find_dominating_file(
     const std::string& filename,
-    boost::filesystem::path starting_dir,
-    F&& predicate = boost::filesystem::exists) {
+    ghc::filesystem::path starting_dir,
+    F&& predicate = ghc::filesystem::exists) {
     while (starting_dir != "") {
-        const boost::filesystem::path candidate = starting_dir / filename;
+        const ghc::filesystem::path candidate = starting_dir / filename;
         if (predicate(candidate)) {
             return candidate;
         }

@@ -48,7 +48,7 @@ constexpr int extended_max_win32_messages = 8192;
 constexpr unsigned int juce_message_id = WM_USER + 123;
 
 HostBridge::HostBridge(MainContext& main_context,
-                       boost::filesystem::path plugin_path,
+                       ghc::filesystem::path plugin_path,
                        pid_t parent_pid)
     : plugin_path_(plugin_path),
       main_context_(main_context),

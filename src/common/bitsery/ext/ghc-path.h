@@ -16,10 +16,7 @@
 
 #pragma once
 
-#ifdef __WINE__
-#include "../wine-host/boost-fix.h"
-#endif
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 #include <bitsery/details/serialization_common.h>
 #include <bitsery/traits/core/traits.h>
@@ -31,17 +28,17 @@ namespace ext {
  * An adapter for serializing and deserializing filesystem paths since they're
  * not mutable.
  */
-class BoostPath {
+class GhcPath {
    public:
     template <typename Ser, typename Fnc>
-    void serialize(Ser& ser, const boost::filesystem::path& path, Fnc&&) const {
+    void serialize(Ser& ser, const ghc::filesystem::path& path, Fnc&&) const {
         auto path_str = path.string();
         ser.text1b(path_str, 4096);
     }
 
     template <typename Des, typename Fnc>
-    void deserialize(Des& des, boost::filesystem::path& path, Fnc&&) const {
-        boost::filesystem::path::string_type path_str{};
+    void deserialize(Des& des, ghc::filesystem::path& path, Fnc&&) const {
+        ghc::filesystem::path::string_type path_str{};
         des.text1b(path_str, 4096);
         path = path_str;
     }
@@ -52,7 +49,7 @@ class BoostPath {
 namespace traits {
 
 template <>
-struct ExtensionTraits<ext::BoostPath, boost::filesystem::path> {
+struct ExtensionTraits<ext::GhcPath, ghc::filesystem::path> {
     using TValue = void;
     static constexpr bool SupportValueOverload = false;
     static constexpr bool SupportObjectOverload = true;

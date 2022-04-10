@@ -16,10 +16,7 @@
 
 #pragma once
 
-#ifdef __WINE__
-#include "../wine-host/boost-fix.h"
-#endif
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 // Utilities and tags for plugin types and architectures
 
@@ -58,7 +55,7 @@ void serialize(S& s, PluginType& plugin_type) {
  * @return The detected architecture.
  * @throw std::runtime_error If the file is not a .dll file.
  */
-LibArchitecture find_dll_architecture(const boost::filesystem::path&);
+LibArchitecture find_dll_architecture(const ghc::filesystem::path&);
 
 PluginType plugin_type_from_string(const std::string& plugin_type) noexcept;
 std::string plugin_type_to_string(const PluginType& plugin_type);

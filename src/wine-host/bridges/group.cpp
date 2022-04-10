@@ -19,7 +19,6 @@
 #include "../boost-fix.h"
 
 #include <unistd.h>
-#include <boost/process/environment.hpp>
 #include <regex>
 
 #include "../../common/communication/common.h"
@@ -30,7 +29,7 @@
 
 // FIXME: `std::filesystem` is broken in wineg++, at least under Wine 5.8. Any
 //        path operation will thrown an encoding related error
-namespace fs = boost::filesystem;
+namespace fs = ghc::filesystem;
 
 using namespace std::literals::chrono_literals;
 
@@ -86,7 +85,7 @@ StdIoCapture::~StdIoCapture() noexcept {
     close(pipe_fd_[0]);
 }
 
-GroupBridge::GroupBridge(boost::filesystem::path group_socket_path)
+GroupBridge::GroupBridge(ghc::filesystem::path group_socket_path)
     : logger_(Logger::create_from_environment(
           create_logger_prefix(group_socket_path))),
       main_context_(),
@@ -191,7 +190,7 @@ void GroupBridge::accept_requests() {
             // this process to crash during its initialization to prevent
             // waiting indefinitely on the sockets to be connected to.
             const auto request = read_object<HostRequest>(socket);
-            write_object(socket, HostResponse{boost::this_process::get_id()});
+            write_object(socket, HostResponse{.pid = getpid()});
 
             // The plugin has to be initiated on the IO context's thread because
             // this has to be done on the same thread that's handling messages,

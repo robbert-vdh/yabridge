@@ -28,6 +28,7 @@
 
 #include <windows.h>
 #include <boost/container/small_vector.hpp>
+#include <ghc/filesystem.hpp>
 
 #include "utils.h"
 
@@ -149,7 +150,7 @@ class WineXdndProxy {
      * selection and setting up the event listeners.
      */
     void begin_xdnd(const boost::container::small_vector_base<
-                        boost::filesystem::path>& file_paths,
+                        ghc::filesystem::path>& file_paths,
                     HWND tracker_window);
 
     /**

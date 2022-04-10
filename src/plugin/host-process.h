@@ -20,10 +20,10 @@
 
 #include <boost/asio/local/stream_protocol.hpp>
 #include <boost/asio/streambuf.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/process/child.hpp>
 #include <boost/process/extend.hpp>
 #include <boost/process/io.hpp>
+#include <ghc/filesystem.hpp>
 
 #include "../common/communication/common.h"
 #include "../common/logging/common.h"
@@ -46,7 +46,7 @@ class HostProcess {
      * is chosen depending on the architecture of the plugin's DLL file and on
      * the hosting mode.
      */
-    virtual boost::filesystem::path path() = 0;
+    virtual ghc::filesystem::path path() = 0;
 
     /**
      * Return true if the host process is still running. Used during startup to
@@ -69,7 +69,7 @@ class HostProcess {
      * multiple arugments.
      */
     template <typename... Args>
-    boost::process::child launch_host(boost::filesystem::path host_path,
+    boost::process::child launch_host(ghc::filesystem::path host_path,
                                       Args&&... args) {
         return boost::process::child(
 #ifdef WITH_WINEDBG
@@ -88,7 +88,8 @@ class HostProcess {
             host_path.string() + ".so",
 #endif  // WINEDBG_LEGACY_ARGUMENT_QUOTING
 #else
-            host_path,
+            // FIXME: Replace Boost.Filesystem
+            host_path.string(),
 #endif  // WITH_WINEDBG
             boost::process::std_out = stdout_pipe_,
             boost::process::std_err = stderr_pipe_,
@@ -207,13 +208,13 @@ class IndividualHost : public HostProcess {
                    const PluginInfo& plugin_info,
                    const HostRequest& host_request);
 
-    boost::filesystem::path path() override;
+    ghc::filesystem::path path() override;
     bool running() override;
     void terminate() override;
 
    private:
     const PluginInfo& plugin_info_;
-    boost::filesystem::path host_path_;
+    ghc::filesystem::path host_path_;
     boost::process::child host_;
 };
 
@@ -255,13 +256,13 @@ class GroupHost : public HostProcess {
               const PluginInfo& plugin_info,
               const HostRequest& host_request);
 
-    boost::filesystem::path path() override;
+    ghc::filesystem::path path() override;
     bool running() noexcept override;
     void terminate() override;
 
    private:
     const PluginInfo& plugin_info_;
-    boost::filesystem::path host_path_;
+    ghc::filesystem::path host_path_;
 
     /**
      * We want to either connect to an existing group host process, or spawn a

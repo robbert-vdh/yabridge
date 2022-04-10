@@ -16,12 +16,12 @@
 
 #include "utils.h"
 
+#include <stdlib.h>
+
 #include <sched.h>
 #include <xmmintrin.h>
-#include <boost/process/environment.hpp>
 
-namespace bp = boost::process;
-namespace fs = boost::filesystem;
+namespace fs = ghc::filesystem;
 
 using namespace std::literals::string_view_literals;
 
@@ -40,13 +40,12 @@ constexpr char disable_watchdog_timer_env_var[] = "YABRIDGE_NO_WATCHDOG";
 constexpr char temp_dir_override_env_var[] = "YABRIDGE_TEMP_DIR";
 
 fs::path get_temporary_directory() {
-    const bp::environment env = boost::this_process::environment();
-    if (const auto directory = env.find(temp_dir_override_env_var);
-        directory != env.end()) {
-        return directory->to_string();
-    } else if (const auto directory = env.find("XDG_RUNTIME_DIR");
-               directory != env.end()) {
-        return directory->to_string();
+    // NOLINTNEXTLINE(concurrency-mt-unsafe)
+    if (const auto directory = getenv(temp_dir_override_env_var)) {
+        return fs::path(directory);
+        // NOLINTNEXTLINE(concurrency-mt-unsafe)
+    } else if (const auto directory = getenv("XDG_RUNTIME_DIR")) {
+        return fs::path(directory);
     } else {
         return fs::temp_directory_path();
     }
@@ -105,13 +104,13 @@ bool pid_running(pid_t pid) {
     // processes and zombies, and a terminated group host process will always be
     // left as a zombie process. If the process is active, then
     // `/proc/<pid>/{cwd,exe,root}` will be valid symlinks.
-    boost::system::error_code err;
+    std::error_code err;
     fs::canonical("/proc/" + std::to_string(pid) + "/exe", err);
 
     // NOTE: We can get a `EACCES` here if we don't have permissions to read
     //       this process's memory. This does mean that the process is still
     //       running.
-    return !err.failed() || err.value() == EACCES;
+    return !err || err.value() == EACCES;
 }
 
 std::string url_encode_path(std::string path) {

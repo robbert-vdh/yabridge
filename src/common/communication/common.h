@@ -31,7 +31,7 @@
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/container/small_vector.hpp>
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 #include "../bitsery/traits/small-vector.h"
 #include "../logging/common.h"
@@ -268,7 +268,7 @@ inline T read_object(Socket& socket) {
  * @param plugin_name The name of the plugin we're generating endpoints for.
  *   Used as a visual indication of what plugin is using this endpoint.
  */
-boost::filesystem::path generate_endpoint_base(const std::string& plugin_name);
+ghc::filesystem::path generate_endpoint_base(const std::string& plugin_name);
 
 /**
  * Manages all the sockets used for communicating between the plugin and the
@@ -287,7 +287,7 @@ class Sockets {
      *
      * @see Sockets::connect
      */
-    Sockets(const boost::filesystem::path& endpoint_base_dir)
+    Sockets(const ghc::filesystem::path& endpoint_base_dir)
         : base_dir_(endpoint_base_dir) {}
 
     /**
@@ -305,9 +305,9 @@ class Sockets {
             //       there's now a safeguard against that very thing. Hopefully
             //       this should never be needed, but if it is, then I'm glad
             //       we'll have it!
-            const boost::filesystem::path temp_dir = get_temporary_directory();
+            const ghc::filesystem::path temp_dir = get_temporary_directory();
             if (base_dir_.string().starts_with(temp_dir.string())) {
-                boost::filesystem::remove_all(base_dir_);
+                ghc::filesystem::remove_all(base_dir_);
             } else {
                 Logger logger = Logger::create_exception_logger();
 
@@ -317,7 +317,7 @@ class Sockets {
                            "'");
                 logger.log("");
             }
-        } catch (const boost::filesystem::filesystem_error&) {
+        } catch (const ghc::filesystem::filesystem_error&) {
             // There should not be any filesystem errors since only one side
             // removes the files, but if we somehow can't delete the file
             // then we can just silently ignore this
@@ -351,7 +351,7 @@ class Sockets {
      * The base directory for our socket endpoints. All `*_endpoint` variables
      * below are files within this directory.
      */
-    const boost::filesystem::path base_dir_;
+    const ghc::filesystem::path base_dir_;
 };
 
 /**
@@ -376,8 +376,8 @@ class SocketHandler {
                   bool listen)
         : endpoint_(endpoint), socket_(io_context) {
         if (listen) {
-            boost::filesystem::create_directories(
-                boost::filesystem::path(endpoint.path()).parent_path());
+            ghc::filesystem::create_directories(
+                ghc::filesystem::path(endpoint.path()).parent_path());
             acceptor_.emplace(io_context, endpoint);
         }
     }
@@ -577,8 +577,8 @@ class AdHocSocketHandler {
                        bool listen)
         : io_context_(io_context), endpoint_(endpoint), socket_(io_context) {
         if (listen) {
-            boost::filesystem::create_directories(
-                boost::filesystem::path(endpoint.path()).parent_path());
+            ghc::filesystem::create_directories(
+                ghc::filesystem::path(endpoint.path()).parent_path());
             acceptor_.emplace(io_context, endpoint);
         }
     }
@@ -598,7 +598,7 @@ class AdHocSocketHandler {
             // potentially on the other side of the connection in the case
             // where we're handling `vst_host_callback_` VST2 events
             acceptor_.reset();
-            boost::filesystem::remove(endpoint_.path());
+            ghc::filesystem::remove(endpoint_.path());
         } else {
             socket_.connect(endpoint_);
         }

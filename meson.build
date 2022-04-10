@@ -46,8 +46,10 @@ compiler_options = [
   '-fvisibility-inlines-hidden',
   # Disable the use of concepts in Boost.Asio until Boost 1.73 gets released
   # https://github.com/boostorg/asio/issues/312
+  # TODO: Rename after switching to non-Boost ASIO
   '-DBOOST_ASIO_DISABLE_CONCEPTS',
   # Boost.Process's auto detection for vfork() support doesn't seem to work
+  # TODO: Remove after adding our own library
   '-DBOOST_POSIX_HAS_VFORK=1',
   # We use an intrinsic to force flush-to-zero. SSE2 is always enabled in x86_64
   # CPUs, but when we're compiling the 32-bit bitbridge we need to manually add
@@ -242,6 +244,7 @@ else
   bitsery_dep = dependency('bitsery', version : '>=5.2.0')
 endif
 function2_dep = dependency('function2', version : '>=4.0.0')
+ghc_filesystem_dep = dependency('ghc_filesystem', version : '>=1.5.0')
 threads_dep = dependency('threads')
 tomlplusplus_dep = dependency('tomlplusplus', version : '>=2.0.0')
 
@@ -298,6 +301,7 @@ shared_library(
       : boost_filesystem_64bit_dep,
     bitsery_dep,
     dl_dep,
+    ghc_filesystem_dep,
     rt_dep,
     threads_dep,
     tomlplusplus_dep,
@@ -323,6 +327,7 @@ if with_vst3
       bitsery_dep,
       dl_dep,
       function2_dep,
+      ghc_filesystem_dep,
       rt_dep,
       threads_dep,
       tomlplusplus_dep,

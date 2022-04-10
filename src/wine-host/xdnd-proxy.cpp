@@ -23,7 +23,7 @@
 
 using namespace std::literals::chrono_literals;
 
-namespace fs = boost::filesystem;
+namespace fs = ghc::filesystem;
 
 /**
  * The window class name Wine uses for its `DoDragDrop()` tracker window.
@@ -193,7 +193,7 @@ WineXdndProxy::Handle WineXdndProxy::get_handle() {
 }
 
 void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
-                                   boost::filesystem::path>& file_paths,
+                                   ghc::filesystem::path>& file_paths,
                                HWND tracker_window) {
     if (file_paths.empty()) {
         throw std::runtime_error("Cannot drag-and-drop without any files");
@@ -243,8 +243,8 @@ void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
         [](size_t size, const auto& path) {
             // Account for the protocol, the trailing line feed, and URL
             // encoding
-            return size +
-                   static_cast<size_t>(static_cast<double>(path.size()) * 1.2);
+            return size + static_cast<size_t>(
+                              static_cast<double>(path.native().size()) * 1.2);
         }));
     for (const auto& path : file_paths) {
         dragged_files_uri_list_.append(file_protocol);
@@ -849,10 +849,10 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                                 const char* unix_path =
                                     wine_get_unix_file_name(file_name.data());
                                 if (unix_path) {
-                                    boost::system::error_code err;
+                                    std::error_code err;
                                     const fs::path cannonical_path =
-                                        boost::filesystem::canonical(unix_path,
-                                                                     err);
+                                        ghc::filesystem::canonical(unix_path,
+                                                                   err);
                                     if (err) {
                                         dragged_files.emplace_back(unix_path);
                                     } else {
@@ -875,9 +875,9 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                     const char* unix_path =
                         wine_get_unix_file_name(storage.lpszFileName);
                     if (unix_path) {
-                        boost::system::error_code err;
+                        std::error_code err;
                         const fs::path cannonical_path =
-                            boost::filesystem::canonical(unix_path, err);
+                            ghc::filesystem::canonical(unix_path, err);
                         if (err) {
                             dragged_files.emplace_back(unix_path);
                         } else {

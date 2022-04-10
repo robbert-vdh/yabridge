@@ -20,7 +20,7 @@
 
 #include "../utils.h"
 
-namespace fs = boost::filesystem;
+namespace fs = ghc::filesystem;
 
 /**
  * Used for generating random identifiers.
@@ -28,7 +28,7 @@ namespace fs = boost::filesystem;
 constexpr char alphanumeric_characters[] =
     "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-boost::filesystem::path generate_endpoint_base(const std::string& plugin_name) {
+ghc::filesystem::path generate_endpoint_base(const std::string& plugin_name) {
     fs::path temp_directory = get_temporary_directory();
 
     std::random_device random_device;

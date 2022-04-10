@@ -18,7 +18,7 @@
 
 #include "../boost-fix.h"
 
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 #include "../../common/logging/common.h"
 #include "../utils.h"
@@ -33,7 +33,7 @@
 class HostBridge {
    protected:
     HostBridge(MainContext& main_context,
-               boost::filesystem::path plugin_path,
+               ghc::filesystem::path plugin_path,
                pid_t parent_pid);
 
    public:
@@ -98,7 +98,7 @@ class HostBridge {
     /**
      * The path to the .dll being loaded in the Wine plugin host.
      */
-    const boost::filesystem::path plugin_path_;
+    const ghc::filesystem::path plugin_path_;
 
    protected:
     /**

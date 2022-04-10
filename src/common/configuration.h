@@ -16,15 +16,12 @@
 
 #pragma once
 
-#ifdef __WINE__
-#include "../wine-host/boost-fix.h"
-#endif
-#include <boost/filesystem.hpp>
-
 #include <chrono>
 #include <optional>
 
-#include "bitsery/ext/boost-path.h"
+#include <ghc/filesystem.hpp>
+
+#include "bitsery/ext/ghc-path.h"
 #include "bitsery/ext/in-place-optional.h"
 
 /**
@@ -71,8 +68,8 @@ class Configuration {
      *
      * @see ../plugin/utils.h:load_config_for
      */
-    Configuration(const boost::filesystem::path& config_path,
-                  const boost::filesystem::path& yabridge_path);
+    Configuration(const ghc::filesystem::path& config_path,
+                  const ghc::filesystem::path& yabridge_path);
 
     /**
      * The name of the plugin group that should be used for the plugin this
@@ -92,7 +89,7 @@ class Configuration {
      * `<temporary_directory>/yabridge-plugin-output.log`, or it can be set to
      * an absolute path. (we don't try to expand tildes)
      */
-    std::optional<boost::filesystem::path> disable_pipes;
+    std::optional<ghc::filesystem::path> disable_pipes;
 
     /**
      * If this is set to `true`, then the after every resize we will move the
@@ -167,7 +164,7 @@ class Configuration {
     /**
      * The path to the configuration file that was parsed.
      */
-    std::optional<boost::filesystem::path> matched_file;
+    std::optional<ghc::filesystem::path> matched_file;
 
     /**
      * The matched glob pattern in the above configuration file.
@@ -199,7 +196,7 @@ class Configuration {
               [](S& s, auto& v) { s.text1b(v, 4096); });
 
         s.ext(disable_pipes, bitsery::ext::InPlaceOptional(),
-              [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath{}); });
+              [](S& s, auto& v) { s.ext(v, bitsery::ext::GhcPath{}); });
         s.value1b(editor_coordinate_hack);
         s.value1b(editor_force_dnd);
         s.value1b(editor_xembed);
@@ -210,7 +207,7 @@ class Configuration {
         s.value1b(vst3_prefer_32bit);
 
         s.ext(matched_file, bitsery::ext::InPlaceOptional(),
-              [](S& s, auto& v) { s.ext(v, bitsery::ext::BoostPath{}); });
+              [](S& s, auto& v) { s.ext(v, bitsery::ext::GhcPath{}); });
         s.ext(matched_pattern, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.text1b(v, 4096); });
 
