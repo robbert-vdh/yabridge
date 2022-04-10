@@ -64,6 +64,7 @@ host_common_sources = files(
   '../common/logging/vst2.cpp',
   '../common/audio-shm.cpp',
   '../common/plugins.cpp',
+  '../common/process.cpp',
   '../common/utils.cpp',
   'bridges/common.cpp',
   'bridges/vst2.cpp',
