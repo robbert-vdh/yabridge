@@ -22,7 +22,7 @@ config_header = configure_file(
 #       directory, like when building the `yabridge` AUR package. In that case
 #       `vcs_tag()` should always fall back to the Meson project version.
 version_header = vcs_tag(
-  command : ['git', '--git-dir=' + (meson.source_root() / '.git'), 'describe', '--always'],
+  command : ['git', '--git-dir=' + (meson.project_source_root() / '.git'), 'describe', '--always'],
   input : 'version.h.in',
   output : 'version.h',
   replace_string : '@VCS_VERSION@'

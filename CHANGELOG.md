@@ -18,6 +18,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed an obscure issue with VST3 plugins crashing in **Ardour** on
   Arch/Manjaro because of misreported parameter queue lengths.
 
+### Packaging notes
+
+- Fixed a deprecation warning in the Meson build, causing the minimum supported
+  Meson version to be bumped up to **Meson 0.56** from 0.55.
+
 ## [3.8.1] - 2022-03-08
 
 ### Changed

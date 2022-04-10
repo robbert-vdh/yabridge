@@ -2,7 +2,7 @@ project(
   'yabridge',
   'cpp',
   version : '3.8.1',
-  meson_version : '>=0.55',
+  meson_version : '>=0.56',
   default_options : [
     'warning_level=3',
     'cpp_std=c++2a',
