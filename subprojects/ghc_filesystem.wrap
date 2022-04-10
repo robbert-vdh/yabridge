@@ -1,0 +1,9 @@
+[wrap-git]
+url = https://github.com/gulrak/filesystem.git
+# This is tag v1.5.12
+revision = cd6805e94dd5d6346be1b75a54cdc27787319dd2
+depth = 1
+patch_directory = ghc_filesystem
+
+[provide]
+ghc_filesystem = ghc_filesystem_dep

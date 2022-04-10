@@ -20,6 +20,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Packaging notes
 
+- Added a dependency on the headers-only
+  [`ghc::filesystem`](https://github.com/gulrak/filesystem) library to replace
+  Boost.Filesystem.
 - Fixed a deprecation warning in the Meson build, causing the minimum supported
   Meson version to be bumped up to **Meson 0.56** from 0.55.
 

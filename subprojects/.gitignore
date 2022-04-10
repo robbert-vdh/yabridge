@@ -3,10 +3,12 @@
 # The above pattern doesn't match submodules
 /bitsery
 /function2
+/ghc_filesystem
 /tomlplusplus
 /vst3
 
 # And we obviously don't want to ignore our overlays
 !/packagefiles/bitsery
 !/packagefiles/function2
+!/packagefiles/ghc_filesystem
 !/function2-patch/*
