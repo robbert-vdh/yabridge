@@ -132,7 +132,7 @@ std::string PluginInfo::wine_version() const {
     process.arg("--version");
     process.environment(create_host_env_2());
 
-    auto result = process.spawn_get_stdout_line();
+    const auto result = process.spawn_get_stdout_line();
     return std::visit(
         overload{
             [](std::string version_string) -> std::string {
@@ -462,13 +462,6 @@ Configuration load_config_for(const fs::path& yabridge_path) {
 bool send_notification(const std::string& title,
                        const std::string body,
                        bool append_origin) {
-    // FIXME: Replace Boost.Filesystem
-    const boost::filesystem::path notify_send_path =
-        bp::search_path("notify-send");
-    if (notify_send_path.empty()) {
-        return false;
-    }
-
     // I think there's a zero chance that we're going to call this function with
     // anything that even somewhat resembles HTML, but we should still do a
     // basic XML escape anyways.
@@ -493,16 +486,20 @@ bool send_notification(const std::string& title,
         }
     }
 
-    // TODO: Also use a custom process here, and wrap the above code in a
-    //       class
-    try {
-        return bp::system(notify_send_path, "--urgency=normal",
-                          "--expire-time=15000", "--app-name=yabridge", title,
-                          formatted_body.str(),
-                          bp::posix::use_vfork) == EXIT_SUCCESS;
-    } catch (const boost::process::process_error&) {
-        // We will have printed the message to the terminal anyways, so if the
-        // user doesn't have libnotify installed we'll just fail silently
-        return false;
-    }
+    Process process("notify-send");
+    process.arg("--urgency=normal");
+    process.arg("--app-name=yabridge");
+    process.arg(title);
+    process.arg(formatted_body.str());
+
+    // We will have printed the message to the terminal anyways, so if the user
+    // doesn't have libnotify installed we'll just fail silently
+    const auto result = process.spawn_get_status();
+    return std::visit(
+        overload{
+            [](int status) -> bool { return status == EXIT_SUCCESS; },
+            [](const Process::CommandNotFound&) -> bool { return false; },
+            [](const std::error_code&) -> bool { return false; },
+        },
+        result);
 }

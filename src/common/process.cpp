@@ -115,7 +115,7 @@ std::optional<int> Process::Handle::wait() const noexcept {
 
 Process::Process(std::string command) : command_(command) {}
 
-Process::StringResult Process::spawn_get_stdout_line() {
+Process::StringResult Process::spawn_get_stdout_line() const {
     /// We'll read the results from a pipe. The child writes to the second pipe,
     /// we'll read from the first one.
     int output_pipe[2];
@@ -164,6 +164,28 @@ Process::StringResult Process::spawn_get_stdout_line() {
         }
 
         return output_str;
+    }
+}
+
+Process::StatusResult Process::spawn_get_status() const {
+    const auto argv = build_argv();
+    const auto envp = env_ ? env_->make_environ() : environ;
+
+    pid_t child_pid = 0;
+    const auto result = posix_spawnp(&child_pid, command_.c_str(), nullptr,
+                                     nullptr, argv, envp);
+    if (result == 2) {
+        return Process::CommandNotFound{};
+    } else if (result != 0) {
+        return std::error_code(result, std::system_category());
+    }
+
+    int status = 0;
+    assert(waitpid(child_pid, &status, 0) > 0);
+    if (!WIFEXITED(status) || WEXITSTATUS(status) == 127) {
+        return Process::CommandNotFound{};
+    } else {
+        return WEXITSTATUS(status);
     }
 }
 

@@ -164,7 +164,14 @@ class Process {
      * non-zero exit code. Uses `posix_spawn()`, leaves file descriptors in
      * tact.
      */
-    StringResult spawn_get_stdout_line();
+    StringResult spawn_get_stdout_line() const;
+
+    /**
+     * Spawn the process, leave STDOUT, STDIN and STDERR alone, and return an
+     * empty string if the program ran successfully. Uses `posix_spawn()`,
+     * leaves file descriptors in tact.
+     */
+    StatusResult spawn_get_status() const;
 
    private:
     /**
