@@ -18,6 +18,7 @@
 
 #include <iostream>
 
+#include "../../common/process.h"
 #include "../editor.h"
 
 /**

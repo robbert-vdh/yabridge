@@ -139,12 +139,6 @@ std::optional<rlim_t> get_rttime_limit() noexcept;
 bool is_watchdog_timer_disabled();
 
 /**
- * Check whether a process with the given PID is still active (and not a
- * zombie).
- */
-bool pid_running(pid_t pid);
-
-/**
  * URL encode a file path. We won't escape forward slashes, and `path` should
  * not yet include the `file://` prefix.
  */

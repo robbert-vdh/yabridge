@@ -18,6 +18,29 @@
 
 #include <cassert>
 
+#include <ghc/filesystem.hpp>
+
+namespace fs = ghc::filesystem;
+
+bool pid_running(pid_t pid) {
+    // With regular individually hosted plugins we can simply check whether the
+    // process is still running, however Boost.Process does not allow you to do
+    // the same thing for a process that's not a direct child if this process.
+    // When using plugin groups we'll have to manually check whether the PID
+    // returned by the group host process is still active. We sadly can't use
+    // `kill()` for this as that provides no way to distinguish between active
+    // processes and zombies, and a terminated group host process will always be
+    // left as a zombie process. If the process is active, then
+    // `/proc/<pid>/{cwd,exe,root}` will be valid symlinks.
+    std::error_code err;
+    fs::canonical("/proc/" + std::to_string(pid) + "/exe", err);
+
+    // NOTE: We can get a `EACCES` here if we don't have permissions to read
+    //       this process's memory. This does mean that the process is still
+    //       running.
+    return !err || err.value() == EACCES;
+}
+
 ProcessEnvironment::ProcessEnvironment(char** initial_env) {
     // We'll need to read all strings from `initial_env`. They _should_ all be
     // zero-terminated strings, with a null pointer to indicate the end of the

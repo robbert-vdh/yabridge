@@ -26,6 +26,12 @@
 // entire purpose).
 
 /**
+ * Check whether a process with the given PID is still active (and not a
+ * zombie).
+ */
+bool pid_running(pid_t pid);
+
+/**
  * Helper to create an `environ`-like environment object for passing to the
  * `exec*e()` family of functions.
  */
