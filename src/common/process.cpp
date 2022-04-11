@@ -93,18 +93,43 @@ char* const* ProcessEnvironment::make_environ() const {
     return const_cast<char* const*>(recreated_environ_.data());
 }
 
+Process::Handle::Handle(pid_t pid) : pid_(pid) {}
+
+Process::Handle::~Handle() {
+    if (!is_moved_) {
+        // If this function has already been called then that's okay
+        terminate();
+    }
+}
+
+Process::Handle::Handle(Handle&& o) noexcept : pid_(o.pid_) {
+    o.is_moved_ = true;
+}
+
+Process::Handle& Process::Handle::operator=(Handle&& o) noexcept {
+    o.is_moved_ = true;
+
+    pid_ = o.pid_;
+
+    return *this;
+}
+
+pid_t Process::Handle::pid() const noexcept {
+    return pid_;
+}
+
 bool Process::Handle::running() const noexcept {
-    return pid_running(pid);
+    return pid_running(pid_);
 }
 
 void Process::Handle::terminate() const noexcept {
-    kill(pid, SIGINT);
+    kill(pid_, SIGINT);
     wait();
 }
 
 std::optional<int> Process::Handle::wait() const noexcept {
     int status = 0;
-    assert(waitpid(pid, &status, 0) > 0);
+    assert(waitpid(pid_, &status, 0) > 0);
 
     if (WIFEXITED(status)) {
         return WEXITSTATUS(status);

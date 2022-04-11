@@ -107,11 +107,25 @@ class Process {
      * A handle to a running process.
      */
     class Handle {
+       protected:
+        Handle(pid_t pid);
+
        public:
+        /**
+         * Terminates the process when it gets dropped.
+         */
+        ~Handle();
+
+        Handle(const Handle&) = delete;
+        Handle& operator=(const Handle&) = delete;
+
+        Handle(Handle&&) noexcept;
+        Handle& operator=(Handle&&) noexcept;
+
         /**
          * The process' ID.
          */
-        const pid_t pid;
+        pid_t pid() const noexcept;
 
         /**
          * Whether the process is still running **and not a zombie**.
@@ -129,6 +143,14 @@ class Process {
          * successfully. Returns a nullopt otherwise.
          */
         std::optional<int> wait() const noexcept;
+
+       private:
+        /**
+         * If `true`, don't terminate the process
+         */
+        bool is_moved_ = false;
+
+        pid_t pid_ = 0;
     };
 
     using StringResult =
