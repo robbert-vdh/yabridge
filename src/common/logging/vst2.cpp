@@ -557,7 +557,7 @@ bool Vst2Logger::should_filter_event(bool is_dispatch,
     // Filter out log messages related to these events by default since they are
     // called tens of times per second
     if ((is_dispatch && (opcode == effEditIdle || opcode == effGetTailSize ||
-                         opcode == effIdle)) ||
+                         opcode == effIdle || opcode == effProcessEvents)) ||
         (!is_dispatch && (opcode == audioMasterGetTime ||
                           opcode == audioMasterGetCurrentProcessLevel))) {
         return true;

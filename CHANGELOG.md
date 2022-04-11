@@ -8,6 +8,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `effProcessEvents` VST2 calls are now filtered out from the log when
+  `YABRIDGE_DEBUG_LEVEL` is set to 1.
+
 ### Fixed
 
 - Fixed an obscure issue with VST3 plugins crashing in **Ardour** on
