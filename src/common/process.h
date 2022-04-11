@@ -18,7 +18,17 @@
 
 #include <optional>
 #include <string>
+#include <system_error>
+#include <variant>
 #include <vector>
+
+#ifdef __WINE__
+#include "../wine-host/asio-fix.h"
+#endif
+
+#include <unistd.h>
+#include <asio/posix/stream_descriptor.hpp>
+#include <ghc/filesystem.hpp>
 
 // A minimal API akin to Boost.Process for launching and managing processes
 // using plain Linux APIs. Needed so we can implement our chainloader without
@@ -80,4 +90,91 @@ class ProcessEnvironment {
      * `char**` in `make_environ()`.
      */
     mutable std::vector<char const*> recreated_environ_;
+};
+
+/**
+ * A child process whose output can be captured. Simple wrapper around the Posix
+ * APIs.
+ */
+class Process {
+   public:
+    /**
+     * Marker to indicate that the program was not found.
+     */
+    struct CommandNotFound {};
+
+    /**
+     * A handle to a running process.
+     */
+    class Handle {
+       public:
+        /**
+         * The process' ID.
+         */
+        const pid_t pid;
+
+        /**
+         * Whether the process is still running **and not a zombie**.
+         */
+        bool running() const noexcept;
+
+        /**
+         * Forcefully terminate the process by sending `SIGKILL`. Will reap the
+         * process zombie after sending the signal.
+         */
+        void terminate() const noexcept;
+
+        /**
+         * Wait for the process to exit, returning the exit code if it exited
+         * successfully. Returns a nullopt otherwise.
+         */
+        std::optional<int> wait() const noexcept;
+    };
+
+    using StringResult =
+        std::variant<std::string, CommandNotFound, std::error_code>;
+    using StatusResult = std::variant<int, CommandNotFound, std::error_code>;
+    using HandleResult = std::variant<Handle, CommandNotFound, std::error_code>;
+
+    /**
+     * Build a process. Use the other functions to add arguments or to
+     * launch the process.
+     *
+     * @param command The name of the command. `$PATH` will be searched for
+     * this command if it is not absolute.
+     */
+    Process(std::string command);
+
+    /**
+     * Add an argument to the command invocation.
+     */
+    inline void arg(std::string arg) { args_.emplace_back(std::move(arg)); }
+
+    /**
+     * Use the specified environment for this command.
+     *
+     * @see environment
+     */
+    inline void environment(ProcessEnvironment env) { env_ = std::move(env); }
+
+    /**
+     * Spawn the process, leave STDIN and STDERR alone, and return the first
+     * line (without the trailing linefeed) of STDOUT. The first output line
+     * will still be returned even if the process exits with a non-zero exit
+     * code. Uses `posix_spawn()`, leaves file descriptors in tact.
+     */
+    StringResult spawn_get_stdout_line();
+
+   private:
+    /**
+     * Create the `argv` array from the command and the arguments. Only valid as
+     * long as the pointers in `args_` at the time of calling stay valid.
+     */
+    char* const* build_argv() const;
+
+    std::string command_;
+    std::vector<std::string> args_;
+    std::optional<ProcessEnvironment> env_;
+
+    mutable std::vector<char const*> argv_;
 };

@@ -22,6 +22,7 @@
 
 #include "../common/configuration.h"
 #include "../common/plugins.h"
+#include "../common/process.h"
 #include "../common/utils.h"
 
 /**
@@ -76,6 +77,8 @@ struct PluginInfo {
      * unset if we could not detect a prefix.
      */
     boost::process::environment create_host_env() const;
+    // FIXME: Replace create_host_env with this one
+    ProcessEnvironment create_host_env_2() const;
 
     /**
      * Return the path to the actual Wine prefix in use, taking into account

@@ -18,7 +18,8 @@
 
 #include <cassert>
 
-#include <ghc/filesystem.hpp>
+#include <spawn.h>
+#include <sys/wait.h>
 
 namespace fs = ghc::filesystem;
 
@@ -90,4 +91,88 @@ char* const* ProcessEnvironment::make_environ() const {
     recreated_environ_.push_back(nullptr);
 
     return const_cast<char* const*>(recreated_environ_.data());
+}
+
+bool Process::Handle::running() const noexcept {
+    return pid_running(pid);
+}
+
+void Process::Handle::terminate() const noexcept {
+    kill(pid, SIGINT);
+    wait();
+}
+
+std::optional<int> Process::Handle::wait() const noexcept {
+    int status = 0;
+    assert(waitpid(pid, &status, 0) > 0);
+
+    if (WIFEXITED(status)) {
+        return WEXITSTATUS(status);
+    } else {
+        return std::nullopt;
+    }
+}
+
+Process::Process(std::string command) : command_(command) {}
+
+Process::StringResult Process::spawn_get_stdout_line() {
+    /// We'll read the results from a pipe. The child writes to the second pipe,
+    /// we'll read from the first one.
+    int output_pipe[2];
+    ::pipe(output_pipe);
+
+    const auto argv = build_argv();
+    const auto envp = env_ ? env_->make_environ() : environ;
+
+    posix_spawn_file_actions_t actions;
+    posix_spawn_file_actions_init(&actions);
+    posix_spawn_file_actions_adddup2(&actions, output_pipe[1], STDOUT_FILENO);
+    posix_spawn_file_actions_addclose(&actions, output_pipe[0]);
+    posix_spawn_file_actions_addclose(&actions, output_pipe[1]);
+
+    pid_t child_pid = 0;
+    const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
+                                     nullptr, argv, envp);
+
+    close(output_pipe[1]);
+    if (result == 2) {
+        close(output_pipe[0]);
+        return Process::CommandNotFound{};
+    } else if (result != 0) {
+        close(output_pipe[0]);
+        return std::error_code(result, std::system_category());
+    }
+
+    // Try to read the first line out the output until the line feed
+    std::array<char, 1024> output{0};
+    FILE* output_pipe_stream = fdopen(output_pipe[0], "r");
+    assert(output_pipe_stream);
+    fgets(output.data(), output.size(), output_pipe_stream);
+    fclose(output_pipe_stream);
+
+    int status = 0;
+    assert(waitpid(child_pid, &status, 0) > 0);
+    if (!WIFEXITED(status) || WEXITSTATUS(status) == 127) {
+        return Process::CommandNotFound{};
+    } else {
+        // `fgets()` returns the line feed, so we'll get rid of that
+        std::string output_str(output.data());
+        if (output_str.back() == '\n') {
+            output_str.pop_back();
+        }
+
+        return output_str;
+    }
+}
+
+char* const* Process::build_argv() const {
+    argv_.clear();
+
+    argv_.push_back(command_.c_str());
+    for (const auto& arg : args_) {
+        argv_.push_back(arg.c_str());
+    }
+    argv_.push_back(nullptr);
+
+    return const_cast<char* const*>(argv_.data());
 }
