@@ -158,10 +158,11 @@ class Process {
     inline void environment(ProcessEnvironment env) { env_ = std::move(env); }
 
     /**
-     * Spawn the process, leave STDIN and STDERR alone, and return the first
-     * line (without the trailing linefeed) of STDOUT. The first output line
-     * will still be returned even if the process exits with a non-zero exit
-     * code. Uses `posix_spawn()`, leaves file descriptors in tact.
+     * Spawn the process, leave STDIN, redirect STDERR to `/dev/null`, and
+     * return the first line (without the trailing linefeed) of STDOUT. The
+     * first output line will still be returned even if the process exits with a
+     * non-zero exit code. Uses `posix_spawn()`, leaves file descriptors in
+     * tact.
      */
     StringResult spawn_get_stdout_line();
 

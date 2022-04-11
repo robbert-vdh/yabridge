@@ -127,6 +127,8 @@ Process::StringResult Process::spawn_get_stdout_line() {
     posix_spawn_file_actions_t actions;
     posix_spawn_file_actions_init(&actions);
     posix_spawn_file_actions_adddup2(&actions, output_pipe[1], STDOUT_FILENO);
+    posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, "/dev/null",
+                                     O_WRONLY | O_APPEND, 0);
     posix_spawn_file_actions_addclose(&actions, output_pipe[0]);
     posix_spawn_file_actions_addclose(&actions, output_pipe[1]);
 
