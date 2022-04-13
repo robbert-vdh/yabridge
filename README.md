@@ -630,8 +630,8 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   terminate Wine related in the current or default Wine prefix.
 
 - If you're using a _lot_ of plugins and you're unable to load any new plugins,
-  then you may be running into Xorg's client limit. The exact number of plugins
-  it takes for this to happen will depend on your system and the other
+  then you may be running into Xorg's limit of 256 clients. The exact number of
+  plugins it takes for this to happen will depend on your system and the other
   applications running in the background. An easy way to check if this is the
   case would be to try and run `wine cmd.exe` from a terminal. If this prints a
   message about the maximum number of clients being reached (or if you are not
