@@ -637,7 +637,9 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   message about the maximum number of clients being reached (or if you are not
   able to open the terminal at all), then you might want to consider using
   [plugin groups](#plugin-groups) to run multiple instances of your most
-  frequently used plugins within a single process.
+  frequently used plugins within a single process. And if you're using many
+  instances of a single VST2 plugin, using the VST3 version of that plugin may
+  also help since they'll share a single process.
 
 - If you're using a `WINELOADER` that runs the Wine process under a separate
   namespace while the host is not sandboxed, then you'll have to use the
