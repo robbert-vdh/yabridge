@@ -183,16 +183,23 @@ class Process {
     Process(std::string command);
 
     /**
-     * Add an argument to the command invocation.
+     * Add an argument to the command invocation. Returns a reference to this
+     * object for easier chaining.
      */
-    inline void arg(std::string arg) { args_.emplace_back(std::move(arg)); }
+    inline Process& arg(std::string arg) {
+        args_.emplace_back(std::move(arg));
+        return *this;
+    }
 
     /**
      * Use the specified environment for this command.
      *
      * @see environment
      */
-    inline void environment(ProcessEnvironment env) { env_ = std::move(env); }
+    inline Process& environment(ProcessEnvironment env) {
+        env_ = std::move(env);
+        return *this;
+    }
 
     /**
      * Spawn the process, leave STDIN, redirect STDERR to `/dev/null`, and
