@@ -132,6 +132,11 @@ std::string PluginInfo::wine_version() const {
 fs::path find_plugin_library(const fs::path& this_plugin_path,
                              PluginType plugin_type,
                              bool prefer_32bit_vst3) {
+    // TODO: We only consider lower case extensions, and yabridgectl also
+    //       explicitly ignores upper and mixed case versions. Doing a case
+    //       insensitive version of this would involve checking each entry in
+    //       the directory listing. That's possible, but not something we're
+    //       doing right now.
     switch (plugin_type) {
         case PluginType::vst2: {
             fs::path plugin_path(this_plugin_path);
