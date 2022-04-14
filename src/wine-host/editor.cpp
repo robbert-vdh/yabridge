@@ -17,6 +17,7 @@
 #include "editor.h"
 
 #include <iostream>
+#include <sstream>
 
 #include <boost/container/small_vector.hpp>
 
