@@ -141,38 +141,39 @@ std::optional<int> Process::Handle::wait() const noexcept {
 Process::Process(std::string command) : command_(command) {}
 
 Process::StringResult Process::spawn_get_stdout_line() const {
-    /// We'll read the results from a pipe. The child writes to the second pipe,
-    /// we'll read from the first one.
-    int output_pipe[2];
-    ::pipe(output_pipe);
+    // We'll read the results from a pipe. The child writes to the second pipe,
+    // we'll read from the first one.
+    int stdout_pipe_fds[2];
+    pipe(stdout_pipe_fds);
 
     const auto argv = build_argv();
     const auto envp = env_ ? env_->make_environ() : environ;
 
     posix_spawn_file_actions_t actions;
     posix_spawn_file_actions_init(&actions);
-    posix_spawn_file_actions_adddup2(&actions, output_pipe[1], STDOUT_FILENO);
+    posix_spawn_file_actions_adddup2(&actions, stdout_pipe_fds[1],
+                                     STDOUT_FILENO);
     posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, "/dev/null",
                                      O_WRONLY | O_APPEND, 0);
-    posix_spawn_file_actions_addclose(&actions, output_pipe[0]);
-    posix_spawn_file_actions_addclose(&actions, output_pipe[1]);
+    posix_spawn_file_actions_addclose(&actions, stdout_pipe_fds[0]);
+    posix_spawn_file_actions_addclose(&actions, stdout_pipe_fds[1]);
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
                                      nullptr, argv, envp);
 
-    close(output_pipe[1]);
+    close(stdout_pipe_fds[1]);
     if (result == 2) {
-        close(output_pipe[0]);
+        close(stdout_pipe_fds[0]);
         return Process::CommandNotFound{};
     } else if (result != 0) {
-        close(output_pipe[0]);
+        close(stdout_pipe_fds[0]);
         return std::error_code(result, std::system_category());
     }
 
     // Try to read the first line out the output until the line feed
     std::array<char, 1024> output{0};
-    FILE* output_pipe_stream = fdopen(output_pipe[0], "r");
+    FILE* output_pipe_stream = fdopen(stdout_pipe_fds[0], "r");
     assert(output_pipe_stream);
     fgets(output.data(), output.size(), output_pipe_stream);
     fclose(output_pipe_stream);
@@ -211,6 +212,117 @@ Process::StatusResult Process::spawn_get_status() const {
         return Process::CommandNotFound{};
     } else {
         return WEXITSTATUS(status);
+    }
+}
+
+Process::HandleResult Process::spawn_child_piped(
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+    asio::posix::stream_descriptor& stdout_pipe,
+    asio::posix::stream_descriptor& stderr_pipe) const {
+    // We'll reopen the child process' STDOUT and STDERR stream from a pipe, and
+    // we'll assign the other ends of those pipes to the stream descriptors
+    // passed to this function so they can be read from asynchronously in an
+    // Asio IO context loop. We'll read from the first elements of these pipes,
+    // and the child process will write to the second elements.
+    int stdout_pipe_fds[2];
+    int stderr_pipe_fds[2];
+    pipe(stdout_pipe_fds);
+    pipe(stderr_pipe_fds);
+
+    const auto argv = build_argv();
+    const auto envp = env_ ? env_->make_environ() : environ;
+
+    posix_spawn_file_actions_t actions;
+    posix_spawn_file_actions_init(&actions);
+    posix_spawn_file_actions_adddup2(&actions, stdout_pipe_fds[1],
+                                     STDOUT_FILENO);
+    posix_spawn_file_actions_adddup2(&actions, stderr_pipe_fds[1],
+                                     STDERR_FILENO);
+    // We'll close the four pipe fds along with the rest of the file descriptors
+
+// NOTE: If the Wine process outlives the host, then it may cause issues if
+//       our process is still keeping the host's file descriptors alive
+//       that. This can prevent Ardour from restarting after an unexpected
+//       shutdown. Because of this we won't use `vfork()`, but instead we'll
+//       just manually close all non-STDIO file descriptors.
+#if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 34)
+    posix_spawn_file_actions_addclosefrom_np(&actions, STDERR_FILENO + 1);
+#else
+    const int max_fds = static_cast<int>(sysconf(_SC_OPEN_MAX));
+    for (int fd = STDERR_FILENO + 1; fd < max_fds; fd++) {
+        posix_spawn_file_actions_addclose(&actions, fd);
+    }
+#endif
+
+    pid_t child_pid = 0;
+    const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
+                                     nullptr, argv, envp);
+
+    // We'll assign the read ends of the pipes to the Asio stream descriptors
+    // passed to this function, even if launching the process failed.
+    // `asio::posix::stream_descriptor::assign()` will take ownership of the FD
+    // and close it when the object gets dropped.
+    stdout_pipe.assign(stdout_pipe_fds[0]);
+    stderr_pipe.assign(stderr_pipe_fds[0]);
+    close(stdout_pipe_fds[1]);
+    close(stderr_pipe_fds[1]);
+
+    if (result == 2) {
+        return Process::CommandNotFound{};
+    } else if (result != 0) {
+        return std::error_code(result, std::system_category());
+    }
+
+    // With glibc `posix_spawn*()` will return 2/`ENOENT` when the file does not
+    // exist, but the specification says that it should return a PID that exits
+    // with status 127 instead. I have no idea how we'd check for that without
+    // waiting here though, so this check may not work
+    int status = 0;
+    assert(waitpid(child_pid, &status, WNOHANG) >= 0);
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 127) {
+        return Process::CommandNotFound{};
+    } else {
+        return Handle(child_pid);
+    }
+}
+
+Process::HandleResult Process::spawn_child_redirected(
+    const ghc::filesystem::path& filename) const {
+    const auto argv = build_argv();
+    const auto envp = env_ ? env_->make_environ() : environ;
+
+    posix_spawn_file_actions_t actions;
+    posix_spawn_file_actions_init(&actions);
+    posix_spawn_file_actions_addopen(&actions, STDOUT_FILENO, filename.c_str(),
+                                     O_WRONLY | O_APPEND, 0);
+    posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, filename.c_str(),
+                                     O_WRONLY | O_APPEND, 0);
+
+    // See the note in the other function
+#if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 34)
+    posix_spawn_file_actions_addclosefrom_np(&actions, STDERR_FILENO + 1);
+#else
+    const int max_fds = static_cast<int>(sysconf(_SC_OPEN_MAX));
+    for (int fd = STDERR_FILENO + 1; fd < max_fds; fd++) {
+        posix_spawn_file_actions_addclose(&actions, fd);
+    }
+#endif
+
+    pid_t child_pid = 0;
+    const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
+                                     nullptr, argv, envp);
+    if (result == 2) {
+        return Process::CommandNotFound{};
+    } else if (result != 0) {
+        return std::error_code(result, std::system_category());
+    }
+
+    int status = 0;
+    assert(waitpid(child_pid, &status, WNOHANG) >= 0);
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 127) {
+        return Process::CommandNotFound{};
+    } else {
+        return Handle(child_pid);
     }
 }
 

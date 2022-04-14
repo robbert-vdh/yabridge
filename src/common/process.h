@@ -94,7 +94,8 @@ class ProcessEnvironment {
 
 /**
  * A child process whose output can be captured. Simple wrapper around the Posix
- * APIs.
+ * APIs. The functions provided for running processes this way are very much
+ * tailored towards yabridge's needs.
  */
 class Process {
    public:
@@ -109,6 +110,8 @@ class Process {
     class Handle {
        protected:
         Handle(pid_t pid);
+
+        friend Process;
 
        public:
         /**
@@ -194,6 +197,26 @@ class Process {
      * leaves file descriptors in tact.
      */
     StatusResult spawn_get_status() const;
+
+    /**
+     * Spawn the process without waiting for its completion, leave STDIN alone,
+     * create pipes for STDOUT and STDERR, and assign those to the provided
+     * (empty) stream descriptors. Use `posix_spawn()`, closes all non-STDIO
+     * file descriptors. The process will be terminated when the child process
+     * handle gets dropped.
+     */
+    HandleResult spawn_child_piped(
+        asio::posix::stream_descriptor& stdout_pipe,
+        asio::posix::stream_descriptor& stderr_pipe) const;
+
+    /**
+     * Spawn the process without waiting for its completion, leave STDIN alone,
+     * and redirect STDOUT and STDERR to a file. Use `posix_spawn()`, closes all
+     * non-STDIO file descriptors. The process will be terminated when the child
+     * process handle gets dropped.
+     */
+    HandleResult spawn_child_redirected(
+        const ghc::filesystem::path& filename) const;
 
    private:
     /**

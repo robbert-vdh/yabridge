@@ -105,6 +105,8 @@ class WineXdndProxy {
          */
         Handle(WineXdndProxy* proxy);
 
+        friend WineXdndProxy;
+
        public:
         /**
          * Reduces the reference count by one, and frees `proxy_` if this was
@@ -120,8 +122,6 @@ class WineXdndProxy {
 
        private:
         WineXdndProxy* proxy_;
-
-        friend WineXdndProxy;
     };
 
     /**

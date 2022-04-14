@@ -66,11 +66,12 @@ class patched_async_pipe {
     inline patched_async_pipe(asio::io_context& ios)
         : patched_async_pipe(ios, ios) {}
 
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     inline patched_async_pipe(asio::io_context& ios_source,
                               asio::io_context& ios_sink)
         : _source(ios_source), _sink(ios_sink) {
         int fds[2];
-        if (::pipe(fds) == -1)
+        if (pipe(fds) == -1)
             boost::process::detail::throw_last_error("pipe(2) failed");
 
         _source.assign(fds[0]);

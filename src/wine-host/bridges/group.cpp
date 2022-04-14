@@ -64,7 +64,7 @@ StdIoCapture::StdIoCapture(asio::io_context& io_context, int file_descriptor)
       original_fd_copy_(dup(file_descriptor)) {
     // We'll use the second element of these two file descriptors to reopen
     // `file_descriptor`, and the first one to read the captured contents from
-    if (::pipe(pipe_fd_) != 0) {
+    if (pipe(pipe_fd_) != 0) {
         std::cerr << "Could not create pipe" << std::endl;
         throw std::system_error(errno, std::system_category());
     }
