@@ -19,10 +19,8 @@
 #include <thread>
 
 #include <asio/local/stream_protocol.hpp>
+#include <asio/posix/stream_descriptor.hpp>
 #include <asio/streambuf.hpp>
-#include <boost/process/child.hpp>
-#include <boost/process/extend.hpp>
-#include <boost/process/io.hpp>
 #include <ghc/filesystem.hpp>
 
 #include "../common/communication/common.h"
@@ -59,108 +57,42 @@ class HostProcess {
      */
     virtual void terminate() = 0;
 
-    /**
-     * Simple helper function around `boost::process::child` that launches the
-     * host application (`*.exe`) with some basic setup. This includes setting
-     * up the asynchronous pipes for STDIO redirection, closing file descriptors
-     * to prevent leaks, and wrapping everything in winedbg if we're compiling
-     * with `-Dwith-winedbg=true`. Keep in mind that winedbg does not handle
-     * arguments containing spaces, so most Windows paths will be split up into
-     * multiple arugments.
-     */
-    template <typename... Args>
-    boost::process::child launch_host(ghc::filesystem::path host_path,
-                                      Args&&... args) {
-        return boost::process::child(
-#ifdef WITH_WINEDBG
-            // This is set up for KDE Plasma. Other desktop environments and
-            // window managers require some slight modifications to spawn a
-            // detached terminal emulator. Alternatively, you can spawn
-            // `/usr/bin/winedbg` with the `--no-start` option to launch a gdb
-            // server and then connect to it from another terminal.
-            "/usr/bin/kstart5", "konsole", "--", "-e", "winedbg", "--gdb",
-#ifdef WINEDBG_LEGACY_ARGUMENT_QUOTING
-            // Note the double quoting here. Old versions of winedbg didn't
-            // respect `argv` and instead expected a pre-quoted Win32 command
-            // line as its arguments.
-            "\"" + host_path.string() + ".so\"",
-#else
-            host_path.string() + ".so",
-#endif  // WINEDBG_LEGACY_ARGUMENT_QUOTING
-#else
-            // FIXME: Replace Boost.Filesystem
-            host_path.string(),
-#endif  // WITH_WINEDBG
-        // FIXME: This won't work with our patched async_pipe version
-        // boost::process::std_out = stdout_pipe_,
-        // boost::process::std_err = stderr_pipe_,
-            patched_async_pipe_out<1, -1>(stdout_pipe_),
-            patched_async_pipe_out<2, -1>(stderr_pipe_),
-            // NOTE: If the Wine process outlives the host, then it may cause
-            //       issues if our process is still keeping the host's file
-            //       descriptors alive that. This can prevent Ardour from
-            //       restarting after an unexpected shutdown. Because of this we
-            //       won't use `vfork()`, but instead we'll just manually close
-            //       all non-STDIO file descriptors.
-            // HACK: If the `disable_pipes` option is enabled, then we'll
-            //       redirect the plugin's output to a file instead of using
-            //       pipes to blend it in with the rest of yabridge's output.
-            //       This is for some reason necessary for ujam's plugins and
-            //       all other plugins made with Gorilla Engine to function.
-            //       Otherwise they'll print a nondescriptive `JS_EXEC_FAILED`
-            //       error message.
-            boost::process::extend::on_exec_setup =
-                [this](auto& /*executor*/) {
-                    const int max_fds = static_cast<int>(sysconf(_SC_OPEN_MAX));
-                    for (int fd = STDERR_FILENO + 1; fd < max_fds; fd++) {
-                        close(fd);
-                    }
-
-                    // See above
-                    if (config_.disable_pipes) {
-                        const int redirect_fd =
-                            open(config_.disable_pipes->c_str(),
-                                 O_CREAT | O_APPEND | O_WRONLY, 0640);
-
-                        assert(redirect_fd != -1);
-                        dup2(redirect_fd, STDOUT_FILENO);
-                        dup2(redirect_fd, STDERR_FILENO);
-                        close(redirect_fd);
-                    }
-                },
-            std::forward<Args>(args)...);
-    }
-
    protected:
     /**
-     * Initialize the host process by setting up the STDIO redirection.
+     * The actual process initialization and everything involved in that process
+     * is done in `launch_host()` since a new process may not be required
+     * when using plugin groups.
      *
-     * @param io_context The IO context that the STDIO redurection will be
-     *   handled on.
-     * @param logger The `Logger` instance the redirected STDIO streams will be
-     *   written to.
+     * @param io_context The IO context that the STDIO redirection pipes will be
+     *   bound to. The logging for these pipes is set up in `launch_host()`.
      * @param sockets The socket endpoints that will be used for communication
      *   with the plugin. When the plugin shuts down, we'll close all of the
      *   sockets used by the plugin.
      */
-    HostProcess(asio::io_context& io_context,
-                Logger& logger,
-                const Configuration& config,
-                Sockets& sockets);
+    HostProcess(asio::io_context& io_context, Sockets& sockets);
 
     /**
-     * The STDOUT stream of the Wine process we can forward to the logger.
+     * Helper function that launches the Wine host application (`*.exe`) with
+     * all of the correct environment setup. This includes setting the correct
+     * environment variables for the Wine prefix the plugin is in, setting up
+     * pipes or files for STDIO redirection, closing file descriptors to prevent
+     * leaks, and wrapping all of that in a terminal process running winedbg if
+     * we're compiling with `-Dwith-winedbg=true`. Keep in mind that winedbg
+     * does not handle arguments containing spaces, so most Windows paths will
+     * be split up into multiple arguments.
+     *
+     * @param logger The `Logger` instance the redirected STDIO streams will be
+     *   written to.
+     * @param config The plugin's configuration, used to determine whether to
+     *   use pipes or to redirect the output to a file instead.
+     * @param plugin_info Information about the plugin, used to determine the
+     *   plugin's Wine prefix.
      */
-    patched_async_pipe stdout_pipe_;
-    /**
-     * The STDERR stream of the Wine process we can forward to the logger.
-     */
-    patched_async_pipe stderr_pipe_;
-
-    /**
-     * The current plugin instance's configuration.
-     */
-    const Configuration& config_;
+    Process::Handle launch_host(const ghc::filesystem::path& host_path,
+                                std::initializer_list<std::string> args,
+                                Logger& logger,
+                                const Configuration& config,
+                                const PluginInfo& plugin_info);
 
     /**
      * The associated sockets for the plugin we're hosting. This is used to
@@ -170,9 +102,13 @@ class HostProcess {
 
    private:
     /**
-     * The logger the Wine output will be written to.
+     * The STDOUT stream of the Wine process we can forward to the logger.
      */
-    Logger& logger_;
+    asio::posix::stream_descriptor stdout_pipe_;
+    /**
+     * The STDERR stream of the Wine process we can forward to the logger.
+     */
+    asio::posix::stream_descriptor stderr_pipe_;
 
     asio::streambuf stdout_buffer_;
     asio::streambuf stderr_buffer_;
@@ -218,7 +154,7 @@ class IndividualHost : public HostProcess {
    private:
     const PluginInfo& plugin_info_;
     ghc::filesystem::path host_path_;
-    boost::process::child host_;
+    Process::Handle handle_;
 };
 
 /**

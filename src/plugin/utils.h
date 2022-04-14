@@ -18,8 +18,6 @@
 
 #include <variant>
 
-#include <boost/process/environment.hpp>
-
 #include "../common/configuration.h"
 #include "../common/plugins.h"
 #include "../common/process.h"
@@ -76,9 +74,7 @@ struct PluginInfo {
      * we'll set `WINEPREFIX` to the detected Wine prefix, or it will be left
      * unset if we could not detect a prefix.
      */
-    boost::process::environment create_host_env() const;
-    // FIXME: Replace create_host_env with this one
-    ProcessEnvironment create_host_env_2() const;
+    ProcessEnvironment create_host_env() const;
 
     /**
      * Return the path to the actual Wine prefix in use, taking into account
@@ -236,10 +232,8 @@ ghc::filesystem::path generate_group_endpoint(
  * environment variable can be a big hurdle if you've never done anything like
  * that before. And since this is the recommended installation location, it
  * makes sense to also search there by default.
- *
- * FIXME: Replace Boost.Filesystem
  */
-std::vector<boost::filesystem::path> get_augmented_search_path();
+std::vector<ghc::filesystem::path> get_augmented_search_path();
 
 /**
  * Return a path to this `.so` file. This can be used to find out from where

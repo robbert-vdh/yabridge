@@ -22,6 +22,7 @@
 #include "../asio-fix.h"
 
 #include <asio/local/stream_protocol.hpp>
+#include <asio/posix/stream_descriptor.hpp>
 
 #include "../common/logging/common.h"
 #include "../utils.h"

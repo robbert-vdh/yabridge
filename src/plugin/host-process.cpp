@@ -17,24 +17,72 @@
 #include "host-process.h"
 
 #include <asio/read_until.hpp>
-#include <boost/process/env.hpp>
-#include <boost/process/start_dir.hpp>
 
 #include "../common/utils.h"
 
-namespace bp = boost::process;
 namespace fs = ghc::filesystem;
 
-HostProcess::HostProcess(asio::io_context& io_context,
-                         Logger& logger,
-                         const Configuration& config,
-                         Sockets& sockets)
-    : stdout_pipe_(io_context),
-      stderr_pipe_(io_context),
-      config_(config),
-      sockets_(sockets),
-      logger_(logger) {
-    // See the comment above the `on_exec_setup` in `launch_host()`
+HostProcess::HostProcess(asio::io_context& io_context, Sockets& sockets)
+    : sockets_(sockets), stdout_pipe_(io_context), stderr_pipe_(io_context) {}
+
+HostProcess::~HostProcess() noexcept {}
+
+Process::Handle HostProcess::launch_host(
+    const ghc::filesystem::path& host_path,
+    std::initializer_list<std::string> args,
+    Logger& logger,
+    const Configuration& config,
+    const PluginInfo& plugin_info) {
+#ifdef WITH_WINEDBG
+    // This is set up for KDE Plasma. Other desktop environments and window
+    // managers require some slight modifications to spawn a detached terminal
+    // emulator. Alternatively, you can spawn `winedbg` with the `--no-start`
+    // option to launch a gdb server and then connect to it from another
+    // terminal.
+    Process child("kstart5");
+    child.arg("konsole").arg("--").arg("-e").arg("winedbg").arg("--gdb");
+#ifdef WINEDBG_LEGACY_ARGUMENT_QUOTING
+    // Note the double quoting here. Old versions of winedbg didn't
+    // respect `argv` and instead expected a pre-quoted Win32 command
+    // line as its arguments.
+    child.arg("\"" + host_path.string() + ".so\""),
+#else
+    child.arg(host_path.string() + ".so");
+#endif  // WINEDBG_LEGACY_ARGUMENT_QUOTING
+#else
+    Process child(host_path);
+#endif  // WITH_WINEDBG
+
+        // What's up with this indentation
+        for (const auto& arg : args) {
+        child.arg(arg);
+    }
+
+    child.environment(plugin_info.create_host_env());
+    Process::Handle child_handle = std::visit(
+        overload{
+            [](Process::Handle handle) -> Process::Handle { return handle; },
+            [&host_path](const Process::CommandNotFound&) -> Process::Handle {
+                throw std::runtime_error("Could not launch '" +
+                                         host_path.string() +
+                                         "', command not found");
+            },
+            [](const std::error_code& err) -> Process::Handle {
+                throw std::runtime_error("Error spawning Wine process: " +
+                                         err.message());
+            },
+        },
+        // HACK: If the `disable_pipes` option is enabled, then we'll redirect
+        //       the plugin's output to a file instead of using pipes to blend
+        //       it in with the rest of yabridge's output. This is for some
+        //       reason necessary for ujam's plugins and all other plugins made
+        //       with Gorilla Engine to function. Otherwise they'll print a
+        //       nondescriptive `JS_EXEC_FAILED` error message.
+        config.disable_pipes
+            ? child.spawn_child_redirected(*config.disable_pipes)
+            : child.spawn_child_piped(stdout_pipe_, stderr_pipe_));
+
+    // See the above comment
     if (config.disable_pipes) {
         logger.log("");
         logger.log("WARNING: All Wine output will be written to");
@@ -49,9 +97,9 @@ HostProcess::HostProcess(asio::io_context& io_context,
         logger.async_log_pipe_lines(stderr_pipe_, stderr_buffer_,
                                     "[Wine STDERR] ");
     }
-}
 
-HostProcess::~HostProcess() noexcept {}
+    return child_handle;
+}
 
 IndividualHost::IndividualHost(asio::io_context& io_context,
                                Logger& logger,
@@ -59,28 +107,32 @@ IndividualHost::IndividualHost(asio::io_context& io_context,
                                Sockets& sockets,
                                const PluginInfo& plugin_info,
                                const HostRequest& host_request)
-    : HostProcess(io_context, logger, config, sockets),
+    : HostProcess(io_context, sockets),
       plugin_info_(plugin_info),
       host_path_(find_vst_host(plugin_info.native_library_path_,
                                plugin_info.plugin_arch_,
                                false)),
-      host_(
-          launch_host(host_path_,
-                      plugin_type_to_string(host_request.plugin_type),
+      handle_(launch_host(
+          host_path_,
+          {
+              plugin_type_to_string(host_request.plugin_type),
 #if defined(WITH_WINEDBG) && defined(WINEDBG_LEGACY_ARGUMENT_QUOTING)
-                      // Old versions of winedbg flattened all command line
-                      // arguments to a single space separated Win32 command
-                      // line, so we had to do our own quoting
-                      "\"" + plugin_info.windows_plugin_path + "\"",
+                  // Old versions of winedbg flattened all command line
+                  // arguments to a single space separated Win32 command line,
+                  // so we had to do our own quoting
+                  "\"" + plugin_info.windows_plugin_path + "\"",
 #else
-                      host_request.plugin_path,
+                  host_request.plugin_path,
 #endif
-                      host_request.endpoint_base_dir,
-                      // We pass this process' process ID as an argument so we
-                      // can run a watchdog on the Wine plugin host process that
-                      // shuts down the sockets after this process shuts down
-                      std::to_string(getpid()),
-                      bp::env = plugin_info.create_host_env())) {
+                  host_request.endpoint_base_dir,
+                  // We pass this process' process ID as an argument so we can
+                  // run a watchdog on the Wine plugin host process that shuts
+                  // down the sockets after this process shuts down
+                  std::to_string(getpid())
+          },
+          logger,
+          config,
+          plugin_info)) {
 #ifdef WITH_WINEDBG
     if (plugin_info.windows_plugin_path_.string().find('"') !=
         std::string::npos) {
@@ -96,9 +148,7 @@ fs::path IndividualHost::path() {
 }
 
 bool IndividualHost::running() {
-    // NOTE: `boost::process::child::running()` still considers zombies as
-    //       running, so it's useless for our purposes.
-    return pid_running(host_.id());
+    return handle_.running();
 }
 
 void IndividualHost::terminate() {
@@ -109,10 +159,8 @@ void IndividualHost::terminate() {
     //       prevents us from joining our `std::jthread`s on the plugin side.
     sockets_.close();
 
-    host_.terminate();
-    // NOTE: This leaves a zombie, because Boost.Process will actually not call
-    //       `wait()` after we have terminated the process.
-    host_.wait();
+    // This will also reap the terminated process
+    handle_.terminate();
 }
 
 GroupHost::GroupHost(asio::io_context& io_context,
@@ -121,7 +169,7 @@ GroupHost::GroupHost(asio::io_context& io_context,
                      Sockets& sockets,
                      const PluginInfo& plugin_info,
                      const HostRequest& host_request)
-    : HostProcess(io_context, logger, config, sockets),
+    : HostProcess(io_context, sockets),
       plugin_info_(plugin_info),
       host_path_(find_vst_host(plugin_info.native_library_path_,
                                plugin_info.plugin_arch_,
@@ -156,15 +204,13 @@ GroupHost::GroupHost(asio::io_context& io_context,
         // new group host process. This process is detached immediately
         // because it should run independently of this yabridge instance as
         // it will likely outlive it.
-        bp::child group_host =
-            // FIXME: Boost.Filesystem conversion
-            launch_host(host_path_, group_socket_path.string(),
-                        bp::env = plugin_info.create_host_env());
+        Process::Handle group_host =
+            launch_host(host_path_, {group_socket_path.string()}, logger,
+                        config, plugin_info);
         group_host.detach();
 
-        const pid_t group_host_pid = group_host.id();
         group_host_connect_handler_ =
-            std::jthread([this, connect, group_host_pid]() {
+            std::jthread([this, connect, group_host = std::move(group_host)]() {
                 set_realtime_priority(true);
                 pthread_setname_np(pthread_self(), "group-connect");
 
@@ -172,7 +218,7 @@ GroupHost::GroupHost(asio::io_context& io_context,
 
                 // We'll first try to connect to the group host we just spawned
                 // TODO: Replace this polling with inotify
-                while (pid_running(group_host_pid)) {
+                while (group_host.running()) {
                     std::this_thread::sleep_for(20ms);
 
                     try {

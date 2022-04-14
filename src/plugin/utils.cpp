@@ -20,15 +20,7 @@
 
 #include <unistd.h>
 #include <boost/dll/runtime_symbol_info.hpp>
-#include <boost/process/io.hpp>
-#include <boost/process/pipe.hpp>
-#include <boost/process/search_path.hpp>
-#include <boost/process/system.hpp>
 #include <sstream>
-
-// XXX: With Boost 1.75 at least, this header cannot be included in alphabetical
-//      order because it's missing some includes
-#include <boost/process/env.hpp>
 
 // Generated inside of the build directory
 #include <config.h>
@@ -36,7 +28,6 @@
 #include "../common/configuration.h"
 #include "../common/utils.h"
 
-namespace bp = boost::process;
 namespace fs = ghc::filesystem;
 
 // These functions are used to populate the fields in `PluginInfo`. See the
@@ -65,25 +56,7 @@ PluginInfo::PluginInfo(PluginType plugin_type, bool prefer_32bit_vst3)
           normalize_plugin_path(windows_library_path_, plugin_type)),
       wine_prefix_(find_wine_prefix(windows_plugin_path_)) {}
 
-bp::environment PluginInfo::create_host_env() const {
-    bp::environment env = boost::this_process::environment();
-
-    // Only set the prefix when could auto detect it and it's not being
-    // overridden (this entire `std::visit` instead of `std::has_alternative` is
-    // just for clarity's sake)
-    std::visit(overload{
-                   [](const OverridenWinePrefix&) {},
-                   [&](const ghc::filesystem::path& prefix) {
-                       env["WINEPREFIX"] = prefix.string();
-                   },
-                   [](const DefaultWinePrefix&) {},
-               },
-               wine_prefix_);
-
-    return env;
-}
-
-ProcessEnvironment PluginInfo::create_host_env_2() const {
+ProcessEnvironment PluginInfo::create_host_env() const {
     ProcessEnvironment env(environ);
 
     // Only set the prefix when could auto detect it and it's not being
@@ -130,7 +103,7 @@ std::string PluginInfo::wine_version() const {
 
     Process process(wine_path);
     process.arg("--version");
-    process.environment(create_host_env_2());
+    process.environment(create_host_env());
 
     const auto result = process.spawn_get_stdout_line();
     return std::visit(
@@ -345,7 +318,6 @@ std::string create_logger_prefix(const fs::path& endpoint_base_dir) {
 fs::path find_vst_host(const ghc::filesystem::path& this_plugin_path,
                        LibArchitecture plugin_arch,
                        bool use_plugin_groups) {
-    // FIXME: Anything using `this_plugin_path` and similar needs to be changed
     auto host_name = use_plugin_groups ? yabridge_group_host_name
                                        : yabridge_individual_host_name;
     if (plugin_arch == LibArchitecture::dll_32) {
@@ -361,17 +333,13 @@ fs::path find_vst_host(const ghc::filesystem::path& this_plugin_path,
         return host_path;
     }
 
-    // Boost will return an empty path if the file could not be found in the
-    // search path
-    const boost::filesystem::path vst_host_path =
-        bp::search_path(host_name, get_augmented_search_path());
-    if (vst_host_path == "") {
+    if (const std::optional<fs::path> vst_host_path =
+            search_in_path(get_augmented_search_path(), host_name)) {
+        return *vst_host_path;
+    } else {
         throw std::runtime_error("Could not locate '" + std::string(host_name) +
                                  "'");
     }
-
-    // FIXME: Replace Boost.Filesystem usage requiring this conversion
-    return vst_host_path.string();
 }
 
 ghc::filesystem::path generate_group_endpoint(
@@ -396,8 +364,7 @@ ghc::filesystem::path generate_group_endpoint(
     return get_temporary_directory() / socket_name.str();
 }
 
-// FIXME: Replace Boost.Filesystem
-std::vector<boost::filesystem::path> get_augmented_search_path() {
+std::vector<fs::path> get_augmented_search_path() {
     // HACK: `std::locale("")` would return the current locale, but this
     //       overload is implementation specific, and libstdc++ returns an error
     //       when this happens and one of the locale variables (or `LANG`) is
@@ -411,6 +378,11 @@ std::vector<boost::filesystem::path> get_augmented_search_path() {
     //       https://svn.boost.org/trac10/changeset/72855
     //
     //       https://github.com/boostorg/process/pull/179
+    // FIXME: As mentioned above, we did this in the past to work around a
+    //        Boost.Process bug. Since we no longer use Boost.Process, we can
+    //        technically get rid of this, but we could also leave it in place
+    //        since this may still cause other crashes for the user if we don't
+    //        do it.
     try {
         std::locale("");
     } catch (const std::runtime_error&) {
@@ -431,17 +403,19 @@ std::vector<boost::filesystem::path> get_augmented_search_path() {
         setenv("LC_ALL", "C", true);  // NOLINT(concurrency-mt-unsafe)
     }
 
-    std::vector<boost::filesystem::path> search_path =
-        boost::this_process::path();
+    // NOLINTNEXTLINE(concurrency-mt-unsafe)
+    const char* path_env = getenv("PATH");
+    assert(path_env);
+
+    std::vector<fs::path> search_path = split_path(path_env);
 
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     if (const char* xdg_data_home = getenv("XDG_DATA_HOME")) {
-        search_path.push_back(boost::filesystem::path(xdg_data_home) /
-                              "yabridge");
+        search_path.push_back(fs::path(xdg_data_home) / "yabridge");
         // NOLINTNEXTLINE(concurrency-mt-unsafe)
     } else if (const char* home_directory = getenv("HOME")) {
-        search_path.push_back(boost::filesystem::path(home_directory) /
-                              ".local" / "share" / "yabridge");
+        search_path.push_back(fs::path(home_directory) / ".local" / "share" /
+                              "yabridge");
     }
 
     return search_path;
