@@ -42,6 +42,12 @@
 bool pid_running(pid_t pid);
 
 /**
+ * Split a `PATH`-like environment variable on colons. These environment
+ * variables don't support escaping, which makes this a lot simpler.
+ */
+std::vector<ghc::filesystem::path> split_path(const std::string_view& path_env);
+
+/**
  * Helper to create an `environ`-like environment object for passing to the
  * `exec*e()` family of functions.
  */

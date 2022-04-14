@@ -42,6 +42,30 @@ bool pid_running(pid_t pid) {
     return !err || err.value() == EACCES;
 }
 
+std::vector<ghc::filesystem::path> split_path(
+    const std::string_view& path_env) {
+    // C++ has these great split range adapters. That are completely usless.
+    std::vector<fs::path> search_path;
+
+    size_t segment_begin = 0;
+    while (segment_begin != path_env.size()) {
+        const size_t segment_end = path_env.find(':', segment_begin);
+        if (segment_end == std::string_view::npos) {
+            search_path.push_back(path_env.substr(
+                segment_begin, path_env.size() - segment_begin));
+            break;
+        } else {
+            search_path.push_back(
+                path_env.substr(segment_begin, segment_end - segment_begin));
+
+            // Restart after the colon
+            segment_begin = segment_end + 1;
+        }
+    }
+
+    return search_path;
+}
+
 ProcessEnvironment::ProcessEnvironment(char** initial_env) {
     // We'll need to read all strings from `initial_env`. They _should_ all be
     // zero-terminated strings, with a null pointer to indicate the end of the
