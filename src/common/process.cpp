@@ -337,9 +337,9 @@ Process::HandleResult Process::spawn_child_redirected(
     posix_spawn_file_actions_t actions;
     posix_spawn_file_actions_init(&actions);
     posix_spawn_file_actions_addopen(&actions, STDOUT_FILENO, filename.c_str(),
-                                     O_WRONLY | O_APPEND, 0);
+                                     O_WRONLY | O_CREAT | O_APPEND, 0640);
     posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, filename.c_str(),
-                                     O_WRONLY | O_APPEND, 0);
+                                     O_WRONLY | O_CREAT | O_APPEND, 0640);
 
     // See the note in the other function
 #if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 34)
