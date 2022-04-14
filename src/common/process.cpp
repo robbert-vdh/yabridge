@@ -184,7 +184,7 @@ Process::StringResult Process::spawn_get_stdout_line() const {
     // We'll read the results from a pipe. The child writes to the second pipe,
     // we'll read from the first one.
     int stdout_pipe_fds[2];
-    pipe(stdout_pipe_fds);
+    assert(pipe(stdout_pipe_fds) == 0);
 
     const auto argv = build_argv();
     const auto envp = env_ ? env_->make_environ() : environ;
@@ -215,7 +215,8 @@ Process::StringResult Process::spawn_get_stdout_line() const {
     std::array<char, 1024> output{0};
     FILE* output_pipe_stream = fdopen(stdout_pipe_fds[0], "r");
     assert(output_pipe_stream);
-    fgets(output.data(), output.size(), output_pipe_stream);
+    [[maybe_unused]] char* not_relevant =
+        fgets(output.data(), output.size(), output_pipe_stream);
     fclose(output_pipe_stream);
 
     int status = 0;
@@ -266,8 +267,8 @@ Process::HandleResult Process::spawn_child_piped(
     // and the child process will write to the second elements.
     int stdout_pipe_fds[2];
     int stderr_pipe_fds[2];
-    pipe(stdout_pipe_fds);
-    pipe(stderr_pipe_fds);
+    assert(pipe(stdout_pipe_fds) == 0);
+    assert(pipe(stderr_pipe_fds) == 0);
 
     const auto argv = build_argv();
     const auto envp = env_ ? env_->make_environ() : environ;
