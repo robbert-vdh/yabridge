@@ -112,8 +112,8 @@ class YaProcessData {
     struct Response {
         // We store raw pointers instead of references so we can default
         // initialize this object during deserialization
-        boost::container::small_vector_base<Steinberg::Vst::AudioBusBuffers>*
-            outputs = nullptr;
+        llvm::SmallVectorImpl<Steinberg::Vst::AudioBusBuffers>* outputs =
+            nullptr;
         std::optional<YaParameterChanges>* output_parameter_changes = nullptr;
         std::optional<YaEventList>* output_events = nullptr;
 
@@ -206,7 +206,7 @@ class YaProcessData {
      * be set to point to our shared memory surface that holds the actual audio
      * data.
      */
-    boost::container::small_vector<Steinberg::Vst::AudioBusBuffers, 8> inputs_;
+    llvm::SmallVector<Steinberg::Vst::AudioBusBuffers, 8> inputs_;
 
     /**
      * This contains metadata about the output buffers for every bus. During
@@ -214,7 +214,7 @@ class YaProcessData {
      * be set to point to our shared memory surface that holds the actual audio
      * data.
      */
-    boost::container::small_vector<Steinberg::Vst::AudioBusBuffers, 8> outputs_;
+    llvm::SmallVector<Steinberg::Vst::AudioBusBuffers, 8> outputs_;
 
     /**
      * Incoming parameter changes.

@@ -26,11 +26,11 @@
 #ifdef __WINE__
 #include "../wine-host/asio-fix.h"
 #endif
+#include <llvm/small-vector.h>
 #include <asio/io_context.hpp>
 #include <asio/local/stream_protocol.hpp>
 #include <asio/read.hpp>
 #include <asio/write.hpp>
-#include <boost/container/small_vector.hpp>
 #include <ghc/filesystem.hpp>
 
 #include "../bitsery/traits/small-vector.h"
@@ -71,37 +71,35 @@ using InputAdapter =
  * this way.
  */
 template <size_t N>
-using SerializationBuffer = boost::container::small_vector<uint8_t, N>;
+using SerializationBuffer = llvm::SmallVector<uint8_t, N>;
 
 /**
  * The class `SerializationBuffer<N>` is derived from, so we can erase the
  * buffer's initial capacity from all functions that work with them.
  */
-using SerializationBufferBase = boost::container::small_vector_base<uint8_t>;
+using SerializationBufferBase = llvm::SmallVectorImpl<uint8_t>;
 
 namespace asio {
 
-template <typename PodType, typename Allocator>
-inline ASIO_MUTABLE_BUFFER buffer(
-    boost::container::small_vector_base<PodType, Allocator>& data)
+// These are copied verbatim `asio::buffer(std::vector<PodType, Allocator>&,
+// std::size_t)`, since `llvm::SmallVector` is mostly compatible with the STL
+// vector.
+template <typename PodType>
+inline ASIO_MUTABLE_BUFFER buffer(llvm::SmallVectorImpl<PodType>& data)
     ASIO_NOEXCEPT {
     return ASIO_MUTABLE_BUFFER(
         data.size() ? &data[0] : 0, data.size() * sizeof(PodType)
 #if defined(ASIO_ENABLE_BUFFER_DEBUGGING)
                                         ,
-        detail::buffer_debug_check<typename boost::container::small_vector_base<
-            PodType, Allocator>::iterator>(data.begin())
+        detail::buffer_debug_check<
+            typename llvm::SmallVectorImpl<PodType>::iterator>(data.begin())
 #endif  // ASIO_ENABLE_BUFFER_DEBUGGING
     );
 }
 
-// These are copied verbatim `asio::buffer(std::vector<PodType,
-// Allocator>&, std::size_t)`, since `boost::container::small_vector` is
-// compatible with the STL vector.
-template <typename PodType, typename Allocator>
-inline ASIO_MUTABLE_BUFFER buffer(
-    boost::container::small_vector_base<PodType, Allocator>& data,
-    std::size_t max_size_in_bytes) ASIO_NOEXCEPT {
+template <typename PodType>
+inline ASIO_MUTABLE_BUFFER buffer(llvm::SmallVectorImpl<PodType>& data,
+                                  std::size_t max_size_in_bytes) ASIO_NOEXCEPT {
     return ASIO_MUTABLE_BUFFER(
         data.size() ? &data[0] : 0,
         data.size() * sizeof(PodType) < max_size_in_bytes
@@ -109,8 +107,8 @@ inline ASIO_MUTABLE_BUFFER buffer(
             : max_size_in_bytes
 #if defined(ASIO_ENABLE_BUFFER_DEBUGGING)
         ,
-        detail::buffer_debug_check<typename boost::container::small_vector_base<
-            PodType, Allocator>::iterator>(data.begin())
+        detail::buffer_debug_check<
+            typename llvm::SmallVectorImpl<PodType>::iterator>(data.begin())
 #endif  // ASIO_ENABLE_BUFFER_DEBUGGING
     );
 }

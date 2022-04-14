@@ -205,8 +205,8 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
         // from the socket, so we can override this for specific function calls
         // that potentially need to have their responses handled on the same
         // calling thread (i.e. mutual recursion).
-        const Vst2EventResult response = this->send(
-            [&](asio::local::stream_protocol::socket& socket) {
+        const Vst2EventResult response =
+            this->send([&](asio::local::stream_protocol::socket& socket) {
                 return data_converter.send_event(socket, event,
                                                  serialization_buffer());
             });
@@ -294,7 +294,7 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
      * thread at all cost we'll just predefine a large buffer for every thread.
      */
     SerializationBufferBase& serialization_buffer() {
-        // This object also contains a `boost::container::small_vector` that has
+        // This object also contains a `llvm::SmallVector` that has
         // capacity for a large-ish number of events so we don't have to
         // allocate under normal circumstances.
         constexpr size_t initial_events_size = sizeof(DynamicVstEvents);
@@ -304,9 +304,13 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
         // when sending and receiving preset data. In such cases we do want to
         // reallocate the buffer on the next event to free up memory again. This
         // won't happen during audio processing.
-        if (buffer.size() > initial_events_size) {
-            buffer.resize(initial_events_size);
-            buffer.shrink_to_fit();
+        if (buffer.size() > initial_events_size * 2) {
+            // NOTE: There's no `.shrink_to_fit()` implementation here, so we'll
+            //       just YOLO it and reinitialize the vector since we don't
+            //       need the old data
+            buffer = SerializationBuffer<initial_events_size>{};
+            // buffer.resize(initial_events_size);
+            // buffer.shrink_to_fit();
         }
 
         return buffer;

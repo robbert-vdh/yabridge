@@ -18,8 +18,6 @@
 
 #include <sstream>
 
-#include <boost/container/string.hpp>
-
 #include "../serialization/vst3.h"
 #include "common.h"
 

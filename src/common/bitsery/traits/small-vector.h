@@ -17,44 +17,30 @@
 #pragma once
 
 #include <bitsery/traits/core/std_defaults.h>
-#include <boost/container/detail/is_contiguous_container.hpp>
-#include <boost/container/small_vector.hpp>
+#include <llvm/small-vector.h>
 
 namespace bitsery {
 namespace traits {
 
-template <typename T, size_t N, typename Allocator>
-struct ContainerTraits<boost::container::small_vector<T, N, Allocator>>
-    : public StdContainer<boost::container::small_vector<T, N, Allocator>,
-                          true,
-                          true> {
-    // Unlike `std::vector`, I'm pretty sure
-    // `boost::container::small_vector<bool, N>` is contiguous. So hopefully
-    // this assertion does its thing.
-    static_assert(boost::container::dtl::is_contiguous_container<
-                  boost::container::small_vector<T, N, Allocator>>::value);
+template <typename T, unsigned N>
+struct ContainerTraits<llvm::SmallVector<T, N>>
+    : public StdContainer<llvm::SmallVector<T, N>, true, true> {
+    // The small vector implementation needs to be contiguous for this to work
 };
 
-template <typename T, size_t N, typename Allocator>
-struct BufferAdapterTraits<boost::container::small_vector<T, N, Allocator>>
-    : public StdContainerForBufferAdapter<
-          boost::container::small_vector<T, N, Allocator>> {};
+template <typename T, unsigned N>
+struct BufferAdapterTraits<llvm::SmallVector<T, N>>
+    : public StdContainerForBufferAdapter<llvm::SmallVector<T, N>> {};
 
 // And the same extensions again for the type erased version
 
-template <typename T, typename Allocator>
-struct ContainerTraits<boost::container::small_vector_base<T, Allocator>>
-    : public StdContainer<boost::container::small_vector_base<T, Allocator>,
-                          true,
-                          true> {
-    static_assert(boost::container::dtl::is_contiguous_container<
-                  boost::container::small_vector_base<T, Allocator>>::value);
-};
+template <typename T>
+struct ContainerTraits<llvm::SmallVectorImpl<T>>
+    : public StdContainer<llvm::SmallVectorImpl<T>, true, true> {};
 
-template <typename T, typename Allocator>
-struct BufferAdapterTraits<boost::container::small_vector_base<T, Allocator>>
-    : public StdContainerForBufferAdapter<
-          boost::container::small_vector_base<T, Allocator>> {};
+template <typename T>
+struct BufferAdapterTraits<llvm::SmallVectorImpl<T>>
+    : public StdContainerForBufferAdapter<llvm::SmallVectorImpl<T>> {};
 
 }  // namespace traits
 }  // namespace bitsery

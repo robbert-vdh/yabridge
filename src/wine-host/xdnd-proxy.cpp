@@ -192,9 +192,9 @@ WineXdndProxy::Handle WineXdndProxy::get_handle() {
     return Handle(instance);
 }
 
-void WineXdndProxy::begin_xdnd(const boost::container::small_vector_base<
-                                   ghc::filesystem::path>& file_paths,
-                               HWND tracker_window) {
+void WineXdndProxy::begin_xdnd(
+    const llvm::SmallVectorImpl<ghc::filesystem::path>& file_paths,
+    HWND tracker_window) {
     if (file_paths.empty()) {
         throw std::runtime_error("Cannot drag-and-drop without any files");
     }
@@ -815,7 +815,7 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
     }
 
     // This will contain the normal, Unix-style paths to the files
-    boost::container::small_vector<fs::path, 4> dragged_files;
+    llvm::SmallVector<fs::path, 4> dragged_files;
     for (unsigned int format_idx = 0; format_idx < num_formats; format_idx++) {
         STGMEDIUM storage{};
         if (HRESULT result = tracker_info->dataObject->GetData(

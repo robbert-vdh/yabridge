@@ -66,6 +66,7 @@ host_common_sources = files(
   '../common/plugins.cpp',
   '../common/process.cpp',
   '../common/utils.cpp',
+  '../include/llvm/small-vector.cpp',
   'bridges/common.cpp',
   'bridges/vst2.cpp',
   'editor.cpp',

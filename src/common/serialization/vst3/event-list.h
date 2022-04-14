@@ -16,18 +16,15 @@
 
 #pragma once
 
+#include <llvm/small-vector.h>
 #include <pluginterfaces/vst/ivstevents.h>
-#include <boost/container/small_vector.hpp>
 
 #include "../../bitsery/ext/in-place-variant.h"
+#include "../../bitsery/traits/small-vector.h"
 #include "base.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
-// FIXME: When used in a Boost.Containers small vector, GCC somehow complains
-//        that the fields in `YaEvent` may be uninitialized (during the
-//        deserialization). This warning only shows up during a unity build.
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
 /**
  * A wrapper around `DataEvent` for serialization purposes, as this event
@@ -270,7 +267,7 @@ class YaEventList : public Steinberg::Vst::IEventList {
     }
 
    private:
-    boost::container::small_vector<YaEvent, 64> events_;
+    llvm::SmallVector<YaEvent, 64> events_;
 };
 
 #pragma GCC diagnostic pop

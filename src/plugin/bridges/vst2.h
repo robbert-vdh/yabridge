@@ -196,7 +196,7 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      * we receive so we can send them to host on the audio thread at the end of
      * `process_replacing()`.
      */
-    boost::container::small_vector<DynamicVstEvents, 1> incoming_midi_events_;
+    llvm::SmallVector<DynamicVstEvents, 1> incoming_midi_events_;
     /**
      * Mutex for locking the above event queue, since recieving and processing
      * now happens in two different threads.

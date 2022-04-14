@@ -245,7 +245,7 @@ class Vst2Bridge : public HostBridge {
      * practice every host will bundle all events in a single
      * `effProcessEvents()` call.
      */
-    boost::container::small_vector<DynamicVstEvents, 1>
+    llvm::SmallVector<DynamicVstEvents, 1>
         next_audio_buffer_midi_events_;
     /**
      * Whether `next_audio_buffer_midi_events` should be cleared before

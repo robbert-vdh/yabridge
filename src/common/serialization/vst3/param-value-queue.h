@@ -16,20 +16,14 @@
 
 #pragma once
 
+#include <llvm/small-vector.h>
 #include <pluginterfaces/vst/ivstparameterchanges.h>
-#include <boost/container/small_vector.hpp>
 
 #include "../../bitsery/traits/small-vector.h"
 #include "base.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
-// FIXME: When used in a Boost.Containers small vector, GCC somehow complains
-//        that the fields in this class may be uninitialized (during the
-//        deserialization). This warning only shows up during a unity build.
-#if defined(__GNUC__) && !defined(__llvm__)
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
 
 /**
  * Wraps around `IParamValueQueue` for serializing a queue containing changes to
@@ -102,9 +96,7 @@ class alignas(16) YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
      *
      * This contains pairs of `(sample_offset, value)`.
      */
-    boost::container::small_vector<std::pair<int32, Steinberg::Vst::ParamValue>,
-                                   16>
-        queue_;
+    llvm::SmallVector<std::pair<int32, Steinberg::Vst::ParamValue>, 16> queue_;
 };
 
 #pragma GCC diagnostic pop

@@ -26,8 +26,8 @@
 #include <xcb/xcb.h>
 #pragma pop_macro("_WIN32")
 
+#include <llvm/small-vector.h>
 #include <windows.h>
-#include <boost/container/small_vector.hpp>
 #include <ghc/filesystem.hpp>
 
 #include "utils.h"
@@ -149,9 +149,9 @@ class WineXdndProxy {
      * Initiate the XDDN protocol by taking ownership of the `XdndSelection`
      * selection and setting up the event listeners.
      */
-    void begin_xdnd(const boost::container::small_vector_base<
-                        ghc::filesystem::path>& file_paths,
-                    HWND tracker_window);
+    void begin_xdnd(
+        const llvm::SmallVectorImpl<ghc::filesystem::path>& file_paths,
+        HWND tracker_window);
 
     /**
      * Release ownership of the selection stop listening for X11 events.

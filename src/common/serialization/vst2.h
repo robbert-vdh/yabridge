@@ -20,8 +20,8 @@
 
 #include <bitsery/traits/array.h>
 #include <bitsery/traits/vector.h>
+#include <llvm/small-vector.h>
 #include <vestige/aeffectx.h>
-#include <boost/container/small_vector.hpp>
 
 #include "../audio-shm.h"
 #include "../bitsery/ext/in-place-optional.h"
@@ -123,18 +123,17 @@ class alignas(16) DynamicVstEvents {
      * the `sysex_data_` field before dumping everything to
      * `vst_events_buffer_`.
      */
-    boost::container::small_vector<VstEvent, 64> events_;
+    llvm::SmallVector<VstEvent, 64> events_;
 
     /**
      * If the host or a plugin sends SysEx data, then we will store that data
      * here. I've only seen this happen with the combination of an Arturia
      * MiniLab keyboard, REAPER, and D16 Group plugins. We'll store this as an
      * associative list of `(index, data)` pairs, where `index` corresponds to
-     * an event in `events`. There's no 'small_unordered_map' in
-     * Boost.Container, so this will have to do.
+     * an event in `events`. There's no 'SmallUnorderedMap' equivalent to the
+     * `SmallVector`.
      */
-    boost::container::small_vector<std::pair<native_size_t, std::string>, 8>
-        sysex_data_;
+    llvm::SmallVector<std::pair<native_size_t, std::string>, 8> sysex_data_;
 
     template <typename S>
     void serialize(S& s) {
@@ -161,7 +160,7 @@ class alignas(16) DynamicVstEvents {
      * MIDI events the host can send at once we have to build this object on the
      * heap by hand.
      */
-    boost::container::small_vector<
+    llvm::SmallVector<
         uint8_t,
         sizeof(VstEvents) +
             ((64 - 1) *

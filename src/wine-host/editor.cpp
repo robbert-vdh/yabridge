@@ -19,7 +19,7 @@
 #include <iostream>
 #include <sstream>
 
-#include <boost/container/small_vector.hpp>
+#include <llvm/small-vector.h>
 
 using namespace std::literals::chrono_literals;
 using namespace std::literals::string_literals;
@@ -132,7 +132,7 @@ static const HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
  * @return A non-empty list containing `starting_at` and all of its ancestor
  *   windows `starting_at`.
  */
-boost::container::small_vector<xcb_window_t, 8> find_ancestor_windows(
+llvm::SmallVector<xcb_window_t, 8> find_ancestor_windows(
     xcb_connection_t& x11_connection,
     xcb_window_t starting_at);
 
@@ -1238,7 +1238,7 @@ LRESULT CALLBACK window_proc(HWND handle,
     return DefWindowProc(handle, message, wParam, lParam);
 }
 
-boost::container::small_vector<xcb_window_t, 8> find_ancestor_windows(
+llvm::SmallVector<xcb_window_t, 8> find_ancestor_windows(
     xcb_connection_t& x11_connection,
     xcb_window_t starting_at) {
     xcb_window_t current_window = starting_at;
@@ -1250,8 +1250,7 @@ boost::container::small_vector<xcb_window_t, 8> find_ancestor_windows(
     THROW_X11_ERROR(error);
 
     const xcb_window_t root = query_reply->root;
-    boost::container::small_vector<xcb_window_t, 8> ancestor_windows{
-        current_window};
+    llvm::SmallVector<xcb_window_t, 8> ancestor_windows{current_window};
     while (query_reply->parent != root) {
         current_window = query_reply->parent;
         ancestor_windows.push_back(current_window);

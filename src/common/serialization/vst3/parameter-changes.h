@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include <llvm/small-vector.h>
 #include <pluginterfaces/vst/ivstparameterchanges.h>
-#include <boost/container/small_vector.hpp>
 
 #include "../../bitsery/traits/small-vector.h"
 #include "base.h"
@@ -85,7 +85,7 @@ class YaParameterChanges : public Steinberg::Vst::IParameterChanges {
     /**
      * The parameter value changes queues.
      */
-    boost::container::small_vector<YaParamValueQueue, 16> queues_;
+    llvm::SmallVector<YaParamValueQueue, 16> queues_;
 };
 
 #pragma GCC diagnostic pop
