@@ -48,7 +48,8 @@ AudioShmBuffer::~AudioShmBuffer() noexcept {
 AudioShmBuffer::AudioShmBuffer(AudioShmBuffer&& o) noexcept
     : config_(std::move(o.config_)),
       shm_fd_(std::move(o.shm_fd_)),
-      shm_bytes_(std::move(o.shm_bytes_)) {
+      shm_bytes_(std::move(o.shm_bytes_)),
+      shm_size_(std::move(o.shm_size_)) {
     o.is_moved_ = true;
 }
 
@@ -56,6 +57,7 @@ AudioShmBuffer& AudioShmBuffer::operator=(AudioShmBuffer&& o) noexcept {
     config_ = std::move(o.config_);
     shm_fd_ = std::move(o.shm_fd_);
     shm_bytes_ = std::move(o.shm_bytes_);
+    shm_size_ = std::move(o.shm_size_);
     o.is_moved_ = true;
 
     return *this;
