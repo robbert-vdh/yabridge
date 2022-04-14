@@ -169,8 +169,10 @@ void Process::Handle::terminate() const noexcept {
 }
 
 std::optional<int> Process::Handle::wait() const noexcept {
+    // This may fail if we've already reaped the process and terminate gets
+    // called another time, so we won't check the result here
     int status = 0;
-    assert(waitpid(pid_, &status, 0) > 0);
+    waitpid(pid_, &status, 0);
 
     if (WIFEXITED(status)) {
         return WEXITSTATUS(status);
