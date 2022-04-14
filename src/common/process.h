@@ -48,6 +48,14 @@ bool pid_running(pid_t pid);
 std::vector<ghc::filesystem::path> split_path(const std::string_view& path_env);
 
 /**
+ * Search through a search path vector created by `split_path` for an executable
+ * binary called `target`, returning the first match if any.
+ */
+std::optional<ghc::filesystem::path> search_in_path(
+    const std::vector<ghc::filesystem::path>& path,
+    const std::string_view& target);
+
+/**
  * Helper to create an `environ`-like environment object for passing to the
  * `exec*e()` family of functions.
  */

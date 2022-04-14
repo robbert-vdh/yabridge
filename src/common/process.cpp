@@ -66,6 +66,19 @@ std::vector<ghc::filesystem::path> split_path(
     return search_path;
 }
 
+std::optional<ghc::filesystem::path> search_in_path(
+    const std::vector<ghc::filesystem::path>& path,
+    const std::string_view& target) {
+    for (const auto& dir : path) {
+        ghc::filesystem::path candidate = dir / target;
+        if (access(candidate.c_str(), X_OK) == 0) {
+            return candidate;
+        }
+    }
+
+    return std::nullopt;
+}
+
 ProcessEnvironment::ProcessEnvironment(char** initial_env) {
     // We'll need to read all strings from `initial_env`. They _should_ all be
     // zero-terminated strings, with a null pointer to indicate the end of the
