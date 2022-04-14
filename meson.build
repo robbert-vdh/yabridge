@@ -22,7 +22,6 @@ project(
 is_64bit_system = build_machine.cpu_family() not in ['x86', 'arm']
 with_32bit_libraries = (not is_64bit_system) or get_option('build.cpp_args').contains('-m32')
 with_bitbridge = get_option('with-bitbridge')
-with_static_boost = get_option('with-static-boost')
 with_winedbg = get_option('with-winedbg')
 with_vst3 = get_option('with-vst3')
 
@@ -185,7 +184,7 @@ endif
 
 asio_dep = dependency('asio', version : '>=1.22.0')
 # TODO: Get rid of the last Boost bits and pieces
-boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
+boost_dep = dependency('boost', version : '>=1.66')
 if meson.version().version_compare('>=0.60')
   # Bitsery's CMake build definition is capitalized for some reason
   bitsery_dep = dependency('bitsery', 'Bitsery', version : '>=5.2.0')

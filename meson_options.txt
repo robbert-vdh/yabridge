@@ -1,15 +1,10 @@
+# TODO: For yabridge 4.0, remove the `with-` prefix from these options
+
 option(
   'with-bitbridge',
   type : 'boolean',
   value : false,
   description : 'Build a 32-bit host application for hosting 32-bit plugins. See the readme for full instructions on how to use this.'
-)
-
-option(
-  'with-static-boost',
-  type : 'boolean',
-  value : false,
-  description : 'Enable static linking for Boost. Needed when distributing the binaries to other systems.'
 )
 
 option(

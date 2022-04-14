@@ -13,6 +13,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - `effProcessEvents` VST2 calls are now filtered out from the log when
   `YABRIDGE_DEBUG_LEVEL` is set to 1.
 
+### Removed
+
+- Removed the `with-static-boost` build option since there's no longer a
+  dependency on Boost.Filesystem.
+
 ### Fixed
 
 - Fixed an obscure issue with VST3 plugins crashing in **Ardour** on
