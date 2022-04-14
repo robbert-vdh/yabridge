@@ -136,6 +136,11 @@ class Process {
         bool running() const noexcept;
 
         /**
+         * Don't terminate the process when this object gets dropped.
+         */
+        void detach() noexcept;
+
+        /**
          * Forcefully terminate the process by sending `SIGKILL`. Will reap the
          * process zombie after sending the signal.
          */
@@ -149,9 +154,10 @@ class Process {
 
        private:
         /**
-         * If `true`, don't terminate the process
+         * If `true`, don't terminate the process when this object gets dropped.
+         * Also set when this object gets moved from.
          */
-        bool is_moved_ = false;
+        bool detached_ = false;
 
         pid_t pid_ = 0;
     };

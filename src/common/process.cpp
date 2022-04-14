@@ -96,18 +96,18 @@ char* const* ProcessEnvironment::make_environ() const {
 Process::Handle::Handle(pid_t pid) : pid_(pid) {}
 
 Process::Handle::~Handle() {
-    if (!is_moved_) {
+    if (!detached_) {
         // If this function has already been called then that's okay
         terminate();
     }
 }
 
 Process::Handle::Handle(Handle&& o) noexcept : pid_(o.pid_) {
-    o.is_moved_ = true;
+    o.detached_ = true;
 }
 
 Process::Handle& Process::Handle::operator=(Handle&& o) noexcept {
-    o.is_moved_ = true;
+    o.detached_ = true;
 
     pid_ = o.pid_;
 
@@ -120,6 +120,10 @@ pid_t Process::Handle::pid() const noexcept {
 
 bool Process::Handle::running() const noexcept {
     return pid_running(pid_);
+}
+
+void Process::Handle::detach() noexcept {
+    detached_ = true;
 }
 
 void Process::Handle::terminate() const noexcept {
