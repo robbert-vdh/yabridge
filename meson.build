@@ -174,48 +174,6 @@ include_dir = include_directories('src/include')
 winegcc = meson.get_compiler('cpp', native : false)
 
 if is_64bit_system
-  boost_filesystem_64bit_dep = dependency(
-    'boost',
-    version : '>=1.66',
-    modules : ['filesystem'],
-    static : with_static_boost,
-  )
-endif
-# HACK: I couldn't get Meson's Boost dependency detection to work with `-m32`,
-#       because no matter what settings I use in machine/cross files it will
-#       keep rejecting the 32-bit libraries when the host system is 64-bit.
-#       Since cross-compiling 32-bit native libraries is not really a supported
-#       use case anyways we'll just brute force it for the time being.
-#
-#       We also don't add any additional library search paths here, so you may
-#       need to manually add your own using something like
-#       `-Dbuild.cpp_link_args='-I/usr/local/lib'`.
-if with_32bit_libraries or with_bitbridge
-  boost_filesystem_32bit_dep = declare_dependency(
-    dependencies : winegcc.find_library(
-      'boost_filesystem',
-      static : with_static_boost,
-      dirs : [
-        # Used by Arch based distros
-        '/usr/local/lib32',
-        '/usr/lib32',
-        # Used by Debian based distros
-        '/usr/local/lib/i386-linux-gnu',
-        '/usr/lib/i386-linux-gnu',
-        # Used by Red Hat based distros, could cause issues though since Meson
-        # cannot differentiate between the 32-bit version and the regular 64-bit
-        # version that would normally be in /lib
-        '/usr/local/lib',
-        '/usr/lib',
-      ]
-    ),
-    compile_args : with_static_boost
-      ? ['-DBOOST_FILESYSTEM_STATIC_LINK=1']
-      : ['-DBOOST_FILESYSTEM_DYN_LINK=1'],
-  )
-endif
-
-if is_64bit_system
   xcb_64bit_dep = dependency('xcb')
 endif
 if with_32bit_libraries or with_bitbridge
@@ -226,6 +184,7 @@ endif
 # and 64-bit versions
 
 asio_dep = dependency('asio', version : '>=1.22.0')
+# TODO: Get rid of the last Boost bits and pieces
 boost_dep = dependency('boost', version : '>=1.66', static : with_static_boost)
 if meson.version().version_compare('>=0.60')
   # Bitsery's CMake build definition is capitalized for some reason
@@ -291,9 +250,6 @@ shared_library(
 
     asio_dep,
     boost_dep,
-    with_32bit_libraries
-      ? boost_filesystem_32bit_dep
-      : boost_filesystem_64bit_dep,
     bitsery_dep,
     dl_dep,
     ghc_filesystem_dep,
@@ -317,9 +273,6 @@ if with_vst3
 
       asio_dep,
       boost_dep,
-      with_32bit_libraries
-        ? boost_filesystem_32bit_dep
-        : boost_filesystem_64bit_dep,
       bitsery_dep,
       dl_dep,
       function2_dep,
