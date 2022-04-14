@@ -41,7 +41,6 @@
 // FIXME: Remove Boost stuff
 #include <boost/predef.h>
 #include <asio/basic_socket_streambuf.hpp>
-#include <boost/asio/basic_socket_streambuf.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 // #include <asio/asio/detail/timer_queue_ptime.hpp>
 // #include <boost/interprocess/detail/workaround.hpp>

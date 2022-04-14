@@ -24,15 +24,12 @@
 namespace fs = ghc::filesystem;
 
 bool pid_running(pid_t pid) {
-    // With regular individually hosted plugins we can simply check whether the
-    // process is still running, however Boost.Process does not allow you to do
-    // the same thing for a process that's not a direct child if this process.
-    // When using plugin groups we'll have to manually check whether the PID
-    // returned by the group host process is still active. We sadly can't use
-    // `kill()` for this as that provides no way to distinguish between active
-    // processes and zombies, and a terminated group host process will always be
-    // left as a zombie process. If the process is active, then
-    // `/proc/<pid>/{cwd,exe,root}` will be valid symlinks.
+    // In theory you could `kill(0)` a process to check if it's still active,
+    // but that doesn't distinguish between actually running processes and
+    // unreaped zombies, and terminated group host processes will always be left
+    // as zombies since there may not be anything left to reap them. Instead
+    // we'll check whether one of `/proc/<pid>/{cwd,exe,root}` are valid
+    // symlinks.
     std::error_code err;
     fs::canonical("/proc/" + std::to_string(pid) + "/exe", err);
 

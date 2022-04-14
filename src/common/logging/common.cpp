@@ -18,14 +18,11 @@
 
 #include <vestige/aeffectx.h>
 
-#include <boost/process/environment.hpp>
 #include <chrono>
 #include <ctime>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-
-namespace bp = boost::process;
 
 /**
  * The environment variable indicating whether to log to a file. Will log to
@@ -60,11 +57,12 @@ Logger::Logger(std::shared_ptr<std::ostream> stream,
 Logger Logger::create_from_environment(std::string prefix,
                                        std::shared_ptr<std::ostream> stream,
                                        bool prefix_timestamp) {
-    bp::environment env = boost::this_process::environment();
-    const std::string file_path =
-        env[logging_file_environment_variable].to_string();
-    std::string verbosity =
-        env[logging_verbosity_environment_variable].to_string();
+    // NOLINTNEXTLINE(concurrency-mt-unsafe)
+    const char* file_path_env = getenv(logging_file_environment_variable);
+    // NOLINTNEXTLINE(concurrency-mt-unsafe)
+    const char* verbosity_env = getenv(logging_verbosity_environment_variable);
+    std::string file_path = file_path_env ? std::string(file_path_env) : "";
+    std::string verbosity = verbosity_env ? std::string(verbosity_env) : "";
 
     // Editor debug tracing is an optional flag that can be added to any debug
     // level (and technically it will also work fine if it's the only option,
