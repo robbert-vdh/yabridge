@@ -16,13 +16,10 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
-#ifdef __WINE__
-#include "../wine-host/asio-fix.h"
-#endif
-#include <boost/interprocess/mapped_region.hpp>
-#include <boost/interprocess/shared_memory_object.hpp>
+#include <sys/mman.h>
 
 /**
  * A shared memory object that allows audio buffers to be shared between the
@@ -109,6 +106,9 @@ class AudioShmBuffer {
      * Connect to or create the shared memory object and map it to this
      * process's memory. The configuration is created on the Wine side using the
      * process described in `Config`'s docstring.
+     *
+     * @throw std::system_error If the shared memory object could not be
+     *   created or mapped.
      */
     AudioShmBuffer(const Config& config);
 
@@ -131,6 +131,7 @@ class AudioShmBuffer {
      *
      * @throw `std::invalid_argument` If the config is for a buffer with a
      *   different name.
+     * @throw std::system_error If the shared memory object could not be mapped.
      */
     void resize(const Config& new_config);
 
@@ -148,15 +149,17 @@ class AudioShmBuffer {
      * addresses might change after a call to `resize()`.
      */
     template <typename T>
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     T* input_channel_ptr(const uint32_t bus, const uint32_t channel) noexcept {
-        return reinterpret_cast<T*>(buffer_.get_address()) +
+        return reinterpret_cast<T*>(shm_bytes_) +
                config_.input_offsets[bus][channel];
     }
 
     template <typename T>
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     const T* input_channel_ptr(const uint32_t bus,
                                const uint32_t channel) const noexcept {
-        return reinterpret_cast<const T*>(buffer_.get_address()) +
+        return reinterpret_cast<const T*>(shm_bytes_) +
                config_.input_offsets[bus][channel];
     }
 
@@ -166,15 +169,17 @@ class AudioShmBuffer {
      * addresses might change after a call to `resize()`.
      */
     template <typename T>
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     T* output_channel_ptr(const uint32_t bus, const uint32_t channel) noexcept {
-        return reinterpret_cast<T*>(buffer_.get_address()) +
+        return reinterpret_cast<T*>(shm_bytes_) +
                config_.output_offsets[bus][channel];
     }
 
     template <typename T>
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     const T* output_channel_ptr(const uint32_t bus,
                                 const uint32_t channel) const noexcept {
-        return reinterpret_cast<const T*>(buffer_.get_address()) +
+        return reinterpret_cast<const T*>(shm_bytes_) +
                config_.output_offsets[bus][channel];
     }
 
@@ -183,11 +188,23 @@ class AudioShmBuffer {
    private:
     /**
      * Resize the shared memory object, and set up the memory mapping.
+     *
+     * @throw std::system_error If the shared memory object could not be mapped.
      */
     void setup_mapping();
 
-    boost::interprocess::shared_memory_object shm_;
-    boost::interprocess::mapped_region buffer_;
+    /**
+     * The file descriptor for our shared memory object.
+     */
+    int shm_fd_ = 0;
+    /**
+     * A pointer to our mapped shared memory region.
+     */
+    uint8_t* shm_bytes_ = nullptr;
+    /**
+     * The size of the mapped shared memory area, used for remapping.
+     */
+    size_t shm_size_ = 0;
 
     bool is_moved_ = false;
 };

@@ -10,6 +10,16 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Almost the entirety of yabridge's backend has had a rewrite to get rid of any
+  all dependencies on the Boost libraries to make packaging easier and to remove
+  the runtime dependency on Boost.Filesystem for distro packaged versions of
+  yabridge. This prevents yabridge from breaking when Boost gets updated
+  independently of the yabridge package.
+- When mapping shared memory for audio and the user does not have permissions to
+  lock the memory, yabridge will now retry mapping the memory without locking it
+  instead of immediately terminating the process. An annoying desktop
+  notification will still be shown every time you load a plugin until you fix
+  this.
 - `effProcessEvents` VST2 calls are now filtered out from the log when
   `YABRIDGE_DEBUG_LEVEL` is set to 1.
 

@@ -38,12 +38,8 @@
 // included here, but including headers from the detail directory directly
 // didn't sound like a great idea.
 
-// FIXME: Remove Boost stuff
-#include <boost/predef.h>
 #include <asio/basic_socket_streambuf.hpp>
-#include <boost/interprocess/mapped_region.hpp>
 // #include <asio/asio/detail/timer_queue_ptime.hpp>
-// #include <boost/interprocess/detail/workaround.hpp>
 
 #pragma pop_macro("WIN32")
 #pragma pop_macro("_WIN32")

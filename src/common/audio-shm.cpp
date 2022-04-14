@@ -20,11 +20,17 @@
 
 #include "logging/common.h"
 
+using namespace std::literals::string_literals;
+
 AudioShmBuffer::AudioShmBuffer(const Config& config)
     : config_(config),
-      shm_(boost::interprocess::open_or_create,
-           config.name.c_str(),
-           boost::interprocess::read_write) {
+      shm_fd_(shm_open(config.name.c_str(), O_RDWR | O_CREAT, 0600)) {
+    if (shm_fd_ == -1) {
+        throw std::system_error(
+            std::error_code(errno, std::system_category()),
+            "Could not create shared memory object " + config_.name);
+    }
+
     setup_mapping();
 }
 
@@ -33,21 +39,23 @@ AudioShmBuffer::~AudioShmBuffer() noexcept {
     // removed, so we'll do it on both sides to reduce the chance that we leak
     // shared memory
     if (!is_moved_) {
-        boost::interprocess::shared_memory_object::remove(config_.name.c_str());
+        munmap(shm_bytes_, config_.size);
+        close(shm_fd_);
+        shm_unlink(config_.name.c_str());
     }
 }
 
 AudioShmBuffer::AudioShmBuffer(AudioShmBuffer&& o) noexcept
     : config_(std::move(o.config_)),
-      shm_(std::move(o.shm_)),
-      buffer_(std::move(o.buffer_)) {
+      shm_fd_(std::move(o.shm_fd_)),
+      shm_bytes_(std::move(o.shm_bytes_)) {
     o.is_moved_ = true;
 }
 
 AudioShmBuffer& AudioShmBuffer::operator=(AudioShmBuffer&& o) noexcept {
     config_ = std::move(o.config_);
-    shm_ = std::move(o.shm_);
-    buffer_ = std::move(o.buffer_);
+    shm_fd_ = std::move(o.shm_fd_);
+    shm_bytes_ = std::move(o.shm_bytes_);
     o.is_moved_ = true;
 
     return *this;
@@ -65,17 +73,22 @@ void AudioShmBuffer::resize(const Config& new_config) {
 }
 
 void AudioShmBuffer::setup_mapping() {
-    try {
-        // Apparently you get a `Resource temporarily unavailable` when calling
-        // `ftruncate()` with a size of 0 on shared memory
-        if (config_.size > 0) {
-            shm_.truncate(config_.size);
-            buffer_ = boost::interprocess::mapped_region(
-                shm_, boost::interprocess::read_write, 0, config_.size, nullptr,
-                MAP_LOCKED);
-        }
-    } catch (const boost::interprocess::interprocess_exception& error) {
-        if (error.get_native_error() == EAGAIN) {
+    // Apparently you get a `Resource temporarily unavailable` when calling
+    // `ftruncate()` with a size of 0 on shared memory
+    if (config_.size > 0) {
+        // I don't think this can fail
+        assert(ftruncate(shm_fd_, config_.size) == 0);
+
+        // But this can, if the user does not have permissions to use (enough)
+        // locked emmory, we'll try it without locking memory and show a big
+        // obnoxious warning and try again without locking the memory.
+        uint8_t* old_shm_bytes = shm_bytes_;
+        shm_bytes_ = static_cast<uint8_t*>(
+            old_shm_bytes
+                ? mremap(old_shm_bytes, shm_size_, config_.size, MREMAP_MAYMOVE)
+                : mmap(nullptr, config_.size, PROT_READ | PROT_WRITE,
+                       MAP_SHARED | MAP_LOCKED, shm_fd_, 0));
+        if (shm_bytes_ == MAP_FAILED) {
             Logger logger = Logger::create_exception_logger();
 
             logger.log("");
@@ -85,8 +98,22 @@ void AudioShmBuffer::setup_mapping() {
             logger.log("       wiki for instructions on how to set up");
             logger.log("       realtime privileges and memlock limits.");
             logger.log("");
-        }
 
-        throw;
+            // Growing into a size that we cannot lock sounds like a super rare
+            // edge case, but let's handle it anyways
+            if (old_shm_bytes) {
+                assert(munmap(old_shm_bytes, shm_size_) == 0);
+            }
+            shm_bytes_ = static_cast<uint8_t*>(mmap(nullptr, config_.size,
+                                                    PROT_READ | PROT_WRITE,
+                                                    MAP_SHARED, shm_fd_, 0));
+            if (shm_bytes_ == MAP_FAILED) {
+                throw std::system_error(
+                    std::error_code(errno, std::system_category()),
+                    "Could not map shared memory");
+            }
+        }
     }
+
+    shm_size_ = config_.size;
 }
