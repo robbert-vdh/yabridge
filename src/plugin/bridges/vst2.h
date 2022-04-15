@@ -1,4 +1,4 @@
-// yabridge: a Wine VST bridge
+// yabridge: a Wine plugin bridge
 // Copyright (C) 2020-2022 Robbert van der Helm
 //
 // This program is free software: you can redistribute it and/or modify
@@ -37,7 +37,7 @@
 class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
    public:
     /**
-     * Initializes the Wine VST bridge. This sets up the sockets for event
+     * Initializes the Wine plugin bridge. This sets up the sockets for event
      * handling.
      *
      * @param host_callback The callback function passed to the VST plugin by

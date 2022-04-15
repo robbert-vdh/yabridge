@@ -1,5 +1,5 @@
 
-// yabridge: a Wine VST bridge
+// yabridge: a Wine plugin bridge
 // Copyright (C) 2020-2022 Robbert van der Helm
 //
 // This program is free software: you can redistribute it and/or modify
