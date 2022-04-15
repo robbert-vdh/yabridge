@@ -304,7 +304,7 @@ std::optional<ghc::filesystem::path> find_dominating_file(
     const std::string& filename,
     ghc::filesystem::path starting_dir,
     F&& predicate = ghc::filesystem::exists) {
-    while (starting_dir != "/") {
+    while (starting_dir != "/" && starting_dir != "") {
         const ghc::filesystem::path candidate = starting_dir / filename;
         if (predicate(candidate)) {
             return candidate;
