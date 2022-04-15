@@ -34,12 +34,6 @@ page lists some of those.
   files from smaller stub libraries. This would avoid having to rerun
   `yabridgectl sync` after an upgrade, and it would save disk space on systems
   without support for reflinks.
-- Consider replacing Boost.Asio with the standalone Asio library,
-  Boost.Filesystem with a similar headers only library (as `std::filesystem`
-  doesn't work under `wineg++`) and all other components with custom wrappers
-  around Linux and Windows APIs. Getting rid of the Boost.Filesystem dependency
-  would be nice as it makes packaging easier, but it would require a lot of work
-  to make it happen.
 
 # Somewhere in the future, possibly
 

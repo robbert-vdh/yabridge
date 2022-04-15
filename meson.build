@@ -183,8 +183,6 @@ endif
 # and 64-bit versions
 
 asio_dep = dependency('asio', version : '>=1.22.0')
-# TODO: Get rid of the last Boost bits and pieces
-boost_dep = dependency('boost', version : '>=1.66')
 if meson.version().version_compare('>=0.60')
   # Bitsery's CMake build definition is capitalized for some reason
   bitsery_dep = dependency('bitsery', 'Bitsery', version : '>=5.2.0')
@@ -248,7 +246,6 @@ shared_library(
     configuration_dep,
 
     asio_dep,
-    boost_dep,
     bitsery_dep,
     dl_dep,
     ghc_filesystem_dep,
@@ -271,7 +268,6 @@ if with_vst3
       configuration_dep,
 
       asio_dep,
-      boost_dep,
       bitsery_dep,
       dl_dep,
       function2_dep,

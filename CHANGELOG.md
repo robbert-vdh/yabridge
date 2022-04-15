@@ -10,11 +10,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Almost the entirety of yabridge's backend has had a rewrite to get rid of any
-  all dependencies on the Boost libraries to make packaging easier and to remove
-  the runtime dependency on Boost.Filesystem for distro packaged versions of
-  yabridge. This prevents yabridge from breaking when Boost gets updated
-  independently of the yabridge package.
+- Almost the entirety of yabridge's backend has been rewritten to get rid of all
+  dependencies on the Boost libraries to make packaging yabridge for distros
+  easier and to make distro packaged versions of yabridge more reliable. This
+  gets rid of the runtime dependency on Boost.Filesystem for those builds, and
+  it also makes compiling slightly faster and the binaries slightly smaller.
+  Before this, yabridge would need to be rebuilt whenever Boost got updated.
 - When mapping shared memory for audio and the user does not have permissions to
   lock the memory, yabridge will now retry mapping the memory without locking it
   instead of immediately terminating the process. An annoying desktop
@@ -35,6 +36,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Packaging notes
 
+- Completely removed the dependency on all Boost libraries.
 - Added a dependency on the headers-only
   [`ghc::filesystem`](https://github.com/gulrak/filesystem) library to replace
   Boost.Filesystem.

@@ -61,9 +61,9 @@ interacts with the Win32 message loop or the GUI has to be done from the same
 thread (or typically the main thread). To do this yabridge will execute certain
 'unsafe' functions that are likely to interact with these things from the main
 thread. The main thread also periodically handles Win32 and optionally also X11
-events (when there are open editors) using a Boost.Asio timer, so these function
-calls can all be done from that same thread by posting a task to the Boost.Asio
-IO context.
+events (when there are open editors) using an Asio timer, so these function
+calls can all be done from that same thread by posting a task to the Asio IO
+context.
 
 On the native Linux side it usually doesn't matter which thread functions are
 called from, but since REAPER does not allow any function calls that interact

@@ -765,7 +765,6 @@ the following dependencies:
 - A Wine installation with `winegcc` and the development headers. The latest
   commits contain a workaround for a winelib [compilation
   issue](https://bugs.winehq.org/show_bug.cgi?id=49138) with Wine 5.7+.
-- Boost version 1.66 or higher[\*](#building-ubuntu-18.04)
 - libxcb
 
 The following dependencies are included in the repository as a Meson wrap:
@@ -793,9 +792,9 @@ After you've finished building you can follow the instructions under the
 [usage](#usage) section on how to set up yabridge.
 
 <sup id="building-ubuntu-18.04">
-  *The versions of GCC and Boost that ship with Ubuntu 18.04 by default are too
-  old to compile yabridge. If you do wish to build yabridge from scratch rather
-  than using the <a
+  *The version of GCC that ships with Ubuntu 18.04 by default is too old to
+  compile yabridge. If you do wish to build yabridge from scratch rather than
+  using the <a
   href="https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster">prebuilt
   binaries</a>, then you should take a look at the <a
   href="https://github.com/robbert-vdh/docker-yabridge/blob/master/bionic/Dockerfile">docker
@@ -809,7 +808,7 @@ It is also possible to compile a host application for yabridge that's compatible
 with 32-bit plugins such as old SynthEdit plugins. This will allow yabridge to
 act as a bitbridge, allowing you to run old 32-bit only Windows VST2 plugins in
 a modern 64-bit Linux VST host. For this you'll need to have installed the 32
-bit versions of the Boost and XCB libraries. This can then be set up as follows:
+bit versions of the XCB library. This can then be set up as follows:
 
 ```shell
 # Enable the bitbridge on an existing build

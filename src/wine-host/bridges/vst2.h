@@ -188,8 +188,7 @@ class Vst2Bridge : public HostBridge {
 #pragma GCC diagnostic ignored "-Wignored-attributes"
 
     /**
-     * The shared library handle of the VST plugin. I sadly could not get
-     * Boost.DLL to work here, so we'll just load the VST plugisn by hand.
+     * The shared library handle of the VST2 plugin.
      */
     std::unique_ptr<std::remove_pointer_t<HMODULE>, decltype(&FreeLibrary)>
         plugin_handle_;
@@ -245,8 +244,7 @@ class Vst2Bridge : public HostBridge {
      * practice every host will bundle all events in a single
      * `effProcessEvents()` call.
      */
-    llvm::SmallVector<DynamicVstEvents, 1>
-        next_audio_buffer_midi_events_;
+    llvm::SmallVector<DynamicVstEvents, 1> next_audio_buffer_midi_events_;
     /**
      * Whether `next_audio_buffer_midi_events` should be cleared before
      * inserting new events.

@@ -11,7 +11,6 @@ if is_64bit_system
     configuration_dep,
 
     asio_dep,
-    boost_dep,
     bitsery_dep,
     function2_dep,
     ghc_filesystem_dep,
@@ -37,7 +36,6 @@ if with_bitbridge
     configuration_dep,
 
     asio_dep,
-    boost_dep,
     ghc_filesystem_dep,
     bitsery_dep,
     function2_dep,
