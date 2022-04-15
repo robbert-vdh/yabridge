@@ -41,9 +41,9 @@ static const std::string host_name = "yabridge group host version " +
  * plugin host and this group plugin host will function identically on both the
  * plugin and the Wine VST host side.
  */
-int __attribute__((visibility("default")))
+int YABRIDGE_EXPORT
 #ifdef WINE_USE_CDECL
-__cdecl
+    __cdecl
 #endif
     main(int argc, char* argv[]) {
     // Instead of directly hosting a plugin, this process will receive a UNIX

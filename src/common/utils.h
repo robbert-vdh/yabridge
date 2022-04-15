@@ -21,6 +21,8 @@
 #include <sys/resource.h>
 #include <ghc/filesystem.hpp>
 
+#define YABRIDGE_EXPORT __attribute__((visibility("default")))
+
 /**
  * The interval in seconds between synchronizing the Wine plugin host's audio
  * thread scheduling priority with the host's audio thread.

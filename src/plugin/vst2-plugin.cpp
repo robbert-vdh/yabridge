@@ -24,8 +24,6 @@
 
 using namespace std::literals::string_literals;
 
-#define VST_EXPORT __attribute__((visibility("default")))
-
 // The main entry point for VST2 plugins should be called `VSTPluginMain``. The
 // other one exist for legacy reasons since some old hosts might still use them
 // (EnergyXT being the only known host on Linux that uses the `main` entry
@@ -40,7 +38,7 @@ using namespace std::literals::string_literals;
  * manual memory management. Clean up is done when we receive the `effClose`
  * opcode from the VST2 host (i.e. opcode 1).`
  */
-extern "C" VST_EXPORT AEffect* VSTPluginMain(
+extern "C" YABRIDGE_EXPORT AEffect* VSTPluginMain(
     audioMasterCallback host_callback) {
     try {
         // This is the only place where we have to use manual memory management.
@@ -73,8 +71,8 @@ extern "C" VST_EXPORT AEffect* VSTPluginMain(
 // XXX: GCC doens't seem to have a clean way to let you define an arbitrary
 //      function called 'main'. Even JUCE does it this way, so it should be
 //      safe.
-extern "C" VST_EXPORT AEffect* deprecated_main(
+extern "C" YABRIDGE_EXPORT AEffect* deprecated_main(
     audioMasterCallback audioMaster) asm("main");
-VST_EXPORT AEffect* deprecated_main(audioMasterCallback audioMaster) {
+YABRIDGE_EXPORT AEffect* deprecated_main(audioMasterCallback audioMaster) {
     return VSTPluginMain(audioMaster);
 }

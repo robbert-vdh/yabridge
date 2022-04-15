@@ -39,9 +39,9 @@ static const std::string host_name = "yabridge host version " +
  * plugin plugin, and then connect back to the `libyabridge-{vst2,vst3}.so`
  * instance that spawned this over the socket.
  */
-int __attribute__((visibility("default")))
+int YABRIDGE_EXPORT
 #ifdef WINE_USE_CDECL
-__cdecl
+    __cdecl
 #endif
     main(int argc, char* argv[]) {
     // We pass the plugin format, the name of the VST2 plugin .dll file or VST3

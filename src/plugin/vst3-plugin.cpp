@@ -86,7 +86,7 @@ bool DeinitModule() {
  * the plugin in our Wine application, retrieve its information and supported
  * classes, and then recreate it here.
  */
-SMTG_EXPORT_SYMBOL Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory() {
+YABRIDGE_EXPORT Steinberg::IPluginFactory* PLUGIN_API GetPluginFactory() {
     // The host should have called `InitModule()` first
     assert(bridge);
 
