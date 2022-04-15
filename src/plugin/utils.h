@@ -236,12 +236,6 @@ ghc::filesystem::path generate_group_endpoint(
 std::vector<ghc::filesystem::path> get_augmented_search_path();
 
 /**
- * Return a path to this `.so` file. This can be used to find out from where
- * this link to or copy of `libyabridge-{vst2,vst3}.so` was loaded.
- */
-ghc::filesystem::path get_this_file_location();
-
-/**
  * Load the configuration that belongs to a copy of or symlink to
  * `libyabridge-{vst2,vst3}.so`. If no configuration file could be found then
  * this will return an empty configuration object with default settings. See the

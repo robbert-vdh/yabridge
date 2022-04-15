@@ -29,6 +29,9 @@
 #include "../../common/utils.h"
 #include "../host-process.h"
 
+// FIXME: This should be passed as an argument instead
+#include "../../common/linking.h"
+
 /**
  * If the amount of lockable memory is below this, then we'll warn about it
  * during startup. Otherwise we may run into issues when mapping shared memory
@@ -73,9 +76,8 @@ class PluginBridge {
      * @throw std::runtime_error Thrown when the Wine plugin host could not be
      *   found, or if it could not locate and load a VST3 module.
      */
-    template <invocable_returning<TSockets,
-                                  asio::io_context&,
-                                  const PluginInfo&> F>
+    template <
+        invocable_returning<TSockets, asio::io_context&, const PluginInfo&> F>
     PluginBridge(PluginType plugin_type, F&& create_socket_instance)
         // This is still correct for VST3 plugins because we can configure an
         // entire directory (the module's bundle) at once

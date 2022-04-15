@@ -19,7 +19,6 @@
 #include <iostream>
 
 #include <unistd.h>
-#include <boost/dll/runtime_symbol_info.hpp>
 #include <sstream>
 
 // Generated inside of the build directory
@@ -27,6 +26,9 @@
 
 #include "../common/configuration.h"
 #include "../common/utils.h"
+
+// FIXME: This should be passed as an argument instead
+#include "../common/linking.h"
 
 namespace fs = ghc::filesystem;
 
@@ -269,25 +271,6 @@ std::variant<OverridenWinePrefix, fs::path, DefaultWinePrefix> find_wine_prefix(
     }
 
     return dosdevices_dir->parent_path();
-}
-
-fs::path get_this_file_location() {
-    // HACK: Not sure why, but `boost::dll::this_line_location()` returns a path
-    //       starting with a double slash on some systems. I've seen this happen
-    //       on both Ubuntu 18.04 and 20.04, but not on Arch based distros.
-    //       Under Linux a path starting with two slashes is treated the same as
-    //       a path starting with only a single slash, but Wine will refuse to
-    //       load any files when the path starts with two slashes. The easiest
-    //       way to work around this if this happens is to just add another
-    //       leading slash and then normalize the path, since three or more
-    //       slashes will be coerced into a single slash.
-    // FIXME: Replace Boost.Filesystem usage
-    fs::path this_file = boost::dll::this_line_location().string();
-    if (this_file.string().starts_with("//")) {
-        this_file = ("/" / this_file).lexically_normal();
-    }
-
-    return this_file;
 }
 
 bool equals_case_insensitive(const std::string& a, const std::string& b) {
