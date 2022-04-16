@@ -20,8 +20,12 @@
 
 #include <dlfcn.h>
 
+// Generated inside of the build directory
+#include <config.h>
+
 #include "../common/linking.h"
 #include "../common/utils.h"
+#include "utils.h"
 
 // These chainloader libraries are tiny, mostly dependencyless libraries that
 // `dlopen()` the actual `libyabridge-{vst2,vst3}.so` files and forward the
@@ -34,8 +38,6 @@
 // whenever yabridge is updated. This is even more important when considering
 // distro packaging, because updates to Boost might require the package to be
 // rebuilt, which in turn would also require a resync.
-
-// TODO: Order to check in: See Discord
 
 namespace fs = ghc::filesystem;
 
@@ -83,11 +85,10 @@ bool initialize_library() {
         return true;
     }
 
-    // FIXME: Hardcoded path
-    library_handle = dlopen(
-        "/home/robbert/Documenten/projecten/yabridge/build/libyabridge-vst3.so",
-        RTLD_LAZY | RTLD_LOCAL);
-    assert(library_handle);
+    library_handle = find_plugin_library(yabridge_vst3_plugin_name);
+    if (!library_handle) {
+        return false;
+    }
 
 #define LOAD_FUNCTION(name)                                                 \
     do {                                                                    \
@@ -109,7 +110,9 @@ extern "C" YABRIDGE_EXPORT bool ModuleEntry(void*) {
     // This function can be called multiple times, so we should make sure to
     // only initialize the bridge on the first call
     if (active_instances.fetch_add(1, std::memory_order_seq_cst) == 0) {
-        assert(initialize_library());
+        if (!initialize_library()) {
+            return false;
+        }
 
         // You can't change the deleter function with `.reset()` so we'll need
         // this abomination instead

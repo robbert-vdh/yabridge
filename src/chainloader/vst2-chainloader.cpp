@@ -20,8 +20,12 @@
 
 #include <dlfcn.h>
 
+// Generated inside of the build directory
+#include <config.h>
+
 #include "../common/linking.h"
 #include "../common/utils.h"
+#include "utils.h"
 
 // These chainloader libraries are tiny, mostly dependencyless libraries that
 // `dlopen()` the actual `libyabridge-{vst2,vst3}.so` files and forward the
@@ -34,8 +38,6 @@
 // whenever yabridge is updated. This is even more important when considering
 // distro packaging, because updates to Boost might require the package to be
 // rebuilt, which in turn would also require a resync.
-
-// TODO: Order to check in: See Discord
 
 namespace fs = ghc::filesystem;
 
@@ -65,11 +67,10 @@ bool initialize_library() {
         return true;
     }
 
-    // FIXME: Hardcoded path
-    library_handle = dlopen(
-        "/home/robbert/Documenten/projecten/yabridge/build/libyabridge-vst2.so",
-        RTLD_LAZY | RTLD_LOCAL);
-    assert(library_handle);
+    library_handle = find_plugin_library(yabridge_vst2_plugin_name);
+    if (!library_handle) {
+        return false;
+    }
 
 #define LOAD_FUNCTION(name)                                                 \
     do {                                                                    \
@@ -89,7 +90,9 @@ extern "C" YABRIDGE_EXPORT AEffect* VSTPluginMain(
     audioMasterCallback host_callback) {
     assert(host_callback);
 
-    initialize_library();
+    if (!initialize_library()) {
+        return nullptr;
+    }
 
     const fs::path this_plugin_path = get_this_file_location();
     return yabridge_plugin_init(host_callback, this_plugin_path.c_str());

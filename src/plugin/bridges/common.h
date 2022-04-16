@@ -142,6 +142,7 @@ class PluginBridge {
                  << " (32-bit build)"
 #endif
                  << std::endl;
+        // TODO: Show this library's path now that we're chainloading
         init_msg << "host:          '" << plugin_host_->path().string() << "'"
                  << std::endl;
         init_msg << "plugin:        '" << info_.windows_plugin_path_.string()

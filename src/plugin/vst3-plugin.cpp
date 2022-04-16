@@ -77,8 +77,8 @@ void log_init_exception(const std::exception& error,
     logger.log(error.what());
     logger.log("");
 
-    // Also show a desktop notification most people likely won't see the above
-    // message
+    // Also show a desktop notification since most people likely won't see the
+    // above message
     // FIXME: Go through these messages and update them to reflect the
     //        chainloading changes
     send_notification(
