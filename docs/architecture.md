@@ -9,20 +9,35 @@
 
 ## General architecture
 
-The project consists of multiple components: several native Linux plugins
-(`libyabridge-vst2.so` for VST2 plugins, and `libyabridge-vst3.so` for VST3
-plugins) and a few different plugin host applications that can run under Wine
+The project consists of multiple components: a number of native Linux plugin
+libraries (`libyabridge-vst2.so` for VST2 plugins, and `libyabridge-vst3.so` for
+VST3 plugins), matching chainloader libraries (`libyabridge-chainloader-vst2.so`
+for VST2 plugins, and `libyabridge-chainloader-vst3.so` for VST3 plugins) that
+act as stubs to load the former libraries, and a few different plugin host
+applications that can run under Wine
 (`yabridge-host.exe`/`yabridge-host.exe.so`, and
 `yabridge-host-32.exe`/`yabridge-host-32.exe.so` if the bitbridge is enabled).
 
-The main idea is that when the host loads a plugin, the plugin will try to
-locate the corresponding Windows plugin, and it will then start a Wine process
-to host that Windows plugin. Depending on the architecture of the Windows plugin
-and the configuration in the `yabridge.toml` config files (see the readme for
-more information), yabridge will pick between the four plugin host applications
-named above. When a plugin has been configured to use plugin groups, instead of
-spawning a new host process the plugin will try to connect to an existing group
-host process first and ask it to host the Windows plugin within that process.
+The main idea is that when the host loads a (chainloader) plugin, the plugin
+will try to locate the corresponding Windows plugin, and it will then start a
+Wine process to host that Windows plugin. Depending on the architecture of the
+Windows plugin and the configuration in the `yabridge.toml` config files (see
+the readme for more information), yabridge will pick between the four plugin
+host applications named above. When a plugin has been configured to use plugin
+groups, instead of spawning a new host process the plugin will try to connect to
+an existing group host process first and ask it to host the Windows plugin
+within that process.
+
+The chainloader libraries are compact dependencyless shims that load the
+corresponding plugin library and forward calls to the plugin API's entry poitn
+functions. This allows the plugin library to be updated without needing to
+replace existing copies of the chainloader library. That makes using a
+distro-packaged version of yabridge more convenient soname rebuilds won't
+require a `yabridgectl sync` for yabridge to keep working. It also means that
+multiple plugins can all share the same yabridge plugin bridge library instance,
+since the same library will be `dlopen()`'d into a single process multiple
+times. This can help increase the L1i cache hit rate when using multiple
+yabridge plugins.
 
 ### Communication
 

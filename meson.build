@@ -49,6 +49,12 @@ compiler_options = [
   '-msse2',
 ]
 
+chainloader_compiler_options = [
+  # We use our process library for sending notifications from the chainloaders,
+  # but we don't need the Asio pipe support there
+  '-DPROCESS_NO_ASIO',
+]
+
 # HACK: Some stuff from `windows.h` that we don't need results in conflicting
 #       definitions, so we'll try to exclude those bits
 wine_compiler_options = [
@@ -234,6 +240,7 @@ subdir('src/common/config')
 # directory and it's much more convenient having all of the important files
 # directory under `build/`.
 # https://github.com/mesonbuild/meson/pull/4037
+subdir('src/chainloader')
 subdir('src/plugin')
 subdir('src/wine-host')
 
@@ -254,6 +261,24 @@ shared_library(
     tomlplusplus_dep,
   ],
   cpp_args : compiler_options,
+  # LTO currently doesn't work with winelibs, so instead we'll explicitly enable
+  # it for all other targets (which is extra important for the chainloaders as
+  # they'd otherwise pull in a bunch of unused symbols) without affecting the
+  # Wine plugin host binaries
+  override_options : ['b_lto=true'],
+)
+shared_library(
+  'yabridge-chainloader-vst2',
+  vst2_chainloader_sources,
+  native : true,
+  dependencies : [
+    configuration_dep,
+
+    dl_dep,
+    ghc_filesystem_dep,
+    rt_dep,
+  ],
+  cpp_args : compiler_options + chainloader_compiler_options,
   # LTO currently doesn't work with winelibs, so instead we'll explicitly enable
   # it for all other targets (which is extra important for the chainloaders as
   # they'd otherwise pull in a bunch of unused symbols) without affecting the
@@ -283,6 +308,24 @@ if with_vst3
       vst3_sdk_native_dep,
     ],
     cpp_args : compiler_options,
+    # LTO currently doesn't work with winelibs, so instead we'll explicitly
+    # enable it for all other targets (which is extra important for the
+    # chainloaders as they'd otherwise pull in a bunch of unused symbols)
+    # without affecting the Wine plugin host binaries
+    override_options : ['b_lto=true'],
+  )
+  shared_library(
+    'yabridge-chainloader-vst3',
+    vst3_chainloader_sources,
+    native : true,
+    dependencies : [
+      configuration_dep,
+
+      dl_dep,
+      ghc_filesystem_dep,
+      rt_dep,
+    ],
+    cpp_args : compiler_options + chainloader_compiler_options,
     # LTO currently doesn't work with winelibs, so instead we'll explicitly
     # enable it for all other targets (which is extra important for the
     # chainloaders as they'd otherwise pull in a bunch of unused symbols)

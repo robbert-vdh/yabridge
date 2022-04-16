@@ -8,6 +8,28 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Yabridge 4.0 introduces a completely new way to load plugins that allows
+  yabridge to be updated without breaking any plugins, saves disk space on
+  filesystems that don't support reflinks, and makes the `yabridgectl sync`
+  process faster. It does this by chainloading the actual plugin libraries from
+  these new tiny, dependencyless shim libraries. The way yabridge has always
+  worked is that whenever you run `yabridgectl sync`, yabridgectl will create
+  copies of `libyabridge-vst2.so` or `libyabridge-vst3.so` for every Windows
+  plugin it finds. When your DAW then loads those plugin libraries, yabridge
+  will find the corresponding Windows plugin and starts doing its magic.
+  Yabridge 4.0 changes this process by no longer copying the full
+  `libyabridge-*.so` libraries, and instead using these shim libraries that will
+  find and then chainload the actual yabridge plugin libraries. The result is
+  that instead of having to copy large files, yabridgectl now only needs to copy
+  these small shim libraries while the actual plugin libraries stay in
+  yabridge's installation directory. That not only saves disk space, but it also
+  means that it's no longer possible for yabridge to be out of sync after an
+  update. If you use a distro packaged version of yabridge, then that means
+  yabridge can now be updated safely without requiring any action from your
+  side.
+
 ### Changed
 
 - Almost the entirety of yabridge's backend has been rewritten to get rid of all
