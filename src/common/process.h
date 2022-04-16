@@ -22,13 +22,17 @@
 #include <variant>
 #include <vector>
 
+#include <ghc/filesystem.hpp>
+
+// We also use this header from the chainloaders, and we don't want to pull in
+// Asio there
+#ifndef PROCESS_NO_ASIO
 #ifdef __WINE__
 #include "../wine-host/asio-fix.h"
 #endif
 
-#include <unistd.h>
 #include <asio/posix/stream_descriptor.hpp>
-#include <ghc/filesystem.hpp>
+#endif  // PROCESS_NO_ASIO
 
 // A minimal API akin to Boost.Process for launching and managing processes
 // using plain Linux APIs. Needed so we can implement our chainloader without
@@ -225,6 +229,7 @@ class Process {
      */
     StatusResult spawn_get_status() const;
 
+#ifndef PROCESS_NO_ASIO
     /**
      * Spawn the process without waiting for its completion, leave STDIN alone,
      * create pipes for STDOUT and STDERR, and assign those to the provided
@@ -235,6 +240,7 @@ class Process {
     HandleResult spawn_child_piped(
         asio::posix::stream_descriptor& stdout_pipe,
         asio::posix::stream_descriptor& stderr_pipe) const;
+#endif  // PROCESS_NO_ASIO
 
     /**
      * Spawn the process without waiting for its completion, leave STDIN alone,
