@@ -423,17 +423,16 @@ class PluginBridge {
             generic_logger_.log(
                 "WARNING: The host application's version does not match");
             generic_logger_.log(
-                "         this plugin's. If you just updated yabridge, then");
+                "         this plugin's. Check the logs to see which yabridge");
             generic_logger_.log(
-                "         you may need rerun 'yabridgectl sync' first to");
-            generic_logger_.log("         update your plugins.");
+                "          library and host are being loaded, and try "
+                "rerunning");
+            generic_logger_.log("          'yabridgectl sync'.");
 
-            // FIXME: Go through these messages and update them to reflect the
-            //        chainloading changes
             send_notification(
                 "Version mismatch",
-                "If you just updated yabridge, then you may need "
-                "to rerun 'yabridgectl sync' first to update your plugins.",
+                "Check the logs to see which yabridge library and host are "
+                "being loaded, and try rerunning 'yabridgectl sync'.",
                 info_.native_library_path_);
         }
     }

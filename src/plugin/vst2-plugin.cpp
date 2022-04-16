@@ -56,9 +56,7 @@ void log_init_error(const std::exception& error, const fs::path& plugin_path) {
     // above message
     send_notification(
         "Failed to initialize VST2 plugin",
-        error.what() +
-            "\nIf you just updated yabridge, then you may need to rerun "
-            "'yabridgectl sync' first to update your plugins."s,
+        error.what() + "\nCheck the plugin's output for more information"s,
         plugin_path);
 }
 
