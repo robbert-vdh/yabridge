@@ -74,6 +74,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Packaging notes
 
+- `libyabridge-chainloader-vst2.so` and `libyabridge-chainloader-vst3.so` are
+  new files that should be included in the package.
 - Completely removed the dependency on all Boost libraries.
 - Added a dependency on the headers-only
   [`ghc::filesystem`](https://github.com/gulrak/filesystem) library to replace
