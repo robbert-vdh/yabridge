@@ -254,6 +254,11 @@ shared_library(
     tomlplusplus_dep,
   ],
   cpp_args : compiler_options,
+  # LTO currently doesn't work with winelibs, so instead we'll explicitly enable
+  # it for all other targets (which is extra important for the chainloaders as
+  # they'd otherwise pull in a bunch of unused symbols) without affecting the
+  # Wine plugin host binaries
+  override_options : ['b_lto=true'],
 )
 
 if with_vst3
@@ -278,6 +283,11 @@ if with_vst3
       vst3_sdk_native_dep,
     ],
     cpp_args : compiler_options,
+    # LTO currently doesn't work with winelibs, so instead we'll explicitly
+    # enable it for all other targets (which is extra important for the
+    # chainloaders as they'd otherwise pull in a bunch of unused symbols)
+    # without affecting the Wine plugin host binaries
+    override_options : ['b_lto=true'],
   )
 endif
 
