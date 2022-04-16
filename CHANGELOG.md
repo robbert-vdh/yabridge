@@ -89,12 +89,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   library to replace Boost.Asio.
 - Fixed a deprecation warning in the Meson build, causing the minimum supported
   Meson version to be bumped up to **Meson 0.56** from 0.55.
-- LTO has been explicitly enabled for all of the library targets. LTO doesn't
-  work with the plugin host Winelib binaries because of the way winegcc works,
-  but it's still useful for the plugin libraries so the option is now explicitly
-  enabled in the Meson build file for those targets. This is especially
-  important for the new chainloader libraries as they will otherwise pull in a
-  lot of code they don't actually need.
 
 ## [3.8.1] - 2022-03-08
 

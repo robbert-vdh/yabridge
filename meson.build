@@ -268,12 +268,11 @@ shared_library(
     threads_dep,
     tomlplusplus_dep,
   ],
+  # NOTE: LTO does not support Winelibs, and it seems to break
+  #       `libyabridge-vst2.so` in Bitwig for some reason. It should be left
+  #       turned off for the time being except for on the chainloader
+  #       libraries.
   cpp_args : compiler_options,
-  # LTO currently doesn't work with winelibs, so instead we'll explicitly enable
-  # it for all other targets (which is extra important for the chainloaders as
-  # they'd otherwise pull in a bunch of unused symbols) without affecting the
-  # Wine plugin host binaries
-  override_options : ['b_lto=true'],
 )
 shared_library(
   'yabridge-chainloader-vst2',
@@ -287,10 +286,7 @@ shared_library(
     rt_dep,
   ],
   cpp_args : compiler_options + chainloader_compiler_options,
-  # LTO currently doesn't work with winelibs, so instead we'll explicitly enable
-  # it for all other targets (which is extra important for the chainloaders as
-  # they'd otherwise pull in a bunch of unused symbols) without affecting the
-  # Wine plugin host binaries
+  # LTO is useful here to get rid of unused code
   override_options : ['b_lto=true'],
 )
 
@@ -316,11 +312,6 @@ if with_vst3
       vst3_sdk_native_dep,
     ],
     cpp_args : compiler_options,
-    # LTO currently doesn't work with winelibs, so instead we'll explicitly
-    # enable it for all other targets (which is extra important for the
-    # chainloaders as they'd otherwise pull in a bunch of unused symbols)
-    # without affecting the Wine plugin host binaries
-    override_options : ['b_lto=true'],
   )
   shared_library(
     'yabridge-chainloader-vst3',
@@ -334,10 +325,7 @@ if with_vst3
       rt_dep,
     ],
     cpp_args : compiler_options + chainloader_compiler_options,
-    # LTO currently doesn't work with winelibs, so instead we'll explicitly
-    # enable it for all other targets (which is extra important for the
-    # chainloaders as they'd otherwise pull in a bunch of unused symbols)
-    # without affecting the Wine plugin host binaries
+    # See above
     override_options : ['b_lto=true'],
   )
 endif
