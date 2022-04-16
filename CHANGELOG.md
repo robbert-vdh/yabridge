@@ -33,6 +33,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixed an obscure issue with VST3 plugins crashing in **Ardour** on
   Arch/Manjaro because of misreported parameter queue lengths.
+- Some of yabridge's socket file names contained extremely aesthetically
+  unpleasing trailing underscores. Begone pesky underscores!
 
 ### Packaging notes
 

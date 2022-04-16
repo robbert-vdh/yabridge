@@ -354,7 +354,7 @@ class Vst2Sockets final : public Sockets {
                              (base_dir_ / "host_vst_dispatch.sock").string(),
                              listen),
           vst_host_callback_(io_context,
-                             (base_dir_ / "vst_host_callback_.sock").string(),
+                             (base_dir_ / "vst_host_callback.sock").string(),
                              listen),
           host_vst_parameters_(
               io_context,
@@ -365,7 +365,7 @@ class Vst2Sockets final : public Sockets {
               (base_dir_ / "host_vst_process_replacing.sock").string(),
               listen),
           host_vst_control_(io_context,
-                            (base_dir_ / "host_vst_control_.sock").string(),
+                            (base_dir_ / "host_vst_control.sock").string(),
                             listen) {}
 
     ~Vst2Sockets() noexcept override { close(); }

@@ -315,10 +315,10 @@ class Vst3Sockets final : public Sockets {
                 bool listen)
         : Sockets(endpoint_base_dir),
           host_vst_control_(io_context,
-                            (base_dir_ / "host_vst_control_.sock").string(),
+                            (base_dir_ / "host_vst_control.sock").string(),
                             listen),
           vst_host_callback_(io_context,
-                             (base_dir_ / "vst_host_callback_.sock").string(),
+                             (base_dir_ / "vst_host_callback.sock").string(),
                              listen),
           io_context_(io_context) {}
 
