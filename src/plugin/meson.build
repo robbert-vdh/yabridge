@@ -1,6 +1,33 @@
 # We only define the sources here, because calling `shared_library()` here will
 # cause the `libyabridge-*.so` files to be generated in a deeply nested
 # subdirectory of `build/`
+
+vst2_plugin_deps = [
+  configuration_dep,
+
+  asio_dep,
+  bitsery_dep,
+  dl_dep,
+  ghc_filesystem_dep,
+  rt_dep,
+  threads_dep,
+  tomlplusplus_dep,
+]
+
+vst3_plugin_deps = [
+  configuration_dep,
+
+  asio_dep,
+  bitsery_dep,
+  dl_dep,
+  function2_dep,
+  ghc_filesystem_dep,
+  rt_dep,
+  threads_dep,
+  tomlplusplus_dep,
+  vst3_sdk_native_dep,
+]
+
 vst2_plugin_sources = files(
   '../common/communication/common.cpp',
   '../common/communication/vst2.cpp',

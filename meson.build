@@ -257,17 +257,7 @@ shared_library(
   vst2_plugin_sources,
   native : true,
   include_directories : include_dir,
-  dependencies : [
-    configuration_dep,
-
-    asio_dep,
-    bitsery_dep,
-    dl_dep,
-    ghc_filesystem_dep,
-    rt_dep,
-    threads_dep,
-    tomlplusplus_dep,
-  ],
+  dependencies : vst2_plugin_deps,
   # NOTE: LTO does not support Winelibs, and it seems to break
   #       `libyabridge-vst2.so` in Bitwig for some reason. It should be left
   #       turned off for the time being except for on the chainloader
@@ -278,13 +268,7 @@ shared_library(
   'yabridge-chainloader-vst2',
   vst2_chainloader_sources,
   native : true,
-  dependencies : [
-    configuration_dep,
-
-    dl_dep,
-    ghc_filesystem_dep,
-    rt_dep,
-  ],
+  dependencies : chainloader_deps,
   cpp_args : compiler_options + chainloader_compiler_options,
   # LTO is useful here to get rid of unused code
   override_options : ['b_lto=true'],
@@ -298,32 +282,14 @@ if with_vst3
     vst3_plugin_sources,
     native : true,
     include_directories : include_dir,
-    dependencies : [
-      configuration_dep,
-
-      asio_dep,
-      bitsery_dep,
-      dl_dep,
-      function2_dep,
-      ghc_filesystem_dep,
-      rt_dep,
-      threads_dep,
-      tomlplusplus_dep,
-      vst3_sdk_native_dep,
-    ],
+    dependencies : vst3_plugin_deps,
     cpp_args : compiler_options,
   )
   shared_library(
     'yabridge-chainloader-vst3',
     vst3_chainloader_sources,
     native : true,
-    dependencies : [
-      configuration_dep,
-
-      dl_dep,
-      ghc_filesystem_dep,
-      rt_dep,
-    ],
+    dependencies : chainloader_deps,
     cpp_args : compiler_options + chainloader_compiler_options,
     # See above
     override_options : ['b_lto=true'],
