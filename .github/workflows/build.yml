@@ -46,7 +46,7 @@ jobs:
 
           # Statically link to libstdc++ on Ubuntu 18.04 as we're compiling
           # with a newer version of g++ than what's in the default repos
-          meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=10000 -Dwith-bitbridge=true -Dcpp_link_args='-mwindows -static-libstdc++' -Dbuild.cpp_link_args='-static-libstdc++'
+          meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=10000 -Dbitbridge=true -Dcpp_link_args='-mwindows -static-libstdc++' -Dbuild.cpp_link_args='-static-libstdc++'
           ninja -C build
       - name: Strip remaining debug symbols
         run: strip build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-{host,group}{,-32}.exe.so
@@ -84,7 +84,7 @@ jobs:
           # In this version we don't need to statically link libstdc++ since
           # Ubuntu 20.04 and similar distros will ship with a version that's
           # compatible with GCC 10, even if that's not the default GCC version
-          meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=10000 -Dwith-bitbridge=true
+          meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=10000 -Dbitbridge=true
           ninja -C build
       - name: Strip remaining debug symbols
         run: strip build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-{host,group}{,-32}.exe.so
@@ -124,7 +124,7 @@ jobs:
 
           # Statically link to libstdc++ on Ubuntu 18.04, and also target a
           # 32-bit OS
-          meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=10000 -Dwith-bitbridge=true -Dcpp_link_args='-mwindows -static-libstdc++' -Dbuild.cpp_args='-m32' -Dbuild.cpp_link_args='-m32 -static-libstdc++'
+          meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=10000 -Dbitbridge=true -Dcpp_link_args='-mwindows -static-libstdc++' -Dbuild.cpp_args='-m32' -Dbuild.cpp_link_args='-m32 -static-libstdc++'
           ninja -C build
       - name: Strip remaining debug symbols
         run: strip build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-{host,group}{,-32}.exe.so

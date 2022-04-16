@@ -17,19 +17,19 @@ project(
 #
 
 # In theory yabridge should compile fine on a 32-bit system, but you will always
-# need to pass `-Dwith-bitbridge=true`. We just make sure that we won't build
+# need to pass `-Dbitbridge=true`. We just make sure that we won't build
 # any 64-bit binaries in that situation.
 is_64bit_system = build_machine.cpu_family() not in ['x86', 'arm']
 with_32bit_libraries = (not is_64bit_system) or get_option('build.cpp_args').contains('-m32')
-with_bitbridge = get_option('with-bitbridge')
-with_winedbg = get_option('with-winedbg')
-with_vst3 = get_option('with-vst3')
+with_bitbridge = get_option('bitbridge')
+with_winedbg = get_option('winedbg')
+with_vst3 = get_option('vst3')
 
 #
 # Compiler flags
 #
 
-# Depending on the `with-bitbridge` flag we'll enable building secondary 32-bit
+# Depending on the `bitbridge` flag we'll enable building secondary 32-bit
 # host applications that can act as a bit bridge for using 32-bit Windows
 # plugins in 64-bit Linux VST hosts. The plugin will determine which host
 # application to use based on the `.dll` file it's trying to load. This setup is
@@ -164,7 +164,7 @@ if wine_version.returncode() == 0 and \
    with_vst3
   error('Because of a bug in Wine < 5.7\n' +
         'you cannot build yabridge with VST3 support using these older Wine versions.\n' +
-        'Use the \'-Dwith-vst3=false\' build option to disable VST3 support.\n\n' +
+        'Use the \'-Dvst3=false\' build option to disable VST3 support.\n\n' +
         'https://github.com/robbert-vdh/yabridge/issues/63#issuecomment-757369645')
 endif
 

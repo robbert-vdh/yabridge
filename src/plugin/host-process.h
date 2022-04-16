@@ -77,9 +77,9 @@ class HostProcess {
      * environment variables for the Wine prefix the plugin is in, setting up
      * pipes or files for STDIO redirection, closing file descriptors to prevent
      * leaks, and wrapping all of that in a terminal process running winedbg if
-     * we're compiling with `-Dwith-winedbg=true`. Keep in mind that winedbg
-     * does not handle arguments containing spaces, so most Windows paths will
-     * be split up into multiple arguments.
+     * we're compiling with `-Dwinedbg=true`. Keep in mind that winedbg does not
+     * handle arguments containing spaces, so most Windows paths will be split
+     * up into multiple arguments.
      *
      * @param logger The `Logger` instance the redirected STDIO streams will be
      *   written to.

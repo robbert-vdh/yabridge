@@ -1,21 +1,19 @@
-# TODO: For yabridge 4.0, remove the `with-` prefix from these options
-
 option(
-  'with-bitbridge',
+  'bitbridge',
   type : 'boolean',
   value : false,
   description : 'Build a 32-bit host application for hosting 32-bit plugins. See the readme for full instructions on how to use this.'
 )
 
 option(
-  'with-vst3',
+  'vst3',
   type : 'boolean',
   value : true,
   description : 'Whether to build the VST3 version of yabridge.'
 )
 
 option(
-  'with-winedbg',
+  'winedbg',
   type : 'boolean',
   value : false,
   description : 'Whether to run the Wine VST host with GDB attached. Might not always be reliable.'

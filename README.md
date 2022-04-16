@@ -812,9 +812,9 @@ bit versions of the XCB library. This can then be set up as follows:
 
 ```shell
 # Enable the bitbridge on an existing build
-meson configure build -Dwith-bitbridge=true
+meson configure build -Dbitbridge=true
 # Or configure a new build from scratch
-meson setup build --buildtype=release --cross-file cross-wine.conf -Dwith-bitbridge=true
+meson setup build --buildtype=release --cross-file cross-wine.conf -Dbitbridge=true
 
 ninja -C build
 ```
@@ -836,7 +836,7 @@ actual 32-bit system you would need to comment out the 64-bit `yabridge-host`
 and `yabridge-group` binaries in `meson.build`:
 
 ```shell
-meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000 -Dwith-bitbridge=true -Dbuild.cpp_args='-m32' -Dbuild.cpp_link_args='-m32'
+meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000 -Dbitbridge=true -Dbuild.cpp_args='-m32' -Dbuild.cpp_link_args='-m32'
 ninja -C build
 ```
 
@@ -900,5 +900,5 @@ environments and window managers will require some slight modifications in
 rebuild yabridge:
 
 ```shell
-meson configure build --buildtype=debug -Dwith-winedbg=true
+meson configure build --buildtype=debug -Dwinedbg=true
 ```

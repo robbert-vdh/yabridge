@@ -46,6 +46,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Yabridge now prints the path to the `libyabridge-{vst2,vst3}.so` library
   that's being used on startup. This tells you where the chainloader is loading
   the library file from. Because you can never have too much information, right?
+- The `with-bitbridge`, `with-vst3`, and `with-winedbg` build options have been
+  renamed to `bitbridge`, `vst3`, and `winedbg`.
 - `effProcessEvents` VST2 calls are now filtered out from the log when
   `YABRIDGE_DEBUG_LEVEL` is set to 1.
 
@@ -78,6 +80,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `libyabridge-chainloader-vst2.so` and `libyabridge-chainloader-vst3.so` are
   new files that should be included in the package.
+- The `with-bitbridge` build option has been renamed to just `bitbridge`.
 - Completely removed the dependency on all Boost libraries.
 - Added a dependency on the headers-only
   [`ghc::filesystem`](https://github.com/gulrak/filesystem) library to replace
