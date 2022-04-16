@@ -149,6 +149,8 @@ pub struct KnownConfig {
 pub struct YabridgeFiles {
     /// The path to `libyabridge-chainloader-vst2.so` we should use.
     pub vst2_chainloader: PathBuf,
+    /// The file's architecture is used only for display purposes in `yabridgectl status`.
+    pub vst2_chainloader_arch: LibArchitecture,
     /// The path to `libyabridge-chainloader-vst3.so` we should use, if yabridge has been compiled
     /// with VST3 support. We need to know if it's a 32-bit or a 64-bit library so we can properly
     /// set up the merged VST3 bundles.
@@ -270,6 +272,15 @@ impl Config {
             }
         };
 
+        // This is displayed in `yabridgectl status`
+        let vst2_chainloader_arch =
+            utils::get_elf_architecture(&vst2_chainloader).with_context(|| {
+                format!(
+                    "Could not determine ELF architecture for '{}'",
+                    vst2_chainloader.display()
+                )
+            })?;
+
         // Based on that we can check if `libyabridge-chainloader-vst3.so` exists, since yabridge
         // can be compiled without VST3 support
         let vst3_chainloader = match vst2_chainloader.with_file_name(VST3_CHAINLOADER_NAME) {
@@ -301,6 +312,7 @@ impl Config {
 
         Ok(YabridgeFiles {
             vst2_chainloader,
+            vst2_chainloader_arch,
             vst3_chainloader,
             yabridge_host_exe,
             yabridge_host_exe_so,

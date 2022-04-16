@@ -101,10 +101,10 @@ pub fn show_status(config: &Config) -> Result<()> {
     let files = config.files();
     match &files {
         Ok(files) => {
-            // TOOD: Also include the architecture here to avoid confusion
             println!(
-                "libyabridge-chainloader-vst2.so: '{}'",
-                files.vst2_chainloader.display()
+                "libyabridge-chainloader-vst2.so: '{}' ({})",
+                files.vst2_chainloader.display(),
+                files.vst2_chainloader_arch,
             );
             println!(
                 "libyabridge-chainloader-vst3.so: {}\n",
