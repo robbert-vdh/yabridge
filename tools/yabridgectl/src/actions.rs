@@ -23,7 +23,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
-use crate::config::{yabridge_vst3_home, Config, InstallationMethod, YabridgeFiles};
+use crate::config::{yabridge_vst3_home, Config, YabridgeFiles};
 use crate::files::{self, NativeFile, Plugin, Vst2Plugin};
 use crate::utils::{self, get_file_type};
 use crate::utils::{verify_path_setup, verify_wine_setup};
@@ -139,12 +139,6 @@ pub fn show_status(config: &Config) -> Result<()> {
         }
     }
 
-    // Since the symlink-based installation method is deprecated, don't even mention installation
-    // methods if it's currently set to copies
-    if config.method != InstallationMethod::Copy {
-        println!("\ninstallation method: {}", config.method)
-    }
-
     for (path, search_results) in results {
         // Always print these paths with trailing slashes for consistency's sake because paths can
         // be added both with and without a trailing slash
@@ -188,8 +182,7 @@ pub fn show_status(config: &Config) -> Result<()> {
 }
 
 /// Options passed to `yabridgectl set`, see `main()` for the definitions of these options.
-pub struct SetOptions<'a> {
-    pub method: Option<&'a str>,
+pub struct SetOptions {
     pub path: Option<PathBuf>,
     pub path_auto: bool,
     pub no_verify: Option<bool>,
@@ -197,13 +190,6 @@ pub struct SetOptions<'a> {
 
 /// Change configuration settings. The actual options are defined in the clap [app](clap::App).
 pub fn set_settings(config: &mut Config, options: &SetOptions) -> Result<()> {
-    match options.method {
-        Some("copy") => config.method = InstallationMethod::Copy,
-        Some("symlink") => config.method = InstallationMethod::Symlink,
-        Some(s) => unimplemented!("Unexpected installation method '{}'", s),
-        None => (),
-    }
-
     if let Some(path) = &options.path {
         config.yabridge_home = Some(path.clone());
     }
@@ -236,20 +222,6 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         Some((path, _)) => Some(utils::hash_file(path)?),
         None => None,
     };
-
-    if config.method == InstallationMethod::Symlink {
-        eprintln!(
-            "{}",
-            utils::wrap(&format!(
-                "{}: The symlink-based installation method is currently active. This \
-                 will likely result in unexpected behavior, and the feature will be removed \
-                 entirely in a later version of yabridgectl. You can revert back \
-                 to the copy-based installation method by running '{}'.\n",
-                "WARNING".yellow().bold(),
-                "yabridgectl set --method=copy".bright_white()
-            ))
-        );
-    }
 
     if let Some((vst3_chainloader_path, _)) = &files.vst3_chainloader {
         println!("Setting up VST2 and VST3 plugins using:");
@@ -307,19 +279,13 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     path: plugin_path, ..
                 }) => {
                     let target_path = plugin_path.with_extension("so");
-                    let normalized_target_path = if config.method == InstallationMethod::Symlink {
-                        // We should probably remove the symlink option altogether, but the count
-                        // will at least be soemwhat correct-ish this way
-                        target_path.clone()
-                    } else {
-                        utils::normalize_path(&target_path)
-                    };
+                    let normalized_target_path = utils::normalize_path(&target_path);
 
                     // Since we skip some files, we'll also keep track of how many new file we've
                     // actually set up
                     if install_file(
                         options.force,
-                        config.method,
+                        InstallationMethod::Copy,
                         &files.vst2_chainloader,
                         Some(vst2_chainloader_hash),
                         &target_path,
@@ -342,13 +308,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     let target_native_module_path = module.target_native_module_path(Some(&files));
                     let target_windows_module_path = module.target_windows_module_path();
                     let normalized_native_module_path =
-                        if config.method == InstallationMethod::Symlink {
-                            // We should probably remove the symlink option altogether, but the
-                            // count will at least be soemwhat correct-ish this way
-                            target_native_module_path.clone()
-                        } else {
-                            utils::normalize_path(&target_native_module_path)
-                        };
+                        utils::normalize_path(&target_native_module_path);
 
                     // 32-bit and 64-bit versions of the plugin can live inside of the same bundle),
                     // but it's not possible to use the exact same plugin from multiple Wine
@@ -379,7 +339,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     utils::create_dir_all(target_native_module_path.parent().unwrap())?;
                     if install_file(
                         options.force,
-                        config.method,
+                        InstallationMethod::Copy,
                         &files.vst3_chainloader.as_ref().unwrap().0,
                         vst3_chainloader_hash,
                         &target_native_module_path,
@@ -541,13 +501,8 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // Don't mind the ugly format string, the existence of the symlink-based installation method
     // should be hidden as much as possible until it gets removed in yabridge 4.0
     println!(
-        "Finished setting up {} plugins{} ({} new), skipped {} non-plugin .dll files",
+        "Finished setting up {} plugins ({} new), skipped {} non-plugin .dll files",
         managed_plugins.len(),
-        if config.method == InstallationMethod::Copy {
-            String::new()
-        } else {
-            format!(" using {}", config.method.plural_name())
-        },
         new_plugins.len(),
         num_skipped_files
     );
@@ -559,15 +514,21 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     }
 
     // The path setup is to make sure that the `libyabridge-chainloader-{vst2,vst3}.so` copies can
-    // find `yabridge-host.exe`
-    if config.method == InstallationMethod::Copy {
-        verify_path_setup(config)?;
-    }
+    // find `yabridge-host.exe` and by extension the plugin libraries. That last part should already
+    // be the case if we get to this point though.
+    verify_path_setup(config)?;
 
     // This check is only performed once per combination of Wine and yabridge versions
     verify_wine_setup(config)?;
 
     Ok(())
+}
+
+// TODO: Clean this up, in the past this was part of a yabridgectl setting and the enum was simply
+//       reused here
+enum InstallationMethod {
+    Copy,
+    Symlink,
 }
 
 /// Create a copy or symlink of `from` to `to`. Depending on `force`, we might not actually create a

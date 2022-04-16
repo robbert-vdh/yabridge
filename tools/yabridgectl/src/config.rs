@@ -21,7 +21,6 @@ use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::env;
-use std::fmt::Display;
 use std::fs;
 use std::path::{Path, PathBuf};
 use which::which;
@@ -57,12 +56,9 @@ const YABRIDGE_VST3_HOME: &str = ".vst3/yabridge";
 
 /// The configuration used for yabridgectl. This will be serialized to and deserialized from
 /// `$XDG_CONFIG_HOME/yabridge/config.toml`.
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Config {
-    /// The installation method to use. We will default to creating copies since that works
-    /// everywhere.
-    pub method: InstallationMethod,
     /// The path to the directory containing `libyabridge-{chainloader,}-{vst2,vst3}.so`. If not
     /// set, then yabridgectl will look in `/usr/lib` and `$XDG_DATA_HOME/yabridge` since those are
     /// the expected locations for yabridge to be installed in.
@@ -84,41 +80,6 @@ pub struct Config {
     /// This is mostly to diagnose issues with older Wine versions (such as those in Ubuntu's repos)
     /// early on.
     pub last_known_config: Option<KnownConfig>,
-}
-
-/// Specifies how yabridge will be set up for the found plugins.
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy)]
-#[serde(rename_all = "snake_case")]
-pub enum InstallationMethod {
-    /// Create a copy of `libyabridge-chainloader-{vst2,vst3}.so` for every Windows VST2 plugin
-    /// `.dll` file or VST3 module found. After updating yabridge, the user will have to rerun
-    /// `yabridgectl sync` to copy over the new version.
-    Copy,
-    /// This will create a symlink to `libyabridge-chainloader-{vst2,vst3}.so` for every VST2 plugin
-    /// `.dll` file or VST3 module in the plugin directories. Now that yabridge also searches in
-    /// `~/.local/share/yabridge` since yabridge 2.1 this option is not really needed anymore.
-    ///
-    /// TODO: This feature has been deprecated, remove it in yabridge 4.0
-    Symlink,
-}
-
-impl InstallationMethod {
-    /// The plural term for this installation methodd, using in string formatting.
-    pub fn plural_name(&self) -> &str {
-        match &self {
-            InstallationMethod::Copy => "copies",
-            InstallationMethod::Symlink => "symlinks",
-        }
-    }
-}
-
-impl Display for InstallationMethod {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self {
-            InstallationMethod::Copy => write!(f, "copy"),
-            InstallationMethod::Symlink => write!(f, "symlink"),
-        }
-    }
 }
 
 /// Stores information about a combination of Wine and yabridge that works together properly.
@@ -166,19 +127,6 @@ pub struct YabridgeFiles {
     /// The same as `yabridge_host_exe_so`, but for the 32-bit verison. We will hash this instead of
     /// there's no 64-bit version available.
     pub yabridge_host_32_exe_so: Option<PathBuf>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            method: InstallationMethod::Copy,
-            yabridge_home: None,
-            plugin_dirs: BTreeSet::new(),
-            no_verify: false,
-            blacklist: BTreeSet::new(),
-            last_known_config: None,
-        }
-    }
 }
 
 impl Config {

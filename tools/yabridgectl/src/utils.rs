@@ -228,7 +228,7 @@ pub fn verify_path_setup(config: &Config) -> Result<bool> {
             let shell = Path::new(&shell_path)
                 .file_name()
                 .and_then(|os_str| os_str.to_str())
-                .unwrap_or_else(|| shell_path.as_str());
+                .unwrap_or(shell_path.as_str());
 
             // We're using the `-l` flag present in most shells to start a login shell, but some
             // shells don't have this option. According the Bash's man page, another method some

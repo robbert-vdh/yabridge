@@ -123,29 +123,6 @@ fn main() -> Result<()> {
                 .display_order(200)
                 .setting(AppSettings::ArgRequiredElseHelp)
                 .arg(
-                    Arg::new("method")
-                        .long("method")
-                        .help("The installation method to use (deprecated)")
-                        .long_help(format!(
-                            "This feature has been deprecated in yabridgectl 3.8.0 and should \
-                             not be used anymore. \
-                             \n\n\
-                             The installation method to use. \
-                             '{}' works in every situation but it requires you to modify your PATH \
-                             environment variable so yabridge is able to find 'yabridge-host.exe'. \
-                             'yabridgectl sync' whenever you update yabridge. You'll also have to \
-                             rerun 'yabridgectl sync' whenever you update yabridge. \
-                             '{}' only works for hosts that support individually sandboxed plugins \
-                             such as Bitwig Studio, but it does not require setting environment \
-                             variables or to manual updates.",
-                            "copy".bright_white(),
-                            "symlink".bright_white()
-                        ).as_ref())
-                        .setting(clap::ArgSettings::NextLineHelp)
-                        .possible_values(["copy", "symlink"])
-                        .takes_value(true),
-                )
-                .arg(
                     Arg::new("path")
                         .long("path")
                         .help("Path to the directory containing 'libyabridge-chainloader-{vst2,vst3}.so'")
@@ -265,7 +242,6 @@ fn main() -> Result<()> {
         Some(("set", options)) => actions::set_settings(
             &mut config,
             &actions::SetOptions {
-                method: options.value_of("method"),
                 // We've already verified that the path is valid, so we should only be getting
                 // errors for missing arguments
                 path: options

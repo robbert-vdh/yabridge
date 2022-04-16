@@ -68,6 +68,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   once after updating to yabridge 4.0, yabridge can now be updated without
   needing to rerun `yabridgectl sync`. This is particularly useful when using a
   distro packaged version of yabridge.
+- The previously deprecated symlink installation method has now been removed
+  from yabridgectl, along with the `yabridgectl set --method` option.
 - `yabridgectl status` now lists the architecture of
   `libyabridge-chainloader-vst2.so` just like it already did for the VST3
   library.
