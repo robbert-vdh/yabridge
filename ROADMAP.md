@@ -30,10 +30,6 @@ page lists some of those.
 - Consider adding an option for yabridgectl to set up VST2 plugins in `~/.vst`.
   As discussed in a couple places already doing so would come with a number of
   downsides and potential pitfalls so this may not happen.
-- Consider chainloading the real `libyabridge-vst2.so` and `libyabridge-vst3.so`
-  files from smaller stub libraries. This would avoid having to rerun
-  `yabridgectl sync` after an upgrade, and it would save disk space on systems
-  without support for reflinks.
 
 # Somewhere in the future, possibly
 
