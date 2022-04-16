@@ -385,6 +385,8 @@ class PluginBridge {
 
                     // Also show a desktop notification so users running from
                     // the GUI get a heads up
+                    // FIXME: Go through these messages and update them to
+                    //        reflect the chainloading changes
                     send_notification(
                         "Failed to start the Wine plugin host",
                         "Check yabridge's output for more information on what "
@@ -423,6 +425,8 @@ class PluginBridge {
                 "         you may need rerun 'yabridgectl sync' first to");
             generic_logger_.log("         update your plugins.");
 
+            // FIXME: Go through these messages and update them to reflect the
+            //        chainloading changes
             send_notification(
                 "Version mismatch",
                 "If you just updated yabridge, then you may need "
