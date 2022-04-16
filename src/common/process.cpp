@@ -17,6 +17,7 @@
 #include "process.h"
 
 #include <cassert>
+#include <iostream>
 
 #include <spawn.h>
 #include <sys/wait.h>
@@ -37,6 +38,63 @@ bool pid_running(pid_t pid) {
     //       this process's memory. This does mean that the process is still
     //       running.
     return !err || err.value() == EACCES;
+}
+
+std::vector<fs::path> get_augmented_search_path() {
+    // HACK: `std::locale("")` would return the current locale, but this
+    //       overload is implementation specific, and libstdc++ returns an error
+    //       when this happens and one of the locale variables (or `LANG`) is
+    //       set to a locale that doesn't exist. Because of that, you should use
+    //       the default constructor instead which does fall back gracefully
+    //       when using an invalid locale. Boost.Process sadly doesn't seem to
+    //       do this, so some intervention is required. We can remove this once
+    //       the PR linked below is merged into Boost proper and included in
+    //       most distro's copy of Boost (which will probably take a while):
+    //
+    //       https://svn.boost.org/trac10/changeset/72855
+    //
+    //       https://github.com/boostorg/process/pull/179
+    // FIXME: As mentioned above, we did this in the past to work around a
+    //        Boost.Process bug. Since we no longer use Boost.Process, we can
+    //        technically get rid of this, but we could also leave it in place
+    //        since this may still cause other crashes for the user if we don't
+    //        do it.
+    try {
+        std::locale("");
+    } catch (const std::runtime_error&) {
+        // We normally avoid modifying the current process' environment and
+        // instead use `boost::process::environment` to only modify the
+        // environment of launched child processes, but in this case we do need
+        // to fix this
+        // TODO: We don't have access to the logger here, so we cannot yet
+        //       properly print the message inform the user that their locale is
+        //       broken when this happens
+        std::cerr << std::endl;
+        std::cerr << "WARNING: Your locale is broken. Yabridge was kind enough "
+                     "to monkey patch it for you in this DAW session, but you "
+                     "should probably take a look at it ;)"
+                  << std::endl;
+        std::cerr << std::endl;
+
+        setenv("LC_ALL", "C", true);  // NOLINT(concurrency-mt-unsafe)
+    }
+
+    // NOLINTNEXTLINE(concurrency-mt-unsafe)
+    const char* path_env = getenv("PATH");
+    assert(path_env);
+
+    std::vector<fs::path> search_path = split_path(path_env);
+
+    // NOLINTNEXTLINE(concurrency-mt-unsafe)
+    if (const char* xdg_data_home = getenv("XDG_DATA_HOME")) {
+        search_path.push_back(fs::path(xdg_data_home) / "yabridge");
+        // NOLINTNEXTLINE(concurrency-mt-unsafe)
+    } else if (const char* home_directory = getenv("HOME")) {
+        search_path.push_back(fs::path(home_directory) / ".local" / "share" /
+                              "yabridge");
+    }
+
+    return search_path;
 }
 
 std::vector<ghc::filesystem::path> split_path(

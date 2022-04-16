@@ -46,6 +46,17 @@
 bool pid_running(pid_t pid);
 
 /**
+ * Return the search path as defined in `$PATH`, with `~/.local/share/yabridge`
+ * appended to the end. Even though it likely won't be set, this does respect
+ * `$XDG_DATA_HOME`. I'd rather not do this since more magic makes things harder
+ * to comprehend, but I can understand that modifying your login shell's `PATH`
+ * environment variable can be a big hurdle if you've never done anything like
+ * that before. And since this is the recommended installation location, it
+ * makes sense to also search there by default.
+ */
+std::vector<ghc::filesystem::path> get_augmented_search_path();
+
+/**
  * Split a `PATH`-like environment variable on colons. These environment
  * variables don't support escaping, which makes this a lot simpler.
  */
