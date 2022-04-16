@@ -36,10 +36,10 @@ pub const CONFIG_FILE_NAME: &str = "config.toml";
 /// `$XDG_DATA_HOME`.
 const YABRIDGECTL_PREFIX: &str = "yabridgectl";
 
-/// The name of yabridge's VST2 library.
-pub const LIBYABRIDGE_VST2_NAME: &str = "libyabridge-vst2.so";
-/// The name of yabridge's VST3 library.
-pub const LIBYABRIDGE_VST3_NAME: &str = "libyabridge-vst3.so";
+/// The name of yabridge's VST2 chainloading library yabridgectl will create copies of.
+pub const VST2_CHAINLOADER_NAME: &str = "libyabridge-chainloader-vst2.so";
+/// The name of yabridge's VST3 chainloading library yabridgectl will create copies of.
+pub const VST3_CHAINLOADER_NAME: &str = "libyabridge-chainloader-vst3.so";
 /// The name of the script we're going to run to verify that everything's working correctly.
 pub const YABRIDGE_HOST_EXE_NAME: &str = "yabridge-host.exe";
 /// The 32-bit verison of `YABRIDGE_HOST_EXE_NAME`. If `~/.wine` was somehow created with
@@ -63,9 +63,9 @@ pub struct Config {
     /// The installation method to use. We will default to creating copies since that works
     /// everywhere.
     pub method: InstallationMethod,
-    /// The path to the directory containing `libyabridge-{vst2,vst3}.so`. If not set, then
-    /// yabridgectl will look in `/usr/lib` and `$XDG_DATA_HOME/yabridge` since those are the
-    /// expected locations for yabridge to be installed in.
+    /// The path to the directory containing `libyabridge-{chainloader,}-{vst2,vst3}.so`. If not
+    /// set, then yabridgectl will look in `/usr/lib` and `$XDG_DATA_HOME/yabridge` since those are
+    /// the expected locations for yabridge to be installed in.
     pub yabridge_home: Option<PathBuf>,
     /// Directories to search for Windows VST plugins. These directories can contain both VST2
     /// plugin `.dll` files and VST3 modules (which should be located in `<prefix>/drive_c/Program
@@ -90,12 +90,12 @@ pub struct Config {
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum InstallationMethod {
-    /// Create a copy of `libyabridge-{vst2,vst3}.so` for every Windows VST2 plugin `.dll` file or
-    /// VST3 module found. After updating yabridge, the user will have to rerun `yabridgectl sync`
-    /// to copy over the new version.
+    /// Create a copy of `libyabridge-chainloader-{vst2,vst3}.so` for every Windows VST2 plugin
+    /// `.dll` file or VST3 module found. After updating yabridge, the user will have to rerun
+    /// `yabridgectl sync` to copy over the new version.
     Copy,
-    /// This will create a symlink to `libyabridge-{vst2,vst3}.so` for every VST2 plugin `.dll` file
-    /// or VST3 module in the plugin directories. Now that yabridge also searches in
+    /// This will create a symlink to `libyabridge-chainloader-{vst2,vst3}.so` for every VST2 plugin
+    /// `.dll` file or VST3 module in the plugin directories. Now that yabridge also searches in
     /// `~/.local/share/yabridge` since yabridge 2.1 this option is not really needed anymore.
     ///
     /// TODO: This feature has been deprecated, remove it in yabridge 4.0
@@ -147,12 +147,12 @@ pub struct KnownConfig {
 /// `Config::files`.
 #[derive(Debug)]
 pub struct YabridgeFiles {
-    /// The path to `libyabridge-vst2.so` we should use.
-    pub libyabridge_vst2: PathBuf,
-    /// The path to `libyabridge-vst3.so` we should use, if yabridge has been compiled with VST3
-    /// support. We need to know if it's a 32-bit or a 64-bit library so we can properly set up the
-    /// merged VST3 bundles.
-    pub libyabridge_vst3: Option<(PathBuf, LibArchitecture)>,
+    /// The path to `libyabridge-chainloader-vst2.so` we should use.
+    pub vst2_chainloader: PathBuf,
+    /// The path to `libyabridge-chainloader-vst3.so` we should use, if yabridge has been compiled
+    /// with VST3 support. We need to know if it's a 32-bit or a 64-bit library so we can properly
+    /// set up the merged VST3 bundles.
+    pub vst3_chainloader: Option<(PathBuf, LibArchitecture)>,
     /// The path to `yabridge-host.exe`. This is the path yabridge will actually use, and it does
     /// not have to be relative to `yabridge_home`.
     pub yabridge_host_exe: Option<PathBuf>,
@@ -220,16 +220,16 @@ impl Config {
     pub fn files(&self) -> Result<YabridgeFiles> {
         let xdg_dirs = yabridge_directories()?;
 
-        // First find `libyabridge-vst2.so`
-        let libyabridge_vst2: PathBuf = match &self.yabridge_home {
+        // First find `libyabridge-chainloader-vst2.so`
+        let vst2_chainloader: PathBuf = match &self.yabridge_home {
             Some(directory) => {
-                let candidate = directory.join(LIBYABRIDGE_VST2_NAME);
+                let candidate = directory.join(VST2_CHAINLOADER_NAME);
                 if candidate.exists() {
                     candidate
                 } else {
                     return Err(anyhow!(
                         "Could not find '{}' in '{}'",
-                        LIBYABRIDGE_VST2_NAME,
+                        VST2_CHAINLOADER_NAME,
                         directory.display()
                     ));
                 }
@@ -238,7 +238,7 @@ impl Config {
                 // Search in the system library locations and in `~/.local/share/yabridge` if no
                 // path was set explicitely. We'll also search through `/usr/local/lib` just in case
                 // but since we advocate against installing yabridge there we won't list this path
-                // in the error message when `libyabridge-vst2.so` can't be found.
+                // in the error message when `libyabridge-chainloader-vst2.so` can't be found.
                 let system_path = Path::new("/usr/lib");
                 let user_path = xdg_dirs.get_data_home();
                 let lib_directories = [
@@ -254,14 +254,14 @@ impl Config {
                 ];
                 let mut candidates = lib_directories
                     .iter()
-                    .map(|directory| directory.join(LIBYABRIDGE_VST2_NAME));
+                    .map(|directory| directory.join(VST2_CHAINLOADER_NAME));
                 match candidates.find(|directory| directory.exists()) {
                     Some(candidate) => candidate,
                     _ => {
                         return Err(anyhow!(
                             "Could not find '{}' in either '{}' or '{}'. You can override the \
                             default search path using 'yabridgectl set --path=<path>'.",
-                            LIBYABRIDGE_VST2_NAME,
+                            VST2_CHAINLOADER_NAME,
                             system_path.display(),
                             user_path.display()
                         ));
@@ -270,12 +270,12 @@ impl Config {
             }
         };
 
-        // Based on that we can check if `libyabridge-vst3.so` exists, since yabridge can be
-        // compiled without VST3 support
-        let libyabridge_vst3 = match libyabridge_vst2.with_file_name(LIBYABRIDGE_VST3_NAME) {
+        // Based on that we can check if `libyabridge-chainloader-vst3.so` exists, since yabridge
+        // can be compiled without VST3 support
+        let vst3_chainloader = match vst2_chainloader.with_file_name(VST3_CHAINLOADER_NAME) {
             path if path.exists() => {
-                // We need to know `libyabridge-vst3.so`'s architecture to be able to set up the
-                // bundle properly
+                // We need to know `libyabridge-chainloader-vst3.so`'s architecture to be able to
+                // set up the bundle properly. 32-bit builds of yabridge are technically supported.
                 let arch = utils::get_elf_architecture(&path).with_context(|| {
                     format!(
                         "Could not determine ELF architecture for '{}'",
@@ -300,8 +300,8 @@ impl Config {
             .map(|path| path.with_extension("exe.so"));
 
         Ok(YabridgeFiles {
-            libyabridge_vst2,
-            libyabridge_vst3,
+            vst2_chainloader,
+            vst3_chainloader,
             yabridge_host_exe,
             yabridge_host_exe_so,
             yabridge_host_32_exe,
@@ -326,8 +326,8 @@ impl Config {
 }
 
 /// Fetch the XDG base directories for yabridge's own files, converting any error messages if this
-/// somehow fails into a printable string to reduce boiler plate. This is only used when searching
-/// for `libyabridge-{vst2,vst3}.so` when no explicit search path has been set.
+/// somehow fails into a printable string to reduce boiler plate. This is used when searching for
+/// `libyabridge-chainloader-{vst2,vst3}.so` when no explicit search path has been set.
 pub fn yabridge_directories() -> Result<BaseDirectories> {
     BaseDirectories::with_prefix(YABRIDGE_PREFIX).context("Error while parsing base directories")
 }

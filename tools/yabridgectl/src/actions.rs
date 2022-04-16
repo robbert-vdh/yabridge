@@ -101,14 +101,15 @@ pub fn show_status(config: &Config) -> Result<()> {
     let files = config.files();
     match &files {
         Ok(files) => {
+            // TOOD: Also include the architecture here to avoid confusion
             println!(
-                "libyabridge-vst2.so: '{}'",
-                files.libyabridge_vst2.display()
+                "libyabridge-chainloader-vst2.so: '{}'",
+                files.vst2_chainloader.display()
             );
             println!(
-                "libyabridge-vst3.so: {}\n",
+                "libyabridge-chainloader-vst3.so: {}\n",
                 files
-                    .libyabridge_vst3
+                    .vst3_chainloader
                     .as_ref()
                     .map(|(path, arch)| format!("'{}' ({})", path.display(), arch))
                     .unwrap_or_else(|| "<not found>".red().to_string())
@@ -230,8 +231,8 @@ pub struct SyncOptions {
 /// `.so` files if the prune option is set.
 pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     let files: YabridgeFiles = config.files()?;
-    let libyabridge_vst2_hash = utils::hash_file(&files.libyabridge_vst2)?;
-    let libyabridge_vst3_hash = match &files.libyabridge_vst3 {
+    let vst2_chainloader_hash = utils::hash_file(&files.vst2_chainloader)?;
+    let vst3_chainloader_hash = match &files.vst3_chainloader {
         Some((path, _)) => Some(utils::hash_file(path)?),
         None => None,
     };
@@ -250,13 +251,13 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         );
     }
 
-    if let Some((libyabridge_vst3_path, _)) = &files.libyabridge_vst3 {
+    if let Some((vst3_chainloader_path, _)) = &files.vst3_chainloader {
         println!("Setting up VST2 and VST3 plugins using:");
-        println!("- {}", files.libyabridge_vst2.display());
-        println!("- {}\n", libyabridge_vst3_path.display());
+        println!("- {}", files.vst2_chainloader.display());
+        println!("- {}\n", vst3_chainloader_path.display());
     } else {
         println!("Setting up VST2 plugins using:");
-        println!("- {}\n", files.libyabridge_vst2.display());
+        println!("- {}\n", files.vst2_chainloader.display());
     }
 
     let results = config
@@ -273,14 +274,14 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // `utils::normalize_path()` so that the reported numbers are still correct when encountering
     // overlapping symlinked paths.
     let mut managed_plugins: HashSet<PathBuf> = HashSet::new();
-    // The plugins we created a new copy of `libyabridge-{vst2,vst3}.so` for. We don't touch these
-    // files if they're already up to date to prevent hosts from unnecessarily rescanning the
-    // plugins.
+    // The plugins we created a new copy of `libyabridge-chainloader-{vst2,vst3}.so` for. We don't
+    // touch these files if they're already up to date to prevent hosts from unnecessarily
+    // rescanning the plugins.
     let mut new_plugins: HashSet<PathBuf> = HashSet::new();
     // The files we skipped during the scan because they turned out to not be plugins
     let mut skipped_dll_files: Vec<PathBuf> = Vec::new();
     // `.so` files and unused VST3 modules we found during scanning that didn't have a corresponding
-    // copy or symlink of `libyabridge-vst2.so`
+    // copy or symlink of `libyabridge-chainloader-vst2.so`
     let mut orphan_files: Vec<NativeFile> = Vec::new();
     // Since VST3 bundles contain multiple files from multiple sources (native library files from
     // yabridge, and symlinks to Windows VST3 modules or bundles), cleaning up orphan VST3 files is
@@ -319,8 +320,8 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     if install_file(
                         options.force,
                         config.method,
-                        &files.libyabridge_vst2,
-                        Some(libyabridge_vst2_hash),
+                        &files.vst2_chainloader,
+                        Some(vst2_chainloader_hash),
                         &target_path,
                     )? {
                         new_plugins.insert(normalized_target_path.clone());
@@ -333,7 +334,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 // https://developer.steinberg.help/display/VST/Plug-in+Format+Structure#PluginFormatStructure-MergedBundle
                 Plugin::Vst3(module) => {
                     // Only set up VST3 plugins when yabridge has been compiled with VST3 support
-                    if libyabridge_vst3_hash.is_none() {
+                    if vst3_chainloader_hash.is_none() {
                         continue;
                     }
 
@@ -372,15 +373,15 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     }
 
                     // We're building a merged VST3 bundle containing both a copy or symlink to
-                    // `libyabridge-vst3.so` and the Windows VST3 plugin. The path to this native
-                    // module will depend on whether `libyabridge-vst3.so` is a 32-bit or a 64-bit
-                    // library file.
+                    // `libyabridge-chainloader-vst3.so` and the Windows VST3 plugin. The path to
+                    // this native module will depend on whether `libyabridge-chainloader-vst3.so`
+                    // is a 32-bit or a 64-bit library file.
                     utils::create_dir_all(target_native_module_path.parent().unwrap())?;
                     if install_file(
                         options.force,
                         config.method,
-                        &files.libyabridge_vst3.as_ref().unwrap().0,
-                        libyabridge_vst3_hash,
+                        &files.vst3_chainloader.as_ref().unwrap().0,
+                        vst3_chainloader_hash,
                         &target_native_module_path,
                     )? {
                         // We're counting the native `.so` files and not the Windows VST3 plugins
@@ -557,8 +558,8 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         return Ok(());
     }
 
-    // The path setup is to make sure that the `libyabridge-{vst2,vst3}.so` copies can find
-    // `yabridge-host.exe`
+    // The path setup is to make sure that the `libyabridge-chainloader-{vst2,vst3}.so` copies can
+    // find `yabridge-host.exe`
     if config.method == InstallationMethod::Copy {
         verify_path_setup(config)?;
     }

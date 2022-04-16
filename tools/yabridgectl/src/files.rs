@@ -188,10 +188,10 @@ impl Vst3Module {
         }
     }
 
-    /// Get the path to the `libyabridge.so` file in `~/.vst3` corresponding to the bridged version
-    /// of this module. The path here depends on whether we're using a 32-bit or 64-bit version of
-    /// yabridge. If the configuration is not given (for instance, becuase yabridge is not set up
-    /// properly) we'll assume the module should be 64-bit.
+    /// Get the path to the renamed `plugin.so` file in `~/.vst3` corresponding to the bridged
+    /// version of this module. The path here depends on whether we're using a 32-bit or 64-bit
+    /// version of yabridge. If the configuration is not given (for instance, becuase yabridge is
+    /// not set up properly) we'll assume the module should be 64-bit.
     pub fn target_native_module_path(&self, config: Option<&YabridgeFiles>) -> PathBuf {
         let native_module_name = match &self.module {
             Vst3ModuleType::Legacy(path) | Vst3ModuleType::Bundle(path) => path
@@ -207,11 +207,11 @@ impl Vst3Module {
         path.push("Contents");
 
         #[allow(clippy::wildcard_in_or_patterns)]
-        match config.and_then(|c| c.libyabridge_vst3.as_ref()) {
+        match config.and_then(|c| c.vst3_chainloader.as_ref()) {
             Some((_, LibArchitecture::Lib32)) => path.push("i386-linux"),
-            // NOTE: We'll always fall back to this if `libyabridge-vst3.so` is not found, just so
-            //       we cannot get any errors during `yabridgectl status` even if yabridge is not
-            //       set up correctly.
+            // NOTE: We'll always fall back to this if `libyabridge-chainloader-vst3.so` is not
+            //       found, just so we cannot get any errors during `yabridgectl status` even if
+            //       yabridge is not set up correctly.
             Some((_, LibArchitecture::Lib64)) | _ => path.push("x86_64-linux"),
         }
 

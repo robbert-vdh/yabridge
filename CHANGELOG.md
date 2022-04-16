@@ -61,6 +61,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Some of yabridge's socket file names contained extremely aesthetically
   unpleasing trailing underscores. Begone pesky underscores!
 
+### yabridgectl
+
+- As mentioned above, yabridgectl will now use the new chainloading libraries
+  when setting up plugins. This means that once you've ran `yabridgectl sync`
+  once after updating to yabridge 4.0, yabridge can now be updated without
+  needing to rerun `yabridgectl sync`. This is particularly useful when using a
+  distro packaged version of yabridge.
+
 ### Packaging notes
 
 - Completely removed the dependency on all Boost libraries.
