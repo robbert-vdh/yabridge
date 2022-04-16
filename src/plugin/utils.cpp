@@ -43,9 +43,11 @@ fs::path normalize_plugin_path(const fs::path& windows_library_path,
 std::variant<OverridenWinePrefix, fs::path, DefaultWinePrefix> find_wine_prefix(
     fs::path windows_plugin_path);
 
-PluginInfo::PluginInfo(PluginType plugin_type, bool prefer_32bit_vst3)
+PluginInfo::PluginInfo(PluginType plugin_type,
+                       const ghc::filesystem::path& plugin_path,
+                       bool prefer_32bit_vst3)
     : plugin_type_(plugin_type),
-      native_library_path_(get_this_file_location()),
+      native_library_path_(plugin_path),
       // As explained in the docstring, this is the actual Windows library. For
       // VST3 plugins that come in a module we should be loading that module
       // instead of the `.vst3` file within in, which is where
@@ -423,23 +425,24 @@ Configuration load_config_for(const fs::path& yabridge_path) {
 
 bool send_notification(const std::string& title,
                        const std::string body,
-                       bool append_origin) {
+                       std::optional<ghc::filesystem::path> origin) {
     // I think there's a zero chance that we're going to call this function with
     // anything that even somewhat resembles HTML, but we should still do a
     // basic XML escape anyways.
     std::ostringstream formatted_body;
     formatted_body << xml_escape(body);
 
-    // If possible, append the path to this library file to the message.
-    if (append_origin) {
+    // If the path to the current library file is provided, then we'll append
+    // the path to that library file to the message. In earlier versions we
+    // would detect the library path right here, but that will not work with
+    // chainloaded plugins as they will load the actual plugin libraries from
+    // fixed locations.
+    if (origin) {
         try {
-            const fs::path this_library = get_this_file_location();
             formatted_body << "\n"
                            << "Source: <a href=\"file://"
-                           << url_encode_path(
-                                  this_library.parent_path().string())
-                           << "\">"
-                           << xml_escape(this_library.filename().string())
+                           << url_encode_path(origin->parent_path().string())
+                           << "\">" << xml_escape(origin->filename().string())
                            << "</a>";
         } catch (const std::system_error&) {
             // I don't think this can fail in the way we're using it, but the

@@ -66,23 +66,26 @@ class PluginBridge {
      * `connect_sockets_guarded()` themselves after their initialization list.
      *
      * @param plugin_type The type of the plugin we're handling.
-     * @param plugin_path The path to the plugin. For VST2 plugins this is the
-     *   path to the `.dll` file, and for VST3 plugins this is the path to the
-     *   module (either a `.vst3` DLL file or a bundle).
+     * @param plugin_path The path to the **native** plugin library `.so` file.
+     *   This is used to determine the path to the Windows plugin library we
+     *   should load.
      * @param create_socket_instance A function to create a socket instance.
      *   Using a lambda here feels wrong, but I can't think of a better
      *   solution right now.
      *
      * @throw std::runtime_error Thrown when the Wine plugin host could not be
-     *   found, or if it could not locate and load a VST3 module.
+     *   found, or if it could not locate and load a corresponding Windows
+     *   plugin library.
      */
     template <
         invocable_returning<TSockets, asio::io_context&, const PluginInfo&> F>
-    PluginBridge(PluginType plugin_type, F&& create_socket_instance)
+    PluginBridge(PluginType plugin_type,
+                 const ghc::filesystem::path& plugin_path,
+                 F&& create_socket_instance)
         // This is still correct for VST3 plugins because we can configure an
         // entire directory (the module's bundle) at once
-        : config_(load_config_for(get_this_file_location())),
-          info_(plugin_type, config_.vst3_prefer_32bit),
+        : config_(load_config_for(plugin_path)),
+          info_(plugin_type, plugin_path, config_.vst3_prefer_32bit),
           io_context_(),
           sockets_(create_socket_instance(io_context_, info_)),
           generic_logger_(Logger::create_from_environment(
@@ -179,7 +182,7 @@ class PluginBridge {
                             "recommended to set up proper realtime privileges "
                             "for your user. Check the readme for "
                             "instructions on how to do that.",
-                        false);
+                        std::nullopt);
                 } else {
                     init_msg << "'yes'" << std::endl;
                 }
@@ -222,7 +225,7 @@ class PluginBridge {
                         "realtime privileges for your user, and some plugins "
                         "may cause your DAW to crash until you fix this. Check "
                         "the readme for instructions on how to do that.",
-                    false);
+                    std::nullopt);
             }
         } else {
             init_msg
@@ -390,7 +393,7 @@ class PluginBridge {
                         "went wrong. You may need to rerun your DAW from a "
                         "terminal and restart the plugin scanning process to "
                         "see the error.",
-                        true);
+                        info_.native_library_path_);
 
                     std::terminate();
                 }
@@ -426,7 +429,7 @@ class PluginBridge {
                 "Version mismatch",
                 "If you just updated yabridge, then you may need "
                 "to rerun 'yabridgectl sync' first to update your plugins.",
-                true);
+                info_.native_library_path_);
         }
     }
 

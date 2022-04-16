@@ -40,13 +40,19 @@ class Vst2PluginBridge : PluginBridge<Vst2Sockets<std::jthread>> {
      * Initializes the Wine plugin bridge. This sets up the sockets for event
      * handling.
      *
+     * @param plugin_path The path to the **native** plugin library `.so` file.
+     *   This is used to determine the path to the Windows plugin library we
+     *   should load. For directly loaded bridges this should be
+     *   `get_this_file_location()`. Chainloaded plugins should use the path of
+     *   the chainloader copy instead.
      * @param host_callback The callback function passed to the VST plugin by
      *   the host.
      *
      * @throw std::runtime_error Thrown when the VST host could not be found, or
      *   if it could not locate and load a VST .dll file.
      */
-    Vst2PluginBridge(audioMasterCallback host_callback);
+    Vst2PluginBridge(const ghc::filesystem::path& plugin_path,
+                     audioMasterCallback host_callback);
 
     /**
      * Terminate the Wine plugin host process and drop all work when the module

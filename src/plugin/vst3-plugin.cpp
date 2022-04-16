@@ -29,6 +29,10 @@ using namespace std::literals::string_literals;
 // NOLINTNEXTLINE(bugprone-suspicious-include)
 #include <public.sdk/source/main/linuxmain.cpp>
 
+using namespace std::literals::string_literals;
+
+namespace fs = ghc::filesystem;
+
 // Because VST3 plugins consist of completely independent components that have
 // to be initialized and connected by the host, hosting a VST3 plugin through
 // yabridge works very differently from hosting VST2 plugin. Even with
@@ -48,8 +52,11 @@ std::unique_ptr<Vst3PluginBridge> bridge;
 bool InitModule() {
     assert(!bridge);
 
+    // FIXME: Update this for the chainloading
+    const fs::path plugin_path = get_this_file_location();
+
     try {
-        bridge = std::make_unique<Vst3PluginBridge>();
+        bridge = std::make_unique<Vst3PluginBridge>(plugin_path);
 
         return true;
     } catch (const std::exception& error) {
@@ -67,7 +74,7 @@ bool InitModule() {
             error.what() +
                 "\nIf you just updated yabridge, then you may need to rerun "
                 "'yabridgectl sync' first to update your plugins."s,
-            true);
+            plugin_path);
 
         return false;
     }

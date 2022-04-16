@@ -19,7 +19,7 @@
 // This header is completely standalone so the chainloading libraries can
 // retrieve their file path without pulling in a lot of additional dependencies
 
-#include <string>
+#include <ghc/filesystem.hpp>
 
 /**
  * Return a path to this `.so` file. This can be used to find out from where
@@ -29,4 +29,4 @@
  * library using the provided exported functions since they can't detect the
  * path themselves.
  */
-std::string get_this_file_location();
+ghc::filesystem::path get_this_file_location();

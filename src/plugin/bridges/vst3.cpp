@@ -24,9 +24,10 @@
 
 using namespace std::literals::string_literals;
 
-Vst3PluginBridge::Vst3PluginBridge()
+Vst3PluginBridge::Vst3PluginBridge(const ghc::filesystem::path& plugin_path)
     : PluginBridge(
           PluginType::vst3,
+          plugin_path,
           [](asio::io_context& io_context, const PluginInfo& info) {
               return Vst3Sockets<std::jthread>(
                   io_context,

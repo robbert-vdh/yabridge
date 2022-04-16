@@ -20,7 +20,9 @@
 
 #include <dlfcn.h>
 
-std::string get_this_file_location() {
+namespace fs = ghc::filesystem;
+
+fs::path get_this_file_location() {
     // We'll try to find the library this function was defined in. When called
     // from a copy of `libyabridge-*.so` this will return that library. Because
     // the chainloader libraries load the plugin libraries from fixed locations,

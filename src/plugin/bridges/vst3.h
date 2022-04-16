@@ -52,10 +52,16 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
      * Initializes the VST3 module by starting and setting up communicating with
      * the Wine plugin host.
      *
+     * @param plugin_path The path to the **native** plugin library `.so` file.
+     *   This is used to determine the path to the Windows plugin library we
+     *   should load. For directly loaded bridges this should be
+     *   `get_this_file_location()`. Chainloaded plugins should use the path of
+     *   the chainloader copy instead.
+     *
      * @throw std::runtime_error Thrown when the Wine plugin host could not be
      *   found, or if it could not locate and load a VST3 module.
      */
-    explicit Vst3PluginBridge();
+    explicit Vst3PluginBridge(const ghc::filesystem::path& plugin_path);
 
     /**
      * Terminate the Wine plugin host process and drop all work when the module

@@ -24,6 +24,8 @@
 
 using namespace std::literals::string_literals;
 
+namespace fs = ghc::filesystem;
+
 // The main entry point for VST2 plugins should be called `VSTPluginMain``. The
 // other one exist for legacy reasons since some old hosts might still use them
 // (EnergyXT being the only known host on Linux that uses the `main` entry
@@ -40,11 +42,15 @@ using namespace std::literals::string_literals;
  */
 extern "C" YABRIDGE_EXPORT AEffect* VSTPluginMain(
     audioMasterCallback host_callback) {
+    // FIXME: Update this for the chainloading
+    const fs::path plugin_path = get_this_file_location();
+
     try {
         // This is the only place where we have to use manual memory management.
         // The bridge's destructor is called when the `effClose` opcode is
         // received.
-        Vst2PluginBridge* bridge = new Vst2PluginBridge(host_callback);
+        Vst2PluginBridge* bridge =
+            new Vst2PluginBridge(plugin_path, host_callback);
 
         return &bridge->plugin_;
     } catch (const std::exception& error) {
@@ -62,7 +68,7 @@ extern "C" YABRIDGE_EXPORT AEffect* VSTPluginMain(
             error.what() +
                 "\nIf you just updated yabridge, then you may need to rerun "
                 "'yabridgectl sync' first to update your plugins."s,
-            true);
+            plugin_path);
 
         return nullptr;
     }

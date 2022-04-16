@@ -35,9 +35,11 @@ Vst2PluginBridge& get_bridge_instance(const AEffect& plugin) noexcept {
     return *static_cast<Vst2PluginBridge*>(plugin.ptr3);
 }
 
-Vst2PluginBridge::Vst2PluginBridge(audioMasterCallback host_callback)
+Vst2PluginBridge::Vst2PluginBridge(const ghc::filesystem::path& plugin_path,
+                                   audioMasterCallback host_callback)
     : PluginBridge(
           PluginType::vst2,
+          plugin_path,
           [](asio::io_context& io_context, const PluginInfo& info) {
               return Vst2Sockets<std::jthread>(
                   io_context,

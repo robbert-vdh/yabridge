@@ -58,6 +58,9 @@ struct PluginInfo {
      *
      * @param plugin_type The type of the plugin we're going to load. The
      *   detection works slightly differently depending on the plugin type.
+     * @param plugin_path The path to the **native** plugin library `.so` file.
+     *   This is used to determine the path to the Windows plugin library we
+     *   should load.
      * @param prefer_32bit_vst3 If there's both a 64-bit and a 32-bit Windows
      *   VST3 module in the same bundle, then setting this to true will cause
      *   the 32-bit version to be used instead of the 64-bit version.
@@ -66,7 +69,9 @@ struct PluginInfo {
      *   plugin. The error message contains a human readable description of what
      *   went wrong.
      */
-    PluginInfo(PluginType plugin_type, bool prefer_32bit_vst3 = false);
+    PluginInfo(PluginType plugin_type,
+               const ghc::filesystem::path& plugin_path,
+               bool prefer_32bit_vst3 = false);
 
     /**
      * Create the environment for the plugin host based on `wine_prefix_`. If
@@ -267,15 +272,16 @@ Configuration load_config_for(const ghc::filesystem::path& yabridge_path);
  * @param body The message to display. This can contain line feeds, and it any
  *   HTML tags and XML escape sequences will be automatically escaped. The
  *   message can also be empty.
- * @param Whether to append 'Source: <XXX.so>' to the body, where `<XXX.so>` is
- *   a hyperlink to the directory this library is placed in.
+ * @param origin If this is set to the current plugin's path, then the
+ *   notification will append a 'Source: <XXX.so>' hyperlink to the body so the
+ *   user can more easily navigate to the plugin's path.
  *
  * @return Whether the notification was sent. This will be false if
  *   `notify-send` is not available.
  */
 bool send_notification(const std::string& title,
                        const std::string body,
-                       bool append_origin);
+                       std::optional<ghc::filesystem::path> origin);
 
 /**
  * Starting from the starting file or directory, go up in the directory
