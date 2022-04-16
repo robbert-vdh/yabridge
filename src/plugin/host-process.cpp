@@ -110,8 +110,7 @@ IndividualHost::IndividualHost(asio::io_context& io_context,
     : HostProcess(io_context, sockets),
       plugin_info_(plugin_info),
       host_path_(find_vst_host(plugin_info.native_library_path_,
-                               plugin_info.plugin_arch_,
-                               false)),
+                               plugin_info.plugin_arch_)),
       handle_(launch_host(
           host_path_,
           {
@@ -172,8 +171,7 @@ GroupHost::GroupHost(asio::io_context& io_context,
     : HostProcess(io_context, sockets),
       plugin_info_(plugin_info),
       host_path_(find_vst_host(plugin_info.native_library_path_,
-                               plugin_info.plugin_arch_,
-                               true)) {
+                               plugin_info.plugin_arch_)) {
     // When using plugin groups, we'll first try to connect to an existing group
     // host process and ask it to host our plugin. If no such process exists,
     // then we'll start a new process. In the event that multiple yabridge
@@ -205,8 +203,8 @@ GroupHost::GroupHost(asio::io_context& io_context,
         // because it should run independently of this yabridge instance as
         // it will likely outlive it.
         Process::Handle group_host =
-            launch_host(host_path_, {group_socket_path.string()}, logger,
-                        config, plugin_info);
+            launch_host(host_path_, {"group", group_socket_path.string()},
+                        logger, config, plugin_info);
         group_host.detach();
 
         group_host_connect_handler_ =

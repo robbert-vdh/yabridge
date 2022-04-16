@@ -304,13 +304,10 @@ std::string create_logger_prefix(const fs::path& endpoint_base_dir) {
 }
 
 fs::path find_vst_host(const ghc::filesystem::path& this_plugin_path,
-                       LibArchitecture plugin_arch,
-                       bool use_plugin_groups) {
-    auto host_name = use_plugin_groups ? yabridge_group_host_name
-                                       : yabridge_individual_host_name;
+                       LibArchitecture plugin_arch) {
+    auto host_name = yabridge_host_name;
     if (plugin_arch == LibArchitecture::dll_32) {
-        host_name = use_plugin_groups ? yabridge_group_host_name_32bit
-                                      : yabridge_individual_host_name_32bit;
+        host_name = yabridge_host_name_32bit;
     }
 
     // If our `.so` file is a symlink, then search for the host in the directory

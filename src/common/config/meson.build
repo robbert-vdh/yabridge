@@ -7,10 +7,8 @@ config_header = configure_file(
     {
       'vst2_plugin_name': 'lib' + vst2_plugin_name + '.so',
       'vst3_plugin_name': 'lib' + vst3_plugin_name + '.so',
-      'individual_host_binary_32bit': individual_host_name_32bit + '.exe',
-      'individual_host_binary_64bit': individual_host_name_64bit + '.exe',
-      'group_host_binary_32bit': group_host_name_32bit + '.exe',
-      'group_host_binary_64bit': group_host_name_64bit + '.exe',
+      'host_binary_32bit': host_name_32bit + '.exe',
+      'host_binary_64bit': host_name_64bit + '.exe',
     }
   )
 )

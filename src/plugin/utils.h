@@ -181,7 +181,7 @@ std::string create_logger_prefix(
     const ghc::filesystem::path& endpoint_base_dir);
 
 /**
- * Finds the Wine VST host (either `yabridge-host.exe` or `yabridge-host.exe`
+ * Finds the Wine VST host (either `yabridge-host.exe` or `yabridge-host-32.exe`
  * depending on the plugin). For this we will search in two places:
  *
  *   1. Alongside libyabridge-{vst2,vst3}.so if the file got symlinked. This is
@@ -195,16 +195,13 @@ std::string create_logger_prefix(
  *   from.
  * @param plugin_arch The architecture of the plugin, either 64-bit or 32-bit.
  *   Used to determine which host application to use, if available.
- * @param use_plugin_groups Whether the plugin is using plugin groups and we
- *   should be looking for the group host instead of the individual plugin host.
  *
  * @return The a path to the VST host, if found.
  * @throw std::runtime_error If the Wine VST host could not be found.
  */
 ghc::filesystem::path find_vst_host(
     const ghc::filesystem::path& this_plugin_path,
-    LibArchitecture plugin_arch,
-    bool use_plugin_groups);
+    LibArchitecture plugin_arch);
 
 /**
  * Generate the group socket endpoint name used based on the name of the group,

@@ -819,11 +819,10 @@ meson setup build --buildtype=release --cross-file cross-wine.conf -Dbitbridge=t
 ninja -C build
 ```
 
-This will produce four files called `yabridge-host-32.exe`,
-`yabridge-host-32.exe.so`, `yabridge-group-32.exe` and
-`yabridge-group-32.exe.so`. Yabridge will detect whether the plugin you're
-trying to load is 32-bit or 64-bit, and will run either the regular version or
-the `*-32.exe` variant accordingly.
+This will produce a second plugin host binary called `yabridge-host-32.exe`.
+Yabridge will detect whether the plugin you're trying to load is 32-bit or
+64-bit, and will run either the regular version or the `*-32.exe` variant
+accordingly.
 
 ### 32-bit libraries
 

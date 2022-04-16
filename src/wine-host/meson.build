@@ -1,11 +1,7 @@
-# The plugin host applications come on four flavours: hosting a single plugin
-# and hosting multiple plugins within a single process, and 32-bit and 64-bit.
-# We will compile the shared parts for the individual an plugin group hosts as a
-# static library first to cut down on compile times.
-#
 # As with the libraries, we cannot call `executable()` here since we would like
 # to keep all relevant files in the root of the build directory, and Meson
 # doesn't have a way to customize that yet.
+
 if is_64bit_system
   host_64bit_deps = [
     configuration_dep,
@@ -54,7 +50,7 @@ if with_bitbridge
   endif
 endif
 
-host_common_sources = files(
+host_sources = files(
   '../common/communication/vst2.cpp',
   '../common/serialization/vst2.cpp',
   '../common/configuration.cpp',
@@ -67,14 +63,16 @@ host_common_sources = files(
   '../common/utils.cpp',
   '../include/llvm/small-vector.cpp',
   'bridges/common.cpp',
+  'bridges/group.cpp',
   'bridges/vst2.cpp',
   'editor.cpp',
+  'host.cpp',
   'utils.cpp',
   'xdnd-proxy.cpp',
 )
 
 if with_vst3
-  host_common_sources += files(
+  host_sources += files(
     '../common/logging/vst3.cpp',
     '../common/serialization/vst3/component-handler/component-handler.cpp',
     '../common/serialization/vst3/component-handler/component-handler-2.cpp',
@@ -138,49 +136,4 @@ if with_vst3
     'bridges/vst3-impls/plug-frame-proxy.cpp',
     'bridges/vst3.cpp',
 )
-endif
-
-# These will be linked against a static library made from `host_common_sources`
-individual_host_sources = files(
-  'individual-host.cpp',
-)
-group_host_sources = files(
-  'bridges/group.cpp',
-  'group-host.cpp',
-)
-
-if is_64bit_system
-  host_common_64bit = static_library(
-    'host_common_64bit',
-    host_common_sources,
-    native : false,
-    include_directories : include_dir,
-    dependencies : host_64bit_deps,
-    cpp_args : compiler_options + wine_64bit_compiler_options,
-    link_args : ['-m64'],
-  )
-  host_common_64bit_dep = declare_dependency(
-    link_with : host_common_64bit,
-    include_directories : include_dir,
-    dependencies : host_64bit_deps,
-    compile_args : compiler_options + wine_64bit_compiler_options,
-  )
-endif
-
-if with_bitbridge
-  host_common_32bit = static_library(
-    'host_common_32bit',
-    host_common_sources,
-    native : false,
-    include_directories : include_dir,
-    dependencies : host_32bit_deps,
-    cpp_args : compiler_options + wine_32bit_compiler_options,
-    link_args : ['-m32'],
-  )
-  host_common_32bit_dep = declare_dependency(
-    link_with : host_common_32bit,
-    include_directories : include_dir,
-    dependencies : host_32bit_deps,
-    compile_args : compiler_options + wine_32bit_compiler_options,
-  )
 endif

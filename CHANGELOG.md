@@ -38,6 +38,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   gets rid of the runtime dependency on Boost.Filesystem for those builds, and
   it also makes compiling slightly faster and the binaries slightly smaller.
   Before this, yabridge would need to be rebuilt whenever Boost got updated.
+- The functionality for the `yabridge-group` binaries has been merged into the
+  `yabridge-host` binaries.
 - When mapping shared memory for audio and the user does not have permissions to
   lock the memory, yabridge will now retry mapping the memory without locking it
   instead of immediately terminating the process. An annoying desktop
@@ -55,6 +57,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Removed the `with-static-boost` build option since there's no longer a
   dependency on Boost.Filesystem.
+- Removed the `yabridge-group*` binaries as they are now part of the
+  `yabridge-host*` binaries. This saves precious megabytes.
 
 ### Fixed
 
@@ -80,6 +84,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `libyabridge-chainloader-vst2.so` and `libyabridge-chainloader-vst3.so` are
   new files that should be included in the package.
+- The `yabridge-group` binaries no longer exist as they are now part of the
+  `yabridge-host` binaries.
 - The `with-bitbridge` build option has been renamed to just `bitbridge`.
 - Completely removed the dependency on all Boost libraries.
 - Added a dependency on the headers-only

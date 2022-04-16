@@ -41,10 +41,8 @@ with_vst3 = get_option('vst3')
 # suffixed with `.exe`.
 vst2_plugin_name = 'yabridge-vst2'
 vst3_plugin_name = 'yabridge-vst3'
-individual_host_name_64bit = 'yabridge-host'
-individual_host_name_32bit = 'yabridge-host-32'
-group_host_name_64bit = 'yabridge-group'
-group_host_name_32bit = 'yabridge-group-32'
+host_name_64bit = 'yabridge-host'
+host_name_32bit = 'yabridge-host-32'
 
 compiler_options = [
   '-fvisibility=hidden',
@@ -231,11 +229,11 @@ endif
 # Binaries
 #
 # The application consists of a plugin (`libyabridge-{vst2,vst3}.so`) that calls
-# a Winelib application (`yabridge-{host,group}{,-32}.exe`) that can host
-# Windows VST2 and VST3 plugins. These plugins can in turn be loaded from small
-# stub libraries dubbed chainloaders to avoid having to copy large plugin
-# libraries around. More information about the way these two components work
-# together can be found in `docs/architecture.md`.
+# a Winelib application (`yabridge-host{,-32}.exe`) that can host Windows VST2
+# and VST3 plugins. These plugins can in turn be loaded from small stub
+# libraries dubbed chainloaders to avoid having to copy large plugin libraries
+# around. More information about the way these two components work together can
+# be found in `docs/architecture.md`.
 #
 
 # Generate header files for configuration variables such as the current git tag
@@ -298,36 +296,24 @@ endif
 
 if is_64bit_system
   executable(
-    individual_host_name_64bit,
-    individual_host_sources,
+    host_name_64bit,
+    host_sources,
     native : false,
-    dependencies : host_common_64bit_dep,
-    link_args : ['-m64'],
-  )
-
-  executable(
-    group_host_name_64bit,
-    group_host_sources,
-    native : false,
-    dependencies : host_common_64bit_dep,
+    include_directories : include_dir,
+    dependencies : host_64bit_deps,
+    cpp_args : compiler_options + wine_64bit_compiler_options,
     link_args : ['-m64'],
   )
 endif
 
 if with_bitbridge
   executable(
-    individual_host_name_32bit,
-    individual_host_sources,
+    host_name_32bit,
+    host_sources,
     native : false,
-    dependencies : host_common_32bit_dep,
-    link_args : ['-m32'],
-  )
-
-  executable(
-    group_host_name_32bit,
-    group_host_sources,
-    native : false,
-    dependencies : host_common_32bit_dep,
+    include_directories : include_dir,
+    dependencies : host_32bit_deps,
+    cpp_args : compiler_options + wine_32bit_compiler_options,
     link_args : ['-m32'],
   )
 endif

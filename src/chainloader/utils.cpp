@@ -36,15 +36,15 @@ void* find_plugin_library(const std::string& name) {
         // `dlopen()` for distro packaged versions of yabridge
         const std::vector<fs::path> search_path = get_augmented_search_path();
         if (const auto& yabridge_host_path =
-                search_in_path(search_path, yabridge_individual_host_name)) {
+                search_in_path(search_path, yabridge_host_name)) {
             const fs::path candidate = yabridge_host_path->parent_path() / name;
             if (fs::exists(candidate)) {
                 return dlopen(candidate.c_str(), RTLD_LAZY | RTLD_LOCAL);
             }
         }
 
-        if (const auto& yabridge_host_32_path = search_in_path(
-                search_path, yabridge_individual_host_name_32bit)) {
+        if (const auto& yabridge_host_32_path =
+                search_in_path(search_path, yabridge_host_name_32bit)) {
             const fs::path candidate =
                 yabridge_host_32_path->parent_path() / name;
             if (fs::exists(candidate)) {
