@@ -43,6 +43,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   instead of immediately terminating the process. An annoying desktop
   notification will still be shown every time you load a plugin until you fix
   this.
+- Yabridge now prints the path to the `libyabridge-{vst2,vst3}.so` library
+  that's being used on startup. This tells you where the chainloader is loading
+  the library file from. Because you can never have too much information, right?
 - `effProcessEvents` VST2 calls are now filtered out from the log when
   `YABRIDGE_DEBUG_LEVEL` is set to 1.
 

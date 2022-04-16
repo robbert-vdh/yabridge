@@ -26,6 +26,7 @@
 #include <version.h>
 
 #include "../../common/configuration.h"
+#include "../../common/linking.h"
 #include "../../common/notifications.h"
 #include "../../common/utils.h"
 #include "../host-process.h"
@@ -142,7 +143,8 @@ class PluginBridge {
                  << " (32-bit build)"
 #endif
                  << std::endl;
-        // TODO: Show this library's path now that we're chainloading
+        init_msg << "library:       '" << get_this_file_location().string()
+                 << "'" << std::endl;
         init_msg << "host:          '" << plugin_host_->path().string() << "'"
                  << std::endl;
         init_msg << "plugin:        '" << info_.windows_plugin_path_.string()
