@@ -5,6 +5,8 @@ config_header = configure_file(
   output : 'config.h',
   configuration : configuration_data(
     {
+      'vst2_plugin_name': 'lib' + vst2_plugin_name + '.so',
+      'vst3_plugin_name': 'lib' + vst3_plugin_name + '.so',
       'individual_host_binary_32bit': individual_host_name_32bit + '.exe',
       'individual_host_binary_64bit': individual_host_name_64bit + '.exe',
       'group_host_binary_32bit': group_host_name_32bit + '.exe',

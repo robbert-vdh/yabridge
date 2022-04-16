@@ -35,6 +35,12 @@ with_vst3 = get_option('with-vst3')
 # application to use based on the `.dll` file it's trying to load. This setup is
 # necessary until Meson provides a way to have multiple cross-builds for a
 # single build directory: https://github.com/mesonbuild/meson/issues/5125
+
+# These variables are used to generate a `config.h` file. The library names will
+# be prefixed with `lib` and suffixed with `.so`, and the host names will be
+# suffixed with `.exe`.
+vst2_plugin_name = 'yabridge-vst2'
+vst3_plugin_name = 'yabridge-vst3'
 individual_host_name_64bit = 'yabridge-host'
 individual_host_name_32bit = 'yabridge-host-32'
 group_host_name_64bit = 'yabridge-group'
@@ -245,7 +251,7 @@ subdir('src/plugin')
 subdir('src/wine-host')
 
 shared_library(
-  'yabridge-vst2',
+  vst2_plugin_name,
   vst2_plugin_sources,
   native : true,
   include_directories : include_dir,
@@ -290,7 +296,7 @@ if with_vst3
   # This is the VST3 equivalent of `libyabridge-vst2.so`. The Wine host
   # applications can handle both VST2 and VST3 plugins.
   shared_library(
-    'yabridge-vst3',
+    vst3_plugin_name,
     vst3_plugin_sources,
     native : true,
     include_directories : include_dir,
