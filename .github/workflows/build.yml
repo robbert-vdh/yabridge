@@ -53,7 +53,7 @@ jobs:
       - name: Create an archive for the binaries
         run: |
           mkdir yabridge
-          cp build/libyabridge-{vst2,vst3}.so build/yabridge-{host,group}{,-32}.exe{,.so} yabridge
+          cp build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-{host,group}{,-32}.exe{,.so} yabridge
           cp CHANGELOG.md README.md yabridge
 
           tar -caf "$ARCHIVE_NAME" yabridge
@@ -91,7 +91,7 @@ jobs:
       - name: Create an archive for the binaries
         run: |
           mkdir yabridge
-          cp build/libyabridge-{vst2,vst3}.so build/yabridge-{host,group}{,-32}.exe{,.so} yabridge
+          cp build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-{host,group}{,-32}.exe{,.so} yabridge
           cp CHANGELOG.md README.md yabridge
 
           tar -caf "$ARCHIVE_NAME" yabridge
@@ -131,7 +131,7 @@ jobs:
       - name: Create an archive for the binaries
         run: |
           mkdir yabridge
-          cp build/libyabridge-{vst2,vst3}.so build/yabridge-{host,group}{,-32}.exe{,.so} yabridge
+          cp build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-{host,group}{,-32}.exe{,.so} yabridge
           cp CHANGELOG.md README.md yabridge
 
           tar -caf "$ARCHIVE_NAME" yabridge
