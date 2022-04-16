@@ -232,8 +232,10 @@ endif
 #
 # The application consists of a plugin (`libyabridge-{vst2,vst3}.so`) that calls
 # a Winelib application (`yabridge-{host,group}{,-32}.exe`) that can host
-# Windows VST2 and VST3 plugins. More information about the way these two
-# components work together can be found in `docs/architecture.md`.
+# Windows VST2 and VST3 plugins. These plugins can in turn be loaded from small
+# stub libraries dubbed chainloaders to avoid having to copy large plugin
+# libraries around. More information about the way these two components work
+# together can be found in `docs/architecture.md`.
 #
 
 # Generate header files for configuration variables such as the current git tag
