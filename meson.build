@@ -58,7 +58,7 @@ compiler_options = [
 chainloader_compiler_options = [
   # We use our process library for sending notifications from the chainloaders,
   # but we don't need the Asio pipe support there
-  '-DPROCESS_NO_ASIO',
+  '-DWITHOUT_ASIO',
 ]
 
 # HACK: Some stuff from `windows.h` that we don't need results in conflicting

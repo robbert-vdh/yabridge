@@ -20,12 +20,16 @@
 #include <optional>
 #include <ostream>
 
+// The chainloader needs to be able to use the logger without pulling in a bunch
+// of Boost things
+#ifndef WITHOUT_ASIO
 #ifdef __WINE__
 #include "../wine-host/asio-fix.h"
 #endif
 
 #include <asio/read_until.hpp>
 #include <asio/streambuf.hpp>
+#endif  // WITHOUT_ASIO
 
 #include "../utils.h"
 
@@ -138,6 +142,7 @@ class Logger {
      */
     void log(const std::string& message);
 
+#ifndef WITHOUT_ASIO
     /**
      * Write output from an async pipe to the log on a line by line basis.
      * Useful for logging the Wine process's STDOUT and STDERR streams.
@@ -167,6 +172,7 @@ class Logger {
                 async_log_pipe_lines(pipe, buffer, prefix);
             });
     }
+#endif  // WITHOUT_ASIO
 
     /**
      * Log a message that should only be printed when the `verbosity` is set to

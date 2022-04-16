@@ -314,7 +314,7 @@ Process::StatusResult Process::spawn_get_status() const {
     }
 }
 
-#ifndef PROCESS_NO_ASIO
+#ifndef WITHOUT_ASIO
 Process::HandleResult Process::spawn_child_piped(
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     asio::posix::stream_descriptor& stdout_pipe,
@@ -385,7 +385,7 @@ Process::HandleResult Process::spawn_child_piped(
         return Handle(child_pid);
     }
 }
-#endif  // PROCESS_NO_ASIO
+#endif  // WITHOUT_ASIO
 
 Process::HandleResult Process::spawn_child_redirected(
     const ghc::filesystem::path& filename) const {
