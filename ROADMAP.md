@@ -20,8 +20,6 @@ page lists some of those.
 
 # For a major release
 
-- Completely remove the now deprecated symlink-based installation method from
-  yabridgectl.
 - Replace the use of `notify-send` for notifications with using `libdbus`
   directly. Most systems will have both available by default, but some less
   common distros split `notify-send` from the rest of the `libnotify` package.
