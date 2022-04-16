@@ -26,11 +26,9 @@
 #include <version.h>
 
 #include "../../common/configuration.h"
+#include "../../common/notifications.h"
 #include "../../common/utils.h"
 #include "../host-process.h"
-
-// FIXME: This should be passed as an argument instead
-#include "../../common/linking.h"
 
 /**
  * If the amount of lockable memory is below this, then we'll warn about it

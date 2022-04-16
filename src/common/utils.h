@@ -141,17 +141,6 @@ std::optional<rlim_t> get_rttime_limit() noexcept;
 bool is_watchdog_timer_disabled();
 
 /**
- * URL encode a file path. We won't escape forward slashes, and `path` should
- * not yet include the `file://` prefix.
- */
-std::string url_encode_path(std::string path);
-
-/**
- * Escape XML entities within a string. Used inside of desktop notifications.
- */
-std::string xml_escape(std::string string);
-
-/**
  * A RAII wrapper that will temporarily enable the FTZ flag so that denormals
  * are automatically flushed to zero, returning to whatever the flag was
  * previously when it drops out of scope.

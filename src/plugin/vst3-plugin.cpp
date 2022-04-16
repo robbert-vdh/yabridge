@@ -14,10 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "bridges/vst3.h"
-
-using namespace std::literals::string_literals;
-
 // FIXME: The VST3 SDK as of version 3.7.2 now includes multiple local functions
 //        called `InitModule` and `DeinitModule`: one in the new
 //        `public.sdk/source/main/initmodule.cpp`, and the existing ones in the
@@ -28,6 +24,9 @@ using namespace std::literals::string_literals;
 #define DeinitModule deinit_module
 // NOLINTNEXTLINE(bugprone-suspicious-include)
 #include <public.sdk/source/main/linuxmain.cpp>
+
+#include "../common/linking.h"
+#include "bridges/vst3.h"
 
 using namespace std::literals::string_literals;
 
@@ -49,6 +48,8 @@ namespace fs = ghc::filesystem;
 
 std::unique_ptr<Vst3PluginBridge> bridge;
 
+// These functions are called by the `ModuleEntry` and `ModuleExit` functions on
+// the first load and load unload
 bool InitModule() {
     assert(!bridge);
 

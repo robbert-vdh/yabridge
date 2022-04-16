@@ -19,6 +19,7 @@
 #include <iostream>
 #include <numeric>
 
+#include "../common/notifications.h"
 #include "editor.h"
 
 using namespace std::literals::chrono_literals;

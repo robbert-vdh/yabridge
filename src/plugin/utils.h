@@ -264,26 +264,6 @@ std::vector<ghc::filesystem::path> get_augmented_search_path();
 Configuration load_config_for(const ghc::filesystem::path& yabridge_path);
 
 /**
- * Send a desktop notification using `notify-send`. Used for diagnostics when a
- * plugin fails to load since the user may not be checking the output in a
- * terminal.
- *
- * @param title The title (or technically, summary) of the notification.
- * @param body The message to display. This can contain line feeds, and it any
- *   HTML tags and XML escape sequences will be automatically escaped. The
- *   message can also be empty.
- * @param origin If this is set to the current plugin's path, then the
- *   notification will append a 'Source: <XXX.so>' hyperlink to the body so the
- *   user can more easily navigate to the plugin's path.
- *
- * @return Whether the notification was sent. This will be false if
- *   `notify-send` is not available.
- */
-bool send_notification(const std::string& title,
-                       const std::string body,
-                       std::optional<ghc::filesystem::path> origin);
-
-/**
  * Starting from the starting file or directory, go up in the directory
  * hierarchy until we find a file named `filename`.
  *

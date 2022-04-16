@@ -19,6 +19,7 @@
 #include <iostream>
 #include <memory>
 
+#include "../common/linking.h"
 #include "../common/logging/common.h"
 #include "bridges/vst2.h"
 
