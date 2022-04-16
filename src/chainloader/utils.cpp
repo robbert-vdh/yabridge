@@ -52,7 +52,30 @@ void* find_plugin_library(const std::string& name) {
             }
         }
 
-        return dlopen(name.c_str(), RTLD_LAZY | RTLD_LOCAL);
+        if (void* handle = dlopen(name.c_str(), RTLD_LAZY | RTLD_LOCAL)) {
+            return handle;
+        }
+
+        // One last Hail Mary, in case ldconfig was not set up correctly. This
+        // might be relevant for some of the `/usr/local/*` locations (although
+        // you really, really shouldn't install yabridge there, please, thank
+        // you). Yabridgectl searches through these same directories.
+        for (const auto& lib_dir : {
+                 "/usr/lib",
+                 "/usr/lib/x86_64-linux-gnu",
+                 "/usr/lib64",
+                 "/usr/local/lib",
+                 "/usr/local/lib/x86_64-linux-gnu",
+                 "/usr/local/lib64",
+             }) {
+            const fs::path candidate = fs::path(lib_dir) / name;
+            if (void* handle =
+                    dlopen(candidate.c_str(), RTLD_LAZY | RTLD_LOCAL)) {
+                return handle;
+            }
+        }
+
+        return nullptr;
     };
 
     void* handle = impl();
@@ -62,9 +85,11 @@ void* find_plugin_library(const std::string& name) {
         Logger logger = Logger::create_exception_logger();
 
         logger.log("");
-        logger.log("Could not find '" + name + "'.");
-        logger.log("Make sure you followed the installation instructions from");
-        logger.log("yabridge's readme");
+        logger.log("Could not find '" + name + "'");
+        logger.log("");
+        logger.log(
+            "Make sure you followed the installation instructions from "
+            "yabridge's readme.");
         logger.log("");
         logger.log("Source: '" + this_plugin_path.string() + "'");
         logger.log("");

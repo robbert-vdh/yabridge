@@ -33,5 +33,7 @@
  *   process for `yabridge-host-32.exe`.
  * - When those don't exist, we'll try to `dlopen()` the file directly. This
  *   will use the correct path for the system.
+ * - If we still can't find the file, we'll do one last scan through common lib
+ *   directories in case `ldconfig` was not set up correctly.
  */
 void* find_plugin_library(const std::string& name);
