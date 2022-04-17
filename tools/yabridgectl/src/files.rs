@@ -51,11 +51,12 @@ pub struct SearchResults {
 /// files in a directory before filtering them down to a `SearchResults` object.
 #[derive(Debug)]
 pub struct SearchIndex {
-    /// Any `.dll` file.
-    pub dll_files: Vec<PathBuf>,
-    /// Any `.vst3` file or directory. This can be either a legacy `.vst3` DLL module or a VST
-    /// 3.6.10 module (or some kind of random other file, of course).
-    pub vst3_files: Vec<PathBuf>,
+    /// Any `.dll` file, along with its relative path inq the search directory.
+    pub dll_files: Vec<(PathBuf, Option<PathBuf>)>,
+    /// Any `.vst3` file or directory, along with its relative path in the search directory. This
+    /// can be either a legacy `.vst3` DLL module or a VST 3.6.10 module (or some kind of random
+    /// other file, of course).
+    pub vst3_files: Vec<(PathBuf, Option<PathBuf>)>,
     /// Absolute paths to any `.so` files inside of the directory, and whether they're a symlink or
     /// a regular file.
     pub so_files: Vec<NativeFile>,
@@ -90,10 +91,13 @@ pub enum Plugin {
 /// VST2 plugins we found during a search along with their architecture.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Vst2Plugin {
-    /// The absolute path to the VST2 plugin `.dll` file.
+    /// The absolute path to the VST2 plugin's `.dll` file.
     pub path: PathBuf,
     /// The architecture of the VST2 plugin.
     pub architecture: LibArchitecture,
+    /// The subdirectory within the plugins directory the orignal plugin was in. If this could not
+    /// be detected then this will be `None`.
+    pub subdirectory: Option<PathBuf>,
 }
 
 /// VST3 modules we found during a search.
@@ -103,9 +107,8 @@ pub struct Vst3Module {
     pub module: Vst3ModuleType,
     /// The architecture of the VST3 module.
     pub architecture: LibArchitecture,
-    /// The VST3 subdirectory the orignal module was in, if any. This is usually used to group
-    /// plugisn by the same manufacturer together. We detect this by looking for a parent `VST3`
-    /// directory. If we can't find that, this will be `None`.
+    /// The subdirectory within the plugins directory the orignal module was in. If this could not
+    /// be detected then this will be `None`.
     pub subdirectory: Option<PathBuf>,
 }
 
@@ -340,8 +343,10 @@ impl SearchResults {
 /// be pruned immediately, so this can be used to both not index individual files and to skip an
 /// entire directory.
 pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
-    let mut dll_files: Vec<PathBuf> = Vec::new();
-    let mut vst3_files: Vec<PathBuf> = Vec::new();
+    // These are pairs of `(absolute_path, subdirectory)`. The subdirectory is used for setting up
+    // VST3 plugins and for setting up VST2 plugins in the centralized installation location mode.
+    let mut dll_files: Vec<(PathBuf, Option<PathBuf>)> = Vec::new();
+    let mut vst3_files: Vec<(PathBuf, Option<PathBuf>)> = Vec::new();
     let mut so_files: Vec<NativeFile> = Vec::new();
     // XXX: We're silently skipping directories and files we don't have permission to read. This
     //      sounds like the expected behavior, but I"m not entirely sure.
@@ -372,8 +377,22 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
         }
 
         match entry.path().extension().and_then(|os| os.to_str()) {
-            Some("dll") => dll_files.push(entry.into_path()),
-            Some("vst3") => vst3_files.push(entry.into_path()),
+            Some("dll") => {
+                let path = entry.into_path();
+                let subdirectory = path
+                    .parent()
+                    .and_then(|p| p.strip_prefix(directory).ok())
+                    .map(|p| p.to_owned());
+                dll_files.push((path, subdirectory));
+            }
+            Some("vst3") => {
+                let path = entry.into_path();
+                let subdirectory = path
+                    .parent()
+                    .and_then(|p| p.strip_prefix(directory).ok())
+                    .map(|p| p.to_owned());
+                vst3_files.push((path, subdirectory));
+            }
             Some("so") => {
                 if entry.path_is_symlink() {
                     so_files.push(NativeFile::Symlink(entry.into_path()));
@@ -426,7 +445,7 @@ impl SearchIndex {
         let is_vst2_plugin: Vec<Result<Vst2Plugin, PathBuf>> = self
             .dll_files
             .into_par_iter()
-            .map(|path| {
+            .map(|(path, subdirectory)| {
                 let architecture = if DLL32_AUTOMATON.is_match(pe32_info(&path)?) {
                     LibArchitecture::Lib32
                 } else {
@@ -434,7 +453,11 @@ impl SearchIndex {
                 };
 
                 if VST2_AUTOMATON.is_match(exported_functions(&path)?) {
-                    Ok(Ok(Vst2Plugin { path, architecture }))
+                    Ok(Ok(Vst2Plugin {
+                        path,
+                        architecture,
+                        subdirectory,
+                    }))
                 } else {
                     Ok(Err(path))
                 }
@@ -448,7 +471,7 @@ impl SearchIndex {
         let is_vst3_module: Vec<Result<Vst3Module, PathBuf>> = self
             .vst3_files
             .into_par_iter()
-            .map(|module_path| {
+            .map(|(module_path, subdirectory)| {
                 let architecture = if DLL32_AUTOMATON.is_match(pe32_info(&module_path)?) {
                     LibArchitecture::Lib32
                 } else {
@@ -480,34 +503,10 @@ impl SearchIndex {
                         })
                         .unwrap_or(false);
 
-                    let (module, module_home) = if module_is_in_bundle {
-                        (
-                            Vst3ModuleType::Bundle(bundle_root.unwrap().to_owned()),
-                            bundle_root.unwrap(),
-                        )
+                    let module = if module_is_in_bundle {
+                        Vst3ModuleType::Bundle(bundle_root.unwrap().to_owned())
                     } else {
-                        (
-                            Vst3ModuleType::Legacy(module_path.clone()),
-                            module_path.as_path(),
-                        )
-                    };
-
-                    // We want to recreate the original subdirectory structure, so plugins are still
-                    // grouped by manufacturer
-                    let vst3_directory = module_home.ancestors().find(|path| {
-                        path.file_name()
-                            .and_then(|name| name.to_str())
-                            .map(|name| name.to_lowercase().as_str() == "vst3")
-                            .unwrap_or(false)
-                    });
-                    let subdirectory = match vst3_directory {
-                        Some(directory) => module_home
-                            .strip_prefix(directory)
-                            .ok()
-                            // We should of coruse pop the `.vst3` directory
-                            .and_then(|suffix| suffix.parent())
-                            .map(|subdirectory| subdirectory.to_owned()),
-                        None => None,
+                        Vst3ModuleType::Legacy(module_path)
                     };
 
                     Ok(Ok(Vst3Module {
