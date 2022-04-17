@@ -8,6 +8,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### TODOs
+
+- The readme documentation has not yet been updated to reflect the changes on
+  the master branch. The main thing that would require documentation changes is
+  the default VST2 plugin handling. Those are now set up in `~/.vst/yabridge` by
+  default, with an option to revert back to the old inline behavior.
+
 ### Added
 
 - Yabridge 4.0 introduces a completely new way to load plugins that allows
@@ -57,8 +64,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Removed the `with-static-boost` build option since there's no longer a
   dependency on Boost.Filesystem.
-- Removed the `yabridge-group*` binaries as they are now part of the
-  `yabridge-host*` binaries. This saves precious megabytes.
+- Removed the `yabridge-group` binaries as they are now part of the
+  `yabridge-host` binaries. This saves precious megabytes.
 
 ### Fixed
 
@@ -69,11 +76,27 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### yabridgectl
 
+- VST2 plugins are now set up in `~/.vst/yabridge` by default. This means that
+  you no longer have to add any directory search locations in your DAW. The
+  downside is that it's no longer possible for two plugin directories (perhaps
+  in different Wine prefixes) to provide the same plugin file. Like with
+  yabridgectl's VST3 handling, the subdirectory structure within the plugin
+  directory is preserved. You can use `yabridgectl set --vst2-location=inline`
+  to revert back to the old behavior of setting the plugins up right next to the
+  VST2 plugin `.dll` files.
+
+  If you were using a `yabridge.toml` configuration file, then you will now need
+  to place that file in `~/.vst/yabridge` instead.
+
 - As mentioned above, yabridgectl will now use the new chainloading libraries
   when setting up plugins. This means that once you've ran `yabridgectl sync`
   once after updating to yabridge 4.0, yabridge can now be updated without
   needing to rerun `yabridgectl sync`. This is particularly useful when using a
   distro packaged version of yabridge.
+
+- The VST3 subdirectory detection is more robust and can now handle arbitrary
+  directories, not just directories that are called `VST3`. This, of course,
+  should not be needed.
 - The previously deprecated symlink installation method has now been removed
   from yabridgectl, along with the `yabridgectl set --method` option.
 - `yabridgectl status` now lists the architecture of
@@ -87,12 +110,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - The `yabridge-group` binaries no longer exist as they are now part of the
   `yabridge-host` binaries.
 - The `with-bitbridge` build option has been renamed to just `bitbridge`.
-- Completely removed the dependency on all Boost libraries.
-- Added a dependency on the headers-only
+- Both runtime and compile time dependencies on the Boost libraries have been
+  removed.
+- There's a new dependency on the headers-only
   [`ghc::filesystem`](https://github.com/gulrak/filesystem) library to replace
-  Boost.Filesystem.
+  Boost.Filesystem. A Meson wrap is included as a fallback for a distro package.
 - Added a dependency on the headers-only [Asio](http://think-async.com/Asio/)
-  library to replace Boost.Asio.
+  library to replace Boost.Asio. A Meson wrap is included as a fallback for a
+  distro package.
 - Fixed a deprecation warning in the Meson build, causing the minimum supported
   Meson version to be bumped up to **Meson 0.56** from 0.55.
 

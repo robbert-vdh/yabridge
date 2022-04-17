@@ -26,7 +26,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use walkdir::WalkDir;
 
-use crate::config::{yabridge_vst3_home, YabridgeFiles};
+use crate::config::{yabridge_vst2_home, yabridge_vst3_home, Config, YabridgeFiles};
 use crate::utils::get_file_type;
 
 /// Stores the results from searching through a directory. We'll search for Windows VST2 plugin
@@ -125,6 +125,47 @@ pub enum Vst3ModuleType {
     Bundle(PathBuf),
 }
 
+impl Vst2Plugin {
+    /// Get the absolute path to the `.so` file we should create in `~/.vst/yabridge` for this
+    /// plugin when using the centralized VST installation location mode.
+    pub fn centralized_native_target(&self) -> PathBuf {
+        let file_name = self
+            .path
+            .file_name()
+            .unwrap()
+            .to_str()
+            .expect("Plugin name contains invalid UTF-8");
+        let file_name = Path::new(file_name).with_extension("so");
+
+        match &self.subdirectory {
+            Some(directory) => yabridge_vst2_home().join(directory).join(file_name),
+            None => yabridge_vst2_home().join(file_name),
+        }
+    }
+
+    /// Get the absolute path to the `.dll` file we should symlink to `~/.vst/yabridge` when setting
+    /// this plugin up with the centralized VST2 installation location setting.
+    pub fn centralized_windows_target(&self) -> PathBuf {
+        let file_name = self
+            .path
+            .file_name()
+            .unwrap()
+            .to_str()
+            .expect("Plugin name contains invalid UTF-8");
+
+        match &self.subdirectory {
+            Some(directory) => yabridge_vst2_home().join(directory).join(file_name),
+            None => yabridge_vst2_home().join(file_name),
+        }
+    }
+
+    /// Get the absolute path to the `.so` file we should create when setting this plugin up with
+    /// the inline VST2 installation location setting.
+    pub fn inline_native_target(&self) -> PathBuf {
+        self.path.with_extension("so")
+    }
+}
+
 impl Vst3Module {
     /// Get the path to the Windows VST3 plugin. This can be either a file or a directory depending
     /// on the type of moudle.
@@ -195,7 +236,7 @@ impl Vst3Module {
     /// version of this module. The path here depends on whether we're using a 32-bit or 64-bit
     /// version of yabridge. If the configuration is not given (for instance, becuase yabridge is
     /// not set up properly) we'll assume the module should be 64-bit.
-    pub fn target_native_module_path(&self, config: Option<&YabridgeFiles>) -> PathBuf {
+    pub fn target_native_module_path(&self, files: Option<&YabridgeFiles>) -> PathBuf {
         let native_module_name = match &self.module {
             Vst3ModuleType::Legacy(path) | Vst3ModuleType::Bundle(path) => path
                 .with_extension("so")
@@ -210,7 +251,7 @@ impl Vst3Module {
         path.push("Contents");
 
         #[allow(clippy::wildcard_in_or_patterns)]
-        match config.and_then(|c| c.vst3_chainloader.as_ref()) {
+        match files.and_then(|c| c.vst3_chainloader.as_ref()) {
             Some((_, LibArchitecture::Lib32)) => path.push("i386-linux"),
             // NOTE: We'll always fall back to this if `libyabridge-chainloader-vst3.so` is not
             //       found, just so we cannot get any errors during `yabridgectl status` even if
@@ -280,12 +321,12 @@ impl LibArchitecture {
 }
 
 impl SearchResults {
-    /// Create a map out of all found plugins based on their file path that contains both a
-    /// reference to the plugin (so we can print information about it) and the current installation
-    /// status. The installation status will be `None` if the plugin has not yet been set up.
+    /// Create a map out of all found Windows plugins and their current installation status, if the
+    /// plugin has already been set up.
     pub fn installation_status(
         &self,
-        config: Option<&YabridgeFiles>,
+        config: &Config,
+        files: Option<&YabridgeFiles>,
     ) -> BTreeMap<PathBuf, (&Plugin, Option<NativeFile>)> {
         let so_files: HashMap<&Path, &NativeFile> = self
             .so_files
@@ -296,12 +337,26 @@ impl SearchResults {
         self.plugins
             .iter()
             .map(|plugin| match plugin {
-                Plugin::Vst2(Vst2Plugin { path, .. }) => {
-                    // For VST2 plugins we'll just look at the similarly named `.so` file right next
-                    // to the plugin `.dll` file.
-                    match so_files.get(path.with_extension("so").as_path()) {
-                        Some(&file_type) => (path.clone(), (plugin, Some(file_type.clone()))),
-                        None => (path.clone(), (plugin, None)),
+                Plugin::Vst2(vst2_plugin) => {
+                    // For VST2 plugins depending on the VST2 installation location setting we'll
+                    // either look for a matching file in `~/.vst` or we'll just look at the
+                    // similarly named `.so` file right next to the plugin `.dll` file
+                    match config.vst2_location {
+                        crate::config::Vst2InstallationLocation::Centralized => (
+                            vst2_plugin.path.clone(),
+                            (
+                                plugin,
+                                get_file_type(vst2_plugin.centralized_native_target()),
+                            ),
+                        ),
+                        crate::config::Vst2InstallationLocation::Inline => {
+                            match so_files.get(vst2_plugin.inline_native_target().as_path()) {
+                                Some(&file_type) => {
+                                    (vst2_plugin.path.clone(), (plugin, Some(file_type.clone())))
+                                }
+                                None => (vst2_plugin.path.clone(), (plugin, None)),
+                            }
+                        }
                     }
                 }
                 // We have not stored the paths to the corresponding `.so` files yet for VST3
@@ -310,7 +365,7 @@ impl SearchResults {
                     vst3_module.original_path().to_owned(),
                     (
                         plugin,
-                        get_file_type(vst3_module.target_native_module_path(config)),
+                        get_file_type(vst3_module.target_native_module_path(files)),
                     ),
                 ),
             })
@@ -318,9 +373,9 @@ impl SearchResults {
     }
 
     /// Find all `.so` files in the search results that do not belong to a VST2 plugin `.dll` file.
-    /// We cannot yet do the same thing for VST3 plguins because they will all be installed in
-    /// `~/.vst3`.
-    pub fn vst2_orphans(&self) -> Vec<&NativeFile> {
+    /// This depends on the VST2 installation location setting. Centralized VST2 and VST3 orphans
+    /// should be detected separately.
+    pub fn vst2_inline_orphans(&self, config: &Config) -> Vec<&NativeFile> {
         // We need to store these in a map so we can easily entries with corresponding `.dll` files
         let mut orphans: HashMap<&Path, &NativeFile> = self
             .so_files
@@ -328,9 +383,17 @@ impl SearchResults {
             .map(|file_type| (file_type.path(), file_type))
             .collect();
 
-        for plugin in &self.plugins {
-            if let Plugin::Vst2(Vst2Plugin { path, .. }) = plugin {
-                orphans.remove(path.with_extension("so").as_path());
+        match config.vst2_location {
+            // When we set up the plugin in `~/.vst`, any `.so` file in a VST2 plugin search
+            // directory should be considered an orphan. This can happen when switching between the
+            // two modes.
+            crate::config::Vst2InstallationLocation::Centralized => (),
+            crate::config::Vst2InstallationLocation::Inline => {
+                for plugin in &self.plugins {
+                    if let Plugin::Vst2(Vst2Plugin { path, .. }) = plugin {
+                        orphans.remove(path.with_extension("so").as_path());
+                    }
+                }
             }
         }
 

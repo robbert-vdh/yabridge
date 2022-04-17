@@ -41,8 +41,8 @@ class HostProcess {
 
     /**
      * Return the full path to the host application in use. The host application
-     * is chosen depending on the architecture of the plugin's DLL file and on
-     * the hosting mode.
+     * is chosen depending on the architecture of the plugin's `.dll` file and
+     * on the hosting mode.
      */
     virtual ghc::filesystem::path path() = 0;
 

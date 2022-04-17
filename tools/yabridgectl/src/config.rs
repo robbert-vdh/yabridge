@@ -49,6 +49,10 @@ pub const YABRIDGE_HOST_32_EXE_NAME: &str = "yabridge-host-32.exe";
 /// `$XDG_CONFIG_HOME` and `$XDG_DATA_HOME`.
 const YABRIDGE_PREFIX: &str = "yabridge";
 
+/// The path relative to `$HOME` we will set up bridged VST2 plugins in when using the centralized
+/// VST2 installation location setting. By putting this in a subdirectory we can easily clean up any
+/// orphan files without interfering with other native plugins.
+const YABRIDGE_VST2_HOME: &str = ".vst/yabridge";
 /// The path relative to `$HOME` that VST3 modules bridged by yabridgectl life in. By putting this
 /// in a subdirectory we can easily clean up any orphan files without interfering with other native
 /// plugins.
@@ -320,6 +324,13 @@ pub fn yabridge_directories() -> Result<BaseDirectories> {
 /// somehow fails into a printable string to reduce boiler plate.
 pub fn yabridgectl_directories() -> Result<BaseDirectories> {
     BaseDirectories::with_prefix(YABRIDGECTL_PREFIX).context("Error while parsing base directories")
+}
+
+/// Get the path where bridged VST2 plugin files should be placed when using the centralized
+/// installation location setting. This is a subdirectory of `~/.vst` so we can easily clean up
+/// leftover files without interfering with other native plugins.
+pub fn yabridge_vst2_home() -> PathBuf {
+    Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_VST2_HOME)
 }
 
 /// Get the path where VST3 modules bridged by yabridgectl should be placed in. This is a

@@ -23,7 +23,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
-use crate::config::{yabridge_vst3_home, Config, Vst2InstallationLocation, YabridgeFiles};
+use crate::config::{
+    yabridge_vst2_home, yabridge_vst3_home, Config, Vst2InstallationLocation, YabridgeFiles,
+};
 use crate::files::{self, NativeFile, Plugin, Vst2Plugin};
 use crate::utils::{self, get_file_type};
 use crate::utils::{verify_path_setup, verify_wine_setup};
@@ -145,7 +147,7 @@ pub fn show_status(config: &Config) -> Result<()> {
         println!("\n{}", path.join("").display());
 
         for (plugin_path, (plugin, status)) in
-            search_results.installation_status(files.as_ref().ok())
+            search_results.installation_status(config, files.as_ref().ok())
         {
             let plugin_type = match plugin {
                 Plugin::Vst2(Vst2Plugin { architecture, .. }) => {
@@ -263,14 +265,23 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // `.so` files and unused VST3 modules we found during scanning that didn't have a corresponding
     // copy or symlink of `libyabridge-chainloader-vst2.so`
     let mut orphan_files: Vec<NativeFile> = Vec::new();
+    // When using the centralized VST2 installation location in `~/.vst/yabridge` we'll want to
+    // track all unmanaged files in that directory and add them to the orphans list
+    let mut known_centralized_vst2_files: HashSet<PathBuf> = HashSet::new();
     // Since VST3 bundles contain multiple files from multiple sources (native library files from
     // yabridge, and symlinks to Windows VST3 modules or bundles), cleaning up orphan VST3 files is
     // a bit more complicated. We want to clean both `.vst3` bundles that weren't used by anything
     // during the syncing process, so we'll keep track of which VST3 files we touched per-bundle. We
     // can then at the end remove all unkonwn bundles, and all unkonwn files within a bundle.
-    let mut known_vst3_files: HashMap<PathBuf, HashSet<PathBuf>> = HashMap::new();
+    let mut known_centralized_vst3_files: HashMap<PathBuf, HashSet<PathBuf>> = HashMap::new();
     for (path, search_results) in results {
-        orphan_files.extend(search_results.vst2_orphans().into_iter().cloned());
+        // Orphan files in the centralized directories need to be detected separately
+        orphan_files.extend(
+            search_results
+                .vst2_inline_orphans(config)
+                .into_iter()
+                .cloned(),
+        );
         skipped_dll_files.extend(search_results.skipped_files);
 
         if options.verbose {
@@ -282,27 +293,78 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         for plugin in search_results.plugins {
             // If verbose mode is enabled we'll print the path to the plugin after setting it up
             let plugin_path: PathBuf = match plugin {
-                // We'll set up the copies or symlinks for VST2 plugins
-                Plugin::Vst2(Vst2Plugin {
-                    path: plugin_path, ..
-                }) => {
-                    let target_path = plugin_path.with_extension("so");
-                    let normalized_target_path = utils::normalize_path(&target_path);
+                // VST2 plugins can be set up in either `~/.vst/yabridge` or inline with the
+                // plugin's `.dll` file
+                Plugin::Vst2(vst2_plugin) => {
+                    match config.vst2_location {
+                        Vst2InstallationLocation::Centralized => {
+                            let target_native_plugin_path = vst2_plugin.centralized_native_target();
+                            let target_windows_plugin_path =
+                                vst2_plugin.centralized_windows_target();
+                            let normalized_target_native_plugin_path =
+                                utils::normalize_path(&target_native_plugin_path);
 
-                    // Since we skip some files, we'll also keep track of how many new file we've
-                    // actually set up
-                    if install_file(
-                        options.force,
-                        InstallationMethod::Copy,
-                        &files.vst2_chainloader,
-                        Some(vst2_chainloader_hash),
-                        &target_path,
-                    )? {
-                        new_plugins.insert(normalized_target_path.clone());
+                            let mut is_new = known_centralized_vst2_files
+                                .insert(target_native_plugin_path.clone());
+                            is_new |= known_centralized_vst2_files
+                                .insert(target_windows_plugin_path.clone());
+                            if !is_new {
+                                eprintln!(
+                                    "{}",
+                                    utils::wrap(&format!(
+                                        "{}: '{}' has already been provided by another Wine prefix or plugin directory, skipping it\n",
+                                        "WARNING".red(),
+                                        target_windows_plugin_path.display(),
+                                    ))
+                                );
+
+                                continue;
+                            }
+
+                            // In the centralized mode we'll create a copy of
+                            // `libyabridge-chainloader-vst2.so` to (a subdirectory of)
+                            // `~/.vst/yabridge`, and then we'll symlink the Windows VST2 plugin
+                            // `.dll` file right next to it
+                            utils::create_dir_all(target_native_plugin_path.parent().unwrap())?;
+                            if install_file(
+                                options.force,
+                                InstallationMethod::Copy,
+                                &files.vst2_chainloader,
+                                Some(vst2_chainloader_hash),
+                                &target_native_plugin_path,
+                            )? {
+                                new_plugins.insert(normalized_target_native_plugin_path.clone());
+                            }
+                            managed_plugins.insert(normalized_target_native_plugin_path);
+
+                            install_file(
+                                true,
+                                InstallationMethod::Symlink,
+                                &vst2_plugin.path,
+                                None,
+                                &target_windows_plugin_path,
+                            )?;
+                        }
+                        Vst2InstallationLocation::Inline => {
+                            let target_path = vst2_plugin.inline_native_target();
+                            let normalized_target_path = utils::normalize_path(&target_path);
+
+                            // Since we skip some files, we'll also keep track of how many new file we've
+                            // actually set up
+                            if install_file(
+                                options.force,
+                                InstallationMethod::Copy,
+                                &files.vst2_chainloader,
+                                Some(vst2_chainloader_hash),
+                                &target_path,
+                            )? {
+                                new_plugins.insert(normalized_target_path.clone());
+                            }
+                            managed_plugins.insert(normalized_target_path);
+                        }
                     }
-                    managed_plugins.insert(normalized_target_path);
 
-                    plugin_path.clone()
+                    vst2_plugin.path.clone()
                 }
                 // And then create merged bundles for the VST3 plugins:
                 // https://developer.steinberg.help/display/VST/Plug-in+Format+Structure#PluginFormatStructure-MergedBundle
@@ -321,7 +383,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     // 32-bit and 64-bit versions of the plugin can live inside of the same bundle),
                     // but it's not possible to use the exact same plugin from multiple Wine
                     // prefixes at the same time so we'll warn when that happens
-                    let managed_vst3_bundle_files = known_vst3_files
+                    let managed_vst3_bundle_files = known_centralized_vst3_files
                         .entry(target_bundle_home.clone())
                         .or_insert_with(HashSet::new);
                     if managed_vst3_bundle_files.contains(&target_windows_module_path) {
@@ -329,7 +391,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                             "{}",
                             utils::wrap(&format!(
                                 "{}: The {} version of '{}' has already been provided by another Wine \
-                                prefix, skipping '{}'\n",
+                                prefix or plugin directory, skipping '{}'\n",
                                 "WARNING".red(),
                                 module.architecture,
                                 module.target_bundle_home().display(),
@@ -420,10 +482,30 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         println!();
     }
 
-    // We want to remove both unmanaged VST3 bundles in `~/.vst3/yabridge` as well as
-    // unmanged files within managed bundles. That's why we'll immediately filter out
-    // kown files within VST3 bundles.
+    // We've already kept track of orphan `.dll` files in the plugin directories, but now we need to
+    // do something similar for orphan files in `~/.vst/yabridge` and `~/.vst3/yabridge`. For VST3
+    // plugins we'll want to remove both unmanaged VST3 bundles in `~/.vst3/yabridge` as well as
+    // unmanged files within managed bundles. That's why we'll immediately filter out known files
+    // within VST3 bundles. For VST2 plugins we can simply treat any file in `~/.vst/yabridge` that
+    // we did not add to `known_centralized_vst2_files` as an orphan. We'll want to do this
+    // regardless of the VST2 installation location setting so switching between the two modes and
+    // then pruning works as expected.
     // TODO: Move this elsewhere
+    let centralized_vst2_files = WalkDir::new(yabridge_vst2_home())
+        .follow_links(true)
+        .same_file_system(true)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|entry| !entry.file_type().is_dir())
+        .filter(|entry| {
+            matches!(
+                entry
+                    .path()
+                    .extension()
+                    .and_then(|extension| extension.to_str()),
+                Some("dll" | "so")
+            )
+        });
     let installed_vst3_bundles = WalkDir::new(yabridge_vst3_home())
         .follow_links(true)
         .same_file_system(true)
@@ -437,8 +519,16 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 .and_then(|extension| extension.to_str())
                 == Some("vst3")
         });
+
+    orphan_files.extend(centralized_vst2_files.filter_map(|entry| {
+        if known_centralized_vst2_files.contains(entry.path()) {
+            None
+        } else {
+            get_file_type(entry.path().to_owned())
+        }
+    }));
     for bundle in installed_vst3_bundles {
-        match known_vst3_files.get(bundle.path()) {
+        match known_centralized_vst3_files.get(bundle.path()) {
             None => orphan_files.push(NativeFile::Directory(bundle.path().to_owned())),
             Some(managed_vst3_bundle_files) => {
                 // Find orphan files and symlinks within this bundle. We need this to be able to
@@ -480,7 +570,10 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
             );
         }
 
-        for file in orphan_files {
+        // NOTE: This is done in reverse lexicographical order to make sure subdirectories are
+        //       cleaned before their parent directories
+        orphan_files.sort_by(|a, b| b.path().cmp(a.path()));
+        for file in orphan_files.into_iter() {
             println!("- {}", file.path().display());
             if options.prune {
                 match &file {
