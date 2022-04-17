@@ -100,6 +100,17 @@ pub fn show_status(config: &Config) -> Result<()> {
             .unwrap_or_else(|| String::from("<auto>"))
     );
 
+    match config.vst2_location {
+        Vst2InstallationLocation::Centralized => {
+            println!("VST2 location: '{}'", yabridge_vst2_home().display());
+        }
+        Vst2InstallationLocation::Inline => {
+            println!("VST2 location: inline next to the Windows plugin file");
+        }
+    }
+    // This is fixed, but just from a UX point of view it might be nice to have as a reminder
+    println!("VST3 location: '{}'\n", yabridge_vst3_home().display());
+
     let files = config.files();
     match &files {
         Ok(files) => {
@@ -161,6 +172,9 @@ pub fn show_status(config: &Config) -> Result<()> {
                 ),
             };
 
+            // TODO: With the symlink installation method gone this does not make a lot of sense
+            //       anymore, but it does seem useful to have some sort of label telling you that a
+            //       plugin has been set up
             let status_str = match status {
                 Some(NativeFile::Regular(_)) => "copy".green(),
                 Some(NativeFile::Symlink(_)) => "symlink".green(),
