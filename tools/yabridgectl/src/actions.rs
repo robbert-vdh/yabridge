@@ -23,7 +23,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
-use crate::config::{yabridge_vst3_home, Config, YabridgeFiles};
+use crate::config::{yabridge_vst3_home, Config, Vst2InstallationLocation, YabridgeFiles};
 use crate::files::{self, NativeFile, Plugin, Vst2Plugin};
 use crate::utils::{self, get_file_type};
 use crate::utils::{verify_path_setup, verify_wine_setup};
@@ -182,9 +182,10 @@ pub fn show_status(config: &Config) -> Result<()> {
 }
 
 /// Options passed to `yabridgectl set`, see `main()` for the definitions of these options.
-pub struct SetOptions {
+pub struct SetOptions<'a> {
     pub path: Option<PathBuf>,
     pub path_auto: bool,
+    pub vst2_location: Option<&'a str>,
     pub no_verify: Option<bool>,
 }
 
@@ -196,6 +197,13 @@ pub fn set_settings(config: &mut Config, options: &SetOptions) -> Result<()> {
 
     if options.path_auto {
         config.yabridge_home = None;
+    }
+
+    match options.vst2_location {
+        Some("centralized") => config.vst2_location = Vst2InstallationLocation::Centralized,
+        Some("inline") => config.vst2_location = Vst2InstallationLocation::Inline,
+        Some(s) => unimplemented!("Unexpected installation method '{}'", s),
+        None => (),
     }
 
     if let Some(no_verify) = options.no_verify {

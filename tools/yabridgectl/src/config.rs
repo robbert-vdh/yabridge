@@ -68,6 +68,9 @@ pub struct Config {
     /// Files/Common/VST3`). We're using an ordered set here out of convenience so we can't get
     /// duplicates and the config file is always sorted.
     pub plugin_dirs: BTreeSet<PathBuf>,
+    /// Where VST2 plugins are setup. This can be either in `~/.vst/yabridge` or inline with the
+    /// plugin's .dll` files.`
+    pub vst2_location: Vst2InstallationLocation,
     /// Always skip post-installation setup checks. This can be set temporarily by passing the
     /// `--no-verify` option to `yabridgectl sync`.
     pub no_verify: bool,
@@ -80,6 +83,21 @@ pub struct Config {
     /// This is mostly to diagnose issues with older Wine versions (such as those in Ubuntu's repos)
     /// early on.
     pub last_known_config: Option<KnownConfig>,
+}
+
+/// Determines where VST2 plugins are set up. They can either be set up in `~/.vst/yabridge` by
+/// creating `libyabridge-chainloader-vst2.so` copies there and symlinking the Windows VST2 plugin
+/// `.dll` files right next to it, or those copies can be made right next to the orignal plugin
+/// files.
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+pub enum Vst2InstallationLocation {
+    /// Set up the plugins in `~/.vst/yabridge`. The downside of this approach is that you cannot
+    /// have multiple plugins with the same name being provided by multiple directories or prefixes.
+    /// That might be useful for debugging purposes.
+    Centralized,
+    /// Create the `.so` files right next to the original VST2 plugins.
+    Inline,
 }
 
 /// Stores information about a combination of Wine and yabridge that works together properly.
@@ -127,6 +145,12 @@ pub struct YabridgeFiles {
     /// The same as `yabridge_host_exe_so`, but for the 32-bit verison. We will hash this instead of
     /// there's no 64-bit version available.
     pub yabridge_host_32_exe_so: Option<PathBuf>,
+}
+
+impl Default for Vst2InstallationLocation {
+    fn default() -> Self {
+        Vst2InstallationLocation::Centralized
+    }
 }
 
 impl Config {

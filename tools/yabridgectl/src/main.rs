@@ -143,6 +143,21 @@ fn main() -> Result<()> {
                              setting a path with the '--path' option to revert back to the default \
                              auto detection behaviour.",
                         ),
+                )
+                .arg(
+                    Arg::new("vst2_location")
+                        .long("vst2-location")
+                        .help("Where to set up VST2 plugins")
+                        .long_help(format!(
+                            "Where to set up VST2 plugins. \
+                             '{}' (the default) causes bridged VST2 plugins to be set up in `~/.vst/yabridge.` \
+                             '{}' causes bridged VST2 plugins to be set up next to the original '.dll' file.",
+                            "centralized".bright_white(),
+                            "inline".bright_white()
+                        ).as_ref())
+                        .setting(clap::ArgSettings::NextLineHelp)
+                        .possible_values(["centralized", "inline"])
+                        .takes_value(true),
                 ).arg(
                     Arg::new("no_verify")
                         .long("no-verify")
@@ -249,6 +264,7 @@ fn main() -> Result<()> {
                     .ok()
                     .and_then(|path| path.canonicalize().ok()),
                 path_auto: options.is_present("path_auto"),
+                vst2_location: options.value_of("vst2_location"),
                 no_verify: options.value_of("no_verify").map(|value| value == "true"),
             },
         ),
