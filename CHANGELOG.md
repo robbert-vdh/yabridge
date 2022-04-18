@@ -100,7 +100,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   directories, not just directories that are called `VST3`. This, of course,
   should not be needed.
 - The previously deprecated symlink installation method has now been removed
-  from yabridgectl, along with the `yabridgectl set --method` option.
+  from yabridgectl, along with the `yabridgectl set --method` option. The
+  terminology in `yabridgectl status` has changed accordingly.
 - `yabridgectl status` now lists the architecture of
   `libyabridge-chainloader-vst2.so` just like it already did for the VST3
   library.

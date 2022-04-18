@@ -172,14 +172,14 @@ pub fn show_status(config: &Config) -> Result<()> {
                 ),
             };
 
-            // TODO: With the symlink installation method gone this does not make a lot of sense
-            //       anymore, but it does seem useful to have some sort of label telling you that a
-            //       plugin has been set up
+            // This made more sense when we supported symlinking `libyabridge-*.so`, but we should
+            // display _something_ to indicate that the plugin is set up correctly
             let status_str = match status {
-                Some(NativeFile::Regular(_)) => "copy".green(),
-                Some(NativeFile::Symlink(_)) => "symlink".green(),
+                Some(NativeFile::Regular(_)) => "synced".green(),
+                // This should not occur, but we'll display it just in case it does happen
+                Some(NativeFile::Symlink(_)) => "symlink".yellow(),
                 Some(NativeFile::Directory(_)) => "invalid".red(),
-                None => "not yet installed".into(),
+                None => "not yet synced".into(),
             };
 
             println!(
