@@ -93,9 +93,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   once after updating to yabridge 4.0, yabridge can now be updated without
   needing to rerun `yabridgectl sync`. This is particularly useful when using a
   distro packaged version of yabridge.
-- `yabridgectl status` now lists the locations where bridged VST2 and VST3
+- `yabridgectl status` now shows the locations where bridged VST2 and VST3
   plugins will be set up.
-
+- `yabridgectl sync --prune` now also considers broken symlinks.
 - The VST3 subdirectory detection is more robust and can now handle arbitrary
   directories, not just directories that are called `VST3`. This, of course,
   should not be needed.

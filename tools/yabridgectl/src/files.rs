@@ -411,9 +411,7 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
     let mut dll_files: Vec<(PathBuf, Option<PathBuf>)> = Vec::new();
     let mut vst3_files: Vec<(PathBuf, Option<PathBuf>)> = Vec::new();
     let mut so_files: Vec<NativeFile> = Vec::new();
-    // XXX: We're silently skipping directories and files we don't have permission to read. This
-    //      sounds like the expected behavior, but I"m not entirely sure.
-    for (file_idx, entry) in WalkDir::new(directory)
+    for (file_idx, path) in WalkDir::new(directory)
         .follow_links(true)
         .into_iter()
         .filter_entry(|e| {
@@ -424,8 +422,20 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
                 .map(|p| !blacklist.contains(p.as_path()))
                 .unwrap_or(false)
         })
-        .filter_map(|e| e.ok())
-        .filter(|e| !e.file_type().is_dir())
+        .filter_map(|e| {
+            // NOTE: Broken symlinks will also get an `Err` entry, so we'll use `err.path()` to
+            //       still include them in the index
+            let path = match e {
+                Ok(entry) => entry.path().to_owned(),
+                Err(err) => err.path()?.to_owned(),
+            };
+
+            if !path.is_dir() {
+                Some(path)
+            } else {
+                None
+            }
+        })
         .enumerate()
     {
         // This is a bit of an odd warning, but I can see it happening that someone adds their
@@ -439,9 +449,8 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
             )
         }
 
-        match entry.path().extension().and_then(|os| os.to_str()) {
+        match path.extension().and_then(|os| os.to_str()) {
             Some("dll") => {
-                let path = entry.into_path();
                 let subdirectory = path
                     .parent()
                     .and_then(|p| p.strip_prefix(directory).ok())
@@ -449,7 +458,6 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
                 dll_files.push((path, subdirectory));
             }
             Some("vst3") => {
-                let path = entry.into_path();
                 let subdirectory = path
                     .parent()
                     .and_then(|p| p.strip_prefix(directory).ok())
@@ -457,10 +465,10 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
                 vst3_files.push((path, subdirectory));
             }
             Some("so") => {
-                if entry.path_is_symlink() {
-                    so_files.push(NativeFile::Symlink(entry.into_path()));
+                if path.is_symlink() {
+                    so_files.push(NativeFile::Symlink(path));
                 } else {
-                    so_files.push(NativeFile::Regular(entry.into_path()));
+                    so_files.push(NativeFile::Regular(path));
                 }
             }
             _ => (),

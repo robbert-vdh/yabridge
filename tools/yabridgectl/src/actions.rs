@@ -509,52 +509,61 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         .follow_links(true)
         .same_file_system(true)
         .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|entry| !entry.file_type().is_dir())
-        .filter(|entry| {
-            matches!(
-                entry
-                    .path()
-                    .extension()
-                    .and_then(|extension| extension.to_str()),
-                Some("dll" | "so")
-            )
+        .filter_map(|e| {
+            let path = match e {
+                Ok(entry) => entry.path().to_owned(),
+                Err(err) => err.path()?.to_owned(),
+            };
+
+            if !path.is_dir() && matches!(path.extension()?.to_str()?, "dll" | "so") {
+                Some(path)
+            } else {
+                None
+            }
         });
     let installed_vst3_bundles = WalkDir::new(yabridge_vst3_home())
         .follow_links(true)
         .same_file_system(true)
         .into_iter()
         .filter_entry(|entry| entry.file_type().is_dir())
-        .filter_map(|e| e.ok())
-        .filter(|entry| {
-            entry
-                .path()
-                .extension()
-                .and_then(|extension| extension.to_str())
-                == Some("vst3")
+        .filter_map(|e| {
+            let path = match e {
+                Ok(entry) => entry.path().to_owned(),
+                Err(err) => err.path()?.to_owned(),
+            };
+
+            if path.extension()?.to_str()? == "vst3" {
+                Some(path)
+            } else {
+                None
+            }
         });
 
-    orphan_files.extend(centralized_vst2_files.filter_map(|entry| {
-        if known_centralized_vst2_files.contains(entry.path()) {
+    orphan_files.extend(centralized_vst2_files.filter_map(|path| {
+        if known_centralized_vst2_files.contains(&path) {
             None
         } else {
-            get_file_type(entry.path().to_owned())
+            get_file_type(path)
         }
     }));
-    for bundle in installed_vst3_bundles {
-        match known_centralized_vst3_files.get(bundle.path()) {
-            None => orphan_files.push(NativeFile::Directory(bundle.path().to_owned())),
+    for bundle_path in installed_vst3_bundles {
+        match known_centralized_vst3_files.get(&bundle_path) {
+            None => orphan_files.push(NativeFile::Directory(bundle_path)),
             Some(managed_vst3_bundle_files) => {
                 // Find orphan files and symlinks within this bundle. We need this to be able to
                 // switch between 32-bit and 64-bit versions of both yabridge and the Windows plugin
                 orphan_files.extend(
-                    WalkDir::new(bundle.path())
+                    WalkDir::new(bundle_path)
                         .follow_links(false)
                         .into_iter()
-                        .filter_map(|e| e.ok())
-                        .filter_map(|entry| {
-                            let managed_file = managed_vst3_bundle_files.contains(entry.path());
-                            match get_file_type(entry.path().to_owned()).unwrap() {
+                        .filter_map(|e| {
+                            let path = match e {
+                                Ok(entry) => entry.path().to_owned(),
+                                Err(err) => err.path()?.to_owned(),
+                            };
+
+                            let managed_file = managed_vst3_bundle_files.contains(&path);
+                            match get_file_type(path).unwrap() {
                                 // Don't remove directories, since we're not tracking the
                                 // directories within the bundle
                                 NativeFile::Directory(_) => None,
