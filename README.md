@@ -67,11 +67,11 @@ Please let me know if there are any issues with other hosts.
    check out Wine's [user
    guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
 
-1. You can install yabridge and its yabridgectl companion utility using a
-   prebuilt binary, through the AUR, from a distro package, or by building from
-   source. Keep in mind that the distro packages mentioned below may not always
-   be up to date, and some may also not be compiled with support for 32-bit
-   plugins.
+1. Depending on your distro you can install yabridge and its yabridgectl
+   companion utility through your distro's package manager or by using the using
+   a binary archive from the GitHub releases page. Keep in mind that the distro
+   packages mentioned below may not always be up to date, and some may also not
+   be compiled with support for 32-bit plugins.
 
    <a href="https://repology.org/project/yabridge/versions" target="_blank" rel="noopener" title="Packaging status"><img align="right" src="https://repology.org/badge/vertical-allrepos/yabridge.svg"></a>
 
@@ -80,15 +80,14 @@ Please let me know if there are any issues with other hosts.
      [`yabridge`](https://archlinux.org/packages/multilib/x86_64/yabridge/) and
      [`yabridgectl`](https://archlinux.org/packages/multilib/x86_64/yabridgectl/)
      packages.
-
    - On **Fedora**, you can install yabridge and yabridgectl from a
      [COPR](https://copr.fedorainfracloud.org/coprs/patrickl/yabridge/).
    - On the **OpenSUSE** distros, yabridge and yabridgectl are packaged by
      [GeekosDAW](https://geekosdaw.tuxfamily.org/en/).
    - On **NixOS**, yabridge and yabridgectl are in the repositories.
 
-   - On any other distro, you can simply download and install a prebuilt version
-     of yabridge:
+   - On **Ubuntu**, **Debian**, **Linux Mint**, **Pop!\_OS**, and any other
+     distro, you can simply download and install a prebuilt version of yabridge:
 
      1. First download the latest version of yabridge from the [releases
         page](https://github.com/robbert-vdh/yabridge/releases). If you're using
@@ -105,7 +104,7 @@ Please let me know if there are any issues with other hosts.
      3. **Whenever any step below mentions running `yabridgectl <something>`,
         then you should run `~/.local/share/yabridge/yabridgectl <something>`
         instead** as `~/.local/share/yabridge` is not in your search path so
-        your shell won't know where to look for yabridge.
+        your shell won't be able to find yabridgectl otherwise.
 
         Alternatively, you can also add that directory to your shell's search
         path so you'll be able to run `yabridgectl` directly. If you don't know
