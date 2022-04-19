@@ -111,14 +111,13 @@ Please let me know if there are any issues with other hosts.
         what that means, then add `export PATH="$PATH:$HOME/.local/share/yabridge"`
         to the end of `~/.bashrc` and reopen your terminal.
 
-2. Setting up and updating yabridge for plugins is done though `yabridgectl`.
-   The general idea is that you install your plugins to their default locations
-   within a Wine prefix just like you would on Windows, and you then let
-   yabridgectl manage those plugin directories for you. That way you only need
-   to rerun a single command whenever you install or remove a plugin, or when
-   you update yabridge. Both yabridge and yabridgectl will autoamtically detect
-   your yabridge installation if you used one of the installation methods
-   described above.
+2. Setting up and updating yabridge for your plugins is done though
+   `yabridgectl`. The general idea is that you install your plugins to their
+   default locations within a Wine prefix just like you would on Windows, and
+   you yabridgectl then manages those plugin directories for you. That way you
+   only need to run a single command whenever you install or remove a plugin.
+   Both yabridge and yabridgectl will autoamtically detect your yabridge
+   installation if you used one of the installation methods described above.
 
 3. To tell yabridgectl where it can find your Windows VST2 and VST3 plugins, you
    can use yabridgectl's `add`, `rm` and `list` commands to add, remove, and
@@ -147,6 +146,11 @@ Please let me know if there are any issues with other hosts.
       ```shell
       ln -s "$HOME/.wine/drive_c/Program Files/Steinberg" ~/.vst/yabridge-steinberg
       ```
+
+      _If you're already using the master branch version of yabridge 4.0, then
+      the plugins will be set up in `~/.vst/yabridge` by default instead. As
+      long as your DAW searches for VST2 plugins in `~/.vst` you don't need to
+      do anything else._
 
    2. VST3 plugins are always set up in `~/.vst3/yabridge` as per the VST3
       specification. Just make sure your DAW searches for VST3 plugins in
