@@ -94,7 +94,10 @@ bool initialize_library() {
     do {                                                                    \
         (name) =                                                            \
             reinterpret_cast<decltype(name)>(dlsym(library_handle, #name)); \
-        assert(name);                                                       \
+        if (!(name)) {                                                      \
+            log_failing_dlsym(yabridge_vst3_plugin_name, #name);            \
+            return false;                                                   \
+        }                                                                   \
     } while (false)
 
     LOAD_FUNCTION(yabridge_module_init);

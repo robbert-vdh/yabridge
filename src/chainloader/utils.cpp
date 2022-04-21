@@ -104,3 +104,23 @@ void* find_plugin_library(const std::string& name) {
 
     return handle;
 }
+
+void log_failing_dlsym(const std::string& library_name,
+                       const char* function_name) {
+    const fs::path this_plugin_path = get_this_file_location();
+
+    Logger logger = Logger::create_exception_logger();
+
+    logger.log("");
+    logger.log("Could not find '" + std::string(function_name) + "' in '" +
+               library_name + "'");
+    logger.log("");
+    logger.log("Try rerunning 'yabridgectl sync'.");
+    logger.log("");
+    logger.log("Source: '" + this_plugin_path.string() + "'");
+    logger.log("");
+
+    send_notification("Could not find '" + std::string(function_name) +
+                          "' in '" + library_name + "'",
+                      "Try rerunning 'yabridgectl sync'.", this_plugin_path);
+}

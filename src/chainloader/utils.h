@@ -37,3 +37,10 @@
  *   directories in case `ldconfig` was not set up correctly.
  */
 void* find_plugin_library(const std::string& name);
+
+/**
+ * Log a message when a `dlsym()` call fails and show a corresponding desktop
+ * notification. Used as part of the `LOAD_FUNCTION` macros.
+ */
+void log_failing_dlsym(const std::string& library_name,
+                       const char* function_name);
