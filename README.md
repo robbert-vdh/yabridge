@@ -694,9 +694,6 @@ negative side effects:
   on where to set this environment variable so that it gets picked up when you
   start your DAW.
 
-  You can find a guide to setting these things up on Ubuntu
-  [here](https://zezic.github.io/yabridge-benchmark/).
-
 - If you have the choice, the VST3 version of a plugin will likely perform
   better than the VST2 version.
 
