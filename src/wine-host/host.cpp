@@ -82,7 +82,6 @@ int YABRIDGE_EXPORT
 
         return 1;
     }
-    // asdf
 
     std::cerr << "Initializing " << host_name << std::endl;
 
