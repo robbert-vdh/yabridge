@@ -39,7 +39,7 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging 7.6:
+Yabridge has been tested under the following hosts using Wine Staging 7.7:
 
 | Host                | VST2               | VST3                                                                 |
 | ------------------- | ------------------ | -------------------------------------------------------------------- |
@@ -681,18 +681,13 @@ negative side effects:
   version of Wine with the fsync patches included. Make sure to follow the
   instructions in the readme and don't try to use the prebuilt releases as they
   will have fshack enabled which tends to break many plugins that use Direct3D
-  for their rendering. And if you're running Linux kernel 5.16 or newer, then
-  you'll need to enable the `_fsync_futex_waitv` option in `customization.cfg`
-  first. Aside from a patched copy of Wine you'll also need a supported kernel
-  for this to work. Manjaro's kernel supports fsync out of the box. On Arch you
-  can use the `linux-zen` kernel. If you're installing `linux-zen` and you also
-  use extramodules like NVIDIA drivers or VirtualBox host modules, then you'll
-  need to also install `linux-zen-headers` and the `-dkms` versions of those
-  extramodule packages. Finally, you'll have to set the `WINEFSYNC` environment
-  variable to `1` to enable fsync. See the [environment
-  configuration](#environment-configuration) section below for more information
-  on where to set this environment variable so that it gets picked up when you
-  start your DAW.
+  for their rendering. You'll also want to make sure you're running Linux kernel
+  5.16 or newer as those include support the `_fsync_futex_waitv` option that's
+  enabled by default though wine-tkg's `customization.cfg`. Finally, you'll have
+  to set the `WINEFSYNC` environment variable to `1` to enable fsync. See the
+  [environment configuration](#environment-configuration) section below for more
+  information on where to set this environment variable so that it gets picked
+  up when you start your DAW.
 
 - If you have the choice, the VST3 version of a plugin will likely perform
   better than the VST2 version.
