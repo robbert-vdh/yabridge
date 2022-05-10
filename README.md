@@ -43,7 +43,7 @@ Yabridge has been tested under the following hosts using Wine Staging 7.7:
 
 | Host                           | VST2               | VST3                                                                 |
 | ------------------------------ | ------------------ | -------------------------------------------------------------------- |
-| Bitwig Studio 4.2.3/3.3 beta\* | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Bitwig Studio 4.2.3/4.3 beta\* | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | REAPER 6.51                    | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Carla 2.4.2                    | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Qtractor 0.9.25                | :heavy_check_mark: | :warning: VST3 editor window may not have the correct size           |
@@ -53,7 +53,7 @@ Yabridge has been tested under the following hosts using Wine Staging 7.7:
 | Mixbus 7.0.140                 | :heavy_check_mark: | :heavy_check_mark:                                                   |
 
 <sup>
-  *Bitwig Studio 3.3 currently only comes as a Flatpak version, which means yabridge won't work there. Running the Bitwig directly through `/var/lib/flatpak/app/com.bitwig.BitwigStudio/current/active/files/bitwig-studio` serves as a temporary workaround.
+  *Bitwig Studio 4.3 currently only comes as a Flatpak version, which means yabridge won't work there. Running the Bitwig directly through `/var/lib/flatpak/app/com.bitwig.BitwigStudio/current/active/files/bitwig-studio` serves as a temporary workaround.
 </sup>
 
 Please let me know if there are any issues with other hosts.
