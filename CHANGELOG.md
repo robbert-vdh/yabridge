@@ -73,6 +73,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   Arch/Manjaro because of misreported parameter queue lengths.
 - Some of yabridge's socket file names contained extremely aesthetically
   unpleasing trailing underscores. Begone pesky underscores!
+- Fixed building with VST3 support disabled.
 
 ### yabridgectl
 
