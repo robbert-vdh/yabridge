@@ -52,11 +52,11 @@ Yabridge has been tested under the following hosts using Wine Staging 7.7:
 | Ardour 6.9                     | :heavy_check_mark: | :heavy_check_mark:                                                   |
 | Mixbus 7.0.140                 | :heavy_check_mark: | :heavy_check_mark:                                                   |
 
-<sup>
-  *Bitwig Studio 4.3 currently only comes as a Flatpak version, which means yabridge won't work there. Running the Bitwig directly through `/var/lib/flatpak/app/com.bitwig.BitwigStudio/current/active/files/bitwig-studio` serves as a temporary workaround.
-</sup>
-
 Please let me know if there are any issues with other hosts.
+
+<sup>
+  *Bitwig Studio 4.3 currently only comes as a Flatpak version, which means yabridge won't work there. Running the Bitwig directly through <code>/var/lib/flatpak/app/com.bitwig.BitwigStudio/current/active/files/bitwig-studio</code> serves as a temporary workaround.
+</sup>
 
 ## Usage
 
