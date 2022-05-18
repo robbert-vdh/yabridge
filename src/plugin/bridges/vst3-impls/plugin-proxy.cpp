@@ -416,14 +416,31 @@ Vst3PluginProxyImpl::activateBus(Steinberg::Vst::MediaType type,
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setActive(TBool state) {
     // HACK: Even though we initially implemented this cache specifically for
-    //       REAPER, REAPER doesn't use `IComponent::setProcessing` properly and
-    //       calls it before doing setting up input and output busses. So now
-    //       our workaround to get acceptable performance in REAPER needs a
-    //       workaround of its ownn.  Great!
+    //       REAPER, REAPER doesn't use `IComponent::setProcessing()` properly
+    //       and calls it before doing setting up input and output busses. So
+    //       now our workaround to get acceptable performance in REAPER needs a
+    //       workaround of its own. Great!
     clear_bus_cache();
 
-    return bridge_.send_audio_processor_message(
+    const SetActiveResponse response = bridge_.send_audio_processor_message(
         YaComponent::SetActive{.instance_id = instance_id(), .state = state});
+
+    // NOTE: REAPER may (and will) change a plugin's channel layout after
+    //       calling `setupProcessing()`. Because of that, we need to test
+    //       whether this has happened any time the plugin gets reactivated.
+    //       It's technically legal, so we need to support it.
+    if (response.updated_audio_buffers_config) {
+        // The host should absolutely not call this function before
+        // `setupProcessing()` so this should already contain a value, but you
+        // never know...
+        if (!process_buffers_) {
+            process_buffers_.emplace(*response.updated_audio_buffers_config);
+        } else {
+            process_buffers_->resize(*response.updated_audio_buffers_config);
+        }
+    }
+
+    return response.result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setState(Steinberg::IBStream* state) {

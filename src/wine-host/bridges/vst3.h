@@ -456,10 +456,12 @@ class Vst3Bridge : public HostBridge {
      * instance and return the configuration so the native plugin can connect to
      * it as well.
      *
-     * This uses the `Vst3PluginInstance::process_setup` field, so that needs to
-     * be set first or this function raise SIGABRT.
+     * This returns a nullopt when `Vst3PluginInstance::process_setup` is not
+     * set, or when the object instance does not support the `IAudioProcessor`
+     * interface.
      */
-    AudioShmBuffer::Config setup_shared_audio_buffers(size_t instance_id);
+    std::optional<AudioShmBuffer::Config> setup_shared_audio_buffers(
+        size_t instance_id);
 
     /**
      * Assign a unique identifier to an object and add it to

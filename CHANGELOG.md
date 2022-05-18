@@ -69,6 +69,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed manually changing channel counts with supported VST3 plugins in
+  **REAPER** not working.
 - Fixed an obscure issue with VST3 plugins crashing in **Ardour** on
   Arch/Manjaro because of misreported parameter queue lengths.
 - Some of yabridge's socket file names contained extremely aesthetically

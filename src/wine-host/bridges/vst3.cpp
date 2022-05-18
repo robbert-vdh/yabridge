@@ -1351,20 +1351,18 @@ Vst3Bridge::get_instance(size_t instance_id) noexcept {
         object_instances_.at(instance_id), std::move(lock));
 }
 
-AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
+std::optional<AudioShmBuffer::Config> Vst3Bridge::setup_shared_audio_buffers(
     size_t instance_id) {
     const auto& [instance, _] = get_instance(instance_id);
-    // TODO: When also calling this in setActive, return a nullopt instead of
-    //       asserting
-    assert(instance.process_buffers);
 
     const Steinberg::IPtr<Steinberg::Vst::IComponent> component =
         instance.interfaces.component;
     const Steinberg::IPtr<Steinberg::Vst::IAudioProcessor> audio_processor =
         instance.interfaces.audio_processor;
-    // TODO: When also calling this in setActive, return a nullopt instead of
-    //       asserting
-    assert(component && audio_processor);
+
+    if (!instance.process_setup || !component || !audio_processor) {
+        return std::nullopt;
+    }
 
     // We'll query the plugin for its audio bus layouts, and then create
     // calculate the offsets in a large memory buffer for the different audio
@@ -1575,7 +1573,7 @@ size_t Vst3Bridge::register_object_instance(
                         // buffers.
                         instance.process_setup = request.setup;
                         const AudioShmBuffer::Config audio_buffers_config =
-                            setup_shared_audio_buffers(request.instance_id);
+                            *setup_shared_audio_buffers(request.instance_id);
 
                         return YaAudioProcessor::SetupProcessingResponse{
                             .result = result,
@@ -1739,12 +1737,28 @@ size_t Vst3Bridge::register_object_instance(
                         //       deadlocks caused by mutually recursive function
                         //       calls.
                         return do_mutual_recursion_on_off_thread(
-                            [&]() -> tresult {
+                            [&]() -> YaComponent::SetActive::Response {
                                 const auto& [instance, _] =
                                     get_instance(request.instance_id);
 
-                                return instance.interfaces.component->setActive(
-                                    request.state);
+                                const tresult result =
+                                    instance.interfaces.component->setActive(
+                                        request.state);
+
+                                // NOTE: REAPER may change the bus layout after
+                                //       calling
+                                //       `IAudioProcessor::setupProcessing`. In
+                                //       that case we'll need to resize the
+                                //       shared memory buffers here.
+                                const std::optional<AudioShmBuffer::Config>
+                                    updated_audio_buffers_config =
+                                        setup_shared_audio_buffers(
+                                            request.instance_id);
+
+                                return YaComponent::SetActiveResponse{
+                                    .result = result,
+                                    .updated_audio_buffers_config = std::move(
+                                        updated_audio_buffers_config)};
                             });
                     },
                     [&](const YaPrefetchableSupport::GetPrefetchableSupport&

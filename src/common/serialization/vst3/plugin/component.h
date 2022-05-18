@@ -18,6 +18,7 @@
 
 #include <pluginterfaces/vst/ivstcomponent.h>
 
+#include "../../../audio-shm.h"
 #include "../../../bitsery/ext/in-place-optional.h"
 #include "../../common.h"
 #include "../base.h"
@@ -252,11 +253,31 @@ class YaComponent : public Steinberg::Vst::IComponent {
                                            TBool state) override = 0;
 
     /**
+     * The response code and written state for a call to
+     * `IAudioProcessor::setupProcessing(setup)`.
+     */
+    struct SetActiveResponse {
+        UniversalTResult result;
+        std::optional<AudioShmBuffer::Config> updated_audio_buffers_config;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.object(result);
+            s.ext(updated_audio_buffers_config,
+                  bitsery::ext::InPlaceOptional{});
+        }
+    };
+
+    /**
      * Message to pass through a call to `IComponent::setActive(state)` to the
      * Wine plugin host.
+     *
+     * NOTE: REAPER may change a plugin's bus arrangements after the processing
+     *       has been set up, so we need to check for this on every
+     *       `setActive()` call
      */
     struct SetActive {
-        using Response = UniversalTResult;
+        using Response = SetActiveResponse;
 
         native_size_t instance_id;
 

@@ -1897,6 +1897,19 @@ void Vst3Logger::log_response(
     });
 }
 
+void Vst3Logger::log_response(bool is_host_vst,
+                              const YaComponent::SetActiveResponse& response) {
+    log_response_base(is_host_vst, [&](auto& message) {
+        message << response.result.string();
+        if (response.result == Steinberg::kResultOk &&
+            response.updated_audio_buffers_config) {
+            message << ", <new shared memory configuration for \""
+                    << response.updated_audio_buffers_config->name << "\", "
+                    << response.updated_audio_buffers_config->size << " bytes>";
+        }
+    });
+}
+
 void Vst3Logger::log_response(
     bool is_host_vst,
     const YaPrefetchableSupport::GetPrefetchableSupportResponse& response) {

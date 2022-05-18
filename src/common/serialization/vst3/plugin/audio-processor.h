@@ -194,6 +194,11 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
     /**
      * Message to pass through a call to
      * `IAudioProcessor::setupProcessing(setup)` to the Wine plugin host.
+     *
+     * Here Wine plugin host will set up the shared memory buffers.
+     *
+     * NOTE: This process is repeated as part of `SetActive`. Apparently REAPER
+     *       can change bus arrangements after the processing has been set up.
      */
     struct SetupProcessing {
         using Response = SetupProcessingResponse;

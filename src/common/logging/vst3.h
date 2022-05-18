@@ -319,6 +319,7 @@ class Vst3Logger {
                       bool from_cache = false);
     void log_response(bool is_host_vst,
                       const YaComponent::GetRoutingInfoResponse&);
+    void log_response(bool is_host_vst, const YaComponent::SetActiveResponse&);
     void log_response(
         bool is_host_vst,
         const YaPrefetchableSupport::GetPrefetchableSupportResponse&);
