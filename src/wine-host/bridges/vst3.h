@@ -247,12 +247,15 @@ struct Vst3PluginInstance {
     bool is_initialized = false;
 
     /**
-     * Whether the plugin instance is currently in offline processing mode or
-     * not. Needed as a HACK for IK Multimedia's T-RackS 5 because those plugins
-     * will deadlock if they don't process audio from the GUI thread while doing
-     * offline processing.
+     * The plugin's current process setup, containing information about the
+     * buffer sizes, sample rate, and processing mode. Used for setting up
+     * shared memory audio buffers, and to know whether the plugin instance is
+     * currently in offline processing mode or not. The latter is needed as a
+     * HACK for IK Multimedia's T-RackS 5 because those plugins will deadlock if
+     * they don't process audio from the GUI thread while doing offline
+     * processing.
      */
-    bool is_offline_processing = false;
+    std::optional<Steinberg::Vst::ProcessSetup> process_setup;
 };
 
 /**
@@ -452,10 +455,11 @@ class Vst3Bridge : public HostBridge {
      * Sets up the shared memory audio buffers for a plugin instance plugin
      * instance and return the configuration so the native plugin can connect to
      * it as well.
+     *
+     * This uses the `Vst3PluginInstance::process_setup` field, so that needs to
+     * be set first or this function raise SIGABRT.
      */
-    AudioShmBuffer::Config setup_shared_audio_buffers(
-        size_t instance_id,
-        const Steinberg::Vst::ProcessSetup& setup);
+    AudioShmBuffer::Config setup_shared_audio_buffers(size_t instance_id);
 
     /**
      * Assign a unique identifier to an object and add it to

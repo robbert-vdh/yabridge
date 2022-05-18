@@ -1352,14 +1352,18 @@ Vst3Bridge::get_instance(size_t instance_id) noexcept {
 }
 
 AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
-    size_t instance_id,
-    const Steinberg::Vst::ProcessSetup& setup) {
+    size_t instance_id) {
     const auto& [instance, _] = get_instance(instance_id);
+    // TODO: When also calling this in setActive, return a nullopt instead of
+    //       asserting
+    assert(instance.process_buffers);
 
     const Steinberg::IPtr<Steinberg::Vst::IComponent> component =
         instance.interfaces.component;
     const Steinberg::IPtr<Steinberg::Vst::IAudioProcessor> audio_processor =
         instance.interfaces.audio_processor;
+    // TODO: When also calling this in setActive, return a nullopt instead of
+    //       asserting
     assert(component && audio_processor);
 
     // We'll query the plugin for its audio bus layouts, and then create
@@ -1368,7 +1372,8 @@ AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
     // they'll be used with pointer arithmetic in `AudioShmBuffer`).
     uint32_t current_offset = 0;
 
-    auto create_bus_offsets = [&](Steinberg::Vst::BusDirection direction) {
+    auto create_bus_offsets = [&, &setup = instance.process_setup](
+                                  Steinberg::Vst::BusDirection direction) {
         const auto num_busses =
             component->getBusCount(Steinberg::Vst::kAudio, direction);
 
@@ -1386,7 +1391,7 @@ AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
 
             for (size_t channel = 0; channel < num_channels; channel++) {
                 bus_offsets[bus][channel] = current_offset;
-                current_offset += setup.maxSamplesPerBlock;
+                current_offset += setup->maxSamplesPerBlock;
             }
         }
 
@@ -1404,7 +1409,7 @@ AudioShmBuffer::Config Vst3Bridge::setup_shared_audio_buffers(
     // The size of the buffer is in bytes, and it will depend on whether the
     // host is going to pass 32-bit or 64-bit audio to the plugin
     const bool double_precision =
-        setup.symbolicSampleSize == Steinberg::Vst::kSample64;
+        instance.process_setup->symbolicSampleSize == Steinberg::Vst::kSample64;
     const uint32_t buffer_size =
         current_offset * (double_precision ? sizeof(double) : sizeof(float));
 
@@ -1559,12 +1564,6 @@ size_t Vst3Bridge::register_object_instance(
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
 
-                        // See the comment in the
-                        // `YaAudioProcessor::Process` handler
-                        instance.is_offline_processing =
-                            request.setup.processMode ==
-                            Steinberg::Vst::kOffline;
-
                         const tresult result =
                             instance.interfaces.audio_processor
                                 ->setupProcessing(request.setup);
@@ -1574,9 +1573,9 @@ size_t Vst3Bridge::register_object_instance(
                         // This configuration can then be used on the native
                         // plugin side to connect to the same shared audio
                         // buffers.
+                        instance.process_setup = request.setup;
                         const AudioShmBuffer::Config audio_buffers_config =
-                            setup_shared_audio_buffers(request.instance_id,
-                                                       request.setup);
+                            setup_shared_audio_buffers(request.instance_id);
 
                         return YaAudioProcessor::SetupProcessingResponse{
                             .result = result,
@@ -1636,7 +1635,9 @@ size_t Vst3Bridge::register_object_instance(
                         auto& reconstructed = request.data.reconstruct(
                             instance.process_buffers_input_pointers,
                             instance.process_buffers_output_pointers);
-                        if (instance.is_offline_processing) {
+                        if (instance.process_setup &&
+                            instance.process_setup->processMode ==
+                                Steinberg::Vst::kOffline) {
                             result = main_context_
                                          .run_in_context([&instance = instance,
                                                           &reconstructed]() {
