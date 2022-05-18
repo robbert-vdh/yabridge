@@ -39,7 +39,7 @@ class YaParameterChanges : public Steinberg::Vst::IParameterChanges {
      */
     YaParameterChanges() noexcept;
 
-    ~YaParameterChanges() noexcept;
+    virtual ~YaParameterChanges() noexcept;
 
     /**
      * Remove all parameter changes. Used when a null pointer gets passed to the

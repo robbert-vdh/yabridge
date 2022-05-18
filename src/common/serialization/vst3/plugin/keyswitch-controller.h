@@ -59,6 +59,8 @@ class YaKeyswitchController : public Steinberg::Vst::IKeyswitchController {
      */
     YaKeyswitchController(ConstructArgs&& args) noexcept;
 
+    virtual ~YaKeyswitchController() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

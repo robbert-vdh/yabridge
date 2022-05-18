@@ -73,6 +73,8 @@ class YaContextMenu : public Steinberg::Vst::IContextMenu {
      */
     YaContextMenu(ConstructArgs&& args) noexcept;
 
+    virtual ~YaContextMenu() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     // Since we pass along a list of initial items, we don't need to proxy this

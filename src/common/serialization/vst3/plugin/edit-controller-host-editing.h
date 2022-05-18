@@ -60,6 +60,8 @@ class YaEditControllerHostEditing
      */
     YaEditControllerHostEditing(ConstructArgs&& args) noexcept;
 
+    virtual ~YaEditControllerHostEditing() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

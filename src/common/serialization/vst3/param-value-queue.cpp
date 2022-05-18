@@ -66,10 +66,11 @@ int32 PLUGIN_API YaParamValueQueue::getPointCount() {
     return static_cast<int32>(queue_.size());
 }
 
-tresult PLUGIN_API
-YaParamValueQueue::getPoint(int32 index,
-                            int32& sampleOffset /*out*/,
-                            Steinberg::Vst::ParamValue& value /*out*/) {
+tresult PLUGIN_API YaParamValueQueue::getPoint(
+    int32 index,
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+    int32& sampleOffset /*out*/,
+    Steinberg::Vst::ParamValue& value /*out*/) {
     if (index < static_cast<int32>(queue_.size())) {
         sampleOffset = queue_[index].first;
         value = queue_[index].second;

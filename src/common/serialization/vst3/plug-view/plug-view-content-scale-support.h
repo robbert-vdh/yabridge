@@ -60,6 +60,8 @@ class YaPlugViewContentScaleSupport
      */
     YaPlugViewContentScaleSupport(ConstructArgs&& args) noexcept;
 
+    virtual ~YaPlugViewContentScaleSupport() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

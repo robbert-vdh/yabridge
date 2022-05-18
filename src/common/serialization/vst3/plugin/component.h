@@ -63,6 +63,8 @@ class YaComponent : public Steinberg::Vst::IComponent {
      */
     YaComponent(ConstructArgs&& args) noexcept;
 
+    virtual ~YaComponent() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

@@ -61,6 +61,8 @@ class YaPluginBase : public Steinberg::IPluginBase {
      */
     YaPluginBase(ConstructArgs&& args) noexcept;
 
+    virtual ~YaPluginBase() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     // The request and response for `IPluginBase::initialize()` is defined

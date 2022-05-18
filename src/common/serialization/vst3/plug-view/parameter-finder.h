@@ -59,6 +59,8 @@ class YaParameterFinder : public Steinberg::Vst::IParameterFinder {
      */
     YaParameterFinder(ConstructArgs&& args) noexcept;
 
+    virtual ~YaParameterFinder() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

@@ -129,7 +129,7 @@ class PluginBridge {
               io_context_.run();
           }) {}
 
-    virtual ~PluginBridge() noexcept {};
+    virtual ~PluginBridge() noexcept = default;
 
    protected:
     /**

@@ -37,7 +37,7 @@
  */
 class HostProcess {
    public:
-    virtual ~HostProcess() noexcept;
+    virtual ~HostProcess() noexcept = default;
 
     /**
      * Return the full path to the host application in use. The host application

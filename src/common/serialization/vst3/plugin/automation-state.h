@@ -62,6 +62,8 @@ class YaAutomationState : public Steinberg::Vst::IAutomationState {
      */
     YaAutomationState(ConstructArgs&& args) noexcept;
 
+    virtual ~YaAutomationState() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

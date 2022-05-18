@@ -60,6 +60,8 @@ class YaPrefetchableSupport : public Steinberg::Vst::IPrefetchableSupport {
      */
     YaPrefetchableSupport(ConstructArgs&& args) noexcept;
 
+    virtual ~YaPrefetchableSupport() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

@@ -38,7 +38,7 @@ class YaAttributeList : public Steinberg::Vst::IAttributeList {
      */
     YaAttributeList() noexcept;
 
-    ~YaAttributeList() noexcept;
+    virtual ~YaAttributeList() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 

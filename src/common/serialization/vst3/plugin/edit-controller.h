@@ -63,6 +63,8 @@ class YaEditController : public Steinberg::Vst::IEditController {
      */
     YaEditController(ConstructArgs&& args) noexcept;
 
+    virtual ~YaEditController() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

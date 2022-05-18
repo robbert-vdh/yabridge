@@ -239,7 +239,7 @@ class YaEventList : public Steinberg::Vst::IEventList {
      */
     void repopulate(Steinberg::Vst::IEventList& event_list);
 
-    ~YaEventList() noexcept;
+    virtual ~YaEventList() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 

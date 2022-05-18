@@ -61,6 +61,8 @@ class YaPlugView : public Steinberg::IPlugView {
      */
     YaPlugView(ConstructArgs&& args) noexcept;
 
+    virtual ~YaPlugView() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

@@ -59,6 +59,8 @@ class YaComponentHandler : public Steinberg::Vst::IComponentHandler {
      */
     YaComponentHandler(ConstructArgs&& args) noexcept;
 
+    virtual ~YaComponentHandler() noexcept = default;
+
     inline bool supported() const noexcept { return arguments.supported; }
 
     /**

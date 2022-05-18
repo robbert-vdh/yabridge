@@ -57,8 +57,6 @@ HostBridge::HostBridge(MainContext& main_context,
       parent_pid_(parent_pid),
       watchdog_guard_(main_context.register_watchdog(*this)) {}
 
-HostBridge::~HostBridge() noexcept {}
-
 void HostBridge::handle_events() noexcept {
     MSG msg;
 

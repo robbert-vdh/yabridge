@@ -62,6 +62,8 @@ class YaComponentHandlerBusActivation
      */
     YaComponentHandlerBusActivation(ConstructArgs&& args) noexcept;
 
+    virtual ~YaComponentHandlerBusActivation() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

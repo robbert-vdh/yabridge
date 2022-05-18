@@ -62,6 +62,8 @@ class YaProcessContextRequirements
      */
     YaProcessContextRequirements(ConstructArgs&& args) noexcept;
 
+    virtual ~YaProcessContextRequirements() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

@@ -63,6 +63,8 @@ class YaHostApplication : public Steinberg::Vst::IHostApplication {
      */
     YaHostApplication(ConstructArgs&& args) noexcept;
 
+    virtual ~YaHostApplication() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

@@ -16,8 +16,6 @@
 
 #include "vst2.h"
 
-DefaultDataConverter::~DefaultDataConverter() noexcept {}
-
 Vst2Event::Payload DefaultDataConverter::read_data(const int /*opcode*/,
                                                    const int /*index*/,
                                                    const intptr_t /*value*/,

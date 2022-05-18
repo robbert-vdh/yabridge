@@ -67,7 +67,7 @@ class YaContextMenuTarget : public Steinberg::Vst::IContextMenuTarget {
      */
     YaContextMenuTarget(ConstructArgs&& args) noexcept;
 
-    ~YaContextMenuTarget() noexcept;
+    virtual ~YaContextMenuTarget() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 

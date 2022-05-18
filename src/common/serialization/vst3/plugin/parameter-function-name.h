@@ -61,6 +61,8 @@ class YaParameterFunctionName : public Steinberg::Vst::IParameterFunctionName {
      */
     YaParameterFunctionName(ConstructArgs&& args) noexcept;
 
+    virtual ~YaParameterFunctionName() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

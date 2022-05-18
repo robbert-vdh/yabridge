@@ -60,6 +60,8 @@ class YaInfoListener : public Steinberg::Vst::ChannelContext::IInfoListener {
      */
     YaInfoListener(ConstructArgs&& args) noexcept;
 
+    virtual ~YaInfoListener() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

@@ -60,6 +60,8 @@ class YaAudioPresentationLatency
      */
     YaAudioPresentationLatency(ConstructArgs&& args) noexcept;
 
+    virtual ~YaAudioPresentationLatency() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

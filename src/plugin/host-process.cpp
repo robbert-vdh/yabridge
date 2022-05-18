@@ -25,8 +25,6 @@ namespace fs = ghc::filesystem;
 HostProcess::HostProcess(asio::io_context& io_context, Sockets& sockets)
     : sockets_(sockets), stdout_pipe_(io_context), stderr_pipe_(io_context) {}
 
-HostProcess::~HostProcess() noexcept {}
-
 Process::Handle HostProcess::launch_host(
     const ghc::filesystem::path& host_path,
     std::initializer_list<std::string> args,

@@ -59,6 +59,8 @@ class YaMidiLearn : public Steinberg::Vst::IMidiLearn {
      */
     YaMidiLearn(ConstructArgs&& args) noexcept;
 
+    virtual ~YaMidiLearn() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

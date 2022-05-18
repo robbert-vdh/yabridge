@@ -37,7 +37,7 @@ class HostBridge {
                pid_t parent_pid);
 
    public:
-    virtual ~HostBridge() noexcept;
+    virtual ~HostBridge() noexcept = default;
 
     /**
      * If a plugin instance returns `true` here, then the event loop should not

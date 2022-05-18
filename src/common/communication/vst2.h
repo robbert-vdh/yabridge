@@ -31,7 +31,7 @@
  */
 class DefaultDataConverter {
    public:
-    virtual ~DefaultDataConverter() noexcept;
+    virtual ~DefaultDataConverter() noexcept = default;
 
     /**
      * Read data from the `data` void pointer into a an `Vst2Event::Payload`

@@ -63,6 +63,8 @@ class YaNoteExpressionController
      */
     YaNoteExpressionController(ConstructArgs&& args) noexcept;
 
+    virtual ~YaNoteExpressionController() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

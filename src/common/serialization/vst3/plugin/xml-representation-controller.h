@@ -67,6 +67,8 @@ class YaXmlRepresentationController
      */
     YaXmlRepresentationController(ConstructArgs&& args) noexcept;
 
+    virtual ~YaXmlRepresentationController() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

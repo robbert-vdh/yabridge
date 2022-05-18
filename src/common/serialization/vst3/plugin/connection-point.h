@@ -107,6 +107,8 @@ class YaConnectionPoint : public Steinberg::Vst::IConnectionPoint {
      */
     YaConnectionPoint(ConstructArgs&& args) noexcept;
 
+    virtual ~YaConnectionPoint() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

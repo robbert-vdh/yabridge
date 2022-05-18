@@ -59,6 +59,8 @@ class YaUnitHandler2 : public Steinberg::Vst::IUnitHandler2 {
      */
     YaUnitHandler2(ConstructArgs&& args) noexcept;
 
+    virtual ~YaUnitHandler2() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

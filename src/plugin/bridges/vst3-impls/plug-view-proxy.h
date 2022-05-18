@@ -49,7 +49,7 @@ class RunLoopTasks : public Steinberg::Linux::IEventHandler {
     /**
      * Unregister the event handler and close the file descriptor on cleanup.
      */
-    ~RunLoopTasks();
+    virtual ~RunLoopTasks();
 
     DECLARE_FUNKNOWN_METHODS
 

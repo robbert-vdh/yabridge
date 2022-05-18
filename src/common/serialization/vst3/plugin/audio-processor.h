@@ -62,6 +62,8 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
      */
     YaAudioProcessor(ConstructArgs&& args) noexcept;
 
+    virtual ~YaAudioProcessor() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

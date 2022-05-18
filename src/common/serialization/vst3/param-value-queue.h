@@ -39,6 +39,8 @@ class alignas(16) YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
      */
     YaParamValueQueue() noexcept;
 
+    virtual ~YaParamValueQueue() noexcept;
+
     /**
      * Clear this queue in place so that it can be used to write parameter data
      * to. Used in `YaParameterChanges::addParameterData`.
@@ -49,8 +51,6 @@ class alignas(16) YaParamValueQueue : public Steinberg::Vst::IParamValueQueue {
      * Read data from an `IParamValueQueue` object into this existing object.
      */
     void repopulate(Steinberg::Vst::IParamValueQueue& original_queue);
-
-    ~YaParamValueQueue() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 

@@ -62,6 +62,8 @@ class YaNoteExpressionPhysicalUIMapping
      */
     YaNoteExpressionPhysicalUIMapping(ConstructArgs&& args) noexcept;
 
+    virtual ~YaNoteExpressionPhysicalUIMapping() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

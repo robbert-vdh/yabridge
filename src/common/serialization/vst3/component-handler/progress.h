@@ -60,6 +60,8 @@ class YaProgress : public Steinberg::Vst::IProgress {
      */
     YaProgress(ConstructArgs&& args) noexcept;
 
+    virtual ~YaProgress() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

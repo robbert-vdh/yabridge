@@ -390,6 +390,7 @@ Vst3PluginProxyImpl::getBusInfo(Steinberg::Vst::MediaType type,
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getRoutingInfo(
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     Steinberg::Vst::RoutingInfo& inInfo,
     Steinberg::Vst::RoutingInfo& outInfo /*out*/) {
     const GetRoutingInfoResponse response =

@@ -54,7 +54,7 @@ class YaMessagePtr : public Steinberg::Vst::IMessage {
      */
     explicit YaMessagePtr(IMessage& message);
 
-    ~YaMessagePtr() noexcept;
+    virtual ~YaMessagePtr() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 
@@ -124,7 +124,7 @@ class YaMessage : public Steinberg::Vst::IMessage {
      */
     YaMessage() noexcept;
 
-    ~YaMessage() noexcept;
+    virtual ~YaMessage() noexcept;
 
     DECLARE_FUNKNOWN_METHODS
 

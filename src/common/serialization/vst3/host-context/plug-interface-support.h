@@ -60,6 +60,8 @@ class YaPlugInterfaceSupport : public Steinberg::Vst::IPlugInterfaceSupport {
      */
     YaPlugInterfaceSupport(ConstructArgs&& args) noexcept;
 
+    virtual ~YaPlugInterfaceSupport() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

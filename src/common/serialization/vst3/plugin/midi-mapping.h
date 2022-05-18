@@ -59,6 +59,8 @@ class YaMidiMapping : public Steinberg::Vst::IMidiMapping {
      */
     YaMidiMapping(ConstructArgs&& args) noexcept;
 
+    virtual ~YaMidiMapping() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

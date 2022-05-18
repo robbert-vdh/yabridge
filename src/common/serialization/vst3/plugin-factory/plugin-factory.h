@@ -124,6 +124,8 @@ class YaPluginFactory3 : public Steinberg::IPluginFactory3 {
      */
     YaPluginFactory3(ConstructArgs&& args) noexcept;
 
+    virtual ~YaPluginFactory3() noexcept = default;
+
     inline bool supports_plugin_factory() const noexcept {
         return arguments_.supports_plugin_factory;
     }

@@ -60,6 +60,8 @@ class YaProgramListData : public Steinberg::Vst::IProgramListData {
      */
     YaProgramListData(ConstructArgs&& args) noexcept;
 
+    virtual ~YaProgramListData() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

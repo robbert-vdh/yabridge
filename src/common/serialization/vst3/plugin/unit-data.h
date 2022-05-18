@@ -60,6 +60,8 @@ class YaUnitData : public Steinberg::Vst::IUnitData {
      */
     YaUnitData(ConstructArgs&& args) noexcept;
 
+    virtual ~YaUnitData() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**

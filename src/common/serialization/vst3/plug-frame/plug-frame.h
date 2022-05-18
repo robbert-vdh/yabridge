@@ -59,6 +59,8 @@ class YaPlugFrame : public Steinberg::IPlugFrame {
      */
     YaPlugFrame(ConstructArgs&& args) noexcept;
 
+    virtual ~YaPlugFrame() noexcept = default;
+
     inline bool supported() const noexcept { return arguments_.supported; }
 
     /**
