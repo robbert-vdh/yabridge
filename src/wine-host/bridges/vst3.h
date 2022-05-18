@@ -459,6 +459,9 @@ class Vst3Bridge : public HostBridge {
      * This returns a nullopt when `Vst3PluginInstance::process_setup` is not
      * set, or when the object instance does not support the `IAudioProcessor`
      * interface.
+     *
+     * A nullopt will also be returned if this is called again after shared
+     * audio buffers have been set up and the audio buffer size has not changed.
      */
     std::optional<AudioShmBuffer::Config> setup_shared_audio_buffers(
         size_t instance_id);

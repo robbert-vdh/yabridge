@@ -1375,7 +1375,12 @@ std::optional<AudioShmBuffer::Config> Vst3Bridge::setup_shared_audio_buffers(
         const auto num_busses =
             component->getBusCount(Steinberg::Vst::kAudio, direction);
 
-        std::vector<std::vector<uint32_t>> bus_offsets(num_busses);
+        // This function is also run from `IAudioProcessor::setActive()`.
+        // According to the docs this does not need to be realtime-safe, but we
+        // should at least still try to not do anything expensive when no work
+        // needs to be done.
+        llvm::SmallVector<llvm::SmallVector<uint32_t, 32>, 16> bus_offsets(
+            num_busses);
         for (int bus = 0; bus < num_busses; bus++) {
             Steinberg::Vst::SpeakerArrangement speaker_arrangement{};
             audio_processor->getBusArrangement(direction, bus,
@@ -1399,10 +1404,8 @@ std::optional<AudioShmBuffer::Config> Vst3Bridge::setup_shared_audio_buffers(
     // Creating the audio buffer offsets for every channel in every bus will
     // advacne `current_offset` to keep pointing to the starting position for
     // the next channel
-    std::vector<std::vector<uint32_t>> input_bus_offsets =
-        create_bus_offsets(Steinberg::Vst::kInput);
-    std::vector<std::vector<uint32_t>> output_bus_offsets =
-        create_bus_offsets(Steinberg::Vst::kOutput);
+    const auto input_bus_offsets = create_bus_offsets(Steinberg::Vst::kInput);
+    const auto output_bus_offsets = create_bus_offsets(Steinberg::Vst::kOutput);
 
     // The size of the buffer is in bytes, and it will depend on whether the
     // host is going to pass 32-bit or 64-bit audio to the plugin
@@ -1411,6 +1414,29 @@ std::optional<AudioShmBuffer::Config> Vst3Bridge::setup_shared_audio_buffers(
     const uint32_t buffer_size =
         current_offset * (double_precision ? sizeof(double) : sizeof(float));
 
+    // If this function has been called previously and the size did not change,
+    // then we should not do any work
+    if (instance.process_buffers &&
+        instance.process_buffers->config_.size == buffer_size) {
+        return std::nullopt;
+    }
+
+    // Because the above check should be super cheap, we'll now need to convert
+    // the stack allocated SmallVectors to regular heap vectors
+    std::vector<std::vector<uint32_t>> input_bus_offsets_vector;
+    input_bus_offsets_vector.reserve(input_bus_offsets.size());
+    for (const auto& channel_offsets : input_bus_offsets) {
+        input_bus_offsets_vector.push_back(
+            std::vector(channel_offsets.begin(), channel_offsets.end()));
+    }
+
+    std::vector<std::vector<uint32_t>> output_bus_offsets_vector;
+    output_bus_offsets_vector.reserve(output_bus_offsets.size());
+    for (const auto& channel_offsets : output_bus_offsets) {
+        output_bus_offsets_vector.push_back(
+            std::vector(channel_offsets.begin(), channel_offsets.end()));
+    }
+
     // We'll set up these shared memory buffers on the Wine side first, and then
     // when this request returns we'll do the same thing on the native plugin
     // side
@@ -1418,8 +1444,8 @@ std::optional<AudioShmBuffer::Config> Vst3Bridge::setup_shared_audio_buffers(
         .name = sockets_.base_dir_.filename().string() + "-" +
                 std::to_string(instance_id),
         .size = buffer_size,
-        .input_offsets = std::move(input_bus_offsets),
-        .output_offsets = std::move(output_bus_offsets)};
+        .input_offsets = std::move(input_bus_offsets_vector),
+        .output_offsets = std::move(output_bus_offsets_vector)};
     if (!instance.process_buffers) {
         instance.process_buffers.emplace(buffer_config);
     } else {
