@@ -256,7 +256,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
 
     /**
      * The response code and written state for a call to
-     * `IAudioProcessor::setupProcessing(setup)`.
+     * `IAudioProcessor::setActive(state)`.
      */
     struct SetActiveResponse {
         UniversalTResult result;
@@ -276,7 +276,7 @@ class YaComponent : public Steinberg::Vst::IComponent {
      *
      * NOTE: REAPER may change a plugin's bus arrangements after the processing
      *       has been set up, so we need to check for this on every
-     *       `setActive()` call
+     *       `setActive()` call.
      */
     struct SetActive {
         using Response = SetActiveResponse;

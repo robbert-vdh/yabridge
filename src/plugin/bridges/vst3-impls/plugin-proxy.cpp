@@ -186,19 +186,9 @@ uint32 PLUGIN_API Vst3PluginProxyImpl::getLatencySamples() {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::setupProcessing(Steinberg::Vst::ProcessSetup& setup) {
-    const YaAudioProcessor::SetupProcessingResponse response =
-        bridge_.send_audio_processor_message(YaAudioProcessor::SetupProcessing{
-            .instance_id = instance_id(), .setup = setup});
-
-    // We have now set up the shared audio buffers on the Wine side, and we'll
-    // be able to able to connect to them by using the same audio configuration
-    if (!process_buffers_) {
-        process_buffers_.emplace(response.audio_buffers_config);
-    } else {
-        process_buffers_->resize(response.audio_buffers_config);
-    }
-
-    return response.result;
+    return bridge_.send_audio_processor_message(
+        YaAudioProcessor::SetupProcessing{.instance_id = instance_id(),
+                                          .setup = setup});
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::setProcessing(TBool state) {
@@ -427,13 +417,10 @@ tresult PLUGIN_API Vst3PluginProxyImpl::setActive(TBool state) {
         YaComponent::SetActive{.instance_id = instance_id(), .state = state});
 
     // NOTE: REAPER may (and will) change a plugin's channel layout after
-    //       calling `setupProcessing()`. Because of that, we need to test
-    //       whether this has happened any time the plugin gets reactivated.
-    //       It's technically legal, so we need to support it.
+    //       calling `IAudioProcessor::setupProcessing()`. Because of that, we
+    //       need to test whether this has happened any time the plugin gets
+    //       reactivated.  It's technically legal, so we need to support it.
     if (response.updated_audio_buffers_config) {
-        // The host should absolutely not call this function before
-        // `setupProcessing()` so this should already contain a value, but you
-        // never know...
         if (!process_buffers_) {
             process_buffers_.emplace(*response.updated_audio_buffers_config);
         } else {

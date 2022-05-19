@@ -171,7 +171,7 @@ struct Vst3PluginInstance {
      * A shared memory object we'll write the input audio buffers to on the
      * native plugin side. We'll then let the plugin write its outputs here on
      * the Wine side. The buffer will be configured during
-     * `IAudioProcessor::setupProcessing()`. At that point we'll build the
+     * `IAudioProcessor::setActive()`. At that point we'll build the
      * configuration for the object here, on the Wine side, and then we'll
      * initialize the buffers using that configuration. This same configuration
      * is then used on the native plugin side to connect to this same shared

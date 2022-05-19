@@ -1007,9 +1007,8 @@ bool Vst3Logger::log_request(
 
             // TODO: The channel counts are now capped at what the plugin
             //       supports (based on the audio buffers we set up during
-            //       `IAudioProcessor::setupProcessing()`). Some hosts may send
-            //       more buffers, but we don't reflect that in the output right
-            //       now.
+            //       `IAudioProcessor::setActive()`). Some hosts may send more
+            //       buffers, but we don't reflect that in the output right now.
             std::ostringstream num_input_channels;
             num_input_channels << "[";
             for (bool is_first = true;
@@ -1784,19 +1783,6 @@ void Vst3Logger::log_response(
                 << std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement) * 8>(
                        response.arr)
                 << ">";
-        }
-    });
-}
-
-void Vst3Logger::log_response(
-    bool is_host_vst,
-    const YaAudioProcessor::SetupProcessingResponse& response) {
-    log_response_base(is_host_vst, [&](auto& message) {
-        message << response.result.string();
-        if (response.result == Steinberg::kResultOk) {
-            message << ", <shared memory configuration for \""
-                    << response.audio_buffers_config.name << "\", "
-                    << response.audio_buffers_config.size << " bytes>";
         }
     });
 }

@@ -468,7 +468,7 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
      * amount of copies required to only once for the input audio, and one more
      * copy when copying the results back to the host.
      *
-     * This will be set up during `IAudioProcessor::setupProcessing()`.
+     * This will be set up during `IAudioProcessor::setActive()`.
      */
     std::optional<AudioShmBuffer> process_buffers_;
 

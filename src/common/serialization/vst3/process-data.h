@@ -83,7 +83,7 @@ class YaProcessData {
      * difficult for us to mess this up, we'll store those bus-channel pointers
      * in `Vst3Bridge::InstanceInterfaces` and we'll point the pointers in our
      * `inputs` and `outputs` fields directly to those pointers. They will have
-     * been set up during `IAudioProcessor::setupProcessing()`.
+     * been set up during `IAudioProcessor::setActive()`.
      *
      * These can be either float or double pointers. Since a pointer is a
      * pointer and they're stored using a union the actual type doesn't matter,

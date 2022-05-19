@@ -1588,23 +1588,15 @@ size_t Vst3Bridge::register_object_instance(
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
 
-                        const tresult result =
-                            instance.interfaces.audio_processor
-                                ->setupProcessing(request.setup);
-
                         // We'll set up the shared audio buffers on the Wine
                         // side after the plugin has finished doing their setup.
                         // This configuration can then be used on the native
                         // plugin side to connect to the same shared audio
                         // buffers.
                         instance.process_setup = request.setup;
-                        const AudioShmBuffer::Config audio_buffers_config =
-                            *setup_shared_audio_buffers(request.instance_id);
 
-                        return YaAudioProcessor::SetupProcessingResponse{
-                            .result = result,
-                            .audio_buffers_config =
-                                std::move(audio_buffers_config)};
+                        return instance.interfaces.audio_processor
+                            ->setupProcessing(request.setup);
                     },
                     [&](const YaAudioProcessor::SetProcessing& request)
                         -> YaAudioProcessor::SetProcessing::Response {
@@ -1773,9 +1765,9 @@ size_t Vst3Bridge::register_object_instance(
 
                                 // NOTE: REAPER may change the bus layout after
                                 //       calling
-                                //       `IAudioProcessor::setupProcessing`. In
-                                //       that case we'll need to resize the
-                                //       shared memory buffers here.
+                                //       `IAudioProcessor::setupProcessing()`,
+                                //       so this place is the only safe place to
+                                //       setup the buffers
                                 const std::optional<AudioShmBuffer::Config>
                                     updated_audio_buffers_config =
                                         setup_shared_audio_buffers(

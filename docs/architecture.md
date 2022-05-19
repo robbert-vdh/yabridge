@@ -270,7 +270,7 @@ that gets sent along with the actual audio buffers. This also means that the
 sockets act as a form of synchronisation, so we do not need any additional
 inter-process locking. These shared memory audio buffers are defined as part of
 `AudioShmBuffer`, and they are configured while handling `effMainsChanged` for
-VST2 plugins and during `IAudioProcessor::setupProcessing()` for VST3 plugins.
+VST2 plugins and during `IAudioProcessor::setActive()` for VST3 plugins.
 For VST2 plugins this does mean that we will need to keep track of the maximum
 block size and the sample size reported by the host, since this information is
 not passed along with `effMainsChanged`.
