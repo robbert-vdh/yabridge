@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anyhow::Result;
-use clap::{app_from_crate, App, AppSettings, Arg};
+use clap::{command, Arg, Command};
 use colored::Colorize;
 use std::collections::HashSet;
 use std::env;
@@ -52,10 +52,10 @@ fn main() -> Result<()> {
     let blacklist_entries: HashSet<&Path> =
         config.blacklist.iter().map(|path| path.as_path()).collect();
 
-    let matches = app_from_crate!()
-        .setting(AppSettings::SubcommandRequiredElseHelp)
+    let matches = command!()
+        .subcommand_required(true).arg_required_else_help(true)
         .subcommand(
-            App::new("add")
+            Command::new("add")
                 .about("Add a plugin install location")
                 .display_order(1)
                 .arg(
@@ -67,7 +67,7 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
-            App::new("rm")
+            Command::new("rm")
                 .about("Remove a plugin install location")
                 .display_order(2)
                 .arg(
@@ -79,17 +79,17 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
-            App::new("list")
+            Command::new("list")
                 .about("List the plugin install locations")
                 .display_order(3),
         )
         .subcommand(
-            App::new("status")
+            Command::new("status")
                 .about("Show the installation status for all plugins")
                 .display_order(4),
         )
         .subcommand(
-            App::new("sync")
+            Command::new("sync")
                 .about("Set up or update yabridge for all plugins")
                 .display_order(100)
                 .arg(
@@ -118,10 +118,10 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
-            App::new("set")
+            Command::new("set")
                 .about("Change the yabridge path (advanced)")
                 .display_order(200)
-                .setting(AppSettings::ArgRequiredElseHelp)
+                .arg_required_else_help(true)
                 .arg(
                     Arg::new("path")
                         .long("path")
@@ -155,7 +155,6 @@ fn main() -> Result<()> {
                             "centralized".bright_white(),
                             "inline".bright_white()
                         ).as_ref())
-                        .setting(clap::ArgSettings::NextLineHelp)
                         .possible_values(["centralized", "inline"])
                         .takes_value(true),
                 ).arg(
@@ -171,10 +170,10 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
-            App::new("blacklist")
+            Command::new("blacklist")
                 .about("Manage the indexing blacklist (advanced)")
                 .display_order(201)
-                .setting(AppSettings::SubcommandRequiredElseHelp)
+                .subcommand_required(true).arg_required_else_help(true)
                 .long_about(
                     "Manage the indexing blacklist (advanced)\n\
                      \n\
@@ -182,7 +181,7 @@ fn main() -> Result<()> {
                      indexing process. You most likely won't have to use this feature.",
                 )
                 .subcommand(
-                    App::new("add")
+                    Command::new("add")
                         .about("Add a path to the blacklist")
                         .display_order(1)
                         .arg(
@@ -194,7 +193,7 @@ fn main() -> Result<()> {
                         ),
                 )
                 .subcommand(
-                    App::new("rm")
+                    Command::new("rm")
                         .about("Remove a path from the blacklist")
                         .display_order(2)
                         .arg(
@@ -207,12 +206,12 @@ fn main() -> Result<()> {
                         ),
                 )
                 .subcommand(
-                    App::new("list")
+                    Command::new("list")
                         .about("List the blacklisted paths")
                         .display_order(3),
                 )
                 .subcommand(
-                    App::new("clear")
+                    Command::new("clear")
                         .about("Clear the entire blacklist")
                         .display_order(4),
                 ),
