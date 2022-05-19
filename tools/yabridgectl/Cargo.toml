@@ -22,6 +22,7 @@ reflink = { git = "https://github.com/nicokoch/reflink", rev = "e8d93b465f5d9ad3
 rayon = "1.5.1"
 serde = "1.0.133"
 serde_derive = "1.0.133"
+serde_jsonrc = "0.1"
 # NOTE: textwrap 0.12.0 up to at least 0.13.4 apply the subsequent indent after
 #       wrapping
 textwrap = { version = "0.11.0", features = ["term_size"] }

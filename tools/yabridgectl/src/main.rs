@@ -27,6 +27,7 @@ mod actions;
 mod config;
 mod files;
 mod utils;
+mod vst3_moduleinfo;
 
 fn main() -> Result<()> {
     // We'll modify our `PATH` environment variable so it matches up with
