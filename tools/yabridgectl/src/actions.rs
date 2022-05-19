@@ -453,6 +453,11 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     // screenshots and documentation
                     // TODO: Also symlink presets, but this is a bit more involved. See
                     //       https://developer.steinberg.help/display/VST/Preset+Locations
+                    // TODO: Also handle `moduleinfo.json` files. That would require translating the
+                    //       UIDs from the COM-format to the non-COM format. Yabridge currently does
+                    //       not suport this because supporting the accompanying
+                    //       `IPluginCompatibility` would require having to add a JSON parser to
+                    //       yabridge just for that.
                     if let Some(original_resources_dir) = module.original_resources_dir() {
                         let target_resources_dir = module.target_resources_dir();
 

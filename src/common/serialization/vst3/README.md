@@ -4,7 +4,9 @@ See
 [docs/architecture.md](https://github.com/robbert-vdh/yabridge/blob/master/docs/architecture.md)
 for more information on how the serialization works.
 
-We currently support all official VST 3.7.3 interfaces.
+We currently support all official VST 3.7.5 interfaces minus
+`IPluginCompatibility`, as that functionality is currently not used on Linux and
+implementing it would require parsing JSON within yabridge.
 
 VST3 plugin interfaces are implemented as follows:
 

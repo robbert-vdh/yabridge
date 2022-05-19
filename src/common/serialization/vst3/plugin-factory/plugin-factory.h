@@ -79,7 +79,7 @@ class YaPluginFactory3 : public Steinberg::IPluginFactory3 {
          * `std::nullopt` if the plugin doesn't return a class info.
          *
          * NOTE: We'll have already converted all returned class IDs to native
-         *       class IDs using `WienUID::to_native_uid()` for cross-platform
+         *       class IDs using `WineUID::to_native_uid()` for cross-platform
          *       compatibility. This applies to all `class_info_*` fields here.
          */
         std::vector<std::optional<Steinberg::PClassInfo>> class_infos_1;
