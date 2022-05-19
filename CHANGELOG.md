@@ -96,6 +96,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   once after updating to yabridge 4.0, yabridge can now be updated without
   needing to rerun `yabridgectl sync`. This is particularly useful when using a
   distro packaged version of yabridge.
+- Added support for the new VST 3.7.5 `moduleinfo.json` format to allow
+  VST3 plugins to replace other VST3 and VST2 plugins with different class IDs.
 - `yabridgectl status` now shows the locations where bridged VST2 and VST3
   plugins will be set up.
 - `yabridgectl sync --prune` now also considers broken symlinks.

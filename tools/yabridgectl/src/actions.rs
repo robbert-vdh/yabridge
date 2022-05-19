@@ -29,6 +29,7 @@ use crate::config::{
 use crate::files::{self, NativeFile, Plugin, Vst2Plugin};
 use crate::utils::{self, get_file_type};
 use crate::utils::{verify_path_setup, verify_wine_setup};
+use crate::vst3_moduleinfo::ModuleInfo;
 
 pub mod blacklist;
 
@@ -469,6 +470,37 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                             &target_resources_dir,
                         )?;
                         managed_vst3_bundle_files.insert(target_resources_dir);
+                    }
+
+                    // If the plugin has a VST 3.7.10 moduleinfo file, then we'll rewrite the byte
+                    // orders of the class IDs stored within the file and then write it to the
+                    // bridged VST3 bundle.
+                    // https://steinbergmedia.github.io/vst3_dev_portal/pages/Technical+Documentation/VST+Module+Architecture/ModuleInfo-JSON.html
+                    if let Some(original_moduleinfo_path) = module.original_moduleinfo_path() {
+                        let target_moduleinfo_path = module.target_moduleinfo_path();
+
+                        let result = utils::read_to_string(&original_moduleinfo_path)
+                            .and_then(|module_info_json| {
+                                serde_jsonrc::from_str(&module_info_json)
+                                    .context("Could not parse JSON file")
+                            })
+                            .and_then(|mut module_info: ModuleInfo| {
+                                module_info.rewrite_uid_byte_orders()?;
+                                Ok(module_info)
+                            })
+                            .and_then(|converted_module_info| {
+                                let converted_json =
+                                    serde_jsonrc::to_string_pretty(&converted_module_info)
+                                        .context("Could not format JSON file")?;
+                                utils::write(target_moduleinfo_path, converted_json)
+                            });
+                        if let Err(error) = result {
+                            eprintln!(
+                                "Error converting '{}', skipping...\n{}",
+                                original_moduleinfo_path.display(),
+                                error
+                            );
+                        }
                     }
 
                     module.original_path().to_path_buf()

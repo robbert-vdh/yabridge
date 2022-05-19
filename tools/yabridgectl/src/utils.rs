@@ -61,6 +61,13 @@ pub fn create_dir_all<P: AsRef<Path>>(path: P) -> Result<()> {
     })
 }
 
+/// Wrapper around [`std::fs::read_to_string()`](std::fs::read_to_string) with a human readable
+/// error message.
+pub fn read_to_string<P: AsRef<Path>>(path: P) -> Result<String> {
+    fs::read_to_string(&path)
+        .with_context(|| format!("Could not read file '{}'", path.as_ref().display()))
+}
+
 /// Wrapper around [`std::fs::remove_dir_all()`](std::fs::remove_dir_all) with a human readable
 /// error message.
 pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> Result<()> {
@@ -85,6 +92,12 @@ pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> Result<()> {
             dst.as_ref().display()
         )
     })
+}
+
+/// Wrapper around [`std::fs::write()`](std::fs::write) with a human readable error message.
+pub fn write<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> Result<()> {
+    fs::write(&path, contents)
+        .with_context(|| format!("Could write to '{}'", path.as_ref().display()))
 }
 
 /// Get the architecture of the ELF file at `path`. This detection is a bit naive, but we'd rather

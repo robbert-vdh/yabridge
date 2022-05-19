@@ -217,6 +217,24 @@ impl Vst3Module {
         }
     }
 
+    /// Return the path to the Windows plugin's `moduleinfo.json` file if this is a bundle-style
+    /// plugin and the plugin has one. This file would need to be rewritten using
+    /// `ModuleInfo::rewrite_uid_byte_orders()` first.
+    pub fn original_moduleinfo_path(&self) -> Option<PathBuf> {
+        match &self.module {
+            Vst3ModuleType::Bundle(bundle_home) => {
+                let mut path = bundle_home.join("Contents");
+                path.push("moduleinfo.json");
+                if path.exists() {
+                    Some(path)
+                } else {
+                    None
+                }
+            }
+            Vst3ModuleType::Legacy(_) => None,
+        }
+    }
+
     /// Get the path to the bundle in `~/.vst3` corresponding to the bridged version of this module.
     /// We will try to recreate the original subdirectory structure so plugins are still grouped by
     /// manufacturer.
@@ -280,6 +298,15 @@ impl Vst3Module {
         let mut path = self.target_bundle_home();
         path.push("Contents");
         path.push("Resources");
+        path
+    }
+
+    /// If the Windows VST3 plugin had a `moduleinfo.json` file, then it should be translated using
+    /// `ModuleInfo::rewrite_uid_byte_orders()` and then written to this path.
+    pub fn target_moduleinfo_path(&self) -> PathBuf {
+        let mut path = self.target_bundle_home();
+        path.push("Contents");
+        path.push("moduleinfo.json");
         path
     }
 
