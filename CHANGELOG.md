@@ -126,6 +126,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   distro package.
 - Fixed a deprecation warning in the Meson build, causing the minimum supported
   Meson version to be bumped up to **Meson 0.56** from 0.55.
+- Yabridge now targets VST3 SDK version 3.7.5 with git tag `v3.7.5_build_44-patched`.
 
 ## [3.8.1] - 2022-03-08
 
