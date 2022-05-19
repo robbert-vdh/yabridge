@@ -636,6 +636,11 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
 - Sometimes left over Wine processes can cause problems. Run `wineserver -k` to
   terminate Wine related in the current or default Wine prefix.
 
+- If plugin windows show up as a large overlay over the entire screen, covering
+  up other windows and making it impossible to interact with anything else
+  without Alt+Tabbing to them, then make sure the 'Allow the window manager to
+  control the windows' checkbox in winecfg's Graphics tab is checked.
+
 - If you're using a _lot_ of plugins and you're unable to load any new plugins,
   then you may be running into Xorg's limit of 256 clients. The exact number of
   plugins it takes for this to happen will depend on your system and the other
