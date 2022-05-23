@@ -98,6 +98,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   distro packaged version of yabridge.
 - Added support for the new VST 3.7.5 `moduleinfo.json` format to allow
   VST3 plugins to replace other VST3 and VST2 plugins with different class IDs.
+- Yabridgectl no longer depends on **winedump**. It now parses Windows PE32(+)
+  binaries without requiring any external dependencies. Or at least, that's the
+  idea. I've come across at least one binary this new parser can't handle
+  (https://github.com/m4b/goblin/issues/307), so it will still fall back to
+  winedump in some cases.
 - `yabridgectl status` now shows the locations where bridged VST2 and VST3
   plugins will be set up.
 - `yabridgectl sync --prune` now also considers broken symlinks.

@@ -26,6 +26,7 @@ use crate::config::Config;
 mod actions;
 mod config;
 mod files;
+mod symbols;
 mod utils;
 mod vst3_moduleinfo;
 

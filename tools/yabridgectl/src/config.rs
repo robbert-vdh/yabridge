@@ -297,8 +297,7 @@ impl Config {
         })
     }
 
-    /// Search for VST2 and VST3 plugins in all of the registered plugins directories. This will
-    /// return an error if `winedump` could not be called.
+    /// Search for VST2 and VST3 plugins in all of the registered plugins directories.
     pub fn search_directories(&self) -> Result<BTreeMap<&Path, SearchResults>> {
         let blacklist: HashSet<&Path> = self.blacklist.iter().map(|p| p.as_path()).collect();
 

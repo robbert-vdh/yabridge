@@ -16,17 +16,15 @@
 
 //! Functions to index plugins and to set up yabridge for those plugins.
 
-use aho_corasick::AhoCorasick;
-use anyhow::{Context, Result};
-use lazy_static::lazy_static;
+use anyhow::Result;
 use rayon::prelude::*;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use walkdir::WalkDir;
 
 use crate::config::{yabridge_vst2_home, yabridge_vst3_home, Config, YabridgeFiles};
+use crate::symbols::parse_pe32_binary;
 use crate::utils::get_file_type;
 
 /// Stores the results from searching through a directory. We'll search for Windows VST2 plugin
@@ -511,31 +509,10 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
 
 impl SearchIndex {
     /// Filter these indexing results down to actual VST2 plugins and VST3 modules. This will skip
-    /// all invalid files, such as regular `.dll` libraries. Will return an error if `winedump`
-    /// could not be found.
+    /// all invalid files, such as regular `.dll` libraries.
     pub fn search(self) -> Result<SearchResults> {
-        lazy_static! {
-            static ref VST2_AUTOMATON: AhoCorasick =
-                AhoCorasick::new_auto_configured(&["VSTPluginMain", "main"]);
-            static ref VST3_AUTOMATON: AhoCorasick =
-                AhoCorasick::new_auto_configured(&["GetPluginFactory"]);
-            static ref DLL32_AUTOMATON: AhoCorasick =
-                AhoCorasick::new_auto_configured(&["Machine:                      014C"]);
-        }
-
-        let winedump = |args: &[&str], path: &Path| {
-            Command::new("winedump")
-                .args(args)
-                .arg(path)
-                .output()
-                .context(
-                    "Could not find 'winedump'. In some distributions this is part of a seperate \
-                     Wine tools package.",
-                )
-                .map(|output| output.stdout)
-        };
-        let pe32_info = |path: &Path| winedump(&[], path);
-        let exported_functions = |path: &Path| winedump(&["-j", "export"], path);
+        const VST2_ENTRY_POINTS: [&str; 2] = ["VSTPluginMain", "main"];
+        const VST3_ENTRY_POINTS: [&str; 1] = ["GetPluginFactory"];
 
         // We'll have to figure out which `.dll` files are VST2 plugins and which should be skipped
         // by checking whether the file contains one of the VST2 entry point functions. This vector
@@ -544,13 +521,18 @@ impl SearchIndex {
             .dll_files
             .into_par_iter()
             .map(|(path, subdirectory)| {
-                let architecture = if DLL32_AUTOMATON.is_match(pe32_info(&path)?) {
-                    LibArchitecture::Lib32
-                } else {
+                let info = parse_pe32_binary(&path)?;
+                let architecture = if info.is_64_bit {
                     LibArchitecture::Lib64
+                } else {
+                    LibArchitecture::Lib32
                 };
 
-                if VST2_AUTOMATON.is_match(exported_functions(&path)?) {
+                if info
+                    .exports
+                    .into_iter()
+                    .any(|symbol| VST2_ENTRY_POINTS.contains(&symbol.as_str()))
+                {
                     Ok(Ok(Vst2Plugin {
                         path,
                         architecture,
@@ -570,13 +552,18 @@ impl SearchIndex {
             .vst3_files
             .into_par_iter()
             .map(|(module_path, subdirectory)| {
-                let architecture = if DLL32_AUTOMATON.is_match(pe32_info(&module_path)?) {
-                    LibArchitecture::Lib32
-                } else {
+                let info = parse_pe32_binary(&module_path)?;
+                let architecture = if info.is_64_bit {
                     LibArchitecture::Lib64
+                } else {
+                    LibArchitecture::Lib32
                 };
 
-                if VST3_AUTOMATON.is_match(exported_functions(&module_path)?) {
+                if info
+                    .exports
+                    .into_iter()
+                    .any(|symbol| VST3_ENTRY_POINTS.contains(&symbol.as_str()))
+                {
                     // Now we'll have to figure out if the plugin is part of a VST 3.6.10 style
                     // bundle or a legacy `.vst3` DLL file. A WIndows VST3 bundle contains at least
                     // `<plugin_name>.vst3/Contents/<architecture_string>/<plugin_name>.vst3`, so
