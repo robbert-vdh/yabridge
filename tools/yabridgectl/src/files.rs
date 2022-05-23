@@ -25,7 +25,7 @@ use walkdir::WalkDir;
 
 use crate::config::{yabridge_vst2_home, yabridge_vst3_home, Config, YabridgeFiles};
 use crate::symbols::parse_pe32_binary;
-use crate::utils::get_file_type;
+use crate::util::get_file_type;
 
 /// Stores the results from searching through a directory. We'll search for Windows VST2 plugin
 /// `.dll` files, Windows VST3 plugin modules, and native Linux `.so` files inside of a directory.

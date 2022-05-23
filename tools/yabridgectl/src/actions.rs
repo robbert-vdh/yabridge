@@ -27,8 +27,8 @@ use crate::config::{
     yabridge_vst2_home, yabridge_vst3_home, Config, Vst2InstallationLocation, YabridgeFiles,
 };
 use crate::files::{self, NativeFile, Plugin, Vst2Plugin};
-use crate::utils::{self, get_file_type};
-use crate::utils::{verify_path_setup, verify_wine_setup};
+use crate::util::{self, get_file_type};
+use crate::util::{verify_path_setup, verify_wine_setup};
 use crate::vst3_moduleinfo::ModuleInfo;
 
 pub mod blacklist;
@@ -65,7 +65,7 @@ pub fn remove_directory(config: &mut Config, path: &Path) -> Result<()> {
         ) {
             Ok(Some(answer)) if answer == "YES" => {
                 for file in &orphan_files {
-                    utils::remove_file(file.path())?;
+                    util::remove_file(file.path())?;
                 }
 
                 println!("\nRemoved {} files", orphan_files.len());
@@ -242,9 +242,9 @@ pub struct SyncOptions {
 /// `.so` files if the prune option is set.
 pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     let files: YabridgeFiles = config.files()?;
-    let vst2_chainloader_hash = utils::hash_file(&files.vst2_chainloader)?;
+    let vst2_chainloader_hash = util::hash_file(&files.vst2_chainloader)?;
     let vst3_chainloader_hash = match &files.vst3_chainloader {
-        Some((path, _)) => Some(utils::hash_file(path)?),
+        Some((path, _)) => Some(util::hash_file(path)?),
         None => None,
     };
 
@@ -317,7 +317,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                             let target_windows_plugin_path =
                                 vst2_plugin.centralized_windows_target();
                             let normalized_target_native_plugin_path =
-                                utils::normalize_path(&target_native_plugin_path);
+                                util::normalize_path(&target_native_plugin_path);
 
                             let mut is_new = known_centralized_vst2_files
                                 .insert(target_native_plugin_path.clone());
@@ -326,7 +326,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                             if !is_new {
                                 eprintln!(
                                     "{}",
-                                    utils::wrap(&format!(
+                                    util::wrap(&format!(
                                         "{}: '{}' has already been provided by another Wine prefix or plugin directory, skipping it\n",
                                         "WARNING".red(),
                                         target_windows_plugin_path.display(),
@@ -340,7 +340,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                             // `libyabridge-chainloader-vst2.so` to (a subdirectory of)
                             // `~/.vst/yabridge`, and then we'll symlink the Windows VST2 plugin
                             // `.dll` file right next to it
-                            utils::create_dir_all(target_native_plugin_path.parent().unwrap())?;
+                            util::create_dir_all(target_native_plugin_path.parent().unwrap())?;
                             if install_file(
                                 options.force,
                                 InstallationMethod::Copy,
@@ -362,7 +362,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         }
                         Vst2InstallationLocation::Inline => {
                             let target_path = vst2_plugin.inline_native_target();
-                            let normalized_target_path = utils::normalize_path(&target_path);
+                            let normalized_target_path = util::normalize_path(&target_path);
 
                             // Since we skip some files, we'll also keep track of how many new file we've
                             // actually set up
@@ -393,7 +393,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     let target_native_module_path = module.target_native_module_path(Some(&files));
                     let target_windows_module_path = module.target_windows_module_path();
                     let normalized_native_module_path =
-                        utils::normalize_path(&target_native_module_path);
+                        util::normalize_path(&target_native_module_path);
 
                     // 32-bit and 64-bit versions of the plugin can live inside of the same bundle),
                     // but it's not possible to use the exact same plugin from multiple Wine
@@ -404,7 +404,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     if managed_vst3_bundle_files.contains(&target_windows_module_path) {
                         eprintln!(
                             "{}",
-                            utils::wrap(&format!(
+                            util::wrap(&format!(
                                 "{}: The {} version of '{}' has already been provided by another Wine \
                                 prefix or plugin directory, skipping '{}'\n",
                                 "WARNING".red(),
@@ -421,7 +421,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     // `libyabridge-chainloader-vst3.so` and the Windows VST3 plugin. The path to
                     // this native module will depend on whether `libyabridge-chainloader-vst3.so`
                     // is a 32-bit or a 64-bit library file.
-                    utils::create_dir_all(target_native_module_path.parent().unwrap())?;
+                    util::create_dir_all(target_native_module_path.parent().unwrap())?;
                     if install_file(
                         options.force,
                         InstallationMethod::Copy,
@@ -440,7 +440,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
 
                     // We'll then symlink the Windows VST3 module to that bundle to create a merged
                     // bundle: https://developer.steinberg.help/display/VST/Plug-in+Format+Structure#PluginFormatStructure-MergedBundle
-                    utils::create_dir_all(target_windows_module_path.parent().unwrap())?;
+                    util::create_dir_all(target_windows_module_path.parent().unwrap())?;
                     install_file(
                         true,
                         InstallationMethod::Symlink,
@@ -479,7 +479,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                     if let Some(original_moduleinfo_path) = module.original_moduleinfo_path() {
                         let target_moduleinfo_path = module.target_moduleinfo_path();
 
-                        let result = utils::read_to_string(&original_moduleinfo_path)
+                        let result = util::read_to_string(&original_moduleinfo_path)
                             .and_then(|module_info_json| {
                                 serde_jsonrc::from_str(&module_info_json)
                                     .context("Could not parse JSON file")
@@ -492,7 +492,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                                 let converted_json =
                                     serde_jsonrc::to_string_pretty(&converted_module_info)
                                         .context("Could not format JSON file")?;
-                                utils::write(target_moduleinfo_path, converted_json)
+                                util::write(target_moduleinfo_path, converted_json)
                             });
                         if let Err(error) = result {
                             eprintln!(
@@ -638,10 +638,10 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
             if options.prune {
                 match &file {
                     NativeFile::Regular(path) | NativeFile::Symlink(path) => {
-                        utils::remove_file(path)?;
+                        util::remove_file(path)?;
                     }
                     NativeFile::Directory(path) => {
-                        utils::remove_dir_all(path)?;
+                        util::remove_dir_all(path)?;
                     }
                 }
 
@@ -713,7 +713,7 @@ fn install_file(
                 // same as that of the `from` file we're trying to copy there, then we don't have to
                 // do anything
                 if let Some(hash) = from_hash {
-                    if metadata.file_type().is_file() && utils::hash_file(to)? == hash {
+                    if metadata.file_type().is_file() && util::hash_file(to)? == hash {
                         return Ok(false);
                     }
                 }
@@ -728,15 +728,15 @@ fn install_file(
             (true, _) => (),
         }
 
-        utils::remove_file(&to)?;
+        util::remove_file(&to)?;
     };
 
     match method {
         InstallationMethod::Copy => {
-            utils::copy_or_reflink(from, to)?;
+            util::copy_or_reflink(from, to)?;
         }
         InstallationMethod::Symlink => {
-            utils::symlink(from, to)?;
+            util::symlink(from, to)?;
         }
     }
 

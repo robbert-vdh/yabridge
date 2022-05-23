@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! Small helper utilities.
+//! Helper utilities and wrappers around filesystem functions for use with anyhow.
 
 use anyhow::{anyhow, Context, Result};
 use colored::Colorize;
@@ -59,6 +59,11 @@ pub fn create_dir_all<P: AsRef<Path>>(path: P) -> Result<()> {
             path.as_ref().display(),
         )
     })
+}
+
+/// Wrapper around [`std::fs::read()`](std::fs::read) with a human readable error message.
+pub fn read<P: AsRef<Path>>(path: P) -> Result<Vec<u8>> {
+    fs::read(&path).with_context(|| format!("Could not read file '{}'", path.as_ref().display()))
 }
 
 /// Wrapper around [`std::fs::read_to_string()`](std::fs::read_to_string) with a human readable

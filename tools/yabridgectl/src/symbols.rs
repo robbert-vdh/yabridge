@@ -18,7 +18,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use std::io::BufRead;
 use std::{path::Path, process::Command};
 
-use crate::utils;
+use crate::util;
 
 /// Some information parsed from a PE32(+) binary. This is needed for setting up yabridge for
 /// Windows plugin libraries.
@@ -45,7 +45,7 @@ pub fn parse_pe32_binary<P: AsRef<Path>>(binary: P) -> Result<Pe32Info> {
 fn parse_pe32_goblin<P: AsRef<Path>>(binary: P) -> Result<Pe32Info> {
     // The original version of this function also supports ELF and Mach architectures, but we don't
     // need those things here
-    let bytes = utils::read(&binary)?;
+    let bytes = util::read(&binary)?;
     let obj = goblin::pe::PE::parse(&bytes).with_context(|| {
         format!(
             "Could not parse '{}' as a PE32(+) binary",

@@ -27,7 +27,7 @@ use which::which;
 use xdg::BaseDirectories;
 
 use crate::files::{self, LibArchitecture, SearchResults};
-use crate::utils;
+use crate::util;
 
 /// The name of the config file, relative to `$XDG_CONFIG_HOME/YABRIDGECTL_PREFIX`.
 pub const CONFIG_FILE_NAME: &str = "config.toml";
@@ -250,7 +250,7 @@ impl Config {
 
         // This is displayed in `yabridgectl status`
         let vst2_chainloader_arch =
-            utils::get_elf_architecture(&vst2_chainloader).with_context(|| {
+            util::get_elf_architecture(&vst2_chainloader).with_context(|| {
                 format!(
                     "Could not determine ELF architecture for '{}'",
                     vst2_chainloader.display()
@@ -263,7 +263,7 @@ impl Config {
             path if path.exists() => {
                 // We need to know `libyabridge-chainloader-vst3.so`'s architecture to be able to
                 // set up the bundle properly. 32-bit builds of yabridge are technically supported.
-                let arch = utils::get_elf_architecture(&path).with_context(|| {
+                let arch = util::get_elf_architecture(&path).with_context(|| {
                     format!(
                         "Could not determine ELF architecture for '{}'",
                         path.display()

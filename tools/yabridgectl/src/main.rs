@@ -27,7 +27,7 @@ mod actions;
 mod config;
 mod files;
 mod symbols;
-mod utils;
+mod util;
 mod vst3_moduleinfo;
 
 fn main() -> Result<()> {
@@ -340,7 +340,7 @@ fn match_in_path_list<'a>(path: &Path, candidates: &'a HashSet<&Path>) -> Result
     // This will include a trailing slash if `path` was `.`. All paths entered through yabridgectl
     // will be cannonicalized and won't contain a trailing slash, but we'll try both variants
     // anyways just in case someone edited the config file.
-    let normalized_path = utils::normalize_path(absolute_path.as_path());
+    let normalized_path = util::normalize_path(absolute_path.as_path());
 
     // Is there a nicer way to strip trailing slashes with the standard library?
     let normalized_path_str = normalized_path
