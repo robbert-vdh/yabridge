@@ -36,6 +36,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   update. If you use a distro packaged version of yabridge, then that means
   yabridge can now be updated safely without requiring any action from your
   side.
+- Added support for the `effBeginLoadBank` and `effBeginLoadProgram` VST2
+  opcodes for loading state as a program or a program bank.
 
 ### Changed
 
@@ -103,6 +105,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   idea. I've come across at least one binary this new parser can't handle
   (https://github.com/m4b/goblin/issues/307), so it will still fall back to
   winedump in some cases.
+- After `yabridgectl sync` has finished setting up plugins, yabridgectl will now
+  also check whether `notify-send` is installed as part of its post-install
+  verification process. If `notify-send` is missing then yabridge won't be able
+  to send any notifications when things are going terribly wrong.
 - `yabridgectl status` now shows the locations where bridged VST2 and VST3
   plugins will be set up.
 - `yabridgectl sync --prune` now also considers broken symlinks.

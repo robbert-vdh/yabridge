@@ -28,7 +28,7 @@ use crate::config::{
 };
 use crate::files::{self, NativeFile, Plugin, Vst2Plugin};
 use crate::util::{self, get_file_type};
-use crate::util::{verify_path_setup, verify_wine_setup};
+use crate::util::{verify_external_dependencies, verify_path_setup, verify_wine_setup};
 use crate::vst3_moduleinfo::ModuleInfo;
 
 pub mod blacklist;
@@ -681,6 +681,10 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
 
     // This check is only performed once per combination of Wine and yabridge versions
     verify_wine_setup(config)?;
+
+    // Yabridge uses notify-send to relay important information when something's very wrong, so
+    // we'll check whether this is installed
+    verify_external_dependencies()?;
 
     Ok(())
 }

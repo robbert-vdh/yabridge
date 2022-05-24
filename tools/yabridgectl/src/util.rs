@@ -29,6 +29,7 @@ use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use textwrap::Wrapper;
+use which::which;
 
 use crate::config::{self, Config, KnownConfig, YABRIDGE_HOST_32_EXE_NAME, YABRIDGE_HOST_EXE_NAME};
 use crate::files::{LibArchitecture, NativeFile};
@@ -458,6 +459,25 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
                     .bright_white(),
             ))
         )
+    }
+
+    Ok(())
+}
+
+/// Check whether `notify-send` is installed, as this is used to relay important information when
+/// something's very wrong.
+pub fn verify_external_dependencies() -> Result<()> {
+    if which("notify-send").is_err() {
+        eprintln!(
+            "\n{}",
+            wrap(&format!(
+                "Warning: Could not find '{}'. This will not prevent yabridge from working, but \
+                 you will also not receive any notifcations when something is wrong. It is \
+                 usually part of the libnotify package, but your distro might have moved it into a \
+                 separate libnotify-tools package.",
+                "notify-send".bright_white(),
+            ))
+        );
     }
 
     Ok(())
