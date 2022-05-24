@@ -46,12 +46,7 @@ fn parse_pe32_goblin<P: AsRef<Path>>(binary: P) -> Result<Pe32Info> {
     // The original version of this function also supports ELF and Mach architectures, but we don't
     // need those things here
     let bytes = util::read(&binary)?;
-    let obj = goblin::pe::PE::parse_with_opts(
-        &bytes,
-        // We only care about the exports
-        &goblin::pe::options::ParseOptions { resolve_rva: false },
-    )
-    .with_context(|| {
+    let obj = goblin::pe::PE::parse(&bytes).with_context(|| {
         format!(
             "Could not parse '{}' as a PE32(+) binary",
             binary.as_ref().display()
