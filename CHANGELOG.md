@@ -75,6 +75,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   **REAPER** not working.
 - Fixed an obscure issue with VST3 plugins crashing in **Ardour** on
   Arch/Manjaro because of misreported parameter queue lengths.
+- Fixed yabridge throwing assertion failures on serialization when using some of
+  the _Orchestral Tools_ Kontakt libraries in the VST2 version of Kontakt. Some
+  of those libraries would output more than 2048 MIDI events in a single buffer.
 - Some of yabridge's socket file names contained extremely aesthetically
   unpleasing trailing underscores. Begone pesky underscores!
 - Fixed building with VST3 support disabled.
