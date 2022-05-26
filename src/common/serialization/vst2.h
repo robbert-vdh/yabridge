@@ -43,7 +43,7 @@ constexpr size_t max_audio_channels = 16384;
 /**
  * The maximum number of samples in a buffer.
  */
-constexpr size_t max_buffer_size = 16384;
+constexpr size_t max_buffer_size = 1 << 16;
 /**
  * The maximum number of MIDI events in a single `VstEvents` struct. Apparently
  * the Orchestral Tools Kontakt libraries output more than 2048 MIDI events per
