@@ -56,7 +56,8 @@ void log_init_error(const std::exception& error, const fs::path& plugin_path) {
     // above message
     send_notification(
         "Failed to initialize VST2 plugin",
-        error.what() + "\nCheck the plugin's output for more information"s,
+        error.what() +
+            "\nCheck the plugin's output in a terminal for more information"s,
         plugin_path);
 }
 

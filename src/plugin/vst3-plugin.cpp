@@ -81,7 +81,8 @@ void log_init_exception(const std::exception& error,
     // above message
     send_notification(
         "Failed to initialize VST3 plugin",
-        error.what() + "\nCheck the plugin's output for more information"s,
+        error.what() +
+            "\nCheck the plugin's output in a terminal for more information"s,
         plugin_path);
 }
 

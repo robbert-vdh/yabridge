@@ -206,15 +206,13 @@ class PluginBridge {
                 init_msg
                     << "   With a low memory locking limit, yabridge may not be"
                     << std::endl;
-                init_msg << "   be able to map enough shared memory for its "
-                            "audio buffers."
+                init_msg << "   be able to lock its shared memory audio "
+                            "buffers into";
+                init_msg << "   main memory. Performance may be degraded until "
+                            "you fix "
                          << std::endl;
-                init_msg
-                    << "   Plugins with many input or output channels may cause"
-                    << std::endl;
-                init_msg << "   yabridge to crash until you fix this. Check the"
-                         << std::endl;
-                init_msg << "   readme for instructions on how to do that."
+                init_msg << "   this. Check the readme for instructions on how "
+                            "to do that."
                          << std::endl;
                 init_msg << std::endl;
 
@@ -223,9 +221,9 @@ class PluginBridge {
                     "The current memlock limit is set to " +
                         std::to_string(*memlock_limit) +
                         " bytes. This means that you have not yet set up "
-                        "realtime privileges for your user, and some plugins "
-                        "may cause your DAW to crash until you fix this. Check "
-                        "the readme for instructions on how to do that.",
+                        "realtime privileges for your user, and performance "
+                        "may be degraded until you fix this. Check the readme "
+                        "for instructions on how to do that.",
                     std::nullopt);
             }
         } else {
@@ -388,8 +386,6 @@ class PluginBridge {
 
                     // Also show a desktop notification so users running from
                     // the GUI get a heads up
-                    // FIXME: Go through these messages and update them to
-                    //        reflect the chainloading changes
                     send_notification(
                         "Failed to start the Wine plugin host",
                         "Check yabridge's output for more information on what "
