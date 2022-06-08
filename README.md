@@ -55,7 +55,7 @@ Yabridge has been tested under the following hosts using Wine Staging 7.10:
 Please let me know if there are any issues with other hosts.
 
 <sup>
-  *Bitwig Studio 4.3 currently only comes as a Flatpak version, which means yabridge won't work there. Running the Bitwig directly through <code>/var/lib/flatpak/app/com.bitwig.BitwigStudio/current/active/files/bitwig-studio</code> serves as a temporary workaround.
+  *Bitwig Studio (4.3)'s Flatpak version will not work with yabridge. You'll need to use the .deb found on the release notes page instead.
 </sup>
 
 ## Usage
