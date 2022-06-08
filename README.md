@@ -139,32 +139,10 @@ Please let me know if there are any issues with other hosts.
       to add that one.
 
 4. Finally, you'll need to run `yabridgectl sync` to finish setting up yabridge
-   for all of your plugins.
-
-   1. For VST2 plugins this will create Linux VST2 plugin `.so` files that your
-      DAW will be able to load alongside the Windows VST2 plugins. You can
-      either open your DAW's plugin location settings and add the same VST2
-      plugin directories you also added to yabridgectl there, or you can symlink
-      those directories to `~/.vst` like so:
-
-      ```shell
-      ln -s "$HOME/.wine/drive_c/Program Files/Steinberg" ~/.vst/yabridge-steinberg
-      ```
-
-      _If you're already using the master branch version of yabridge 4.0, then
-      the plugins will be set up in `~/.vst/yabridge` by default instead. As
-      long as your DAW searches for VST2 plugins in `~/.vst` you don't need to
-      do anything else._
-
-   2. VST3 plugins are always set up in `~/.vst3/yabridge` as per the VST3
-      specification. Just make sure your DAW searches for VST3 plugins in
-      `~/.vst3` and it will pick up those plugins automatically without any
-      additional setup. Don't add the Windows VST3 plugin directories to your
-      DAW's plugin search paths, as that can cause some DAWs like REAPER that
-      blacklist plugins based on the plugin file's name rather than the full
-      path to ignore all yabridge VST3 plugins.
-
-5. _Don't forget to rerun `yabridgectl sync` whenever you update yabridge._
+   for all of your plugins. After doing so, your VST2 plugins will be set up in
+   `~/.vst/yabridge`, and your VST3 plugins are set up in `~/.vst3/yabridge`.
+   Make sure your DAW searches both `~/.vst` and `~/.vst3` for plugins and
+   you'll be good to go.
 
 ### Bitbridge
 
@@ -301,15 +279,19 @@ compatibility with certain hosts and plugins.
 
 Configuring yabridge is done through a `yabridge.toml` file located in either
 the same directory as the plugin's `.so` file you're trying to configure, or in
-any of its parent directories. This file contains case sensitive
+any of its parent directories. In most cases, you'll want to create this file as
+either `~/.vst/yabridge/yabridge.toml` or `~/.vst3/yabridge/yabridge.toml`.
+Configuration files contain several _sections_. Each section can match one or
+more plugins using case sensitive
 [glob](https://www.man7.org/linux/man-pages/man7/glob.7.html) patterns that
-match paths to yabridge `.so` files relative to the `yabridge.toml` file. These
-patterns can also match an entire directory to apply settings to all plugins
-within that directory. To avoid confusion, only the first `yabridge.toml` file
+match paths to yabridge `.so` files relative to the `yabridge.toml` file. If a
+section is matched for a plugin, then the settings under that section are
+applied to the plugin. To avoid confusion, only the first `yabridge.toml` file
 found and only the first matching glob pattern within that file will be
-considered. See below for an [example](#example) of a `yabridge.toml` file. On
-startup, yabridge will print used `yabridge.toml` file and the matched section
-within it, as well as all of the options that have been set.
+considered. See below for an [example](#example) of a `yabridge.toml` file. To
+make debugging easier, yabridge will print the used `yabridge.toml` file and the
+matched section within it on startup, as well as all of the options that have
+been set.
 
 ### Plugin groups
 
@@ -362,7 +344,7 @@ All of the paths used here are relative to the `yabridge.toml` file. A
 configuration file for VST2 plugins might look a little something like this:
 
 ```toml
-# ~/.wine/drive_c/Program Files/Steinberg/VstPlugins/yabridge.toml
+# ~/.vst/yabridge/yabridge.toml
 
 ["FabFilter Pro-Q 3.so"]
 group = "fabfilter"
