@@ -79,9 +79,6 @@ class YaPlugInterfaceSupport : public Steinberg::Vst::IPlugInterfaceSupport {
          */
         std::optional<native_size_t> owner_instance_id;
 
-        // TODO: Figure out if we should translate the UIDs from Windows COM to
-        //       non-Windows COM here. I have not actually seen this interface
-        //       used.
         WineUID iid;
 
         template <typename S>
