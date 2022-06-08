@@ -25,9 +25,6 @@
 #include "../common/configuration.h"
 #include "../common/utils.h"
 
-// FIXME: This should be passed as an argument instead
-#include "../common/linking.h"
-
 namespace fs = ghc::filesystem;
 
 // These functions are used to populate the fields in `PluginInfo`. See the
