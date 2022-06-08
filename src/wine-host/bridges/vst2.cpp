@@ -100,9 +100,10 @@ static const std::unordered_set<int> safe_mutually_recursive_requests{
  *       this on the main thread introduces any regressions.
  */
 static const std::unordered_set<int> unsafe_requests{
-    effOpen,      effClose,    effEditGetRect,   effEditOpen,
-    effEditClose, effEditIdle, effEditTop,       effMainsChanged,
-    effGetChunk,  effSetChunk, effSetSampleRate, effSetBlockSize};
+    effOpen,          effClose,       effEditGetRect,   effEditOpen,
+    effEditClose,     effEditIdle,    effEditTop,       effMainsChanged,
+    effGetChunk,      effSetChunk,    effBeginLoadBank, effBeginLoadProgram,
+    effSetSampleRate, effSetBlockSize};
 
 /**
  * These opcodes from `unsafe_requests` should be run under realtime scheduling
@@ -622,10 +623,9 @@ class HostCallbackDataConverter : public DefaultDataConverter {
         return DefaultDataConverter::write_value(opcode, value, response);
     }
 
-    Vst2EventResult send_event(
-        asio::local::stream_protocol::socket& socket,
-        const Vst2Event& event,
-        SerializationBufferBase& buffer) const override {
+    Vst2EventResult send_event(asio::local::stream_protocol::socket& socket,
+                               const Vst2Event& event,
+                               SerializationBufferBase& buffer) const override {
         if (mutually_recursive_callbacks.contains(event.opcode)) {
             return mutual_recursion_.fork([&]() {
                 return DefaultDataConverter::send_event(socket, event, buffer);

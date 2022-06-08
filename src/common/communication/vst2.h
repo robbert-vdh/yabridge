@@ -504,6 +504,7 @@ Vst2EventResult passthrough_event(AEffect* plugin,
         [](VstIOProperties& props) -> void* { return &props; },
         [](VstMidiKeyName& key_name) -> void* { return &key_name; },
         [](VstParameterProperties& props) -> void* { return &props; },
+        [](VstPatchChunkInfo& info) -> void* { return &info; },
         [&](const WantsVstRect&) -> void* { return string_buffer.data(); },
         [](const WantsVstTimeInfo&) -> void* { return nullptr; },
         [&](const WantsString&) -> void* { return string_buffer.data(); }};

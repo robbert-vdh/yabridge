@@ -266,6 +266,10 @@ class DispatchDataConverter : public DefaultDataConverter {
                 return ChunkData{
                     std::vector<uint8_t>(chunk_data, chunk_data + value)};
             } break;
+            case effBeginLoadBank:
+            case effBeginLoadProgram:
+                return *static_cast<const VstPatchChunkInfo*>(data);
+                break;
             case effProcessEvents:
                 return DynamicVstEvents(*static_cast<const VstEvents*>(data));
                 break;

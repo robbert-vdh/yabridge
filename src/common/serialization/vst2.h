@@ -444,6 +444,7 @@ struct Vst2Event {
                                  VstIOProperties,
                                  VstMidiKeyName,
                                  VstParameterProperties,
+                                 VstPatchChunkInfo,
                                  WantsVstRect,
                                  WantsVstTimeInfo,
                                  WantsString>;
@@ -640,6 +641,15 @@ void serialize(S& s, VstParameterProperties& props) {
     s.value2b(props.reserved);
     s.container1b(props.categoryLabel);
     s.container1b(props.future);
+}
+
+template <typename S>
+void serialize(S& s, VstPatchChunkInfo& info) {
+    s.value4b(info.version);
+    s.value4b(info.pluginUniqueID);
+    s.value4b(info.pluginVersion);
+    s.value4b(info.numElements);
+    s.container1b(info.future);
 }
 
 template <typename S>

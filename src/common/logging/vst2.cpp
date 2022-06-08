@@ -445,6 +445,10 @@ void Vst2Logger::log_event(
                 [&](const VstParameterProperties&) {
                     message << "<writable_buffer>";
                 },
+                [&](const VstPatchChunkInfo& info) {
+                    message << "<patch_chunk_info for " << info.numElements
+                            << " banks/programs>";
+                },
                 [&](const WantsAEffectUpdate&) { message << "nullptr"; },
                 [&](const WantsAudioShmBufferConfig&) { message << "nullptr"; },
                 [&](const WantsChunkBuffer&) {
