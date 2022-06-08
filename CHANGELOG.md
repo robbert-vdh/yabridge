@@ -17,43 +17,43 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Yabridge 4.0 introduces a completely new way to load plugins that allows
-  yabridge to be updated without breaking any plugins, saves disk space on
-  filesystems that don't support reflinks, and makes the `yabridgectl sync`
-  process faster. It does this by chainloading the actual plugin libraries from
-  these new tiny, dependencyless shim libraries. The way yabridge has always
-  worked is that whenever you run `yabridgectl sync`, yabridgectl will create
-  copies of `libyabridge-vst2.so` or `libyabridge-vst3.so` for every Windows
-  plugin it finds. When your DAW then loads those plugin libraries, yabridge
-  will find the corresponding Windows plugin and starts doing its magic.
-  Yabridge 4.0 changes this process by no longer copying the full
-  `libyabridge-*.so` libraries, and instead using these shim libraries that will
-  find and then chainload the actual yabridge plugin libraries. The result is
-  that instead of having to copy large files, yabridgectl now only needs to copy
-  these small shim libraries while the actual plugin libraries stay in
-  yabridge's installation directory. That not only saves disk space, but it also
-  means that it's no longer possible for yabridge to be out of sync after an
-  update. If you use a distro packaged version of yabridge, then that means
-  yabridge can now be updated safely without requiring any action from your
-  side.
+- Yabridge 4.0 completely revamps the way plugin loading works to allow yabridge
+  to be updated without breaking existing yabridge'd plugins while saving disk
+  space on filesystems that don't support reflinks and speeding up the
+  `yabridgectl sync` process. Up until this point, `yabridgectl sync` has always
+  made copies of yabridge's `libyabridge-vst2.so` or `libyabridge-vst3.so`
+  plugin libraries for every Windows plugin it sets up. These plugins are
+  tightly coupled to the yabridge plugin host binaries, and updating one but not
+  the other can thus cause issues. With yabridge 4.0, yabridgectl no longer
+  copies the entire plugin libraries. Instead, it now creates copies of these
+  new tiny dependencyless shim libraries. When loaded by a plugin host, these
+  libraries locate the actual plugin libraries on the system and then
+  transparently forward all entry point function calls to them as if the host
+  was loading the yabridge plugin library directly. Yabridge internally calls
+  these libraries chainloaders due to their similarity to the identically named
+  functionality in boot loading process. This allows yabridge to be updated
+  independently of these copied chainloading libraries. As such, it is no longer
+  possible for yabridge to be out of sync after an update. If you use a distro
+  packaged version of yabridge, then that means yabridge can now be updated
+  safely without requiring any action from your side.
 - Added support for the `effBeginLoadBank` and `effBeginLoadProgram` VST2
   opcodes for loading state as a program or a program bank.
 
 ### Changed
 
 - Almost the entirety of yabridge's backend has been rewritten to get rid of all
-  dependencies on the Boost libraries to make packaging yabridge for distros
-  easier and to make distro packaged versions of yabridge more reliable. This
-  gets rid of the runtime dependency on Boost.Filesystem for those builds, and
-  it also makes compiling slightly faster and the binaries slightly smaller.
-  Before this, yabridge would need to be rebuilt whenever Boost got updated.
+  dependencies on the Boost libraries. As a consequence, the runtime dependency
+  on `Boost.Filesystem` has also been removed. This makes packaging yabridge for
+  distros easier, and it makes the packages more reliable by removing the need
+  for yabridge to be rebuilt whenever Boost gets updated. Additionally, it also
+  makes compiling slightly faster and the binaries are slightly smaller.
 - The functionality for the `yabridge-group` binaries has been merged into the
-  `yabridge-host` binaries.
-- When mapping shared memory for audio and the user does not have permissions to
-  lock the memory, yabridge will now retry mapping the memory without locking it
+  `yabridge-host` binaries to reduce duplication.
+- When the user does not have the permissions to lock the shared audio buffers
+  into memory, yabridge will now retry mapping the memory without locking it
   instead of immediately terminating the process. An annoying desktop
   notification will still be shown every time you load a plugin until you fix
-  this.
+  this however.
 - Yabridge now prints the path to the `libyabridge-{vst2,vst3}.so` library
   that's being used on startup. This tells you where the chainloader is loading
   the library file from. Because you can never have too much information, right?
@@ -74,7 +74,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed manually changing channel counts with supported VST3 plugins in
   **REAPER** not working.
 - Fixed an obscure issue with VST3 plugins crashing in **Ardour** on
-  Arch/Manjaro because of misreported parameter queue lengths.
+  Arch/Manjaro because of Ardour's misreported parameter queue lengths.
 - Fixed yabridge throwing assertion failures on serialization when using some of
   the _Orchestral Tools_ Kontakt libraries in the VST2 version of Kontakt. Some
   of those libraries would output more than 2048 MIDI events in a single buffer.
@@ -85,42 +85,54 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### yabridgectl
 
 - VST2 plugins are now set up in `~/.vst/yabridge` by default. This means that
-  you no longer have to add any directory search locations in your DAW. The
-  downside is that it's no longer possible for two plugin directories (perhaps
-  in different Wine prefixes) to provide the same plugin file. Like with
-  yabridgectl's VST3 handling, the subdirectory structure within the plugin
+  you no longer have to add any directory search locations in your DAW. The only
+  potential downside is that it's no longer possible for two plugin directories
+  (perhaps in different Wine prefixes) to provide the same plugin file, although
+  you would not have been able to use both with the same DAW anyways. Like with
+  yabridgectl's VST3 support, the subdirectory structure within the plugin
   directory is preserved. You can use `yabridgectl set --vst2-location=inline`
   to revert back to the old behavior of setting the plugins up right next to the
-  VST2 plugin `.dll` files.
+  VST2 plugin `.dll` files. Some migration notes:
 
-  If you were using a `yabridge.toml` configuration file, then you will now need
-  to place that file in `~/.vst/yabridge` instead.
+  - Because the plugins are now set up in `~/.vst/yabridge` by default instead
+    of next to the Windows VST2 plugin .dll file, you will see notices about
+    leftover `.so` files the first time you run `yabridgectl sync` after
+    updating. Double check the list to make sure there are no files in there
+    that shouldn't be removed, and then run `yabridgectl sync --prune` as
+    instructed to remove the old `.so` files.
+  - Make sure your DAW searches for VST2 plugins in `~/.vst`.
+  - You can and should remove any entries for VST2 plugin directories you added
+    to your DAW's plugin search locations as they will no longer contain any
+    relevant files.
+  - If you were using a `yabridge.toml` configuration file to configure VST2
+    plugins, then you will now need to move that file in `~/.vst/yabridge`
+    instead.
 
-- As mentioned above, yabridgectl will now use the new chainloading libraries
-  when setting up plugins. This means that once you've ran `yabridgectl sync`
-  once after updating to yabridge 4.0, yabridge can now be updated without
-  needing to rerun `yabridgectl sync`. This is particularly useful when using a
-  distro packaged version of yabridge.
-- Added support for the new VST 3.7.5 `moduleinfo.json` format to allow
-  VST3 plugins to replace other VST3 and VST2 plugins with different class IDs.
+- As mentioned above, yabridgectl now uses the new chainloading libraries when
+  setting up plugins. This means that once you've ran `yabridgectl sync` after
+  updating to yabridge 4.0, yabridge can now be updated without needing to rerun
+  `yabridgectl sync`. This is particularly useful when using a distro packaged
+  version of yabridge.
+- Added support for the new VST 3.7.5 `moduleinfo.json` format to allow VST3
+  plugins to replace VST2 and VST3 plugins with different class IDs.
 - Yabridgectl no longer depends on **winedump**. It now parses Windows PE32(+)
   binaries without requiring any external dependencies. Or at least, that's the
-  idea. I've come across at least one binary this new parser can't handle
+  idea. I've come across at least one binary that this new parser can't handle
   (https://github.com/m4b/goblin/issues/307), so it will still fall back to
-  winedump in some cases.
-- After `yabridgectl sync` has finished setting up plugins, yabridgectl will now
-  also check whether `notify-send` is installed as part of its post-install
-  verification process. If `notify-send` is missing then yabridge won't be able
+  winedump when that happens.
+- After `yabridgectl sync` has finished setting up plugins, yabridgectl now also
+  checks whether `notify-send` is installed as part of its post-installation
+  verification process. If `notify-send` is missing, then yabridge won't be able
   to send any notifications when things are going terribly wrong.
 - `yabridgectl status` now shows the locations where bridged VST2 and VST3
   plugins will be set up.
 - `yabridgectl sync --prune` now also considers broken symlinks.
-- The VST3 subdirectory detection is more robust and can now handle arbitrary
-  directories, not just directories that are called `VST3`. This, of course,
-  should not be needed.
-- The previously deprecated symlink installation method has now been removed
-  from yabridgectl, along with the `yabridgectl set --method` option. The
-  terminology in `yabridgectl status` has changed accordingly.
+- The VST3 subdirectory detection has been made more robust and can now handle
+  arbitrary plugin directories, not just directories that are called `VST3`.
+  This, of course, should not be needed.
+- The previously deprecated symlink installation method has been removed from
+  yabridgectl, along with the `yabridgectl set --method` option. The terminology
+  in `yabridgectl status` has changed accordingly.
 - `yabridgectl status` now lists the architecture of
   `libyabridge-chainloader-vst2.so` just like it already did for the VST3
   library.
@@ -137,9 +149,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - There's a new dependency on the headers-only
   [`ghc::filesystem`](https://github.com/gulrak/filesystem) library to replace
   Boost.Filesystem. A Meson wrap is included as a fallback for a distro package.
-- Added a dependency on the headers-only [Asio](http://think-async.com/Asio/)
-  library to replace Boost.Asio. A Meson wrap is included as a fallback for a
-  distro package.
+- The headers-only [Asio](http://think-async.com/Asio/) library now replaces
+  Boost.Asio. A Meson wrap is included as a fallback for a distro package.
 - Fixed a deprecation warning in the Meson build, causing the minimum supported
   Meson version to be bumped up to **Meson 0.56** from 0.55.
 - Yabridge now targets VST3 SDK version 3.7.5 with git tag `v3.7.5_build_44-patched`.
