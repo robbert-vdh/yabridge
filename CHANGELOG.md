@@ -8,13 +8,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### TODOs
-
-- The readme documentation has not yet been updated to reflect the changes on
-  the master branch. The main thing that would require documentation changes is
-  the default VST2 plugin handling. Those are now set up in `~/.vst/yabridge` by
-  default, with an option to revert back to the old inline behavior.
-
 ### Added
 
 - Yabridge 4.0 completely revamps the way plugin loading works to allow yabridge
