@@ -22,6 +22,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   Meson will fall back to using the included wrap dependency. Configuring the
   project with `meson setup build -Dsystem-asio=true ...` will cause
   `<asio.hpp>` to be used instead.
+- The `ghc_filesystem` dependency now explicitly mentions the
+  `ghcFilesystem::ghc_filesystem` CMake module because their inconsistent naming
+  prevents Meson from picking this up by default. The dependency will however
+  not work with `ghc::filesystem` 1.5.0's default CMake definition as they
+  forgot to include a version number.
 
 ## [4.0.0] - 2022-06-09
 

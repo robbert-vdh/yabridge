@@ -225,7 +225,7 @@ else
   bitsery_dep = dependency('bitsery', version : '>=5.2.0')
 endif
 function2_dep = dependency('function2', version : '>=4.0.0')
-ghc_filesystem_dep = dependency('ghc_filesystem', version : '>=1.5.0')
+ghc_filesystem_dep = dependency('ghc_filesystem', modules : 'ghcFilesystem::ghc_filesystem', version : '>=1.5.0')
 threads_dep = dependency('threads')
 tomlplusplus_dep = dependency('tomlplusplus', version : '>=2.0.0')
 
