@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added a `system-asio` build option to aid distro packaging.
+
+### Packaging notes
+
+- The new `system-asio` build option forces asio to be used from the standard
+  include directories instead of being defined as a regular Meson dependency.
+  Asio does not have any pkgconfig or CMake [build
+  definitions](https://github.com/chriskohlhoff/asio/issues/1071), so it's
+  impossible to detect its presence and version in a normal way, and as such
+  Meson will fall back to using the included wrap dependency. Configuring the
+  project with `meson setup build -Dsystem-asio=true ...` will cause
+  `<asio.hpp>` to be used instead.
+
 ## [4.0.0] - 2022-06-09
 
 ### Added

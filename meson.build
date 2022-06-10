@@ -22,6 +22,7 @@ project(
 is_64bit_system = build_machine.cpu_family() not in ['x86', 'arm']
 with_32bit_libraries = (not is_64bit_system) or get_option('build.cpp_args').contains('-m32')
 with_bitbridge = get_option('bitbridge')
+with_system_asio = get_option('system-asio')
 with_winedbg = get_option('winedbg')
 with_vst3 = get_option('vst3')
 
@@ -192,7 +193,27 @@ endif
 # These are all headers-only libraries, and thus won't require separate 32-bit
 # and 64-bit versions
 
-asio_dep = dependency('asio', version : '>=1.22.0')
+# NOTE: The standalone asio library does not come with a pkgconfig or CMake
+#       build definition, and Meson thus also won't be able to detect it this
+#       way. As a workaround for distro packaging, configuring the project with
+#       `-Dsystem-asio=true` will use `<asio.h>` from the standard include
+#       directories instead.
+if with_system_asio
+  if not meson.get_compiler('cpp', native : true).check_header('asio.hpp')
+    error('The \'system-asio\' build option was set, but <asio.hpp> was not found')
+  endif
+
+  asio_version = meson.get_compiler('cpp', native : true).get_define('ASIO_VERSION', prefix : '#include <asio.hpp>')
+  if asio_version.to_int() < 102000
+    error('Expected version 1.22.0 of the asio library or higher, found @0@ (MMmmrr)'.format(asio_version))
+  endif
+
+  # This is a dummy dependency, since the library is only accessible implicitly through the system include path
+  asio_dep = declare_dependency()
+else
+  asio_dep = dependency('asio', version : '>=1.22.0')
+endif
+
 if meson.version().version_compare('>=0.60')
   # Bitsery's CMake build definition is capitalized for some reason
   bitsery_dep = dependency('bitsery', 'Bitsery', version : '>=5.2.0')
