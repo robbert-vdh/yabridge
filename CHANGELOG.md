@@ -12,6 +12,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added a `system-asio` build option to aid distro packaging.
 
+### yabridgectl
+
+- Fixed a regression from yabridge 4.0.0 where VST3 plugins in the 'new' bundle
+  format, like _Sforzando_, were not set up correctly due to the subdirectory
+  detection logic change from the previous release.
+
 ### Packaging notes
 
 - The new `system-asio` build option forces asio to be used from the standard

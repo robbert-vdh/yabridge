@@ -430,6 +430,9 @@ impl SearchResults {
 /// to actual VST2 plugins and VST3 modules using `search()`. Any path found in the blacklist will
 /// be pruned immediately, so this can be used to both not index individual files and to skip an
 /// entire directory.
+///
+/// For VST3 plugin _bundles_ the subdirectory also contains the `foo.vst3/Contents/x86_64-win`
+/// suffix. This needs to be stripped out to get the bundle root.
 pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
     // These are pairs of `(absolute_path, subdirectory)`. The subdirectory is used for setting up
     // VST3 plugins and for setting up VST2 plugins in the centralized installation location mode.
@@ -483,6 +486,8 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
                 dll_files.push((path, subdirectory));
             }
             Some("vst3") => {
+                // NOTE: For bundles this will also contain the `foo.vst3/Contents/x86_64-win`
+                //       suffix. This needs to be stripped later.
                 let subdirectory = path
                     .parent()
                     .and_then(|p| p.strip_prefix(directory).ok())
@@ -588,10 +593,28 @@ impl SearchIndex {
                         })
                         .unwrap_or(false);
 
-                    let module = if module_is_in_bundle {
-                        Vst3ModuleType::Bundle(bundle_root.unwrap().to_owned())
+                    let (module, subdirectory) = if module_is_in_bundle {
+                        (
+                            Vst3ModuleType::Bundle(bundle_root.unwrap().to_owned()),
+                            // The subdirectory should be relative to the bundle, not to the .vst3
+                            // file inside of the bundle. The latter is what we get from the index
+                            // function since it only considers regular files and symlinks.
+                            subdirectory.map(|subdirectory| {
+                                subdirectory
+                                    // x86_64-win
+                                    .parent()
+                                    .unwrap()
+                                    // Contents
+                                    .parent()
+                                    .unwrap()
+                                    // foo.vst3
+                                    .parent()
+                                    .unwrap()
+                                    .to_owned()
+                            }),
+                        )
                     } else {
-                        Vst3ModuleType::Legacy(module_path)
+                        (Vst3ModuleType::Legacy(module_path), subdirectory)
                     };
 
                     Ok(Ok(Vst3Module {
