@@ -12,6 +12,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added a `system-asio` build option to aid distro packaging.
 
+### Fixed
+
+- Fixed recent _Arturia_ VST3 plugins running into memory errors during plugin
+  scans in **REAPER** and **Ardour**. These plugins would try to read data in
+  the Windows event loop without checking whether that data was initialized,
+  after the data had just been deinitialized.
+
 ### yabridgectl
 
 - Fixed a regression from yabridge 4.0.0 where VST3 plugins in the 'new' bundle

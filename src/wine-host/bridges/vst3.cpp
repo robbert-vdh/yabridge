@@ -1080,6 +1080,16 @@ void Vst3Bridge::run() {
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
 
+                        // HACK: New (anno May/June 2022) Arturia VST3 plugins
+                        //       don't check whether the data they try to access
+                        //       from their Win32 timers is actually
+                        //       initialized, and this function deinitializes
+                        //       that data. So if this is followed by
+                        //       `handle_events()`, then the plugin would run
+                        //       into a memory error. Inhibiting that event loop
+                        //       'fixes' this.
+                        instance.is_initialized = false;
+
                         return instance.interfaces.plugin_base->terminate();
                     })
                     .get();
