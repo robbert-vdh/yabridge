@@ -599,18 +599,21 @@ impl SearchIndex {
                             // The subdirectory should be relative to the bundle, not to the .vst3
                             // file inside of the bundle. The latter is what we get from the index
                             // function since it only considers regular files and symlinks.
-                            subdirectory.map(|subdirectory| {
-                                subdirectory
-                                    // x86_64-win
-                                    .parent()
-                                    .unwrap()
-                                    // Contents
-                                    .parent()
-                                    .unwrap()
-                                    // foo.vst3
-                                    .parent()
-                                    .unwrap()
-                                    .to_owned()
+                            subdirectory.and_then(|subdirectory| {
+                                // NOTE: Just `.uwnrapping()` all of these and using `.map()`
+                                //       instead of `.and_then()` should be sufficient, but for some
+                                //       reason people add the `x86_64-win` directory inside of a
+                                //       VST3 bundle to their plugin locations........why?
+                                Some(
+                                    subdirectory
+                                        // x86_64-win
+                                        .parent()?
+                                        // Contents
+                                        .parent()?
+                                        // foo.vst3
+                                        .parent()?
+                                        .to_owned(),
+                                )
                             }),
                         )
                     } else {
