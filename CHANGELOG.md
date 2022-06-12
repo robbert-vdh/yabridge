@@ -14,32 +14,35 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed recent _Arturia_ VST3 plugins running into memory errors during plugin
-  scans in **REAPER** and **Ardour**. These plugins would try to read data in
-  the Windows event loop without checking whether that data was initialized,
-  after the data had just been deinitialized.
+- Fixed recent _Arturia_ VST3 plugins running into memory errors at the end of a
+  plugin scan in **REAPER** and **Ardour**. These plugins would try to read data
+  in the Windows message loop without checking whether that data was
+  initialized, after the data had just been deinitialized.
 
 ### yabridgectl
 
-- Fixed a regression from yabridge 4.0.0 where VST3 plugins in the 'new' bundle
-  format, like _Sforzando_, were not set up correctly due to the subdirectory
-  detection logic change from the previous release.
+- Fixed a regression from yabridge 4.0.0 where VST3 plugins in the 'new' Windows
+  VST3 bundle format, like _Sforzando_, were not set up correctly.
 
 ### Packaging notes
 
-- The new `system-asio` build option forces asio to be used from the standard
-  include directories instead of being defined as a regular Meson dependency.
-  Asio does not have any pkgconfig or CMake [build
+- The new `system-asio` build option forces Asio to be used from the standard
+  include directories. Otherwise the dependency is defined as a regular Meson
+  dependency. Asio does not have any pkgconfig or CMake [build
   definitions](https://github.com/chriskohlhoff/asio/issues/1071), so it's
-  impossible to detect its presence and version in a normal way, and as such
-  Meson will fall back to using the included wrap dependency. Configuring the
-  project with `meson setup build -Dsystem-asio=true ...` will cause
-  `<asio.hpp>` to be used instead.
+  impossible to detect its presence and version in a standard way. Because of
+  that the Meson build will always fall back to using the included wrap
+  dependency. Configuring the project with
+  `meson setup build -Dsystem-asio=true ...` forces `<asio.hpp>` to be used
+  instead.
 - The `ghc_filesystem` dependency now explicitly mentions the
-  `ghcFilesystem::ghc_filesystem` CMake module because their inconsistent naming
-  prevents Meson from picking this up by default. The dependency will however
-  not work with `ghc::filesystem` 1.5.0's default CMake definition as they
-  forgot to include a version number.
+  `ghcFilesystem::ghc_filesystem` CMake module. `ghc::filesystem`'s naming is
+  [inconsistent](https://github.com/gulrak/filesystem/pull/129) so Meson can't
+  detect the correct module automatically. It also doesn't expose a
+  [version](https://github.com/gulrak/filesystem/issues/148), so even with this
+  change version 1.5.12 of the upstream dependency still won't be detected
+  correctly. There is a [PR](https://github.com/gulrak/filesystem/pull/149) that
+  fixes this.
 
 ## [4.0.0] - 2022-06-09
 
