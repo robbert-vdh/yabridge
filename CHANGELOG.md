@@ -8,6 +8,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed a rare edge case where a Windows VST3 plugin would incorrectly be
+  classified as a bundle, causing loading the plugin to fail. This could happen
+  if the directory `foo` contained some random directory, containing another
+  directory, containing `foo.vst3`. Yabridge always assumed this to be a bundle,
+  even if it is not.
+
 ### yabridge
 
 - Don't panic when someone `yabridgectl add`'ed part of the contents of a

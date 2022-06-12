@@ -239,9 +239,16 @@ fs::path normalize_plugin_path(const fs::path& windows_library_path,
             // an old standalone module
             const fs::path win_module_name =
                 windows_library_path.filename().replace_extension(".vst3");
+            // NOTE: This extra check is needed to prevent
+            //       `<plugin_dir>/foo/X/Y/foo.vst3` from being recognized as a
+            //       bundle when it isn't in fact a bundle.
+            const fs::path windows_bundle_contents =
+                windows_library_path.parent_path().parent_path();
             const fs::path windows_bundle_home =
-                windows_library_path.parent_path().parent_path().parent_path();
-            if (equals_case_insensitive(windows_bundle_home.filename().string(),
+                windows_bundle_contents.parent_path();
+            if (equals_case_insensitive(windows_bundle_contents.string(),
+                                        "Contents") &&
+                equals_case_insensitive(windows_bundle_home.filename().string(),
                                         win_module_name.string())) {
                 return windows_bundle_home;
             } else {
