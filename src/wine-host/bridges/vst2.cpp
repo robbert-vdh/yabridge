@@ -139,6 +139,17 @@ Vst2Bridge& get_bridge_instance(const AEffect* plugin) {
     return *current_bridge_instance;
 }
 
+// FIXME: GCC 11/12 throws a false positive here for the
+//        `time_info_cache_guard`:
+//        https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80635
+//
+//        Oh and Clang doesn't know about -Wmaybe-uninitialized, so we need to
+//        ignore some more warnings here to get clangd to not complain
+#pragma GCC diagnostic push
+#if defined(__GNUC__) && !defined(__llvm__)
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 Vst2Bridge::Vst2Bridge(MainContext& main_context,
                        // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                        std::string plugin_dll_path,
@@ -367,6 +378,8 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
         });
     });
 }
+
+#pragma GCC diagnostic pop
 
 bool Vst2Bridge::inhibits_event_loop() noexcept {
     return !is_initialized_;
