@@ -82,7 +82,7 @@ static const std::unordered_set<int> mutually_recursive_callbacks{
  * list of situations where this may be necessary.
  */
 static const std::unordered_set<int> safe_mutually_recursive_requests{
-    effGetProgram, effGetProgramName};
+    effGetProgram, effGetProgramName, effGetProgramNameIndexed};
 
 /**
  * Opcodes that should always be handled on the main thread because they may

@@ -15,6 +15,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   if the directory `foo` contained some random directory, containing another
   directory, containing `foo.vst3`. Yabridge always assumed this to be a bundle,
   even if it is not.
+- Fixed Full Bucket's _Ragnarök_ causing some hosts to freeze when changing
+  presets due to some mutually recursive function calls that weren't being
+  handled as such.
 
 ### yabridge
 
