@@ -96,7 +96,9 @@ fn parse_pe32_winedump<P: AsRef<Path>>(binary: P) -> Result<Pe32Info> {
             }
             Err(_) => None,
         })
-        .ok_or_else(|| anyhow!("Winedump output did not contain a 'Machine:' line"))?;
+        .ok_or_else(|| {
+            anyhow!("Winedump output did not contain a 'Machine:' line. Is a text file?")
+        })?;
 
     // And we'll just parse _all_ exported functions. Previously we would only check whether this
     // contrained certain entries, but efficiency isn't too important here anyways since this is
