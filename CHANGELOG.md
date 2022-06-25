@@ -19,8 +19,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   presets due to some mutually recursive function calls that weren't being
   handled as such.
 
-### yabridge
+### yabridgectl
 
+- Parsing errors for plugin binaries are now non-fatal. This could happen when
+  you have a text file with a `.dll` or `.vst3` extension in your plugin search
+  locations. This normally would never happen, but it can happen if you manually
+  extract a .zip file containing Windows plugins to those directories that was
+  created on macOS. Don't ask me how or why.
 - Don't panic when someone `yabridgectl add`'ed part of the contents of a
   Windows VST3 bundle. For the record, you really, really, _really_ shouldn't be
   doing this.

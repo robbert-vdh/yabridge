@@ -547,7 +547,17 @@ impl SearchIndex {
                     Ok(Err(path))
                 }
             })
-            .collect::<Result<_>>()?;
+            // Make parsing failures non-fatal. People somehow extract these `__MACOSX` and other
+            // junk files from zip files containing Windows VST2/VST3 plugins created on macOS to
+            // their plugin directories (how does such a thing even happen in the first place?)
+            .filter_map(|result: Result<Result<Vst2Plugin, PathBuf>>| match result {
+                Ok(result) => Some(result),
+                Err(err) => {
+                    eprintln!("WARNING: Skipping file during scan: {err:#}\n");
+                    None
+                }
+            })
+            .collect();
 
         // We need to do the same thing with VST3 plugins. The added difficulty here is that we have
         // to figure out of the `.vst3` file is a legacy standalone VST3 module, or part of a VST
@@ -629,7 +639,17 @@ impl SearchIndex {
                     Ok(Err(module_path))
                 }
             })
-            .collect::<Result<_>>()?;
+            // Make parsing failures non-fatal. People somehow extract these `__MACOSX` and other
+            // junk files from zip files containing Windows VST2/VST3 plugins created on macOS to
+            // their plugin directories (how does such a thing even happen in the first place?)
+            .filter_map(|result: Result<Result<Vst3Module, PathBuf>>| match result {
+                Ok(result) => Some(result),
+                Err(err) => {
+                    eprintln!("WARNING: Skipping file during scan: {err:#}\n");
+                    None
+                }
+            })
+            .collect();
 
         let mut plugins: Vec<Plugin> = Vec::new();
         let mut skipped_files: Vec<PathBuf> = Vec::new();

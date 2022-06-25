@@ -36,7 +36,7 @@ pub struct Pe32Info {
 pub fn parse_pe32_binary<P: AsRef<Path>>(binary: P) -> Result<Pe32Info> {
     parse_pe32_goblin(&binary).or_else(|err| {
         parse_pe32_winedump(binary)
-            .with_context(|| format!("Parsing with goblin also failed: {err}"))
+            .with_context(|| format!("Failed to parse with both winedump and goblin: {err}"))
     })
 }
 
