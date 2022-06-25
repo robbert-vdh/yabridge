@@ -261,6 +261,44 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         .search_directories()
         .context("Failure while searching for plugins")?;
 
+    // Before doing anything, make sure `~/.vst/yabridge` and `~/.vst3/yabridge` are not symlinks to
+    // one of the plugin directories. See
+    // https://github.com/robbert-vdh/yabridge/issues/185#issuecomment-1166274104.
+    let vst2_home = yabridge_vst2_home();
+    let vst3_home = yabridge_vst3_home();
+    if let Ok(canonical_vst2_home) = fs::canonicalize(&vst2_home) {
+        if canonical_vst2_home != vst2_home {
+            for plugin_dir in &config.plugin_dirs {
+                if let Ok(canonical_plugin_dir) = fs::canonicalize(&plugin_dir) {
+                    if canonical_plugin_dir.starts_with(&canonical_vst2_home) {
+                        anyhow::bail!(
+                            "'~/.vst/yabridge' is a symlink to '{}'. \
+                             This conflicts with '{}' from your plugin directories, so the syncing process will now be aborted.",
+                            canonical_vst2_home.display(),
+                            plugin_dir.display(),
+                        );
+                    }
+                }
+            }
+        }
+    }
+    if let Ok(canonical_vst3_home) = fs::canonicalize(&vst3_home) {
+        if canonical_vst3_home != vst3_home {
+            for plugin_dir in &config.plugin_dirs {
+                if let Ok(canonical_plugin_dir) = fs::canonicalize(&plugin_dir) {
+                    if canonical_plugin_dir.starts_with(&canonical_vst3_home) {
+                        anyhow::bail!(
+                            "'~/.vst3/yabridge' is a symlink to '{}'. \
+                             This conflicts with '{}' from your plugin directories, so the syncing process will now be aborted.",
+                            canonical_vst3_home.display(),
+                            plugin_dir.display(),
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     // Keep track of some global statistics
     // The plugin files we installed. This tracks copies of/symlinks to `libabyrdge-*.so` managed.
     // by yabridgectl. This could be optimized a bit so we wouldn't have to track everything, but
@@ -537,7 +575,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // regardless of the VST2 installation location setting so switching between the two modes and
     // then pruning works as expected.
     // TODO: Move this elsewhere
-    let centralized_vst2_files = WalkDir::new(yabridge_vst2_home())
+    let centralized_vst2_files = WalkDir::new(vst2_home)
         .follow_links(true)
         .same_file_system(true)
         .into_iter()
@@ -553,7 +591,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 None
             }
         });
-    let installed_vst3_bundles = WalkDir::new(yabridge_vst3_home())
+    let installed_vst3_bundles = WalkDir::new(vst3_home)
         .follow_links(true)
         .same_file_system(true)
         .into_iter()

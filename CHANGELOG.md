@@ -26,6 +26,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   locations. This normally would never happen, but it can happen if you manually
   extract a .zip file containing Windows plugins to those directories that was
   created on macOS. Don't ask me how or why.
+- Abort the `yabridgectl sync` process if `~/.vst/yabridge` or
+  `~/.vst3/yabridge` are symlinks to another directory, and that directory is
+  part of or contains one of yabridgectl's plugin search directories. This
+  prevents an edge cases where VST2 plugin .dll files could be replaced by
+  symlinks to themeselves if `~/.vst/yabridge` was a symlink to a VstPlugins
+  directory.
 - Don't panic when someone `yabridgectl add`'ed part of the contents of a
   Windows VST3 bundle. For the record, you really, really, _really_ shouldn't be
   doing this.
