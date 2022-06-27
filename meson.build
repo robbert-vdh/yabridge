@@ -1,7 +1,7 @@
 project(
   'yabridge',
   'cpp',
-  version : '4.0.1',
+  version : '4.0.2',
   meson_version : '>=0.56',
   default_options : [
     'warning_level=3',
