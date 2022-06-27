@@ -11,30 +11,28 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Fixed a rare edge case where a Windows VST3 plugin would incorrectly be
-  classified as a bundle, causing loading the plugin to fail. This could happen
-  if the directory `foo` contained some random directory, containing another
-  directory, containing `foo.vst3`. Yabridge always assumed this to be a bundle,
-  even if it is not.
+  classified as a bundle-style plugin, which caused loading those plugins to
+  fail. This could happen if the directory `foo` contained some random
+  directory, containing another directory, containing `foo.vst3`. Yabridge
+  always assumed this to be a bundle, even if it was not.
 - Fixed Full Bucket's _Ragnarök_ causing some hosts to freeze when changing
   presets due to some mutually recursive function calls that weren't being
   handled as such.
 
 ### yabridgectl
 
-- Parsing errors for plugin binaries are now non-fatal. This could happen when
-  you have a text file with a `.dll` or `.vst3` extension in your plugin search
-  locations. This normally would never happen, but it can happen if you manually
-  extract a .zip file containing Windows plugins to those directories that was
-  created on macOS. Don't ask me how or why.
-- Abort the `yabridgectl sync` process if `~/.vst/yabridge` or
-  `~/.vst3/yabridge` are symlinks to another directory, and that directory is
-  part of or contains one of yabridgectl's plugin search directories. This
-  prevents an edge cases where VST2 plugin .dll files could be replaced by
-  symlinks to themeselves if `~/.vst/yabridge` was a symlink to a VstPlugins
-  directory.
-- Don't panic when someone `yabridgectl add`'ed part of the contents of a
-  Windows VST3 bundle. For the record, you really, really, _really_ shouldn't be
-  doing this.
+- Parsing errors for plugin binaries are now non-fatal. This could happen if
+  your Windows plugin directories contain text files with a `.dll` or `.vst3`
+  file extension. This would normally never happen, but it can still happen if
+  you extracted those Windows plugins from a .zip file that was created on
+  macOS. Don't ask me how or why.
+- Prematurely abort the `yabridgectl sync` process if `~/.vst/yabridge` or
+  `~/.vst3/yabridge` are symlinks to a directory that's part of or contains one
+  of yabridgectl's plugin search directories. This prevents an edge cases where
+  VST2 plugin .dll files could be replaced by symlinks to themeselves.
+- Don't trigger a panic on `yabridgectl sync` if someone `yabridgectl add`'ed
+  the inner contents of a Windows VST3 bundle. For the record, you really,
+  really, _really_ shouldn't be doing this.
 
 ## [4.0.1] - 2022-06-12
 
