@@ -238,7 +238,7 @@ impl Config {
                     _ => {
                         return Err(anyhow!(
                             "Could not find '{}' in either '{}' or '{}'. You can override the \
-                            default search path using 'yabridgectl set --path=<path>'.",
+                             default search path using 'yabridgectl set --path=<path>'.",
                             VST2_CHAINLOADER_NAME,
                             system_path.display(),
                             user_path.display()

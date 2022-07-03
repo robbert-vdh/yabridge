@@ -55,7 +55,8 @@ fn main() -> Result<()> {
         config.blacklist.iter().map(|path| path.as_path()).collect();
 
     let matches = command!()
-        .subcommand_required(true).arg_required_else_help(true)
+        .subcommand_required(true)
+        .arg_required_else_help(true)
         .subcommand(
             Command::new("add")
                 .about("Add a plugin install location")
@@ -127,45 +128,56 @@ fn main() -> Result<()> {
                 .arg(
                     Arg::new("path")
                         .long("path")
-                        .help("Path to the directory containing 'libyabridge-chainloader-{vst2,vst3}.so'")
+                        .help(
+                            "Path to the directory containing \
+                             'libyabridge-chainloader-{vst2,vst3}.so'",
+                        )
                         .long_help(
-                            "Path to the directory containing 'libyabridge-chainloader-{vst2,vst3}.so'. \
-                             If this is not set, then yabridgectl will look in both '/usr/lib' and \
+                            "Path to the directory containing \
+                             'libyabridge-chainloader-{vst2,vst3}.so'. If this is not set, then \
+                             yabridgectl will look in both '/usr/lib' and \
                              '~/.local/share/yabridge' by default.",
                         )
                         .validator(validate_path)
-                        .takes_value(true).conflicts_with("path_auto"),
+                        .takes_value(true)
+                        .conflicts_with("path_auto"),
                 )
                 .arg(
                     Arg::new("path_auto")
                         .long("path-auto")
                         .help("Automatically locate yabridge's files")
                         .long_help(
-                            "Automatically locate yabridge's files. This can be used after manually \
-                             setting a path with the '--path' option to revert back to the default \
-                             auto detection behaviour.",
+                            "Automatically locate yabridge's files. This can be used after \
+                             manually setting a path with the '--path' option to revert back to \
+                             the default auto detection behaviour.",
                         ),
                 )
                 .arg(
                     Arg::new("vst2_location")
                         .long("vst2-location")
                         .help("Where to set up VST2 plugins")
-                        .long_help(format!(
-                            "Where to set up VST2 plugins. \
-                             '{}' (the default) causes bridged VST2 plugins to be set up in `~/.vst/yabridge.` \
-                             '{}' causes bridged VST2 plugins to be set up next to the original '.dll' file.",
-                            "centralized".bright_white(),
-                            "inline".bright_white()
-                        ).as_ref())
+                        .long_help(
+                            format!(
+                                "Where to set up VST2 plugins. '{}' (the default) causes bridged \
+                                 VST2 plugins to be set up in `~/.vst/yabridge.` '{}' causes \
+                                 bridged VST2 plugins to be set up next to the original '.dll' \
+                                 file.",
+                                "centralized".bright_white(),
+                                "inline".bright_white()
+                            )
+                            .as_ref(),
+                        )
                         .possible_values(["centralized", "inline"])
                         .takes_value(true),
-                ).arg(
+                )
+                .arg(
                     Arg::new("no_verify")
                         .long("no-verify")
                         .help("Always skip post-installation setup checks")
                         .long_help(
-                            "Always skip post-installation setup checks. This can be set temporarily \
-                             by passing the '--no-verify' option to 'yabridgectl sync'.",
+                            "Always skip post-installation setup checks. This can be set \
+                             temporarily by passing the '--no-verify' option to 'yabridgectl \
+                             sync'.",
                         )
                         .possible_values(["true", "false"])
                         .takes_value(true),
@@ -175,12 +187,12 @@ fn main() -> Result<()> {
             Command::new("blacklist")
                 .about("Manage the indexing blacklist (advanced)")
                 .display_order(201)
-                .subcommand_required(true).arg_required_else_help(true)
+                .subcommand_required(true)
+                .arg_required_else_help(true)
                 .long_about(
-                    "Manage the indexing blacklist (advanced)\n\
-                     \n\
-                     This lets you skip over individual files and entire directories in the \
-                     indexing process. You most likely won't have to use this feature.",
+                    "Manage the indexing blacklist (advanced)\n\nThis lets you skip over \
+                     individual files and entire directories in the indexing process. You most \
+                     likely won't have to use this feature.",
                 )
                 .subcommand(
                     Command::new("add")
@@ -201,7 +213,9 @@ fn main() -> Result<()> {
                         .arg(
                             Arg::new("path")
                                 .help("Path to a previously added file or directory")
-                                .validator(|path| match_in_path_list(Path::new(path), &blacklist_entries))
+                                .validator(|path| {
+                                    match_in_path_list(Path::new(path), &blacklist_entries)
+                                })
                                 .validator(validate_path)
                                 .takes_value(true)
                                 .required(true),

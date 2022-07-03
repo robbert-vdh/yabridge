@@ -272,8 +272,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 if let Ok(canonical_plugin_dir) = fs::canonicalize(&plugin_dir) {
                     if canonical_plugin_dir.starts_with(&canonical_vst2_home) {
                         anyhow::bail!(
-                            "'~/.vst/yabridge' is a symlink to '{}'. \
-                             This conflicts with '{}' from your plugin directories, so the syncing process will now be aborted.",
+                            "'~/.vst/yabridge' is a symlink to '{}'. This conflicts with '{}' \
+                             from your plugin directories, so the syncing process will now be \
+                             aborted.",
                             canonical_vst2_home.display(),
                             plugin_dir.display(),
                         );
@@ -288,8 +289,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                 if let Ok(canonical_plugin_dir) = fs::canonicalize(&plugin_dir) {
                     if canonical_plugin_dir.starts_with(&canonical_vst3_home) {
                         anyhow::bail!(
-                            "'~/.vst3/yabridge' is a symlink to '{}'. \
-                             This conflicts with '{}' from your plugin directories, so the syncing process will now be aborted.",
+                            "'~/.vst3/yabridge' is a symlink to '{}'. This conflicts with '{}' \
+                             from your plugin directories, so the syncing process will now be \
+                             aborted.",
                             canonical_vst3_home.display(),
                             plugin_dir.display(),
                         );
@@ -365,7 +367,8 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                                 eprintln!(
                                     "{}",
                                     util::wrap(&format!(
-                                        "{}: '{}' has already been provided by another Wine prefix or plugin directory, skipping it\n",
+                                        "{}: '{}' has already been provided by another Wine \
+                                         prefix or plugin directory, skipping it\n",
                                         "WARNING".red(),
                                         target_windows_plugin_path.display(),
                                     ))
@@ -443,8 +446,8 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         eprintln!(
                             "{}",
                             util::wrap(&format!(
-                                "{}: The {} version of '{}' has already been provided by another Wine \
-                                prefix or plugin directory, skipping '{}'\n",
+                                "{}: The {} version of '{}' has already been provided by another \
+                                 Wine prefix or plugin directory, skipping '{}'\n",
                                 "WARNING".red(),
                                 module.architecture,
                                 module.target_bundle_home().display(),

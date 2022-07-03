@@ -72,8 +72,8 @@ fn parse_pe32_winedump<P: AsRef<Path>>(binary: P) -> Result<Pe32Info> {
             .arg(path)
             .output()
             .context(
-                "Could not find 'winedump'. In some distributions this is part of a seperate \
-             Wine tools package.",
+                "Could not find 'winedump'. In some distributions this is part of a seperate Wine \
+                 tools package.",
             )
             .map(|output| output.stdout)
     };

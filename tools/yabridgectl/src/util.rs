@@ -326,9 +326,10 @@ pub fn verify_path_setup(config: &Config) -> Result<bool> {
                     eprintln!(
                         "\n{}",
                         wrap(&format!(
-                            "Warning: could not run {} as a login shell, skipping PATH setup check: \
-                             {}",
-                            shell.bright_white(), err
+                            "Warning: could not run {} as a login shell, skipping PATH setup \
+                             check: {}",
+                            shell.bright_white(),
+                            err
                         ))
                     );
 
@@ -473,8 +474,8 @@ pub fn verify_external_dependencies() -> Result<()> {
             wrap(&format!(
                 "Warning: Could not find '{}'. This will not prevent yabridge from working, but \
                  you will also not receive any notifcations when something is wrong. It is \
-                 usually part of the libnotify package, but your distro might have moved it into a \
-                 separate libnotify-tools package.",
+                 usually part of the libnotify package, but your distro might have moved it into \
+                 a separate libnotify-tools package.",
                 "notify-send".bright_white(),
             ))
         );

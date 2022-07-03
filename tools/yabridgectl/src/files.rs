@@ -472,8 +472,8 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
         // at least tell the user what's happening and that they can safely cancel the scan.
         if file_idx == 100_000 {
             eprintln!(
-                "Indexed over 100.000 files, press Ctrl+C to cancel this operation if this was not \
-                 intentional."
+                "Indexed over 100.000 files, press Ctrl+C to cancel this operation if this was \
+                 not intentional."
             )
         }
 
