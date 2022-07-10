@@ -432,16 +432,22 @@ include:
   `gdiplus` through `winetricks`. You may also want to disable the tooltips by
   going to the global settings tab, unchecking 'Show help tooltips', and
   clicking on the save icon next to 'Preferences'.
-- **Native Instruments** plugins work, but Native Access is unable to finish
-  installing the plugins. To work around this you can open the .iso file
-  downloaded to your downloads directory and run the installer directly. _With
-  Wine (Staging) 6.8 or later Native Access might also not be able to finish the
-  download, in which case you should downgrade Wine first using the
-  [instructions above](#downgrading-wine)._ You may also have to manually
-  terminate the ISO driver installation process when installing Native Access
-  for the first time to allow the installation to proceed. Some Native
-  Instruments .iso files contain hidden files, and the installer will fail
-  unless you mount the .iso file with the correct mounting options. To do this,
+- **Native Instruments** plugins work, but the latest version of Native Access
+  doesn't run under Wine. You can find Native Access 1 on the [legacy
+  installers](https://support.native-instruments.com/hc/en-us/articles/360000407909-Native-Access-1-Legacy-Installers-for-Older-Operating-Systems)
+  page on Native Instruments' website. To get the installer to finish correctly,
+  open `winecfg` and set the reported Windows version to Windows 10. Otherwise
+  the installer will be stuck on installing an ISO driver. To work around this
+  you can open the .iso file downloaded to your downloads directory and run the
+  installer directly.
+
+  Some plugins or sound libraries will install as expected, but if you get an
+  'Error while mounting disk image' installation failure, then you will need to
+  install the plugin or sound library manually. You will find a .iso file in
+  your downloads directory that you can mount and then run the installer from.
+  However some of those Native Instruments .iso files contain hidden files, and
+  the installer on the .iso file will fail to install unless you mount the .iso
+  file with the correct mounting options to unhide those files. To do this,
   first run `udisksctl loop-setup -f ~/Downloads/<filename>.iso` to load the
   .iso file, and then use `udisksctl mount -t udf -o unhide -b /dev/loopX` where
   `/dev/loopX` corresponds to the loop device printed by the `loop-setup`
