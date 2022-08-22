@@ -3,6 +3,7 @@
 # The above pattern doesn't match submodules
 /asio
 /bitsery
+/clap
 /function2
 /ghc_filesystem
 /tomlplusplus
@@ -11,6 +12,7 @@
 # And we obviously don't want to ignore our overlays
 !/packagefiles/asio
 !/packagefiles/bitsery
+!/packagefiles/clap
 !/packagefiles/function2
 !/packagefiles/ghc_filesystem
 !/function2-patch/*
