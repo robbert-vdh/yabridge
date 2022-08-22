@@ -65,7 +65,6 @@ std::unique_ptr<Vst3PluginBridge, decltype(yabridge_module_free)> bridge(
  * `ModuleExit()` call causes this to return back to 0.
  */
 std::atomic_size_t active_instances = 0;
-std::mutex bridge_mutex;
 
 /**
  * The first time one of the exported functions from this library gets called,
