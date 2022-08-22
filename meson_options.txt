@@ -6,6 +6,13 @@ option(
 )
 
 option(
+  'clap',
+  type : 'boolean',
+  value : true,
+  description : 'Whether to build the CLAP version of yabridge.'
+)
+
+option(
   'system-asio',
   type : 'boolean',
   value : false,

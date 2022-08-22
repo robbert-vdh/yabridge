@@ -22,6 +22,7 @@ project(
 is_64bit_system = build_machine.cpu_family() not in ['x86', 'arm']
 with_32bit_libraries = (not is_64bit_system) or get_option('build.cpp_args').contains('-m32')
 with_bitbridge = get_option('bitbridge')
+with_clap = get_option('clap')
 with_system_asio = get_option('system-asio')
 with_winedbg = get_option('winedbg')
 with_vst3 = get_option('vst3')
@@ -40,6 +41,7 @@ with_vst3 = get_option('vst3')
 # These variables are used to generate a `config.h` file. The library names will
 # be prefixed with `lib` and suffixed with `.so`, and the host names will be
 # suffixed with `.exe`.
+clap_plugin_name = 'yabridge-clap'
 vst2_plugin_name = 'yabridge-vst2'
 vst3_plugin_name = 'yabridge-vst3'
 host_name_64bit = 'yabridge-host'
@@ -99,6 +101,10 @@ endif
 
 if with_bitbridge
   compiler_options += '-DWITH_BITBRIDGE'
+endif
+
+if with_clap
+  compiler_options += '-DWITH_CLAP'
 endif
 
 # This provides an easy way to start the Wine VST host using winedbg since it
@@ -239,6 +245,10 @@ wine_shell32_dep = declare_dependency(link_args : '-lshell32')
 wine_threads_dep = declare_dependency(link_args : '-lpthread')
 wine_uuid_dep = declare_dependency(link_args : '-luuid')
 
+if with_clap
+  clap_dep = dependency('clap', version : '>=1.1.1')
+endif
+
 # We need to build the VST3 SDK dependencies in tree because Meson won't let us
 # build both native, 32-bit cross compiled and 64-bit cross compiled
 # dependencies from a (CMake) subproject
@@ -293,9 +303,32 @@ shared_library(
   override_options : ['b_lto=true'],
 )
 
+if with_clap
+  # This is the CLAP equivalent of `libyabridge-vst2.so`. The Wine host
+  # applications can handle VST2, VST3, and CLAP plugins.
+  shared_library(
+    clap_plugin_name,
+    clap_plugin_sources,
+    native : true,
+    include_directories : include_dir,
+    dependencies : clap_plugin_deps,
+    cpp_args : compiler_options,
+  )
+  # TODO: Chainloader
+  # shared_library(
+  #   'yabridge-chainloader-clap',
+  #   clap_chainloader_sources,
+  #   native : true,
+  #   dependencies : chainloader_deps,
+  #   cpp_args : compiler_options + chainloader_compiler_options,
+  #   # See above
+  #   override_options : ['b_lto=true'],
+  # )
+endif
+
 if with_vst3
   # This is the VST3 equivalent of `libyabridge-vst2.so`. The Wine host
-  # applications can handle both VST2 and VST3 plugins.
+  # applications can handle both VST2, VST3 and CLAP plugins.
   shared_library(
     vst3_plugin_name,
     vst3_plugin_sources,

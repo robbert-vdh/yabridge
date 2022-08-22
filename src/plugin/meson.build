@@ -14,6 +14,22 @@ vst2_plugin_deps = [
   tomlplusplus_dep,
 ]
 
+if with_clap
+  clap_plugin_deps = [
+    configuration_dep,
+
+    asio_dep,
+    bitsery_dep,
+    clap_dep,
+    dl_dep,
+    function2_dep,
+    ghc_filesystem_dep,
+    rt_dep,
+    threads_dep,
+    tomlplusplus_dep,
+  ]
+endif
+
 if with_vst3
   vst3_plugin_deps = [
     configuration_dep,
@@ -49,6 +65,12 @@ vst2_plugin_sources = files(
   'utils.cpp',
   'vst2-plugin.cpp',
 )
+
+if with_clap
+  clap_plugin_sources = files(
+    'clap-plugin.cpp',
+  )
+endif
 
 if with_vst3
   vst3_plugin_sources = files(
