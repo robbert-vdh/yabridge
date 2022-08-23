@@ -34,8 +34,8 @@ class Vst3PluginProxyImpl;
  * because a plugin is no longer its own entity, but rather a definition of
  * objects that the host can create and interconnect. This `Vst3PluginBridge`
  * will be instantiated when the plugin first gets loaded, and it will survive
- * until the last instance of the plugin gets removed. The Wine host process
- * will thus also have the same lifetime, and even with yabridge's 'individual'
+ * until the last instance of the plugin is removed. The Wine host process will
+ * thus also have the same lifetime, and even with yabridge's 'individual'
  * plugin hosting other instances of the same plugin will be handled by a single
  * process.
  *
@@ -116,9 +116,12 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
     void unregister_plugin_proxy(Vst3PluginProxyImpl& proxy_object);
 
     /**
-     * Send a control message to the Wine plugin host return the response. This
-     * is a shorthand for `sockets_.host_vst_control_.send_message()` for use in
-     * VST3 interface implementations.
+     * Send a control message to the Wine plugin host and return the response.
+     * This is a shorthand for `sockets_.host_vst_control_.send_message()` for
+     * use in VST3 interface implementations. This is mostly used for main
+     * thread messages but outside of the situations where plugins will crash or
+     * misbehave thread guarantees are not always upheld in yabridge's VST3
+     * implementation.
      */
     template <typename T>
     typename T::Response send_message(const T& object) {

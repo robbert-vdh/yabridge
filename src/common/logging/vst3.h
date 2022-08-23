@@ -22,7 +22,7 @@
 #include "common.h"
 
 /**
- * Wraps around `Logger` to provide VST3 specific logging functionality for
+ * Wraps around `Logger` to provide VST3-specific logging functionality for
  * debugging plugins. This way we can have all the complex initialisation be
  * performed in one place.
  */
@@ -52,13 +52,13 @@ class Vst3Logger {
                              tresult result,
                              const std::optional<Steinberg::FUID>& uid);
 
-    // For every object we send using `Vst3MessageHandler` we have overloads
-    // that print information about the request and the response. The boolean
-    // flag here indicates whether the request was initiated on the host side
-    // (what we'll call a control message).
-    // `log_response()` should only be called if the corresponding
-    // `log_request()` call returned `true`. This way we can filter out the
-    // log message for the response together with the request.
+    // For every object we send using the `TypedMessageHandler` we have
+    // overloads that print information about the request and the response. The
+    // boolean flag here indicates whether the request was initiated on the host
+    // side (what we'll call a control message). `log_response()` should only be
+    // called if the corresponding `log_request()` call returned `true`. This
+    // way we can filter out the log message for the response together with the
+    // request.
 
     bool log_request(bool is_host_vst,
                      const Vst3PluginFactoryProxy::Construct&);

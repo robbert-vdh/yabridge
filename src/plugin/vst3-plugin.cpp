@@ -157,9 +157,8 @@ extern "C" YABRIDGE_EXPORT void yabridge_module_free(
 }
 
 /**
- * Our VST3 plugin's entry point. When building the plugin factory we'll host
- * the plugin in our Wine application, retrieve its information and supported
- * classes, and then recreate it here.
+ * Create and return the plugin factory from a bridge instance. Used by the
+ * chainloaders.
  */
 extern "C" YABRIDGE_EXPORT Steinberg::IPluginFactory*
 yabridge_module_get_plugin_factory(Vst3PluginBridge* instance) {

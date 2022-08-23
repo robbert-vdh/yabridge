@@ -91,7 +91,8 @@ struct HostResponse {
 /**
  * A reference wrapper similar `std::reference_wrapper<T>` that supports default
  * initializing (which is of course UB, but we need this for serialization) and
- * also forwards the `T::Response` type for use with `Vst3MessageHandler`.
+ * also forwards the `T::Response` type for use with the
+ * `TypedMessageHandler`.
  *
  * We use this during audio processing to avoid having to store the actual
  * process data in a temporary object (when we copy it to an

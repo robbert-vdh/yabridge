@@ -24,254 +24,6 @@
 #include "common.h"
 
 /**
- * An instance of `AdHocSocketHandler` that encapsulates the simple
- * communication model we use for sending requests and receiving responses. A
- * request of type `T`, where `T` is in `{Control,Callback}Request`, should be
- * answered with an object of type `T::Response`.
- *
- * See the docstrings on `Vst2EventHandler` and `AdHocSocketHandler` for more
- * information on how this works internally and why it works the way it does.
- *
- * @note The name of this class is not to be confused with VST3's `IMessage` as
- *   this is very much just general purpose messaging between yabridge's two
- *   components. Of course, this will handle `IMessage` function calls as well.
- *
- * @tparam Thread The thread implementation to use. On the Linux side this
- *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
- * @tparam Request Either `ControlRequest` or `CallbackRequest`.
- */
-template <typename Thread, typename Request>
-class Vst3MessageHandler : public AdHocSocketHandler<Thread> {
-   public:
-    /**
-     * Sets up a single main socket for this type of events. The sockets won't
-     * be active until `connect()` gets called.
-     *
-     * @param io_context The IO context the main socket should be bound to. A
-     *   new IO context will be created for accepting the additional incoming
-     *   connections.
-     * @param endpoint The socket endpoint used for this event handler.
-     * @param listen If `true`, start listening on the sockets. Incoming
-     *   connections will be accepted when `connect()` gets called. This should
-     *   be set to `true` on the plugin side, and `false` on the Wine host side.
-     *
-     * @see Sockets::connect
-     */
-    Vst3MessageHandler(asio::io_context& io_context,
-                       asio::local::stream_protocol::endpoint endpoint,
-                       bool listen)
-        : AdHocSocketHandler<Thread>(io_context, endpoint, listen) {}
-
-    /**
-     * Serialize and send an event over a socket and return the appropriate
-     * response.
-     *
-     * As described above, if this function is currently being called from
-     * another thread, then this will create a new socket connection and send
-     * the event there instead.
-     *
-     * @param object The request object to send. Often a marker struct to ask
-     *   for a specific object to be returned.
-     * @param logging A pair containing a logger instance and whether or not
-     *   this is for sending host -> plugin control messages. If set to false,
-     *   then this indicates that this `Vst3MessageHandler` is handling plugin
-     *   -> host callbacks isntead. Optional since it only has to be set on the
-     *   plugin's side.
-     * @param buffer The serialization and receiving buffer to reuse. This is
-     *   optional, but it's useful for minimizing allocations in the audio
-     *   processing loop.
-     *
-     * @relates Vst3MessageHandler::receive_messages
-     */
-    template <typename T>
-    typename T::Response send_message(
-        const T& object,
-        std::optional<std::pair<Vst3Logger&, bool>> logging,
-        SerializationBufferBase& buffer) {
-        typename T::Response response_object;
-        receive_into(object, response_object, logging, buffer);
-
-        return response_object;
-    }
-
-    /**
-     * The same as the above, but with a small default buffer.
-     *
-     * @overload
-     */
-    template <typename T>
-    typename T::Response send_message(
-        const T& object,
-        std::optional<std::pair<Vst3Logger&, bool>> logging) {
-        typename T::Response response_object;
-        receive_into(object, response_object, logging);
-
-        return response_object;
-    }
-
-    /**
-     * `Vst3MessageHandler::send_message()`, but deserializing the response into
-     * an existing object.
-     *
-     * @param response_object The object to deserialize into.
-     *
-     * @overload Vst3MessageHandler::send_message
-     */
-    template <typename T>
-    typename T::Response& receive_into(
-        const T& object,
-        typename T::Response& response_object,
-        std::optional<std::pair<Vst3Logger&, bool>> logging,
-        SerializationBufferBase& buffer) {
-        using TResponse = typename T::Response;
-
-        // Since a lot of messages just return a `tresult`, we can't filter out
-        // responses based on the response message type. Instead, we'll just
-        // only print the responses when the request was not filtered out.
-        bool should_log_response = false;
-        if (logging) {
-            auto [logger, is_host_vst] = *logging;
-            should_log_response = logger.log_request(is_host_vst, object);
-        }
-
-        // A socket only handles a single request at a time as to prevent
-        // messages from arriving out of order. `AdHocSocketHandler::send()`
-        // will either use a long-living primary socket, or if that's currently
-        // in use it will spawn a new socket for us.
-        this->send([&](asio::local::stream_protocol::socket& socket) {
-            write_object(socket, Request(object), buffer);
-            read_object<TResponse>(socket, response_object, buffer);
-        });
-
-        if (should_log_response) {
-            auto [logger, is_host_vst] = *logging;
-            logger.log_response(!is_host_vst, response_object);
-        }
-
-        return response_object;
-    }
-
-    /**
-     * The same function as above, but with a small default buffer.
-     *
-     * @overload
-     */
-    template <typename T>
-    typename T::Response& receive_into(
-        const T& object,
-        typename T::Response& response_object,
-        std::optional<std::pair<Vst3Logger&, bool>> logging) {
-        SerializationBuffer<256> buffer{};
-        return receive_into(object, response_object, std::move(logging),
-                            buffer);
-    }
-
-    /**
-     * Spawn a new thread to listen for extra connections to `endpoint`, and
-     * then start a blocking loop that handles messages from the primary
-     * `socket`.
-     *
-     * The specified function receives a `Request` variant object containing an
-     * object of type `T`, and it should then return the corresponding
-     * `T::Response`.
-     *
-     * @param logging A pair containing a logger instance and whether or not
-     *   this is for sending host -> plugin control messages. If set to false,
-     *   then this indicates that this `Vst3MessageHandler` is handling plugin
-     *   -> host callbacks isntead. Optional since it only has to be set on the
-     *   plugin's side.
-     * @param callback The function used to generate a response out of the
-     *   request.  See the definition of `F` for more information.
-     *
-     * @tparam F A function type in the form of `T::Response(T)` for every `T`
-     *   in `Request`. This way we can directly deserialize into a `T::Response`
-     *   on the side that called `receive_into(T, T::Response&)`.
-     * @tparam persistent_buffers If enabled, we'll reuse the buffers used for
-     *   sending and receiving serialized data as well as the objects we're
-     *   receiving into. This avoids allocations in the audio processing loop
-     *   (after the first allocation of course). This is mostly relevant for the
-     *   `YaProcessData` object stored inside of `YaAudioProcessor::Process`.
-     *   These buffers are thread local and will also never shrink, but that
-     *   should not be an issue with the `IAudioProcessor` and `IComponent`
-     *   functions.  Saving and loading state is handled on the main sockets,
-     *   which don't use these persistent buffers.
-     *
-     * @relates Vst3MessageHandler::send_event
-     */
-    template <bool persistent_buffers = false, typename F>
-    void receive_messages(std::optional<std::pair<Vst3Logger&, bool>> logging,
-                          F&& callback) {
-        // Reading, processing, and writing back the response for the requests
-        // we receive works in the same way regardless of which socket we're
-        // using
-        const auto process_message =
-            [&](asio::local::stream_protocol::socket& socket) {
-                // The persistent buffer is only used when the
-                // `persistent_buffers` template value is enabled, but we'll
-                // always use the thread local persistent object. Because of
-                // loading and storing state the buffer can grow a lot in size
-                // which is why we might not want to reuse that for tasks that
-                // don't need to be realtime safe, but the object has a fixed
-                // size. Normally reusing this object doesn't make much sense
-                // since it's a variant and it will likely have to be recreated
-                // every time, but on the audio processor side we store the
-                // actual variant within an object and we then use some hackery
-                // to always keep the large process data object in memory.
-                thread_local SerializationBuffer<256> persistent_buffer{};
-                thread_local Request persistent_object;
-
-                auto& request =
-                    persistent_buffers
-                        ? read_object<Request>(socket, persistent_object,
-                                               persistent_buffer)
-                        : read_object<Request>(socket, persistent_object);
-
-                // See the comment in `receive_into()` for more information
-                bool should_log_response = false;
-                if (logging) {
-                    should_log_response = std::visit(
-                        [&](const auto& object) {
-                            auto [logger, is_host_vst] = *logging;
-                            return logger.log_request(is_host_vst, object);
-                        },
-                        // In the case of `AudioProcessorRequest`, we need to
-                        // actually fetch the variant field since our object
-                        // also contains a persistent object to store process
-                        // data into so we can prevent allocations during audio
-                        // processing
-                        get_request_variant(request));
-                }
-
-                // We do the visiting here using a templated lambda. This way we
-                // always know for sure that the function returns the correct
-                // type, and we can scrap a lot of boilerplate elsewhere.
-                std::visit(
-                    [&]<typename T>(T object) {
-                        typename T::Response response = callback(object);
-
-                        if (should_log_response) {
-                            auto [logger, is_host_vst] = *logging;
-                            logger.log_response(!is_host_vst, response);
-                        }
-
-                        if constexpr (persistent_buffers) {
-                            write_object(socket, response, persistent_buffer);
-                        } else {
-                            write_object(socket, response);
-                        }
-                    },
-                    // See above
-                    get_request_variant(request));
-            };
-
-        this->receive_multi(
-            logging ? std::optional(std::ref(logging->first.logger_))
-                    : std::nullopt,
-            process_message);
-    }
-};
-
-/**
  * Manages all the sockets used for communicating between the plugin and the
  * Wine host when hosting a VST3 plugin.
  *
@@ -485,14 +237,14 @@ class Vst3Sockets final : public Sockets {
      * This will be listened on by the Wine plugin host when it calls
      * `receive_multi()`.
      */
-    Vst3MessageHandler<Thread, ControlRequest> host_vst_control_;
+    TypedMessageHandler<Thread, Vst3Logger, ControlRequest> host_vst_control_;
 
     /**
      * For sending callbacks from the plugin back to the host. After we have a
      * better idea of what our communication model looks like we'll probably
      * want to provide an abstraction similar to `Vst2EventHandler`.
      */
-    Vst3MessageHandler<Thread, CallbackRequest> vst_host_callback_;
+    TypedMessageHandler<Thread, Vst3Logger, CallbackRequest> vst_host_callback_;
 
    private:
     /**
@@ -526,8 +278,9 @@ class Vst3Sockets final : public Sockets {
      * would have one dedicated thread for handling function calls to these
      * interfaces, and then another dedicated thread just idling around.
      */
-    std::unordered_map<size_t,
-                       Vst3MessageHandler<Thread, AudioProcessorRequest>>
+    std::unordered_map<
+        size_t,
+        TypedMessageHandler<Thread, Vst3Logger, AudioProcessorRequest>>
         audio_processor_sockets_;
     std::mutex audio_processor_sockets_mutex_;
 };
