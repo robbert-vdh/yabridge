@@ -46,13 +46,13 @@ Vst3PluginBridge::Vst3PluginBridge(const ghc::filesystem::path& plugin_path)
     // Now that communication is set up the Wine host can send callbacks to this
     // bridge class, and we can send control messages to the Wine host. This
     // messaging mechanism is how we relay the VST3 communication protocol. As a
-    // first thing, the Wine VST host will ask us for a copy of the
+    // first thing, the Wine plugin host will ask us for a copy of the
     // configuration.
     host_callback_handler_ = std::jthread([&]() {
         set_realtime_priority(true);
         pthread_setname_np(pthread_self(), "host-callbacks");
 
-        sockets_.vst_host_callback_.receive_messages(
+        sockets_.plugin_host_callback_.receive_messages(
             std::pair<Vst3Logger&, bool>(logger_, false),
             overload{
                 [&](const Vst3ContextMenuProxy::Destruct& request)
@@ -435,7 +435,7 @@ Steinberg::IPluginFactory* Vst3PluginBridge::get_plugin_factory() {
         // have started before this since the Wine plugin host will request a
         // copy of the configuration during its initialization.
         Vst3PluginFactoryProxy::ConstructArgs factory_args =
-            sockets_.host_vst_control_.send_message(
+            sockets_.host_plugin_control_.send_message(
                 Vst3PluginFactoryProxy::Construct{},
                 std::pair<Vst3Logger&, bool>(logger_, true));
         plugin_factory_ = Steinberg::owned(

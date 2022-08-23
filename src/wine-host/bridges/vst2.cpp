@@ -216,14 +216,14 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
     // done after the host calls `effOpen()`, and when the plugin calls
     // `audioMasterIOChanged()`. We will also send along this host's version so
     // we can show a warning when the plugin's version doesn't match.
-    sockets_.host_vst_control_.send(
+    sockets_.host_plugin_control_.send(
         Vst2EventResult{.return_value = 0,
                         .payload = *plugin_,
                         .value_payload = yabridge_git_version});
 
     // After sending the AEffect struct we'll receive this instance's
     // configuration as a response
-    config_ = sockets_.host_vst_control_.receive_single<Configuration>();
+    config_ = sockets_.host_plugin_control_.receive_single<Configuration>();
 
     // Allow this plugin to configure the main context's tick rate
     main_context.update_timer_interval(config_.event_loop_interval());
@@ -232,7 +232,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
         set_realtime_priority(true);
         pthread_setname_np(pthread_self(), "parameters");
 
-        sockets_.host_vst_parameters_.receive_multi<Parameter>(
+        sockets_.host_plugin_parameters_.receive_multi<Parameter>(
             [&](Parameter& request, SerializationBufferBase& buffer) {
                 // Both `getParameter` and `setParameter` functions are passed
                 // through on this socket since they have a lot of overlap. The
@@ -244,13 +244,13 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
                                           *request.value);
 
                     ParameterResult response{std::nullopt};
-                    sockets_.host_vst_parameters_.send(response, buffer);
+                    sockets_.host_plugin_parameters_.send(response, buffer);
                 } else {
                     // `getParameter`
                     float value = plugin_->getParameter(plugin_, request.index);
 
                     ParameterResult response{value};
-                    sockets_.host_vst_parameters_.send(response, buffer);
+                    sockets_.host_plugin_parameters_.send(response, buffer);
                 }
             });
     });
@@ -264,7 +264,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
         // they start producing denormals
         ScopedFlushToZero ftz_guard;
 
-        sockets_.host_vst_process_replacing_.receive_multi<
+        sockets_.host_plugin_process_replacing_.receive_multi<
             Vst2ProcessRequest>([&](Vst2ProcessRequest& process_request,
                                     SerializationBufferBase& buffer) {
             // Since the value cannot change during this processing cycle,
@@ -370,7 +370,7 @@ Vst2Bridge::Vst2Bridge(MainContext& main_context,
             // so we can just send that object back. Like on the plugin side
             // we cannot reuse the request object because a plugin may have
             // a different number of input and output channels
-            sockets_.host_vst_process_replacing_.send(Ack{}, buffer);
+            sockets_.host_plugin_process_replacing_.send(Ack{}, buffer);
 
             // See the docstrong on `should_clear_midi_events` for why we
             // don't just clear `next_buffer_midi_events` here
@@ -388,7 +388,7 @@ bool Vst2Bridge::inhibits_event_loop() noexcept {
 void Vst2Bridge::run() {
     set_realtime_priority(true);
 
-    sockets_.host_vst_dispatch_.receive_events(
+    sockets_.host_plugin_dispatch_.receive_events(
         std::nullopt,
         [&](Vst2Event& event, bool /*on_main_thread*/) -> Vst2EventResult {
             if (event.opcode == effProcessEvents) {
@@ -706,7 +706,7 @@ intptr_t Vst2Bridge::host_callback(AEffect* effect,
 
     HostCallbackDataConverter converter(effect, last_time_info_,
                                         mutual_recursion_);
-    return sockets_.vst_host_callback_.send_event(
+    return sockets_.plugin_host_callback_.send_event(
         converter, std::nullopt, opcode, index, value, data, option);
 }
 

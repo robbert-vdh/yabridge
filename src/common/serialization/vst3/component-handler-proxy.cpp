@@ -43,17 +43,15 @@ Vst3ComponentHandlerProxy::Vst3ComponentHandlerProxy(
       arguments_(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3ComponentHandlerProxy::~Vst3ComponentHandlerProxy() noexcept {
-    FUNKNOWN_DTOR
-}
-
+          FUNKNOWN_DTOR}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_REFCOUNT(Vst3ComponentHandlerProxy)
+      IMPLEMENT_REFCOUNT(Vst3ComponentHandlerProxy)
 #pragma GCC diagnostic pop
 
-tresult PLUGIN_API
-Vst3ComponentHandlerProxy::queryInterface(Steinberg::FIDString _iid,
-                                          void** obj) {
+          tresult PLUGIN_API Vst3ComponentHandlerProxy::queryInterface(
+              Steinberg::FIDString _iid,
+              void** obj) {
     if (YaComponentHandler::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
                         Steinberg::Vst::IComponentHandler)

@@ -35,5 +35,5 @@ option(
   'winedbg',
   type : 'boolean',
   value : false,
-  description : 'Whether to run the Wine VST host with GDB attached. Might not always be reliable.'
+  description : 'Whether to run the Wine plugin host with GDB attached. Might not always be reliable.'
 )

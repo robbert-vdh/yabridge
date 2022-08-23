@@ -86,8 +86,8 @@ class Logger {
      *   editor window handling. If we end up adding more of these options, we
      *   should move to a bitfield or something.
      * @param prefix An optional prefix for the logger. Useful for differentiate
-     *   messages coming from the Wine VST host. Should end with a single space
-     *   character.
+     *   messages coming from the Wine plugin host. Should end with a single
+     *   space character.
      * @param prefix_timestamp Whether the log messages should be prefixed with
      *   a timestamp. The timestamp is added before `prefix`. This is set to
      *   `false` in `create_wine_stderr()` because otherwise you would end up

@@ -27,17 +27,15 @@ Vst3PlugFrameProxy::Vst3PlugFrameProxy(ConstructArgs&& args) noexcept
     : YaPlugFrame(std::move(args.plug_frame_args)),
       arguments_(std::move(args)){FUNKNOWN_CTOR}
 
-      Vst3PlugFrameProxy::~Vst3PlugFrameProxy() noexcept {
-    FUNKNOWN_DTOR
-}
-
+      Vst3PlugFrameProxy::~Vst3PlugFrameProxy() noexcept {FUNKNOWN_DTOR}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_REFCOUNT(Vst3PlugFrameProxy)
+      IMPLEMENT_REFCOUNT(Vst3PlugFrameProxy)
 #pragma GCC diagnostic pop
 
-tresult PLUGIN_API Vst3PlugFrameProxy::queryInterface(Steinberg::FIDString _iid,
-                                                      void** obj) {
+          tresult PLUGIN_API Vst3PlugFrameProxy::queryInterface(
+              Steinberg::FIDString _iid,
+              void** obj) {
     if (YaPlugFrame::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
                         Steinberg::IPlugFrame)

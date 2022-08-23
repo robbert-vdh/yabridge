@@ -28,8 +28,8 @@
  * Wine host when hosting a VST3 plugin.
  *
  * On the plugin side this class should be initialized with `listen` set to
- * `true` before launching the Wine VST host. This will start listening on the
- * sockets, and the call to `connect()` will then accept any incoming
+ * `true` before launching the Wine plugin host. This will start listening on
+ * the sockets, and the call to `connect()` will then accept any incoming
  * connections.
  *
  * We'll have a host -> plugin connection for sending control messages (which is
@@ -66,27 +66,29 @@ class Vst3Sockets final : public Sockets {
                 const ghc::filesystem::path& endpoint_base_dir,
                 bool listen)
         : Sockets(endpoint_base_dir),
-          host_vst_control_(io_context,
-                            (base_dir_ / "host_vst_control.sock").string(),
-                            listen),
-          vst_host_callback_(io_context,
-                             (base_dir_ / "vst_host_callback.sock").string(),
-                             listen),
+          host_plugin_control_(
+              io_context,
+              (base_dir_ / "host_plugin_control.sock").string(),
+              listen),
+          plugin_host_callback_(
+              io_context,
+              (base_dir_ / "plugin_host_callback.sock").string(),
+              listen),
           io_context_(io_context) {}
 
     // NOLINTNEXTLINE(clang-analyzer-optin.cplusplus.VirtualCall)
     ~Vst3Sockets() noexcept override { close(); }
 
     void connect() override {
-        host_vst_control_.connect();
-        vst_host_callback_.connect();
+        host_plugin_control_.connect();
+        plugin_host_callback_.connect();
     }
 
     void close() override {
         // Manually close all sockets so we break out of any blocking operations
         // that may still be active
-        host_vst_control_.close();
-        vst_host_callback_.close();
+        host_plugin_control_.close();
+        plugin_host_callback_.close();
 
         // This map should be empty at this point, but who knows
         std::lock_guard lock(audio_processor_sockets_mutex_);
@@ -106,7 +108,7 @@ class Vst3Sockets final : public Sockets {
         std::lock_guard lock(audio_processor_sockets_mutex_);
         audio_processor_sockets_.try_emplace(
             instance_id, io_context_,
-            (base_dir_ / ("host_vst_audio_processor_" +
+            (base_dir_ / ("host_plugin_audio_processor_" +
                           std::to_string(instance_id) + ".sock"))
                 .string(),
             false);
@@ -140,7 +142,7 @@ class Vst3Sockets final : public Sockets {
             std::lock_guard lock(audio_processor_sockets_mutex_);
             audio_processor_sockets_.try_emplace(
                 instance_id, io_context_,
-                (base_dir_ / ("host_vst_audio_processor_" +
+                (base_dir_ / ("host_plugin_audio_processor_" +
                               std::to_string(instance_id) + ".sock"))
                     .string(),
                 true);
@@ -237,14 +239,16 @@ class Vst3Sockets final : public Sockets {
      * This will be listened on by the Wine plugin host when it calls
      * `receive_multi()`.
      */
-    TypedMessageHandler<Thread, Vst3Logger, ControlRequest> host_vst_control_;
+    TypedMessageHandler<Thread, Vst3Logger, ControlRequest>
+        host_plugin_control_;
 
     /**
      * For sending callbacks from the plugin back to the host. After we have a
      * better idea of what our communication model looks like we'll probably
      * want to provide an abstraction similar to `Vst2EventHandler`.
      */
-    TypedMessageHandler<Thread, Vst3Logger, CallbackRequest> vst_host_callback_;
+    TypedMessageHandler<Thread, Vst3Logger, CallbackRequest>
+        plugin_host_callback_;
 
    private:
     /**

@@ -78,10 +78,7 @@ static const char* stream_meta_data_string_keys[] = {
 
 YaAttributeList::YaAttributeList() noexcept {FUNKNOWN_CTOR}
 
-YaAttributeList::~YaAttributeList() noexcept {
-    FUNKNOWN_DTOR
-}
-
+YaAttributeList::~YaAttributeList() noexcept {FUNKNOWN_DTOR}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
 IMPLEMENT_FUNKNOWN_METHODS(YaAttributeList,
@@ -89,7 +86,7 @@ IMPLEMENT_FUNKNOWN_METHODS(YaAttributeList,
                            Steinberg::Vst::IAttributeList::iid)
 #pragma GCC diagnostic pop
 
-std::vector<std::string> YaAttributeList::keys_and_types() const {
+    std::vector<std::string> YaAttributeList::keys_and_types() const {
     std::vector<std::string> result{};
     for (const auto& [key, value] : attrs_int_) {
         result.push_back("\"" + key + "\" (int)");

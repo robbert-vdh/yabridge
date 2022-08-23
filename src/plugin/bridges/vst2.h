@@ -27,8 +27,8 @@
 
 /**
  * This handles the communication between the Linux native VST2 plugin and the
- * Wine VST host. The functions below should be used as callback functions in an
- * `AEffect` object.
+ * Wine plugin host. The functions below should be used as callback functions in
+ * an `AEffect` object.
  *
  * The naming scheme of all of these 'bridge' classes is `<type>{,Plugin}Bridge`
  * for greppability reasons. The `Plugin` infix is added on the native plugin

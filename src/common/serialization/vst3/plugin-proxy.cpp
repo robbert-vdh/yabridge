@@ -77,17 +77,15 @@ Vst3PluginProxy::Vst3PluginProxy(ConstructArgs&& args) noexcept
           std::move(args.xml_representation_controller_args)),
       arguments_(std::move(args)){FUNKNOWN_CTOR}
 
-      Vst3PluginProxy::~Vst3PluginProxy() noexcept {
-    FUNKNOWN_DTOR
-}
-
+      Vst3PluginProxy::~Vst3PluginProxy() noexcept {FUNKNOWN_DTOR}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_REFCOUNT(Vst3PluginProxy)
+      IMPLEMENT_REFCOUNT(Vst3PluginProxy)
 #pragma GCC diagnostic pop
 
-tresult PLUGIN_API Vst3PluginProxy::queryInterface(Steinberg::FIDString _iid,
-                                                   void** obj) {
+          tresult PLUGIN_API Vst3PluginProxy::queryInterface(
+              Steinberg::FIDString _iid,
+              void** obj) {
     if (YaPluginBase::supported()) {
         // We had to expand the macro here because we need to cast through
         // `YaPluginBase`, since `IpluginBase` is also a base of `IComponent`

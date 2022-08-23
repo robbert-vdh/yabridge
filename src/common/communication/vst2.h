@@ -322,8 +322,8 @@ class Vst2EventHandler : public AdHocSocketHandler<Thread> {
  * Wine host when hosting a VST2 plugin.
  *
  * On the plugin side this class should be initialized with `listen` set to
- * `true` before launching the Wine VST host. This will start listening on the
- * sockets, and the call to `connect()` will then accept any incoming
+ * `true` before launching the Wine plugin host. This will start listening on
+ * the sockets, and the call to `connect()` will then accept any incoming
  * connections.
  *
  * @tparam Thread The thread implementation to use. On the Linux side this
@@ -350,76 +350,79 @@ class Vst2Sockets final : public Sockets {
                 const ghc::filesystem::path& endpoint_base_dir,
                 bool listen)
         : Sockets(endpoint_base_dir),
-          host_vst_dispatch_(io_context,
-                             (base_dir_ / "host_vst_dispatch.sock").string(),
-                             listen),
-          vst_host_callback_(io_context,
-                             (base_dir_ / "vst_host_callback.sock").string(),
-                             listen),
-          host_vst_parameters_(
+          host_plugin_dispatch_(
               io_context,
-              (base_dir_ / "host_vst_parameters.sock").string(),
+              (base_dir_ / "host_plugin_dispatch.sock").string(),
               listen),
-          host_vst_process_replacing_(
+          plugin_host_callback_(
               io_context,
-              (base_dir_ / "host_vst_process_replacing.sock").string(),
+              (base_dir_ / "plugin_host_callback.sock").string(),
               listen),
-          host_vst_control_(io_context,
-                            (base_dir_ / "host_vst_control.sock").string(),
-                            listen) {}
+          host_plugin_parameters_(
+              io_context,
+              (base_dir_ / "host_plugin_parameters.sock").string(),
+              listen),
+          host_plugin_process_replacing_(
+              io_context,
+              (base_dir_ / "host_plugin_process_replacing.sock").string(),
+              listen),
+          host_plugin_control_(
+              io_context,
+              (base_dir_ / "host_plugin_control.sock").string(),
+              listen) {}
 
     ~Vst2Sockets() noexcept override { close(); }
 
     void connect() override {
-        host_vst_dispatch_.connect();
-        vst_host_callback_.connect();
-        host_vst_parameters_.connect();
-        host_vst_process_replacing_.connect();
-        host_vst_control_.connect();
+        host_plugin_dispatch_.connect();
+        plugin_host_callback_.connect();
+        host_plugin_parameters_.connect();
+        host_plugin_process_replacing_.connect();
+        host_plugin_control_.connect();
     }
 
     void close() override {
         // Manually close all sockets so we break out of any blocking operations
         // that may still be active
-        host_vst_dispatch_.close();
-        vst_host_callback_.close();
-        host_vst_parameters_.close();
-        host_vst_process_replacing_.close();
-        host_vst_control_.close();
+        host_plugin_dispatch_.close();
+        plugin_host_callback_.close();
+        host_plugin_parameters_.close();
+        host_plugin_process_replacing_.close();
+        host_plugin_control_.close();
     }
 
     // The naming convention for these sockets is `<from>_<to>_<event>`. For
-    // instance the socket named `host_vst_dispatch` forwards
+    // instance the socket named `host_plugin_dispatch` forwards
     // `AEffect.dispatch()` calls from the native VST host to the Windows VST
-    // plugin (through the Wine VST host).
+    // plugin (through the Wine plugin host).
 
     /**
      * The socket that forwards all `dispatcher()` calls from the VST host to
      * the plugin.
      */
-    Vst2EventHandler<Thread> host_vst_dispatch_;
+    Vst2EventHandler<Thread> host_plugin_dispatch_;
     /**
      * The socket that forwards all `audioMaster()` calls from the Windows VST
      * plugin to the host.
      */
-    Vst2EventHandler<Thread> vst_host_callback_;
+    Vst2EventHandler<Thread> plugin_host_callback_;
     /**
      * Used for both `getParameter` and `setParameter` since they mostly
      * overlap.
      */
-    SocketHandler host_vst_parameters_;
+    SocketHandler host_plugin_parameters_;
     /**
      * Used for processing audio usign the `process()`, `processReplacing()` and
      * `processDoubleReplacing()` functions.
      */
-    SocketHandler host_vst_process_replacing_;
+    SocketHandler host_plugin_process_replacing_;
     /**
      * A control socket that sends data that is not suitable for the other
      * sockets. At the moment this is only used to, on startup, send the Windows
      * VST plugin's `AEffect` object to the native VST plugin, and to then send
      * the configuration (from `config_`) back to the Wine host.
      */
-    SocketHandler host_vst_control_;
+    SocketHandler host_plugin_control_;
 };
 
 /**

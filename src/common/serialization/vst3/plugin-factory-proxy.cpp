@@ -27,17 +27,15 @@ Vst3PluginFactoryProxy::Vst3PluginFactoryProxy(ConstructArgs&& args) noexcept
       arguments_(std::move(args)){FUNKNOWN_CTOR}
 
       // clang-format just doesn't understand these macros, I guess
-      Vst3PluginFactoryProxy::~Vst3PluginFactoryProxy() noexcept {
-    FUNKNOWN_DTOR
-}
-
+      Vst3PluginFactoryProxy::~Vst3PluginFactoryProxy() noexcept {FUNKNOWN_DTOR}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_REFCOUNT(Vst3PluginFactoryProxy)
+      IMPLEMENT_REFCOUNT(Vst3PluginFactoryProxy)
 #pragma GCC diagnostic pop
 
-tresult PLUGIN_API
-Vst3PluginFactoryProxy::queryInterface(Steinberg::FIDString _iid, void** obj) {
+          tresult PLUGIN_API Vst3PluginFactoryProxy::queryInterface(
+              Steinberg::FIDString _iid,
+              void** obj) {
     if (YaPluginFactory3::supports_plugin_factory()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
                         Steinberg::IPluginFactory)

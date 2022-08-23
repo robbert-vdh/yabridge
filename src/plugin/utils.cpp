@@ -307,8 +307,8 @@ std::string create_logger_prefix(const fs::path& endpoint_base_dir) {
     return "[" + endpoint_name + "] ";
 }
 
-fs::path find_vst_host(const ghc::filesystem::path& this_plugin_path,
-                       LibArchitecture plugin_arch) {
+fs::path find_plugin_host(const ghc::filesystem::path& this_plugin_path,
+                          LibArchitecture plugin_arch) {
     auto host_name = yabridge_host_name;
     if (plugin_arch == LibArchitecture::dll_32) {
         host_name = yabridge_host_name_32bit;
@@ -322,9 +322,9 @@ fs::path find_vst_host(const ghc::filesystem::path& this_plugin_path,
         return host_path;
     }
 
-    if (const std::optional<fs::path> vst_host_path =
+    if (const std::optional<fs::path> plugin_host_path =
             search_in_path(get_augmented_search_path(), host_name)) {
-        return *vst_host_path;
+        return *plugin_host_path;
     } else {
         throw std::runtime_error("Could not locate '" + std::string(host_name) +
                                  "'");

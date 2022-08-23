@@ -236,11 +236,11 @@ class alignas(16) DynamicSpeakerArrangement {
 };
 
 /**
- * Marker struct to indicate that the other side (the Wine VST host) should send
- * an updated copy of the plugin's `AEffect` object. Should not be needed since
- * the plugin should be calling `audioMasterIOChanged()` after it has changed
- * its object, but some improperly coded plugins will only initialize their
- * flags, IO properties and parameter counts after `effEditOpen()`.
+ * Marker struct to indicate that the other side (the Wine plugin host) should
+ * send an updated copy of the plugin's `AEffect` object. Should not be needed
+ * since the plugin should be calling `audioMasterIOChanged()` after it has
+ * changed its object, but some improperly coded plugins will only initialize
+ * their flags, IO properties and parameter counts after `effEditOpen()`.
  */
 struct WantsAEffectUpdate {
     using Response = AEffect;
@@ -500,7 +500,7 @@ void serialize(S& s, Vst2Event::Payload& payload) {
 /**
  * The result of a `getParameter` or a `setParameter` call. For `setParameter`
  * this struct won't contain any values and mostly acts as an acknowledgement
- * from the Wine VST host.
+ * from the Wine plugin host.
  */
 struct ParameterResult {
     std::optional<float> value;

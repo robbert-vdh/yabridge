@@ -117,15 +117,15 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
 
     /**
      * Send a control message to the Wine plugin host and return the response.
-     * This is a shorthand for `sockets_.host_vst_control_.send_message()` for
-     * use in VST3 interface implementations. This is mostly used for main
+     * This is a shorthand for `sockets_.host_plugin_control_.send_message()`
+     * for use in VST3 interface implementations. This is mostly used for main
      * thread messages but outside of the situations where plugins will crash or
      * misbehave thread guarantees are not always upheld in yabridge's VST3
      * implementation.
      */
     template <typename T>
     typename T::Response send_message(const T& object) {
-        return sockets_.host_vst_control_.send_message(
+        return sockets_.host_plugin_control_.send_message(
             object, std::pair<Vst3Logger&, bool>(logger_, true));
     }
 
@@ -199,7 +199,7 @@ class Vst3PluginBridge : PluginBridge<Vst3Sockets<std::jthread>> {
    private:
     /**
      * Handles callbacks from the plugin to the host over the
-     * `vst_host_callback_` sockets.
+     * `plugin_host_callback_` sockets.
      */
     std::jthread host_callback_handler_;
 

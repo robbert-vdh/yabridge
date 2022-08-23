@@ -45,8 +45,9 @@ struct PluginInfo {
    public:
     /**
      * Locate the Windows plugin based on the location of this copy of
-     * `libyabridge-{clap,vst2,vst3}.so` file and the type of the plugin we're going
-     * to load. For VST2 plugins this is a file with the same name but with a
+     * `libyabridge-{clap,vst2,vst3}.so` file and the type of the plugin we're
+     * going to load. For VST2 plugins this is a file with the same name but
+     * with a
      * `.dll` file extension instead of `.so`. In case this file does not exist
      * and the `.so` file is a symlink, we'll also repeat this check for the
      * file it links to. This is to support the workflow described in issue #3
@@ -181,13 +182,14 @@ std::string create_logger_prefix(
     const ghc::filesystem::path& endpoint_base_dir);
 
 /**
- * Finds the Wine VST host (either `yabridge-host.exe` or `yabridge-host-32.exe`
- * depending on the plugin). For this we will search in two places:
+ * Finds the Wine plugin host (either `yabridge-host.exe` or
+ * `yabridge-host-32.exe` depending on the plugin). For this we will search in
+ * two places:
  *
- *   1. Alongside libyabridge-{clap,vst2,vst3}.so if the file got symlinked. This is
- *      useful when developing, as you can simply symlink the
- *      `libyabridge-{clap,vst2,vst3}.so` file in the build directory without having
- *      to install anything to /usr.
+ *   1. Alongside libyabridge-{clap,vst2,vst3}.so if the file got symlinked.
+ *      This is useful when developing, as you can simply symlink the
+ *      `libyabridge-{clap,vst2,vst3}.so` file in the build directory without
+ *      having to install anything to /usr.
  *   2. In the regular search path, augmented with `~/.local/share/yabridge` to
  *      ease the setup process.
  *
@@ -197,9 +199,9 @@ std::string create_logger_prefix(
  *   Used to determine which host application to use, if available.
  *
  * @return The a path to the VST host, if found.
- * @throw std::runtime_error If the Wine VST host could not be found.
+ * @throw std::runtime_error If the Wine plugin host could not be found.
  */
-ghc::filesystem::path find_vst_host(
+ghc::filesystem::path find_plugin_host(
     const ghc::filesystem::path& this_plugin_path,
     LibArchitecture plugin_arch);
 
@@ -228,10 +230,10 @@ ghc::filesystem::path generate_group_endpoint(
 
 /**
  * Load the configuration that belongs to a copy of or symlink to
- * `libyabridge-{clap,vst2,vst3}.so`. If no configuration file could be found then
- * this will return an empty configuration object with default settings. See the
- * docstrong on the `Configuration` class for more details on how to choose the
- * config file to load.
+ * `libyabridge-{clap,vst2,vst3}.so`. If no configuration file could be found
+ * then this will return an empty configuration object with default settings.
+ * See the docstrong on the `Configuration` class for more details on how to
+ * choose the config file to load.
  *
  * This function will take any optional compile-time features that have not been
  * enabled into account.

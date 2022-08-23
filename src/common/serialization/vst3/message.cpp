@@ -25,18 +25,16 @@ YaMessagePtr::YaMessagePtr(IMessage& message)
       original_message_ptr_(static_cast<native_size_t>(
           reinterpret_cast<size_t>(&message))){FUNKNOWN_CTOR}
 
-      YaMessagePtr::~YaMessagePtr() noexcept {
-    FUNKNOWN_DTOR
-}
-
+          YaMessagePtr::~YaMessagePtr() noexcept {FUNKNOWN_DTOR}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_FUNKNOWN_METHODS(YaMessagePtr,
-                           Steinberg::Vst::IMessage,
-                           Steinberg::Vst::IMessage::iid)
+          IMPLEMENT_FUNKNOWN_METHODS(YaMessagePtr,
+                                     Steinberg::Vst::IMessage,
+                                     Steinberg::Vst::IMessage::iid)
 #pragma GCC diagnostic pop
 
-Steinberg::Vst::IMessage* YaMessagePtr::get_original() const noexcept {
+              Steinberg::Vst::IMessage
+          * YaMessagePtr::get_original() const noexcept {
     // See the docstrings on `YaMessage` and `YaMessagePtr`
     return reinterpret_cast<IMessage*>(
         static_cast<size_t>(original_message_ptr_));
@@ -64,10 +62,7 @@ Steinberg::Vst::IAttributeList* PLUGIN_API YaMessagePtr::getAttributes() {
 
 YaMessage::YaMessage() noexcept {FUNKNOWN_CTOR}
 
-YaMessage::~YaMessage() noexcept {
-    FUNKNOWN_DTOR
-}
-
+YaMessage::~YaMessage() noexcept {FUNKNOWN_DTOR}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
 IMPLEMENT_FUNKNOWN_METHODS(YaMessage,
@@ -75,7 +70,7 @@ IMPLEMENT_FUNKNOWN_METHODS(YaMessage,
                            Steinberg::Vst::IMessage::iid)
 #pragma GCC diagnostic pop
 
-Steinberg::FIDString PLUGIN_API YaMessage::getMessageID() {
+    Steinberg::FIDString PLUGIN_API YaMessage::getMessageID() {
     if (message_id_) {
         return message_id_->c_str();
     } else {

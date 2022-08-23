@@ -104,7 +104,7 @@ Vst3Bridge::Vst3Bridge(MainContext& main_context,
 
     // Fetch this instance's configuration from the plugin to finish the setup
     // process
-    config_ = sockets_.vst_host_callback_.send_message(
+    config_ = sockets_.plugin_host_callback_.send_message(
         WantsConfiguration{.host_version = yabridge_git_version}, std::nullopt);
 
     // Allow this plugin to configure the main context's tick rate
@@ -126,7 +126,7 @@ bool Vst3Bridge::inhibits_event_loop() noexcept {
 void Vst3Bridge::run() {
     set_realtime_priority(true);
 
-    sockets_.host_vst_control_.receive_messages(
+    sockets_.host_plugin_control_.receive_messages(
         std::nullopt,
         overload{
             [&](const Vst3PluginFactoryProxy::Construct&)

@@ -30,17 +30,15 @@ Vst3HostContextProxy::Vst3HostContextProxy(ConstructArgs&& args) noexcept
       YaPlugInterfaceSupport(std::move(args.plug_interface_support_args)),
       arguments_(std::move(args)){FUNKNOWN_CTOR}
 
-      Vst3HostContextProxy::~Vst3HostContextProxy() noexcept {
-    FUNKNOWN_DTOR
-}
-
+      Vst3HostContextProxy::~Vst3HostContextProxy() noexcept {FUNKNOWN_DTOR}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_REFCOUNT(Vst3HostContextProxy)
+      IMPLEMENT_REFCOUNT(Vst3HostContextProxy)
 #pragma GCC diagnostic pop
 
-tresult PLUGIN_API
-Vst3HostContextProxy::queryInterface(Steinberg::FIDString _iid, void** obj) {
+          tresult PLUGIN_API Vst3HostContextProxy::queryInterface(
+              Steinberg::FIDString _iid,
+              void** obj) {
     if (YaHostApplication::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
                         Steinberg::Vst::IHostApplication)

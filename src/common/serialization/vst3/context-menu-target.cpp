@@ -19,13 +19,11 @@
 YaContextMenuTarget::YaContextMenuTarget(ConstructArgs&& args) noexcept
     : arguments_(std::move(args)){FUNKNOWN_CTOR}
 
-      YaContextMenuTarget::~YaContextMenuTarget() noexcept {
-    FUNKNOWN_DTOR
-}
+      YaContextMenuTarget::~YaContextMenuTarget() noexcept {FUNKNOWN_DTOR}
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_FUNKNOWN_METHODS(YaContextMenuTarget,
-                           Steinberg::Vst::IContextMenuTarget,
-                           Steinberg::Vst::IContextMenuTarget::iid)
+      IMPLEMENT_FUNKNOWN_METHODS(YaContextMenuTarget,
+                                 Steinberg::Vst::IContextMenuTarget,
+                                 Steinberg::Vst::IContextMenuTarget::iid)
 #pragma GCC diagnostic pop

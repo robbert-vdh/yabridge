@@ -30,17 +30,15 @@ Vst3ContextMenuProxy::Vst3ContextMenuProxy(ConstructArgs&& args) noexcept
     : YaContextMenu(std::move(args.context_menu_args)),
       arguments_(std::move(args)){FUNKNOWN_CTOR}
 
-      Vst3ContextMenuProxy::~Vst3ContextMenuProxy() noexcept {
-    FUNKNOWN_DTOR
-}
-
+      Vst3ContextMenuProxy::~Vst3ContextMenuProxy() noexcept {FUNKNOWN_DTOR}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_REFCOUNT(Vst3ContextMenuProxy)
+      IMPLEMENT_REFCOUNT(Vst3ContextMenuProxy)
 #pragma GCC diagnostic pop
 
-tresult PLUGIN_API
-Vst3ContextMenuProxy::queryInterface(Steinberg::FIDString _iid, void** obj) {
+          tresult PLUGIN_API Vst3ContextMenuProxy::queryInterface(
+              Steinberg::FIDString _iid,
+              void** obj) {
     if (YaContextMenu::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
                         Steinberg::Vst::IContextMenu)

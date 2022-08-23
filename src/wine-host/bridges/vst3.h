@@ -331,12 +331,13 @@ class Vst3Bridge : public HostBridge {
    public:
     /**
      * Send a callback message to the host return the response. This is a
-     * shorthand for `sockets.vst_host_callback_.send_message` for use in VST3
-     * interface implementations.
+     * shorthand for `sockets.plugin_host_callback_.send_message` for use in
+     * VST3 interface implementations.
      */
     template <typename T>
     typename T::Response send_message(const T& object) {
-        return sockets_.vst_host_callback_.send_message(object, std::nullopt);
+        return sockets_.plugin_host_callback_.send_message(object,
+                                                           std::nullopt);
     }
 
     /**

@@ -22,17 +22,15 @@ Vst3ConnectionPointProxy::Vst3ConnectionPointProxy(
       arguments_(std::move(args)){FUNKNOWN_CTOR}
 
       Vst3ConnectionPointProxy::~Vst3ConnectionPointProxy() noexcept {
-    FUNKNOWN_DTOR
-}
-
+          FUNKNOWN_DTOR}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_REFCOUNT(Vst3ConnectionPointProxy)
+      IMPLEMENT_REFCOUNT(Vst3ConnectionPointProxy)
 #pragma GCC diagnostic pop
 
-tresult PLUGIN_API
-Vst3ConnectionPointProxy::queryInterface(Steinberg::FIDString _iid,
-                                         void** obj) {
+          tresult PLUGIN_API Vst3ConnectionPointProxy::queryInterface(
+              Steinberg::FIDString _iid,
+              void** obj) {
     if (YaConnectionPoint::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
                         Steinberg::Vst::IConnectionPoint)

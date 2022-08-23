@@ -77,7 +77,7 @@ Vst2PluginBridge::Vst2PluginBridge(const ghc::filesystem::path& plugin_path,
         set_realtime_priority(true);
         pthread_setname_np(pthread_self(), "host-callbacks");
 
-        sockets_.vst_host_callback_.receive_events(
+        sockets_.plugin_host_callback_.receive_events(
             std::pair<Vst2Logger&, bool>(logger_, false),
             [&](Vst2Event& event, bool /*on_main_thread*/) {
                 switch (event.opcode) {
@@ -178,7 +178,7 @@ Vst2PluginBridge::Vst2PluginBridge(const ghc::filesystem::path& plugin_path,
     // over the `dispatcher()` socket. This would happen whenever the plugin
     // calls `audioMasterIOChanged()` and after the host calls `effOpen()`.
     const auto initialization_data =
-        sockets_.host_vst_control_.receive_single<Vst2EventResult>();
+        sockets_.host_plugin_control_.receive_single<Vst2EventResult>();
 
     const auto initialized_plugin =
         std::get<AEffect>(initialization_data.payload);
@@ -188,7 +188,7 @@ Vst2PluginBridge::Vst2PluginBridge(const ghc::filesystem::path& plugin_path,
 
     // After receiving the `AEffect` values we'll want to send the configuration
     // back to complete the startup process
-    sockets_.host_vst_control_.send(config_);
+    sockets_.host_plugin_control_.send(config_);
 
     update_aeffect(plugin_, initialized_plugin);
 }
@@ -250,7 +250,7 @@ class DispatchDataConverter : public DefaultDataConverter {
                 break;
             case effEditOpen:
                 // The host will have passed us an X11 window handle in the void
-                // pointer. In the Wine VST host we'll create a Win32 window,
+                // pointer. In the Wine plugin host we'll create a Win32 window,
                 // ask the plugin to embed itself in that and then embed that
                 // window into this X11 window handle.
                 return reinterpret_cast<size_t>(data);
@@ -541,7 +541,7 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
             intptr_t return_value = 0;
             try {
                 // TODO: Add some kind of timeout?
-                return_value = sockets_.host_vst_dispatch_.send_event(
+                return_value = sockets_.host_plugin_dispatch_.send_event(
                     converter, std::pair<Vst2Logger&, bool>(logger_, true),
                     opcode, index, value, data, option);
             } catch (const std::system_error&) {
@@ -617,7 +617,7 @@ intptr_t Vst2PluginBridge::dispatch(AEffect* /*plugin*/,
     // and loading plugin state it's much better to have bitsery or our
     // receiving function temporarily allocate a large enough buffer rather than
     // to have a bunch of allocated memory sitting around doing nothing.
-    return sockets_.host_vst_dispatch_.send_event(
+    return sockets_.host_plugin_dispatch_.send_event(
         converter, std::pair<Vst2Logger&, bool>(logger_, true), opcode, index,
         value, data, option);
 }
@@ -692,12 +692,12 @@ void Vst2PluginBridge::do_process(T** inputs, T** outputs, int sample_frames) {
     // After writing audio to the shared memory buffers, we'll send the
     // processing request parameters to the Wine plugin host so it can start
     // processing audio. This is why we don't need any explicit synchronisation.
-    sockets_.host_vst_process_replacing_.send(request);
+    sockets_.host_plugin_process_replacing_.send(request);
 
     // From the Wine side we'll send a zero byte struct back as an
     // acknowledgement that audio processing has finished. At this point the
     // audio will have been written to our buffers.
-    sockets_.host_vst_process_replacing_.receive_single<Ack>();
+    sockets_.host_plugin_process_replacing_.receive_single<Ack>();
 
     for (int channel = 0; channel < plugin_.numOutputs; channel++) {
         const T* output_channel =
@@ -777,10 +777,10 @@ float Vst2PluginBridge::get_parameter(AEffect* /*plugin*/, int index) {
     // called at the same time since  they share the same socket
     {
         std::lock_guard lock(parameters_mutex_);
-        sockets_.host_vst_parameters_.send(request);
+        sockets_.host_plugin_parameters_.send(request);
 
         response =
-            sockets_.host_vst_parameters_.receive_single<ParameterResult>();
+            sockets_.host_plugin_parameters_.receive_single<ParameterResult>();
     }
 
     logger_.log_get_parameter_response(*response.value);
@@ -798,10 +798,10 @@ void Vst2PluginBridge::set_parameter(AEffect* /*plugin*/,
 
     {
         std::lock_guard lock(parameters_mutex_);
-        sockets_.host_vst_parameters_.send(request);
+        sockets_.host_plugin_parameters_.send(request);
 
         response =
-            sockets_.host_vst_parameters_.receive_single<ParameterResult>();
+            sockets_.host_plugin_parameters_.receive_single<ParameterResult>();
     }
 
     logger_.log_set_parameter_response();

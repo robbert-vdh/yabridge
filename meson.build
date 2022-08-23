@@ -107,7 +107,7 @@ if with_clap
   compiler_options += '-DWITH_CLAP'
 endif
 
-# This provides an easy way to start the Wine VST host using winedbg since it
+# This provides an easy way to start the Wine plugin host using winedbg since it
 # can be quite a pain to set up
 if with_winedbg
   compiler_options += '-DWITH_WINEDBG'

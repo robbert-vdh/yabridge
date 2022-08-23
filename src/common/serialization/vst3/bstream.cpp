@@ -80,17 +80,14 @@ YaBStream::YaBStream(Steinberg::IBStream* stream) {
     }
 }
 
-YaBStream::~YaBStream() noexcept {
-    FUNKNOWN_DTOR
-}
-
+YaBStream::~YaBStream() noexcept {FUNKNOWN_DTOR}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
 IMPLEMENT_REFCOUNT(YaBStream)
 #pragma GCC diagnostic pop
 
-tresult PLUGIN_API YaBStream::queryInterface(Steinberg::FIDString _iid,
-                                             void** obj) {
+    tresult PLUGIN_API YaBStream::queryInterface(Steinberg::FIDString _iid,
+                                                 void** obj) {
     QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid, Steinberg::IBStream)
     QUERY_INTERFACE(_iid, obj, Steinberg::IBStream::iid, Steinberg::IBStream)
     QUERY_INTERFACE(_iid, obj, Steinberg::ISizeableStream::iid,

@@ -33,17 +33,15 @@ Vst3PlugViewProxy::Vst3PlugViewProxy(ConstructArgs&& args) noexcept
           std::move(args.plug_view_content_scale_support_args)),
       arguments_(std::move(args)){FUNKNOWN_CTOR}
 
-      Vst3PlugViewProxy::~Vst3PlugViewProxy() noexcept {
-    FUNKNOWN_DTOR
-}
-
+      Vst3PlugViewProxy::~Vst3PlugViewProxy() noexcept {FUNKNOWN_DTOR}
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-IMPLEMENT_REFCOUNT(Vst3PlugViewProxy)
+      IMPLEMENT_REFCOUNT(Vst3PlugViewProxy)
 #pragma GCC diagnostic pop
 
-tresult PLUGIN_API Vst3PlugViewProxy::queryInterface(Steinberg::FIDString _iid,
-                                                     void** obj) {
+          tresult PLUGIN_API Vst3PlugViewProxy::queryInterface(
+              Steinberg::FIDString _iid,
+              void** obj) {
     if (YaPlugView::supported()) {
         QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid,
                         Steinberg::IPlugView)

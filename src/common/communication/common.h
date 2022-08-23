@@ -591,7 +591,7 @@ class AdHocSocketHandler {
             // As mentioned in `acceptor's` docstring, this acceptor will be
             // recreated in `receive_multi()` on another context, and
             // potentially on the other side of the connection in the case
-            // where we're handling `vst_host_callback_` VST2 events
+            // where we're handling `plugin_host_callback_` VST2 events
             acceptor_.reset();
             ghc::filesystem::remove(endpoint_.path());
         } else {
@@ -869,10 +869,10 @@ class AdHocSocketHandler {
      * during `Sockets::connect()`. When `AdHocSocketHandler::receive_multi()`
      * is then called, we'll recreate the acceptor to asynchronously listen for
      * new incoming socket connections on `endpoint` using. This is important,
-     * because on the case of `Vst2Sockets`'s' `vst_host_callback_` the acceptor
-     * is first accepts an initial socket on the plugin side (like all sockets),
-     * but all additional incoming connections of course have to be listened for
-     * on the plugin side.
+     * because on the case of `Vst2Sockets`'s' `plugin_host_callback_` the
+     * acceptor is first accepts an initial socket on the plugin side (like all
+     * sockets), but all additional incoming connections of course have to be
+     * listened for on the plugin side.
      */
     std::optional<asio::local::stream_protocol::acceptor> acceptor_;
 
@@ -1010,8 +1010,8 @@ class TypedMessageHandler : public AdHocSocketHandler<Thread> {
         // only print the responses when the request was not filtered out.
         bool should_log_response = false;
         if (logging) {
-            auto [logger, is_host_vst] = *logging;
-            should_log_response = logger.log_request(is_host_vst, object);
+            auto [logger, is_host_plugin] = *logging;
+            should_log_response = logger.log_request(is_host_plugin, object);
         }
 
         // A socket only handles a single request at a time as to prevent
@@ -1024,8 +1024,8 @@ class TypedMessageHandler : public AdHocSocketHandler<Thread> {
         });
 
         if (should_log_response) {
-            auto [logger, is_host_vst] = *logging;
-            logger.log_response(!is_host_vst, response_object);
+            auto [logger, is_host_plugin] = *logging;
+            logger.log_response(!is_host_plugin, response_object);
         }
 
         return response_object;
@@ -1111,8 +1111,8 @@ class TypedMessageHandler : public AdHocSocketHandler<Thread> {
                 if (logging) {
                     should_log_response = std::visit(
                         [&](const auto& object) {
-                            auto [logger, is_host_vst] = *logging;
-                            return logger.log_request(is_host_vst, object);
+                            auto [logger, is_host_plugin] = *logging;
+                            return logger.log_request(is_host_plugin, object);
                         },
                         // In the case of `AudioProcessorRequest`, we need to
                         // actually fetch the variant field since our object
@@ -1130,8 +1130,8 @@ class TypedMessageHandler : public AdHocSocketHandler<Thread> {
                         typename T::Response response = callback(object);
 
                         if (should_log_response) {
-                            auto [logger, is_host_vst] = *logging;
-                            logger.log_response(!is_host_vst, response);
+                            auto [logger, is_host_plugin] = *logging;
+                            logger.log_response(!is_host_plugin, response);
                         }
 
                         if constexpr (persistent_buffers) {

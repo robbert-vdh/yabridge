@@ -168,8 +168,7 @@ class MutualRecursionHelper {
         // pretend that we're not doing any async things here
         std::packaged_task<Result()> do_call(std::forward<F>(fn));
         std::future<Result> do_call_response = do_call.get_future();
-        asio::dispatch(*mutual_recursion_contexts_.back(),
-                              std::move(do_call));
+        asio::dispatch(*mutual_recursion_contexts_.back(), std::move(do_call));
         mutual_recursion_lock.unlock();
 
         return do_call_response.get();
@@ -186,7 +185,6 @@ class MutualRecursionHelper {
      * active one. If the stack is empty, then there's currently no mutual
      * recursion going on.
      */
-    std::vector<std::shared_ptr<asio::io_context>>
-        mutual_recursion_contexts_;
+    std::vector<std::shared_ptr<asio::io_context>> mutual_recursion_contexts_;
     std::mutex mutual_recursion_contexts_mutex_;
 };
