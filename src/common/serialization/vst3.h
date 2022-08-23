@@ -21,7 +21,6 @@
 #include "../bitsery/ext/in-place-variant.h"
 
 #include "../bitsery/ext/message-reference.h"
-#include "../configuration.h"
 #include "../utils.h"
 #include "common.h"
 #include "vst3/component-handler-proxy.h"
@@ -48,23 +47,6 @@
 
 // All messages for creating objects and calling interfaces on them are defined
 // as part of the interfaces and implementations in `vst3/`
-
-/**
- * Marker struct to indicate the other side (the plugin) should send a copy of
- * the configuration. During this process we will also transmit the version
- * string from the host, so we can show a little warning when the user forgot to
- * rerun `yabridgectl sync` (and the initialization was still successful).
- */
-struct WantsConfiguration {
-    using Response = Configuration;
-
-    std::string host_version;
-
-    template <typename S>
-    void serialize(S& s) {
-        s.text1b(host_version, 128);
-    }
-};
 
 /**
  * When we send a control message from the plugin to the Wine plugin host, this

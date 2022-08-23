@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "../configuration.h"
 #include "../plugins.h"
 
 // The plugin should always be compiled to a 64-bit version, but the host
@@ -41,6 +42,23 @@ using native_intptr_t = int64_t;
 struct Ack {
     template <typename S>
     void serialize(S&) {}
+};
+
+/**
+ * Marker struct to indicate the other side (the plugin) should send a copy of
+ * the configuration. During this process we will also transmit the version
+ * string from the host, so we can show a little warning when the user forgot to
+ * rerun `yabridgectl sync` (and the initialization was still successful).
+ */
+struct WantsConfiguration {
+    using Response = Configuration;
+
+    std::string host_version;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.text1b(host_version, 128);
+    }
 };
 
 /**
