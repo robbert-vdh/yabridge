@@ -1150,3 +1150,15 @@ class TypedMessageHandler : public AdHocSocketHandler<Thread> {
             process_message);
     }
 };
+
+/**
+ * Get the actual variant for a request. We need a function for this to be able
+ * to handle composite types, like `AudioProcessorRequest` that use
+ * `MesasgeReference` to be able to store persistent objects in the message
+ * variant. This function should be specialized for those kinds of types.
+ */
+template <typename... Ts>
+std::variant<Ts...>& get_request_variant(
+    std::variant<Ts...>& request) noexcept {
+    return request;
+}

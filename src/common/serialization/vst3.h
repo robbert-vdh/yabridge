@@ -138,7 +138,7 @@ using ControlRequest =
 template <typename S>
 void serialize(S& s, ControlRequest& payload) {
     // All of the objects in `ControlRequest` should have their own
-    // serialization function.
+    // serialization function
     s.ext(payload, bitsery::ext::InPlaceVariant{});
 }
 
@@ -204,7 +204,7 @@ struct AudioProcessorRequest {
                     // `Vst3Sockets::add_audio_processor_and_listen`) and then
                     // reassign the reference to point to that boject.
                     s.ext(request_ref,
-                          bitsery::ext::MessageReference(process_request));
+                          bitsery::ext::MessageReference(process_request_));
                 },
                 [](S& s, auto& request) { s.object(request); }});
     }
@@ -216,8 +216,23 @@ struct AudioProcessorRequest {
      * to this object. That way we can keep it around as a thread local object
      * to prevent unnecessary allocations.
      */
-    std::optional<YaAudioProcessor::Process> process_request;
+    std::optional<YaAudioProcessor::Process> process_request_;
 };
+
+/**
+ * Fetch the `std::variant<>` from an audio processor request object. This will
+ * let us use our regular, simple function call dispatch code, but we can still
+ * store the process data in a separate field (to reduce allocations).
+ *
+ * This overloads the `get_request_variant()` function from
+ * `../communication/common.h`.
+ *
+ * @overload
+ */
+inline AudioProcessorRequest::Payload& get_request_variant(
+    AudioProcessorRequest& request) noexcept {
+    return request.payload;
+}
 
 /**
  * When we do a callback from the Wine plugin host to the plugin, this encodes
@@ -261,28 +276,4 @@ void serialize(S& s, CallbackRequest& payload) {
     // All of the objects in `CallbackRequest` should have their own
     // serialization function.
     s.ext(payload, bitsery::ext::InPlaceVariant{});
-}
-
-/**
- * Get the actual variant for a request. We need a function for this to be able
- * to handle composite types, like `AudioProcessorRequest` that use
- * `MesasgeReference` to be able to store persistent objects in the message
- * variant.
- */
-template <typename... Ts>
-std::variant<Ts...>& get_request_variant(
-    std::variant<Ts...>& request) noexcept {
-    return request;
-}
-
-/**
- * Fetch the `std::variant<>` from an audio processor request object. This will
- * let us use our regular, simple function call dispatch code, but we can still
- * store the process data in a separate field (to reduce allocations).
- *
- * @overload
- */
-inline AudioProcessorRequest::Payload& get_request_variant(
-    AudioProcessorRequest& request) noexcept {
-    return request.payload;
 }
