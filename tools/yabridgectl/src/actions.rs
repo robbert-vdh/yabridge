@@ -311,7 +311,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // `utils::normalize_path()` so that the reported numbers are still correct when encountering
     // overlapping symlinked paths.
     let mut managed_plugins: HashSet<PathBuf> = HashSet::new();
-    // The plugins we created a new copy of `libyabridge-chainloader-{vst2,vst3}.so` for. We don't
+    // The plugins we created a new copy of `libyabridge-chainloader-{clap,vst2,vst3}.so` for. We don't
     // touch these files if they're already up to date to prevent hosts from unnecessarily
     // rescanning the plugins.
     let mut new_plugins: HashSet<PathBuf> = HashSet::new();
@@ -710,7 +710,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
         return Ok(());
     }
 
-    // The path setup is to make sure that the `libyabridge-chainloader-{vst2,vst3}.so` copies can
+    // The path setup is to make sure that the `libyabridge-chainloader-{clap,vst2,vst3}.so` copies can
     // find `yabridge-host.exe` and by extension the plugin libraries. That last part should already
     // be the case if we get to this point though.
     verify_path_setup(config)?;

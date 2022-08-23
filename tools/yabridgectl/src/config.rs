@@ -63,7 +63,7 @@ const YABRIDGE_VST3_HOME: &str = ".vst3/yabridge";
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Config {
-    /// The path to the directory containing `libyabridge-{chainloader,}-{vst2,vst3}.so`. If not
+    /// The path to the directory containing `libyabridge-{chainloader,}-{clap,vst2,vst3}.so`. If not
     /// set, then yabridgectl will look in `/usr/lib` and `$XDG_DATA_HOME/yabridge` since those are
     /// the expected locations for yabridge to be installed in.
     pub yabridge_home: Option<PathBuf>,
@@ -314,7 +314,7 @@ impl Config {
 
 /// Fetch the XDG base directories for yabridge's own files, converting any error messages if this
 /// somehow fails into a printable string to reduce boiler plate. This is used when searching for
-/// `libyabridge-chainloader-{vst2,vst3}.so` when no explicit search path has been set.
+/// `libyabridge-chainloader-{clap,vst2,vst3}.so` when no explicit search path has been set.
 pub fn yabridge_directories() -> Result<BaseDirectories> {
     BaseDirectories::with_prefix(YABRIDGE_PREFIX).context("Error while parsing base directories")
 }

@@ -259,7 +259,7 @@ endif
 #
 # Binaries
 #
-# The application consists of a plugin (`libyabridge-{vst2,vst3}.so`) that calls
+# The application consists of a plugin (`libyabridge-{clap,vst2,vst3}.so`) that calls
 # a Winelib application (`yabridge-host{,-32}.exe`) that can host Windows VST2
 # and VST3 plugins. These plugins can in turn be loaded from small stub
 # libraries dubbed chainloaders to avoid having to copy large plugin libraries

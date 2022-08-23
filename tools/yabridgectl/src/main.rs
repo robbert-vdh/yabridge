@@ -130,11 +130,11 @@ fn main() -> Result<()> {
                         .long("path")
                         .help(
                             "Path to the directory containing \
-                             'libyabridge-chainloader-{vst2,vst3}.so'",
+                             'libyabridge-chainloader-{clap,vst2,vst3}.so'",
                         )
                         .long_help(
                             "Path to the directory containing \
-                             'libyabridge-chainloader-{vst2,vst3}.so'. If this is not set, then \
+                             'libyabridge-chainloader-{clap,vst2,vst3}.so'. If this is not set, then \
                              yabridgectl will look in both '/usr/lib' and \
                              '~/.local/share/yabridge' by default.",
                         )

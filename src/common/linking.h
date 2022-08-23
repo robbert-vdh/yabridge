@@ -23,7 +23,7 @@
 
 /**
  * Return a path to this `.so` file. This can be used to find out from where
- * this copy of `libyabridge-{vst2,vst3}.so` or `libyabridge-chainloader-*.so`
+ * this copy of `libyabridge-{clap,vst2,vst3}.so` or `libyabridge-chainloader-*.so`
  * was loaded so we can search for a matching Windows plugin library. When the
  * chainloaders are used, this path should be passed to the chainloaded plugin
  * library using the provided exported functions since they can't detect the

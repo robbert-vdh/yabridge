@@ -49,11 +49,11 @@ jobs:
           meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=10000 -Dbitbridge=true -Dcpp_link_args='-mwindows -static-libstdc++' -Dbuild.cpp_link_args='-static-libstdc++'
           ninja -C build
       - name: Strip remaining debug symbols
-        run: strip build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-host{,-32}.exe.so
+        run: strip build/libyabridge{,-chainloader}-{clap,vst2,vst3}.so build/yabridge-host{,-32}.exe.so
       - name: Create an archive for the binaries
         run: |
           mkdir yabridge
-          cp build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-host{,-32}.exe{,.so} yabridge
+          cp build/libyabridge{,-chainloader}-{clap,vst2,vst3}.so build/yabridge-host{,-32}.exe{,.so} yabridge
           cp CHANGELOG.md README.md yabridge
 
           tar -caf "$ARCHIVE_NAME" yabridge
@@ -87,11 +87,11 @@ jobs:
           meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=10000 -Dbitbridge=true
           ninja -C build
       - name: Strip remaining debug symbols
-        run: strip build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-host{,-32}.exe.so
+        run: strip build/libyabridge{,-chainloader}-{clap,vst2,vst3}.so build/yabridge-host{,-32}.exe.so
       - name: Create an archive for the binaries
         run: |
           mkdir yabridge
-          cp build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-host{,-32}.exe{,.so} yabridge
+          cp build/libyabridge{,-chainloader}-{clap,vst2,vst3}.so build/yabridge-host{,-32}.exe{,.so} yabridge
           cp CHANGELOG.md README.md yabridge
 
           tar -caf "$ARCHIVE_NAME" yabridge
@@ -127,11 +127,11 @@ jobs:
           meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=10000 -Dbitbridge=true -Dcpp_link_args='-mwindows -static-libstdc++' -Dbuild.cpp_args='-m32' -Dbuild.cpp_link_args='-m32 -static-libstdc++'
           ninja -C build
       - name: Strip remaining debug symbols
-        run: strip build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-host{,-32}.exe.so
+        run: strip build/libyabridge{,-chainloader}-{clap,vst2,vst3}.so build/yabridge-host{,-32}.exe.so
       - name: Create an archive for the binaries
         run: |
           mkdir yabridge
-          cp build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-host{,-32}.exe{,.so} yabridge
+          cp build/libyabridge{,-chainloader}-{clap,vst2,vst3}.so build/yabridge-host{,-32}.exe{,.so} yabridge
           cp CHANGELOG.md README.md yabridge
 
           tar -caf "$ARCHIVE_NAME" yabridge

@@ -28,7 +28,7 @@
 #include "utils.h"
 
 // These chainloader libraries are tiny, mostly dependencyless libraries that
-// `dlopen()` the actual `libyabridge-{vst2,vst3}.so` files and forward the
+// `dlopen()` the actual `libyabridge-{clap,vst2,vst3}.so` files and forward the
 // entry point function calls from this library to those. Or technically, these
 // libraries use dedicated entry point functions because multiple chainloader
 // libraries may all dynamically link to the exact same plugin library, so we

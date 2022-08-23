@@ -41,7 +41,7 @@ static const std::string host_name = "yabridge host version " +
  * plugin, or spawn a group host server.
  *
  * For the individual plugin situation this process will load the specified
- * plugin plugin, and then connect back to the `libyabridge-{vst2,vst3}.so`
+ * plugin plugin, and then connect back to the `libyabridge-{clap,vst2,vst3}.so`
  * instance that spawned this over the socket.
  *
  * For the group host case this process will act as a daemon yabridge plugin
