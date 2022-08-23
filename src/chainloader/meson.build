@@ -9,6 +9,10 @@ chainloader_deps = [
   rt_dep,
 ]
 
+if with_clap
+  clap_chainloader_deps = chainloader_deps + [clap_dep]
+endif
+
 vst2_chainloader_sources = files(
   '../common/logging/common.cpp',
   '../common/linking.cpp',
@@ -17,6 +21,17 @@ vst2_chainloader_sources = files(
   'utils.cpp',
   'vst2-chainloader.cpp',
 )
+
+if with_clap
+  clap_chainloader_sources = files(
+    '../common/logging/common.cpp',
+    '../common/linking.cpp',
+    '../common/notifications.cpp',
+    '../common/process.cpp',
+    'utils.cpp',
+    'clap-chainloader.cpp',
+  )
+endif
 
 if with_vst3
   vst3_chainloader_sources = files(

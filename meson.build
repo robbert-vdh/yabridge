@@ -314,16 +314,15 @@ if with_clap
     dependencies : clap_plugin_deps,
     cpp_args : compiler_options,
   )
-  # TODO: Chainloader
-  # shared_library(
-  #   'yabridge-chainloader-clap',
-  #   clap_chainloader_sources,
-  #   native : true,
-  #   dependencies : chainloader_deps,
-  #   cpp_args : compiler_options + chainloader_compiler_options,
-  #   # See above
-  #   override_options : ['b_lto=true'],
-  # )
+  shared_library(
+    'yabridge-chainloader-clap',
+    clap_chainloader_sources,
+    native : true,
+    dependencies : clap_chainloader_deps,
+    cpp_args : compiler_options + chainloader_compiler_options,
+    # See above
+    override_options : ['b_lto=true'],
+  )
 endif
 
 if with_vst3

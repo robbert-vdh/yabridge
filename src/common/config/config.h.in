@@ -17,6 +17,11 @@
 #pragma once
 
 /**
+ * The name of yabridge's CLAP library, e.g. `libyabridge-clap.so`.
+ */
+constexpr char yabridge_clap_plugin_name[] = "@clap_plugin_name@";
+
+/**
  * The name of yabridge's VST2 library, e.g. `libyabridge-vst2.so`.
  */
 constexpr char yabridge_vst2_plugin_name[] = "@vst2_plugin_name@";
