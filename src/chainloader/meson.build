@@ -18,11 +18,13 @@ vst2_chainloader_sources = files(
   'vst2-chainloader.cpp',
 )
 
-vst3_chainloader_sources = files(
-  '../common/logging/common.cpp',
-  '../common/linking.cpp',
-  '../common/notifications.cpp',
-  '../common/process.cpp',
-  'utils.cpp',
-  'vst3-chainloader.cpp',
-)
+if with_vst3
+  vst3_chainloader_sources = files(
+    '../common/logging/common.cpp',
+    '../common/linking.cpp',
+    '../common/notifications.cpp',
+    '../common/process.cpp',
+    'utils.cpp',
+    'vst3-chainloader.cpp',
+  )
+endif
