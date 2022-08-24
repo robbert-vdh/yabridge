@@ -5,6 +5,7 @@ config_header = configure_file(
   output : 'config.h',
   configuration : configuration_data(
     {
+      'clap_plugin_name': 'lib' + clap_plugin_name + '.so',
       'vst2_plugin_name': 'lib' + vst2_plugin_name + '.so',
       'vst3_plugin_name': 'lib' + vst3_plugin_name + '.so',
       'host_binary_32bit': host_name_32bit + '.exe',
