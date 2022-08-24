@@ -68,6 +68,20 @@ vst2_plugin_sources = files(
 
 if with_clap
   clap_plugin_sources = files(
+    '../common/communication/common.cpp',
+    '../common/configuration.cpp',
+    '../common/logging/clap.cpp',
+    '../common/logging/common.cpp',
+    '../common/audio-shm.cpp',
+    '../common/linking.cpp',
+    '../common/notifications.cpp',
+    '../common/plugins.cpp',
+    '../common/process.cpp',
+    '../common/utils.cpp',
+    '../include/llvm/small-vector.cpp',
+    'bridges/clap.cpp',
+    'host-process.cpp',
+    'utils.cpp',
     'clap-plugin.cpp',
   )
 endif
