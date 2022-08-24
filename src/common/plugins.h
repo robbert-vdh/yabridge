@@ -37,7 +37,7 @@ enum class LibArchitecture { dll_32, dll_64 };
  * `plugin_type_from_string()` with some invalid value we can use it to
  * gracefully show an error message without resorting to exceptions.
  */
-enum class PluginType { vst2, vst3, unknown };
+enum class PluginType { clap, vst2, vst3, unknown };
 
 template <typename S>
 void serialize(S& s, PluginType& plugin_type) {

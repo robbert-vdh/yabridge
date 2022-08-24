@@ -69,7 +69,9 @@ LibArchitecture find_dll_architecture(const fs::path& plugin_path) {
 }
 
 PluginType plugin_type_from_string(const std::string& plugin_type) noexcept {
-    if (plugin_type == "VST2") {
+    if (plugin_type == "CLAP") {
+        return PluginType::clap;
+    } else if (plugin_type == "VST2") {
         return PluginType::vst2;
     } else if (plugin_type == "VST3") {
         return PluginType::vst3;
@@ -81,7 +83,9 @@ PluginType plugin_type_from_string(const std::string& plugin_type) noexcept {
 std::string plugin_type_to_string(const PluginType& plugin_type) {
     // We'll capitalize the acronyms because this is also our human readable
     // format
-    if (plugin_type == PluginType::vst2) {
+    if (plugin_type == PluginType::clap) {
+        return "CLAP";
+    } else if (plugin_type == PluginType::vst2) {
         return "VST2";
     } else if (plugin_type == PluginType::vst3) {
         return "VST3";
