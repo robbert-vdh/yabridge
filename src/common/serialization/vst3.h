@@ -51,9 +51,9 @@
 /**
  * When we send a control message from the plugin to the Wine plugin host, this
  * encodes the information we request or the operation we want to perform. A
- * request of type `ControlRequest(T)` should send back a `T::Response`.
+ * request of type `Vst3ControlRequest(T)` should send back a `T::Response`.
  */
-using ControlRequest =
+using Vst3ControlRequest =
     std::variant<Vst3PluginFactoryProxy::Construct,
                  Vst3PlugViewProxy::Destruct,
                  Vst3PluginProxy::Construct,
@@ -136,8 +136,8 @@ using ControlRequest =
                  YaXmlRepresentationController::GetXmlRepresentationStream>;
 
 template <typename S>
-void serialize(S& s, ControlRequest& payload) {
-    // All of the objects in `ControlRequest` should have their own
+void serialize(S& s, Vst3ControlRequest& payload) {
+    // All of the objects in `Vst3ControlRequest` should have their own
     // serialization function
     s.ext(payload, bitsery::ext::InPlaceVariant{});
 }
@@ -156,15 +156,15 @@ void serialize(S& s, ControlRequest& payload) {
  * without needing to create copies. See `MessageReference<T>` and
  * `bitsery::ext::MessageReference<T>` for more information.
  */
-struct AudioProcessorRequest {
-    AudioProcessorRequest() {}
+struct Vst3AudioProcessorRequest {
+    Vst3AudioProcessorRequest() {}
 
     /**
      * Initialize the variant with an object. In `Vst3Sockets::send_message()`
      * the object gets implicitly converted to the this variant.
      */
     template <typename T>
-    AudioProcessorRequest(T request) : payload(std::move(request)) {}
+    Vst3AudioProcessorRequest(T request) : payload(std::move(request)) {}
 
     using Payload =
         std::variant<YaAudioProcessor::SetBusArrangements,
@@ -229,17 +229,17 @@ struct AudioProcessorRequest {
  *
  * @overload
  */
-inline AudioProcessorRequest::Payload& get_request_variant(
-    AudioProcessorRequest& request) noexcept {
+inline Vst3AudioProcessorRequest::Payload& get_request_variant(
+    Vst3AudioProcessorRequest& request) noexcept {
     return request.payload;
 }
 
 /**
  * When we do a callback from the Wine plugin host to the plugin, this encodes
  * the information we want or the operation we want to perform. A request of
- * type `CallbackRequest(T)` should send back a `T::Response`.
+ * type `Vst3CallbackRequest(T)` should send back a `T::Response`.
  */
-using CallbackRequest =
+using Vst3CallbackRequest =
     std::variant<Vst3ContextMenuProxy::Destruct,
                  WantsConfiguration,
                  YaComponentHandler::BeginEdit,
@@ -272,8 +272,8 @@ using CallbackRequest =
                  YaUnitHandler2::NotifyUnitByBusChange>;
 
 template <typename S>
-void serialize(S& s, CallbackRequest& payload) {
-    // All of the objects in `CallbackRequest` should have their own
+void serialize(S& s, Vst3CallbackRequest& payload) {
+    // All of the objects in `Vst3CallbackRequest` should have their own
     // serialization function.
     s.ext(payload, bitsery::ext::InPlaceVariant{});
 }

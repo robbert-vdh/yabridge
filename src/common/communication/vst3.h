@@ -128,10 +128,10 @@ class Vst3Sockets final : public Sockets {
      *   that the native plugin already tries to connect to the socket before
      *   Wine plugin host is even listening on it.
      * @param cb An overloaded function that can take every type `T` in the
-     *   `AudioProcessorRequest` variant and then returns `T::Response`.
+     *   `Vst3AudioProcessorRequest` variant and then returns `T::Response`.
      *
      * @tparam F A function type in the form of `T::Response(T)` for every `T`
-     *   in `AudioProcessorRequest::Payload`.
+     *   in `Vst3AudioProcessorRequest::Payload`.
      */
     template <typename F>
     void add_audio_processor_and_listen(
@@ -189,7 +189,7 @@ class Vst3Sockets final : public Sockets {
      * and thread for handling those. These calls also always reuse buffers to
      * minimize allocations.
      *
-     * @tparam T Some object in the `AudioProcessorRequest` variant.
+     * @tparam T Some object in the `Vst3AudioProcessorRequest` variant.
      */
     template <typename T>
     typename T::Response send_audio_processor_message(
@@ -239,7 +239,7 @@ class Vst3Sockets final : public Sockets {
      * This will be listened on by the Wine plugin host when it calls
      * `receive_multi()`.
      */
-    TypedMessageHandler<Thread, Vst3Logger, ControlRequest>
+    TypedMessageHandler<Thread, Vst3Logger, Vst3ControlRequest>
         host_plugin_control_;
 
     /**
@@ -247,7 +247,7 @@ class Vst3Sockets final : public Sockets {
      * better idea of what our communication model looks like we'll probably
      * want to provide an abstraction similar to `Vst2EventHandler`.
      */
-    TypedMessageHandler<Thread, Vst3Logger, CallbackRequest>
+    TypedMessageHandler<Thread, Vst3Logger, Vst3CallbackRequest>
         plugin_host_callback_;
 
    private:
@@ -284,7 +284,7 @@ class Vst3Sockets final : public Sockets {
      */
     std::unordered_map<
         size_t,
-        TypedMessageHandler<Thread, Vst3Logger, AudioProcessorRequest>>
+        TypedMessageHandler<Thread, Vst3Logger, Vst3AudioProcessorRequest>>
         audio_processor_sockets_;
     std::mutex audio_processor_sockets_mutex_;
 };

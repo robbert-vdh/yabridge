@@ -1628,7 +1628,7 @@ size_t Vst3Bridge::register_object_instance(
                         // NOTE: To prevent allocations we keep this actual
                         //       `YaAudioProcessor::Process` object around as
                         //       part of a static thread local
-                        //       `AudioProcessorRequest` object, and we only
+                        //       `Vst3AudioProcessorRequest` object, and we only
                         //       store a reference to it in our variant (this is
                         //       done during the deserialization in
                         //       `bitsery::ext::MessageReference`)

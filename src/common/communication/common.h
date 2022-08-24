@@ -905,8 +905,8 @@ class AdHocSocketHandler {
 /**
  * An instance of `AdHocSocketHandler` that encapsulates the simple
  * communication model we use for sending requests and receiving responses. A
- * request of type `T`, where `T` is in the `{Control,Callback}Request` variatns
- * for the plugin format, should be answered with an object of type
+ * request of type `T`, where `T` is in the `*{Control,Callback}Request`
+ * variants for the plugin format, should be answered with an object of type
  * `T::Response`.
  *
  * See the docstrings on `Vst2EventHandler` and `AdHocSocketHandler` for more
@@ -918,7 +918,7 @@ class AdHocSocketHandler {
  * @tparam LoggerImpl The logger instead to use. This should have
  *   `log_request(bool, T)` methods for every T in `Request`, as well as
  *   corresponding `log_response(bool, T::Response)` methods.
- * @tparam Request Either `ControlRequest` or `CallbackRequest`.
+ * @tparam Request Either `Vst3ControlRequest` or `Vst3CallbackRequest`.
  */
 template <typename Thread, typename LoggerImpl, typename Request>
 class TypedMessageHandler : public AdHocSocketHandler<Thread> {
@@ -1114,8 +1114,8 @@ class TypedMessageHandler : public AdHocSocketHandler<Thread> {
                             auto [logger, is_host_plugin] = *logging;
                             return logger.log_request(is_host_plugin, object);
                         },
-                        // In the case of `AudioProcessorRequest`, we need to
-                        // actually fetch the variant field since our object
+                        // In the case of `Vst3AudioProcessorRequest`, we need
+                        // to actually fetch the variant field since our object
                         // also contains a persistent object to store process
                         // data into so we can prevent allocations during audio
                         // processing
@@ -1153,7 +1153,7 @@ class TypedMessageHandler : public AdHocSocketHandler<Thread> {
 
 /**
  * Get the actual variant for a request. We need a function for this to be able
- * to handle composite types, like `AudioProcessorRequest` that use
+ * to handle composite types, like `Vst3AudioProcessorRequest` that use
  * `MesasgeReference` to be able to store persistent objects in the message
  * variant. This function should be specialized for those kinds of types.
  */
