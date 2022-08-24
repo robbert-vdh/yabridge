@@ -137,6 +137,40 @@ fs::path find_plugin_library(const fs::path& this_plugin_path,
     //       the directory listing. That's possible, but not something we're
     //       doing right now.
     switch (plugin_type) {
+        case PluginType::clap: {
+            // CLAP uses the same file extension on all platforms, which is kind
+            // of a problem for our setup. As a workaround we invent this new
+            // 'clap-win' file extension for the Windows CLAP plugin. That
+            // avoids having the actual Windows plugin in one of the plugin
+            // search locations, as those will show up in the DAW's plugin
+            // blacklist, and they may cause the bridged plugin to be
+            // blacklisted as well.
+            fs::path plugin_path(this_plugin_path);
+            plugin_path.replace_extension(".clap-win");
+            if (fs::exists(plugin_path)) {
+                // Also resolve symlinks here, to support symlinked plugins.
+                // This is the default in yabridgectl 4.0.
+                return fs::canonical(plugin_path);
+            }
+
+            // In case this files does not exist and our `.so` file is a
+            // symlink, we'll also repeat this check after resolving that
+            // symlink to support links to copies of `libyabridge-clap.so` as
+            // described in issue #3
+            fs::path alternative_plugin_path = fs::canonical(this_plugin_path);
+            alternative_plugin_path.replace_extension(".clap-win");
+            if (fs::exists(alternative_plugin_path)) {
+                return fs::canonical(alternative_plugin_path);
+            }
+
+            // This function is used in the constructor's initializer list so we
+            // have to throw when the path could not be found
+            throw std::runtime_error(
+                "'" + plugin_path.string() +
+                "' does not exist. Yabridge's CLAP support looks for a Windows "
+                "CLAP plugin renamed have a '.clap-win' file extension next to "
+                "a yabridge '.clap' file with the same name.");
+        } break;
         case PluginType::vst2: {
             fs::path plugin_path(this_plugin_path);
             plugin_path.replace_extension(".dll");
@@ -231,6 +265,7 @@ fs::path find_plugin_library(const fs::path& this_plugin_path,
 fs::path normalize_plugin_path(const fs::path& windows_library_path,
                                PluginType plugin_type) {
     switch (plugin_type) {
+        case PluginType::clap:
         case PluginType::vst2:
             return windows_library_path;
             break;
