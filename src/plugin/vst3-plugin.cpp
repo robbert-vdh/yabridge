@@ -68,8 +68,7 @@ namespace fs = ghc::filesystem;
  */
 std::unique_ptr<Vst3PluginBridge> bridge;
 
-void log_init_exception(const std::exception& error,
-                        const fs::path& plugin_path) {
+void log_init_error(const std::exception& error, const fs::path& plugin_path) {
     Logger logger = Logger::create_exception_logger();
 
     logger.log("");
@@ -99,7 +98,7 @@ bool InitModule() {
 
         return true;
     } catch (const std::exception& error) {
-        log_init_exception(error, plugin_path);
+        log_init_error(error, plugin_path);
 
         return false;
     }
@@ -140,7 +139,7 @@ extern "C" YABRIDGE_EXPORT Vst3PluginBridge* yabridge_module_init(
     try {
         return new Vst3PluginBridge(plugin_path);
     } catch (const std::exception& error) {
-        log_init_exception(error, plugin_path);
+        log_init_error(error, plugin_path);
 
         return nullptr;
     }
