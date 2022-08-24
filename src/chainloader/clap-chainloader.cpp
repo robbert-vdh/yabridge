@@ -48,9 +48,8 @@ using ClapPluginBridge = void;
 
 ClapPluginBridge* (*yabridge_bridge_init)(const char* plugin_path) = nullptr;
 void (*yabridge_bridge_free)(ClapPluginBridge* instance) = nullptr;
-const void* (*yabridge_module_get_plugin_factory)(ClapPluginBridge* instance,
-                                                  const char* factory_id) =
-    nullptr;
+const void* (*yabridge_module_get_factory)(ClapPluginBridge* instance,
+                                           const char* factory_id) = nullptr;
 
 /**
  * The bridge instance for this chainloader. This is initialized when
@@ -102,7 +101,7 @@ bool initialize_library() {
 
     LOAD_FUNCTION(yabridge_bridge_init);
     LOAD_FUNCTION(yabridge_bridge_free);
-    LOAD_FUNCTION(yabridge_module_get_plugin_factory);
+    LOAD_FUNCTION(yabridge_module_get_factory);
 
 #undef LOAD_FUNCTION
 
@@ -148,7 +147,7 @@ const void* clap_entry_get_factory(const char* factory_id) {
     assert(bridge);
     assert(factory_id);
 
-    return yabridge_module_get_plugin_factory(bridge.get(), factory_id);
+    return yabridge_module_get_factory(bridge.get(), factory_id);
 }
 
 CLAP_EXPORT const clap_plugin_entry_t clap_entry = {
