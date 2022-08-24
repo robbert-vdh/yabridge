@@ -339,13 +339,17 @@ class PluginBridge {
 #ifdef WITH_BITBRIDGE
         init_msg << "- bitbridge support" << std::endl;
 #endif
+#ifdef WITH_CLAP
+        init_msg << "- CLAP support" << std::endl;
+#endif
 #ifdef WITH_WINEDBG
         init_msg << "- winedbg" << std::endl;
 #endif
 #ifdef WITH_VST3
         init_msg << "- VST3 support" << std::endl;
 #endif
-#if !(defined(WITH_BITBRIDGE) || defined(WITH_WINEDBG) || defined(WITH_VST3))
+#if !(defined(WITH_BITBRIDGE) || defined(WITH_CLAP) || \
+      defined(WITH_WINEDBG) || defined(WITH_VST3))
         init_msg << "  <none>" << std::endl;
 #endif
         init_msg << std::endl;
