@@ -98,9 +98,9 @@ class Vst3Sockets final : public Sockets {
     }
 
     /**
-     * Connect to the dedicated `IAudioProcessor` and `IConnect` handling socket
-     * for a plugin object instance. This should be called on the plugin side
-     * after instantiating such an object.
+     * Connect to the dedicated `IAudioProcessor` and `IComponent` handling
+     * socket for a plugin object instance. This should be called on the plugin
+     * side after instantiating such an object.
      *
      * @param instance_id The object instance identifier of the socket.
      */
@@ -117,7 +117,7 @@ class Vst3Sockets final : public Sockets {
     }
 
     /**
-     * Create and listen on a dedicated `IAudioProcessor` and `IConnect`
+     * Create and listen on a dedicated `IAudioProcessor` and `IComponent`
      * handling socket for a plugin object instance. The calling thread will
      * block until the socket has been closed. This should be called from the
      * Wine plugin host side after instantiating such an object.
@@ -189,7 +189,8 @@ class Vst3Sockets final : public Sockets {
      * and thread for handling those. These calls also always reuse buffers to
      * minimize allocations.
      *
-     * @tparam T Some object in the `Vst3AudioProcessorRequest` variant.
+     * @tparam T Some object in the `Vst3AudioProcessorRequest` variant. All of
+     *   these objects need to have an `instance_id` field.
      */
     template <typename T>
     typename T::Response send_audio_processor_message(
@@ -216,7 +217,7 @@ class Vst3Sockets final : public Sockets {
     /**
      * Alternative to `send_audio_processor_message()` for use with
      * `MessageReference<T>`, where we also want deserialize into an existing
-     * object to prevent allocations. Used during audio processing.q
+     * object to prevent allocations. Used during audio processing.
      *
      * TODO: Think of a better name for this
      */
@@ -276,11 +277,6 @@ class Vst3Sockets final : public Sockets {
      * both of those) will get a dedicated socket. These functions are always
      * called in a hot loop, so there should not be any waiting or additional
      * thread or socket creation happening there.
-     *
-     * THe last `false` template arguments means that we'll disable all ad-hoc
-     * socket and thread spawning behaviour. Otherwise every plugin instance
-     * would have one dedicated thread for handling function calls to these
-     * interfaces, and then another dedicated thread just idling around.
      */
     std::unordered_map<
         size_t,
