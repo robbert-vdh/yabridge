@@ -150,9 +150,16 @@ const void* clap_entry_get_factory(const char* factory_id) {
     return yabridge_module_get_factory(bridge.get(), factory_id);
 }
 
+// This visibility attribute doesn't do anything on data with external linkage,
+// but we'll include it here just because it's in the CLAP template
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
+
 CLAP_EXPORT const clap_plugin_entry_t clap_entry = {
     .clap_version = CLAP_VERSION_INIT,
     .init = clap_entry_init,
     .deinit = clap_entry_deinit,
     .get_factory = clap_entry_get_factory,
 };
+
+#pragma GCC diagnostic pop
