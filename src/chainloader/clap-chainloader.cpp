@@ -46,8 +46,8 @@ namespace fs = ghc::filesystem;
 // `clap_entry.init` gets called
 using ClapPluginBridge = void;
 
-ClapPluginBridge* (*yabridge_bridge_init)(const char* plugin_path) = nullptr;
-void (*yabridge_bridge_free)(ClapPluginBridge* instance) = nullptr;
+ClapPluginBridge* (*yabridge_module_init)(const char* plugin_path) = nullptr;
+void (*yabridge_module_free)(ClapPluginBridge* instance) = nullptr;
 const void* (*yabridge_module_get_factory)(ClapPluginBridge* instance,
                                            const char* factory_id) = nullptr;
 
@@ -55,7 +55,7 @@ const void* (*yabridge_module_get_factory)(ClapPluginBridge* instance,
  * The bridge instance for this chainloader. This is initialized when
  * `clap_entry.init` first gets called.
  */
-std::unique_ptr<ClapPluginBridge, decltype(yabridge_bridge_free)> bridge(
+std::unique_ptr<ClapPluginBridge, decltype(yabridge_module_free)> bridge(
     nullptr,
     nullptr);
 /**
@@ -99,8 +99,8 @@ bool initialize_library() {
         }                                                                   \
     } while (false)
 
-    LOAD_FUNCTION(yabridge_bridge_init);
-    LOAD_FUNCTION(yabridge_bridge_free);
+    LOAD_FUNCTION(yabridge_module_init);
+    LOAD_FUNCTION(yabridge_module_free);
     LOAD_FUNCTION(yabridge_module_get_factory);
 
 #undef LOAD_FUNCTION
@@ -124,8 +124,8 @@ bool clap_entry_init(const char* /*plugin_path*/) {
         //      plugin formats.
         const fs::path this_plugin_path = get_this_file_location();
         bridge =
-            decltype(bridge)(yabridge_bridge_init(this_plugin_path.c_str()),
-                             yabridge_bridge_free);
+            decltype(bridge)(yabridge_module_init(this_plugin_path.c_str()),
+                             yabridge_module_free);
         if (!bridge) {
             return false;
         }
