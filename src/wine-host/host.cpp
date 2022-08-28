@@ -22,6 +22,9 @@
 #include <version.h>
 
 #include "../common/utils.h"
+#ifdef WITH_CLAP
+#include "bridges/clap.h"
+#endif
 #include "bridges/group.h"
 #include "bridges/vst2.h"
 #ifdef WITH_VST3
@@ -138,6 +141,19 @@ int YABRIDGE_EXPORT
         std::unique_ptr<HostBridge> bridge;
         try {
             switch (plugin_type) {
+                case PluginType::clap:
+#ifdef WITH_CLAP
+                    bridge = std::make_unique<ClapBridge>(
+                        main_context, plugin_location, socket_endpoint_path,
+                        parent_pid);
+#else
+                    std::cerr
+                        << "This version of yabridge has not been compiled "
+                           "with CLAP support"
+                        << std::endl;
+                    return 1;
+#endif
+                    break;
                 case PluginType::vst2:
                     bridge = std::make_unique<Vst2Bridge>(
                         main_context, plugin_location, socket_endpoint_path,

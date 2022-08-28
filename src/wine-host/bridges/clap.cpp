@@ -1,0 +1,344 @@
+// yabridge: a Wine plugin bridge
+// Copyright (C) 2020-2022 Robbert van der Helm
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#include "clap.h"
+
+#include <bitset>
+
+// Generated inside of the build directory
+#include <version.h>
+
+// TODO: Query extensions in the initializer list
+ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept {
+}
+
+ClapPluginInstance::ClapPluginInstance(const clap_plugin* plugin) noexcept
+    : plugin((assert(plugin), plugin), plugin->destroy), extensions(*plugin) {}
+
+ClapBridge::ClapBridge(MainContext& main_context,
+                       // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+                       std::string plugin_dll_path,
+                       std::string endpoint_base_dir,
+                       pid_t parent_pid)
+    : HostBridge(main_context, plugin_dll_path, parent_pid),
+      logger_(generic_logger_),
+      sockets_(main_context.context_, endpoint_base_dir, false) {
+    // TODO: Load the CLAP module
+    // std::string error;
+    // module_ = CLAP::Hosting::Win32Module::create(plugin_dll_path, error);
+    // if (!module_) {
+    //     throw std::runtime_error("Could not load the CLAP module for '" +
+    //                              plugin_dll_path + "': " + error);
+    // }
+
+    sockets_.connect();
+
+    // Fetch this instance's configuration from the plugin to finish the setup
+    // process
+    config_ = sockets_.plugin_host_main_thread_callback_.send_message(
+        WantsConfiguration{.host_version = yabridge_git_version}, std::nullopt);
+
+    // Allow this plugin to configure the main context's tick rate
+    main_context.update_timer_interval(config_.event_loop_interval());
+}
+
+bool ClapBridge::inhibits_event_loop() noexcept {
+    std::shared_lock lock(object_instances_mutex_);
+
+    for (const auto& [instance_id, instance] : object_instances_) {
+        if (!instance.is_initialized) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void ClapBridge::run() {
+    set_realtime_priority(true);
+
+    // TODO: Listen on the socket
+    // sockets_.host_plugin_control_.receive_messages(
+    //     std::nullopt,
+    //     overload{
+    //         [&](const ClapPluginFactoryProxy::Construct&)
+    //             -> ClapPluginFactoryProxy::Construct::Response {
+    //             return ClapPluginFactoryProxy::ConstructArgs(
+    //                 module_->getFactory().get());
+    //         },
+    //     });
+}
+
+// TODO: Implement this
+// bool ClapBridge::maybe_resize_editor(size_t instance_id,
+//                                      const Steinberg::ViewRect& new_size) {
+//     const auto& [instance, _] = get_instance(instance_id);
+
+//     if (instance.editor) {
+//         instance.editor->resize(new_size.getWidth(), new_size.getHeight());
+//         return true;
+//     } else {
+//         return false;
+//     }
+// }
+
+void ClapBridge::close_sockets() {
+    sockets_.close();
+}
+
+size_t ClapBridge::generate_instance_id() noexcept {
+    return current_instance_id_.fetch_add(1);
+}
+
+std::pair<ClapPluginInstance&, std::shared_lock<std::shared_mutex>>
+ClapBridge::get_instance(size_t instance_id) noexcept {
+    std::shared_lock lock(object_instances_mutex_);
+
+    return std::pair<ClapPluginInstance&, std::shared_lock<std::shared_mutex>>(
+        object_instances_.at(instance_id), std::move(lock));
+}
+
+// TODO: Implement audio processing
+// std::optional<AudioShmBuffer::Config> ClapBridge::setup_shared_audio_buffers(
+//     size_t instance_id) {
+//     const auto& [instance, _] = get_instance(instance_id);
+
+//     const Steinberg::IPtr<Steinberg::Vst::IComponent> component =
+//         instance.interfaces.component;
+//     const Steinberg::IPtr<Steinberg::Vst::IAudioProcessor> audio_processor =
+//         instance.interfaces.audio_processor;
+
+//     if (!instance.process_setup || !component || !audio_processor) {
+//         return std::nullopt;
+//     }
+
+//     // We'll query the plugin for its audio bus layouts, and then create
+//     // calculate the offsets in a large memory buffer for the different audio
+//     // channels. The offsets for each audio channel are in samples (since
+//     // they'll be used with pointer arithmetic in `AudioShmBuffer`).
+//     uint32_t current_offset = 0;
+
+//     auto create_bus_offsets = [&, &setup = instance.process_setup](
+//                                   Steinberg::Vst::BusDirection direction) {
+//         const auto num_busses =
+//             component->getBusCount(Steinberg::Vst::kAudio, direction);
+
+//         // This function is also run from `IAudioProcessor::setActive()`.
+//         // According to the docs this does not need to be realtime-safe, but we
+//         // should at least still try to not do anything expensive when no work
+//         // needs to be done.
+//         llvm::SmallVector<llvm::SmallVector<uint32_t, 32>, 16> bus_offsets(
+//             num_busses);
+//         for (int bus = 0; bus < num_busses; bus++) {
+//             Steinberg::Vst::SpeakerArrangement speaker_arrangement{};
+//             audio_processor->getBusArrangement(direction, bus,
+//                                                speaker_arrangement);
+
+//             const size_t num_channels =
+//                 std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement) * 8>(
+//                     speaker_arrangement)
+//                     .count();
+//             bus_offsets[bus].resize(num_channels);
+
+//             for (size_t channel = 0; channel < num_channels; channel++) {
+//                 bus_offsets[bus][channel] = current_offset;
+//                 current_offset += setup->maxSamplesPerBlock;
+//             }
+//         }
+
+//         return bus_offsets;
+//     };
+
+//     // Creating the audio buffer offsets for every channel in every bus will
+//     // advacne `current_offset` to keep pointing to the starting position for
+//     // the next channel
+//     const auto input_bus_offsets =
+//     create_bus_offsets(Steinberg::Vst::kInput); const auto output_bus_offsets
+//     = create_bus_offsets(Steinberg::Vst::kOutput);
+
+//     // The size of the buffer is in bytes, and it will depend on whether the
+//     // host is going to pass 32-bit or 64-bit audio to the plugin
+//     const bool double_precision =
+//         instance.process_setup->symbolicSampleSize ==
+//         Steinberg::Vst::kSample64;
+//     const uint32_t buffer_size =
+//         current_offset * (double_precision ? sizeof(double) : sizeof(float));
+
+//     // If this function has been called previously and the size did not change,
+//     // then we should not do any work
+//     if (instance.process_buffers &&
+//         instance.process_buffers->config_.size == buffer_size) {
+//         return std::nullopt;
+//     }
+
+//     // Because the above check should be super cheap, we'll now need to convert
+//     // the stack allocated SmallVectors to regular heap vectors
+//     std::vector<std::vector<uint32_t>> input_bus_offsets_vector;
+//     input_bus_offsets_vector.reserve(input_bus_offsets.size());
+//     for (const auto& channel_offsets : input_bus_offsets) {
+//         input_bus_offsets_vector.push_back(
+//             std::vector(channel_offsets.begin(), channel_offsets.end()));
+//     }
+
+//     std::vector<std::vector<uint32_t>> output_bus_offsets_vector;
+//     output_bus_offsets_vector.reserve(output_bus_offsets.size());
+//     for (const auto& channel_offsets : output_bus_offsets) {
+//         output_bus_offsets_vector.push_back(
+//             std::vector(channel_offsets.begin(), channel_offsets.end()));
+//     }
+
+//     // We'll set up these shared memory buffers on the Wine side first, and then
+//     // when this request returns we'll do the same thing on the native plugin
+//     // side
+//     AudioShmBuffer::Config buffer_config{
+//         .name = sockets_.base_dir_.filename().string() + "-" +
+//                 std::to_string(instance_id),
+//         .size = buffer_size,
+//         .input_offsets = std::move(input_bus_offsets_vector),
+//         .output_offsets = std::move(output_bus_offsets_vector)};
+//     if (!instance.process_buffers) {
+//         instance.process_buffers.emplace(buffer_config);
+//     } else {
+//         instance.process_buffers->resize(buffer_config);
+//     }
+
+//     // After setting up the shared memory buffer, we need to create a vector of
+//     // channel audio pointers for every bus. These will then be assigned to the
+//     // `AudioBusBuffers` objects in the `ProcessData` struct in
+//     // `YaProcessData::reconstruct()` before passing the reconstructed process
+//     // data to `IAudioProcessor::process()`.
+//     auto set_bus_pointers =
+//         [&]<std::invocable<uint32_t, uint32_t> F>(
+//             std::vector<std::vector<void*>>& bus_pointers,
+//             const std::vector<std::vector<uint32_t>>& bus_offsets,
+//             F&& get_channel_pointer) {
+//             bus_pointers.resize(bus_offsets.size());
+
+//             for (size_t bus = 0; bus < bus_offsets.size(); bus++) {
+//                 bus_pointers[bus].resize(bus_offsets[bus].size());
+
+//                 for (size_t channel = 0; channel < bus_offsets[bus].size();
+//                      channel++) {
+//                     bus_pointers[bus][channel] =
+//                         get_channel_pointer(bus, channel);
+//                 }
+//             }
+//         };
+
+//     set_bus_pointers(
+//         instance.process_buffers_input_pointers,
+//         instance.process_buffers->config_.input_offsets,
+//         [&, &instance = instance](uint32_t bus, uint32_t channel) -> void* {
+//             if (double_precision) {
+//                 return instance.process_buffers->input_channel_ptr<double>(
+//                     bus, channel);
+//             } else {
+//                 return instance.process_buffers->input_channel_ptr<float>(
+//                     bus, channel);
+//             }
+//         });
+//     set_bus_pointers(
+//         instance.process_buffers_output_pointers,
+//         instance.process_buffers->config_.output_offsets,
+//         [&, &instance = instance](uint32_t bus, uint32_t channel) -> void* {
+//             if (double_precision) {
+//                 return instance.process_buffers->output_channel_ptr<double>(
+//                     bus, channel);
+//             } else {
+//                 return instance.process_buffers->output_channel_ptr<float>(
+//                     bus, channel);
+//             }
+//         });
+
+//     return buffer_config;
+// }
+
+size_t ClapBridge::register_plugin_instance(const clap_plugin* plugin) {
+    std::unique_lock lock(object_instances_mutex_);
+
+    if (!plugin) {
+        throw std::invalid_argument("The plugin pointer cannot be null");
+    }
+
+    const size_t instance_id = generate_instance_id();
+    object_instances_.emplace(instance_id, plugin);
+
+    // Every plugin instance gets its own audio thread
+    std::promise<void> socket_listening_latch;
+    object_instances_.at(instance_id)
+        .audio_thread_handler = Win32Thread([&, instance_id]() {
+        set_realtime_priority(true);
+
+        // XXX: Like with VST2 worker threads, when using plugin groups the
+        //      thread names from different plugins will clash. Not a huge
+        //      deal probably, since duplicate thread names are still more
+        //      useful than no thread names.
+        const std::string thread_name = "audio-" + std::to_string(instance_id);
+        pthread_setname_np(pthread_self(), thread_name.c_str());
+
+        // TODO: Listen on the socket
+        // sockets_.add_audio_processor_and_listen(
+        //     instance_id, socket_listening_latch,
+        //     overload{
+        //         [&](YaAudioProcessor::SetBusArrangements& request)
+        //             -> YaAudioProcessor::SetBusArrangements::Response {
+        //             const auto& [instance, _] =
+        //                 get_instance(request.instance_id);
+
+        //             // HACK: WA Production Imperfect CLAP somehow requires
+        //             //       `inputs` to be a valid pointer, even if there
+        //             //       are no inputs.
+        //             Steinberg::Vst::SpeakerArrangement empty_arrangement =
+        //                 0b00000000;
+
+        //             return instance.interfaces.audio_processor
+        //                 ->setBusArrangements(
+        //                     request.num_ins > 0 ? request.inputs.data()
+        //                                         : &empty_arrangement,
+        //                     request.num_ins,
+        //                     request.num_outs > 0 ? request.outputs.data()
+        //                                          : &empty_arrangement,
+        //                     request.num_outs);
+        //         },
+        //     });
+    });
+
+    // Wait for the new socket to be listening on before continuing. Otherwise
+    // the native plugin may try to connect to it before our thread is up and
+    // running.
+    socket_listening_latch.get_future().wait();
+
+    return instance_id;
+}
+
+void ClapBridge::unregister_object_instance(size_t instance_id) {
+    sockets_.remove_audio_thread(instance_id);
+
+    // Remove the instance from within the main IO context so
+    // removing it doesn't interfere with the Win32 message loop
+    // XXX: I don't think we have to wait for the object to be
+    //      deleted most of the time, but I can imagine a situation
+    //      where the plugin does a host callback triggered by a
+    //      Win32 timer in between where the above closure is being
+    //      executed and when the actual host application context on
+    //      the plugin side gets deallocated.
+    main_context_
+        .run_in_context([&, instance_id]() -> void {
+            std::unique_lock lock(object_instances_mutex_);
+            object_instances_.erase(instance_id);
+        })
+        .wait();
+}

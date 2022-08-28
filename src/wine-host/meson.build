@@ -16,6 +16,9 @@ if is_64bit_system
     wine_threads_dep,
     xcb_64bit_dep,
   ]
+  if with_clap
+    host_64bit_deps += [clap_dep]
+  endif
   if with_vst3
     host_64bit_deps += [
       vst3_sdk_hosting_wine_64bit_dep,
@@ -41,6 +44,9 @@ if with_bitbridge
     wine_threads_dep,
     xcb_32bit_dep,
   ]
+  if with_clap
+    host_32bit_deps += [clap_dep]
+  endif
   if with_vst3
     host_32bit_deps += [
       vst3_sdk_hosting_wine_32bit_dep,
@@ -70,6 +76,13 @@ host_sources = files(
   'utils.cpp',
   'xdnd-proxy.cpp',
 )
+
+if with_clap
+  host_sources += files(
+    '../common/logging/clap.cpp',
+    'bridges/clap.cpp',
+  )
+endif
 
 if with_vst3
   host_sources += files(
@@ -135,5 +148,5 @@ if with_vst3
     'bridges/vst3-impls/host-context-proxy.cpp',
     'bridges/vst3-impls/plug-frame-proxy.cpp',
     'bridges/vst3.cpp',
-)
+  )
 endif
