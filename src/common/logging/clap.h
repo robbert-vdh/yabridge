@@ -18,7 +18,7 @@
 
 #include <sstream>
 
-// #include "../serialization/clap.h"
+#include "../serialization/clap.h"
 #include "common.h"
 
 /**
@@ -45,13 +45,15 @@ class ClapLogger {
     // `log_request()` call returned `true`. This way we can filter out the
     // log message for the response together with the request.
 
-    // TODO: M ain thread rquests
+    // TODO: Main thread rquests
     // bool log_request(bool is_host_plugin,
     //                  const ClapPluginFactoryProxy::Construct&);
 
     // TODO: Audio thread requests
     // bool log_request(bool is_host_plugin,
     //                  const YaAudioProcessor::SetBusArrangements&);
+
+    bool log_request(bool is_host_plugin, const WantsConfiguration&);
 
     // TOOD: Main thread responses
     // void log_response(bool is_host_plugin, const Ack&);
@@ -62,6 +64,8 @@ class ClapLogger {
     // TODO: Audio thread responses
     // void log_response(bool is_host_plugin,
     //                   const YaAudioProcessor::GetBusArrangementResponse&);
+
+    void log_response(bool is_host_plugin, const Configuration&);
 
     // TODO: Universal response
     // template <typename T>

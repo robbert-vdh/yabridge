@@ -29,7 +29,18 @@ ClapLogger::ClapLogger(Logger& generic_logger) : logger_(generic_logger) {}
 //     });
 // }
 
+bool ClapLogger::log_request(bool is_host_plugin, const WantsConfiguration&) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << "Requesting <Configuration>";
+    });
+}
+
 // void ClapLogger::log_response(bool is_host_plugin, const Ack&) {
 //     log_response_base(is_host_plugin, [&](auto& message) { message << "ACK";
 //     });
 // }
+
+void ClapLogger::log_response(bool is_host_plugin, const Configuration&) {
+    log_response_base(is_host_plugin,
+                      [&](auto& message) { message << "<Configuration>"; });
+}
