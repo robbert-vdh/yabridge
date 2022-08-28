@@ -97,12 +97,12 @@ struct Vst3PluginInterfaces {
 };
 
 /**
- * A holder for plugin object instance created from the factory. This contains a
- * smart pointer to the object's `FUnknown` interface and everything else we
- * need to proxy for this object, like audio threads and proxy objects for
- * callbacks. We also store an `interfaces` object that contains smart pointers
- * to all relevant VST3 interface so we can handle control messages sent by the
- * plugin without having to do these expensive casts all the time.
+ * A holder for the plugin object instance created from the factory. This
+ * contains a smart pointer to the object's `FUnknown` interface and everything
+ * else we need to proxy for this object, like audio threads and proxy objects
+ * for callbacks. We also store an `interfaces` object that contains smart
+ * pointers to all relevant VST3 interface so we can handle control messages
+ * sent by the plugin without having to do these expensive casts all the time.
  */
 struct Vst3PluginInstance {
     Vst3PluginInstance(Steinberg::IPtr<Steinberg::FUnknown> object) noexcept;
@@ -202,7 +202,7 @@ struct Vst3PluginInstance {
     std::optional<Editor> editor;
 
     /**
-     * The base object we cast from. This is upcasted form the object created by
+     * The base object we cast from. This is upcasted from the object created by
      * the factory.
      */
     Steinberg::IPtr<Steinberg::FUnknown> object;
@@ -238,7 +238,7 @@ struct Vst3PluginInstance {
     Vst3PluginInterfaces interfaces;
 
     /**
-     * Whether `IPluginBase:initialize()` has already been called for this
+     * Whether `IPluginBase::initialize()` has already been called for this
      * object instance. If the object doesn't implement `IPluginBase` then this
      * will always be true. I haven't run into any VST3 plugins that have issues
      * with partially initialized states like the VST2 versions of T-RackS 5
@@ -266,13 +266,13 @@ class Vst3Bridge : public HostBridge {
    public:
     /**
      * Initializes the Windows VST3 plugin and set up communication with the
-     * native Linux VST plugin.
+     * native Linux VST3 plugin.
      *
      * @param main_context The main IO context for this application. Most events
      *   will be dispatched to this context, and the event handling loop should
      *   also be run from this context.
-     * @param plugin_dll_path A (Unix style) path to the VST plugin .dll file to
-     *   load.
+     * @param plugin_dll_path A (Unix style) path to the VST3 plugin .dll file
+     *   to load.
      * @param endpoint_base_dir The base directory used for the socket
      *   endpoints. See `Sockets` for more information.
      * @param parent_pid The process ID of the native plugin host this bridge is
@@ -282,8 +282,8 @@ class Vst3Bridge : public HostBridge {
      * @note The object has to be constructed from the same thread that calls
      *   `main_context.run()`.
      *
-     * @throw std::runtime_error Thrown when the VST plugin could not be loaded,
-     *   or if communication could not be set up.
+     * @throw std::runtime_error Thrown when the VST3 plugin could not be
+     *   loaded, or if communication could not be set up.
      */
     Vst3Bridge(MainContext& main_context,
                std::string plugin_dll_path,
@@ -341,7 +341,7 @@ class Vst3Bridge : public HostBridge {
     }
 
     /**
-     * When called form the GUI thread, spawn a new thread and call
+     * When called from the GUI thread, spawn a new thread and call
      * `send_message()` from there, and then handle functions passed by calls to
      * `do_mutual_recursion_on_gui_thread()` and
      * `do_mutual_recursion_on_off_thread()` on this thread until we get a
@@ -503,7 +503,7 @@ class Vst3Bridge : public HostBridge {
      * Used to assign unique identifiers to instances created for
      * `IPluginFactory::createInstance()`.
      *
-     * @related enerate_instance_id
+     * @related generate_instance_id
      */
     std::atomic_size_t current_instance_id_;
 

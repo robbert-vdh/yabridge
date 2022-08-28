@@ -335,7 +335,7 @@ class YaEditController : public Steinberg::Vst::IEditController {
      * Message to pass through a call to
      * `IEditController::setComponentHandler(handler)` to the Wine plugin host.
      * Like when creating a proxy for a plugin object, we'll read all supported
-     * interfaces form the component handler instance passed by the host. We'll
+     * interfaces from the component handler instance passed by the host. We'll
      * then create a perfect proxy on the plugin side, that can do callbacks to
      * the actual component handler passed by the host.
      */
