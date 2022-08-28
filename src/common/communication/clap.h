@@ -65,13 +65,13 @@ class ClapSockets final : public Sockets {
                 const ghc::filesystem::path& endpoint_base_dir,
                 bool listen)
         : Sockets(endpoint_base_dir),
-          host_plugin_control_(
+          host_plugin_main_thread_control_(
               io_context,
-              (base_dir_ / "host_plugin_control.sock").string(),
+              (base_dir_ / "host_plugin_main_thread_control.sock").string(),
               listen),
-          plugin_host_callback_(
+          plugin_host_main_thread_callback_(
               io_context,
-              (base_dir_ / "plugin_host_callback.sock").string(),
+              (base_dir_ / "plugin_host_main_thread_callback.sock").string(),
               listen),
           io_context_(io_context) {}
 
@@ -79,15 +79,15 @@ class ClapSockets final : public Sockets {
     ~ClapSockets() noexcept override { close(); }
 
     void connect() override {
-        host_plugin_control_.connect();
-        plugin_host_callback_.connect();
+        host_plugin_main_thread_control_.connect();
+        plugin_host_main_thread_callback_.connect();
     }
 
     void close() override {
         // Manually close all sockets so we break out of any blocking operations
         // that may still be active
-        host_plugin_control_.close();
-        plugin_host_callback_.close();
+        host_plugin_main_thread_control_.close();
+        plugin_host_main_thread_callback_.close();
 
         // This map should be empty at this point, but who knows
         std::lock_guard lock(audio_thread_sockets_mutex_);
@@ -238,13 +238,13 @@ class ClapSockets final : public Sockets {
      * `receive_multi()`.
      */
     TypedMessageHandler<Thread, ClapLogger, ClapMainThreadControlRequest>
-        host_plugin_control_;
+        host_plugin_main_thread_control_;
 
     /**
      * For sending callbacks from the plugin back to the host.
      */
     TypedMessageHandler<Thread, ClapLogger, ClapMainThreadCallbackRequest>
-        plugin_host_callback_;
+        plugin_host_main_thread_callback_;
 
    private:
     /**
