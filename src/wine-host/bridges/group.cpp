@@ -22,6 +22,9 @@
 #include <regex>
 
 #include "../../common/communication/common.h"
+#ifdef WITH_CLAP
+#include "clap.h"
+#endif
 #include "vst2.h"
 #ifdef WITH_VST3
 #include "vst3.h"
@@ -207,6 +210,17 @@ void GroupBridge::accept_requests() {
 
                 std::unique_ptr<HostBridge> bridge = nullptr;
                 switch (request.plugin_type) {
+                    case PluginType::clap:
+#ifdef WITH_CLAP
+                        bridge = std::make_unique<ClapBridge>(
+                            main_context_, request.plugin_path,
+                            request.endpoint_base_dir, request.parent_pid);
+#else
+                        throw std::runtime_error(
+                            "This version of yabridge has not been compiled "
+                            "with CLAP support");
+#endif
+                        break;
                     case PluginType::vst2:
                         bridge = std::make_unique<Vst2Bridge>(
                             main_context_, request.plugin_path,
