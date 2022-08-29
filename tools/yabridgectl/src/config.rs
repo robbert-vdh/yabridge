@@ -35,6 +35,8 @@ pub const CONFIG_FILE_NAME: &str = "config.toml";
 /// `$XDG_DATA_HOME`.
 const YABRIDGECTL_PREFIX: &str = "yabridgectl";
 
+/// The name of yabridge's CLAP chainloading library yabridgectl will create copies of.
+pub const CLAP_CHAINLOADER_NAME: &str = "libyabridge-chainloader-clap.so";
 /// The name of yabridge's VST2 chainloading library yabridgectl will create copies of.
 pub const VST2_CHAINLOADER_NAME: &str = "libyabridge-chainloader-vst2.so";
 /// The name of yabridge's VST3 chainloading library yabridgectl will create copies of.
@@ -49,6 +51,10 @@ pub const YABRIDGE_HOST_32_EXE_NAME: &str = "yabridge-host-32.exe";
 /// `$XDG_CONFIG_HOME` and `$XDG_DATA_HOME`.
 const YABRIDGE_PREFIX: &str = "yabridge";
 
+/// The path relative to `$HOME` that CLAP plugins bridged by yabridgectl life in. By putting this
+/// in a subdirectory we can easily clean up any orphan files without interfering with other native
+/// plugins.
+const YABRIDGE_CLAP_HOME: &str = ".clap/yabridge";
 /// The path relative to `$HOME` we will set up bridged VST2 plugins in when using the centralized
 /// VST2 installation location setting. By putting this in a subdirectory we can easily clean up any
 /// orphan files without interfering with other native plugins.
@@ -67,10 +73,11 @@ pub struct Config {
     /// set, then yabridgectl will look in `/usr/lib` and `$XDG_DATA_HOME/yabridge` since those are
     /// the expected locations for yabridge to be installed in.
     pub yabridge_home: Option<PathBuf>,
-    /// Directories to search for Windows VST plugins. These directories can contain both VST2
-    /// plugin `.dll` files and VST3 modules (which should be located in `<prefix>/drive_c/Program
-    /// Files/Common/VST3`). We're using an ordered set here out of convenience so we can't get
-    /// duplicates and the config file is always sorted.
+    /// Directories to search for Windows VST plugins. These directories can contain VST2 plugin
+    /// `.dll` files, VST3 modules (which should be located in `<prefix>/drive_c/Program
+    /// Files/Common/VST3`), and CLAP plugins (which should similarly be installed to
+    /// `<prefix>/drive_c/Program Files/Common/CLAP`). We're using an ordered set here out of
+    /// convenience so we can't get duplicates and the config file is always sorted.
     pub plugin_dirs: BTreeSet<PathBuf>,
     /// Where VST2 plugins are setup. This can be either in `~/.vst/yabridge` or inline with the
     /// plugin's .dll` files.`
@@ -138,6 +145,11 @@ pub struct YabridgeFiles {
     /// with VST3 support. We need to know if it's a 32-bit or a 64-bit library so we can properly
     /// set up the merged VST3 bundles.
     pub vst3_chainloader: Option<(PathBuf, LibArchitecture)>,
+    /// The path to `libyabridge-chainloader-clap.so` we should use. The architecture is only used
+    /// for display purposes in `yabridgectl status`. Because CLAP is supposed to be 64-bit-only on
+    /// AMD64 systems we can also just leave this out, but it looks more consisent this way.
+    /// Yabridge can be configurued without CLAP support, so this is optional.
+    pub clap_chainloader: Option<(PathBuf, LibArchitecture)>,
     /// The path to `yabridge-host.exe`. This is the path yabridge will actually use, and it does
     /// not have to be relative to `yabridge_home`.
     pub yabridge_host_exe: Option<PathBuf>,
@@ -275,6 +287,22 @@ impl Config {
             _ => None,
         };
 
+        // And the same thing for `libyabridge-chainloader-clap.so`.
+        let clap_chainloader = match vst2_chainloader.with_file_name(CLAP_CHAINLOADER_NAME) {
+            path if path.exists() => {
+                // The architecture is only used for display purposes
+                let arch = util::get_elf_architecture(&path).with_context(|| {
+                    format!(
+                        "Could not determine ELF architecture for '{}'",
+                        path.display()
+                    )
+                })?;
+
+                Some((path, arch))
+            }
+            _ => None,
+        };
+
         // `yabridge-host.exe` should either be in the search path, or it should be in
         // `~/.local/share/yabridge` (which was appended to the `$PATH` at the start of `main()`)
         let yabridge_host_exe = which(YABRIDGE_HOST_EXE_NAME).ok();
@@ -290,6 +318,7 @@ impl Config {
             vst2_chainloader,
             vst2_chainloader_arch,
             vst3_chainloader,
+            clap_chainloader,
             yabridge_host_exe,
             yabridge_host_exe_so,
             yabridge_host_32_exe,
@@ -297,7 +326,7 @@ impl Config {
         })
     }
 
-    /// Search for VST2 and VST3 plugins in all of the registered plugins directories.
+    /// Search for VST2, VST3, and CLAP plugins in all of the registered plugins directories.
     pub fn search_directories(&self) -> Result<BTreeMap<&Path, SearchResults>> {
         let blacklist: HashSet<&Path> = self.blacklist.iter().map(|p| p.as_path()).collect();
 
@@ -325,6 +354,9 @@ pub fn yabridgectl_directories() -> Result<BaseDirectories> {
     BaseDirectories::with_prefix(YABRIDGECTL_PREFIX).context("Error while parsing base directories")
 }
 
+// TODO: Use `lazy_static` for these things. `$HOME` can technically change at runtime but
+//       realistically it won't.
+
 /// Get the path where bridged VST2 plugin files should be placed when using the centralized
 /// installation location setting. This is a subdirectory of `~/.vst` so we can easily clean up
 /// leftover files without interfering with other native plugins.
@@ -337,4 +369,11 @@ pub fn yabridge_vst2_home() -> PathBuf {
 /// other native plugins.
 pub fn yabridge_vst3_home() -> PathBuf {
     Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_VST3_HOME)
+}
+
+/// Get the path where CLAP modules bridged by yabridgectl should be placed in. This is a
+/// subdirectory of `~/.clap` so we can easily clean up leftover files without interfering with
+/// other native plugins.
+pub fn yabridge_clap_home() -> PathBuf {
+    Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_CLAP_HOME)
 }

@@ -8,6 +8,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### yabridgectl
+
+- Added support for setting up CLAP plugins.
+
 ### Packaging notes
 
 - The VST3 dependency is now at tag `v3.7.5_build_44-patched-2`. The only

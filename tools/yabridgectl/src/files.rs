@@ -23,18 +23,22 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
-use crate::config::{yabridge_vst2_home, yabridge_vst3_home, Config, YabridgeFiles};
+use crate::config::{
+    yabridge_clap_home, yabridge_vst2_home, yabridge_vst3_home, Config, YabridgeFiles,
+};
 use crate::symbols::parse_pe32_binary;
 use crate::util::get_file_type;
 
 /// Stores the results from searching through a directory. We'll search for Windows VST2 plugin
 /// `.dll` files, Windows VST3 plugin modules, and native Linux `.so` files inside of a directory.
 /// These `.so` files are kept track of so we can report the current installation status of VST2
-/// plugins and to be able to prune orphan files. Since VST3 plugins have to be installed in
-/// `~/.vst3`, these orphan files are only relevant for VST2 plugins.
+/// plugins and to be able to prune orphan files. Since yabridgectl 4.0 now sets up plugins in the
+/// user's home directory, these inline orphans are mostly useful for cleaning up old installations
+/// and when the user has explicitly enabled the inline installation location for VST2 plugins.
 #[derive(Debug)]
 pub struct SearchResults {
-    /// The plugins found during the search. This contains both VST2 plugins and VST3 modules.
+    /// The plugins found during the search. This contains VST2 plugins, VST3 modules, and CLAP
+    /// plugins.
     pub plugins: Vec<Plugin>,
     /// `.dll` files skipped over during the search. Used for printing statistics and shown when
     /// running `yabridgectl sync --verbose`.
@@ -49,12 +53,14 @@ pub struct SearchResults {
 /// files in a directory before filtering them down to a `SearchResults` object.
 #[derive(Debug)]
 pub struct SearchIndex {
-    /// Any `.dll` file, along with its relative path inq the search directory.
+    /// Any `.dll` file, along with its relative path in the search directory.
     pub dll_files: Vec<(PathBuf, Option<PathBuf>)>,
     /// Any `.vst3` file or directory, along with its relative path in the search directory. This
     /// can be either a legacy `.vst3` DLL module or a VST 3.6.10 module (or some kind of random
     /// other file, of course).
     pub vst3_files: Vec<(PathBuf, Option<PathBuf>)>,
+    /// Any `.clap` file, along with its relative path in the search directory.
+    pub clap_files: Vec<(PathBuf, Option<PathBuf>)>,
     /// Absolute paths to any `.so` files inside of the directory, and whether they're a symlink or
     /// a regular file.
     pub so_files: Vec<NativeFile>,
@@ -84,6 +90,7 @@ impl NativeFile {
 pub enum Plugin {
     Vst2(Vst2Plugin),
     Vst3(Vst3Module),
+    Clap(ClapPlugin),
 }
 
 /// VST2 plugins we found during a search along with their architecture.
@@ -106,6 +113,20 @@ pub struct Vst3Module {
     /// The architecture of the VST3 module.
     pub architecture: LibArchitecture,
     /// The subdirectory within the plugins directory the orignal module was in. If this could not
+    /// be detected then this will be `None`.
+    pub subdirectory: Option<PathBuf>,
+}
+
+/// CLAP plugins we found during a search along with their architecture.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ClapPlugin {
+    /// The absolute path to the Windows CLAP plugin's `.clap` file.
+    pub path: PathBuf,
+    /// The architecture of the CLAP plugin. This is supposed to be only the native architecture (no
+    /// official x86 support), but we'll keep track of it anyways for consistency with other
+    /// formats.
+    pub architecture: LibArchitecture,
+    /// The subdirectory within the plugins directory the orignal plugin was in. If this could not
     /// be detected then this will be `None`.
     pub subdirectory: Option<PathBuf>,
 }
@@ -317,6 +338,43 @@ impl Vst3Module {
     }
 }
 
+impl ClapPlugin {
+    /// Get the absolute path to the `.clap` file we should create in `~/.clap/yabridge` for this
+    /// plugin.
+    pub fn native_target(&self) -> PathBuf {
+        let file_name = self
+            .path
+            .file_name()
+            .unwrap()
+            .to_str()
+            .expect("Plugin name contains invalid UTF-8");
+        let file_name = Path::new(file_name).with_extension("clap");
+
+        match &self.subdirectory {
+            Some(directory) => yabridge_clap_home().join(directory).join(file_name),
+            None => yabridge_clap_home().join(file_name),
+        }
+    }
+
+    /// Get the absolute path to the `.clap-win` file in `~/.clap/yabrdge` the Windows `.clap`
+    /// plugin should be symlinked to. This uses a different file extension so we can use the same
+    /// setup as for VST2 plugins without confusing DAWs.
+    pub fn windows_target(&self) -> PathBuf {
+        let file_name = self
+            .path
+            .file_name()
+            .unwrap()
+            .to_str()
+            .expect("Plugin name contains invalid UTF-8");
+        let file_name = Path::new(file_name).with_extension("clap-win");
+
+        match &self.subdirectory {
+            Some(directory) => yabridge_clap_home().join(directory).join(file_name),
+            None => yabridge_clap_home().join(file_name),
+        }
+    }
+}
+
 /// The architecture of a library file (either `.dll` or `.so` depending on the context). Needed so
 /// we can create a merged bundle for VST3 plugins.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Copy)]
@@ -393,6 +451,10 @@ impl SearchResults {
                         get_file_type(vst3_module.target_native_module_path(files)),
                     ),
                 ),
+                Plugin::Clap(clap_plugin) => (
+                    clap_plugin.path.clone(),
+                    (plugin, get_file_type(clap_plugin.native_target())),
+                ),
             })
             .collect()
     }
@@ -426,18 +488,20 @@ impl SearchResults {
     }
 }
 
-/// Find all `.dll`, `.vst3` and `.so` files under a directory. These results can be filtered down
-/// to actual VST2 plugins and VST3 modules using `search()`. Any path found in the blacklist will
-/// be pruned immediately, so this can be used to both not index individual files and to skip an
-/// entire directory.
+/// Find all `.dll`, `.vst3`, `.clap`, and `.so` files under a directory. These results can be
+/// filtered down to actual VST2 plugins, VST3 modules, and CLAP plugins using `search()`. Any path
+/// found in the blacklist will be pruned immediately, so this can be used to both not index
+/// individual files and to skip an entire directory.
 ///
 /// For VST3 plugin _bundles_ the subdirectory also contains the `foo.vst3/Contents/x86_64-win`
 /// suffix. This needs to be stripped out to get the bundle root.
 pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
     // These are pairs of `(absolute_path, subdirectory)`. The subdirectory is used for setting up
-    // VST3 plugins and for setting up VST2 plugins in the centralized installation location mode.
+    // VST3 and CLAP plugins and for setting up VST2 plugins in the centralized installation
+    // location mode.
     let mut dll_files: Vec<(PathBuf, Option<PathBuf>)> = Vec::new();
     let mut vst3_files: Vec<(PathBuf, Option<PathBuf>)> = Vec::new();
+    let mut clap_files: Vec<(PathBuf, Option<PathBuf>)> = Vec::new();
     let mut so_files: Vec<NativeFile> = Vec::new();
     for (file_idx, path) in WalkDir::new(directory)
         .follow_links(true)
@@ -494,6 +558,13 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
                     .map(|p| p.to_owned());
                 vst3_files.push((path, subdirectory));
             }
+            Some("clap") => {
+                let subdirectory = path
+                    .parent()
+                    .and_then(|p| p.strip_prefix(directory).ok())
+                    .map(|p| p.to_owned());
+                clap_files.push((path, subdirectory));
+            }
             Some("so") => {
                 if path.is_symlink() {
                     so_files.push(NativeFile::Symlink(path));
@@ -508,6 +579,7 @@ pub fn index(directory: &Path, blacklist: &HashSet<&Path>) -> SearchIndex {
     SearchIndex {
         dll_files,
         vst3_files,
+        clap_files,
         so_files,
     }
 }
@@ -518,6 +590,8 @@ impl SearchIndex {
     pub fn search(self) -> Result<SearchResults> {
         const VST2_ENTRY_POINTS: [&str; 2] = ["VSTPluginMain", "main"];
         const VST3_ENTRY_POINTS: [&str; 1] = ["GetPluginFactory"];
+        // This is a constant with external linkage, not a function
+        const CLAP_ENTRY_POINTS: [&str; 1] = ["clap_entry"];
 
         // We'll have to figure out which `.dll` files are VST2 plugins and which should be skipped
         // by checking whether the file contains one of the VST2 entry point functions. This vector
@@ -548,8 +622,8 @@ impl SearchIndex {
                 }
             })
             // Make parsing failures non-fatal. People somehow extract these `__MACOSX` and other
-            // junk files from zip files containing Windows VST2/VST3 plugins created on macOS to
-            // their plugin directories (how does such a thing even happen in the first place?)
+            // junk files from zip files containing Windows plugins created on macOS to their plugin
+            // directories (how does such a thing even happen in the first place?)
             .filter_map(|result: Result<Result<Vst2Plugin, PathBuf>>| match result {
                 Ok(result) => Some(result),
                 Err(err) => {
@@ -639,10 +713,44 @@ impl SearchIndex {
                     Ok(Err(module_path))
                 }
             })
-            // Make parsing failures non-fatal. People somehow extract these `__MACOSX` and other
-            // junk files from zip files containing Windows VST2/VST3 plugins created on macOS to
-            // their plugin directories (how does such a thing even happen in the first place?)
+            // See above
             .filter_map(|result: Result<Result<Vst3Module, PathBuf>>| match result {
+                Ok(result) => Some(result),
+                Err(err) => {
+                    eprintln!("WARNING: Skipping file during scan: {err:#}\n");
+                    None
+                }
+            })
+            .collect();
+
+        // Same for CLAP plugins
+        let is_clap_plugin: Vec<Result<ClapPlugin, PathBuf>> = self
+            .clap_files
+            .into_par_iter()
+            .map(|(path, subdirectory)| {
+                let info = parse_pe32_binary(&path)?;
+                let architecture = if info.is_64_bit {
+                    LibArchitecture::Lib64
+                } else {
+                    LibArchitecture::Lib32
+                };
+
+                if info
+                    .exports
+                    .into_iter()
+                    .any(|symbol| CLAP_ENTRY_POINTS.contains(&symbol.as_str()))
+                {
+                    Ok(Ok(ClapPlugin {
+                        path,
+                        architecture,
+                        subdirectory,
+                    }))
+                } else {
+                    Ok(Err(path))
+                }
+            })
+            // See above
+            .filter_map(|result: Result<Result<ClapPlugin, PathBuf>>| match result {
                 Ok(result) => Some(result),
                 Err(err) => {
                     eprintln!("WARNING: Skipping file during scan: {err:#}\n");
@@ -653,17 +761,21 @@ impl SearchIndex {
 
         let mut plugins: Vec<Plugin> = Vec::new();
         let mut skipped_files: Vec<PathBuf> = Vec::new();
-
         for dandidate in is_vst2_plugin {
             match dandidate {
                 Ok(plugin) => plugins.push(Plugin::Vst2(plugin)),
                 Err(path) => skipped_files.push(path),
             }
         }
-
         for candidate in is_vst3_module {
             match candidate {
                 Ok(module) => plugins.push(Plugin::Vst3(module)),
+                Err(path) => skipped_files.push(path),
+            }
+        }
+        for candidate in is_clap_plugin {
+            match candidate {
+                Ok(module) => plugins.push(Plugin::Clap(module)),
                 Err(path) => skipped_files.push(path),
             }
         }

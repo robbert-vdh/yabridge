@@ -18,12 +18,11 @@ mentioned here are only useful during development.
 
 ### Yabridge path
 
-Yabridgectl will need to know where it can find `libyabridge-vst2.so` and
-`libyabridge-vst3.so`. By default it will search for it in both
-`~/.local/share/yabridge` (the recommended installation directory when using the
-prebuilt binaries), in `/usr/lib` and in `/usr/local/lib`. You can use the
-command below to override this behaviour and to use a custom installation
-directory instead.
+Yabridgectl will need to know where it can find yabridge's files. By default it
+will search for it in both `~/.local/share/yabridge` (the recommended
+installation directory when using the prebuilt binaries), in `/usr/lib` and in
+`/usr/local/lib`. You can use the command below to override this behaviour and
+to use a custom installation directory instead.
 
 ```shell
 yabridgectl set --path=<path/to/directory/containing/yabridge/files>
@@ -58,13 +57,13 @@ yabridgectl blacklist
 ### Installing and updating
 
 Lastly you can tell yabridgectl to set up or update yabridge for all of your
-VST2 and VST3 plugins at the same time using the commands below. Yabridgectl
-will warn you if it finds unrelated `.so` files that may have been left after
-uninstalling a plugin, or if it finds any unknown VST3 plugins in
-`~/.vst3/yabridge`. You can rerun the sync command with the `--prune` option to
-delete those files. If you are using the default copy-based installation method,
-it will also verify that your search `PATH` has been set up correctly so you can
-get up and running faster.
+VST2, VST3 and CLAP plugins at the same time using the commands below.
+Yabridgectl will warn you if it finds unrelated `.so` files that may have been
+left after uninstalling a plugin, or if it finds any unknown plugins in
+`~/{.clap,.vst,.vst3}/yabridge`. You can rerun the sync command with the
+`--prune` option to delete those files. After setting up the plugin yabridgectl
+performs some post-installation setup checks to make sure yabridge is going to
+run correctly.
 
 ```shell
 # Set up or update yabridge for all plugins found under the plugin locations

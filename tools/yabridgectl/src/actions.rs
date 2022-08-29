@@ -24,9 +24,11 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 use crate::config::{
-    yabridge_vst2_home, yabridge_vst3_home, Config, Vst2InstallationLocation, YabridgeFiles,
+    yabridge_clap_home, yabridge_vst2_home, yabridge_vst3_home, Config, Vst2InstallationLocation,
+    YabridgeFiles, CLAP_CHAINLOADER_NAME, VST2_CHAINLOADER_NAME, VST3_CHAINLOADER_NAME,
+    YABRIDGE_HOST_32_EXE_NAME, YABRIDGE_HOST_EXE_NAME,
 };
-use crate::files::{self, NativeFile, Plugin, Vst2Plugin};
+use crate::files::{self, ClapPlugin, NativeFile, Plugin, Vst2Plugin};
 use crate::util::{self, get_file_type};
 use crate::util::{verify_external_dependencies, verify_path_setup, verify_wine_setup};
 use crate::vst3_moduleinfo::ModuleInfo;
@@ -109,19 +111,20 @@ pub fn show_status(config: &Config) -> Result<()> {
             println!("VST2 location: inline next to the Windows plugin file");
         }
     }
-    // This is fixed, but just from a UX point of view it might be nice to have as a reminder
+    // These are, but just from a UX point of view it might be nice to have as a reminder
     println!("VST3 location: '{}'\n", yabridge_vst3_home().display());
+    println!("CLAP location: '{}'\n", yabridge_clap_home().display());
 
     let files = config.files();
     match &files {
         Ok(files) => {
             println!(
-                "libyabridge-chainloader-vst2.so: '{}' ({})",
+                "{VST2_CHAINLOADER_NAME}: '{}' ({})",
                 files.vst2_chainloader.display(),
                 files.vst2_chainloader_arch,
             );
             println!(
-                "libyabridge-chainloader-vst3.so: {}\n",
+                "{VST3_CHAINLOADER_NAME}: {}\n",
                 files
                     .vst3_chainloader
                     .as_ref()
@@ -129,7 +132,15 @@ pub fn show_status(config: &Config) -> Result<()> {
                     .unwrap_or_else(|| "<not found>".red().to_string())
             );
             println!(
-                "yabridge-host.exe: {}",
+                "{CLAP_CHAINLOADER_NAME}: {}\n",
+                files
+                    .clap_chainloader
+                    .as_ref()
+                    .map(|(path, arch)| format!("'{}' ({})", path.display(), arch))
+                    .unwrap_or_else(|| "<not found>".red().to_string())
+            );
+            println!(
+                "{YABRIDGE_HOST_EXE_NAME}: {}",
                 files
                     .yabridge_host_exe
                     .as_ref()
@@ -139,7 +150,7 @@ pub fn show_status(config: &Config) -> Result<()> {
                     .unwrap_or_else(|| "<not found>".red().to_string())
             );
             println!(
-                "yabridge-host-32.exe: {}",
+                "{YABRIDGE_HOST_32_EXE_NAME}: {}",
                 files
                     .yabridge_host_32_exe
                     .as_ref()
@@ -171,6 +182,11 @@ pub fn show_status(config: &Config) -> Result<()> {
                     module.type_str(),
                     module.architecture
                 ),
+                // CLAP is supposed to be 64-bit-only, but we'll still display the architecture here for
+                // consistency's sake
+                Plugin::Clap(ClapPlugin { architecture, .. }) => {
+                    format!("{}, {}", "CLAP".yellow(), architecture)
+                }
             };
 
             // This made more sense when we supported symlinking `libyabridge-*.so`, but we should
@@ -243,63 +259,76 @@ pub struct SyncOptions {
 pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     let files: YabridgeFiles = config.files()?;
     let vst2_chainloader_hash = util::hash_file(&files.vst2_chainloader)?;
-    let vst3_chainloader_hash = match &files.vst3_chainloader {
-        Some((path, _)) => Some(util::hash_file(path)?),
-        None => None,
-    };
+    let vst3_chainloader_hash = files
+        .vst3_chainloader
+        .as_ref()
+        .map(|(path, _)| util::hash_file(path))
+        .transpose()?;
+    let clap_chainloader_hash = files
+        .clap_chainloader
+        .as_ref()
+        .map(|(path, _)| util::hash_file(path))
+        .transpose()?;
 
-    if let Some((vst3_chainloader_path, _)) = &files.vst3_chainloader {
-        println!("Setting up VST2 and VST3 plugins using:");
-        println!("- {}", files.vst2_chainloader.display());
-        println!("- {}\n", vst3_chainloader_path.display());
-    } else {
-        println!("Setting up VST2 plugins using:");
-        println!("- {}\n", files.vst2_chainloader.display());
+    // Better not add another plugin format!
+    match (&files.vst3_chainloader, &files.clap_chainloader) {
+        (Some((vst3_chainloader_path, _)), Some((clap_chainloader_path, _))) => {
+            println!("Setting up VST2, VST3, and CLAP plugins using:");
+            println!("- {}", files.vst2_chainloader.display());
+            println!("- {}", vst3_chainloader_path.display());
+            println!("- {}\n", clap_chainloader_path.display());
+        }
+        (Some((vst3_chainloader_path, _)), None) => {
+            println!("Setting up VST2 and VST3 plugins using:");
+            println!("- {}", files.vst2_chainloader.display());
+            println!("- {}\n", vst3_chainloader_path.display());
+        }
+        (None, Some((clap_chainloader_path, _))) => {
+            println!("Setting up VST2 and CLAP plugins using:");
+            println!("- {}", files.vst2_chainloader.display());
+            println!("- {}\n", clap_chainloader_path.display());
+        }
+        (None, None) => {
+            println!("Setting up VST2 plugins using:");
+            println!("- {}\n", files.vst2_chainloader.display());
+        }
     }
 
     let results = config
         .search_directories()
         .context("Failure while searching for plugins")?;
 
-    // Before doing anything, make sure `~/.vst/yabridge` and `~/.vst3/yabridge` are not symlinks to
-    // one of the plugin directories. See
+    // Before doing anything, make sure `~/.{clap,vst,vst3}/yabridge` are not symlinks to one of the
+    // plugin directories. See
     // https://github.com/robbert-vdh/yabridge/issues/185#issuecomment-1166274104.
+    let bail_if_unsafe_symlink = |plugin_home: &Path, plugin_home_display| {
+        if let Ok(canonical_plugin_home) = fs::canonicalize(&plugin_home) {
+            if canonical_plugin_home != plugin_home {
+                for plugin_dir in &config.plugin_dirs {
+                    if let Ok(canonical_plugin_dir) = fs::canonicalize(&plugin_dir) {
+                        if canonical_plugin_dir.starts_with(&canonical_plugin_home) {
+                            anyhow::bail!(
+                                "'{plugin_home_display}' is a symlink to '{}'. This conflicts \
+                                 with '{}' from your plugin directories, so the syncing process \
+                                 will now be aborted.",
+                                canonical_plugin_home.display(),
+                                plugin_dir.display(),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    };
+
     let vst2_home = yabridge_vst2_home();
     let vst3_home = yabridge_vst3_home();
-    if let Ok(canonical_vst2_home) = fs::canonicalize(&vst2_home) {
-        if canonical_vst2_home != vst2_home {
-            for plugin_dir in &config.plugin_dirs {
-                if let Ok(canonical_plugin_dir) = fs::canonicalize(&plugin_dir) {
-                    if canonical_plugin_dir.starts_with(&canonical_vst2_home) {
-                        anyhow::bail!(
-                            "'~/.vst/yabridge' is a symlink to '{}'. This conflicts with '{}' \
-                             from your plugin directories, so the syncing process will now be \
-                             aborted.",
-                            canonical_vst2_home.display(),
-                            plugin_dir.display(),
-                        );
-                    }
-                }
-            }
-        }
-    }
-    if let Ok(canonical_vst3_home) = fs::canonicalize(&vst3_home) {
-        if canonical_vst3_home != vst3_home {
-            for plugin_dir in &config.plugin_dirs {
-                if let Ok(canonical_plugin_dir) = fs::canonicalize(&plugin_dir) {
-                    if canonical_plugin_dir.starts_with(&canonical_vst3_home) {
-                        anyhow::bail!(
-                            "'~/.vst3/yabridge' is a symlink to '{}'. This conflicts with '{}' \
-                             from your plugin directories, so the syncing process will now be \
-                             aborted.",
-                            canonical_vst3_home.display(),
-                            plugin_dir.display(),
-                        );
-                    }
-                }
-            }
-        }
-    }
+    let clap_home = yabridge_clap_home();
+    bail_if_unsafe_symlink(&vst2_home, "~/.vst/yabridge")?;
+    bail_if_unsafe_symlink(&vst3_home, "~/.vst3/yabridge")?;
+    bail_if_unsafe_symlink(&clap_home, "~/.clap/yabridge")?;
 
     // Keep track of some global statistics
     // The plugin files we installed. This tracks copies of/symlinks to `libabyrdge-*.so` managed.
@@ -317,8 +346,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     let mut new_plugins: HashSet<PathBuf> = HashSet::new();
     // The files we skipped during the scan because they turned out to not be plugins
     let mut skipped_dll_files: Vec<PathBuf> = Vec::new();
-    // `.so` files and unused VST3 modules we found during scanning that didn't have a corresponding
-    // copy or symlink of `libyabridge-chainloader-vst2.so`
+    // `.so` files and unused files/bundles we found during scanning that don't belong to a known
+    // plugin. `~/{.clap,.vst,.vst3}/yabridge` will be searched for these files after setting up all
+    // plugins.
     let mut orphan_files: Vec<NativeFile> = Vec::new();
     // When using the centralized VST2 installation location in `~/.vst/yabridge` we'll want to
     // track all unmanaged files in that directory and add them to the orphans list
@@ -329,6 +359,8 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // during the syncing process, so we'll keep track of which VST3 files we touched per-bundle. We
     // can then at the end remove all unkonwn bundles, and all unkonwn files within a bundle.
     let mut known_centralized_vst3_files: HashMap<PathBuf, HashSet<PathBuf>> = HashMap::new();
+    // Similar for CLAP, but since CLAP doesn't use bundles this works the same way as with VST2.
+    let mut known_centralized_clap_files: HashSet<PathBuf> = HashSet::new();
     for (path, search_results) in results {
         // Orphan files in the centralized directories need to be detected separately
         orphan_files.extend(
@@ -420,7 +452,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                         }
                     }
 
-                    vst2_plugin.path.clone()
+                    vst2_plugin.path
                 }
                 // And then create merged bundles for the VST3 plugins:
                 // https://developer.steinberg.help/display/VST/Plug-in+Format+Structure#PluginFormatStructure-MergedBundle
@@ -541,6 +573,65 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
 
                     module.original_path().to_path_buf()
                 }
+                Plugin::Clap(clap_plugin) => {
+                    // Only set up CLAP plugins when yabridge has been compiled with CLAP support
+                    if clap_chainloader_hash.is_none() {
+                        continue;
+                    }
+
+                    let target_native_plugin_path = clap_plugin.native_target();
+                    let target_windows_plugin_path = clap_plugin.windows_target();
+                    let normalized_target_native_plugin_path =
+                        util::normalize_path(&target_native_plugin_path);
+
+                    let mut is_new =
+                        known_centralized_clap_files.insert(target_native_plugin_path.clone());
+                    is_new |=
+                        known_centralized_clap_files.insert(target_windows_plugin_path.clone());
+                    if !is_new {
+                        eprintln!(
+                            "{}",
+                            util::wrap(&format!(
+                                "{}: '{}' has already been provided by another Wine prefix or \
+                                 plugin directory, skipping it\n",
+                                "WARNING".red(),
+                                target_windows_plugin_path.display(),
+                            ))
+                        );
+
+                        continue;
+                    }
+
+                    // Because CLAP uses the same file extension on all platforms, this needs to
+                    // work slightly different compared to the VST2 bridging. Here we'll create a
+                    // copy of the chainloader as a `foo.clap` file in `~/.clap/yabridge`, and we'll
+                    // then symlink the Windows `.clap` file to `foo.clap-win` next to `foo.clap`.
+                    // That allows yabridge to find the Windows CLAP plugin while also preventing
+                    // DAWs from indexing it themselves.
+                    util::create_dir_all(target_native_plugin_path.parent().unwrap())?;
+                    if install_file(
+                        options.force,
+                        InstallationMethod::Copy,
+                        &files.clap_chainloader.as_ref().unwrap().0,
+                        clap_chainloader_hash,
+                        &target_native_plugin_path,
+                    )? {
+                        new_plugins.insert(normalized_target_native_plugin_path.clone());
+                    }
+                    managed_plugins.insert(normalized_target_native_plugin_path);
+
+                    // So this ends up symlinking the original Windows `.clap` file to a `.clap-win`
+                    // file in `~/.clap/yabridge`
+                    install_file(
+                        true,
+                        InstallationMethod::Symlink,
+                        &clap_plugin.path,
+                        None,
+                        &target_windows_plugin_path,
+                    )?;
+
+                    clap_plugin.path
+                }
             };
 
             if options.verbose {
@@ -570,13 +661,14 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     }
 
     // We've already kept track of orphan `.dll` files in the plugin directories, but now we need to
-    // do something similar for orphan files in `~/.vst/yabridge` and `~/.vst3/yabridge`. For VST3
-    // plugins we'll want to remove both unmanaged VST3 bundles in `~/.vst3/yabridge` as well as
-    // unmanged files within managed bundles. That's why we'll immediately filter out known files
-    // within VST3 bundles. For VST2 plugins we can simply treat any file in `~/.vst/yabridge` that
-    // we did not add to `known_centralized_vst2_files` as an orphan. We'll want to do this
-    // regardless of the VST2 installation location setting so switching between the two modes and
-    // then pruning works as expected.
+    // do something similar for orphan files in `~/.vst/yabridge`, `~/.vst3/yabridge`, and
+    // `~/.clap/yabridge`. For VST3 plugins we'll want to remove both unmanaged VST3 bundles in
+    // `~/.vst3/yabridge` as well as unmanged files within managed bundles. That's why we'll
+    // immediately filter out known files within VST3 bundles. For VST2 and CLAP plugins we can
+    // simply treat any file in `~/{.clap,.vst}/yabridge` that we did not add to
+    // `known_centralized_{clap,vst2}_files` as an orphan. We'll want to do this regardless of the
+    // VST2 installation location setting so switching between the two modes and then pruning works
+    // as expected.
     // TODO: Move this elsewhere
     let centralized_vst2_files = WalkDir::new(vst2_home)
         .follow_links(true)
@@ -589,6 +681,22 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
             };
 
             if !path.is_dir() && matches!(path.extension()?.to_str()?, "dll" | "so") {
+                Some(path)
+            } else {
+                None
+            }
+        });
+    let centralized_clap_files = WalkDir::new(clap_home)
+        .follow_links(true)
+        .same_file_system(true)
+        .into_iter()
+        .filter_map(|e| {
+            let path = match e {
+                Ok(entry) => entry.path().to_owned(),
+                Err(err) => err.path()?.to_owned(),
+            };
+
+            if !path.is_dir() && matches!(path.extension()?.to_str()?, "clap" | "clap-win" | "so") {
                 Some(path)
             } else {
                 None
@@ -614,6 +722,13 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
 
     orphan_files.extend(centralized_vst2_files.filter_map(|path| {
         if known_centralized_vst2_files.contains(&path) {
+            None
+        } else {
+            get_file_type(path)
+        }
+    }));
+    orphan_files.extend(centralized_clap_files.filter_map(|path| {
+        if known_centralized_clap_files.contains(&path) {
             None
         } else {
             get_file_type(path)

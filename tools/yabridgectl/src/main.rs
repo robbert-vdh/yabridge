@@ -63,7 +63,7 @@ fn main() -> Result<()> {
                 .display_order(1)
                 .arg(
                     Arg::new("path")
-                        .help("Path to a directory containing Windows VST2 or VST3 plugins")
+                        .help("Path to a directory containing Windows VST2, VST3, or CLAP plugins")
                         .validator(validate_directory)
                         .takes_value(true)
                         .required(true),
@@ -134,8 +134,8 @@ fn main() -> Result<()> {
                         )
                         .long_help(
                             "Path to the directory containing \
-                             'libyabridge-chainloader-{clap,vst2,vst3}.so'. If this is not set, then \
-                             yabridgectl will look in both '/usr/lib' and \
+                             'libyabridge-chainloader-{clap,vst2,vst3}.so'. If this is not set, \
+                             then yabridgectl will look in both '/usr/lib' and \
                              '~/.local/share/yabridge' by default.",
                         )
                         .validator(validate_path)
