@@ -676,12 +676,13 @@ negative side effects:
   running Arch or Manjaro, then you can use [Tk-Glitch's Wine
   fork](https://github.com/Frogging-Family/wine-tkg-git) for a customizable
   version of Wine with the fsync patches included. Make sure to follow the
-  instructions in the readme and don't try to use the prebuilt releases as they
-  will have fshack enabled which tends to break many plugins that use Direct3D
-  for their rendering. You'll also want to make sure you're running Linux kernel
-  5.16 or newer as those include support the `_fsync_futex_waitv` option that's
-  enabled by default though wine-tkg's `customization.cfg`. Finally, you'll have
-  to set the `WINEFSYNC` environment variable to `1` to enable fsync. See the
+  instructions in the readme to build a version of wine-tkg using the default
+  profile and don't try to use the prebuilt releases as they will have fshack
+  enabled which tends to break many plugins that use Direct3D for their
+  rendering. You'll also want to make sure you're running Linux kernel 5.16 or
+  newer as those include support the `_fsync_futex_waitv` option that's enabled
+  by default though wine-tkg's `customization.cfg`. Finally, you'll have to set
+  the `WINEFSYNC` environment variable to `1` to enable fsync. See the
   [environment configuration](#environment-configuration) section below for more
   information on where to set this environment variable so that it gets picked
   up when you start your DAW.
