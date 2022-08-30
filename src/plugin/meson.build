@@ -77,6 +77,7 @@ if with_clap
     '../common/notifications.cpp',
     '../common/plugins.cpp',
     '../common/process.cpp',
+    '../common/serialization/clap/plugin.cpp',
     '../common/utils.cpp',
     '../include/llvm/small-vector.cpp',
     'bridges/clap.cpp',
