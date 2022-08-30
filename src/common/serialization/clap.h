@@ -22,6 +22,7 @@
 
 #include "../bitsery/ext/message-reference.h"
 #include "../utils.h"
+#include "clap/plugin-factory.h"
 #include "common.h"
 
 // The CLAP communication strategy is identical to what we do for VST3.
