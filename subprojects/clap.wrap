@@ -1,7 +1,11 @@
 [wrap-git]
-url = https://github.com/free-audio/clap.git
-# This is tag 1.1.1
-revision = af1e05ce6487151c6b36003fdb47566dbb50194e
+# url = https://github.com/free-audio/clap.git
+# # This is tag 1.1.1
+# revision = af1e05ce6487151c6b36003fdb47566dbb50194e
+# FIXME: This is a fork that adds calling convention, as it's not possible to
+#        use CLAP with Winelib bridging otherwise
+url = https://github.com/robbert-vdh/clap.git
+revision = feature/calling-conventions
 depth = 1
 patch_directory = clap
 
