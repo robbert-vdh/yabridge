@@ -16,10 +16,13 @@
 
 #include "clap.h"
 
-#include <bitset>
+#include <codecvt>
+#include <locale>
 
 // Generated inside of the build directory
 #include <version.h>
+
+namespace fs = ghc::filesystem;
 
 // TODO: Query extensions in the initializer list
 ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept {
@@ -35,7 +38,55 @@ ClapBridge::ClapBridge(MainContext& main_context,
                        pid_t parent_pid)
     : HostBridge(main_context, plugin_dll_path, parent_pid),
       logger_(generic_logger_),
+      plugin_handle_(LoadLibrary(plugin_dll_path.c_str()), FreeLibrary),
+      entry_(plugin_handle_
+                 ? reinterpret_cast<clap_plugin_entry_t*>(
+                       GetProcAddress(plugin_handle_.get(), "clap_entry"))
+                 : nullptr,
+             [](clap_plugin_entry_t* entry) { entry->deinit(); }),
       sockets_(main_context.context_, endpoint_base_dir, false) {
+    if (!plugin_handle_) {
+        throw std::runtime_error(
+            "Could not load the Windows .clap (.dll) file at '" +
+            plugin_dll_path + "'");
+    }
+    if (!entry_) {
+        throw std::runtime_error(
+            "" + plugin_dll_path +
+            "' does not export the 'clap_entry' entry point.");
+    }
+
+    // CLAP plugins receive the library path in their init function. The problem
+    // is that `plugin_dll_path` is a Linux path. This should be fine as all
+    // Wine syscalls can work with both Windows and Linux style paths, but if
+    // the plugin wants to manipulate the path then this may result in
+    // unexpected behavior. Wine can convert these paths for us, but we'd get a
+    // `WCHAR*` back which we must first convert back to UTF-8.
+    bool init_success;
+    WCHAR* dos_plugin_dll_path(wine_get_dos_file_name(plugin_dll_path.c_str()));
+    if (dos_plugin_dll_path) {
+        static_assert(sizeof(WCHAR) == sizeof(char16_t));
+        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>
+            converter;
+        const std::string converted_plugin_path =
+            std::string(converter.to_bytes(std::u16string(
+                reinterpret_cast<char16_t*>(dos_plugin_dll_path))));
+
+        // This function is not optional, but if the plugin somehow does not
+        // provide it and we'll call it anyways then the error will be less than
+        // obvious
+        assert(entry_->init);
+        init_success = entry_->init(converted_plugin_path.c_str());
+
+        // Can't use regular `free()` or `unique_ptr` here
+        HeapFree(GetProcessHeap(), 0, dos_plugin_dll_path);
+    } else {
+        // This should never be hit, but just in case
+        init_success = entry_->init(plugin_dll_path.c_str());
+    }
+
+    throw std::runtime_error("TODO");
+
     // TODO: Load the CLAP module
     // std::string error;
     // module_ = CLAP::Hosting::Win32Module::create(plugin_dll_path, error);

@@ -21,6 +21,7 @@
 #include <shared_mutex>
 #include <string>
 
+#include <clap/entry.h>
 #include <clap/plugin.h>
 
 #include "../../common/audio-shm.h"
@@ -350,8 +351,23 @@ class ClapBridge : public HostBridge {
      */
     Configuration config_;
 
-    // TODO: Grab the entry point and factory
-    // std::shared_ptr<CLAP::Hosting::Module> module_;
+    // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+
+    /**
+     * The shared library handle of the CLAP plugin.
+     */
+    std::unique_ptr<std::remove_pointer_t<HMODULE>, decltype(&FreeLibrary)>
+        plugin_handle_;
+
+#pragma GCC diagnostic pop
+
+    /**
+     * The windows CLAP plugin's entry point. Initialized in the constructor,
+     * and deinitialized again when the entry point gets dropped.
+     */
+    std::unique_ptr<clap_plugin_entry, void (*)(clap_plugin_entry*)> entry_;
 
     /**
      * All sockets used for communicating with this specific plugin.
