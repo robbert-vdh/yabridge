@@ -70,16 +70,21 @@ bool ClapBridge::inhibits_event_loop() noexcept {
 void ClapBridge::run() {
     set_realtime_priority(true);
 
-    // TODO: Listen on the socket
-    // sockets_.host_plugin_control_.receive_messages(
-    //     std::nullopt,
-    //     overload{
-    //         [&](const ClapPluginFactoryProxy::Construct&)
-    //             -> ClapPluginFactoryProxy::Construct::Response {
-    //             return ClapPluginFactoryProxy::ConstructArgs(
-    //                 module_->getFactory().get());
-    //         },
-    //     });
+    sockets_.host_plugin_main_thread_control_.receive_messages(
+        std::nullopt,
+        overload{
+            [&](const WantsConfiguration&) -> WantsConfiguration::Response {
+                // FIXME: This overload shouldn't be here, but
+                //        bitsery simply won't allow us to serialize the
+                //        variant without it.
+                return {};
+            },
+            [&](const clap::plugin_factory::List&)
+                -> clap::plugin_factory::List::Response {
+                // FIXME: Actually load this
+                return clap::plugin_factory::ListResponse{};
+            },
+        });
 }
 
 // TODO: Implement this

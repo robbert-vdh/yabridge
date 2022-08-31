@@ -45,9 +45,7 @@ class ClapLogger {
     // `log_request()` call returned `true`. This way we can filter out the
     // log message for the response together with the request.
 
-    // TODO: Main thread rquests
-    // bool log_request(bool is_host_plugin,
-    //                  const ClapPluginFactoryProxy::Construct&);
+    bool log_request(bool is_host_plugin, const clap::plugin_factory::List&);
 
     // TODO: Audio thread requests
     // bool log_request(bool is_host_plugin,
@@ -55,11 +53,9 @@ class ClapLogger {
 
     bool log_request(bool is_host_plugin, const WantsConfiguration&);
 
-    // TOOD: Main thread responses
     // void log_response(bool is_host_plugin, const Ack&);
-    // void log_response(bool is_host_plugin,
-    //                   const UniversalTResult&,
-    //                   bool from_cache = false);
+    bool log_response(bool is_host_plugin,
+                      const clap::plugin_factory::ListResponse&);
 
     // TODO: Audio thread responses
     // void log_response(bool is_host_plugin,

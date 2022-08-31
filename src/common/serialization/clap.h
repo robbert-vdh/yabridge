@@ -36,8 +36,10 @@
  * request of type `ClapControlRequest(T)` should send back a `T::Response`.
  * These messages are for main thread functions.
  */
-// TODO: Remove placeholder, add actual types
-using ClapMainThreadControlRequest = std::variant<WantsConfiguration>;
+// FIXME: Remove the `WantsConfiguration`. For some reason bitsery just won't
+//        serialize this without it.
+using ClapMainThreadControlRequest =
+    std::variant<WantsConfiguration, clap::plugin_factory::List>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadControlRequest& payload) {
@@ -117,13 +119,12 @@ struct ClapAudioThreadControlRequest {
 // TODO: Placeholder
 using ClapMainThreadCallbackRequest = std::variant<WantsConfiguration>;
 
-// TODO: Uncomment after changing `ClapMainThreadCallbackRequest`
-// template <typename S>
-// void serialize(S& s, ClapMainThreadCallbackRequest& payload) {
-//     // All of the objects in `ClapMainThreadCallbackRequest` should have their own
-//     // serialization function.
-//     s.ext(payload, bitsery::ext::InPlaceVariant{});
-// }
+template <typename S>
+void serialize(S& s, ClapMainThreadCallbackRequest& payload) {
+    // All of the objects in `ClapMainThreadCallbackRequest` should have their
+    // own serialization function.
+    s.ext(payload, bitsery::ext::InPlaceVariant{});
+}
 
 /**
  * Fetch the `std::variant<>` from an audio thread request object. This will

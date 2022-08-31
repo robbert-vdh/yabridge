@@ -22,12 +22,12 @@
 
 ClapLogger::ClapLogger(Logger& generic_logger) : logger_(generic_logger) {}
 
-// bool ClapLogger::log_request(bool is_host_plugin,
-//                              const ClapPluginFactoryProxy::Construct&) {
-//     return log_request_base(is_host_plugin, [&](auto& message) {
-//         message << "GetPluginFactory()";
-//     });
-// }
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::plugin_factory::List&) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << "clap_plugin_factory::list()";
+    });
+}
 
 bool ClapLogger::log_request(bool is_host_plugin, const WantsConfiguration&) {
     return log_request_base(is_host_plugin, [&](auto& message) {
@@ -39,6 +39,19 @@ bool ClapLogger::log_request(bool is_host_plugin, const WantsConfiguration&) {
 //     log_response_base(is_host_plugin, [&](auto& message) { message << "ACK";
 //     });
 // }
+
+bool ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::plugin_factory::ListResponse& response) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        if (response.descriptors) {
+            message << "<clap_plugin_factory containing "
+                    << response.descriptors->size() << " plugin descriptors>";
+        } else {
+            message << "<not supported>";
+        }
+    });
+}
 
 void ClapLogger::log_response(bool is_host_plugin, const Configuration&) {
     log_response_base(is_host_plugin,

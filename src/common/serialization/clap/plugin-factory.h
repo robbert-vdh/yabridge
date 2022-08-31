@@ -26,21 +26,27 @@ namespace plugin_factory {
 /**
  * The response to the `clap::plugin_factory::list` message defined below.
  */
-struct list_response {
-    std::vector<clap::plugin::descriptor> descriptors;
+struct ListResponse {
+    /**
+     * The descriptors for the plugins in the factory. This will be a nullopt if
+     * the plugin does not support the plugin factory.
+     */
+    std::optional<std::vector<clap::plugin::descriptor>> descriptors;
 
     template <typename S>
     void serialize(S& s) {
-        s.container(descriptors, 8192);
+        s.ext(descriptors, bitsery::ext::InPlaceOptional{},
+              [](S& s, auto& v) { s.container(v, 8192); });
     }
 };
 
 /**
  * Message combining `clap_plugin_factory::count()` with
- * `clap_plugin_factory::get()` to get all plugin descriptors in one go.
+ * `clap_plugin_factory::get()` to get all plugin descriptors in one go. Will
+ * return a nullopt if the plugin does not support the plugin factory.
  */
-struct list {
-    using Response = list_response;
+struct List {
+    using Response = ListResponse;
 
     // Since we send this to a specific CLAP plugin library, there are no
     // parameters here
