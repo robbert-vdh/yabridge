@@ -110,10 +110,16 @@ struct ClapPluginInstance {
      */
     std::optional<Editor> editor;
 
+    // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+
     /**
      * The plugin object. The plugin gets destroyed together with this struct.
      */
     std::unique_ptr<const clap_plugin, decltype(clap_plugin::destroy)> plugin;
+
+#pragma GCC diagnostic pop
 
     /**
      * Contains the plugin's supported extensions. Initialized after the host
