@@ -93,15 +93,12 @@ ClapBridge::ClapBridge(MainContext& main_context,
         init_success = entry_->init(plugin_dll_path.c_str());
     }
 
-    throw std::runtime_error("TODO");
-
-    // TODO: Load the CLAP module
-    // std::string error;
-    // module_ = CLAP::Hosting::Win32Module::create(plugin_dll_path, error);
-    // if (!module_) {
-    //     throw std::runtime_error("Could not load the CLAP module for '" +
-    //                              plugin_dll_path + "': " + error);
-    // }
+    if (!init_success) {
+        // `clap_entry->deinit()` is normally called when `entry_` is dropped,
+        // but taht shouldn't happen if the entry point was never initialized.
+        [[maybe_unused]] auto _ = entry_.release();
+        throw std::runtime_error("'clap_entry->init()' returned false.");
+    }
 
     sockets_.connect();
 
