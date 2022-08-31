@@ -56,6 +56,14 @@ ClapBridge::ClapBridge(MainContext& main_context,
             "' does not export the 'clap_entry' entry point.");
     }
 
+    if (!clap_version_is_compatible(entry_->clap_version)) {
+        throw std::runtime_error(
+            "" + plugin_dll_path + "' has an incompatible CLAP version (" +
+            std::to_string(entry_->clap_version.major) + "." +
+            std::to_string(entry_->clap_version.minor) + "." +
+            std::to_string(entry_->clap_version.revision) + ").");
+    }
+
     // CLAP plugins receive the library path in their init function. The problem
     // is that `plugin_dll_path` is a Linux path. This should be fine as all
     // Wine syscalls can work with both Windows and Linux style paths, but if
