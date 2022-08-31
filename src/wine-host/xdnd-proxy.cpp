@@ -847,7 +847,7 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
 
                                 // Normalize the paths to something a bit more
                                 // friendly
-                                const char* unix_path =
+                                char* unix_path =
                                     wine_get_unix_file_name(file_name.data());
                                 if (unix_path) {
                                     std::error_code err;
@@ -860,6 +860,10 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                                         dragged_files.emplace_back(
                                             cannonical_path);
                                     }
+
+                                    // Can't use regular `free()` or
+                                    // `unique_ptr` here
+                                    HeapFree(GetProcessHeap(), 0, unix_path);
                                 }
                             }
 
@@ -873,7 +877,7 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                     }
                 } break;
                 case TYMED_FILE: {
-                    const char* unix_path =
+                    char* unix_path =
                         wine_get_unix_file_name(storage.lpszFileName);
                     if (unix_path) {
                         std::error_code err;
@@ -884,6 +888,8 @@ void CALLBACK dnd_winevent_callback(HWINEVENTHOOK /*hWinEventHook*/,
                         } else {
                             dragged_files.emplace_back(cannonical_path);
                         }
+
+                        HeapFree(GetProcessHeap(), 0, unix_path);
                     }
                 } break;
                 default: {

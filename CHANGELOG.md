@@ -8,6 +8,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed a minor memory leak in the Wine->X11 drag-and-drop implementation when
+  converting Windows file paths.
+
 ### yabridgectl
 
 - Added support for setting up CLAP plugins.
