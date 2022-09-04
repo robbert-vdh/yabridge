@@ -668,7 +668,9 @@ negative side effects:
 
 - Make sure that you're using the performance frequency scaling governor, as
   changing clock speeds in the middle of a real time workload can cause latency
-  spikes.
+  spikes. Since Linux 5.9 it's possible to do this by setting the
+  `cpufreq.default_governor=performance` to the kernel's command line in your
+  boot loader configuration.
 
 - The last but perhaps the most important thing you can do is to use a build of
   Wine compiled with Proton's fsync or FUTEX2 patches. This can improve
