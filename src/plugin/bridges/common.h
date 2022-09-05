@@ -425,9 +425,9 @@ class PluginBridge {
             generic_logger_.log(
                 "         this plugin's. Check the logs to see which yabridge");
             generic_logger_.log(
-                "          library and host are being loaded, and try "
+                "         library and host are being loaded, and try "
                 "rerunning");
-            generic_logger_.log("          'yabridgectl sync'.");
+            generic_logger_.log("         'yabridgectl sync'.");
 
             send_notification(
                 "Version mismatch",
