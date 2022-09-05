@@ -44,6 +44,9 @@
 
 // TODO: If this approach works, maybe we can also refactor the VST2 handling to
 //       do this since it's a bit safer and easier to read
+// TODO: Get rid of all of the purely interface `Ya*` classes and just have the
+//       message structs in namespaces like we now do for CLAP. That should
+//       speed up compilation a bit and help us get rid of a lot of .cpp files.
 
 // All messages for creating objects and calling interfaces on them are defined
 // as part of the interfaces and implementations in `vst3/`
