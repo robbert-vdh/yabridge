@@ -22,7 +22,7 @@ namespace plugin {
 descriptor::descriptor(const clap_plugin_descriptor_t& original)
     : clap_version(original.clap_version),
       id((assert(original.id), original.id)),
-      name((assert(original.id), original.id)),
+      name((assert(original.name), original.name)),
       vendor(original.vendor ? std::optional(original.vendor) : std::nullopt),
       url(original.url ? std::optional(original.url) : std::nullopt),
       manual_url(original.manual_url ? std::optional(original.manual_url)
