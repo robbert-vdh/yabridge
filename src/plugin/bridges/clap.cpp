@@ -87,7 +87,7 @@ const void* ClapPluginBridge::get_factory(const char* factory_id) {
             }
 
             plugin_factory_ = std::make_unique<clap_plugin_factory_proxy>(
-                *this, *response.descriptors);
+                *this, std::move(*response.descriptors));
         }
 
         return &plugin_factory_->plugin_factory_vtable;
