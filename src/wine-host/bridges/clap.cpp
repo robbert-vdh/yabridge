@@ -19,6 +19,8 @@
 #include <codecvt>
 #include <locale>
 
+#include <clap/plugin-factory.h>
+
 // Generated inside of the build directory
 #include <version.h>
 
@@ -137,8 +139,38 @@ void ClapBridge::run() {
             },
             [&](const clap::plugin_factory::List&)
                 -> clap::plugin_factory::List::Response {
-                // FIXME: Actually load this
-                return clap::plugin_factory::ListResponse{};
+                return main_context_
+                    .run_in_context([&]() {
+                        const clap_plugin_factory_t* factory =
+                            static_cast<const clap_plugin_factory_t*>(
+                                (entry_->get_factory)(CLAP_PLUGIN_FACTORY_ID));
+                        if (!factory) {
+                            return clap::plugin_factory::ListResponse{
+                                .descriptors = std::nullopt};
+                        }
+
+                        std::vector<clap::plugin::descriptor> descriptors;
+                        const uint32_t num_plugins =
+                            (factory->get_plugin_count)(factory);
+                        for (uint32_t i = 0; i < num_plugins; i++) {
+                            const clap_plugin_descriptor_t* descriptor =
+                                (factory->get_plugin_descriptor)(factory, i);
+                            if (!descriptor) {
+                                std::cerr << "Plugin returned a null pointer "
+                                             "for plugin index "
+                                          << i << "(" << num_plugins
+                                          << " total), skipping..."
+                                          << std::endl;
+                                continue;
+                            }
+
+                            descriptors.push_back(*descriptor);
+                        }
+
+                        return clap::plugin_factory::ListResponse{
+                            .descriptors = descriptors};
+                    })
+                    .get();
             },
         });
 }
