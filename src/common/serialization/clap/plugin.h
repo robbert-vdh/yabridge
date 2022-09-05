@@ -68,7 +68,7 @@ struct descriptor {
      * to this object's fields, so this descriptor is only valid as long as this
      * object is alive and doesn't get moved.
      */
-    clap_plugin_descriptor_t get() const;
+    const clap_plugin_descriptor_t* get() const;
 
     template <typename S>
     void serialize(S& s) {
@@ -98,6 +98,10 @@ struct descriptor {
      * Populated as part of `get()`.
      */
     mutable std::vector<const char*> features_ptrs;
+    /**
+     * The CLAP descriptor populated and returned from `get()`.
+     */
+    mutable clap_plugin_descriptor_t clap_descriptor;
 };
 
 }  // namespace plugin

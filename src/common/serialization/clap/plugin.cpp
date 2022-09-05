@@ -43,7 +43,7 @@ descriptor::descriptor(const clap_plugin_descriptor_t& original)
     }
 }
 
-clap_plugin_descriptor_t descriptor::get() const {
+const clap_plugin_descriptor_t* descriptor::get() const {
     // This should be the minimum of yabridge's supported CLAP version and
     // the plugin's supported CLAP version
     clap_version_t supported_clap_version = clap_version;
@@ -55,14 +55,15 @@ clap_plugin_descriptor_t descriptor::get() const {
         supported_clap_version = CLAP_VERSION;
     }
 
-    // `features_ptrs` needs to be populated as envp-style null terminated array
+    // `features_ptrs` needs to be populated as an envp-style null terminated
+    // array
     features_ptrs.resize(features.size() + 1);
     for (size_t i = 0; i < features.size(); i++) {
         features_ptrs[i] = features[i].c_str();
     }
     features_ptrs[features.size()] = nullptr;
 
-    return clap_plugin_descriptor_t{
+    clap_descriptor = clap_plugin_descriptor_t{
         .clap_version = supported_clap_version,
         .id = id.c_str(),
         .name = name.c_str(),
@@ -74,6 +75,8 @@ clap_plugin_descriptor_t descriptor::get() const {
         .description = description ? description->c_str() : nullptr,
         .features = features_ptrs.data(),
     };
+
+    return &clap_descriptor;
 }
 
 }  // namespace plugin

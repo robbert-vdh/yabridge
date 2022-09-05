@@ -80,6 +80,7 @@ if with_clap
     '../common/serialization/clap/plugin.cpp',
     '../common/utils.cpp',
     '../include/llvm/small-vector.cpp',
+    'bridges/clap-impls/plugin-factory-proxy.cpp',
     'bridges/clap.cpp',
     'host-process.cpp',
     'utils.cpp',
