@@ -240,12 +240,9 @@ class WineXdndProxy {
      */
     X11Window proxy_window_;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-attributes"
     std::unique_ptr<std::remove_pointer_t<HWINEVENTHOOK>,
                     std::decay_t<decltype(&UnhookWinEvent)>>
         hook_handle_;
-#pragma GCC diagnostic pop
 
     /**
      * MT-PowerDrumkit for some reason initializes a drag-and-drop operation,

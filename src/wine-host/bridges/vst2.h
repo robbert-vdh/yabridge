@@ -183,17 +183,11 @@ class Vst2Bridge : public HostBridge {
      */
     ScopedValueCache<int> process_level_cache_;
 
-    // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-attributes"
-
     /**
      * The shared library handle of the VST2 plugin.
      */
     std::unique_ptr<std::remove_pointer_t<HMODULE>, decltype(&FreeLibrary)>
         plugin_handle_;
-
-#pragma GCC diagnostic pop
 
     /**
      * The loaded plugin's `AEffect` struct, obtained using the above library

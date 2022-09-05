@@ -66,6 +66,10 @@ chainloader_compiler_options = [
 #       definitions, so we'll try to exclude those bits
 wine_compiler_options = [
   '-DNOMINMAX',
+  # Since Wine 5.12 any use of attributes (like visibility specifiers, or
+  # calling conventions) in templated member or variable types causes a warning
+  '-Wno-attributes',
+  '-Wno-ignored-attributes',
   # Winsock conflicts with the Posix sockets API. Before Wine 6.8 there was a
   # `WINE_NOWINSOCK` that would exclude just `winsock.h` from `windows.h`, but
   # they got rid of that so we now need to explicitly define the ifdef guards

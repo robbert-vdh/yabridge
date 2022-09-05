@@ -113,18 +113,12 @@ class Win32Thread {
     Win32Thread& operator=(Win32Thread&&) noexcept;
 
    private:
-    // FIXME: This emits `-Wignored-attributes` as of Wine 5.22
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-attributes"
-
     /**
      * The handle for the thread that is running, will be a null pointer if this
      * class was constructed with the default constructor.
      */
     std::unique_ptr<std::remove_pointer_t<HANDLE>, decltype(&CloseHandle)>
         handle_;
-
-#pragma GCC diagnostic pop
 };
 
 /**
