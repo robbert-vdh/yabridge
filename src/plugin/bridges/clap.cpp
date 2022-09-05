@@ -73,6 +73,28 @@ ClapPluginBridge::~ClapPluginBridge() noexcept {
 }
 
 const void* ClapPluginBridge::get_factory(const char* factory_id) {
-    // FIXME: Implement
-    return nullptr;
+    assert(factory_id);
+
+    if (strcmp(factory_id, CLAP_PLUGIN_FACTORY_ID) == 0) {
+        // We'll initialize the factory the first time it's requested
+        if (!plugin_factory_) {
+            // If the plugin does not support this factory type, then we'll also
+            // return a null poitner
+            const clap::plugin_factory::ListResponse response =
+                send_main_thread_message(clap::plugin_factory::List{});
+            if (!response.descriptors) {
+                return nullptr;
+            }
+
+            plugin_factory_ = std::make_unique<clap_plugin_factory_proxy>(
+                *this, *response.descriptors);
+        }
+
+        return &plugin_factory_->plugin_factory_vtable;
+    } else {
+        logger_.log_trace([factory_id]() {
+            return "Unknown factory type '" + std::string(factory_id) + "'";
+        });
+        return nullptr;
+    }
 }

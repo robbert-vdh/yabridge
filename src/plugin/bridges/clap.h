@@ -22,6 +22,7 @@
 #include "../../common/communication/clap.h"
 #include "../../common/logging/clap.h"
 #include "../../common/mutual-recursion.h"
+#include "clap-impls/plugin-factory-proxy.h"
 #include "common.h"
 
 /**
@@ -108,21 +109,17 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
     //  */
     // void unregister_plugin_proxy(ClapPluginProxyImpl& proxy_object);
 
-    // // TODO:
-    // /**
-    //  * Send a control message to the Wine plugin host and return the
-    //  response.
-    //  * This is intended for main thread function calls, and it's a shorthand
-    //  for
-    //  * `sockets_.host_plugin_control_.send_message()` for use in CLAP
-    //  interface
-    //  * implementations.
-    //  */
-    // template <typename T>
-    // typename T::Response send_main_thread_message(const T& object) {
-    //     return sockets_.host_plugin_control_.send_message(
-    //         object, std::pair<ClapLogger&, bool>(logger_, true));
-    // }
+    /**
+     * Send a control message to the Wine plugin host and return the response.
+     * This is intended for main thread function calls, and it's a shorthand for
+     * `sockets_.host_plugin_control_.send_message()` for use in CLAP interface
+     * implementations.
+     */
+    template <typename T>
+    typename T::Response send_main_thread_message(const T& object) {
+        return sockets_.host_plugin_main_thread_control_.send_message(
+            object, std::pair<ClapLogger&, bool>(logger_, true));
+    }
 
     // /**
     //  * Send an a message to a plugin instance's audio thread. This is
@@ -206,16 +203,14 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
      */
     std::jthread host_callback_handler_;
 
-    // /**
-    //  * Our plugin factory. All information about the plugin and its supported
-    //  * classes are copied directly from the Windows CLAP plugin's factory on
-    //  the
-    //  * Wine side, and we'll provide an implementation that can send control
-    //  * messages to the Wine plugin host.
-    //  *
-    //  * @related get_plugin_factory
-    //  */
-    // Steinberg::IPtr<ClapPluginFactoryProxyImpl> plugin_factory_ = nullptr;
+    /**
+     * Our plugin factory, containing information about all plugins supported by
+     * the bridged CLAP plugin's factory. This is initialized the first time the
+     * host tries to query this in `clap_entry->get_factory()`.
+     *
+     * @related get_factory
+     */
+    std::unique_ptr<clap_plugin_factory_proxy> plugin_factory_;
 
     // TODO: Implement
     // /**
