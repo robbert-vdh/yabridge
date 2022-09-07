@@ -22,6 +22,7 @@
 #include <string>
 
 #include <clap/entry.h>
+#include <clap/plugin-factory.h>
 #include <clap/plugin.h>
 
 #include "../../common/audio-shm.h"
@@ -29,6 +30,7 @@
 #include "../../common/configuration.h"
 #include "../../common/mutual-recursion.h"
 #include "../editor.h"
+#include "clap-impls/host-proxy.h"
 #include "common.h"
 
 /**
@@ -62,15 +64,22 @@ struct ClapPluginInstance {
      * Bind a CLAP plugin pointer to this plugin instance object. This can only
      * be done once per plugin pointer. The pointer must be non-null.
      */
-    ClapPluginInstance(const clap_plugin* plugin) noexcept;
+    ClapPluginInstance(const clap_plugin* plugin,
+                       std::unique_ptr<clap_host_proxy> host_proxy) noexcept;
 
    public:
+    /**
+     * A proxy for the native CLAP host. Stored using an `std::unique_ptr`
+     * because it must be created before creating the plugin instance, and the
+     * object cannot move after being created because of the vtable.
+     */
+    std::unique_ptr<clap_host_proxy> host_proxy;
+    // TODO: Proxies for host extension objects
+
     /**
      * A dedicated thread for handling incoming audio thread function calls.
      */
     Win32Thread audio_thread_handler;
-
-    // TODO: Proxies for host extension objects
 
     /**
      * A shared memory object we'll write the input audio buffers to on the
@@ -331,11 +340,13 @@ class ClapBridge : public HostBridge {
         size_t instance_id);
 
     /**
-     * Assign a unique identifier to an object and add it to
-     * `object_instances_`. This will also set up an audio thread socket
-     * listener for the plugin instance.
+     * Add a plugin and its host to it to `object_instances_`. The plugin's
+     * identifier is taken from the host proxy since this host proxy is already
+     * needed when constructing the plugin. This will also set up an audio
+     * thread socket listener for the plugin instance.
      */
-    size_t register_plugin_instance(const clap_plugin* plugin);
+    void register_plugin_instance(const clap_plugin* plugin,
+                                  std::unique_ptr<clap_host_proxy> host_proxy);
 
     /**
      * Remove an object from `object_instances_`. Will also tear down the
@@ -362,6 +373,12 @@ class ClapBridge : public HostBridge {
      * and deinitialized again when the entry point gets dropped.
      */
     std::unique_ptr<clap_plugin_entry, void (*)(clap_plugin_entry*)> entry_;
+
+    /**
+     * The plugin's factory, initialized when the host requests the plugin
+     * factory.
+     */
+    const clap_plugin_factory_t* plugin_factory_ = nullptr;
 
     /**
      * All sockets used for communicating with this specific plugin.

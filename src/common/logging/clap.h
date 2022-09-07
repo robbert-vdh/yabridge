@@ -46,6 +46,7 @@ class ClapLogger {
     // log message for the response together with the request.
 
     bool log_request(bool is_host_plugin, const clap::plugin_factory::List&);
+    bool log_request(bool is_host_plugin, const clap::plugin_factory::Create&);
 
     // TODO: Audio thread requests
     // bool log_request(bool is_host_plugin,
@@ -54,8 +55,10 @@ class ClapLogger {
     bool log_request(bool is_host_plugin, const WantsConfiguration&);
 
     // void log_response(bool is_host_plugin, const Ack&);
-    bool log_response(bool is_host_plugin,
+    void log_response(bool is_host_plugin,
                       const clap::plugin_factory::ListResponse&);
+    void log_response(bool is_host_plugin,
+                      const clap::plugin_factory::CreateResponse&);
 
     // TODO: Audio thread responses
     // void log_response(bool is_host_plugin,

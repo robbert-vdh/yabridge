@@ -49,6 +49,10 @@ class clap_host_proxy {
      * Get a `clap_host` vtable that can be passed to the plugin.
      */
     inline const clap_host_t* host_vtable() const { return &host_vtable_; }
+    /**
+     * The instance ID of the plugin instance this proxy belongs to.
+     */
+    inline size_t owner_isntance_id() const { return owner_instance_id_; }
 
     static const void* CLAP_ABI host_get_extension(const struct clap_host* host,
                                                    const char* extension_id);

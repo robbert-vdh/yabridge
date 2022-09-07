@@ -22,6 +22,7 @@
 
 #include "../bitsery/ext/message-reference.h"
 #include "../utils.h"
+#include "clap/host.h"
 #include "clap/plugin-factory.h"
 #include "common.h"
 
@@ -38,8 +39,9 @@
  */
 // FIXME: Remove the `WantsConfiguration`. For some reason bitsery just won't
 //        serialize this without it.
-using ClapMainThreadControlRequest =
-    std::variant<WantsConfiguration, clap::plugin_factory::List>;
+using ClapMainThreadControlRequest = std::variant<WantsConfiguration,
+                                                  clap::plugin_factory::List,
+                                                  clap::plugin_factory::Create>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadControlRequest& payload) {

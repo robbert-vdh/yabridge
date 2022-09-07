@@ -29,6 +29,15 @@ bool ClapLogger::log_request(bool is_host_plugin,
     });
 }
 
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::plugin_factory::Create& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << "clap_plugin_factory::create(host = <clap_host_t*>, "
+                   "plugin_id = \""
+                << request.plugin_id << "\")";
+    });
+}
+
 bool ClapLogger::log_request(bool is_host_plugin, const WantsConfiguration&) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << "Requesting <Configuration>";
@@ -40,15 +49,28 @@ bool ClapLogger::log_request(bool is_host_plugin, const WantsConfiguration&) {
 //     });
 // }
 
-bool ClapLogger::log_response(
+void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::plugin_factory::ListResponse& response) {
-    return log_request_base(is_host_plugin, [&](auto& message) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
         if (response.descriptors) {
             message << "<clap_plugin_factory containing "
                     << response.descriptors->size() << " plugin descriptors>";
         } else {
             message << "<not supported>";
+        }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::plugin_factory::CreateResponse& response) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.instance_id) {
+            message << "<clap_plugin_t* with instance ID "
+                    << *response.instance_id << ">";
+        } else {
+            message << "<nullptr*>";
         }
     });
 }

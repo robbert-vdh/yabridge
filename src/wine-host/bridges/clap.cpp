@@ -30,8 +30,12 @@ namespace fs = ghc::filesystem;
 ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept {
 }
 
-ClapPluginInstance::ClapPluginInstance(const clap_plugin* plugin) noexcept
-    : plugin((assert(plugin), plugin), plugin->destroy), extensions(*plugin) {}
+ClapPluginInstance::ClapPluginInstance(
+    const clap_plugin* plugin,
+    std::unique_ptr<clap_host_proxy> host_proxy) noexcept
+    : host_proxy(std::move(host_proxy)),
+      plugin((assert(plugin), plugin), plugin->destroy),
+      extensions(*plugin) {}
 
 ClapBridge::ClapBridge(MainContext& main_context,
                        // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -141,20 +145,22 @@ void ClapBridge::run() {
                 -> clap::plugin_factory::List::Response {
                 return main_context_
                     .run_in_context([&]() {
-                        const clap_plugin_factory_t* factory =
+                        plugin_factory_ =
                             static_cast<const clap_plugin_factory_t*>(
                                 (entry_->get_factory)(CLAP_PLUGIN_FACTORY_ID));
-                        if (!factory) {
+                        if (!plugin_factory_) {
                             return clap::plugin_factory::ListResponse{
                                 .descriptors = std::nullopt};
                         }
 
                         std::vector<clap::plugin::Descriptor> descriptors;
                         const uint32_t num_plugins =
-                            (factory->get_plugin_count)(factory);
+                            (plugin_factory_->get_plugin_count)(
+                                plugin_factory_);
                         for (uint32_t i = 0; i < num_plugins; i++) {
                             const clap_plugin_descriptor_t* descriptor =
-                                (factory->get_plugin_descriptor)(factory, i);
+                                (plugin_factory_->get_plugin_descriptor)(
+                                    plugin_factory_, i);
                             if (!descriptor) {
                                 std::cerr << "Plugin returned a null pointer "
                                              "for plugin index "
@@ -169,6 +175,37 @@ void ClapBridge::run() {
 
                         return clap::plugin_factory::ListResponse{
                             .descriptors = descriptors};
+                    })
+                    .get();
+            },
+            [&](clap::plugin_factory::Create& request)
+                -> clap::plugin_factory::Create::Response {
+                return main_context_
+                    .run_in_context([&]() {
+                        // This assertion should never be hit, but you can never
+                        // be too sure!
+                        assert(plugin_factory_);
+
+                        // We need the instance ID before the instance exists.
+                        // If creating the plugin fails then that's no problem
+                        // since we're using sparse hash maps anyways.
+                        const size_t instance_id = generate_instance_id();
+                        auto host_proxy = std::make_unique<clap_host_proxy>(
+                            *this, instance_id, std::move(request.host));
+
+                        const clap_plugin_t* plugin =
+                            plugin_factory_->create_plugin(
+                                plugin_factory_, host_proxy->host_vtable(),
+                                request.plugin_id.c_str());
+                        if (plugin) {
+                            register_plugin_instance(plugin,
+                                                     std::move(host_proxy));
+                            return clap::plugin_factory::CreateResponse{
+                                .instance_id = instance_id};
+                        } else {
+                            return clap::plugin_factory::CreateResponse{
+                                .instance_id = std::nullopt};
+                        }
                     })
                     .get();
             },
@@ -359,15 +396,19 @@ ClapBridge::get_instance(size_t instance_id) noexcept {
 //     return buffer_config;
 // }
 
-size_t ClapBridge::register_plugin_instance(const clap_plugin* plugin) {
+void ClapBridge::register_plugin_instance(
+    const clap_plugin* plugin,
+    std::unique_ptr<clap_host_proxy> host_proxy) {
     std::unique_lock lock(object_instances_mutex_);
 
-    if (!plugin) {
-        throw std::invalid_argument("The plugin pointer cannot be null");
-    }
+    assert(plugin);
+    assert(host_proxy);
 
-    const size_t instance_id = generate_instance_id();
-    object_instances_.emplace(instance_id, plugin);
+    // This instance ID has already been generated because the host proxy has to
+    // be created before the plugin instance
+    const size_t instance_id = host_proxy->owner_isntance_id();
+    object_instances_.emplace(
+        instance_id, ClapPluginInstance(plugin, std::move(host_proxy)));
 
     // Every plugin instance gets its own audio thread
     std::promise<void> socket_listening_latch;
@@ -413,8 +454,6 @@ size_t ClapBridge::register_plugin_instance(const clap_plugin* plugin) {
     // the native plugin may try to connect to it before our thread is up and
     // running.
     socket_listening_latch.get_future().wait();
-
-    return instance_id;
 }
 
 void ClapBridge::unregister_object_instance(size_t instance_id) {
