@@ -138,7 +138,12 @@ bool GroupBridge::is_event_loop_inhibited() noexcept {
 void GroupBridge::handle_plugin_run(size_t plugin_id, HostBridge* bridge) {
     // Blocks this thread until the plugin shuts down
     bridge->run();
-    logger_.log("'" + bridge->plugin_path_.string() + "' has exited");
+
+    // FIXME: This results in a spurious compiler warning if you inline
+    //        `plugin_path`:
+    //        https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105329
+    const std::string plugin_path = bridge->plugin_path_.string();
+    logger_.log("'" + plugin_path + "' has exited");
 
     // After the plugin has exited we'll remove this thread's plugin from the
     // active plugins. This is done within the IO context because the call to
