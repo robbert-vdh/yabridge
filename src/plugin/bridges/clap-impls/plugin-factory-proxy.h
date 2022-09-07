@@ -34,6 +34,11 @@ class clap_plugin_factory_proxy {
      * The vtable for `clap_plugin_factory`, requires that this object is never
      * moved or copied. This is positioned at the start of the struct so we can
      * cast between them (with only a bit of UB).
+     *
+     * NOTE: CLAP does not provide a user pointer field for this vtable like it
+     *       does with other types because it expects the factory to be a
+     *       statically initialized singleton. That's why we need to do this
+     *       cast instead.
      */
     const clap_plugin_factory_t plugin_factory_vtable;
 
@@ -43,7 +48,7 @@ class clap_plugin_factory_proxy {
      */
     clap_plugin_factory_proxy(
         ClapPluginBridge& bridge,
-        std::vector<clap::plugin::descriptor> descriptors);
+        std::vector<clap::plugin::Descriptor> descriptors);
 
     clap_plugin_factory_proxy(const clap_plugin_factory_proxy&) = delete;
     clap_plugin_factory_proxy& operator=(const clap_plugin_factory_proxy&) =
@@ -65,5 +70,5 @@ class clap_plugin_factory_proxy {
    private:
     ClapPluginBridge& bridge_;
 
-    std::vector<clap::plugin::descriptor> descriptors_;
+    std::vector<clap::plugin::Descriptor> descriptors_;
 };

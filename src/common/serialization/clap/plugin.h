@@ -33,17 +33,17 @@ namespace plugin {
 /**
  * Owned wrapper around `clap_plugin_descriptor` for serialization purposes.
  */
-struct descriptor {
+struct Descriptor {
     /**
      * Parse a plugin-provided descriptor so it can be serialized and sent to
      * the native CLAP plugin.
      */
-    descriptor(const clap_plugin_descriptor_t& original);
+    Descriptor(const clap_plugin_descriptor_t& original);
 
     /**
      * Default constructor for bitsery.
      */
-    descriptor() {}
+    Descriptor() {}
 
     /**
      * We'll report the maximum of the plugin's supported CLAP version and

@@ -21,7 +21,7 @@
 namespace clap {
 namespace plugin {
 
-descriptor::descriptor(const clap_plugin_descriptor_t& original)
+Descriptor::Descriptor(const clap_plugin_descriptor_t& original)
     : clap_version(original.clap_version),
       id((assert(original.id), original.id)),
       name((assert(original.name), original.name)),
@@ -45,7 +45,7 @@ descriptor::descriptor(const clap_plugin_descriptor_t& original)
     }
 }
 
-const clap_plugin_descriptor_t* descriptor::get() const {
+const clap_plugin_descriptor_t* Descriptor::get() const {
     // This should be the minimum of yabridge's supported CLAP version and
     // the plugin's supported CLAP version
     clap_version_t supported_clap_version = clamp_clap_version(clap_version);

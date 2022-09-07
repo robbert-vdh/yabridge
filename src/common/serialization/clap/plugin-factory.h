@@ -31,7 +31,7 @@ struct ListResponse {
      * The descriptors for the plugins in the factory. This will be a nullopt if
      * the plugin does not support the plugin factory.
      */
-    std::optional<std::vector<clap::plugin::descriptor>> descriptors;
+    std::optional<std::vector<clap::plugin::Descriptor>> descriptors;
 
     template <typename S>
     void serialize(S& s) {

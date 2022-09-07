@@ -20,7 +20,7 @@
 
 clap_plugin_factory_proxy::clap_plugin_factory_proxy(
     ClapPluginBridge& bridge,
-    std::vector<clap::plugin::descriptor> descriptors)
+    std::vector<clap::plugin::Descriptor> descriptors)
     : plugin_factory_vtable(clap_plugin_factory_t{
           .get_plugin_count = plugin_factory_get_plugin_count,
           .get_plugin_descriptor = plugin_factory_get_plugin_descriptor,

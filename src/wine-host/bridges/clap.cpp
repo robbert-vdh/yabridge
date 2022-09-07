@@ -149,7 +149,7 @@ void ClapBridge::run() {
                                 .descriptors = std::nullopt};
                         }
 
-                        std::vector<clap::plugin::descriptor> descriptors;
+                        std::vector<clap::plugin::Descriptor> descriptors;
                         const uint32_t num_plugins =
                             (factory->get_plugin_count)(factory);
                         for (uint32_t i = 0; i < num_plugins; i++) {
