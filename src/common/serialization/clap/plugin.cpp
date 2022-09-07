@@ -16,6 +16,8 @@
 
 #include "plugin.h"
 
+#include "version.h"
+
 namespace clap {
 namespace plugin {
 
@@ -46,14 +48,7 @@ descriptor::descriptor(const clap_plugin_descriptor_t& original)
 const clap_plugin_descriptor_t* descriptor::get() const {
     // This should be the minimum of yabridge's supported CLAP version and
     // the plugin's supported CLAP version
-    clap_version_t supported_clap_version = clap_version;
-    if (CLAP_VERSION_MAJOR < clap_version.major ||
-        (clap_version.major == CLAP_VERSION_MAJOR &&
-         (CLAP_VERSION_MINOR < clap_version.minor ||
-          (clap_version.minor == CLAP_VERSION_MINOR &&
-           CLAP_VERSION_REVISION < clap_version.revision)))) {
-        supported_clap_version = CLAP_VERSION;
-    }
+    clap_version_t supported_clap_version = clamp_clap_version(clap_version);
 
     // `features_ptrs` needs to be populated as an envp-style null terminated
     // array
