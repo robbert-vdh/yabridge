@@ -12,12 +12,6 @@ Yabridge currently tracks CLAP 1.1.1. The implementation status for CLAP's core 
 | `clap.plugin-factory`                     | :heavy_check_mark:    |
 | `clap.plugin-invalidation-factory/draft0` | :x: Not supported yet |
 
-| extension                                 | status                |
-| ----------------------------------------- | --------------------- |
-| Core plugin and host functionality        | :x: Work in progress  |
-| `clap.plugin-factory`                     | :x: Work in progress  |
-| `clap.plugin-invalidation-factory/draft0` | :x: Not supported yet |
-
 | extension                 | status                |
 | ------------------------- | --------------------- |
 | `clap.audio-ports`        | :x: Not supported yet |
