@@ -33,6 +33,12 @@
 #include "clap-impls/host-proxy.h"
 #include "common.h"
 
+// Would be nice to able to do this at build time, but Meson doesn't seem to
+// support (subproject) dependencies in build time compiler checks
+#ifndef CLAP_ABI
+#error The found CLAP dependency does not declare a calling convention on Windows. Building yabridge against these CLAP headers will cause it to malfunction.
+#endif
+
 /**
  * Pointers to all of a CLAP plugin's extension structs. These will be null if
  * the plugin doesn't support the extensions.
