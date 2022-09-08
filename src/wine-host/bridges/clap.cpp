@@ -423,31 +423,16 @@ void ClapBridge::register_plugin_instance(
         const std::string thread_name = "audio-" + std::to_string(instance_id);
         pthread_setname_np(pthread_self(), thread_name.c_str());
 
-        // TODO: Listen on the socket
-        // sockets_.add_audio_processor_and_listen(
-        //     instance_id, socket_listening_latch,
-        //     overload{
-        //         [&](YaAudioProcessor::SetBusArrangements& request)
-        //             -> YaAudioProcessor::SetBusArrangements::Response {
-        //             const auto& [instance, _] =
-        //                 get_instance(request.instance_id);
-
-        //             // HACK: WA Production Imperfect CLAP somehow requires
-        //             //       `inputs` to be a valid pointer, even if there
-        //             //       are no inputs.
-        //             Steinberg::Vst::SpeakerArrangement empty_arrangement =
-        //                 0b00000000;
-
-        //             return instance.interfaces.audio_processor
-        //                 ->setBusArrangements(
-        //                     request.num_ins > 0 ? request.inputs.data()
-        //                                         : &empty_arrangement,
-        //                     request.num_ins,
-        //                     request.num_outs > 0 ? request.outputs.data()
-        //                                          : &empty_arrangement,
-        //                     request.num_outs);
-        //         },
-        //     });
+        sockets_.add_audio_thread_and_listen(
+            instance_id, socket_listening_latch,
+            overload{
+                [&](const WantsConfiguration&) -> WantsConfiguration::Response {
+                    // FIXME: This overload shouldn't be here, but
+                    //        bitsery simply won't allow us to serialize the
+                    //        variant without it.
+                    return {};
+                },
+            });
     });
 
     // Wait for the new socket to be listening on before continuing. Otherwise
