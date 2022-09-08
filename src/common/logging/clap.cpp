@@ -54,7 +54,7 @@ void ClapLogger::log_response(
     const clap::plugin_factory::ListResponse& response) {
     return log_response_base(is_host_plugin, [&](auto& message) {
         if (response.descriptors) {
-            message << "<clap_plugin_factory containing "
+            message << "<clap_plugin_factory* containing "
                     << response.descriptors->size() << " plugin descriptors>";
         } else {
             message << "<not supported>";
