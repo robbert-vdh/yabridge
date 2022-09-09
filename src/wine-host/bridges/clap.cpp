@@ -406,7 +406,7 @@ void ClapBridge::register_plugin_instance(
 
     // This instance ID has already been generated because the host proxy has to
     // be created before the plugin instance
-    const size_t instance_id = host_proxy->owner_isntance_id();
+    const size_t instance_id = host_proxy->owner_instance_id();
     object_instances_.emplace(
         instance_id, ClapPluginInstance(plugin, std::move(host_proxy)));
 
@@ -441,7 +441,7 @@ void ClapBridge::register_plugin_instance(
     socket_listening_latch.get_future().wait();
 }
 
-void ClapBridge::unregister_object_instance(size_t instance_id) {
+void ClapBridge::unregister_plugin_instance(size_t instance_id) {
     sockets_.remove_audio_thread(instance_id);
 
     // Remove the instance from within the main IO context so

@@ -358,7 +358,7 @@ class ClapBridge : public HostBridge {
      * Remove an object from `object_instances_`. Will also tear down the
      * instance's audio thread.
      */
-    void unregister_object_instance(size_t instance_id);
+    void unregister_plugin_instance(size_t instance_id);
 
     /**
      * The configuration for this instance of yabridge based on the path to the

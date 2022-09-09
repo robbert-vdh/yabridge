@@ -98,3 +98,32 @@ const void* ClapPluginBridge::get_factory(const char* factory_id) {
         return nullptr;
     }
 }
+
+std::pair<clap_plugin_proxy&, std::shared_lock<std::shared_mutex>>
+ClapPluginBridge::get_proxy(size_t instance_id) noexcept {
+    std::shared_lock lock(plugin_proxies_mutex_);
+
+    return std::pair<clap_plugin_proxy&, std::shared_lock<std::shared_mutex>>(
+        *plugin_proxies_.at(instance_id), std::move(lock));
+}
+
+void ClapPluginBridge::register_plugin_proxy(
+    std::unique_ptr<clap_plugin_proxy> plugin_proxy) {
+    std::unique_lock lock(plugin_proxies_mutex_);
+
+    assert(plugin_proxy);
+
+    plugin_proxies_.emplace(plugin_proxy->instance_id(),
+                            std::move(plugin_proxy));
+
+    // For optimization reaons we use dedicated sockets for functions that will
+    // be run in the audio processing loop
+    sockets_.add_audio_thread_and_connect(plugin_proxy->instance_id());
+}
+
+void ClapPluginBridge::unregister_plugin_proxy(size_t instance_id) {
+    std::lock_guard lock(plugin_proxies_mutex_);
+
+    plugin_proxies_.erase(instance_id);
+    sockets_.remove_audio_thread(instance_id);
+}
