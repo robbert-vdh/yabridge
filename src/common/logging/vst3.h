@@ -414,9 +414,9 @@ class Vst3Logger {
     void log_response_base(bool is_host_plugin, F callback) {
         std::ostringstream message;
         if (is_host_plugin) {
-            message << "[vst <- host]    ";
+            message << "[plugin <- host]    ";
         } else {
-            message << "[host <- vst]    ";
+            message << "[host <- plugin]    ";
         }
 
         callback(message);
