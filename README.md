@@ -568,6 +568,16 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   plugin output to `~/.BitwigStudio/log/engine.log`, so you may need to look
   there instead.
 
+- Try to use a clean Wine prefix when testing misbehaving plugins. Either
+  temporarily rename `~/.wine` to something else, or set the `WINEPREFIX`
+  environment variable to a directory path to have Wine use that as a prefix.
+  Don't forget to unset it before starting your DAW or all plugins will use that
+  prefix.
+
+- If you have the `WINEPREFIX` environment variable set and you _don't_ want all
+  of your plugins to use that specific Wine prefix, then you should unset it to
+  allow yabridge to automatically detect Wine prefixes for you.
+
 - If yabridge prints errors or warnings about memory locking limits, then that
   means that you have not yet set up realtime privileges for your user. Setting
   the memlock limit to unlimited (or -1) is usually part of this process. How
@@ -591,10 +601,6 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   scheduling which requires this limit to be set for it to work. You may also
   want to give [this](https://github.com/robbert-vdh/dotfiles#pipewire)
   optimized PipeWire configuration a try.
-
-- If you have the `WINEPREFIX` environment variable set and you _don't_ want all
-  of your plugins to use that specific Wine prefix, then you should unset it to
-  allow yabridge to automatically detect Wine prefixes for you.
 
 - If you're seeing errors related to Wine either when running `yabridgectl sync`
   or when trying to load a plugin, then it can be that your installed version of
