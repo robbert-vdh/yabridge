@@ -41,7 +41,8 @@
 //        serialize this without it.
 using ClapMainThreadControlRequest = std::variant<WantsConfiguration,
                                                   clap::plugin_factory::List,
-                                                  clap::plugin_factory::Create>;
+                                                  clap::plugin_factory::Create,
+                                                  clap::plugin::Destroy>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadControlRequest& payload) {

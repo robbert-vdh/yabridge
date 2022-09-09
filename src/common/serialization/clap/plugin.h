@@ -24,6 +24,7 @@
 #include <clap/plugin.h>
 
 #include "../../bitsery/ext/in-place-optional.h"
+#include "../common.h"
 
 // Serialization messages for `clap/plugin.h`
 
@@ -102,6 +103,22 @@ struct Descriptor {
      * The CLAP descriptor populated and returned from `get()`.
      */
     mutable clap_plugin_descriptor_t clap_descriptor;
+};
+
+/**
+ * Message struct for `clap_plugin::destroy()`. The Wine plugin host should
+ * clean up the plugin, and everything is also cleaned up on the plugin side
+ * after receiving acknowledgement
+ */
+struct Destroy {
+    using Response = Ack;
+
+    native_size_t instance_id;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(instance_id);
+    }
 };
 
 }  // namespace plugin

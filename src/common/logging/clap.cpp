@@ -38,16 +38,22 @@ bool ClapLogger::log_request(bool is_host_plugin,
     });
 }
 
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::plugin::Destroy& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin::destroy()";
+    });
+}
+
 bool ClapLogger::log_request(bool is_host_plugin, const WantsConfiguration&) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << "Requesting <Configuration>";
     });
 }
 
-// void ClapLogger::log_response(bool is_host_plugin, const Ack&) {
-//     log_response_base(is_host_plugin, [&](auto& message) { message << "ACK";
-//     });
-// }
+void ClapLogger::log_response(bool is_host_plugin, const Ack&) {
+    log_response_base(is_host_plugin, [&](auto& message) { message << "ACK"; });
+}
 
 void ClapLogger::log_response(
     bool is_host_plugin,

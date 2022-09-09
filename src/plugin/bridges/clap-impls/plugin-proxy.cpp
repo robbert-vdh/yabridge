@@ -54,9 +54,12 @@ clap_plugin_proxy::plugin_destroy(const struct clap_plugin* plugin) {
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
-    // TODO: Destroy on the Wine side
+    // This will clean everything related to this instance up on the Wine plugin
+    // host side
+    self->bridge_.send_main_thread_message(
+        clap::plugin::Destroy{.instance_id = self->instance_id()});
 
-    // This deallocates and destroys `self`
+    // And this deallocates and destroys `self`
     self->bridge_.unregister_plugin_proxy(self->instance_id());
 }
 

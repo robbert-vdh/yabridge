@@ -209,6 +209,19 @@ void ClapBridge::run() {
                     })
                     .get();
             },
+            [&](clap::plugin::Destroy& request)
+                -> clap::plugin::Destroy::Response {
+                return main_context_
+                    .run_in_context([&]() {
+                        // This calls `clap_plugin::destroy()` as part of
+                        // cleaning up the `unique_ptr` holding the plugin
+                        // instance pointer
+                        unregister_plugin_instance(request.instance_id);
+
+                        return Ack{};
+                    })
+                    .get();
+            },
         });
 }
 
@@ -446,12 +459,8 @@ void ClapBridge::unregister_plugin_instance(size_t instance_id) {
 
     // Remove the instance from within the main IO context so
     // removing it doesn't interfere with the Win32 message loop
-    // XXX: I don't think we have to wait for the object to be
-    //      deleted most of the time, but I can imagine a situation
-    //      where the plugin does a host callback triggered by a
-    //      Win32 timer in between where the above closure is being
-    //      executed and when the actual host application context on
-    //      the plugin side gets deallocated.
+    // NOTE: This will implicitly run `clap_plugin::destroy()` as part of the
+    //       `unique_ptr`'s cleanup
     main_context_
         .run_in_context([&, instance_id]() -> void {
             std::unique_lock lock(object_instances_mutex_);
