@@ -38,7 +38,8 @@ class clap_plugin_proxy {
      */
     clap_plugin_proxy(ClapPluginBridge& bridge,
                       size_t instance_id,
-                      clap::plugin::Descriptor descriptor);
+                      clap::plugin::Descriptor descriptor,
+                      const clap_host_t* host);
 
     clap_plugin_proxy(const clap_plugin_proxy&) = delete;
     clap_plugin_proxy& operator=(const clap_plugin_proxy&) = delete;
@@ -81,6 +82,12 @@ class clap_plugin_proxy {
     ClapPluginBridge& bridge_;
     size_t instance_id_;
     clap::plugin::Descriptor descriptor_;
+
+    /**
+     * The `clap_host_t*` passed when creating the instance. Any callbacks made
+     * by the proxied plugin instance must go through ere.
+     */
+    const clap_host_t* host_;
 
     /**
      * The vtable for `clap_plugin`, requires that this object is never moved or

@@ -20,10 +20,12 @@
 
 clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
                                      size_t instance_id,
-                                     clap::plugin::Descriptor descriptor)
+                                     clap::plugin::Descriptor descriptor,
+                                     const clap_host_t* host)
     : bridge_(bridge),
       instance_id_(instance_id),
       descriptor_(std::move(descriptor)),
+      host_(host),
       plugin_vtable_(clap_plugin_t{
           .desc = descriptor_.get(),
           .plugin_data = this,

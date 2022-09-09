@@ -85,7 +85,7 @@ clap_plugin_factory_proxy::plugin_factory_create_plugin(
         // correct plugin instance, and callbacks made from the plugin to the
         // correct host instance.
         self->bridge_.register_plugin_proxy(std::make_unique<clap_plugin_proxy>(
-            self->bridge_, *response.instance_id, *descriptor));
+            self->bridge_, *response.instance_id, *descriptor, host));
 
         const auto& [plugin_proxy, _] =
             self->bridge_.get_proxy(*response.instance_id);
