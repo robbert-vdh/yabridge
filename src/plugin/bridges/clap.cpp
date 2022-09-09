@@ -113,12 +113,12 @@ void ClapPluginBridge::register_plugin_proxy(
 
     assert(plugin_proxy);
 
-    plugin_proxies_.emplace(plugin_proxy->instance_id(),
-                            std::move(plugin_proxy));
+    const size_t instance_id = plugin_proxy->instance_id();
+    plugin_proxies_.emplace(instance_id, std::move(plugin_proxy));
 
     // For optimization reaons we use dedicated sockets for functions that will
     // be run in the audio processing loop
-    sockets_.add_audio_thread_and_connect(plugin_proxy->instance_id());
+    sockets_.add_audio_thread_and_connect(instance_id);
 }
 
 void ClapPluginBridge::unregister_plugin_proxy(size_t instance_id) {
