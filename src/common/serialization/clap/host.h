@@ -71,5 +71,20 @@ struct Host {
     }
 };
 
+/**
+ * Extensions supported by the host. This can only be queried in
+ * `clap_plugin::init()` so it cannot be part of `Host`. We'll create make these
+ * same extensions available to the bridged CLAP plugins using proxies.
+ */
+struct SupportedHostExtensions {
+    // Don't forget to add new extensions to the log output
+    // TODO: Support extensions
+
+    template <typename S>
+    void serialize(S& s) {
+        // s.value1b(extension_name);
+    }
+};
+
 }  // namespace host
 }  // namespace clap

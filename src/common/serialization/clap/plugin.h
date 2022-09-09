@@ -25,6 +25,7 @@
 
 #include "../../bitsery/ext/in-place-optional.h"
 #include "../common.h"
+#include "host.h"
 
 // Serialization messages for `clap/plugin.h`
 
@@ -103,6 +104,51 @@ struct Descriptor {
      * The CLAP descriptor populated and returned from `get()`.
      */
     mutable clap_plugin_descriptor_t clap_descriptor;
+};
+
+/**
+ * Extensions supported by the plugin. Queried after `clap_plugin::init()`.
+ */
+struct SupportedPluginExtensions {
+    // Don't forget to add new extensions to the log output
+    // TODO: Support extensions
+
+    template <typename S>
+    void serialize(S& s) {
+        // s.value1b(extension_name);
+    }
+};
+
+/**
+ * The response to the `clap::plugin::Init` message defined below.
+ */
+struct InitResponse {
+    bool result;
+    SupportedPluginExtensions supported_plugin_extensions;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value1b(result);
+        s.object(supported_plugin_extensions);
+    }
+};
+
+/**
+ * Message struct for `clap_plugin::init()`. This is where we set the supported
+ * host extensions on the Wine side, and query the plugin's supported extensions
+ * so we can proxy them.
+ */
+struct Init {
+    using Response = InitResponse;
+
+    native_size_t instance_id;
+    clap::host::SupportedHostExtensions supported_host_extensions;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(instance_id);
+        s.boject(supported_host_extensions);
+    }
 };
 
 /**
