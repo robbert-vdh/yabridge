@@ -25,7 +25,6 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
     : bridge_(bridge),
       instance_id_(instance_id),
       descriptor_(std::move(descriptor)),
-      host_(host),
       plugin_vtable_(clap_plugin_t{
           .desc = descriptor_.get(),
           .plugin_data = this,
@@ -39,14 +38,23 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
           .process = plugin_process,
           .get_extension = plugin_get_extension,
           .on_main_thread = plugin_on_main_thread,
-      }) {}
+      }),
+      host_(host) {}
 
 bool CLAP_ABI clap_plugin_proxy::plugin_init(const struct clap_plugin* plugin) {
     assert(plugin && plugin->plugin_data);
-    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+    auto self = static_cast<clap_plugin_proxy*>(plugin->plugin_data);
 
-    // TODO: Implement
-    return false;
+    const clap::plugin::InitResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::plugin::Init{.instance_id = self->instance_id(),
+                               .supported_host_extensions = *self->host_});
+
+    // This determines which extensions the host is allowed to query in
+    // `clap_plugin::get_extension()`
+    self->supported_extensions_ = response.supported_plugin_extensions;
+
+    return response.result;
 }
 
 void CLAP_ABI

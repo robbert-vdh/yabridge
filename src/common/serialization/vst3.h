@@ -205,7 +205,7 @@ struct Vst3AudioProcessorRequest {
                     // deserializing we'll deserialize into the persistent and
                     // thread local `process_request` object (see
                     // `Vst3Sockets::add_audio_processor_and_listen`) and then
-                    // reassign the reference to point to that boject.
+                    // reassign the reference to point to that object.
                     s.ext(request_ref,
                           bitsery::ext::MessageReference(process_request_));
                 },

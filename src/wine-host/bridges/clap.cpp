@@ -147,7 +147,7 @@ void ClapBridge::run() {
                     .run_in_context([&]() {
                         plugin_factory_ =
                             static_cast<const clap_plugin_factory_t*>(
-                                (entry_->get_factory)(CLAP_PLUGIN_FACTORY_ID));
+                                entry_->get_factory(CLAP_PLUGIN_FACTORY_ID));
                         if (!plugin_factory_) {
                             return clap::plugin_factory::ListResponse{
                                 .descriptors = std::nullopt};
@@ -155,11 +155,10 @@ void ClapBridge::run() {
 
                         std::vector<clap::plugin::Descriptor> descriptors;
                         const uint32_t num_plugins =
-                            (plugin_factory_->get_plugin_count)(
-                                plugin_factory_);
+                            plugin_factory_->get_plugin_count(plugin_factory_);
                         for (uint32_t i = 0; i < num_plugins; i++) {
                             const clap_plugin_descriptor_t* descriptor =
-                                (plugin_factory_->get_plugin_descriptor)(
+                                plugin_factory_->get_plugin_descriptor(
                                     plugin_factory_, i);
                             if (!descriptor) {
                                 std::cerr << "Plugin returned a null pointer "
@@ -209,6 +208,37 @@ void ClapBridge::run() {
                     })
                     .get();
             },
+            [&](clap::plugin::Init& request) -> clap::plugin::Init::Response {
+                return main_context_
+                    .run_in_context([&]() {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        // The plugin is allowed to query the same set of
+                        // extensions from our host proxy that the native host
+                        // supports
+                        instance.host_proxy->supported_extensions_ =
+                            request.supported_host_extensions;
+
+                        const bool result =
+                            instance.plugin->init(instance.plugin.get());
+                        if (result) {
+                            // This mimics the same behavior we had to implement
+                            // for VST2 and VST3. The Win32 message loop is
+                            // completely blocked while a plugin instance has
+                            // been created but not yet initialized.
+                            instance.is_initialized = true;
+                        }
+
+                        return clap::plugin::InitResponse{
+                            .result = result,
+                            // Similarly, we'll make the plugin's supported
+                            // extensions available to the host
+                            .supported_plugin_extensions = *instance.plugin};
+                    })
+                    .get();
+            },
+
             [&](clap::plugin::Destroy& request)
                 -> clap::plugin::Destroy::Response {
                 return main_context_

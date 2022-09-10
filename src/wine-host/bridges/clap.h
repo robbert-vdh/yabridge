@@ -78,9 +78,12 @@ struct ClapPluginInstance {
      * A proxy for the native CLAP host. Stored using an `std::unique_ptr`
      * because it must be created before creating the plugin instance, and the
      * object cannot move after being created because of the vtable.
+     *
+     * Contains a `clap::host::SupportedHostExtensions` set just before
+     * `clap_plugin::init()` that allows the plugin to query host extensions
+     * also supported by the native host.
      */
     std::unique_ptr<clap_host_proxy> host_proxy;
-    // TODO: Proxies for host extension objects
 
     /**
      * A dedicated thread for handling incoming audio thread function calls.

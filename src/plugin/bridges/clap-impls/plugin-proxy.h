@@ -84,15 +84,22 @@ class clap_plugin_proxy {
     clap::plugin::Descriptor descriptor_;
 
     /**
-     * The `clap_host_t*` passed when creating the instance. Any callbacks made
-     * by the proxied plugin instance must go through ere.
-     */
-    const clap_host_t* host_;
-
-    /**
      * The vtable for `clap_plugin`, requires that this object is never moved or
      * copied. We'll use the host data pointer instead of placing this vtable at
      * the start of the struct and directly casting the `clap_plugin_t*`.
      */
     const clap_plugin_t plugin_vtable_;
+
+    /**
+     * The extensions supported by the bridged plugin. Set after a successful
+     * `clap_plugin::init()` call. We'll allow the host to query these same
+     * extensions from our plugin proxy.
+     */
+    clap::plugin::SupportedPluginExtensions supported_extensions_;
+
+    /**
+     * The `clap_host_t*` passed when creating the instance. Any callbacks made
+     * by the proxied plugin instance must go through ere.
+     */
+    const clap_host_t* host_;
 };

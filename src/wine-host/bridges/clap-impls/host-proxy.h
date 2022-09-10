@@ -60,6 +60,13 @@ class clap_host_proxy {
     static void CLAP_ABI host_request_process(const struct clap_host* host);
     static void CLAP_ABI host_request_callback(const struct clap_host* host);
 
+    /**
+     * The extensions supported by the host, set just before calling
+     * `clap_plugin::init()` on the bridged plugin. We'll allow the plugin to
+     * query these extensions through `clap_host::get_extension()`.
+     */
+    clap::host::SupportedHostExtensions supported_extensions_;
+
    private:
     ClapBridge& bridge_;
     size_t owner_instance_id_;

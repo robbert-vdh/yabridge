@@ -42,6 +42,7 @@
 using ClapMainThreadControlRequest = std::variant<WantsConfiguration,
                                                   clap::plugin_factory::List,
                                                   clap::plugin_factory::Create,
+                                                  clap::plugin::Init,
                                                   clap::plugin::Destroy>;
 
 template <typename S>
@@ -92,7 +93,7 @@ struct ClapAudioThreadControlRequest {
                 //     // deserializing we'll deserialize into the persistent and
                 //     // thread local `process_request` object (see
                 //     // `ClapSockets::add_audio_processor_and_listen`) and then
-                //     // reassign the reference to point to that boject.
+                //     // reassign the reference to point to that object.
                 //     s.ext(request_ref,
                 //           bitsery::ext::MessageReference(process_request_));
                 // },

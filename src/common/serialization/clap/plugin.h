@@ -155,7 +155,7 @@ struct Init {
     template <typename S>
     void serialize(S& s) {
         s.value8b(instance_id);
-        s.boject(supported_host_extensions);
+        s.object(supported_host_extensions);
     }
 };
 
