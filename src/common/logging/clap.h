@@ -69,19 +69,22 @@ class ClapLogger {
 
     void log_response(bool is_host_plugin, const Configuration&);
 
-    // TODO: Universal response
-    // template <typename T>
-    // void log_response(bool is_host_plugin,
-    //                   const PrimitiveWrapper<T>& value,
-    //                   bool from_cache = false) {
-    //     // For logging all primitive return values other than `tresult`
-    //     log_response_base(is_host_plugin, [&](auto& message) {
-    //         message << value;
-    //         if (from_cache) {
-    //             message << " (from cache)";
-    //         }
-    //     });
-    // }
+    template <typename T>
+    void log_response(bool is_host_plugin,
+                      const PrimitiveWrapper<T>& value,
+                      bool from_cache = false) {
+        log_response_base(is_host_plugin, [&](auto& message) {
+            if constexpr (std::is_same_v<T, bool>) {
+                message << (value ? "true" : "false");
+            } else {
+                message << value;
+            }
+
+            if (from_cache) {
+                message << " (from cache)";
+            }
+        });
+    }
 
     /**
      * @see Logger::log_trace
