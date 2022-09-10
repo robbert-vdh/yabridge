@@ -238,7 +238,6 @@ void ClapBridge::run() {
                     })
                     .get();
             },
-
             [&](clap::plugin::Destroy& request)
                 -> clap::plugin::Destroy::Response {
                 return main_context_
@@ -247,6 +246,41 @@ void ClapBridge::run() {
                         // cleaning up the `unique_ptr` holding the plugin
                         // instance pointer
                         unregister_plugin_instance(request.instance_id);
+
+                        return Ack{};
+                    })
+                    .get();
+            },
+            [&](clap::plugin::Activate& request)
+                -> clap::plugin::Activate::Response {
+                return main_context_
+                    .run_in_context([&]() {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        const bool result = instance.plugin->activate(
+                            instance.plugin.get(), request.sample_rate,
+                            request.min_frames_count, request.max_frames_count);
+
+                        // TODO: Audio buffer setup
+                        const std::optional<AudioShmBuffer::Config>
+                            updated_audio_buffers_config;
+
+                        return clap::plugin::ActivateResponse{
+                            .result = result,
+                            .updated_audio_buffers_config =
+                                std::move(updated_audio_buffers_config)};
+                    })
+                    .get();
+            },
+            [&](clap::plugin::Deactivate& request)
+                -> clap::plugin::Deactivate::Response {
+                return main_context_
+                    .run_in_context([&]() {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        instance.plugin->deactivate(instance.plugin.get());
 
                         return Ack{};
                     })

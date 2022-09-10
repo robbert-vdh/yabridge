@@ -80,8 +80,18 @@ bool CLAP_ABI clap_plugin_proxy::plugin_activate(
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
-    // TODO: Implement
-    return false;
+    const clap::plugin::ActivateResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::plugin::Activate{.instance_id = self->instance_id(),
+                                   .sample_rate = sample_rate,
+                                   .min_frames_count = min_frames_count,
+                                   .max_frames_count = max_frames_count});
+
+    if (response.updated_audio_buffers_config) {
+        // TODO: Set up the shared memory audio buffers
+    }
+
+    return response.result;
 }
 
 void CLAP_ABI
@@ -89,7 +99,8 @@ clap_plugin_proxy::plugin_deactivate(const struct clap_plugin* plugin) {
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
-    // TODO: Implement
+    self->bridge_.send_main_thread_message(
+        clap::plugin::Deactivate{.instance_id = self->instance_id()});
 }
 
 bool CLAP_ABI
