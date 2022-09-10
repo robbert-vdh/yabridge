@@ -45,6 +45,28 @@ struct Ack {
 };
 
 /**
+ * A simple wrapper around primitive values for serialization purposes. Bitsery
+ * doesn't seem to like serializing plain primitives using `s.object()` even if
+ * you define a serialization function.
+ */
+template <typename T>
+class PrimitiveWrapper {
+   public:
+    PrimitiveWrapper() noexcept {}
+    PrimitiveWrapper(T value) noexcept : value_(value) {}
+
+    operator T() const noexcept { return value_; }
+
+    template <typename S>
+    void serialize(S& s) {
+        s.template value<sizeof(T)>(value_);
+    }
+
+   private:
+    T value_;
+};
+
+/**
  * Marker struct to indicate the other side (the plugin) should send a copy of
  * the configuration. During this process we will also transmit the version
  * string from the host, so we can show a little warning when the user forgot to
