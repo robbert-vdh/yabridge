@@ -24,6 +24,7 @@
 #include <clap/plugin.h>
 
 #include "../../bitsery/ext/in-place-optional.h"
+#include "../audio-shm.h"
 #include "../common.h"
 #include "host.h"
 
@@ -162,7 +163,7 @@ struct Init {
 /**
  * Message struct for `clap_plugin::destroy()`. The Wine plugin host should
  * clean up the plugin, and everything is also cleaned up on the plugin side
- * after receiving acknowledgement
+ * after receiving acknowledgement.
  */
 struct Destroy {
     using Response = Ack;
@@ -174,6 +175,104 @@ struct Destroy {
         s.value8b(instance_id);
     }
 };
+
+/**
+ * The response to the `clap::plugin::Activate` message defined below.
+ */
+struct ActivateResponse {
+    bool result;
+    /**
+     * Only set if activating was successful and the config is different from a
+     * previously returned config.
+     */
+    std::optional<AudioShmBuffer::Config> updated_audio_buffers_config;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value1b(result);
+        s.ext(updated_audio_buffers_config, bitsery::ext::InPlaceOptional{});
+    }
+};
+
+/**
+ * Message struct for `clap_plugin::activate()`. This is where shared memory
+ * audio buffers are set up.
+ */
+struct Activate {
+    using Response = ActivateResponse;
+
+    native_size_t instance_id;
+
+    double sample_rate;
+    uint32_t min_frames_count;
+    uint32_t max_frames_count;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(instance_id);
+        s.value8b(sample_rate);
+        s.value4b(min_frames_count);
+        s.value4b(max_frames_count);
+    }
+};
+
+/**
+ * Message struct for `clap_plugin::deactivate()`.
+ */
+struct Deactivate {
+    using Response = Ack;
+
+    native_size_t instance_id;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(instance_id);
+    }
+};
+
+/**
+ * Message struct for `clap_plugin::start_processing()`.
+ */
+struct StartProcessing {
+    using Response = PrimitiveWrapper<bool>;
+
+    native_size_t instance_id;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(instance_id);
+    }
+};
+
+/**
+ * Message struct for `clap_plugin::stop_processing()`.
+ */
+struct StopProcessing {
+    using Response = Ack;
+
+    native_size_t instance_id;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(instance_id);
+    }
+};
+
+/**
+ * Message struct for `clap_plugin::reset()`.
+ */
+struct Reset {
+    using Response = Ack;
+
+    native_size_t instance_id;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(instance_id);
+    }
+};
+
+// TODO: Process
 
 }  // namespace plugin
 }  // namespace clap
