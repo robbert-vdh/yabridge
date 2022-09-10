@@ -77,6 +77,14 @@ struct Host {
  * same extensions available to the bridged CLAP plugins using proxies.
  */
 struct SupportedHostExtensions {
+    /**
+     * Read the supported extensions from a native CLAP host. This is only valid
+     * once the native host has called `clap_host::init()`.
+     */
+    SupportedHostExtensions(const clap_host& host);
+
+    SupportedHostExtensions() noexcept {}
+
     // Don't forget to add new extensions to the log output
     // TODO: Support extensions
 

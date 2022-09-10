@@ -26,5 +26,8 @@ Host::Host(const clap_host_t& original)
       url(original.url ? std::optional(original.url) : std::nullopt),
       version((assert(original.version), original.version)) {}
 
+// TODO: Add extensions
+SupportedHostExtensions::SupportedHostExtensions(const clap_host& host) {}
+
 }  // namespace host
 }  // namespace clap

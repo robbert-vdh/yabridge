@@ -74,5 +74,9 @@ const clap_plugin_descriptor_t* Descriptor::get() const {
     return &clap_descriptor;
 }
 
+// TODO: Add extensions
+SupportedPluginExtensions::SupportedPluginExtensions(
+    const clap_plugin& plugin) {}
+
 }  // namespace plugin
 }  // namespace clap
