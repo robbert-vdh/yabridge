@@ -351,7 +351,12 @@ class Vst3Logger {
                       bool from_cache = false) {
         // For logging all primitive return values other than `tresult`
         log_response_base(is_host_plugin, [&](auto& message) {
-            message << value;
+            if constexpr (std::is_same_v<T, bool>) {
+                message << (value ? "true" : "false");
+            } else {
+                message << value;
+            }
+
             if (from_cache) {
                 message << " (from cache)";
             }
