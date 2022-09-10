@@ -73,6 +73,24 @@ bool ClapLogger::log_request(bool is_host_plugin,
     });
 }
 
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::plugin::Activate& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin::activate(sample_rate = "
+                << request.sample_rate
+                << ", min_frames_count = " << request.min_frames_count
+                << ", max_frames_count = " << request.max_frames_count << ")";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::plugin::Deactivate& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin::deactivate()";
+    });
+}
+
 bool ClapLogger::log_request(bool is_host_plugin, const WantsConfiguration&) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << "Requesting <Configuration>";
@@ -133,6 +151,18 @@ void ClapLogger::log_response(bool is_host_plugin,
 
         if (first) {
             message << "<none>";
+        }
+    });
+}
+
+void ClapLogger::log_response(bool is_host_plugin,
+                              const clap::plugin::ActivateResponse& response) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
+        message << (response.result ? "true" : "false");
+        if (response.result && response.updated_audio_buffers_config) {
+            message << ", <new shared memory configuration for \""
+                    << response.updated_audio_buffers_config->name << "\", "
+                    << response.updated_audio_buffers_config->size << " bytes>";
         }
     });
 }
