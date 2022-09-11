@@ -181,7 +181,7 @@ endif
 # Dependencies
 #
 
-include_dir = include_directories('src/include')
+include_dir = include_directories('src/include', is_system : true)
 
 # These dependencies require separate linking flags for the 32-bit and 64-bit
 # versions
