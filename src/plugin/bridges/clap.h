@@ -115,17 +115,15 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
             object, std::pair<ClapLogger&, bool>(logger_, true));
     }
 
-    // /**
-    //  * Send an a message to a plugin instance's audio thread. This is
-    //  separate
-    //  * from `send_message()`, which shares one socket for all plugin
-    //  instances.
-    //  */
-    // template <typename T>
-    // typename T::Response send_audio_thread_message(const T& object) {
-    //     return sockets_.send_audio_processor_message(
-    //         object, std::pair<ClapLogger&, bool>(logger_, true));
-    // }
+    /**
+     * Send an a message to a plugin instance's audio thread. This is separate
+     * from `send_message()`, which shares one socket for all plugin instances.
+     */
+    template <typename T>
+    typename T::Response send_audio_thread_message(const T& object) {
+        return sockets_.send_audio_thread_message(
+            object, std::pair<ClapLogger&, bool>(logger_, true));
+    }
 
     // /**
     //  * Send an audio thread control message to a specific plugin instance,

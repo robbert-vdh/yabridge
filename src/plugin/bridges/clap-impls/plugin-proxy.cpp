@@ -108,8 +108,8 @@ clap_plugin_proxy::plugin_start_processing(const struct clap_plugin* plugin) {
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
-    // TODO: Implement
-    return false;
+    return self->bridge_.send_audio_thread_message(
+        clap::plugin::StartProcessing{.instance_id = self->instance_id()});
 }
 
 void CLAP_ABI
@@ -117,7 +117,8 @@ clap_plugin_proxy::plugin_stop_processing(const struct clap_plugin* plugin) {
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
-    // TODO: Implement
+    self->bridge_.send_audio_thread_message(
+        clap::plugin::StopProcessing{.instance_id = self->instance_id()});
 }
 
 void CLAP_ABI
@@ -125,7 +126,8 @@ clap_plugin_proxy::plugin_reset(const struct clap_plugin* plugin) {
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
-    // TODO: Implement
+    self->bridge_.send_audio_thread_message(
+        clap::plugin::Reset{.instance_id = self->instance_id()});
 }
 
 clap_process_status CLAP_ABI

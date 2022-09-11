@@ -489,28 +489,49 @@ void ClapBridge::register_plugin_instance(
 
     // Every plugin instance gets its own audio thread
     std::promise<void> socket_listening_latch;
-    object_instances_.at(instance_id)
-        .audio_thread_handler = Win32Thread([&, instance_id]() {
-        set_realtime_priority(true);
+    object_instances_.at(instance_id).audio_thread_handler =
+        Win32Thread([&, instance_id]() {
+            set_realtime_priority(true);
 
-        // XXX: Like with VST2 worker threads, when using plugin groups the
-        //      thread names from different plugins will clash. Not a huge
-        //      deal probably, since duplicate thread names are still more
-        //      useful than no thread names.
-        const std::string thread_name = "audio-" + std::to_string(instance_id);
-        pthread_setname_np(pthread_self(), thread_name.c_str());
+            // XXX: Like with VST2 worker threads, when using plugin groups the
+            //      thread names from different plugins will clash. Not a huge
+            //      deal probably, since duplicate thread names are still more
+            //      useful than no thread names.
+            const std::string thread_name =
+                "audio-" + std::to_string(instance_id);
+            pthread_setname_np(pthread_self(), thread_name.c_str());
 
-        sockets_.add_audio_thread_and_listen(
-            instance_id, socket_listening_latch,
-            overload{
-                [&](const WantsConfiguration&) -> WantsConfiguration::Response {
-                    // FIXME: This overload shouldn't be here, but
-                    //        bitsery simply won't allow us to serialize the
-                    //        variant without it.
-                    return {};
-                },
-            });
-    });
+            sockets_.add_audio_thread_and_listen(
+                instance_id, socket_listening_latch,
+                overload{
+                    [&](const clap::plugin::StartProcessing& request)
+                        -> clap::plugin::StartProcessing::Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.plugin->start_processing(
+                            instance.plugin.get());
+                    },
+                    [&](const clap::plugin::StopProcessing& request)
+                        -> clap::plugin::StopProcessing::Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        instance.plugin->stop_processing(instance.plugin.get());
+
+                        return Ack{};
+                    },
+                    [&](const clap::plugin::Reset& request)
+                        -> clap::plugin::Reset::Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        instance.plugin->reset(instance.plugin.get());
+
+                        return Ack{};
+                    },
+                });
+        });
 
     // Wait for the new socket to be listening on before continuing. Otherwise
     // the native plugin may try to connect to it before our thread is up and

@@ -52,9 +52,9 @@ class ClapLogger {
     bool log_request(bool is_host_plugin, const clap::plugin::Activate&);
     bool log_request(bool is_host_plugin, const clap::plugin::Deactivate&);
 
-    // TODO: Audio thread requests
-    // bool log_request(bool is_host_plugin,
-    //                  const YaAudioProcessor::SetBusArrangements&);
+    bool log_request(bool is_host_plugin, const clap::plugin::StartProcessing&);
+    bool log_request(bool is_host_plugin, const clap::plugin::StopProcessing&);
+    bool log_request(bool is_host_plugin, const clap::plugin::Reset&);
 
     bool log_request(bool is_host_plugin, const WantsConfiguration&);
 

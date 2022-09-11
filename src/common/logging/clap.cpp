@@ -91,6 +91,27 @@ bool ClapLogger::log_request(bool is_host_plugin,
     });
 }
 
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::plugin::StartProcessing& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin::start_processing()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::plugin::StopProcessing& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin::stop_processing()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::plugin::Reset& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin::reset()";
+    });
+}
+
 bool ClapLogger::log_request(bool is_host_plugin, const WantsConfiguration&) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << "Requesting <Configuration>";

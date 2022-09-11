@@ -76,8 +76,9 @@ struct ClapAudioThreadControlRequest {
     template <typename T>
     ClapAudioThreadControlRequest(T request) : payload(std::move(request)) {}
 
-    // TODO:
-    using Payload = std::variant<WantsConfiguration>;
+    using Payload = std::variant<clap::plugin::StartProcessing,
+                                 clap::plugin::StopProcessing,
+                                 clap::plugin::Reset>;
 
     Payload payload;
 
