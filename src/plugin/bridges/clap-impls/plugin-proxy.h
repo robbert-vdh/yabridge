@@ -16,9 +16,12 @@
 
 #pragma once
 
+#include <future>
 #include <vector>
 
 #include <clap/plugin.h>
+#include <rigtorp/MPMCQueue.h>
+#include <function2/function2.hpp>
 
 #include "../../common/serialization/clap/plugin.h"
 
@@ -30,6 +33,17 @@ class ClapPluginBridge;
  */
 class clap_plugin_proxy {
    public:
+    /**
+     * A function that can be called on the host's main thread through a
+     * combination of `clap_host::request_callback()` and
+     * `clap_plugin::on_main_thread()`. This is identical to
+     * `fu2::unique_function<void()>` except that it doesn't throw and is
+     * noexcept move assignable. That is a requirement for using these in the
+     * MPMC queue.
+     */
+    using HostCallback = fu2::
+        function_base<true, false, fu2::capacity_default, false, true, void()>;
+
     /**
      * Construct a proxy for a plugin that has already been created on the Wine
      * side. This is done in our `clap_plugin_factory::create()` implementation.
@@ -53,6 +67,7 @@ class clap_plugin_proxy {
     inline const clap_plugin_t* plugin_vtable() const {
         return &plugin_vtable_;
     }
+
     /**
      * The instance ID of the plugin instance this proxy belongs to.
      */
@@ -78,6 +93,34 @@ class clap_plugin_proxy {
     static void CLAP_ABI
     plugin_on_main_thread(const struct clap_plugin* plugin);
 
+    /**
+     * Asynchronously run a function on the host's main thread, returning the
+     * result as a future.
+     */
+    template <std::invocable F>
+    std::future<std::invoke_result_t<F>> run_on_main_thread(F&& fn) {
+        using Result = std::invoke_result_t<F>;
+
+        std::promise<Result> response_promise{};
+        std::future<Result> response_future = response_promise.get_future();
+        pending_callbacks_.push(HostCallback(
+            [fn = std::forward<F>(fn),
+             response_promise = std::move(response_promise)]() mutable {
+                if constexpr (std::is_void_v<Result>) {
+                    fn();
+                    response_promise.set_value();
+                } else {
+                    response_promise.set_value(fn());
+                }
+            }));
+
+        // In theory the host will now call `clap_plugin::on_main_thread()`,
+        // where we can pop the function from the queue
+        host_->request_callback(host_);
+
+        return response_future;
+    }
+
    private:
     ClapPluginBridge& bridge_;
     size_t instance_id_;
@@ -102,4 +145,10 @@ class clap_plugin_proxy {
      * by the proxied plugin instance must go through ere.
      */
     const clap_host_t* host_;
+
+    /**
+     * Pending callbacks that must be sent to the host on the main thread. If a
+     * socket needs to make a main thread function call, it will
+     */
+    rigtorp::MPMCQueue<HostCallback> pending_callbacks_;
 };

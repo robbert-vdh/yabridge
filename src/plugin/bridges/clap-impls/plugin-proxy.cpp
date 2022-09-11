@@ -39,7 +39,10 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
           .get_extension = plugin_get_extension,
           .on_main_thread = plugin_on_main_thread,
       }),
-      host_(host) {}
+      host_(host),
+      // These function objects are relatively large, and we probably won't be
+      // getting that many of them
+      pending_callbacks_(128) {}
 
 bool CLAP_ABI clap_plugin_proxy::plugin_init(const struct clap_plugin* plugin) {
     assert(plugin && plugin->plugin_data);
@@ -153,7 +156,12 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
 void CLAP_ABI
 clap_plugin_proxy::plugin_on_main_thread(const struct clap_plugin* plugin) {
     assert(plugin && plugin->plugin_data);
-    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+    auto self = static_cast<clap_plugin_proxy*>(plugin->plugin_data);
 
-    // TODO: Use this for spooling main thread callbacks
+    // Functions are pushed to this queue so they can be run on the host's main
+    // thread
+    HostCallback callback;
+    while (self->pending_callbacks_.try_pop(callback)) {
+        callback();
+    }
 }
