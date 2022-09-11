@@ -118,6 +118,22 @@ bool ClapLogger::log_request(bool is_host_plugin, const WantsConfiguration&) {
     });
 }
 
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::host::RequestRestart& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host::request_restart()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::host::RequestProcess& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host::request_process()";
+    });
+}
+
 void ClapLogger::log_response(bool is_host_plugin, const Ack&) {
     log_response_base(is_host_plugin, [&](auto& message) { message << "ACK"; });
 }

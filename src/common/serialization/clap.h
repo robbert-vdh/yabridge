@@ -124,7 +124,9 @@ struct ClapAudioThreadControlRequest {
  * type `ClapMainThreadCallbackRequest(T)` should send back a `T::Response`.
  */
 // TODO: Placeholder
-using ClapMainThreadCallbackRequest = std::variant<WantsConfiguration>;
+using ClapMainThreadCallbackRequest = std::variant<WantsConfiguration,
+                                                   clap::host::RequestRestart,
+                                                   clap::host::RequestProcess>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadCallbackRequest& payload) {

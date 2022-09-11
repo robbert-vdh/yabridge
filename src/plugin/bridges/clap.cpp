@@ -46,7 +46,6 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
         set_realtime_priority(true);
         pthread_setname_np(pthread_self(), "host-callbacks");
 
-        // TODO: Add the rest of the callbacks
         sockets_.plugin_host_main_thread_callback_.receive_messages(
             std::pair<ClapLogger&, bool>(logger_, false),
             overload{
@@ -55,6 +54,32 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     warn_on_version_mismatch(request.host_version);
 
                     return config_;
+                },
+                [&](const clap::host::RequestRestart& request)
+                    -> clap::host::RequestRestart::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    plugin_proxy
+                        .run_on_main_thread([host = plugin_proxy.host_]() {
+                            host->request_restart(host);
+                        })
+                        .wait();
+
+                    return Ack{};
+                },
+                [&](const clap::host::RequestProcess& request)
+                    -> clap::host::RequestProcess::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    plugin_proxy
+                        .run_on_main_thread([host = plugin_proxy.host_]() {
+                            host->request_process(host);
+                        })
+                        .wait();
+
+                    return Ack{};
                 },
             });
     });

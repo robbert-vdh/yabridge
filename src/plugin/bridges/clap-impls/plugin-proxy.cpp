@@ -22,7 +22,8 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
                                      size_t instance_id,
                                      clap::plugin::Descriptor descriptor,
                                      const clap_host_t* host)
-    : bridge_(bridge),
+    : host_(host),
+      bridge_(bridge),
       instance_id_(instance_id),
       descriptor_(std::move(descriptor)),
       plugin_vtable_(clap_plugin_t{
@@ -39,7 +40,6 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
           .get_extension = plugin_get_extension,
           .on_main_thread = plugin_on_main_thread,
       }),
-      host_(host),
       // These function objects are relatively large, and we probably won't be
       // getting that many of them
       pending_callbacks_(128) {}

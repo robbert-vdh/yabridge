@@ -17,6 +17,7 @@
 #include "host-proxy.h"
 
 #include "../../../common/serialization/clap/version.h"
+#include "../clap.h"
 
 clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
                                  size_t owner_instance_id,
@@ -46,12 +47,20 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
 
 void CLAP_ABI
 clap_host_proxy::host_request_restart(const struct clap_host* host) {
-    // TODO: Implement
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_main_thread_message(clap::host::RequestRestart{
+        .owner_instance_id = self->owner_instance_id()});
 }
 
 void CLAP_ABI
 clap_host_proxy::host_request_process(const struct clap_host* host) {
-    // TODO: Implement
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_main_thread_message(clap::host::RequestProcess{
+        .owner_instance_id = self->owner_instance_id()});
 }
 
 void CLAP_ABI

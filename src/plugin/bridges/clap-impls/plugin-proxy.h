@@ -121,6 +121,12 @@ class clap_plugin_proxy {
         return response_future;
     }
 
+    /**
+     * The `clap_host_t*` passed when creating the instance. Any callbacks made
+     * by the proxied plugin instance must go through ere.
+     */
+    const clap_host_t* host_;
+
    private:
     ClapPluginBridge& bridge_;
     size_t instance_id_;
@@ -139,12 +145,6 @@ class clap_plugin_proxy {
      * extensions from our plugin proxy.
      */
     clap::plugin::SupportedPluginExtensions supported_extensions_;
-
-    /**
-     * The `clap_host_t*` passed when creating the instance. Any callbacks made
-     * by the proxied plugin instance must go through ere.
-     */
-    const clap_host_t* host_;
 
     /**
      * Pending callbacks that must be sent to the host on the main thread. If a

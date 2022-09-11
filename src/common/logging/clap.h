@@ -57,6 +57,8 @@ class ClapLogger {
     bool log_request(bool is_host_plugin, const clap::plugin::Reset&);
 
     bool log_request(bool is_host_plugin, const WantsConfiguration&);
+    bool log_request(bool is_host_plugin, const clap::host::RequestRestart&);
+    bool log_request(bool is_host_plugin, const clap::host::RequestProcess&);
 
     void log_response(bool is_host_plugin, const Ack&);
     void log_response(bool is_host_plugin,
