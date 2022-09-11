@@ -28,8 +28,15 @@ clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
       host_vtable_(clap_host_t{
           .clap_version = clamp_clap_version(host_args_.clap_version),
           .host_data = this,
-          .name = host_args_.name.c_str(),
-          .vendor = host_args_.vendor ? host_args_.vendor->c_str() : nullptr,
+          // HACK: Certain plugins may have undesirable DAW-specific behaviour.
+          //       Chromaphone 3 for instance has broken text input dialogs when
+          //       using Bitwig.
+          .name = bridge_.config_.hide_daw ? product_name_override
+                                           : host_args_.name.c_str(),
+          .vendor =
+              bridge_.config_.hide_daw
+                  ? vendor_name_override
+                  : (host_args_.vendor ? host_args_.vendor->c_str() : nullptr),
           .url = host_args_.url ? host_args_.url->c_str() : nullptr,
           .version = host_args_.version.c_str(),
           .get_extension = host_get_extension,

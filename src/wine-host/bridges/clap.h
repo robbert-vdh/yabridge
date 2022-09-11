@@ -326,6 +326,14 @@ class ClapBridge : public HostBridge {
      */
     ClapLogger logger_;
 
+    /**
+     * The configuration for this instance of yabridge based on the path to the
+     * `.so` (or well `.clap`) file that got loaded by the host. This
+     * configuration gets loaded on the plugin side, and then sent over to the
+     * Wine host as part of the startup process.
+     */
+    Configuration config_;
+
    private:
     /**
      * Generate a nique instance identifier using an atomic fetch-and-add. This
@@ -362,14 +370,6 @@ class ClapBridge : public HostBridge {
      * instance's audio thread.
      */
     void unregister_plugin_instance(size_t instance_id);
-
-    /**
-     * The configuration for this instance of yabridge based on the path to the
-     * `.so` (or well `.clap`) file that got loaded by the host. This
-     * configuration gets loaded on the plugin side, and then sent over to the
-     * Wine host as part of the startup process.
-     */
-    Configuration config_;
 
     /**
      * The shared library handle of the CLAP plugin.
