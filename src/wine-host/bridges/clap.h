@@ -231,7 +231,7 @@ class ClapBridge : public HostBridge {
      * CLAP interface implementations.
      */
     template <typename T>
-    typename T::Response send_message(const T& object) {
+    typename T::Response send_main_thread_message(const T& object) {
         return sockets_.plugin_host_main_thread_callback_.send_message(
             object, std::nullopt);
     }
@@ -250,14 +250,14 @@ class ClapBridge : public HostBridge {
     typename T::Response send_mutually_recursive_message(const T& object) {
         if (main_context_.is_gui_thread()) {
             return mutual_recursion_.fork(
-                [&]() { return send_message(object); });
+                [&]() { return send_main_thread_message(object); });
         } else {
             // TODO: Remove if this isn't needed
             logger_.log_trace([]() {
                 return "'ClapBridge::send_mutually_recursive_message()' called "
                        "from a non-GUI thread, sending the message directly";
             });
-            send_message(object);
+            send_main_thread_message(object);
 
             // return audio_thread_mutual_recursion_.fork(
             //     [&]() { return send_message(object); });
