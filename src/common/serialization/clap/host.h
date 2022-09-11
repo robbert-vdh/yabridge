@@ -24,6 +24,7 @@
 #include <clap/plugin.h>
 
 #include "../../bitsery/ext/in-place-optional.h"
+#include "../common.h"
 
 // Serialization messages for `clap/host.h`
 
@@ -93,6 +94,37 @@ struct SupportedHostExtensions {
         // s.value1b(extension_name);
     }
 };
+
+/**
+ * Message struct for `clap_host::request_restart()`.
+ */
+struct RequestRestart {
+    using Response = Ack;
+
+    native_size_t owner_instance_id;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(owner_instance_id);
+    }
+};
+
+/**
+ * Message struct for `clap_host::request_process()`.
+ */
+struct RequestProcess {
+    using Response = Ack;
+
+    native_size_t owner_instance_id;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(owner_instance_id);
+    }
+};
+
+// `clap_host::request_callback()` is of course handled entirely on the Wine
+// plugin host side
 
 }  // namespace host
 }  // namespace clap
