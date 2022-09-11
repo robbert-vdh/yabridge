@@ -100,6 +100,13 @@ class HostBridge {
      */
     const ghc::filesystem::path plugin_path_;
 
+    /**
+     * The IO context used for event handling so that all events and window
+     * message handling can be performed from a single thread, even when hosting
+     * multiple plugins.
+     */
+    MainContext& main_context_;
+
    protected:
     /**
      * Used as part of the watchdog that shuts down a plugin when the remote
@@ -108,13 +115,6 @@ class HostBridge {
      * `sockets.close()`.
      */
     virtual void close_sockets() = 0;
-
-    /**
-     * The IO context used for event handling so that all events and window
-     * message handling can be performed from a single thread, even when hosting
-     * multiple plugins.
-     */
-    MainContext& main_context_;
 
     /**
      * A logger, just like we have on the plugin side. This is normally not

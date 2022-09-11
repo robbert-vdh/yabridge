@@ -65,5 +65,28 @@ clap_host_proxy::host_request_process(const struct clap_host* host) {
 
 void CLAP_ABI
 clap_host_proxy::host_request_callback(const struct clap_host* host) {
-    // TODO: Implement
+    assert(host && host->host_data);
+    auto self = static_cast<clap_host_proxy*>(host->host_data);
+
+    // TODO: Log
+
+    // Only schedule a `clap_plugin::on_main_thread()` call if we don't already
+    // have a pending one. This limits the number of unnecessarily stacked
+    // calls.
+    bool expected = false;
+    if (self->has_pending_host_callbacks_.compare_exchange_strong(expected,
+                                                                  true)) {
+        // We're acquiring a lock on the instance and then move it into the task
+        // to prevent this instance from being removed before this callback has
+        // been run
+        auto instance_lock =
+            self->bridge_.get_instance(self->owner_instance_id());
+        self->bridge_.main_context_.schedule_task(
+            [self, instance_lock = std::move(instance_lock)]() {
+                const auto& [instance, _] = instance_lock;
+                self->has_pending_host_callbacks_.store(false);
+
+                instance.plugin->on_main_thread(instance.plugin.get());
+            });
+    }
 }

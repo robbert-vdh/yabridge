@@ -306,16 +306,16 @@ void ClapBridge::close_sockets() {
     sockets_.close();
 }
 
-size_t ClapBridge::generate_instance_id() noexcept {
-    return current_instance_id_.fetch_add(1);
-}
-
 std::pair<ClapPluginInstance&, std::shared_lock<std::shared_mutex>>
 ClapBridge::get_instance(size_t instance_id) noexcept {
     std::shared_lock lock(object_instances_mutex_);
 
     return std::pair<ClapPluginInstance&, std::shared_lock<std::shared_mutex>>(
         object_instances_.at(instance_id), std::move(lock));
+}
+
+size_t ClapBridge::generate_instance_id() noexcept {
+    return current_instance_id_.fetch_add(1);
 }
 
 // TODO: Implement audio processing

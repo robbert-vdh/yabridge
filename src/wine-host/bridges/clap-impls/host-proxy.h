@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <atomic>
+
 #include <clap/host.h>
 
 #include "../../common/serialization/clap/plugin-factory.h"
@@ -78,4 +80,12 @@ class clap_host_proxy {
      * the start of the struct and directly casting the `clap_host_t*`.
      */
     const clap_host_t host_vtable_;
+
+    /**
+     * Keeps track of whether there are pending host callbacks. Used to prevent
+     * calling `clap_plugin::on_main_thread()` multiple times in a row when the
+     * plugin calls `clap_host::request_callback()` multiple times before
+     * `clap_plugin::on_main_thread()` is called.
+     */
+    std::atomic_bool has_pending_host_callbacks_ = false;
 };

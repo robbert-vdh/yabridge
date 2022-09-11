@@ -306,6 +306,15 @@ class ClapBridge : public HostBridge {
     // }
 
     /**
+     * Fetch the plugin instance along with a lock valid for the instance's
+     * lifetime. This is mostly just to save some boilerplate everywhere. Use
+     * C++17's structured binding as syntactic sugar to not have to deal with
+     * the lock handle.
+     */
+    std::pair<ClapPluginInstance&, std::shared_lock<std::shared_mutex>>
+    get_instance(size_t instance_id) noexcept;
+
+    /**
      * A logger instance we'll use to log about failed
      * `clap_host::get_extension()` calls, so they can be hidden on verbosity
      * level 0.
@@ -323,15 +332,6 @@ class ClapBridge : public HostBridge {
      * is used to be able to refer to specific plugin instances in the messages.
      */
     size_t generate_instance_id() noexcept;
-
-    /**
-     * Fetch the plugin instance along with a lock valid for the instance's
-     * lifetime. This is mostly just to save some boilerplate everywhere. Use
-     * C++17's structured binding as syntactic sugar to not have to deal with
-     * the lock handle.
-     */
-    std::pair<ClapPluginInstance&, std::shared_lock<std::shared_mutex>>
-    get_instance(size_t instance_id) noexcept;
 
     /**
      * Sets up the shared memory audio buffers for a plugin instance plugin
