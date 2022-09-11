@@ -22,6 +22,18 @@
 
 ClapLogger::ClapLogger(Logger& generic_logger) : logger_(generic_logger) {}
 
+void ClapLogger::log_callback_request(size_t instance_id) {
+    log_request_base(false, Logger::Verbosity::all_events, [&](auto& message) {
+        message << "clap_host::request_callback()";
+    });
+}
+
+void ClapLogger::log_on_main_thread(size_t instance_id) {
+    log_request_base(true, Logger::Verbosity::all_events, [&](auto& message) {
+        message << "clap_plugin::on_main_thread()";
+    });
+}
+
 bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::plugin_factory::List&) {
     return log_request_base(is_host_plugin, [&](auto& message) {

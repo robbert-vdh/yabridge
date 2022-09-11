@@ -37,6 +37,17 @@ class ClapLogger {
 
     // TODO: Logging for extension queries, factory type queries
 
+    /**
+     * Logging for `clap_host::request_callback()`. This is handled purely on
+     * the Wine plugin host side.
+     */
+    void log_callback_request(size_t instance_id);
+    /**
+     * Logging for `clap_plugin::on_main_thread()`. This is handled purely on
+     * the Wine plugin host side.
+     */
+    void log_on_main_thread(size_t instance_id);
+
     // For every object we send using `ClapMessageHandler` we have overloads
     // that print information about the request and the response. The boolean
     // flag here indicates whether the request was initiated on the host side

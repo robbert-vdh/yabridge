@@ -68,7 +68,7 @@ clap_host_proxy::host_request_callback(const struct clap_host* host) {
     assert(host && host->host_data);
     auto self = static_cast<clap_host_proxy*>(host->host_data);
 
-    // TODO: Log
+    self->bridge_.logger_.log_callback_request(self->owner_instance_id());
 
     // Only schedule a `clap_plugin::on_main_thread()` call if we don't already
     // have a pending one. This limits the number of unnecessarily stacked
@@ -85,6 +85,9 @@ clap_host_proxy::host_request_callback(const struct clap_host* host) {
             [self, instance_lock = std::move(instance_lock)]() {
                 const auto& [instance, _] = instance_lock;
                 self->has_pending_host_callbacks_.store(false);
+
+                self->bridge_.logger_.log_on_main_thread(
+                    self->owner_instance_id());
 
                 instance.plugin->on_main_thread(instance.plugin.get());
             });
