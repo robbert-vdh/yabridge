@@ -3,11 +3,11 @@
 [![Automated builds](https://github.com/robbert-vdh/yabridge/workflows/Automated%20builds/badge.svg?branch=master&event=push)](https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster)
 [![Discord](https://img.shields.io/discord/786993304197267527.svg?label=Discord&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/pyNeweqadf)
 
-Yet Another way to use Windows VST plugins on Linux. Yabridge seamlessly
-supports using both 32-bit and 64-bit Windows VST2 and VST3 plugins in a 64-bit
-Linux VST host as if they were native VST2 and VST3 plugins, with optional
-support for [plugin groups](#plugin-groups) to enable inter-plugin communication
-for VST2 plugins and quick startup times. Its modern concurrent architecture and
+Yet Another way to use Windows audio plugins on Linux. Yabridge seamlessly
+supports using both 32-bit and 64-bit Windows VST2, VST3, and CLAP plugins in
+64-bit Linux plugin hosts as if they were native plugins, with optional support
+for [plugin groups](#plugin-groups) to enable inter-plugin communication for
+VST2 plugins and quick startup times. Its modern concurrent architecture and
 focus on transparency allows yabridge to be both fast and highly compatible,
 while also staying easy to debug and maintain.
 
@@ -41,21 +41,21 @@ while also staying easy to debug and maintain.
 
 Yabridge has been tested under the following hosts using Wine Staging 7.17:
 
-| Host                | VST2               | VST3                                                                 |
-| ------------------- | ------------------ | -------------------------------------------------------------------- |
-| Bitwig Studio 4.3.5 | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| REAPER 6.67         | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Carla 2.5.0         | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Qtractor 0.9.25     | :heavy_check_mark: | :warning: VST3 editor window may not have the correct size           |
-| Renoise 3.3.2       | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly |
-| Waveform 11.5.18    | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Ardour 6.9          | :heavy_check_mark: | :heavy_check_mark:                                                   |
-| Mixbus 7.0.140      | :heavy_check_mark: | :heavy_check_mark:                                                   |
+| Host                | VST2               | VST3                                                                 | CLAP                                                          |
+| ------------------- | ------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Bitwig Studio 4.3.5 | :heavy_check_mark: | :heavy_check_mark:                                                   | :warning: yabridge's CLAP support is still a work in progress |
+| REAPER 6.67         | :heavy_check_mark: | :heavy_check_mark:                                                   | :warning: yabridge's CLAP support is still a work in progress |
+| Carla 2.5.0         | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                         |
+| Qtractor 0.9.25     | :heavy_check_mark: | :warning: VST3 editor window may not have the correct size           | :warning: yabridge's CLAP support is still a work in progress |
+| Renoise 3.3.2       | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly | Does not support CLAP                                         |
+| Waveform 11.5.18    | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                         |
+| Ardour 6.9          | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                         |
+| Mixbus 7.0.140      | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                         |
 
 Please let me know if there are any issues with other hosts.
 
 <sup>
-  *Bitwig Studio (4.3)'s Flatpak version will not work with yabridge. You'll need to use the .deb found on the release notes page instead.
+  *Bitwig Studio's Flatpak version will not work with yabridge. You'll need to use the .deb found on the release notes page instead.
 </sup>
 
 ## Usage
@@ -123,35 +123,44 @@ Please let me know if there are any issues with other hosts.
    Both yabridge and yabridgectl will autoamtically detect your yabridge
    installation if you used one of the installation methods described above.
 
-3. To tell yabridgectl where it can find your Windows VST2 and VST3 plugins, you
-   can use yabridgectl's `add`, `rm` and `list` commands to add, remove, and
-   list the plugin directories yabridgectl is managing for you. You can also use
-   `yabridgectl status` to get an overview of the current settings and the
-   installation status for all of your plugins.
+3. To tell yabridgectl where it can find your Windows VST2, VST3, and CLAP
+   plugins, you can use yabridgectl's `add`, `rm` and `list` commands to add,
+   remove, and list the plugin directories yabridgectl is managing for you. You
+   can also use `yabridgectl status` to get an overview of the current settings
+   and the installation status for all of your plugins.
 
    1. To add the most common VST2 plugin directory in the default Wine prefix, use
       `yabridgectl add "$HOME/.wine/drive_c/Program Files/Steinberg/VstPlugins"`.
       This directory may be capitalized as `VSTPlugins` on your system, and some
       plugins may also install themselves to a similar directory directly inside
       of Program Files.
-   2. VST3 plugins under Windows are always installed to the same directory, and
-      you can use `yabridgectl add "$HOME/.wine/drive_c/Program Files/Common Files/VST3"`
-      to add that one.
+   2. VST3 plugins under Windows are always installed to
+      `C:\Program Files\Common Files\VST3`, and you can use
+      `yabridgectl add "$HOME/.wine/drive_c/Program Files/Common Files/VST3"` to
+      add that directory to yabridge.
+   3. CLAP plugins under Windows are always installed to
+      `C:\Program Files\Common Files\CLAP`, and you can use
+      `yabridgectl add "$HOME/.wine/drive_c/Program Files/Common Files/CLAP"` to
+      add that directory to yabridge.
+
+      **Note that the currently released version of yabridge does not yet
+      support CLAP. Right now CLAP support is only available on the master
+      branch.**
 
 4. Finally, you'll need to run `yabridgectl sync` to finish setting up yabridge
-   for all of your plugins. After doing so, your VST2 plugins will be set up in
-   `~/.vst/yabridge`, and your VST3 plugins are set up in `~/.vst3/yabridge`.
-   Make sure your DAW searches both `~/.vst` and `~/.vst3` for plugins and
-   you'll be good to go.
+   for all of your plugins. After doing so, your VST2, VST3, and CLAP plugins
+   will be set up in `~/.vst/yabridge`, `~/.vst3/yabridge`, and
+   `~/.clap/yabridge`. Make sure your DAW searches `~/.vst`, `~/.vst3`, and
+   `~/.clap` for VST2, VST3, and CLAP plugins and you will be good to go.
 
 ### Bitbridge
 
 If you have downloaded the prebuilt version of yabridge or if have followed the
 instructions from the [bitbridge](#32-bit-bitbridge) section below, then
-yabridge is also able to load 32-bit VST2 and VST3 plugins. The installation
-procedure for 32-bit plugins is exactly the same as for 64-bit plugins. Yabridge
-will automatically detect whether a plugin is 32-bit or 64-bit on startup and it
-will handle it accordingly.
+yabridge is also able to load 32-bit plugins. The installation procedure for
+32-bit plugins is exactly the same as for 64-bit plugins. Yabridge will
+automatically detect whether a plugin is 32-bit or 64-bit on startup and it will
+handle it accordingly.
 
 If you want to use the 32-bit version of a VST3 plugin when you also have the
 64-bit version installed, then you may have to enable the `vst3_prefer_32bit`
@@ -162,9 +171,10 @@ two plugins are located in the same VST3 bundle in `~/.vst3/yabridge`.
 ### Wine prefixes
 
 It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
-automatically detect and use the Wine prefix the plugin's `.dll` or `.vst3` file
-is located in. Alternatively, you can set the `WINEPREFIX` environment variable
-to override the Wine prefix for _all instances_ of yabridge.
+automatically detect and use the Wine prefix the plugin's `.dll`, `.vst3`, or
+`.clap` file is located in. Alternatively, you can set the `WINEPREFIX`
+environment variable to override the Wine prefix for _all instances_ of
+yabridge.
 
 ### Drag-and-drop
 
@@ -280,9 +290,10 @@ compatibility with certain hosts and plugins.
 Configuring yabridge is done through a `yabridge.toml` file located in either
 the same directory as the plugin's `.so` file you're trying to configure, or in
 any of its parent directories. In most cases, you'll want to create this file as
-either `~/.vst/yabridge/yabridge.toml` or `~/.vst3/yabridge/yabridge.toml`.
-Configuration files contain several _sections_. Each section can match one or
-more plugins using case sensitive
+either `~/.vst/yabridge/yabridge.toml`, `~/.vst3/yabridge/yabridge.toml`, or
+`~/.clap/yabridge/yabridge.toml` depending on the type of the plugin you want to
+configure. Configuration files contain several _sections_. Each section can
+match one or more plugins using case sensitive
 [glob](https://www.man7.org/linux/man-pages/man7/glob.7.html) patterns that
 match paths to yabridge `.so` files relative to the `yabridge.toml` file. If a
 section is matched for a plugin, then the settings under that section are
@@ -315,11 +326,11 @@ process. Of course, plugin groups with the same name but in different Wine
 prefixes and with different architectures will be run independently of each
 other. See below for an [example](#example) of how these groups can be set up.
 
-_Note that because of the way VST3 works, multiple instances of a single VST3
-plugin will always be hosted in a single process regardless of whether you have
-enabled plugin groups or not._ _The only reason to use plugin groups with VST3
-plugins is to get slightly lower loading times the first time you load a new
-plugin._
+_Note that because of the way VST3 and CLAP work, multiple instances of a single
+VST3 or CLAP plugin will always be hosted in a single process regardless of
+whether you have enabled plugin groups or not._ _The only reason to use plugin
+groups with those plugins is to get slightly lower loading times the first time
+you load a new plugin._
 
 ### Compatibility options
 
@@ -330,7 +341,7 @@ plugin._
 | `editor_force_dnd`       | `{true,false}`          | This option forcefully enables drag-and-drop support in _REAPER_. Because REAPER's FX window supports drag-and-drop itself, dragging a file onto a plugin editor will cause the drop to be intercepted by the FX window. This makes it impossible to drag files onto plugins in REAPER under normal circumstances. Setting this option to `true` will strip drag-and-drop support from the FX window, thus allowing files to be dragged onto the plugin again. Defaults to `false`. |
 | `editor_xembed`          | `{true,false}`          | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't always work properly with it, but it could be useful in certain setups. You may need to use [this Wine patch](https://github.com/psycha0s/airwave/blob/master/fix-xembed-wine-windows.patch) if you're getting blank editor windows. Defaults to `false`.                                                |
 | `frame_rate`             | `<number>`              | The rate at which Win32 events are being handled and usually also the refresh rate of a plugin's editor GUI. When using plugin groups all plugins share the same event handling loop, so in those the last loaded plugin will set the refresh rate. Defaults to `60`.                                                                                                                                                                                                               |
-| `hide_daw`               | `{true,false}`          | Don't report the name of the actual DAW to the plugin. See the [known issues](#known-issues-and-fixes) section for a list of situations where this may be useful. This affects both VST2 and VST3 plugins. Defaults to `false`.                                                                                                                                                                                                                                                     |
+| `hide_daw`               | `{true,false}`          | Don't report the name of the actual DAW to the plugin. See the [known issues](#known-issues-and-fixes) section for a list of situations where this may be useful. This affects VST2, VST3, and CLAP plugins. Defaults to `false`.                                                                                                                                                                                                                                                   |
 | `vst3_no_scaling`        | `{true,false}`          | Disable HiDPI scaling for VST3 plugins. Wine currently does not have proper fractional HiDPI support, so you might have to enable this option if you're using a HiDPI display. In most cases setting the font DPI in `winecfg`'s graphics tab to 192 will cause plugins to scale correctly at 200% size. Defaults to `false`.                                                                                                                                                       |
 | `vst3_prefer_32bit`      | `{true,false}`          | Use the 32-bit version of a VST3 plugin instead the 64-bit version if both are installed and they're in the same VST3 bundle inside of `~/.vst3/yabridge`. You likely won't need this.                                                                                                                                                                                                                                                                                              |
 
@@ -418,6 +429,16 @@ vst3_prefer_32bit = true
 ["*"]
 editor_force_dnd = true
 vst3_no_scaling = true
+```
+
+And with CLAP plugins you match on the `.clap` file, just like the VST2 config
+file matches on `.so` files:
+
+```toml
+# ~/.clap/yabridge/yabridge.toml
+
+["fb799964.clap"]
+hide_daw = true
 ```
 
 ## Known issues and fixes
@@ -607,12 +628,12 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   Wine is much older than the version that yabridge has been compiled for.
   Yabridgectl will automatically check for this when you run `yabridgectl sync`
   after updating Wine or yabridge. You can also manually verify that Wine is
-  working correctly by running one of the VST host applications. Assuming that
-  yabridge is installed under `~/.local/share/yabridge`, then running
-  `~/.local/share/yabridge/yabridge-host.exe` directly (so _not_
-  `wine ~/.local/share/yabridge/yabridge-host.exe`, that won't work) in a
-  terminal should print a few messages related to Wine's startup process
-  followed by the following line:
+  working correctly by running one of the Wine plugin host applications.
+  Assuming that yabridge is installed under `~/.local/share/yabridge`, then
+  running `~/.local/share/yabridge/yabridge-host.exe` directly (so _not_
+  `wine ~/.local/share/yabridge/yabridge-host.exe`, that won't work) in a terminal
+  should print a few messages related to Wine's startup process followed by the
+  following line:
 
   ```
   Usage: yabridge-host.exe <plugin_type> <plugin_location> <endpoint_base_directory>
@@ -644,8 +665,8 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   able to open the terminal at all), then you might want to consider using
   [plugin groups](#plugin-groups) to run multiple instances of your most
   frequently used plugins within a single process. And if you're using many
-  instances of a single VST2 plugin, using the VST3 version of that plugin may
-  also help since they'll share a single process.
+  instances of a single VST2 plugin, using the VST3 or CLAP version of that
+  plugin may also help since they'll share a single process.
 
 - If you're using a `WINELOADER` that runs the Wine process under a separate
   namespace while the host is not sandboxed, then you'll have to use the
@@ -696,15 +717,16 @@ negative side effects:
   up when you start your DAW.
 
 - If you have the choice, the VST3 version of a plugin will likely perform
-  better than the VST2 version.
+  better than the VST2 version. And if there is a CLAP version, then that may
+  perform even better.
 
-- If the plugin doesn't have a VST3 version, then [plugin
+- If the plugin doesn't have a VST3 or CLAP version, then [plugin
   groups](#plugin-groups) can also greatly improve performance when many
-  instances of same VST2 plugin. _VST3 plugins have similar functionality built
-  in by design_. Some plugins, like the BBC Spitfire plugins, can share a lot of
-  resources between different instances of the plugin. Hosting all instances of
-  the same plugin in a single process can in those cases greatly reduce overall
-  CPU usage and get rid of latency spikes.
+  instances of same VST2 plugin. _VST3 and CLAP plugins have similar
+  functionality built in by design_. Some plugins, like the BBC Spitfire
+  plugins, can share a lot of resources between different instances of the
+  plugin. Hosting all instances of the same plugin in a single process can in
+  those cases greatly reduce overall CPU usage and get rid of latency spikes.
 
 ### Environment configuration
 
@@ -778,6 +800,7 @@ The following dependencies are included in the repository as a Meson wrap:
 - Version 3.7.5 of the [VST3 SDK](https://github.com/robbert-vdh/vst3sdk) with
   some [patches](https://github.com/robbert-vdh/yabridge/blob/master/tools/patch-vst3-sdk.sh)
   to allow Winelib compilation
+- Version 1.1.1 of the [CLAP headers](https://github.com/free-audio/clap).
 
 The project can then be compiled with the command below. You can remove or
 change the unity size argument if building takes up too much RAM, or you can
@@ -807,8 +830,8 @@ After you've finished building you can follow the instructions under the
 
 It is also possible to compile a host application for yabridge that's compatible
 with 32-bit plugins such as old SynthEdit plugins. This will allow yabridge to
-act as a bitbridge, allowing you to run old 32-bit only Windows VST2 plugins in
-a modern 64-bit Linux VST host. For this you'll need to have installed the 32
+act as a bitbridge, allowing you to run old 32-bit only Windows plugins in a
+modern 64-bit Linux plugin host. For this you'll need to have installed the 32
 bit versions of the XCB library. This can then be set up as follows:
 
 ```shell
@@ -828,12 +851,12 @@ accordingly.
 ### 32-bit libraries
 
 It also possible to build 32-bit versions of yabridge's libraries, which would
-let you use both 32-bit and 64-bit Windows VST2 and VST3 plugins from a 32-bit
-Linux plugin host. This is mostly untested since 32-bit only Linux applications
-don't really exist anymore, but it should work! The build system will still
-assume you're compiling from a 64-bit system, so if you're compiling on an
-actual 32-bit system you would need to comment out the 64-bit `yabridge-host`
-and `yabridge-group` binaries in `meson.build`:
+let you use both 32-bit and 64-bit Windows VST2, VST3, and CLAP plugins from a
+32-bit Linux plugin host. This is mostly untested since 32-bit only Linux
+applications don't really exist anymore, but it should work! The build system
+will still assume you're compiling from a 64-bit system, so if you're compiling
+on an actual 32-bit system you would need to comment out the 64-bit
+`yabridge-host` and `yabridge-group` binaries in `meson.build`:
 
 ```shell
 meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000 -Dbitbridge=true -Dbuild.cpp_args='-m32' -Dbuild.cpp_link_args='-m32'
@@ -848,9 +871,9 @@ version of yabridge on some other machine.
 ## Debugging
 
 Wine's error messages and warning are usually very helpful whenever a plugin
-doesn't work right away. However, with some VST hosts it can be hard read a
-plugin's output. To make it easier to debug malfunctioning plugins, yabridge
-offers these two environment variables to control yabridge's logging facilities:
+doesn't work right away. However, with some hosts it can be hard read a plugin's
+output. To make it easier to debug malfunctioning plugins, yabridge offers these
+two environment variables to control yabridge's logging facilities:
 
 - `YABRIDGE_DEBUG_FILE=<path>` allows you to write yabridge's debug messages as
   well as all output produced by the plugin and by Wine itself to a file. For
@@ -867,9 +890,9 @@ offers these two environment variables to control yabridge's logging facilities:
     from the Wine process and some basic information about the
     environment, the configuration and the plugin being loaded.
   - A value of `1` will log detailed information about most events and function
-    calls sent between the VST host and the plugin. This filters out some noisy
-    events such as `effEditIdle()` and `audioMasterGetTime()` since those are
-    sent multiple times per second by for every plugin.
+    calls sent between the plugin host and the plugin. This filters out some
+    noisy events such as `effEditIdle()` and `audioMasterGetTime()` since those
+    are sent multiple times per second by for every plugin.
   - A value of `2` will cause all of the events to be logged without any
     filtering. This is very verbose but it can be crucial for debugging
     plugin-specific problems.
@@ -884,7 +907,7 @@ for an example of how to use this.
 Wine's own [logging facilities](https://wiki.winehq.org/Debug_Channels) can also
 be very helpful when diagnosing problems. In particular the `+message`,
 `+module` and `+relay` channels are very useful to trace the execution path
-within the loaded VST plugin itself.
+within the loaded plugin itself.
 
 ### Attaching a debugger
 
