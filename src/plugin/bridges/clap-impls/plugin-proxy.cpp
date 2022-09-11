@@ -149,6 +149,10 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
+    // TODO: When implementing the GUI option, add a `clap_no_scaling` option to
+    //       disable HiDPI scaling just like we have for VST3. Or rename the
+    //       existing one.
+
     // TODO: Implement
     return nullptr;
 }
