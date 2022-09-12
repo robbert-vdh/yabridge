@@ -388,9 +388,9 @@ class Vst3Logger {
         if (logger_.verbosity_ >= min_verbosity) [[unlikely]] {
             std::ostringstream message;
             if (is_host_plugin) {
-                message << "[host -> vst] >> ";
+                message << "[host -> plugin] >> ";
             } else {
-                message << "[vst -> host] >> ";
+                message << "[plugin -> host] >> ";
             }
 
             callback(message);
