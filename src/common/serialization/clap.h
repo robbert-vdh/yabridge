@@ -39,13 +39,16 @@
  */
 // FIXME: Remove the `WantsConfiguration`. For some reason bitsery just won't
 //        serialize this without it.
-using ClapMainThreadControlRequest = std::variant<WantsConfiguration,
-                                                  clap::plugin_factory::List,
-                                                  clap::plugin_factory::Create,
-                                                  clap::plugin::Init,
-                                                  clap::plugin::Destroy,
-                                                  clap::plugin::Activate,
-                                                  clap::plugin::Deactivate>;
+using ClapMainThreadControlRequest =
+    std::variant<WantsConfiguration,
+                 clap::plugin_factory::List,
+                 clap::plugin_factory::Create,
+                 clap::plugin::Init,
+                 clap::plugin::Destroy,
+                 clap::plugin::Activate,
+                 clap::plugin::Deactivate,
+                 clap::ext::audio_ports::plugin::Count,
+                 clap::ext::audio_ports::plugin::Get>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadControlRequest& payload) {
@@ -124,9 +127,12 @@ struct ClapAudioThreadControlRequest {
  * type `ClapMainThreadCallbackRequest(T)` should send back a `T::Response`.
  */
 // TODO: Placeholder
-using ClapMainThreadCallbackRequest = std::variant<WantsConfiguration,
-                                                   clap::host::RequestRestart,
-                                                   clap::host::RequestProcess>;
+using ClapMainThreadCallbackRequest =
+    std::variant<WantsConfiguration,
+                 clap::host::RequestRestart,
+                 clap::host::RequestProcess,
+                 clap::ext::audio_ports::host::IsRescanFlagSupported,
+                 clap::ext::audio_ports::host::Rescan>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadCallbackRequest& payload) {

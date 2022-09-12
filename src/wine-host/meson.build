@@ -80,6 +80,7 @@ host_sources = files(
 if with_clap
   host_sources += files(
     '../common/logging/clap.cpp',
+    '../common/serialization/clap/ext/audio-ports.cpp',
     '../common/serialization/clap/plugin.cpp',
     'bridges/clap-impls/host-proxy.cpp',
     'bridges/clap.cpp',
