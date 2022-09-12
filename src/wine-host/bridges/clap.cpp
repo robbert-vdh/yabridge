@@ -310,6 +310,30 @@ void ClapBridge::run() {
                     })
                     .get();
             },
+            [&](const clap::ext::audio_ports::plugin::Count& request)
+                -> clap::ext::audio_ports::plugin::Count::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We'll ignore the main thread requirement for simple lookup
+                // functions like this for performance's sake
+                return instance.extensions.audio_ports->count(
+                    instance.plugin.get(), request.is_input);
+            },
+            [&](const clap::ext::audio_ports::plugin::Get& request)
+                -> clap::ext::audio_ports::plugin::Get::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                clap_audio_port_info_t info{};
+                if (instance.extensions.audio_ports->get(
+                        instance.plugin.get(), request.index, request.is_input,
+                        &info)) {
+                    return clap::ext::audio_ports::plugin::GetResponse{
+                        .result = info};
+                } else {
+                    return clap::ext::audio_ports::plugin::GetResponse{
+                        .result = std::nullopt};
+                }
+            },
         });
 }
 

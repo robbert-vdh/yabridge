@@ -81,6 +81,36 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
 
                     return Ack{};
                 },
+                [&](const clap::ext::audio_ports::host::IsRescanFlagSupported&
+                        request)
+                    -> clap::ext::audio_ports::host::IsRescanFlagSupported::
+                        Response {
+                            const auto& [plugin_proxy, _] =
+                                get_proxy(request.owner_instance_id);
+
+                            // We'll ignore the main thread requirement for
+                            // simple lookup functions like this for
+                            // performance's sake
+                            return plugin_proxy.extensions_.audio_ports
+                                ->is_rescan_flag_supported(plugin_proxy.host_,
+                                                           request.flag);
+                        },
+                [&](const clap::ext::audio_ports::host::Rescan& request)
+                    -> clap::ext::audio_ports::host::Rescan::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    plugin_proxy
+                        .run_on_main_thread(
+                            [&, host = plugin_proxy.host_,
+                             audio_ports =
+                                 plugin_proxy.extensions_.audio_ports]() {
+                                audio_ports->rescan(host, request.flags);
+                            })
+                        .wait();
+
+                    return Ack{};
+                },
             });
     });
 }

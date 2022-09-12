@@ -77,6 +77,7 @@ if with_clap
     '../common/notifications.cpp',
     '../common/plugins.cpp',
     '../common/process.cpp',
+    '../common/serialization/clap/ext/audio-ports.cpp',
     '../common/serialization/clap/host.cpp',
     '../common/serialization/clap/plugin.cpp',
     '../common/utils.cpp',

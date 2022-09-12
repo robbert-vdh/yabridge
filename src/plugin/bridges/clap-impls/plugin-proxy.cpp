@@ -201,8 +201,9 @@ clap_plugin_proxy::ext_audio_ports_count(const clap_plugin_t* plugin,
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
-    // TODO: Implement
-    return 0;
+    return self->bridge_.send_main_thread_message(
+        clap::ext::audio_ports::plugin::Count{
+            .instance_id = self->instance_id(), .is_input = is_input});
 }
 
 bool CLAP_ABI
@@ -213,6 +214,17 @@ clap_plugin_proxy::ext_audio_ports_get(const clap_plugin_t* plugin,
     assert(plugin && plugin->plugin_data && info);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
-    // TODO: Implement
-    return false;
+    const clap::ext::audio_ports::plugin::GetResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::ext::audio_ports::plugin::Get{
+                .instance_id = self->instance_id(),
+                .index = index,
+                .is_input = is_input});
+    if (response.result) {
+        response.result->reconstruct(*info);
+
+        return true;
+    } else {
+        return false;
+    }
 }

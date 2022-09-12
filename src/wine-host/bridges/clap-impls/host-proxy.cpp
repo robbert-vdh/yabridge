@@ -118,8 +118,9 @@ bool CLAP_ABI clap_host_proxy::ext_audio_ports_is_rescan_flag_supported(
     assert(host && host->host_data);
     auto self = static_cast<clap_host_proxy*>(host->host_data);
 
-    // TODO: Implement
-    return false;
+    return self->bridge_.send_main_thread_message(
+        clap::ext::audio_ports::host::IsRescanFlagSupported{
+            .owner_instance_id = self->owner_instance_id(), .flag = flag});
 }
 
 void CLAP_ABI clap_host_proxy::ext_audio_ports_rescan(const clap_host_t* host,
@@ -127,5 +128,6 @@ void CLAP_ABI clap_host_proxy::ext_audio_ports_rescan(const clap_host_t* host,
     assert(host && host->host_data);
     auto self = static_cast<clap_host_proxy*>(host->host_data);
 
-    // TODO: Implement
+    self->bridge_.send_main_thread_message(clap::ext::audio_ports::host::Rescan{
+        .owner_instance_id = self->owner_instance_id(), .flags = flags});
 }
