@@ -24,13 +24,13 @@ ClapLogger::ClapLogger(Logger& generic_logger) : logger_(generic_logger) {}
 
 void ClapLogger::log_callback_request(size_t instance_id) {
     log_request_base(false, Logger::Verbosity::all_events, [&](auto& message) {
-        message << "clap_host::request_callback()";
+        message << instance_id << ": clap_host::request_callback()";
     });
 }
 
 void ClapLogger::log_on_main_thread(size_t instance_id) {
     log_request_base(true, Logger::Verbosity::all_events, [&](auto& message) {
-        message << "clap_plugin::on_main_thread()";
+        message << instance_id << ": clap_plugin::on_main_thread()";
     });
 }
 
