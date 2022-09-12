@@ -30,6 +30,29 @@
 class ClapPluginBridge;
 
 /**
+ * Pointers to all of a CLAP host's extension structs. These will be null if the
+ * host doesn't support the extensions.
+ *
+ * @relates clap_plugin_proxy
+ */
+struct ClapHostExtensions {
+    /**
+     * Query all of the host's extensions. This can only be done after the
+     * call to init.
+     */
+    ClapHostExtensions(const clap_host& host) noexcept;
+
+    /**
+     * The default constructor that assumes the host doesn't support any
+     * extensions. We may only query the extensions after the plugin has called
+     * `clap_plugin::init()`.
+     */
+    ClapHostExtensions() noexcept;
+
+    const clap_host_audio_ports_t* audio_ports = nullptr;
+};
+
+/**
  * A proxy for a `clap_plugin`.
  */
 class clap_plugin_proxy {
@@ -131,9 +154,15 @@ class clap_plugin_proxy {
 
     /**
      * The `clap_host_t*` passed when creating the instance. Any callbacks made
-     * by the proxied plugin instance must go through ere.
+     * by the proxied plugin instance must go through here.
      */
     const clap_host_t* host_;
+
+    /**
+     * The host's supported extensions. These will be populated in the
+     * `clap_plugin::init()` call.
+     */
+    ClapHostExtensions extensions_;
 
    private:
     ClapPluginBridge& bridge_;

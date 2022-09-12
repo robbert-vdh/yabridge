@@ -26,16 +26,20 @@
 
 namespace fs = ghc::filesystem;
 
-// TODO: Query extensions in the initializer list
-ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept {
-}
+ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
+    : audio_ports(static_cast<const clap_plugin_audio_ports_t*>(
+          plugin.get_extension(&plugin, CLAP_EXT_AUDIO_PORTS))) {}
+
+ClapPluginExtensions::ClapPluginExtensions() noexcept {}
 
 ClapPluginInstance::ClapPluginInstance(
     const clap_plugin* plugin,
     std::unique_ptr<clap_host_proxy> host_proxy) noexcept
     : host_proxy(std::move(host_proxy)),
       plugin((assert(plugin), plugin), plugin->destroy),
-      extensions(*plugin) {}
+      // We may only query the supported extensions after initializing the
+      // plugin
+      extensions() {}
 
 ClapBridge::ClapBridge(MainContext& main_context,
                        // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -223,6 +227,15 @@ void ClapBridge::run() {
                         const bool result =
                             instance.plugin->init(instance.plugin.get());
                         if (result) {
+                            // At this point we should also get the extension
+                            // pointers for the plugin's supported extensions.
+                            // In addition we'll send whether or not the plugin
+                            // supports these extensions as booleans to the
+                            // native plugin side so we can expose these same
+                            // extensions to the host.
+                            instance.extensions =
+                                ClapPluginExtensions(*instance.plugin);
+
                             // This mimics the same behavior we had to implement
                             // for VST2 and VST3. The Win32 message loop is
                             // completely blocked while a plugin instance has

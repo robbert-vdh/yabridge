@@ -18,6 +18,12 @@
 
 #include "../clap.h"
 
+ClapHostExtensions::ClapHostExtensions(const clap_host& host) noexcept
+    : audio_ports(static_cast<const clap_host_audio_ports_t*>(
+          host.get_extension(&host, CLAP_EXT_AUDIO_PORTS))) {}
+
+ClapHostExtensions::ClapHostExtensions() noexcept {}
+
 clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
                                      size_t instance_id,
                                      clap::plugin::Descriptor descriptor,
@@ -51,6 +57,12 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
 bool CLAP_ABI clap_plugin_proxy::plugin_init(const struct clap_plugin* plugin) {
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<clap_plugin_proxy*>(plugin->plugin_data);
+
+    // At this point we are allowed to query the host for extension structs.
+    // We'll store pointers to the host's extensions vtables, and then send
+    // whether or not those extensions were supported as booleans to the Wine
+    // plugin host so it can expose the same interfaces there.
+    self->extensions_ = ClapHostExtensions(*self->host_);
 
     const clap::plugin::InitResponse response =
         self->bridge_.send_main_thread_message(

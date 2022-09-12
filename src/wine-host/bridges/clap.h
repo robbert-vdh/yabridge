@@ -49,12 +49,18 @@ struct ClapPluginExtensions {
     /**
      * Query all of the plugin's extensions. This can only be done after the
      * call to init.
-     *
-     * TODO: Return the supported extensions along with the init call.
      */
     ClapPluginExtensions(const clap_plugin& plugin) noexcept;
 
-    // TODO: Supported extensions
+    /**
+     * The default constructor that assumes the plugin doesn't support any
+     * extensions. We may only query the extensions after the plugin has been
+     * initialized, so this is used when creating the `ClapPluginInstance`
+     * object.
+     */
+    ClapPluginExtensions() noexcept;
+
+    const clap_plugin_audio_ports_t* audio_ports = nullptr;
 };
 
 /**
