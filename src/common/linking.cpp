@@ -52,7 +52,11 @@ fs::path get_this_file_location() {
     if (this_file.starts_with("//")) {
         const size_t path_start_pos = this_file.find_first_not_of('/');
         if (path_start_pos != std::string::npos) {
-            this_file = "/" + this_file.substr(path_start_pos);
+            // FIXME: This results in a spurious compiler warning if you inline
+            //        `path_start`:
+            //        https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105329
+            const std::string path_start = this_file.substr(path_start_pos);
+            this_file = "/" + path_start;
         }
     }
 
