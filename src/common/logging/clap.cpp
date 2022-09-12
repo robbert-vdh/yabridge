@@ -113,7 +113,7 @@ bool ClapLogger::log_request(
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id
                 << ": clap_plugin_audio_ports::count(is_input = "
-                << request.is_input << ")";
+                << (request.is_input ? "true" : "false") << ")";
     });
 }
 
@@ -123,7 +123,8 @@ bool ClapLogger::log_request(
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id
                 << ": clap_plugin_audio_ports::get(index = " << request.index
-                << "is_input = " << request.is_input << ", *info)";
+                << "is_input = " << (request.is_input ? "true" : "false")
+                << ", *info)";
     });
 }
 
