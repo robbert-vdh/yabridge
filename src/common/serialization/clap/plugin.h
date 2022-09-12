@@ -27,6 +27,7 @@
 #include "../audio-shm.h"
 #include "../common.h"
 #include "host.h"
+#include "version.h"
 
 // Serialization messages for `clap/plugin.h`
 
@@ -276,10 +277,3 @@ struct Reset {
 
 }  // namespace plugin
 }  // namespace clap
-
-template <typename S>
-void serialize(S& s, clap_version_t& version) {
-    s.value4b(version.major);
-    s.value4b(version.minor);
-    s.value4b(version.revision);
-}

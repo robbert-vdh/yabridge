@@ -25,6 +25,7 @@
 
 #include "../../bitsery/ext/in-place-optional.h"
 #include "../common.h"
+#include "version.h"
 
 // Serialization messages for `clap/host.h`
 

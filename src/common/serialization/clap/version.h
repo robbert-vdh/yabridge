@@ -35,3 +35,10 @@ inline clap_version_t clamp_clap_version(clap_version_t version) {
         return version;
     }
 }
+
+template <typename S>
+void serialize(S& s, clap_version_t& version) {
+    s.value4b(version.major);
+    s.value4b(version.minor);
+    s.value4b(version.revision);
+}
