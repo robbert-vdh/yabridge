@@ -20,12 +20,40 @@ namespace clap {
 namespace ext {
 namespace audio_ports {
 
+AudioPortType parse_port_type(const char* port_type) {
+    if (!port_type) {
+        return AudioPortType::Unknown;
+    }
+
+    if (strcmp(port_type, CLAP_PORT_MONO) == 0) {
+        return AudioPortType::Mono;
+    } else if (strcmp(port_type, CLAP_PORT_STEREO) == 0) {
+        return AudioPortType::Stereo;
+    } else {
+        return AudioPortType::Unknown;
+    }
+}
+
+const char* audio_port_type_to_string(AudioPortType port_type) {
+    switch (port_type) {
+        case AudioPortType::Mono:
+            return CLAP_PORT_MONO;
+            break;
+        case AudioPortType::Stereo:
+            return CLAP_PORT_STEREO;
+            break;
+        default:
+            return nullptr;
+            break;
+    }
+}
+
 AudioPortInfo::AudioPortInfo(const clap_audio_port_info_t& original)
     : id(original.id),
       name(original.name),
       flags(original.flags),
       channel_count(original.channel_count),
-      port_type(original.port_type),
+      port_type(parse_port_type(original.port_type)),
       in_place_pair(original.in_place_pair) {}
 
 }  // namespace audio_ports

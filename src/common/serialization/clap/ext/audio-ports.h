@@ -32,6 +32,35 @@ namespace ext {
 namespace audio_ports {
 
 /**
+ * An enum representing the value of `clap_audio_port_info::port_type`. We can't
+ * serialize the string directly as we still need to write a pointer to it with
+ * static lifetime to the host's info struct.
+ */
+enum class AudioPortType : uint32_t {
+    /** A null pointer or unrecognized value. */
+    Unknown,
+    /** `CLAP_PORT_MONO` */
+    Mono,
+    /** `CLAP_PORT_STEREO` */
+    Stereo,
+
+    // There are also special values for CV, surround, and ambisonics, but those
+    // are part of draft extensions
+};
+
+/**
+ * Convert a `clap_audio_port_info::port_type` string into our port type enum.
+ */
+AudioPortType parse_audio_port_type(const char* port_type);
+
+/**
+ * Convert an `AudioPortType` to a static string pointer that can be used in the
+ * `clap_audio_port_info` struct. This is a null pointer if the port type was
+ * unknown or unspecified.
+ */
+const char* audio_port_type_to_string(AudioPortType port_type);
+
+/**
  * A serializable version of `clap_audio_port_info` that owns all of the data it
  * references.
  */
@@ -51,10 +80,7 @@ struct AudioPortInfo {
     std::string name;
     uint32_t flags;
     uint32_t channel_count;
-    // We could create an enum for this and only serialize the predefined types,
-    // but store the actual string is easier and more future proof without
-    // having a noticeable impact on performance.
-    std::string port_type;
+    AudioPortType port_type;
     clap_id in_place_pair;
 
     template <typename S>
@@ -63,7 +89,7 @@ struct AudioPortInfo {
         s.text1b(name, 4096);
         s.value4b(flags);
         s.value4b(channel_count);
-        s.text1b(port_type);
+        s.value4b(port_type);
         s.value4b(in_place_pair);
     }
 };
