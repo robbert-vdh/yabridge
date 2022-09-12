@@ -235,7 +235,7 @@ struct Deactivate {
  * Message struct for `clap_plugin::start_processing()`.
  */
 struct StartProcessing {
-    using Response = PrimitiveWrapper<bool>;
+    using Response = PrimitiveResponse<bool>;
 
     native_size_t instance_id;
 

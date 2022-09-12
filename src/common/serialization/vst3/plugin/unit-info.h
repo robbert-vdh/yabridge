@@ -69,7 +69,7 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
      * plugin host.
      */
     struct GetUnitCount {
-        using Response = PrimitiveWrapper<int32>;
+        using Response = PrimitiveResponse<int32>;
 
         native_size_t instance_id;
 
@@ -123,7 +123,7 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
      * the Wine plugin host.
      */
     struct GetProgramListCount {
-        using Response = PrimitiveWrapper<int32>;
+        using Response = PrimitiveResponse<int32>;
 
         native_size_t instance_id;
 
@@ -332,7 +332,7 @@ class YaUnitInfo : public Steinberg::Vst::IUnitInfo {
      * Wine plugin host.
      */
     struct GetSelectedUnit {
-        using Response = PrimitiveWrapper<Steinberg::Vst::UnitID>;
+        using Response = PrimitiveResponse<Steinberg::Vst::UnitID>;
 
         native_size_t instance_id;
 

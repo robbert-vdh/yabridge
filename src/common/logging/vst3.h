@@ -347,7 +347,7 @@ class Vst3Logger {
 
     template <typename T>
     void log_response(bool is_host_plugin,
-                      const PrimitiveWrapper<T>& value,
+                      const PrimitiveResponse<T>& value,
                       bool from_cache = false) {
         // For logging all primitive return values other than `tresult`
         log_response_base(is_host_plugin, [&](auto& message) {

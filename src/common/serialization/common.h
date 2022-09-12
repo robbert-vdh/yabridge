@@ -50,10 +50,10 @@ struct Ack {
  * you define a serialization function.
  */
 template <typename T>
-class PrimitiveWrapper {
+class PrimitiveResponse {
    public:
-    PrimitiveWrapper() noexcept {}
-    PrimitiveWrapper(T value) noexcept : value_(value) {}
+    PrimitiveResponse() noexcept {}
+    PrimitiveResponse(T value) noexcept : value_(value) {}
 
     operator T() const noexcept { return value_; }
 

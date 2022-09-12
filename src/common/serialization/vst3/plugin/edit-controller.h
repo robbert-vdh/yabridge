@@ -102,7 +102,7 @@ class YaEditController : public Steinberg::Vst::IEditController {
      * to the Wine plugin host.
      */
     struct GetParameterCount {
-        using Response = PrimitiveWrapper<int32>;
+        using Response = PrimitiveResponse<int32>;
 
         native_size_t instance_id;
 
@@ -242,7 +242,7 @@ class YaEditController : public Steinberg::Vst::IEditController {
      * Wine plugin host.
      */
     struct NormalizedParamToPlain {
-        using Response = PrimitiveWrapper<Steinberg::Vst::ParamValue>;
+        using Response = PrimitiveResponse<Steinberg::Vst::ParamValue>;
 
         native_size_t instance_id;
 
@@ -267,7 +267,7 @@ class YaEditController : public Steinberg::Vst::IEditController {
      * plugin host.
      */
     struct PlainParamToNormalized {
-        using Response = PrimitiveWrapper<Steinberg::Vst::ParamValue>;
+        using Response = PrimitiveResponse<Steinberg::Vst::ParamValue>;
 
         native_size_t instance_id;
 
@@ -291,7 +291,7 @@ class YaEditController : public Steinberg::Vst::IEditController {
      * `IEditController::getParamNormalized(id)` to the Wine plugin host.
      */
     struct GetParamNormalized {
-        using Response = PrimitiveWrapper<Steinberg::Vst::ParamValue>;
+        using Response = PrimitiveResponse<Steinberg::Vst::ParamValue>;
 
         native_size_t instance_id;
 

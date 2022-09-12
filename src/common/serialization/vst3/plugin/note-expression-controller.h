@@ -73,7 +73,7 @@ class YaNoteExpressionController
      * to the Wine plugin host.
      */
     struct GetNoteExpressionCount {
-        using Response = PrimitiveWrapper<int32>;
+        using Response = PrimitiveResponse<int32>;
 
         native_size_t instance_id;
 

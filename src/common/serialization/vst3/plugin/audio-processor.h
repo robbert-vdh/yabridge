@@ -166,7 +166,7 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
      * to the Wine plugin host.
      */
     struct GetLatencySamples {
-        using Response = PrimitiveWrapper<uint32>;
+        using Response = PrimitiveResponse<uint32>;
 
         native_size_t instance_id;
 
@@ -279,7 +279,7 @@ class YaAudioProcessor : public Steinberg::Vst::IAudioProcessor {
      * to the Wine plugin host.
      */
     struct GetTailSamples {
-        using Response = PrimitiveWrapper<uint32>;
+        using Response = PrimitiveResponse<uint32>;
 
         native_size_t instance_id;
 

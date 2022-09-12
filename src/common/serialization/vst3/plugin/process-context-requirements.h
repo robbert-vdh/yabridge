@@ -72,7 +72,7 @@ class YaProcessContextRequirements
      * Wine plugin host.
      */
     struct GetProcessContextRequirements {
-        using Response = PrimitiveWrapper<uint32>;
+        using Response = PrimitiveResponse<uint32>;
 
         native_size_t instance_id;
 

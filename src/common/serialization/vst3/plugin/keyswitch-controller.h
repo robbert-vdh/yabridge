@@ -69,7 +69,7 @@ class YaKeyswitchController : public Steinberg::Vst::IKeyswitchController {
      * plugin host.
      */
     struct GetKeyswitchCount {
-        using Response = PrimitiveWrapper<int32>;
+        using Response = PrimitiveResponse<int32>;
 
         native_size_t instance_id;
 
