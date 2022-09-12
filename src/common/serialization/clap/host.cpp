@@ -28,8 +28,5 @@ Host::Host(const clap_host_t& original)
       url(original.url ? std::optional(original.url) : std::nullopt),
       version((assert(original.version), original.version)) {}
 
-SupportedHostExtensions::SupportedHostExtensions(const clap_host& host)
-    : supports_audio_ports(host.get_extension(&host, CLAP_EXT_AUDIO_PORTS)) {}
-
 }  // namespace host
 }  // namespace clap

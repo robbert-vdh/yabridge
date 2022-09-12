@@ -76,9 +76,5 @@ const clap_plugin_descriptor_t* Descriptor::get() const {
     return &clap_descriptor;
 }
 
-SupportedPluginExtensions::SupportedPluginExtensions(const clap_plugin& plugin)
-    : supports_audio_ports(
-          plugin.get_extension(&plugin, CLAP_EXT_AUDIO_PORTS)) {}
-
 }  // namespace plugin
 }  // namespace clap

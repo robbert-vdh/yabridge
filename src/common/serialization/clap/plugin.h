@@ -109,17 +109,10 @@ struct Descriptor {
 };
 
 /**
- * Extensions supported by the plugin. Queried after `clap_plugin::init()`.
+ * Extensions supported by the plugin. Queried after `clap_plugin::init()` and
+ * created by `ClapPluginExtensions::supported()`.
  */
 struct SupportedPluginExtensions {
-    /**
-     * Read the supported extensions from a CLAP plugin. This is only valid
-     * after `clap_plugin::init()` has been called on the plugin.
-     */
-    SupportedPluginExtensions(const clap_plugin& plugin);
-
-    SupportedPluginExtensions() noexcept {}
-
     // Don't forget to add new extensions to the log output
     bool supports_audio_ports = false;
 

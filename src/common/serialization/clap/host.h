@@ -75,18 +75,11 @@ struct Host {
 
 /**
  * Extensions supported by the host. This can only be queried in
- * `clap_plugin::init()` so it cannot be part of `Host`. We'll create make these
- * same extensions available to the bridged CLAP plugins using proxies.
+ * `clap_plugin::init()` so it cannot be part of `Host`. Created by
+ * `ClapHostExtensions::supported()`. We'll create make these same extensions
+ * available to the bridged CLAP plugins using proxies.
  */
 struct SupportedHostExtensions {
-    /**
-     * Read the supported extensions from a native CLAP host. This is only valid
-     * once the native host has called `clap_host::init()`.
-     */
-    SupportedHostExtensions(const clap_host& host);
-
-    SupportedHostExtensions() noexcept {}
-
     // Don't forget to add new extensions to the log output
     bool supports_audio_ports = false;
 

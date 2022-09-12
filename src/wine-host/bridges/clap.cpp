@@ -32,6 +32,12 @@ ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
 
 ClapPluginExtensions::ClapPluginExtensions() noexcept {}
 
+clap::plugin::SupportedPluginExtensions ClapPluginExtensions::supported()
+    const noexcept {
+    return clap::plugin::SupportedPluginExtensions{.supports_audio_ports =
+                                                       audio_ports != nullptr};
+}
+
 ClapPluginInstance::ClapPluginInstance(
     const clap_plugin* plugin,
     std::unique_ptr<clap_host_proxy> host_proxy) noexcept
@@ -227,6 +233,12 @@ void ClapBridge::run() {
                         const bool result =
                             instance.plugin->init(instance.plugin.get());
                         if (result) {
+                            // This mimics the same behavior we had to implement
+                            // for VST2 and VST3. The Win32 message loop is
+                            // completely blocked while a plugin instance has
+                            // been created but not yet initialized.
+                            instance.is_initialized = true;
+
                             // At this point we should also get the extension
                             // pointers for the plugin's supported extensions.
                             // In addition we'll send whether or not the plugin
@@ -236,18 +248,17 @@ void ClapBridge::run() {
                             instance.extensions =
                                 ClapPluginExtensions(*instance.plugin);
 
-                            // This mimics the same behavior we had to implement
-                            // for VST2 and VST3. The Win32 message loop is
-                            // completely blocked while a plugin instance has
-                            // been created but not yet initialized.
-                            instance.is_initialized = true;
+                            return clap::plugin::InitResponse{
+                                .result = result,
+                                // Similarly, we'll make the plugin's supported
+                                // extensions available to the host
+                                .supported_plugin_extensions =
+                                    instance.extensions.supported()};
+                        } else {
+                            return clap::plugin::InitResponse{
+                                .result = result,
+                                .supported_plugin_extensions = {}};
                         }
-
-                        return clap::plugin::InitResponse{
-                            .result = result,
-                            // Similarly, we'll make the plugin's supported
-                            // extensions available to the host
-                            .supported_plugin_extensions = *instance.plugin};
                     })
                     .get();
             },

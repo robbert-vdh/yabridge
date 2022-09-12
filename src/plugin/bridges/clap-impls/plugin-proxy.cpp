@@ -24,6 +24,12 @@ ClapHostExtensions::ClapHostExtensions(const clap_host& host) noexcept
 
 ClapHostExtensions::ClapHostExtensions() noexcept {}
 
+clap::host::SupportedHostExtensions ClapHostExtensions::supported()
+    const noexcept {
+    return clap::host::SupportedHostExtensions{.supports_audio_ports =
+                                                   audio_ports != nullptr};
+}
+
 clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
                                      size_t instance_id,
                                      clap::plugin::Descriptor descriptor,
@@ -65,9 +71,9 @@ bool CLAP_ABI clap_plugin_proxy::plugin_init(const struct clap_plugin* plugin) {
     self->extensions_ = ClapHostExtensions(*self->host_);
 
     const clap::plugin::InitResponse response =
-        self->bridge_.send_main_thread_message(
-            clap::plugin::Init{.instance_id = self->instance_id(),
-                               .supported_host_extensions = *self->host_});
+        self->bridge_.send_main_thread_message(clap::plugin::Init{
+            .instance_id = self->instance_id(),
+            .supported_host_extensions = self->extensions_.supported()});
 
     // This determines which extensions the host is allowed to query in
     // `clap_plugin::get_extension()`

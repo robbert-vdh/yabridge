@@ -60,6 +60,12 @@ struct ClapPluginExtensions {
      */
     ClapPluginExtensions() noexcept;
 
+    /**
+     * Get the supported extensions as boolean values for serialization
+     * purposes.
+     */
+    clap::plugin::SupportedPluginExtensions supported() const noexcept;
+
     const clap_plugin_audio_ports_t* audio_ports = nullptr;
 };
 

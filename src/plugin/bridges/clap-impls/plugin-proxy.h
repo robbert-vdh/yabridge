@@ -49,6 +49,12 @@ struct ClapHostExtensions {
      */
     ClapHostExtensions() noexcept;
 
+    /**
+     * Get the supported extensions as boolean values for serialization
+     * purposes.
+     */
+    clap::host::SupportedHostExtensions supported() const noexcept;
+
     const clap_host_audio_ports_t* audio_ports = nullptr;
 };
 
