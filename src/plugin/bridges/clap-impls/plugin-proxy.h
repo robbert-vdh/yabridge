@@ -19,6 +19,7 @@
 #include <future>
 #include <vector>
 
+#include <clap/ext/audio-ports.h>
 #include <clap/plugin.h>
 #include <rigtorp/MPMCQueue.h>
 #include <function2/function2.hpp>
@@ -93,6 +94,13 @@ class clap_plugin_proxy {
     static void CLAP_ABI
     plugin_on_main_thread(const struct clap_plugin* plugin);
 
+    static uint32_t CLAP_ABI ext_audio_ports_count(const clap_plugin_t* plugin,
+                                                   bool is_input);
+    static bool CLAP_ABI ext_audio_ports_get(const clap_plugin_t* plugin,
+                                             uint32_t index,
+                                             bool is_input,
+                                             clap_audio_port_info_t* info);
+
     /**
      * Asynchronously run a function on the host's main thread, returning the
      * result as a future.
@@ -138,6 +146,11 @@ class clap_plugin_proxy {
      * the start of the struct and directly casting the `clap_plugin_t*`.
      */
     const clap_plugin_t plugin_vtable_;
+
+    // Extensions also have vtables. Whether or not we expose these to the host
+    // depends on whether the plugin supported this extension when we called
+    // `clap_plugin::init()`.
+    const clap_plugin_audio_ports ext_audio_ports_vtable;
 
     /**
      * The extensions supported by the bridged plugin. Set after a successful

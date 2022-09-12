@@ -40,6 +40,10 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
           .get_extension = plugin_get_extension,
           .on_main_thread = plugin_on_main_thread,
       }),
+      ext_audio_ports_vtable(clap_plugin_audio_ports_t{
+          .count = ext_audio_ports_count,
+          .get = ext_audio_ports_get,
+      }),
       // These function objects are relatively large, and we probably won't be
       // getting that many of them
       pending_callbacks_(128) {}
@@ -146,15 +150,18 @@ clap_plugin_proxy::plugin_process(const struct clap_plugin* plugin,
 const void* CLAP_ABI
 clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
                                         const char* id) {
-    assert(plugin && plugin->plugin_data);
+    assert(plugin && plugin->plugin_data && id);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
     // TODO: When implementing the GUI option, add a `clap_no_scaling` option to
     //       disable HiDPI scaling just like we have for VST3. Or rename the
     //       existing one.
-
-    // TODO: Implement
-    return nullptr;
+    if (self->supported_extensions_.supports_audio_ports &&
+        strcmp(id, CLAP_EXT_AUDIO_PORTS) == 0) {
+        return &self->ext_audio_ports_vtable;
+    } else {
+        return nullptr;
+    }
 }
 
 void CLAP_ABI
@@ -168,4 +175,26 @@ clap_plugin_proxy::plugin_on_main_thread(const struct clap_plugin* plugin) {
     while (self->pending_callbacks_.try_pop(callback)) {
         callback();
     }
+}
+
+uint32_t CLAP_ABI
+clap_plugin_proxy::ext_audio_ports_count(const clap_plugin_t* plugin,
+                                         bool is_input) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    // TODO: Implement
+    return 0;
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_audio_ports_get(const clap_plugin_t* plugin,
+                                       uint32_t index,
+                                       bool is_input,
+                                       clap_audio_port_info_t* info) {
+    assert(plugin && plugin->plugin_data && info);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    // TODO: Implement
+    return false;
 }
