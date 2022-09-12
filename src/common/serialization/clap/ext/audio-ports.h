@@ -76,6 +76,11 @@ struct AudioPortInfo {
      */
     AudioPortInfo() {}
 
+    /**
+     * Write the stored information to a host provided info struct.
+     */
+    void reconstruct(clap_audio_port_info_t& port_info) const;
+
     clap_id id;
     std::string name;
     uint32_t flags;

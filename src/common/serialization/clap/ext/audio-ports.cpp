@@ -16,6 +16,8 @@
 
 #include "audio-ports.h"
 
+#include "../../../utils.h"
+
 namespace clap {
 namespace ext {
 namespace audio_ports {
@@ -55,6 +57,16 @@ AudioPortInfo::AudioPortInfo(const clap_audio_port_info_t& original)
       channel_count(original.channel_count),
       port_type(parse_port_type(original.port_type)),
       in_place_pair(original.in_place_pair) {}
+
+void AudioPortInfo::reconstruct(clap_audio_port_info_t& port_info) const {
+    port_info = clap_audio_port_info_t{};
+    port_info.id = id;
+    strlcpy_buffer<sizeof(port_info.name)>(port_info.name, name);
+    port_info.flags = flags;
+    port_info.channel_count = channel_count;
+    port_info.port_type = audio_port_type_to_string(port_type);
+    port_info.in_place_pair = in_place_pair;
+}
 
 }  // namespace audio_ports
 }  // namespace ext
