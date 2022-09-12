@@ -1014,6 +1014,17 @@ class TypedMessageHandler : public AdHocSocketHandler<Thread> {
             should_log_response = logger.log_request(is_host_plugin, object);
         }
 
+// FIXME: For some reason you get a -Wmaybe-uninitialized false positive with
+//        GCC 12.2.0 on the `Request<T>` variant destructor here when used with
+//        `ClapAudioThreadControlRequest`.
+//
+//        Oh and Clang doesn't know about -Wmaybe-uninitialized, so we need to
+//        ignore some more warnings here to get clangd to not complain
+#pragma GCC diagnostic push
+#if defined(__GNUC__) && !defined(__llvm__)
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
         // A socket only handles a single request at a time as to prevent
         // messages from arriving out of order. `AdHocSocketHandler::send()`
         // will either use a long-living primary socket, or if that's currently
@@ -1022,6 +1033,8 @@ class TypedMessageHandler : public AdHocSocketHandler<Thread> {
             write_object(socket, Request(object), buffer);
             read_object<TResponse>(socket, response_object, buffer);
         });
+
+#pragma GCC diagnostic pop
 
         if (should_log_response) {
             auto [logger, is_host_plugin] = *logging;
