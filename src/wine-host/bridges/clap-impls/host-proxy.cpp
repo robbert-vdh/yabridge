@@ -43,13 +43,24 @@ clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
           .request_restart = host_request_restart,
           .request_process = host_request_process,
           .request_callback = host_request_callback,
+      }),
+      ext_audio_ports_vtable(clap_host_audio_ports_t{
+          .is_rescan_flag_supported = ext_audio_ports_is_rescan_flag_supported,
+          .rescan = ext_audio_ports_rescan,
       }) {}
 
 const void* CLAP_ABI
 clap_host_proxy::host_get_extension(const struct clap_host* host,
                                     const char* extension_id) {
-    // TODO: Implement
-    return nullptr;
+    assert(host && host->host_data && extension_id);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    if (self->supported_extensions_.supports_audio_ports &&
+        strcmp(extension_id, CLAP_EXT_AUDIO_PORTS) == 0) {
+        return &self->ext_audio_ports_vtable;
+    } else {
+        return nullptr;
+    }
 }
 
 void CLAP_ABI
@@ -99,4 +110,22 @@ clap_host_proxy::host_request_callback(const struct clap_host* host) {
                 instance.plugin->on_main_thread(instance.plugin.get());
             });
     }
+}
+
+bool CLAP_ABI clap_host_proxy::ext_audio_ports_is_rescan_flag_supported(
+    const clap_host_t* host,
+    uint32_t flag) {
+    assert(host && host->host_data);
+    auto self = static_cast<clap_host_proxy*>(host->host_data);
+
+    // TODO: Implement
+    return false;
+}
+
+void CLAP_ABI clap_host_proxy::ext_audio_ports_rescan(const clap_host_t* host,
+                                                      uint32_t flags) {
+    assert(host && host->host_data);
+    auto self = static_cast<clap_host_proxy*>(host->host_data);
+
+    // TODO: Implement
 }

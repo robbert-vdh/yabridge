@@ -18,6 +18,7 @@
 
 #include <atomic>
 
+#include <clap/ext/audio-ports.h>
 #include <clap/host.h>
 
 #include "../../common/serialization/clap/plugin-factory.h"
@@ -62,6 +63,12 @@ class clap_host_proxy {
     static void CLAP_ABI host_request_process(const struct clap_host* host);
     static void CLAP_ABI host_request_callback(const struct clap_host* host);
 
+    static bool CLAP_ABI
+    ext_audio_ports_is_rescan_flag_supported(const clap_host_t* host,
+                                             uint32_t flag);
+    static void CLAP_ABI ext_audio_ports_rescan(const clap_host_t* host,
+                                                uint32_t flags);
+
     /**
      * The extensions supported by the host, set just before calling
      * `clap_plugin::init()` on the bridged plugin. We'll allow the plugin to
@@ -80,6 +87,11 @@ class clap_host_proxy {
      * the start of the struct and directly casting the `clap_host_t*`.
      */
     const clap_host_t host_vtable_;
+
+    // Extensions also have vtables. Whether or not we expose these to the host
+    // depends on whether the plugin supported this extension when the host
+    // called `clap_plugin::init()`.
+    const clap_host_audio_ports ext_audio_ports_vtable;
 
     /**
      * Keeps track of whether there are pending host callbacks. Used to prevent
