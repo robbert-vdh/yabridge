@@ -141,6 +141,25 @@ std::optional<rlim_t> get_rttime_limit() noexcept;
 bool is_watchdog_timer_disabled();
 
 /**
+ * An implementation of BSD's `strlcpy()` function specialized for copying C++
+ * strings to char buffers.
+ * https://linux.die.net/man/3/strlcpy
+ */
+template <size_t N>
+size_t strlcpy_buffer(char dst[N], const std::string& src) {
+    if constexpr (N == 0) {
+        return src.size();
+    }
+
+    // Make sure there's always room for a null terminator
+    const size_t copy_len = std::min(N - 1, src.size());
+    std::copy(src.c_str(), src.c_str() + copy_len, dst);
+    dst[copy_len] = 0;
+
+    return src.size();
+}
+
+/**
  * A RAII wrapper that will temporarily enable the FTZ flag so that denormals
  * are automatically flushed to zero, returning to whatever the flag was
  * previously when it drops out of scope.
