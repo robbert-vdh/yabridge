@@ -13,8 +13,6 @@ page lists some of those.
 
 # Longer term
 
-- [CLAP](https://github.com/free-audio/clap) plugin bridging. Implementing this
-  only makes sense once Windows-only CLAP plugins start appearing.
 - An easier [updater](https://github.com/robbert-vdh/yabridge/issues/51) through
   a new `yabridgectl update` command for distros that don't package yabridge.
 
