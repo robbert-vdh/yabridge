@@ -62,6 +62,10 @@ class ClapLogger {
     bool log_request(bool is_host_plugin, const clap::plugin::Destroy&);
     bool log_request(bool is_host_plugin, const clap::plugin::Activate&);
     bool log_request(bool is_host_plugin, const clap::plugin::Deactivate&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::audio_ports::plugin::Count&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::audio_ports::plugin::Get&);
 
     bool log_request(bool is_host_plugin, const clap::plugin::StartProcessing&);
     bool log_request(bool is_host_plugin, const clap::plugin::StopProcessing&);
@@ -70,6 +74,11 @@ class ClapLogger {
     bool log_request(bool is_host_plugin, const WantsConfiguration&);
     bool log_request(bool is_host_plugin, const clap::host::RequestRestart&);
     bool log_request(bool is_host_plugin, const clap::host::RequestProcess&);
+    bool log_request(
+        bool is_host_plugin,
+        const clap::ext::audio_ports::host::IsRescanFlagSupported&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::audio_ports::host::Rescan&);
 
     void log_response(bool is_host_plugin, const Ack&);
     void log_response(bool is_host_plugin,
@@ -79,10 +88,8 @@ class ClapLogger {
     void log_response(bool is_host_plugin, const clap::plugin::InitResponse&);
     void log_response(bool is_host_plugin,
                       const clap::plugin::ActivateResponse&);
-
-    // TODO: Audio thread responses
-    // void log_response(bool is_host_plugin,
-    //                   const YaAudioProcessor::GetBusArrangementResponse&);
+    void log_response(bool is_host_plugin,
+                      const clap::ext::audio_ports::plugin::GetResponse&);
 
     void log_response(bool is_host_plugin, const Configuration&);
 
