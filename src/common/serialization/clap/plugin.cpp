@@ -16,6 +16,8 @@
 
 #include "plugin.h"
 
+#include <clap/ext/audio-ports.h>
+
 #include "version.h"
 
 namespace clap {
@@ -74,9 +76,9 @@ const clap_plugin_descriptor_t* Descriptor::get() const {
     return &clap_descriptor;
 }
 
-// TODO: Add extensions
-SupportedPluginExtensions::SupportedPluginExtensions(
-    const clap_plugin& plugin) {}
+SupportedPluginExtensions::SupportedPluginExtensions(const clap_plugin& plugin)
+    : supports_audio_ports(
+          plugin.get_extension(&plugin, CLAP_EXT_AUDIO_PORTS)) {}
 
 }  // namespace plugin
 }  // namespace clap

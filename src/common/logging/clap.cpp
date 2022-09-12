@@ -18,6 +18,8 @@
 
 #include <bitset>
 
+#include <clap/ext/audio-ports.h>
+
 #include "../serialization/clap.h"
 
 ClapLogger::ClapLogger(Logger& generic_logger) : logger_(generic_logger) {}
@@ -56,21 +58,23 @@ bool ClapLogger::log_request(bool is_host_plugin,
         message << request.instance_id
                 << ": clap_plugin::init(), supported host extensions: ";
 
-        // TODO: Log supported extensions
         bool first = true;
-        // for (const auto& [supported, extension_name] : {}) {
-        //     if (!supported) {
-        //         continue;
-        //     }
+        const auto& supported_extensions = request.supported_host_extensions;
+        for (const auto& [supported, extension_name] :
+             {std::pair(supported_extensions.supports_audio_ports,
+                        CLAP_EXT_AUDIO_PORTS)}) {
+            if (!supported) {
+                continue;
+            }
 
-        //     if (first) {
-        //         message << extension_name;
-        //     } else {
-        //         message << ", " << extension_name;
-        //     }
+            if (first) {
+                message << '"' << extension_name << '"';
+            } else {
+                message << ", \"" << extension_name << '"';
+            }
 
-        //     first = false;
-        // }
+            first = false;
+        }
 
         if (first) {
             message << "<none>";
@@ -182,21 +186,23 @@ void ClapLogger::log_response(bool is_host_plugin,
         message << (response.result ? "true" : "false")
                 << ", supported plugin extensions: ";
 
-        // TODO: Log supported extensions
         bool first = true;
-        // for (const auto& [supported, extension_name] : {}) {
-        //     if (!supported) {
-        //         continue;
-        //     }
+        const auto& supported_extensions = response.supported_plugin_extensions;
+        for (const auto& [supported, extension_name] :
+             {std::pair(supported_extensions.supports_audio_ports,
+                        CLAP_EXT_AUDIO_PORTS)}) {
+            if (!supported) {
+                continue;
+            }
 
-        //     if (first) {
-        //         message << extension_name;
-        //     } else {
-        //         message << ", " << extension_name;
-        //     }
+            if (first) {
+                message << '"' << extension_name << '"';
+            } else {
+                message << ", \"" << extension_name << '"';
+            }
 
-        //     first = false;
-        // }
+            first = false;
+        }
 
         if (first) {
             message << "<none>";

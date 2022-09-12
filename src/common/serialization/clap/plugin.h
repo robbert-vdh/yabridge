@@ -120,11 +120,11 @@ struct SupportedPluginExtensions {
     SupportedPluginExtensions() noexcept {}
 
     // Don't forget to add new extensions to the log output
-    // TODO: Support extensions
+    bool supports_audio_ports = false;
 
     template <typename S>
     void serialize(S& s) {
-        // s.value1b(extension_name);
+        s.value1b(supports_audio_ports);
     }
 };
 
