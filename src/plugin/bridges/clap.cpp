@@ -111,6 +111,39 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
 
                     return Ack{};
                 },
+                [&](const clap::ext::note_ports::host::SupportedDialects&
+                        request)
+                    -> clap::ext::note_ports::host::SupportedDialects::
+                        Response {
+                            const auto& [plugin_proxy, _] =
+                                get_proxy(request.owner_instance_id);
+
+                            return plugin_proxy
+                                .run_on_main_thread(
+                                    [host = plugin_proxy.host_,
+                                     note_ports = plugin_proxy.extensions_
+                                                      .note_ports]() {
+                                        return note_ports->supported_dialects(
+                                            host);
+                                    })
+                                .get();
+                        },
+                [&](const clap::ext::note_ports::host::Rescan& request)
+                    -> clap::ext::note_ports::host::Rescan::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    plugin_proxy
+                        .run_on_main_thread(
+                            [&, host = plugin_proxy.host_,
+                             note_ports =
+                                 plugin_proxy.extensions_.note_ports]() {
+                                note_ports->rescan(host, request.flags);
+                            })
+                        .wait();
+
+                    return Ack{};
+                },
             });
     });
 }

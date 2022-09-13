@@ -113,12 +113,15 @@ struct Descriptor {
  * created by `ClapPluginExtensions::supported()`.
  */
 struct SupportedPluginExtensions {
-    // Don't forget to add new extensions to the log output
+    // Don't forget to add new extensions to the logger and to the serialize
+    // method
     bool supports_audio_ports = false;
+    bool supports_note_ports = false;
 
     template <typename S>
     void serialize(S& s) {
         s.value1b(supports_audio_ports);
+        s.value1b(supports_note_ports);
     }
 };
 

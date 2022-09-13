@@ -83,7 +83,9 @@ bool ClapLogger::log_request(bool is_host_plugin,
         const auto& supported_extensions = request.supported_host_extensions;
         for (const auto& [supported, extension_name] :
              {std::pair(supported_extensions.supports_audio_ports,
-                        CLAP_EXT_AUDIO_PORTS)}) {
+                        CLAP_EXT_AUDIO_PORTS),
+              std::pair(supported_extensions.supports_note_ports,
+                        CLAP_EXT_NOTE_PORTS)}) {
             if (!supported) {
                 continue;
             }
@@ -292,7 +294,9 @@ void ClapLogger::log_response(bool is_host_plugin,
         const auto& supported_extensions = response.supported_plugin_extensions;
         for (const auto& [supported, extension_name] :
              {std::pair(supported_extensions.supports_audio_ports,
-                        CLAP_EXT_AUDIO_PORTS)}) {
+                        CLAP_EXT_AUDIO_PORTS),
+              std::pair(supported_extensions.supports_note_ports,
+                        CLAP_EXT_NOTE_PORTS)}) {
             if (!supported) {
                 continue;
             }

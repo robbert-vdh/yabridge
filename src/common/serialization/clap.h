@@ -50,7 +50,9 @@ using ClapMainThreadControlRequest =
                  clap::plugin::Activate,
                  clap::plugin::Deactivate,
                  clap::ext::audio_ports::plugin::Count,
-                 clap::ext::audio_ports::plugin::Get>;
+                 clap::ext::audio_ports::plugin::Get,
+                 clap::ext::note_ports::plugin::Count,
+                 clap::ext::note_ports::plugin::Get>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadControlRequest& payload) {
@@ -134,7 +136,9 @@ using ClapMainThreadCallbackRequest =
                  clap::host::RequestRestart,
                  clap::host::RequestProcess,
                  clap::ext::audio_ports::host::IsRescanFlagSupported,
-                 clap::ext::audio_ports::host::Rescan>;
+                 clap::ext::audio_ports::host::Rescan,
+                 clap::ext::note_ports::host::SupportedDialects,
+                 clap::ext::note_ports::host::Rescan>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadCallbackRequest& payload) {

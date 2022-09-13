@@ -21,7 +21,7 @@ Yabridge currently tracks CLAP 1.1.1. The implementation status for CLAP's core 
 | `clap.latency`            | :x: Not supported yet |
 | `clap.log`                | :x: Not supported yet |
 | `clap.note-name`          | :x: Not supported yet |
-| `clap.note-ports`         | :x: Not supported yet |
+| `clap.note-ports`         | :heavy_check_mark:    |
 | `clap.params`             | :x: Not supported yet |
 | `clap.posix-fd-support`   | :x: Not supported yet |
 | `clap.render`             | :x: Not supported yet |

@@ -28,14 +28,17 @@ namespace fs = ghc::filesystem;
 
 ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
     : audio_ports(static_cast<const clap_plugin_audio_ports_t*>(
-          plugin.get_extension(&plugin, CLAP_EXT_AUDIO_PORTS))) {}
+          plugin.get_extension(&plugin, CLAP_EXT_AUDIO_PORTS))),
+      note_ports(static_cast<const clap_plugin_note_ports_t*>(
+          plugin.get_extension(&plugin, CLAP_EXT_NOTE_PORTS))) {}
 
 ClapPluginExtensions::ClapPluginExtensions() noexcept {}
 
 clap::plugin::SupportedPluginExtensions ClapPluginExtensions::supported()
     const noexcept {
-    return clap::plugin::SupportedPluginExtensions{.supports_audio_ports =
-                                                       audio_ports != nullptr};
+    return clap::plugin::SupportedPluginExtensions{
+        .supports_audio_ports = audio_ports != nullptr,
+        .supports_note_ports = note_ports != nullptr};
 }
 
 ClapPluginInstance::ClapPluginInstance(
@@ -331,6 +334,30 @@ void ClapBridge::run() {
                         .result = info};
                 } else {
                     return clap::ext::audio_ports::plugin::GetResponse{
+                        .result = std::nullopt};
+                }
+            },
+            [&](const clap::ext::note_ports::plugin::Count& request)
+                -> clap::ext::note_ports::plugin::Count::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return instance.extensions.note_ports->count(
+                    instance.plugin.get(), request.is_input);
+            },
+            [&](const clap::ext::note_ports::plugin::Get& request)
+                -> clap::ext::note_ports::plugin::Get::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We'll also ignore the main thread requirement here for
+                // performance's sake
+                clap_note_port_info_t info{};
+                if (instance.extensions.note_ports->get(
+                        instance.plugin.get(), request.index, request.is_input,
+                        &info)) {
+                    return clap::ext::note_ports::plugin::GetResponse{.result =
+                                                                          info};
+                } else {
+                    return clap::ext::note_ports::plugin::GetResponse{
                         .result = std::nullopt};
                 }
             },

@@ -20,6 +20,7 @@
 #include <vector>
 
 #include <clap/ext/audio-ports.h>
+#include <clap/ext/note-ports.h>
 #include <clap/plugin.h>
 #include <rigtorp/MPMCQueue.h>
 #include <function2/function2.hpp>
@@ -56,6 +57,7 @@ struct ClapHostExtensions {
     clap::host::SupportedHostExtensions supported() const noexcept;
 
     const clap_host_audio_ports_t* audio_ports = nullptr;
+    const clap_host_note_ports_t* note_ports = nullptr;
 };
 
 /**
@@ -130,6 +132,13 @@ class clap_plugin_proxy {
                                              bool is_input,
                                              clap_audio_port_info_t* info);
 
+    static uint32_t CLAP_ABI ext_note_ports_count(const clap_plugin_t* plugin,
+                                                  bool is_input);
+    static bool CLAP_ABI ext_note_ports_get(const clap_plugin_t* plugin,
+                                            uint32_t index,
+                                            bool is_input,
+                                            clap_note_port_info_t* info);
+
     /**
      * Asynchronously run a function on the host's main thread, returning the
      * result as a future.
@@ -186,6 +195,7 @@ class clap_plugin_proxy {
     // depends on whether the plugin supported this extension when we called
     // `clap_plugin::init()`.
     const clap_plugin_audio_ports ext_audio_ports_vtable;
+    const clap_plugin_note_ports ext_note_ports_vtable;
 
     /**
      * The extensions supported by the bridged plugin. Set after a successful

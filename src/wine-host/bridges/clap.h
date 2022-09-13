@@ -67,6 +67,7 @@ struct ClapPluginExtensions {
     clap::plugin::SupportedPluginExtensions supported() const noexcept;
 
     const clap_plugin_audio_ports_t* audio_ports = nullptr;
+    const clap_plugin_note_ports_t* note_ports = nullptr;
 };
 
 /**

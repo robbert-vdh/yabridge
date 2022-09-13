@@ -20,14 +20,17 @@
 
 ClapHostExtensions::ClapHostExtensions(const clap_host& host) noexcept
     : audio_ports(static_cast<const clap_host_audio_ports_t*>(
-          host.get_extension(&host, CLAP_EXT_AUDIO_PORTS))) {}
+          host.get_extension(&host, CLAP_EXT_AUDIO_PORTS))),
+      note_ports(static_cast<const clap_host_note_ports_t*>(
+          host.get_extension(&host, CLAP_EXT_NOTE_PORTS))) {}
 
 ClapHostExtensions::ClapHostExtensions() noexcept {}
 
 clap::host::SupportedHostExtensions ClapHostExtensions::supported()
     const noexcept {
-    return clap::host::SupportedHostExtensions{.supports_audio_ports =
-                                                   audio_ports != nullptr};
+    return clap::host::SupportedHostExtensions{
+        .supports_audio_ports = audio_ports != nullptr,
+        .supports_note_ports = note_ports != nullptr};
 }
 
 clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
@@ -55,6 +58,10 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
       ext_audio_ports_vtable(clap_plugin_audio_ports_t{
           .count = ext_audio_ports_count,
           .get = ext_audio_ports_get,
+      }),
+      ext_note_ports_vtable(clap_plugin_note_ports_t{
+          .count = ext_note_ports_count,
+          .get = ext_note_ports_get,
       }),
       // These function objects are relatively large, and we probably won't be
       // getting that many of them
@@ -178,6 +185,9 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
     if (self->supported_extensions_.supports_audio_ports &&
         strcmp(id, CLAP_EXT_AUDIO_PORTS) == 0) {
         extension_ptr = &self->ext_audio_ports_vtable;
+    } else if (self->supported_extensions_.supports_note_ports &&
+               strcmp(id, CLAP_EXT_NOTE_PORTS) == 0) {
+        extension_ptr = &self->ext_note_ports_vtable;
     }
 
     self->bridge_.logger_.log_extension_query("clap_plugin::get_extension",
@@ -221,6 +231,40 @@ clap_plugin_proxy::ext_audio_ports_get(const clap_plugin_t* plugin,
     const clap::ext::audio_ports::plugin::GetResponse response =
         self->bridge_.send_main_thread_message(
             clap::ext::audio_ports::plugin::Get{
+                .instance_id = self->instance_id(),
+                .index = index,
+                .is_input = is_input});
+    if (response.result) {
+        response.result->reconstruct(*info);
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+uint32_t CLAP_ABI
+clap_plugin_proxy::ext_note_ports_count(const clap_plugin_t* plugin,
+                                        bool is_input) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::note_ports::plugin::Count{.instance_id = self->instance_id(),
+                                             .is_input = is_input});
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_note_ports_get(const clap_plugin_t* plugin,
+                                      uint32_t index,
+                                      bool is_input,
+                                      clap_note_port_info_t* info) {
+    assert(plugin && plugin->plugin_data && info);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    const clap::ext::note_ports::plugin::GetResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::ext::note_ports::plugin::Get{
                 .instance_id = self->instance_id(),
                 .index = index,
                 .is_input = is_input});
