@@ -58,20 +58,18 @@ void Vst3Logger::log_query_interface(
     tresult result,
     const std::optional<Steinberg::FUID>& uid) {
     if (logger_.verbosity_ >= Logger::Verbosity::all_events) [[unlikely]] {
-        std::ostringstream message;
         std::string uid_string = uid ? format_uid(*uid) : "<unknown_pointer>";
 
+        std::ostringstream message;
         if (result == Steinberg::kResultOk) {
-            if (logger_.verbosity_ >= Logger::Verbosity::most_events) {
-                message << "[query interface] " << where << ": " << uid_string;
-                log(message.str());
-            }
+            message << "[query interface] " << where << ": " << uid_string;
         } else {
             // TODO: DIfferentiate between interfaces we don't implement and
             //       interfaces the object doesn't implement
             message << "[unknown interface] " << where << ": " << uid_string;
-            log(message.str());
         }
+
+        log(message.str());
     }
 }
 
