@@ -149,6 +149,27 @@ bool ClapLogger::log_request(
     });
 }
 
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::note_ports::plugin::Count& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_note_ports::count(is_input = "
+                << (request.is_input ? "true" : "false") << ")";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::note_ports::plugin::Get& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_note_ports::get(index = " << request.index
+                << "is_input = " << (request.is_input ? "true" : "false")
+                << ", *info)";
+    });
+}
+
 bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::plugin::StartProcessing& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
@@ -208,6 +229,25 @@ bool ClapLogger::log_request(
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.owner_instance_id
                 << ": clap_host_audio_ports::rescan(flag = "
+                << std::bitset<sizeof(request.flags) * 8>(request.flags) << ")";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::note_ports::host::SupportedDialects& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_note_ports::supported_dialects()";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::note_ports::host::Rescan& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_note_ports::rescan(flag = "
                 << std::bitset<sizeof(request.flags) * 8>(request.flags) << ")";
     });
 }
@@ -290,6 +330,19 @@ void ClapLogger::log_response(
     return log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message << "true, <audio_port_info_t* for \""
+                    << response.result->name << "\">";
+        } else {
+            message << "false";
+        }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::note_ports::plugin::GetResponse& response) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.result) {
+            message << "true, <note_port_info_t* for \""
                     << response.result->name << "\">";
         } else {
             message << "false";

@@ -23,6 +23,7 @@
 #include "../bitsery/ext/message-reference.h"
 #include "../utils.h"
 #include "clap/ext/audio-ports.h"
+#include "clap/ext/note-ports.h"
 #include "clap/host.h"
 #include "clap/plugin-factory.h"
 #include "common.h"

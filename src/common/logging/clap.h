@@ -81,6 +81,10 @@ class ClapLogger {
                      const clap::ext::audio_ports::plugin::Count&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::audio_ports::plugin::Get&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::note_ports::plugin::Count&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::note_ports::plugin::Get&);
 
     bool log_request(bool is_host_plugin, const clap::plugin::StartProcessing&);
     bool log_request(bool is_host_plugin, const clap::plugin::StopProcessing&);
@@ -94,6 +98,10 @@ class ClapLogger {
         const clap::ext::audio_ports::host::IsRescanFlagSupported&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::audio_ports::host::Rescan&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::note_ports::host::SupportedDialects&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::note_ports::host::Rescan&);
 
     void log_response(bool is_host_plugin, const Ack&);
     void log_response(bool is_host_plugin,
@@ -105,6 +113,8 @@ class ClapLogger {
                       const clap::plugin::ActivateResponse&);
     void log_response(bool is_host_plugin,
                       const clap::ext::audio_ports::plugin::GetResponse&);
+    void log_response(bool is_host_plugin,
+                      const clap::ext::note_ports::plugin::GetResponse&);
 
     void log_response(bool is_host_plugin, const Configuration&);
 
