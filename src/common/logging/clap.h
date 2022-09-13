@@ -35,7 +35,22 @@ class ClapLogger {
      */
     inline void log(const std::string& message) { logger_.log(message); }
 
-    // TODO: Logging for extension queries, factory type queries
+    /**
+     * Log calls to `clap_plugin::get_extension()` and
+     * `clap_host::get_extension()`. This makes it possible to tell which
+     * extensions the host or plugin is querying, and which of those we don't
+     * support yet.
+     *
+     * @param where The name of the function where this query occurred. In the
+     *   format `clap_foo::get_extension`, without parentheses. This is a `const
+     *   char*` to avoid allocations.
+     * @param result True if we returned an extension pointer, or false if we
+     *   returned a null pointer.
+     * @param id The ID of the extension the plugin or host was trying to query.
+     */
+    void log_extension_query(const char* where,
+                             bool result,
+                             const char* extension_id);
 
     /**
      * Logging for `clap_host::request_callback()`. This is handled purely on

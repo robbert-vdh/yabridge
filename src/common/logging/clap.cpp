@@ -24,6 +24,27 @@
 
 ClapLogger::ClapLogger(Logger& generic_logger) : logger_(generic_logger) {}
 
+void ClapLogger::log_extension_query(const char* where,
+                                     bool result,
+                                     const char* extension_id) {
+    if (logger_.verbosity_ >= Logger::Verbosity::all_events) [[unlikely]] {
+        assert(where && extension_id);
+
+        std::ostringstream message;
+        if (result) {
+            message << "[extension query] " << where << "(extension_id = \""
+                    << extension_id << "\")";
+        } else {
+            // TODO: DIfferentiate between extensions we don't implement and
+            //       extensions the object doesn't implement
+            message << "[unknown extension] " << where << "(extension_id = \""
+                    << extension_id << "\")";
+        }
+
+        log(message.str());
+    }
+}
+
 void ClapLogger::log_callback_request(size_t instance_id) {
     log_request_base(false, Logger::Verbosity::all_events, [&](auto& message) {
         message << instance_id << ": clap_host::request_callback()";

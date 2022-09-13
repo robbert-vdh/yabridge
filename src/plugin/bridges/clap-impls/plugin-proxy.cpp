@@ -174,12 +174,16 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
     // TODO: When implementing the GUI option, add a `clap_no_scaling` option to
     //       disable HiDPI scaling just like we have for VST3. Or rename the
     //       existing one.
+    const void* extension_ptr = nullptr;
     if (self->supported_extensions_.supports_audio_ports &&
         strcmp(id, CLAP_EXT_AUDIO_PORTS) == 0) {
-        return &self->ext_audio_ports_vtable;
-    } else {
-        return nullptr;
+        extension_ptr = &self->ext_audio_ports_vtable;
     }
+
+    self->bridge_.logger_.log_extension_query("clap_plugin::get_extension",
+                                              extension_ptr, id);
+
+    return extension_ptr;
 }
 
 void CLAP_ABI

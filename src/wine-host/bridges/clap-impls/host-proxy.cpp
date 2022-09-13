@@ -55,12 +55,16 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
     assert(host && host->host_data && extension_id);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
+    const void* extension_ptr = nullptr;
     if (self->supported_extensions_.supports_audio_ports &&
         strcmp(extension_id, CLAP_EXT_AUDIO_PORTS) == 0) {
-        return &self->ext_audio_ports_vtable;
-    } else {
-        return nullptr;
+        extension_ptr = &self->ext_audio_ports_vtable;
     }
+
+    self->bridge_.logger_.log_extension_query("clap_host::get_extension",
+                                              extension_ptr, extension_id);
+
+    return extension_ptr;
 }
 
 void CLAP_ABI
