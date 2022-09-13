@@ -313,65 +313,53 @@ void ClapBridge::run() {
                 -> clap::ext::audio_ports::plugin::Count::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context(
-                        [&, plugin = instance.plugin.get(),
-                         audio_ports = instance.extensions.audio_ports]() {
-                            return audio_ports->count(plugin, request.is_input);
-                        })
-                    .get();
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in code code paths
+                return instance.extensions.audio_ports->count(
+                    instance.plugin.get(), request.is_input);
             },
             [&](const clap::ext::audio_ports::plugin::Get& request)
                 -> clap::ext::audio_ports::plugin::Get::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     audio_ports =
-                                         instance.extensions.audio_ports]() {
-                        clap_audio_port_info_t info{};
-                        if (audio_ports->get(plugin, request.index,
-                                             request.is_input, &info)) {
-                            return clap::ext::audio_ports::plugin::GetResponse{
-                                .result = info};
-                        } else {
-                            return clap::ext::audio_ports::plugin::GetResponse{
-                                .result = std::nullopt};
-                        }
-                    })
-                    .get();
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in code code paths
+                clap_audio_port_info_t info{};
+                if (instance.extensions.audio_ports->get(
+                        instance.plugin.get(), request.index, request.is_input,
+                        &info)) {
+                    return clap::ext::audio_ports::plugin::GetResponse{
+                        .result = info};
+                } else {
+                    return clap::ext::audio_ports::plugin::GetResponse{
+                        .result = std::nullopt};
+                }
             },
             [&](const clap::ext::note_ports::plugin::Count& request)
                 -> clap::ext::note_ports::plugin::Count::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context(
-                        [&, plugin = instance.plugin.get(),
-                         note_ports = instance.extensions.note_ports]() {
-                            return note_ports->count(plugin, request.is_input);
-                        })
-                    .get();
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in code code paths
+                return instance.extensions.note_ports->count(
+                    instance.plugin.get(), request.is_input);
             },
             [&](const clap::ext::note_ports::plugin::Get& request)
                 -> clap::ext::note_ports::plugin::Get::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     note_ports =
-                                         instance.extensions.note_ports]() {
-                        clap_note_port_info_t info{};
-                        if (note_ports->get(plugin, request.index,
-                                            request.is_input, &info)) {
-                            return clap::ext::note_ports::plugin::GetResponse{
-                                .result = info};
-                        } else {
-                            return clap::ext::note_ports::plugin::GetResponse{
-                                .result = std::nullopt};
-                        }
-                    })
-                    .get();
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in code code paths
+                clap_note_port_info_t info{};
+                if (instance.extensions.note_ports->get(
+                        instance.plugin.get(), request.index, request.is_input,
+                        &info)) {
+                    return clap::ext::note_ports::plugin::GetResponse{.result =
+                                                                          info};
+                } else {
+                    return clap::ext::note_ports::plugin::GetResponse{
+                        .result = std::nullopt};
+                }
             },
         });
 }
