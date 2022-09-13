@@ -222,19 +222,18 @@ void ClapBridge::run() {
                     .get();
             },
             [&](clap::plugin::Init& request) -> clap::plugin::Init::Response {
-                return main_context_
-                    .run_in_context([&]() {
-                        const auto& [instance, _] =
-                            get_instance(request.instance_id);
+                const auto& [instance, _] = get_instance(request.instance_id);
 
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     &instance = instance]() {
                         // The plugin is allowed to query the same set of
                         // extensions from our host proxy that the native host
                         // supports
                         instance.host_proxy->supported_extensions_ =
                             request.supported_host_extensions;
 
-                        const bool result =
-                            instance.plugin->init(instance.plugin.get());
+                        const bool result = plugin->init(plugin);
                         if (result) {
                             // This mimics the same behavior we had to implement
                             // for VST2 and VST3. The Win32 message loop is
@@ -248,8 +247,7 @@ void ClapBridge::run() {
                             // supports these extensions as booleans to the
                             // native plugin side so we can expose these same
                             // extensions to the host.
-                            instance.extensions =
-                                ClapPluginExtensions(*instance.plugin);
+                            instance.extensions = ClapPluginExtensions(*plugin);
 
                             return clap::plugin::InitResponse{
                                 .result = result,
@@ -280,13 +278,12 @@ void ClapBridge::run() {
             },
             [&](clap::plugin::Activate& request)
                 -> clap::plugin::Activate::Response {
-                return main_context_
-                    .run_in_context([&]() {
-                        const auto& [instance, _] =
-                            get_instance(request.instance_id);
+                const auto& [instance, _] = get_instance(request.instance_id);
 
-                        const bool result = instance.plugin->activate(
-                            instance.plugin.get(), request.sample_rate,
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get()]() {
+                        const bool result = plugin->activate(
+                            plugin, request.sample_rate,
                             request.min_frames_count, request.max_frames_count);
 
                         // TODO: Audio buffer setup
@@ -302,12 +299,11 @@ void ClapBridge::run() {
             },
             [&](clap::plugin::Deactivate& request)
                 -> clap::plugin::Deactivate::Response {
-                return main_context_
-                    .run_in_context([&]() {
-                        const auto& [instance, _] =
-                            get_instance(request.instance_id);
+                const auto& [instance, _] = get_instance(request.instance_id);
 
-                        instance.plugin->deactivate(instance.plugin.get());
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get()]() {
+                        plugin->deactivate(plugin);
 
                         return Ack{};
                     })
@@ -317,49 +313,65 @@ void ClapBridge::run() {
                 -> clap::ext::audio_ports::plugin::Count::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                // We'll ignore the main thread requirement for simple lookup
-                // functions like this for performance's sake
-                return instance.extensions.audio_ports->count(
-                    instance.plugin.get(), request.is_input);
+                return main_context_
+                    .run_in_context(
+                        [&, plugin = instance.plugin.get(),
+                         audio_ports = instance.extensions.audio_ports]() {
+                            return audio_ports->count(plugin, request.is_input);
+                        })
+                    .get();
             },
             [&](const clap::ext::audio_ports::plugin::Get& request)
                 -> clap::ext::audio_ports::plugin::Get::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                clap_audio_port_info_t info{};
-                if (instance.extensions.audio_ports->get(
-                        instance.plugin.get(), request.index, request.is_input,
-                        &info)) {
-                    return clap::ext::audio_ports::plugin::GetResponse{
-                        .result = info};
-                } else {
-                    return clap::ext::audio_ports::plugin::GetResponse{
-                        .result = std::nullopt};
-                }
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     audio_ports =
+                                         instance.extensions.audio_ports]() {
+                        clap_audio_port_info_t info{};
+                        if (audio_ports->get(plugin, request.index,
+                                             request.is_input, &info)) {
+                            return clap::ext::audio_ports::plugin::GetResponse{
+                                .result = info};
+                        } else {
+                            return clap::ext::audio_ports::plugin::GetResponse{
+                                .result = std::nullopt};
+                        }
+                    })
+                    .get();
             },
             [&](const clap::ext::note_ports::plugin::Count& request)
                 -> clap::ext::note_ports::plugin::Count::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return instance.extensions.note_ports->count(
-                    instance.plugin.get(), request.is_input);
+                return main_context_
+                    .run_in_context(
+                        [&, plugin = instance.plugin.get(),
+                         note_ports = instance.extensions.note_ports]() {
+                            return note_ports->count(plugin, request.is_input);
+                        })
+                    .get();
             },
             [&](const clap::ext::note_ports::plugin::Get& request)
                 -> clap::ext::note_ports::plugin::Get::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                // We'll also ignore the main thread requirement here for
-                // performance's sake
-                clap_note_port_info_t info{};
-                if (instance.extensions.note_ports->get(
-                        instance.plugin.get(), request.index, request.is_input,
-                        &info)) {
-                    return clap::ext::note_ports::plugin::GetResponse{.result =
-                                                                          info};
-                } else {
-                    return clap::ext::note_ports::plugin::GetResponse{
-                        .result = std::nullopt};
-                }
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     note_ports =
+                                         instance.extensions.note_ports]() {
+                        clap_note_port_info_t info{};
+                        if (note_ports->get(plugin, request.index,
+                                            request.is_input, &info)) {
+                            return clap::ext::note_ports::plugin::GetResponse{
+                                .result = info};
+                        } else {
+                            return clap::ext::note_ports::plugin::GetResponse{
+                                .result = std::nullopt};
+                        }
+                    })
+                    .get();
             },
         });
 }
