@@ -185,6 +185,17 @@ class clap_plugin_proxy {
     clap::plugin::Descriptor descriptor_;
 
     /**
+     * A shared memory object to share audio buffers between the native plugin
+     * and the Wine plugin host. Copying audio is the most significant source of
+     * bridging overhead during audio processing, and this way we can reduce the
+     * amount of copies required to only once for the input audio, and one more
+     * copy when copying the results back to the host.
+     *
+     * This will be set up during `clap_plugin::activate()`.
+     */
+    std::optional<AudioShmBuffer> process_buffers_;
+
+    /**
      * The vtable for `clap_plugin`, requires that this object is never moved or
      * copied. We'll use the host data pointer instead of placing this vtable at
      * the start of the struct and directly casting the `clap_plugin_t*`.

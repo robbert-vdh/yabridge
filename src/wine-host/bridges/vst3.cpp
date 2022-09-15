@@ -1419,7 +1419,7 @@ std::optional<AudioShmBuffer::Config> Vst3Bridge::setup_shared_audio_buffers(
     };
 
     // Creating the audio buffer offsets for every channel in every bus will
-    // advacne `current_offset` to keep pointing to the starting position for
+    // advance `current_offset` to keep pointing to the starting position for
     // the next channel
     const auto input_bus_offsets = create_bus_offsets(Steinberg::Vst::kInput);
     const auto output_bus_offsets = create_bus_offsets(Steinberg::Vst::kOutput);

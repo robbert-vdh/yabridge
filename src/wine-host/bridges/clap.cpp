@@ -286,9 +286,10 @@ void ClapBridge::run() {
                             plugin, request.sample_rate,
                             request.min_frames_count, request.max_frames_count);
 
-                        // TODO: Audio buffer setup
                         const std::optional<AudioShmBuffer::Config>
-                            updated_audio_buffers_config;
+                            updated_audio_buffers_config =
+                                setup_shared_audio_buffers(request.instance_id,
+                                                           request);
 
                         return clap::plugin::ActivateResponse{
                             .result = result,
@@ -393,160 +394,124 @@ size_t ClapBridge::generate_instance_id() noexcept {
     return current_instance_id_.fetch_add(1);
 }
 
-// TODO: Implement audio processing
-// std::optional<AudioShmBuffer::Config> ClapBridge::setup_shared_audio_buffers(
-//     size_t instance_id) {
-//     const auto& [instance, _] = get_instance(instance_id);
+std::optional<AudioShmBuffer::Config> ClapBridge::setup_shared_audio_buffers(
+    size_t instance_id,
+    const clap::plugin::Activate& activate_request) {
+    const auto& [instance, _] = get_instance(instance_id);
 
-//     const Steinberg::IPtr<Steinberg::Vst::IComponent> component =
-//         instance.interfaces.component;
-//     const Steinberg::IPtr<Steinberg::Vst::IAudioProcessor> audio_processor =
-//         instance.interfaces.audio_processor;
+    const clap_plugin_t* plugin = instance.plugin.get();
+    const clap_plugin_audio_ports_t* audio_ports =
+        instance.extensions.audio_ports;
+    if (!audio_ports) {
+        return std::nullopt;
+    }
 
-//     if (!instance.process_setup || !component || !audio_processor) {
-//         return std::nullopt;
-//     }
+    // We'll query the plugin for its audio port layouts, and then create
+    // calculate the offsets in a large memory buffer for the different audio
+    // channels. The offsets for each audio channel are in bytes because CLAP
+    // allows the host to send mixed 32-bit and 64-bit audio if the plugin
+    // advertises supporting 64-bit audio. Because of that we'll allocate enough
+    // space for double precision audio when the port supports it, and then
+    // we'll simply only use the first half of that space if the host sends
+    // 32-bit audio.
+    uint32_t current_offset = 0;
+    auto create_bus_offsets = [&](bool is_input) {
+        const uint32_t num_ports = audio_ports->count(plugin, is_input);
 
-//     // We'll query the plugin for its audio bus layouts, and then create
-//     // calculate the offsets in a large memory buffer for the different audio
-//     // channels. The offsets for each audio channel are in samples (since
-//     // they'll be used with pointer arithmetic in `AudioShmBuffer`).
-//     uint32_t current_offset = 0;
+        std::vector<std::vector<uint32_t>> offsets(num_ports);
+        for (uint32_t port = 0; port < num_ports; port++) {
+            clap_audio_port_info_t info{};
+            assert(audio_ports->get(plugin, port, is_input, &info));
 
-//     auto create_bus_offsets = [&, &setup = instance.process_setup](
-//                                   Steinberg::Vst::BusDirection direction) {
-//         const auto num_busses =
-//             component->getBusCount(Steinberg::Vst::kAudio, direction);
+            // If the audio port supports 64-bit audio, then we should allocate
+            // enough memory for that
+            const size_t sample_size =
+                (info.flags & CLAP_AUDIO_PORT_SUPPORTS_64BITS) != 0
+                    ? sizeof(double)
+                    : sizeof(float);
 
-//         // This function is also run from `IAudioProcessor::setActive()`.
-//         // According to the docs this does not need to be realtime-safe, but we
-//         // should at least still try to not do anything expensive when no work
-//         // needs to be done.
-//         llvm::SmallVector<llvm::SmallVector<uint32_t, 32>, 16> bus_offsets(
-//             num_busses);
-//         for (int bus = 0; bus < num_busses; bus++) {
-//             Steinberg::Vst::SpeakerArrangement speaker_arrangement{};
-//             audio_processor->getBusArrangement(direction, bus,
-//                                                speaker_arrangement);
+            offsets[port].resize(info.channel_count);
+            for (size_t channel = 0; channel < info.channel_count; channel++) {
+                offsets[port][channel] = current_offset;
+                current_offset +=
+                    activate_request.max_frames_count * sample_size;
+            }
+        }
 
-//             const size_t num_channels =
-//                 std::bitset<sizeof(Steinberg::Vst::SpeakerArrangement) * 8>(
-//                     speaker_arrangement)
-//                     .count();
-//             bus_offsets[bus].resize(num_channels);
+        return offsets;
+    };
 
-//             for (size_t channel = 0; channel < num_channels; channel++) {
-//                 bus_offsets[bus][channel] = current_offset;
-//                 current_offset += setup->maxSamplesPerBlock;
-//             }
-//         }
+    // Creating the audio buffer offsets for every channel in every bus will
+    // advance `current_offset` to keep pointing to the starting position for
+    // the next channel
+    const auto input_bus_offsets = create_bus_offsets(true);
+    const auto output_bus_offsets = create_bus_offsets(false);
+    const uint32_t buffer_size = current_offset;
 
-//         return bus_offsets;
-//     };
+    // If this function has been called previously and the size did not change,
+    // then we should not do any work
+    if (instance.process_buffers &&
+        instance.process_buffers->config_.size == buffer_size) {
+        return std::nullopt;
+    }
 
-//     // Creating the audio buffer offsets for every channel in every bus will
-//     // advacne `current_offset` to keep pointing to the starting position for
-//     // the next channel
-//     const auto input_bus_offsets =
-//     create_bus_offsets(Steinberg::Vst::kInput); const auto output_bus_offsets
-//     = create_bus_offsets(Steinberg::Vst::kOutput);
+    // We'll set up these shared memory buffers on the Wine side first, and then
+    // when this request returns we'll do the same thing on the native plugin
+    // side
+    AudioShmBuffer::Config buffer_config{
+        .name = sockets_.base_dir_.filename().string() + "-" +
+                std::to_string(instance_id),
+        .size = buffer_size,
+        .input_offsets = std::move(input_bus_offsets),
+        .output_offsets = std::move(output_bus_offsets)};
+    if (!instance.process_buffers) {
+        instance.process_buffers.emplace(buffer_config);
+    } else {
+        instance.process_buffers->resize(buffer_config);
+    }
 
-//     // The size of the buffer is in bytes, and it will depend on whether the
-//     // host is going to pass 32-bit or 64-bit audio to the plugin
-//     const bool double_precision =
-//         instance.process_setup->symbolicSampleSize ==
-//         Steinberg::Vst::kSample64;
-//     const uint32_t buffer_size =
-//         current_offset * (double_precision ? sizeof(double) : sizeof(float));
+    // After setting up the shared memory buffer, we need to create a vector of
+    // channel audio pointers for every bus. These will then be assigned to the
+    // `AudioBusBuffers` objects in the `ClapProcess` struct in
+    // `ClapProcess::reconstruct()` before passing the reconstructed process
+    // data to `clap_plugin::process()`.
+    auto set_port_pointers =
+        [&, &process_buffers =
+                instance.process_buffers]<std::invocable<uint32_t, uint32_t> F>(
+            std::vector<std::vector<void*>>& port_pointers,
+            const std::vector<std::vector<uint32_t>>& offsets,
+            F&& get_channel_pointer) {
+            port_pointers.resize(offsets.size());
+            for (size_t port = 0; port < offsets.size(); port++) {
+                port_pointers[port].resize(offsets[port].size());
+                for (size_t channel = 0; channel < offsets[port].size();
+                     channel++) {
+                    port_pointers[port][channel] =
+                        get_channel_pointer(port, channel);
+                }
+            }
+        };
 
-//     // If this function has been called previously and the size did not change,
-//     // then we should not do any work
-//     if (instance.process_buffers &&
-//         instance.process_buffers->config_.size == buffer_size) {
-//         return std::nullopt;
-//     }
+    set_port_pointers(instance.process_buffers_input_pointers,
+                      instance.process_buffers->config_.input_offsets,
+                      [&process_buffers = instance.process_buffers](
+                          uint32_t port, uint32_t channel) {
+                          // This can be treated as either a `double*` or a
+                          // `float*` depending on what the port supports and
+                          // what the host gives us
+                          return process_buffers->input_channel_ptr<void>(
+                              port, channel);
+                      });
+    set_port_pointers(instance.process_buffers_output_pointers,
+                      instance.process_buffers->config_.output_offsets,
+                      [&process_buffers = instance.process_buffers](
+                          uint32_t port, uint32_t channel) {
+                          return process_buffers->output_channel_ptr<void>(
+                              port, channel);
+                      });
 
-//     // Because the above check should be super cheap, we'll now need to convert
-//     // the stack allocated SmallVectors to regular heap vectors
-//     std::vector<std::vector<uint32_t>> input_bus_offsets_vector;
-//     input_bus_offsets_vector.reserve(input_bus_offsets.size());
-//     for (const auto& channel_offsets : input_bus_offsets) {
-//         input_bus_offsets_vector.push_back(
-//             std::vector(channel_offsets.begin(), channel_offsets.end()));
-//     }
-
-//     std::vector<std::vector<uint32_t>> output_bus_offsets_vector;
-//     output_bus_offsets_vector.reserve(output_bus_offsets.size());
-//     for (const auto& channel_offsets : output_bus_offsets) {
-//         output_bus_offsets_vector.push_back(
-//             std::vector(channel_offsets.begin(), channel_offsets.end()));
-//     }
-
-//     // We'll set up these shared memory buffers on the Wine side first, and then
-//     // when this request returns we'll do the same thing on the native plugin
-//     // side
-//     AudioShmBuffer::Config buffer_config{
-//         .name = sockets_.base_dir_.filename().string() + "-" +
-//                 std::to_string(instance_id),
-//         .size = buffer_size,
-//         .input_offsets = std::move(input_bus_offsets_vector),
-//         .output_offsets = std::move(output_bus_offsets_vector)};
-//     if (!instance.process_buffers) {
-//         instance.process_buffers.emplace(buffer_config);
-//     } else {
-//         instance.process_buffers->resize(buffer_config);
-//     }
-
-//     // After setting up the shared memory buffer, we need to create a vector of
-//     // channel audio pointers for every bus. These will then be assigned to the
-//     // `AudioBusBuffers` objects in the `ProcessData` struct in
-//     // `YaProcessData::reconstruct()` before passing the reconstructed process
-//     // data to `IAudioProcessor::process()`.
-//     auto set_bus_pointers =
-//         [&]<std::invocable<uint32_t, uint32_t> F>(
-//             std::vector<std::vector<void*>>& bus_pointers,
-//             const std::vector<std::vector<uint32_t>>& bus_offsets,
-//             F&& get_channel_pointer) {
-//             bus_pointers.resize(bus_offsets.size());
-
-//             for (size_t bus = 0; bus < bus_offsets.size(); bus++) {
-//                 bus_pointers[bus].resize(bus_offsets[bus].size());
-
-//                 for (size_t channel = 0; channel < bus_offsets[bus].size();
-//                      channel++) {
-//                     bus_pointers[bus][channel] =
-//                         get_channel_pointer(bus, channel);
-//                 }
-//             }
-//         };
-
-//     set_bus_pointers(
-//         instance.process_buffers_input_pointers,
-//         instance.process_buffers->config_.input_offsets,
-//         [&, &instance = instance](uint32_t bus, uint32_t channel) -> void* {
-//             if (double_precision) {
-//                 return instance.process_buffers->input_channel_ptr<double>(
-//                     bus, channel);
-//             } else {
-//                 return instance.process_buffers->input_channel_ptr<float>(
-//                     bus, channel);
-//             }
-//         });
-//     set_bus_pointers(
-//         instance.process_buffers_output_pointers,
-//         instance.process_buffers->config_.output_offsets,
-//         [&, &instance = instance](uint32_t bus, uint32_t channel) -> void* {
-//             if (double_precision) {
-//                 return instance.process_buffers->output_channel_ptr<double>(
-//                     bus, channel);
-//             } else {
-//                 return instance.process_buffers->output_channel_ptr<float>(
-//                     bus, channel);
-//             }
-//         });
-
-//     return buffer_config;
-// }
+    return buffer_config;
+}
 
 void ClapBridge::register_plugin_instance(
     const clap_plugin* plugin,

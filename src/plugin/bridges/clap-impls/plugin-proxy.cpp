@@ -110,7 +110,7 @@ bool CLAP_ABI clap_plugin_proxy::plugin_activate(
     uint32_t min_frames_count,
     uint32_t max_frames_count) {
     assert(plugin && plugin->plugin_data);
-    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+    auto self = static_cast<clap_plugin_proxy*>(plugin->plugin_data);
 
     const clap::plugin::ActivateResponse response =
         self->bridge_.send_main_thread_message(
@@ -119,8 +119,16 @@ bool CLAP_ABI clap_plugin_proxy::plugin_activate(
                                    .min_frames_count = min_frames_count,
                                    .max_frames_count = max_frames_count});
 
+    // The shared memory audio buffers are allocated here so we can use them
+    // during audio processing
     if (response.updated_audio_buffers_config) {
-        // TODO: Set up the shared memory audio buffers
+        if (!self->process_buffers_) {
+            self->process_buffers_.emplace(
+                *response.updated_audio_buffers_config);
+        } else {
+            self->process_buffers_->resize(
+                *response.updated_audio_buffers_config);
+        }
     }
 
     return response.result;

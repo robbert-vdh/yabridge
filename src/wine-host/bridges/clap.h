@@ -116,22 +116,18 @@ struct ClapPluginInstance {
     std::optional<AudioShmBuffer> process_buffers;
 
     /**
-     * Pointers to the per-bus input channels in process_buffers so we can pass
-     * them to the plugin after a call to `YaProcessData::reconstruct()`. These
-     * can be either `float*` or `double*`, so we sadly have to use void
-     * pointers here.
-     *
-     * FIXME: Update docstring for CLAP
+     * Pointers to the per-port input channels in process_buffers so we can pass
+     * them to the plugin after a call to `ClapProcess::reconstruct()`. These
+     * can be either `float*` or `double*` depending on the audio port's flags,
+     * so we're using void pointers here.
      */
     std::vector<std::vector<void*>> process_buffers_input_pointers;
 
     /**
-     * Pointers to the per-bus output channels in process_buffers so we can pass
-     * them to the plugin after a call to `YaProcessData::reconstruct()`. These
-     * can be either `float*` or `double*`, so we sadly have to use void
-     * pointers here.
-     *
-     * FIXME: Update docstring for CLAP
+     * Pointers to the per-port output channels in process_buffers so we can
+     * pass them to the plugin after a call to `ClapProcess::reconstruct()`.
+     * These can be either `float*` or `double*` depending on the audio port's
+     * flags, so we're using void pointers here.
      */
     std::vector<std::vector<void*>> process_buffers_output_pointers;
 
@@ -367,7 +363,8 @@ class ClapBridge : public HostBridge {
      * audio buffers have been set up and the audio buffer size has not changed.
      */
     std::optional<AudioShmBuffer::Config> setup_shared_audio_buffers(
-        size_t instance_id);
+        size_t instance_id,
+        const clap::plugin::Activate& activate_request);
 
     /**
      * Add a plugin and its host to it to `object_instances_`. The plugin's
