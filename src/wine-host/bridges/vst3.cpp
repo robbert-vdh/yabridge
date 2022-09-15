@@ -1376,8 +1376,15 @@ std::optional<AudioShmBuffer::Config> Vst3Bridge::setup_shared_audio_buffers(
 
     // We'll query the plugin for its audio bus layouts, and then create
     // calculate the offsets in a large memory buffer for the different audio
-    // channels. The offsets for each audio channel are in samples (since
-    // they'll be used with pointer arithmetic in `AudioShmBuffer`).
+    // channels. The offsets for each audio channel are in bytes because CLAP
+    // allows some ports to be 32-bit only while other others are mixed 32-bit
+    // and 64-bit if the plugin opts in to it, and the plugin only knows what
+    // format it receives during the process call.
+    const bool double_precision =
+        instance.process_setup->symbolicSampleSize == Steinberg::Vst::kSample64;
+    const size_t sample_size =
+        (double_precision ? sizeof(double) : sizeof(float));
+
     uint32_t current_offset = 0;
 
     auto create_bus_offsets = [&, &setup = instance.process_setup](
@@ -1404,7 +1411,7 @@ std::optional<AudioShmBuffer::Config> Vst3Bridge::setup_shared_audio_buffers(
 
             for (size_t channel = 0; channel < num_channels; channel++) {
                 bus_offsets[bus][channel] = current_offset;
-                current_offset += setup->maxSamplesPerBlock;
+                current_offset += setup->maxSamplesPerBlock * sample_size;
             }
         }
 
@@ -1419,10 +1426,7 @@ std::optional<AudioShmBuffer::Config> Vst3Bridge::setup_shared_audio_buffers(
 
     // The size of the buffer is in bytes, and it will depend on whether the
     // host is going to pass 32-bit or 64-bit audio to the plugin
-    const bool double_precision =
-        instance.process_setup->symbolicSampleSize == Steinberg::Vst::kSample64;
-    const uint32_t buffer_size =
-        current_offset * (double_precision ? sizeof(double) : sizeof(float));
+    const uint32_t buffer_size = current_offset;
 
     // If this function has been called previously and the size did not change,
     // then we should not do any work

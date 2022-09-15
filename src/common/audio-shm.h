@@ -75,17 +75,22 @@ class AudioShmBuffer {
         uint32_t size;
 
         /**
-         * Offsets **in samples** within the shared memory object for an input
+         * Offsets **in bytes** within the shared memory object for an input
          * audio channel, indexed by `[bus][channel]`. For VST2 plugins the bus
          * will always be 0. This can be used later to retrieve a pointer to the
          * audio channel.
+         *
+         * The offsets are in bytes rather than in samples to accommodate mixed
+         * 32-bit and 64-bit IO. This is allowed in CLAP. If a port can do
+         * either 32-bit or 64-bit audio, we'll reserve enough space for 64-bit
+         * samples and then just not use the latter half if the host ends up
+         * using 32-bit samples.
          */
         std::vector<std::vector<uint32_t>> input_offsets;
         /**
-         * Offsets **in samples** within the shared memory object for an output
-         * audio channel, indexed by `[bus][channel]`. For VST2 plugins the bus
-         * will always be 0. This can be used later to retrieve a pointer to the
-         * audio channel.
+         * Offsets **in bytes** within the shared memory object for an output
+         * audio channel, indexed by `[bus][channel]`. See `input_offsets` for
+         * more details.
          */
         std::vector<std::vector<uint32_t>> output_offsets;
 
@@ -151,16 +156,16 @@ class AudioShmBuffer {
     template <typename T>
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     T* input_channel_ptr(const uint32_t bus, const uint32_t channel) noexcept {
-        return reinterpret_cast<T*>(shm_bytes_) +
-               config_.input_offsets[bus][channel];
+        return reinterpret_cast<T*>(shm_bytes_ +
+                                    config_.input_offsets[bus][channel]);
     }
 
     template <typename T>
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     const T* input_channel_ptr(const uint32_t bus,
                                const uint32_t channel) const noexcept {
-        return reinterpret_cast<const T*>(shm_bytes_) +
-               config_.input_offsets[bus][channel];
+        return reinterpret_cast<const T*>(shm_bytes_ +
+                                          config_.input_offsets[bus][channel]);
     }
 
     /**
@@ -171,16 +176,16 @@ class AudioShmBuffer {
     template <typename T>
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     T* output_channel_ptr(const uint32_t bus, const uint32_t channel) noexcept {
-        return reinterpret_cast<T*>(shm_bytes_) +
-               config_.output_offsets[bus][channel];
+        return reinterpret_cast<T*>(shm_bytes_ +
+                                    config_.output_offsets[bus][channel]);
     }
 
     template <typename T>
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     const T* output_channel_ptr(const uint32_t bus,
                                 const uint32_t channel) const noexcept {
-        return reinterpret_cast<const T*>(shm_bytes_) +
-               config_.output_offsets[bus][channel];
+        return reinterpret_cast<const T*>(shm_bytes_ +
+                                          config_.output_offsets[bus][channel]);
     }
 
     Config config_;

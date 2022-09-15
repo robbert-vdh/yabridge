@@ -795,30 +795,34 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
 }
 
 AudioShmBuffer::Config Vst2Bridge::setup_shared_audio_buffers() {
+    assert(max_samples_per_block_);
+
     // We'll first compute the size and channel offsets for our buffer based on
     // the information already passed to us by the host. The offsets for each
-    // audio channel are in samples (since they'll be used with pointer
-    // arithmetic in `AudioShmBuffer`), and we'll only use the first bus (since
-    // VST2 plugins don't have multiple audio busses).
-    assert(max_samples_per_block_);
+    // audio channel are in bytes because CLAP allows some ports to be 32-bit
+    // only while other others are mixed 32-bit and 64-bit if the plugin opts in
+    // to it, and the plugin only knows what format it receives during the
+    // process call.
+    const size_t sample_size =
+        (double_precision_ ? sizeof(double) : sizeof(float));
+
     uint32_t current_offset = 0;
 
     std::vector<uint32_t> input_channel_offsets(plugin_->numInputs);
     for (int channel = 0; channel < plugin_->numInputs; channel++) {
         input_channel_offsets[channel] = current_offset;
-        current_offset += *max_samples_per_block_;
+        current_offset += *max_samples_per_block_ * sample_size;
     }
 
     std::vector<uint32_t> output_channel_offsets(plugin_->numOutputs);
     for (int channel = 0; channel < plugin_->numOutputs; channel++) {
         output_channel_offsets[channel] = current_offset;
-        current_offset += *max_samples_per_block_;
+        current_offset += *max_samples_per_block_ * sample_size;
     }
 
     // The size of the buffer is in bytes, and it will depend on whether the
     // host is going to pass 32-bit or 64-bit audio to the plugin
-    const uint32_t buffer_size =
-        current_offset * (double_precision_ ? sizeof(double) : sizeof(float));
+    const uint32_t buffer_size = current_offset;
 
     // We'll set up these shared memory buffers on the Wine side first, and then
     // when this request returns we'll do the same thing on the native plugin
