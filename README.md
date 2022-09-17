@@ -120,7 +120,7 @@ Please let me know if there are any issues with other hosts.
    default locations within a Wine prefix just like you would on Windows, and
    you yabridgectl then manages those plugin directories for you. That way you
    only need to run a single command whenever you install or remove a plugin.
-   Both yabridge and yabridgectl will autoamtically detect your yabridge
+   Both yabridge and yabridgectl will automatically detect your yabridge
    installation if you used one of the installation methods described above.
 
 3. To tell yabridgectl where it can find your Windows VST2 and VST3 plugins, you
