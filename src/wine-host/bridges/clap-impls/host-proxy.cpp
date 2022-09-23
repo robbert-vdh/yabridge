@@ -51,6 +51,11 @@ clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
       ext_note_ports_vtable(clap_host_note_ports_t{
           .supported_dialects = ext_note_ports_supported_dialects,
           .rescan = ext_note_ports_rescan,
+      }),
+      ext_params_vtable(clap_host_params_t{
+          .rescan = ext_params_rescan,
+          .clear = ext_params_clear,
+          .request_flush = ext_params_request_flush,
       }) {}
 
 const void* CLAP_ABI
@@ -66,6 +71,9 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
     } else if (self->supported_extensions_.supports_note_ports &&
                strcmp(extension_id, CLAP_EXT_NOTE_PORTS) == 0) {
         extension_ptr = &self->ext_note_ports_vtable;
+    } else if (self->supported_extensions_.supports_params &&
+               strcmp(extension_id, CLAP_EXT_PARAMS) == 0) {
+        extension_ptr = &self->ext_params_vtable;
     }
 
     self->bridge_.logger_.log_extension_query("clap_host::get_extension",
@@ -160,4 +168,36 @@ void CLAP_ABI clap_host_proxy::ext_note_ports_rescan(const clap_host_t* host,
 
     self->bridge_.send_main_thread_message(clap::ext::note_ports::host::Rescan{
         .owner_instance_id = self->owner_instance_id(), .flags = flags});
+}
+
+void CLAP_ABI
+clap_host_proxy::ext_params_rescan(const clap_host_t* host,
+                                   clap_param_rescan_flags flags) {
+    assert(host && host->host_data);
+    auto self = static_cast<clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_main_thread_message(clap::ext::params::host::Rescan{
+        .owner_instance_id = self->owner_instance_id(), .flags = flags});
+}
+
+void CLAP_ABI clap_host_proxy::ext_params_clear(const clap_host_t* host,
+                                                clap_id param_id,
+                                                clap_param_clear_flags flags) {
+    assert(host && host->host_data);
+    auto self = static_cast<clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_main_thread_message(clap::ext::params::host::Clear{
+        .owner_instance_id = self->owner_instance_id(),
+        .param_id = param_id,
+        .flags = flags});
+}
+
+void CLAP_ABI
+clap_host_proxy::ext_params_request_flush(const clap_host_t* host) {
+    assert(host && host->host_data);
+    auto self = static_cast<clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_main_thread_message(
+        clap::ext::params::host::RequestFlush{.owner_instance_id =
+                                                  self->owner_instance_id()});
 }

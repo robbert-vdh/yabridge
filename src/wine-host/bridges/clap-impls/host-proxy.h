@@ -20,6 +20,7 @@
 
 #include <clap/ext/audio-ports.h>
 #include <clap/ext/note-ports.h>
+#include <clap/ext/params.h>
 #include <clap/host.h>
 
 #include "../../common/serialization/clap/plugin-factory.h"
@@ -75,6 +76,13 @@ class clap_host_proxy {
     static void CLAP_ABI ext_note_ports_rescan(const clap_host_t* host,
                                                uint32_t flags);
 
+    static void CLAP_ABI ext_params_rescan(const clap_host_t* host,
+                                           clap_param_rescan_flags flags);
+    static void CLAP_ABI ext_params_clear(const clap_host_t* host,
+                                          clap_id param_id,
+                                          clap_param_clear_flags flags);
+    static void CLAP_ABI ext_params_request_flush(const clap_host_t* host);
+
     /**
      * The extensions supported by the host, set just before calling
      * `clap_plugin::init()` on the bridged plugin. We'll allow the plugin to
@@ -99,6 +107,7 @@ class clap_host_proxy {
     // called `clap_plugin::init()`.
     const clap_host_audio_ports ext_audio_ports_vtable;
     const clap_host_note_ports ext_note_ports_vtable;
+    const clap_host_params ext_params_vtable;
 
     /**
      * Keeps track of whether there are pending host callbacks. Used to prevent

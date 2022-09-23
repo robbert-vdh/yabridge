@@ -30,7 +30,9 @@ ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
     : audio_ports(static_cast<const clap_plugin_audio_ports_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_AUDIO_PORTS))),
       note_ports(static_cast<const clap_plugin_note_ports_t*>(
-          plugin.get_extension(&plugin, CLAP_EXT_NOTE_PORTS))) {}
+          plugin.get_extension(&plugin, CLAP_EXT_NOTE_PORTS))),
+      params(static_cast<const clap_plugin_params_t*>(
+          plugin.get_extension(&plugin, CLAP_EXT_PARAMS))) {}
 
 ClapPluginExtensions::ClapPluginExtensions() noexcept {}
 
@@ -38,7 +40,8 @@ clap::plugin::SupportedPluginExtensions ClapPluginExtensions::supported()
     const noexcept {
     return clap::plugin::SupportedPluginExtensions{
         .supports_audio_ports = audio_ports != nullptr,
-        .supports_note_ports = note_ports != nullptr};
+        .supports_note_ports = note_ports != nullptr,
+        .supports_params = params != nullptr};
 }
 
 ClapPluginInstance::ClapPluginInstance(
@@ -362,6 +365,81 @@ void ClapBridge::run() {
                         .result = std::nullopt};
                 }
             },
+            [&](const clap::ext::params::plugin::Count& request)
+                -> clap::ext::params::plugin::Count::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in code code paths
+                return instance.extensions.params->count(instance.plugin.get());
+            },
+            [&](const clap::ext::params::plugin::GetInfo& request)
+                -> clap::ext::params::plugin::GetInfo::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in code code paths
+                clap_param_info_t param_info{};
+                if (instance.extensions.params->get_info(instance.plugin.get(),
+                                                         request.param_index,
+                                                         &param_info)) {
+                    return clap::ext::params::plugin::GetInfoResponse{
+                        .result = param_info};
+                } else {
+                    return clap::ext::params::plugin::GetInfoResponse{
+                        .result = std::nullopt};
+                }
+            },
+            [&](const clap::ext::params::plugin::GetValue& request)
+                -> clap::ext::params::plugin::GetValue::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in code code paths
+                double value;
+                if (instance.extensions.params->get_value(
+                        instance.plugin.get(), request.param_id, &value)) {
+                    return clap::ext::params::plugin::GetValueResponse{
+                        .result = value};
+                } else {
+                    return clap::ext::params::plugin::GetValueResponse{
+                        .result = std::nullopt};
+                }
+            },
+            [&](const clap::ext::params::plugin::ValueToText& request)
+                -> clap::ext::params::plugin::ValueToText::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in code code paths
+                std::array<char, 1024> display{0};
+                if (instance.extensions.params->value_to_text(
+                        instance.plugin.get(), request.param_id, request.value,
+                        display.data(), display.size())) {
+                    return clap::ext::params::plugin::ValueToTextResponse{
+                        .result = display.data()};
+                } else {
+                    return clap::ext::params::plugin::ValueToTextResponse{
+                        .result = std::nullopt};
+                }
+            },
+            [&](const clap::ext::params::plugin::TextToValue& request)
+                -> clap::ext::params::plugin::TextToValue::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in code code paths
+                double value;
+                if (instance.extensions.params->text_to_value(
+                        instance.plugin.get(), request.param_id,
+                        request.display.c_str(), &value)) {
+                    return clap::ext::params::plugin::TextToValueResponse{
+                        .result = value};
+                } else {
+                    return clap::ext::params::plugin::TextToValueResponse{
+                        .result = std::nullopt};
+                }
+            },
         });
 }
 
@@ -569,6 +647,17 @@ void ClapBridge::register_plugin_instance(
                         instance.plugin->reset(instance.plugin.get());
 
                         return Ack{};
+                    },
+                    [&](const clap::ext::params::plugin::Flush& request)
+                        -> clap::ext::params::plugin::Flush::Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        // TODO: Implement this
+                        // instance.extensions.params->flush(instance.plugin.get(),
+                        //                                   in, out);
+
+                        return clap::ext::params::plugin::FlushResponse{};
                     },
                 });
         });

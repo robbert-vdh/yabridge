@@ -148,6 +148,48 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
 
                     return Ack{};
                 },
+                [&](const clap::ext::params::host::Rescan& request)
+                    -> clap::ext::params::host::Rescan::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    plugin_proxy
+                        .run_on_main_thread(
+                            [&, host = plugin_proxy.host_,
+                             params = plugin_proxy.host_extensions_.params]() {
+                                params->rescan(host, request.flags);
+                            })
+                        .wait();
+
+                    return Ack{};
+                },
+                [&](const clap::ext::params::host::Clear& request)
+                    -> clap::ext::params::host::Clear::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    plugin_proxy
+                        .run_on_main_thread(
+                            [&, host = plugin_proxy.host_,
+                             params = plugin_proxy.host_extensions_.params]() {
+                                params->clear(host, request.param_id,
+                                              request.flags);
+                            })
+                        .wait();
+
+                    return Ack{};
+                },
+                [&](const clap::ext::params::host::RequestFlush& request)
+                    -> clap::ext::params::host::RequestFlush::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    // This doesn't need to be called from the main thread
+                    plugin_proxy.host_extensions_.params->request_flush(
+                        plugin_proxy.host_);
+
+                    return Ack{};
+                },
             });
     });
 }

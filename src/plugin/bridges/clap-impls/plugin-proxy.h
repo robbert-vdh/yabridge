@@ -21,6 +21,7 @@
 
 #include <clap/ext/audio-ports.h>
 #include <clap/ext/note-ports.h>
+#include <clap/ext/params.h>
 #include <clap/plugin.h>
 #include <rigtorp/MPMCQueue.h>
 #include <function2/function2.hpp>
@@ -58,6 +59,7 @@ struct ClapHostExtensions {
 
     const clap_host_audio_ports_t* audio_ports = nullptr;
     const clap_host_note_ports_t* note_ports = nullptr;
+    const clap_host_params_t* params = nullptr;
 };
 
 /**
@@ -139,6 +141,26 @@ class clap_plugin_proxy {
                                             bool is_input,
                                             clap_note_port_info_t* info);
 
+    static uint32_t CLAP_ABI ext_params_count(const clap_plugin_t* plugin);
+    static bool CLAP_ABI ext_params_get_info(const clap_plugin_t* plugin,
+                                             uint32_t param_index,
+                                             clap_param_info_t* param_info);
+    static bool CLAP_ABI ext_params_get_value(const clap_plugin_t* plugin,
+                                              clap_id param_id,
+                                              double* value);
+    static bool CLAP_ABI ext_params_value_to_text(const clap_plugin_t* plugin,
+                                                  clap_id param_id,
+                                                  double value,
+                                                  char* display,
+                                                  uint32_t size);
+    static bool CLAP_ABI ext_params_text_to_value(const clap_plugin_t* plugin,
+                                                  clap_id param_id,
+                                                  const char* display,
+                                                  double* value);
+    static void CLAP_ABI ext_params_flush(const clap_plugin_t* plugin,
+                                          const clap_input_events_t* in,
+                                          const clap_output_events_t* out);
+
     /**
      * Asynchronously run a function on the host's main thread, returning the
      * result as a future.
@@ -207,6 +229,7 @@ class clap_plugin_proxy {
     // `clap_plugin::init()`.
     const clap_plugin_audio_ports ext_audio_ports_vtable;
     const clap_plugin_note_ports ext_note_ports_vtable;
+    const clap_plugin_params ext_params_vtable;
 
     /**
      * The extensions supported by the bridged plugin. Set after a successful

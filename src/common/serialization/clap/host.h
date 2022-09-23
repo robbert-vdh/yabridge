@@ -84,11 +84,13 @@ struct SupportedHostExtensions {
     // method
     bool supports_audio_ports = false;
     bool supports_note_ports = false;
+    bool supports_params = false;
 
     template <typename S>
     void serialize(S& s) {
         s.value1b(supports_audio_ports);
         s.value1b(supports_note_ports);
+        s.value1b(supports_params);
     }
 };
 

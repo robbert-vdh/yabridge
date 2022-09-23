@@ -53,7 +53,16 @@ using ClapMainThreadControlRequest =
                  clap::ext::audio_ports::plugin::Count,
                  clap::ext::audio_ports::plugin::Get,
                  clap::ext::note_ports::plugin::Count,
-                 clap::ext::note_ports::plugin::Get>;
+                 clap::ext::note_ports::plugin::Get,
+                 clap::ext::params::plugin::Count,
+                 clap::ext::params::plugin::GetInfo,
+                 clap::ext::params::plugin::GetValue,
+                 clap::ext::params::plugin::ValueToText,
+                 clap::ext::params::plugin::TextToValue
+                 // Flush may be called from the audio thread and it may not be
+                 // called at the same time as process, so that's handled using
+                 // the audio thread handler
+                 >;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadControlRequest& payload) {
@@ -86,7 +95,8 @@ struct ClapAudioThreadControlRequest {
 
     using Payload = std::variant<clap::plugin::StartProcessing,
                                  clap::plugin::StopProcessing,
-                                 clap::plugin::Reset>;
+                                 clap::plugin::Reset,
+                                 clap::ext::params::plugin::Flush>;
 
     Payload payload;
 
@@ -131,7 +141,6 @@ struct ClapAudioThreadControlRequest {
  * the information we want or the operation we want to perform. A request of
  * type `ClapMainThreadCallbackRequest(T)` should send back a `T::Response`.
  */
-// TODO: Placeholder
 using ClapMainThreadCallbackRequest =
     std::variant<WantsConfiguration,
                  clap::host::RequestRestart,
@@ -139,7 +148,13 @@ using ClapMainThreadCallbackRequest =
                  clap::ext::audio_ports::host::IsRescanFlagSupported,
                  clap::ext::audio_ports::host::Rescan,
                  clap::ext::note_ports::host::SupportedDialects,
-                 clap::ext::note_ports::host::Rescan>;
+                 clap::ext::note_ports::host::Rescan,
+                 clap::ext::params::host::Rescan,
+                 clap::ext::params::host::Clear,
+                 // This doesn't need to be done on the main thread, but we
+                 // don't have an alternative per-plugin instance socket
+                 // available so this is probably fine
+                 clap::ext::params::host::RequestFlush>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadCallbackRequest& payload) {

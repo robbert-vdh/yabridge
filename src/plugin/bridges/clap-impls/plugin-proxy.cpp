@@ -22,7 +22,9 @@ ClapHostExtensions::ClapHostExtensions(const clap_host& host) noexcept
     : audio_ports(static_cast<const clap_host_audio_ports_t*>(
           host.get_extension(&host, CLAP_EXT_AUDIO_PORTS))),
       note_ports(static_cast<const clap_host_note_ports_t*>(
-          host.get_extension(&host, CLAP_EXT_NOTE_PORTS))) {}
+          host.get_extension(&host, CLAP_EXT_NOTE_PORTS))),
+      params(static_cast<const clap_host_params_t*>(
+          host.get_extension(&host, CLAP_EXT_PARAMS))) {}
 
 ClapHostExtensions::ClapHostExtensions() noexcept {}
 
@@ -30,7 +32,8 @@ clap::host::SupportedHostExtensions ClapHostExtensions::supported()
     const noexcept {
     return clap::host::SupportedHostExtensions{
         .supports_audio_ports = audio_ports != nullptr,
-        .supports_note_ports = note_ports != nullptr};
+        .supports_note_ports = note_ports != nullptr,
+        .supports_params = params != nullptr};
 }
 
 clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
@@ -62,6 +65,14 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
       ext_note_ports_vtable(clap_plugin_note_ports_t{
           .count = ext_note_ports_count,
           .get = ext_note_ports_get,
+      }),
+      ext_params_vtable(clap_plugin_params_t{
+          .count = ext_params_count,
+          .get_info = ext_params_get_info,
+          .get_value = ext_params_get_value,
+          .value_to_text = ext_params_value_to_text,
+          .text_to_value = ext_params_text_to_value,
+          .flush = ext_params_flush,
       }),
       // These function objects are relatively large, and we probably won't be
       // getting that many of them
@@ -196,6 +207,9 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
     } else if (self->supported_extensions_.supports_note_ports &&
                strcmp(id, CLAP_EXT_NOTE_PORTS) == 0) {
         extension_ptr = &self->ext_note_ports_vtable;
+    } else if (self->supported_extensions_.supports_params &&
+               strcmp(id, CLAP_EXT_PARAMS) == 0) {
+        extension_ptr = &self->ext_params_vtable;
     }
 
     self->bridge_.logger_.log_extension_query("clap_plugin::get_extension",
@@ -283,4 +297,114 @@ clap_plugin_proxy::ext_note_ports_get(const clap_plugin_t* plugin,
     } else {
         return false;
     }
+}
+
+uint32_t CLAP_ABI
+clap_plugin_proxy::ext_params_count(const clap_plugin_t* plugin) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::params::plugin::Count{.instance_id = self->instance_id()});
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_params_get_info(const clap_plugin_t* plugin,
+                                       uint32_t param_index,
+                                       clap_param_info_t* param_info) {
+    assert(plugin && plugin->plugin_data && param_info);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    const clap::ext::params::plugin::GetInfoResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::ext::params::plugin::GetInfo{
+                .instance_id = self->instance_id(),
+                .param_index = param_index});
+    if (response.result) {
+        response.result->reconstruct(*param_info);
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_params_get_value(const clap_plugin_t* plugin,
+                                        clap_id param_id,
+                                        double* value) {
+    assert(plugin && plugin->plugin_data && value);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    const clap::ext::params::plugin::GetValueResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::ext::params::plugin::GetValue{
+                .instance_id = self->instance_id(), .param_id = param_id});
+    if (response.result) {
+        *value = *response.result;
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_params_value_to_text(const clap_plugin_t* plugin,
+                                            clap_id param_id,
+                                            double value,
+                                            char* display,
+                                            uint32_t size) {
+    assert(plugin && plugin->plugin_data && display);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    const clap::ext::params::plugin::ValueToTextResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::ext::params::plugin::ValueToText{
+                .instance_id = self->instance_id(),
+                .param_id = param_id,
+                .value = value});
+    if (response.result) {
+        strlcpy_buffer(display, *response.result, size);
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_params_text_to_value(const clap_plugin_t* plugin,
+                                            clap_id param_id,
+                                            const char* display,
+                                            double* value) {
+    assert(plugin && plugin->plugin_data && display && value);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    const clap::ext::params::plugin::TextToValueResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::ext::params::plugin::TextToValue{
+                .instance_id = self->instance_id(),
+                .param_id = param_id,
+                .display = display});
+    if (response.result) {
+        *value = *response.result;
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void CLAP_ABI
+clap_plugin_proxy::ext_params_flush(const clap_plugin_t* plugin,
+                                    const clap_input_events_t* in,
+                                    const clap_output_events_t* out) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    // This may also be called on the audio thread and it is never called during
+    // process, so always using the audio thread here is safe
+    self->bridge_.send_audio_thread_message(
+        clap::ext::params::plugin::Flush{.instance_id = self->instance_id()});
 }
