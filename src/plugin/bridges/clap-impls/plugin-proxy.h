@@ -177,7 +177,7 @@ class clap_plugin_proxy {
      * The host's supported extensions. These will be populated in the
      * `clap_plugin::init()` call.
      */
-    ClapHostExtensions extensions_;
+    ClapHostExtensions host_extensions_;
 
    private:
     ClapPluginBridge& bridge_;

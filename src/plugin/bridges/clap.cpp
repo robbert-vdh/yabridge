@@ -91,7 +91,7 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                             return plugin_proxy
                                 .run_on_main_thread(
                                     [&, host = plugin_proxy.host_,
-                                     audio_ports = plugin_proxy.extensions_
+                                     audio_ports = plugin_proxy.host_extensions_
                                                        .audio_ports]() {
                                         return audio_ports
                                             ->is_rescan_flag_supported(
@@ -108,7 +108,7 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                         .run_on_main_thread(
                             [&, host = plugin_proxy.host_,
                              audio_ports =
-                                 plugin_proxy.extensions_.audio_ports]() {
+                                 plugin_proxy.host_extensions_.audio_ports]() {
                                 audio_ports->rescan(host, request.flags);
                             })
                         .wait();
@@ -125,7 +125,7 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                             return plugin_proxy
                                 .run_on_main_thread(
                                     [host = plugin_proxy.host_,
-                                     note_ports = plugin_proxy.extensions_
+                                     note_ports = plugin_proxy.host_extensions_
                                                       .note_ports]() {
                                         return note_ports->supported_dialects(
                                             host);
@@ -141,7 +141,7 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                         .run_on_main_thread(
                             [&, host = plugin_proxy.host_,
                              note_ports =
-                                 plugin_proxy.extensions_.note_ports]() {
+                                 plugin_proxy.host_extensions_.note_ports]() {
                                 note_ports->rescan(host, request.flags);
                             })
                         .wait();

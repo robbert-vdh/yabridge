@@ -75,12 +75,12 @@ bool CLAP_ABI clap_plugin_proxy::plugin_init(const struct clap_plugin* plugin) {
     // We'll store pointers to the host's extensions vtables, and then send
     // whether or not those extensions were supported as booleans to the Wine
     // plugin host so it can expose the same interfaces there.
-    self->extensions_ = ClapHostExtensions(*self->host_);
+    self->host_extensions_ = ClapHostExtensions(*self->host_);
 
     const clap::plugin::InitResponse response =
         self->bridge_.send_main_thread_message(clap::plugin::Init{
             .instance_id = self->instance_id(),
-            .supported_host_extensions = self->extensions_.supported()});
+            .supported_host_extensions = self->host_extensions_.supported()});
 
     // This determines which extensions the host is allowed to query in
     // `clap_plugin::get_extension()`
