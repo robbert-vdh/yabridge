@@ -63,6 +63,9 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
     if (self->supported_extensions_.supports_audio_ports &&
         strcmp(extension_id, CLAP_EXT_AUDIO_PORTS) == 0) {
         extension_ptr = &self->ext_audio_ports_vtable;
+    } else if (self->supported_extensions_.supports_note_ports &&
+               strcmp(extension_id, CLAP_EXT_NOTE_PORTS) == 0) {
+        extension_ptr = &self->ext_note_ports_vtable;
     }
 
     self->bridge_.logger_.log_extension_query("clap_host::get_extension",
