@@ -373,7 +373,26 @@ pub fn yabridge_vst3_home() -> PathBuf {
 
 /// Get the path where CLAP modules bridged by yabridgectl should be placed in. This is a
 /// subdirectory of `~/.clap` so we can easily clean up leftover files without interfering with
-/// other native plugins.
+/// other native plugins. Unless `$CLAP_PATH` is set, in which case this is a subdirectory if the
+/// first direcotry in `$CLAP_PATH`.
 pub fn yabridge_clap_home() -> PathBuf {
-    Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_CLAP_HOME)
+    // Noone's going to be running yabridgectl on Windows, but this would need to be a semicolon
+    // there
+    #[cfg(unix)]
+    const PATH_SEPARATOR: char = ':';
+
+    let clap_path = env::var("CLAP_PATH").ok();
+    let clap_path: Option<PathBuf> = clap_path
+        .as_ref()
+        .map(|path| {
+            path.split_once(PATH_SEPARATOR)
+                .map(|(first_path, _)| first_path)
+                .unwrap_or(path)
+        })
+        .map(|path| Path::new(path).join(YABRIDGE_PREFIX));
+
+    // If `$CLAP_PATH` is not set (which it probably won't be), then we'll fall back to `~/.clap`
+    clap_path.unwrap_or_else(|| {
+        Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_CLAP_HOME)
+    })
 }
