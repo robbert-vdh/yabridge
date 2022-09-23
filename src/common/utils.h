@@ -160,6 +160,13 @@ size_t strlcpy_buffer(char dst[N], const std::string& src) {
 }
 
 /**
+ * An implementation of BSD's `strlcpy()` function specialized for copying C++
+ * strings to char buffers with runtime known lengths.
+ * https://linux.die.net/man/3/strlcpy
+ */
+size_t strlcpy_buffer(char* dst, const std::string& src, size_t size);
+
+/**
  * A RAII wrapper that will temporarily enable the FTZ flag so that denormals
  * are automatically flushed to zero, returning to whatever the flag was
  * previously when it drops out of scope.

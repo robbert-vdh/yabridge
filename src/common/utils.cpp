@@ -94,6 +94,19 @@ bool is_watchdog_timer_disabled() {
     return disable_watchdog_env && disable_watchdog_env == "1"sv;
 }
 
+size_t strlcpy_buffer(char* dst, const std::string& src, size_t size) {
+    if (size == 0) {
+        return src.size();
+    }
+
+    // Make sure there's always room for a null terminator
+    const size_t copy_len = std::min(size - 1, src.size());
+    std::copy(src.c_str(), src.c_str() + copy_len, dst);
+    dst[copy_len] = 0;
+
+    return src.size();
+}
+
 ScopedFlushToZero::ScopedFlushToZero() noexcept {
     old_ftz_mode_ = _MM_GET_FLUSH_ZERO_MODE();
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
