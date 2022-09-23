@@ -112,7 +112,7 @@ pub fn show_status(config: &Config) -> Result<()> {
         }
     }
     // These are, but just from a UX point of view it might be nice to have as a reminder
-    println!("VST3 location: '{}'\n", yabridge_vst3_home().display());
+    println!("VST3 location: '{}'", yabridge_vst3_home().display());
     println!("CLAP location: '{}'\n", yabridge_clap_home().display());
 
     let files = config.files();
@@ -124,7 +124,7 @@ pub fn show_status(config: &Config) -> Result<()> {
                 files.vst2_chainloader_arch,
             );
             println!(
-                "{VST3_CHAINLOADER_NAME}: {}\n",
+                "{VST3_CHAINLOADER_NAME}: {}",
                 files
                     .vst3_chainloader
                     .as_ref()
