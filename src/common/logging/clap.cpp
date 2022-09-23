@@ -173,6 +173,64 @@ bool ClapLogger::log_request(
 }
 
 bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::params::plugin::Count& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin_params::count()";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::params::plugin::GetInfo& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_params::get_info(param_index = "
+                << request.param_index << ", *param_info)";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::params::plugin::GetValue& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_params::get_value(param_id = "
+                << request.param_id << ", *value)";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::params::plugin::ValueToText& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_params::value_to_text(param_id = "
+                << request.param_id << ", value = " << request.value
+                << ", *display, size)";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::params::plugin::TextToValue& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_params::text_to_value(param_id = "
+                << request.param_id << ", display = \"" << request.display
+                << "\", *value)";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::params::plugin::Flush& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        // TODO: Add event counts
+        message << request.instance_id
+                << ": clap_plugin_params::flush(*in, *out)";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::plugin::StartProcessing& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id << ": clap_plugin::start_processing()";
@@ -251,6 +309,34 @@ bool ClapLogger::log_request(
         message << request.owner_instance_id
                 << ": clap_host_note_ports::rescan(flag = "
                 << std::bitset<sizeof(request.flags) * 8>(request.flags) << ")";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::params::host::Rescan& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_params::rescan(flags = "
+                << std::bitset<sizeof(request.flags) * 8>(request.flags) << ")";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::params::host::Clear& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_params::clear(param_id = " << request.param_id
+                << ", flags = "
+                << std::bitset<sizeof(request.flags) * 8>(request.flags) << ")";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::params::host::RequestFlush& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_params::request_flush()";
     });
 }
 
@@ -333,7 +419,7 @@ void ClapLogger::log_response(
     const clap::ext::audio_ports::plugin::GetResponse& response) {
     return log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
-            message << "true, <audio_port_info_t* for \""
+            message << "true, <clap_audio_port_info_t* for \""
                     << response.result->name << "\">";
         } else {
             message << "false";
@@ -346,11 +432,69 @@ void ClapLogger::log_response(
     const clap::ext::note_ports::plugin::GetResponse& response) {
     return log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
-            message << "true, <note_port_info_t* for \""
+            message << "true, <clap_note_port_info_t* for \""
                     << response.result->name << "\">";
         } else {
             message << "false";
         }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::params::plugin::GetInfoResponse& response) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.result) {
+            message << "true, <clap_param_info_t* for \""
+                    << response.result->name << "\">";
+        } else {
+            message << "false";
+        }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::params::plugin::GetValueResponse& response) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.result) {
+            message << "true, " << *response.result;
+        } else {
+            message << "false";
+        }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::params::plugin::ValueToTextResponse& response) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.result) {
+            message << "true, \"" << *response.result << '"';
+        } else {
+            message << "false";
+        }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::params::plugin::TextToValueResponse& response) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.result) {
+            message << "true, " << *response.result;
+        } else {
+            message << "false";
+        }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::params::plugin::FlushResponse& response) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
+        // TODO: Log output event count
+        message << "TODO: Log output event count";
     });
 }
 

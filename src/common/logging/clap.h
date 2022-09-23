@@ -85,6 +85,18 @@ class ClapLogger {
                      const clap::ext::note_ports::plugin::Count&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::note_ports::plugin::Get&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::params::plugin::Count&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::params::plugin::GetInfo&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::params::plugin::GetValue&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::params::plugin::ValueToText&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::params::plugin::TextToValue&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::params::plugin::Flush&);
 
     bool log_request(bool is_host_plugin, const clap::plugin::StartProcessing&);
     bool log_request(bool is_host_plugin, const clap::plugin::StopProcessing&);
@@ -102,6 +114,12 @@ class ClapLogger {
                      const clap::ext::note_ports::host::SupportedDialects&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::note_ports::host::Rescan&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::params::host::Rescan&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::params::host::Clear&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::params::host::RequestFlush&);
 
     void log_response(bool is_host_plugin, const Ack&);
     void log_response(bool is_host_plugin,
@@ -115,6 +133,16 @@ class ClapLogger {
                       const clap::ext::audio_ports::plugin::GetResponse&);
     void log_response(bool is_host_plugin,
                       const clap::ext::note_ports::plugin::GetResponse&);
+    void log_response(bool is_host_plugin,
+                      const clap::ext::params::plugin::GetInfoResponse&);
+    void log_response(bool is_host_plugin,
+                      const clap::ext::params::plugin::GetValueResponse&);
+    void log_response(bool is_host_plugin,
+                      const clap::ext::params::plugin::ValueToTextResponse&);
+    void log_response(bool is_host_plugin,
+                      const clap::ext::params::plugin::TextToValueResponse&);
+    void log_response(bool is_host_plugin,
+                      const clap::ext::params::plugin::FlushResponse&);
 
     void log_response(bool is_host_plugin, const Configuration&);
 
