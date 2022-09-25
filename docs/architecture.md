@@ -5,18 +5,16 @@
   - [Editor embedding](#editor-embedding)
 - [VST2 plugins](#vst2-plugins)
 - [VST3 plugins](#vst3-plugins)
+- [CLAP plugins](#clap-plugins)
 - [Audio buffers](#audio-buffers)
 
 ## General architecture
 
 The project consists of multiple components: a number of native Linux plugin
-libraries (`libyabridge-vst2.so` for VST2 plugins, and `libyabridge-vst3.so` for
-VST3 plugins), matching chainloader libraries (`libyabridge-chainloader-vst2.so`
-for VST2 plugins, and `libyabridge-chainloader-vst3.so` for VST3 plugins) that
-act as stubs to load the former libraries, and a few different plugin host
-applications that can run under Wine
-(`yabridge-host.exe`/`yabridge-host.exe.so`, and
-`yabridge-host-32.exe`/`yabridge-host-32.exe.so` if the bitbridge is enabled).
+libraries for different plugin formats, matching chainloader libraries that act
+as stubs to load the former libraries, and one or two plugin host applications
+that can run under Wine depending on whether or not the bitbridging
+functionality has been enabled.
 
 The main idea is that when the host loads a (chainloader) plugin, the plugin
 will try to locate the corresponding Windows plugin, and it will then start a
@@ -93,7 +91,8 @@ that the calling thread can handle other tasks through another IO context. See
 `Vst3HostBridge::send_mutually_recursive_message()` and
 `Vst3Bridge::send_mutually_recursive_message()` for the actual implementation
 with more details. This applies to the functions related to resizing VST3
-editors on both the Linux and the Wine sides.
+editors on both the Linux and the Wine sides. Similar implementations are used
+for VST2 and CLAP plugins where needed.
 
 ### Editor embedding
 
@@ -254,6 +253,16 @@ itself up. Because of binary compatibility reasons destructors in the VST3 SDK
 are non-virtual, but we can safely make them virtual in our case.
 `Vst3*ProxyImpl` then provides an implementation for all of the applicable
 `IFoo` interfaces that perform function calls using those message structs.
+
+## CLAP plugins
+
+Fundamentally the CLAP bridging is very similar to the VST3 bridging. Yabridge
+has both plugin and host proxy objects that expose the same extensions as the
+plugin and host objects they are proxying. The main difference with the VST3
+approach is that thread requirements are more strictly upheld since CLAP
+documents thread requirements for every function calls, and that each plugin
+instance now has an audio thread callback socket for the handful of interfaces
+that use those.
 
 ## Audio buffers
 
