@@ -25,6 +25,7 @@
 #include "clap/ext/audio-ports.h"
 #include "clap/ext/note-ports.h"
 #include "clap/ext/params.h"
+#include "clap/ext/tail.h"
 #include "clap/host.h"
 #include "clap/plugin-factory.h"
 #include "common.h"
