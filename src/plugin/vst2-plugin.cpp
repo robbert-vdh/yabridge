@@ -28,6 +28,13 @@ namespace fs = ghc::filesystem;
 // (EnergyXT being the only known host on Linux that uses the `main` entry
 // point).
 
+// TODO: At some point we could use a similar per-library bridging strategy as
+//       we use for VST3 and CLAP. We can use ELF constructors and destructors
+//       to hook into the loading and unloading of this library, and then assign
+//       multiple VST2 plugin instances to the same host process. That would
+//       make VST2 bridging a bit more efficient without having to set up plugin
+//       groups.
+
 // These plugin libraries can be used in one of two ways: they can either be
 // loaded directly (the yabridge <4.0 way), or they can be loaded indirectly
 // from `yabridge-chainloader-*.so` (the yabridge >=4.0 way). The advantage of
