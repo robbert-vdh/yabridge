@@ -101,6 +101,7 @@ class ClapLogger {
     bool log_request(bool is_host_plugin, const clap::plugin::StartProcessing&);
     bool log_request(bool is_host_plugin, const clap::plugin::StopProcessing&);
     bool log_request(bool is_host_plugin, const clap::plugin::Reset&);
+    bool log_request(bool is_host_plugin, const clap::ext::tail::plugin::Get&);
 
     bool log_request(bool is_host_plugin, const WantsConfiguration&);
     bool log_request(bool is_host_plugin, const clap::host::RequestRestart&);
@@ -120,6 +121,9 @@ class ClapLogger {
                      const clap::ext::params::host::Clear&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::params::host::RequestFlush&);
+
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::tail::host::Changed&);
 
     void log_response(bool is_host_plugin, const Ack&);
     void log_response(bool is_host_plugin,
