@@ -121,7 +121,7 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
      */
     template <typename T>
     typename T::Response send_audio_thread_message(const T& object) {
-        return sockets_.send_audio_thread_message(
+        return sockets_.send_audio_thread_control_message(
             object, std::pair<ClapLogger&, bool>(logger_, true));
     }
 

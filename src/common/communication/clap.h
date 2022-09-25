@@ -38,8 +38,8 @@
  * of these connections are capable of spawning additional sockets and threads
  * as needed.
  *
- * Every plugin instance gets a dedicated audio thread socket so they can be
- * addressed concurrently.
+ * Every plugin instance gets dedicated audio thread control and callback so
+ * they can be addressed concurrently.
  *
  * @tparam Thread The thread implementation to use. On the Linux side this
  *   should be `std::jthread` and on the Wine side this should be `Win32Thread`.
@@ -190,12 +190,12 @@ class ClapSockets final : public Sockets {
      *   of these objects need to have an `instance_id` field.
      */
     template <typename T>
-    typename T::Response send_audio_thread_message(
+    typename T::Response send_audio_thread_control_message(
         const T& object,
         std::optional<std::pair<ClapLogger&, bool>> logging) {
         typename T::Response response_object;
-        return receive_audio_thread_message_into(object, response_object,
-                                                 object.instance_id, logging);
+        return receive_audio_thread_control_message_into(
+            object, response_object, object.instance_id, logging);
     }
 
     /**
@@ -203,11 +203,11 @@ class ClapSockets final : public Sockets {
      * directly get the instance ID there.
      */
     template <typename T>
-    typename T::Response send_audio_thread_message(
+    typename T::Response send_audio_thread_control_message(
         const MessageReference<T>& object_ref,
         std::optional<std::pair<ClapLogger&, bool>> logging) {
         typename T::Response response_object;
-        return receive_audio_thread_message_into(
+        return receive_audio_thread_control_message_into(
             object_ref, response_object, object_ref.get().instance_id, logging);
     }
 
@@ -219,11 +219,11 @@ class ClapSockets final : public Sockets {
      * TODO: Think of a better name for this
      */
     template <typename T>
-    typename T::Response& receive_audio_thread_message_into(
+    typename T::Response& receive_audio_thread_control_message_into(
         const MessageReference<T>& request_ref,
         typename T::Response& response_ref,
         std::optional<std::pair<ClapLogger&, bool>> logging) {
-        return receive_audio_thread_message_into(
+        return receive_audio_thread_control_message_into(
             request_ref, response_ref, request_ref.get().instance_id, logging);
     }
 
@@ -253,7 +253,7 @@ class ClapSockets final : public Sockets {
      * static variable for our buffers sending.
      */
     template <typename T>
-    typename T::Response& receive_audio_thread_message_into(
+    typename T::Response& receive_audio_thread_control_message_into(
         const T& object,
         typename T::Response& response_object,
         size_t instance_id,
