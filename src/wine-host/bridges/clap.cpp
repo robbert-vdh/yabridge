@@ -324,7 +324,7 @@ void ClapBridge::run() {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
                 // We'll ignore the main thread requirement for simple array
-                // lookups to avoid the synchronisation costs in code code paths
+                // lookups to avoid the synchronisation costs in hot code paths
                 return instance.extensions.audio_ports->count(
                     instance.plugin.get(), request.is_input);
             },
@@ -333,7 +333,7 @@ void ClapBridge::run() {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
                 // We'll ignore the main thread requirement for simple array
-                // lookups to avoid the synchronisation costs in code code paths
+                // lookups to avoid the synchronisation costs in hot code paths
                 clap_audio_port_info_t info{};
                 if (instance.extensions.audio_ports->get(
                         instance.plugin.get(), request.index, request.is_input,
@@ -358,7 +358,7 @@ void ClapBridge::run() {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
                 // We'll ignore the main thread requirement for simple array
-                // lookups to avoid the synchronisation costs in code code paths
+                // lookups to avoid the synchronisation costs in hot code paths
                 return instance.extensions.note_ports->count(
                     instance.plugin.get(), request.is_input);
             },
@@ -367,7 +367,7 @@ void ClapBridge::run() {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
                 // We'll ignore the main thread requirement for simple array
-                // lookups to avoid the synchronisation costs in code code paths
+                // lookups to avoid the synchronisation costs in hot code paths
                 clap_note_port_info_t info{};
                 if (instance.extensions.note_ports->get(
                         instance.plugin.get(), request.index, request.is_input,
@@ -384,7 +384,7 @@ void ClapBridge::run() {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
                 // We'll ignore the main thread requirement for simple array
-                // lookups to avoid the synchronisation costs in code code paths
+                // lookups to avoid the synchronisation costs in hot code paths
                 return instance.extensions.params->count(instance.plugin.get());
             },
             [&](const clap::ext::params::plugin::GetInfo& request)
@@ -392,7 +392,7 @@ void ClapBridge::run() {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
                 // We'll ignore the main thread requirement for simple array
-                // lookups to avoid the synchronisation costs in code code paths
+                // lookups to avoid the synchronisation costs in hot code paths
                 clap_param_info_t param_info{};
                 if (instance.extensions.params->get_info(instance.plugin.get(),
                                                          request.param_index,
@@ -409,7 +409,7 @@ void ClapBridge::run() {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
                 // We'll ignore the main thread requirement for simple array
-                // lookups to avoid the synchronisation costs in code code paths
+                // lookups to avoid the synchronisation costs in hot code paths
                 double value;
                 if (instance.extensions.params->get_value(
                         instance.plugin.get(), request.param_id, &value)) {
@@ -425,7 +425,7 @@ void ClapBridge::run() {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
                 // We'll ignore the main thread requirement for simple array
-                // lookups to avoid the synchronisation costs in code code paths
+                // lookups to avoid the synchronisation costs in hot code paths
                 std::array<char, 1024> display{0};
                 if (instance.extensions.params->value_to_text(
                         instance.plugin.get(), request.param_id, request.value,
@@ -442,7 +442,7 @@ void ClapBridge::run() {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
                 // We'll ignore the main thread requirement for simple array
-                // lookups to avoid the synchronisation costs in code code paths
+                // lookups to avoid the synchronisation costs in hot code paths
                 double value;
                 if (instance.extensions.params->text_to_value(
                         instance.plugin.get(), request.param_id,
