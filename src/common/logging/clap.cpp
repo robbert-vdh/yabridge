@@ -18,10 +18,6 @@
 
 #include <bitset>
 
-#include <clap/ext/audio-ports.h>
-
-#include "../serialization/clap.h"
-
 ClapLogger::ClapLogger(Logger& generic_logger) : logger_(generic_logger) {}
 
 void ClapLogger::log_extension_query(const char* where,
