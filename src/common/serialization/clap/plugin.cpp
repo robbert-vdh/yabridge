@@ -17,6 +17,8 @@
 #include "plugin.h"
 
 #include <clap/ext/audio-ports.h>
+#include <clap/ext/note-ports.h>
+#include <clap/ext/params.h>
 
 #include "version.h"
 
@@ -74,6 +76,13 @@ const clap_plugin_descriptor_t* Descriptor::get() const {
     };
 
     return &clap_descriptor;
+}
+
+std::array<std::pair<bool, const char*>, 3> SupportedPluginExtensions::list()
+    const noexcept {
+    return {std::pair(supports_audio_ports, CLAP_EXT_AUDIO_PORTS),
+            std::pair(supports_note_ports, CLAP_EXT_NOTE_PORTS),
+            std::pair(supports_params, CLAP_EXT_PARAMS)};
 }
 
 }  // namespace plugin

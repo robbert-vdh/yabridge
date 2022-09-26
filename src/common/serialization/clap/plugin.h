@@ -113,11 +113,16 @@ struct Descriptor {
  * created by `ClapPluginExtensions::supported()`.
  */
 struct SupportedPluginExtensions {
-    // Don't forget to add new extensions to the logger and to the serialize
-    // method
+    // Don't forget to add new extensions to below method
     bool supports_audio_ports = false;
     bool supports_note_ports = false;
     bool supports_params = false;
+
+    /**
+     * Get a list of `<bool, extension_name>` tuples for the supported
+     * extensions. Used during logging.
+     */
+    std::array<std::pair<bool, const char*>, 3> list() const noexcept;
 
     template <typename S>
     void serialize(S& s) {
