@@ -218,15 +218,6 @@ bool ClapLogger::log_request(
 }
 
 bool ClapLogger::log_request(bool is_host_plugin,
-                             const clap::ext::params::plugin::Flush& request) {
-    return log_request_base(is_host_plugin, [&](auto& message) {
-        // TODO: Add event counts
-        message << request.instance_id
-                << ": clap_plugin_params::flush(*in, *out)";
-    });
-}
-
-bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::plugin::StartProcessing& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id << ": clap_plugin::start_processing()";
@@ -244,6 +235,15 @@ bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::plugin::Reset& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id << ": clap_plugin::reset()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::params::plugin::Flush& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        // TODO: Add event counts
+        message << request.instance_id
+                << ": clap_plugin_params::flush(*in, *out)";
     });
 }
 

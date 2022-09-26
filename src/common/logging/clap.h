@@ -95,12 +95,12 @@ class ClapLogger {
                      const clap::ext::params::plugin::ValueToText&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::params::plugin::TextToValue&);
-    bool log_request(bool is_host_plugin,
-                     const clap::ext::params::plugin::Flush&);
 
     bool log_request(bool is_host_plugin, const clap::plugin::StartProcessing&);
     bool log_request(bool is_host_plugin, const clap::plugin::StopProcessing&);
     bool log_request(bool is_host_plugin, const clap::plugin::Reset&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::params::plugin::Flush&);
     bool log_request(bool is_host_plugin, const clap::ext::tail::plugin::Get&);
 
     bool log_request(bool is_host_plugin, const WantsConfiguration&);
