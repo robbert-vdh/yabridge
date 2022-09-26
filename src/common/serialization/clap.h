@@ -61,11 +61,7 @@ using ClapMainThreadControlRequest =
                  clap::ext::params::plugin::GetInfo,
                  clap::ext::params::plugin::GetValue,
                  clap::ext::params::plugin::ValueToText,
-                 clap::ext::params::plugin::TextToValue
-                 // Flush may be called from the audio thread and it may not be
-                 // called at the same time as process, so that's handled using
-                 // the audio thread handler
-                 >;
+                 clap::ext::params::plugin::TextToValue>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadControlRequest& payload) {
