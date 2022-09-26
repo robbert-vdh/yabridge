@@ -197,8 +197,9 @@ class Vst3Sockets final : public Sockets {
         const T& object,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
         typename T::Response response_object;
-        return receive_audio_processor_message_into(
-            object, response_object, object.instance_id, logging);
+        return audio_processor_sockets_.at(object.instance_id)
+            .receive_into(object, response_object, logging,
+                          audio_processor_buffer());
     }
 
     /**
@@ -210,8 +211,9 @@ class Vst3Sockets final : public Sockets {
         const MessageReference<T>& object_ref,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
         typename T::Response response_object;
-        return receive_audio_processor_message_into(
-            object_ref, response_object, object_ref.get().instance_id, logging);
+        return audio_processor_sockets_.at(object_ref.get().instance_id)
+            .receive_into(object_ref, response_object, logging,
+                          audio_processor_buffer());
     }
 
     /**
@@ -226,8 +228,9 @@ class Vst3Sockets final : public Sockets {
         const MessageReference<T>& request_ref,
         typename T::Response& response_ref,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
-        return receive_audio_processor_message_into(
-            request_ref, response_ref, request_ref.get().instance_id, logging);
+        return audio_processor_sockets_.at(request_ref.get().instance_id)
+            .receive_into(request_ref, response_ref, logging,
+                          audio_processor_buffer());
     }
 
     /**
@@ -253,21 +256,14 @@ class Vst3Sockets final : public Sockets {
 
    private:
     /**
-     * The actual implementation for `send_audio_processor_message` and
-     * `receive_audio_processor_message_into`. Here we keep a thread local
-     * static variable for our buffers sending.
+     * Get the shared thread local serialization buffer for audio processors.
+     * This is defined here so the buffer can be shared regardless of which `T`
+     * is being sent.
      */
-    template <typename T>
-    typename T::Response& receive_audio_processor_message_into(
-        const T& object,
-        typename T::Response& response_object,
-        size_t instance_id,
-        std::optional<std::pair<Vst3Logger&, bool>> logging) {
+    SerializationBufferBase& audio_processor_buffer() {
         thread_local SerializationBuffer<2048> audio_processor_buffer{};
 
-        return audio_processor_sockets_.at(instance_id)
-            .receive_into(object, response_object, logging,
-                          audio_processor_buffer);
+        return audio_processor_buffer;
     }
 
     asio::io_context& io_context_;

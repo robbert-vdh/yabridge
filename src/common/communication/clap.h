@@ -295,8 +295,9 @@ class ClapSockets final : public Sockets {
         const T& object,
         std::optional<std::pair<ClapLogger&, bool>> logging) {
         typename T::Response response_object;
-        return receive_audio_thread_control_message_into(
-            object, response_object, object.instance_id, logging);
+        return audio_thread_sockets_.at(object.instance_id)
+            .control_.receive_into(object, response_object, logging,
+                                   audio_thread_buffer());
     }
 
     /**
@@ -308,8 +309,9 @@ class ClapSockets final : public Sockets {
         const MessageReference<T>& object_ref,
         std::optional<std::pair<ClapLogger&, bool>> logging) {
         typename T::Response response_object;
-        return receive_audio_thread_control_message_into(
-            object_ref, response_object, object_ref.get().instance_id, logging);
+        return audio_thread_sockets_.at(object_ref.get().instance_id)
+            .control_.receive_into(object_ref, response_object, logging,
+                                   audio_thread_buffer());
     }
 
     /**
@@ -324,8 +326,9 @@ class ClapSockets final : public Sockets {
         const MessageReference<T>& request_ref,
         typename T::Response& response_ref,
         std::optional<std::pair<ClapLogger&, bool>> logging) {
-        return receive_audio_thread_control_message_into(
-            request_ref, response_ref, request_ref.get().instance_id, logging);
+        return audio_thread_sockets_.at(request_ref.get().instance_id)
+            .control_.receive_into(request_ref, response_ref, logging,
+                                   audio_thread_buffer());
     }
 
     /**
@@ -343,11 +346,9 @@ class ClapSockets final : public Sockets {
         const T& object,
         std::optional<std::pair<ClapLogger&, bool>> logging) {
         typename T::Response response_object;
-        thread_local SerializationBuffer<2048> audio_thread_buffer{};
-
         return audio_thread_sockets_.at(object.owner_instance_id)
             .callback_.receive_into(object, response_object, logging,
-                                    audio_thread_buffer);
+                                    audio_thread_buffer());
     }
 
     /**
@@ -371,21 +372,14 @@ class ClapSockets final : public Sockets {
 
    private:
     /**
-     * The actual implementation for `send_audio_thread_message` and
-     * `receive_audio_thread_message_into`. Here we keep a thread local
-     * static variable for our buffers sending.
+     * Get the shared thread local serialization buffer for audio threads. This
+     * is defined here so the buffer can be shared regardless of which `T` is
+     * being sent.
      */
-    template <typename T>
-    typename T::Response& receive_audio_thread_control_message_into(
-        const T& object,
-        typename T::Response& response_object,
-        size_t instance_id,
-        std::optional<std::pair<ClapLogger&, bool>> logging) {
-        thread_local SerializationBuffer<256> audio_thread_buffer{};
+    SerializationBufferBase& audio_thread_buffer() {
+        thread_local SerializationBuffer<2048> audio_thread_buffer{};
 
-        return audio_thread_sockets_.at(instance_id)
-            .control_.receive_into(object, response_object, logging,
-                                   audio_thread_buffer);
+        return audio_thread_buffer;
     }
 
     asio::io_context& io_context_;
