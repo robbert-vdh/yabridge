@@ -197,7 +197,7 @@ clap_host_proxy::ext_params_request_flush(const clap_host_t* host) {
     assert(host && host->host_data);
     auto self = static_cast<clap_host_proxy*>(host->host_data);
 
-    self->bridge_.send_main_thread_message(
+    self->bridge_.send_audio_thread_message(
         clap::ext::params::host::RequestFlush{.owner_instance_id =
                                                   self->owner_instance_id()});
 }

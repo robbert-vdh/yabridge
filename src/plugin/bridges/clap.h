@@ -116,8 +116,8 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
     }
 
     /**
-     * Send an a message to a plugin instance's audio thread. This is separate
-     * from `send_message()`, which shares one socket for all plugin instances.
+     * Send a message to a plugin instance's audio thread. This is separate from
+     * `send_message()`, which shares one socket for all plugin instances.
      */
     template <typename T>
     typename T::Response send_audio_thread_message(const T& object) {

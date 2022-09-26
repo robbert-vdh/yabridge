@@ -223,8 +223,6 @@ struct FlushResponse {
     }
 };
 
-// TODO: This can be either a main thread or an audio thread function call
-//       depending on whether or not the plugin is active
 /**
  * Message struct for `clap_plugin_params::flush()`.
  */

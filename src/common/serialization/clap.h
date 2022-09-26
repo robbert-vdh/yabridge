@@ -151,11 +151,7 @@ using ClapMainThreadCallbackRequest =
                  clap::ext::note_ports::host::SupportedDialects,
                  clap::ext::note_ports::host::Rescan,
                  clap::ext::params::host::Rescan,
-                 clap::ext::params::host::Clear,
-                 // This doesn't need to be done on the main thread, but we
-                 // don't have an alternative per-plugin instance socket
-                 // available so this is probably fine
-                 clap::ext::params::host::RequestFlush>;
+                 clap::ext::params::host::Clear>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadCallbackRequest& payload) {
@@ -177,7 +173,9 @@ void serialize(S& s, ClapMainThreadCallbackRequest& payload) {
  *       used.
  */
 using ClapAudioThreadCallbackRequest =
-    std::variant<WantsConfiguration, clap::ext::tail::host::Changed>;
+    std::variant<WantsConfiguration,
+                 clap::ext::params::host::RequestFlush,
+                 clap::ext::tail::host::Changed>;
 
 template <typename S>
 void serialize(S& s, ClapAudioThreadCallbackRequest& payload) {
