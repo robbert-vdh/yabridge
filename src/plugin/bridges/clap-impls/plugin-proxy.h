@@ -17,6 +17,7 @@
 #pragma once
 
 #include <future>
+#include <thread>
 #include <vector>
 
 #include <clap/ext/audio-ports.h>
@@ -200,6 +201,13 @@ class clap_plugin_proxy {
      * `clap_plugin::init()` call.
      */
     ClapHostExtensions host_extensions_;
+
+    /**
+     * A handler for receiving audio thread callbacks. Set when initializing the
+     * plugin. This is needed to minimize blocking during those callbacks, as
+     * certain CLAP extensions allow callbacks on the audio thread.
+     */
+    std::jthread audio_thread_handler_;
 
    private:
     ClapPluginBridge& bridge_;

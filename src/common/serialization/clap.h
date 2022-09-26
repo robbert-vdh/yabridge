@@ -160,7 +160,29 @@ using ClapMainThreadCallbackRequest =
 template <typename S>
 void serialize(S& s, ClapMainThreadCallbackRequest& payload) {
     // All of the objects in `ClapMainThreadCallbackRequest` should have their
-    // own serialization function.
+    // own serialization function
+    s.ext(payload, bitsery::ext::InPlaceVariant{});
+}
+
+/**
+ * The same as `ClapMainThreadCallbackRequest`, but for callbacks that can be
+ * made from the audio therad. This uses a separate per-instance socket to avoid
+ * blocking or spawning up a new thread when multiple plugin instances make
+ * callbacks at the same time, or when they made simultaneous GUI and audio
+ * thread callbacks. A request of type `ClapAudioThreadCallbackRequest(T)`
+ * should send back a `T::Response`.
+ *
+ * TODO: I still have absolutely no idea why you enter template deduction hell
+ *       if you remove the `WantsConfiguration` entry. This is not actually
+ *       used.
+ */
+using ClapAudioThreadCallbackRequest =
+    std::variant<WantsConfiguration, clap::ext::tail::host::Changed>;
+
+template <typename S>
+void serialize(S& s, ClapAudioThreadCallbackRequest& payload) {
+    // All of the objects in `ClapAudioThreadCallbackRequest` should have their
+    // own serialization function
     s.ext(payload, bitsery::ext::InPlaceVariant{});
 }
 

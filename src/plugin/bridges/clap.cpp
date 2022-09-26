@@ -251,8 +251,48 @@ void ClapPluginBridge::register_plugin_proxy(
     plugin_proxies_.emplace(instance_id, std::move(plugin_proxy));
 
     // For optimization reaons we use dedicated sockets for functions that will
-    // be run in the audio processing loop
-    sockets_.add_audio_thread_and_connect(instance_id);
+    // be run in the audio processing loop.
+    // Every plugin instance gets its own audio thread along with sockets for
+    // host->plugin control messages and plugin->host callbacks
+    std::promise<void> socket_listening_latch;
+    plugin_proxies_.at(instance_id)
+        ->audio_thread_handler_ = std::jthread([&, instance_id]() {
+        set_realtime_priority(true);
+
+        // XXX: Like with VST2 worker threads, when using plugin groups the
+        //      thread names from different plugins will clash. Not a huge
+        //      deal probably, since duplicate thread names are still more
+        //      useful than no thread names.
+        const std::string thread_name = "audio-" + std::to_string(instance_id);
+        pthread_setname_np(pthread_self(), thread_name.c_str());
+
+        // Certain CLAP extensions allow audio thread callbacks, so we need
+        // a dedicated per-instance socket for that
+        sockets_.add_audio_thread_and_listen_callback(
+            instance_id, logger_, socket_listening_latch,
+            overload{
+                [&](const WantsConfiguration&) -> WantsConfiguration::Response {
+                    // FIXME: Without starting the variant with
+                    //        `WantsConfiguration` you enter template deduction
+                    //        hell. I haven't been able to figure out why.
+                    return {};
+                },
+                [&](const clap::ext::tail::host::Changed& request)
+                    -> clap::ext::tail::host::Changed::Response {
+                    // FIXME:
+                    // const auto& [instance, _] =
+                    //     get_instance(request.instance_id);
+
+                    // return instance.plugin->start_processing(
+                    //     instance.plugin.get());
+                },
+            });
+    });
+
+    // Wait for the new socket to be listening on before continuing. Otherwise
+    // the native plugin may try to connect to it before our thread is up and
+    // running.
+    socket_listening_latch.get_future().wait();
 }
 
 void ClapPluginBridge::unregister_plugin_proxy(size_t instance_id) {

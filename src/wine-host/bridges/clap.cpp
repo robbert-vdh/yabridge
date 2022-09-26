@@ -605,7 +605,8 @@ void ClapBridge::register_plugin_instance(
     object_instances_.emplace(
         instance_id, ClapPluginInstance(plugin, std::move(host_proxy)));
 
-    // Every plugin instance gets its own audio thread
+    // Every plugin instance gets its own audio thread along with sockets for
+    // host->plugin control messages and plugin->host callbacks
     std::promise<void> socket_listening_latch;
     object_instances_.at(instance_id).audio_thread_handler =
         Win32Thread([&, instance_id]() {
@@ -619,7 +620,7 @@ void ClapBridge::register_plugin_instance(
                 "audio-" + std::to_string(instance_id);
             pthread_setname_np(pthread_self(), thread_name.c_str());
 
-            sockets_.add_audio_thread_and_listen(
+            sockets_.add_audio_thread_and_listen_control(
                 instance_id, socket_listening_latch,
                 overload{
                     [&](const clap::plugin::StartProcessing& request)
