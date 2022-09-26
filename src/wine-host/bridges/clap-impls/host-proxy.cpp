@@ -56,6 +56,9 @@ clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
           .rescan = ext_params_rescan,
           .clear = ext_params_clear,
           .request_flush = ext_params_request_flush,
+      }),
+      ext_tail_vtable(clap_host_tail_t{
+          .changed = ext_tail_changed,
       }) {}
 
 const void* CLAP_ABI
@@ -74,6 +77,9 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
     } else if (self->supported_extensions_.supports_params &&
                strcmp(extension_id, CLAP_EXT_PARAMS) == 0) {
         extension_ptr = &self->ext_params_vtable;
+    } else if (self->supported_extensions_.supports_tail &&
+               strcmp(extension_id, CLAP_EXT_TAIL) == 0) {
+        extension_ptr = &self->ext_tail_vtable;
     }
 
     self->bridge_.logger_.log_extension_query("clap_host::get_extension",
@@ -135,7 +141,7 @@ bool CLAP_ABI clap_host_proxy::ext_audio_ports_is_rescan_flag_supported(
     const clap_host_t* host,
     uint32_t flag) {
     assert(host && host->host_data);
-    auto self = static_cast<clap_host_proxy*>(host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
     return self->bridge_.send_main_thread_message(
         clap::ext::audio_ports::host::IsRescanFlagSupported{
@@ -145,7 +151,7 @@ bool CLAP_ABI clap_host_proxy::ext_audio_ports_is_rescan_flag_supported(
 void CLAP_ABI clap_host_proxy::ext_audio_ports_rescan(const clap_host_t* host,
                                                       uint32_t flags) {
     assert(host && host->host_data);
-    auto self = static_cast<clap_host_proxy*>(host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
     self->bridge_.send_main_thread_message(clap::ext::audio_ports::host::Rescan{
         .owner_instance_id = self->owner_instance_id(), .flags = flags});
@@ -154,7 +160,7 @@ void CLAP_ABI clap_host_proxy::ext_audio_ports_rescan(const clap_host_t* host,
 uint32_t CLAP_ABI
 clap_host_proxy::ext_note_ports_supported_dialects(const clap_host_t* host) {
     assert(host && host->host_data);
-    auto self = static_cast<clap_host_proxy*>(host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
     return self->bridge_.send_main_thread_message(
         clap::ext::note_ports::host::SupportedDialects{
@@ -164,7 +170,7 @@ clap_host_proxy::ext_note_ports_supported_dialects(const clap_host_t* host) {
 void CLAP_ABI clap_host_proxy::ext_note_ports_rescan(const clap_host_t* host,
                                                      uint32_t flags) {
     assert(host && host->host_data);
-    auto self = static_cast<clap_host_proxy*>(host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
     self->bridge_.send_main_thread_message(clap::ext::note_ports::host::Rescan{
         .owner_instance_id = self->owner_instance_id(), .flags = flags});
@@ -174,7 +180,7 @@ void CLAP_ABI
 clap_host_proxy::ext_params_rescan(const clap_host_t* host,
                                    clap_param_rescan_flags flags) {
     assert(host && host->host_data);
-    auto self = static_cast<clap_host_proxy*>(host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
     self->bridge_.send_main_thread_message(clap::ext::params::host::Rescan{
         .owner_instance_id = self->owner_instance_id(), .flags = flags});
@@ -184,7 +190,7 @@ void CLAP_ABI clap_host_proxy::ext_params_clear(const clap_host_t* host,
                                                 clap_id param_id,
                                                 clap_param_clear_flags flags) {
     assert(host && host->host_data);
-    auto self = static_cast<clap_host_proxy*>(host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
     self->bridge_.send_main_thread_message(clap::ext::params::host::Clear{
         .owner_instance_id = self->owner_instance_id(),
@@ -195,9 +201,17 @@ void CLAP_ABI clap_host_proxy::ext_params_clear(const clap_host_t* host,
 void CLAP_ABI
 clap_host_proxy::ext_params_request_flush(const clap_host_t* host) {
     assert(host && host->host_data);
-    auto self = static_cast<clap_host_proxy*>(host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
     self->bridge_.send_audio_thread_message(
         clap::ext::params::host::RequestFlush{.owner_instance_id =
                                                   self->owner_instance_id()});
+}
+
+void CLAP_ABI clap_host_proxy::ext_tail_changed(const clap_host_t* host) {
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_audio_thread_message(clap::ext::tail::host::Changed{
+        .owner_instance_id = self->owner_instance_id()});
 }

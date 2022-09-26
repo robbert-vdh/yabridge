@@ -97,7 +97,8 @@ struct ClapAudioThreadControlRequest {
     using Payload = std::variant<clap::plugin::StartProcessing,
                                  clap::plugin::StopProcessing,
                                  clap::plugin::Reset,
-                                 clap::ext::params::plugin::Flush>;
+                                 clap::ext::params::plugin::Flush,
+                                 clap::ext::tail::plugin::Get>;
 
     Payload payload;
 

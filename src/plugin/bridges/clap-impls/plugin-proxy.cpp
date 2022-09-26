@@ -24,7 +24,9 @@ ClapHostExtensions::ClapHostExtensions(const clap_host& host) noexcept
       note_ports(static_cast<const clap_host_note_ports_t*>(
           host.get_extension(&host, CLAP_EXT_NOTE_PORTS))),
       params(static_cast<const clap_host_params_t*>(
-          host.get_extension(&host, CLAP_EXT_PARAMS))) {}
+          host.get_extension(&host, CLAP_EXT_PARAMS))),
+      tail(static_cast<const clap_host_tail_t*>(
+          host.get_extension(&host, CLAP_EXT_TAIL))) {}
 
 ClapHostExtensions::ClapHostExtensions() noexcept {}
 
@@ -33,7 +35,8 @@ clap::host::SupportedHostExtensions ClapHostExtensions::supported()
     return clap::host::SupportedHostExtensions{
         .supports_audio_ports = audio_ports != nullptr,
         .supports_note_ports = note_ports != nullptr,
-        .supports_params = params != nullptr};
+        .supports_params = params != nullptr,
+        .supports_tail = tail != nullptr};
 }
 
 clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
@@ -73,6 +76,9 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
           .value_to_text = ext_params_value_to_text,
           .text_to_value = ext_params_text_to_value,
           .flush = ext_params_flush,
+      }),
+      ext_tail_vtable(clap_plugin_tail_t{
+          .get = ext_tail_get,
       }),
       // These function objects are relatively large, and we probably won't be
       // getting that many of them
@@ -210,6 +216,9 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
     } else if (self->supported_extensions_.supports_params &&
                strcmp(id, CLAP_EXT_PARAMS) == 0) {
         extension_ptr = &self->ext_params_vtable;
+    } else if (self->supported_extensions_.supports_tail &&
+               strcmp(id, CLAP_EXT_TAIL) == 0) {
+        extension_ptr = &self->ext_tail_vtable;
     }
 
     self->bridge_.logger_.log_extension_query("clap_plugin::get_extension",
@@ -407,4 +416,12 @@ clap_plugin_proxy::ext_params_flush(const clap_plugin_t* plugin,
     // process, so always using the audio thread here is safe
     self->bridge_.send_audio_thread_message(
         clap::ext::params::plugin::Flush{.instance_id = self->instance_id()});
+}
+
+uint32_t CLAP_ABI clap_plugin_proxy::ext_tail_get(const clap_plugin_t* plugin) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_audio_thread_message(
+        clap::ext::tail::plugin::Get{.instance_id = self->instance_id()});
 }

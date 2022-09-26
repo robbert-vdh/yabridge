@@ -19,6 +19,7 @@
 #include <clap/ext/audio-ports.h>
 #include <clap/ext/note-ports.h>
 #include <clap/ext/params.h>
+#include <clap/ext/tail.h>
 
 namespace clap {
 namespace host {
@@ -30,11 +31,12 @@ Host::Host(const clap_host_t& original)
       url(original.url ? std::optional(original.url) : std::nullopt),
       version((assert(original.version), original.version)) {}
 
-std::array<std::pair<bool, const char*>, 3> SupportedHostExtensions::list()
+std::array<std::pair<bool, const char*>, 4> SupportedHostExtensions::list()
     const noexcept {
     return {std::pair(supports_audio_ports, CLAP_EXT_AUDIO_PORTS),
             std::pair(supports_note_ports, CLAP_EXT_NOTE_PORTS),
-            std::pair(supports_params, CLAP_EXT_PARAMS)};
+            std::pair(supports_params, CLAP_EXT_PARAMS),
+            std::pair(supports_tail, CLAP_EXT_TAIL)};
 }
 
 }  // namespace host

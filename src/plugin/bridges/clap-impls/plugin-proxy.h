@@ -23,6 +23,7 @@
 #include <clap/ext/audio-ports.h>
 #include <clap/ext/note-ports.h>
 #include <clap/ext/params.h>
+#include <clap/ext/tail.h>
 #include <clap/plugin.h>
 #include <rigtorp/MPMCQueue.h>
 #include <function2/function2.hpp>
@@ -61,6 +62,7 @@ struct ClapHostExtensions {
     const clap_host_audio_ports_t* audio_ports = nullptr;
     const clap_host_note_ports_t* note_ports = nullptr;
     const clap_host_params_t* params = nullptr;
+    const clap_host_tail_t* tail = nullptr;
 };
 
 /**
@@ -162,6 +164,8 @@ class clap_plugin_proxy {
                                           const clap_input_events_t* in,
                                           const clap_output_events_t* out);
 
+    static uint32_t CLAP_ABI ext_tail_get(const clap_plugin_t* plugin);
+
     /**
      * Asynchronously run a function on the host's main thread, returning the
      * result as a future.
@@ -235,9 +239,10 @@ class clap_plugin_proxy {
     // Extensions also have vtables. Whether or not we expose these to the host
     // depends on whether the plugin supported this extension when we called
     // `clap_plugin::init()`.
-    const clap_plugin_audio_ports ext_audio_ports_vtable;
-    const clap_plugin_note_ports ext_note_ports_vtable;
-    const clap_plugin_params ext_params_vtable;
+    const clap_plugin_audio_ports_t ext_audio_ports_vtable;
+    const clap_plugin_note_ports_t ext_note_ports_vtable;
+    const clap_plugin_params_t ext_params_vtable;
+    const clap_plugin_tail_t ext_tail_vtable;
 
     /**
      * The extensions supported by the bridged plugin. Set after a successful

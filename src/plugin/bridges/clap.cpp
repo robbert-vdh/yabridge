@@ -278,12 +278,13 @@ void ClapPluginBridge::register_plugin_proxy(
                 },
                 [&](const clap::ext::tail::host::Changed& request)
                     -> clap::ext::tail::host::Changed::Response {
-                    // FIXME:
-                    // const auto& [instance, _] =
-                    //     get_instance(request.instance_id);
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
 
-                    // return instance.plugin->start_processing(
-                    //     instance.plugin.get());
+                    plugin_proxy.host_extensions_.tail->changed(
+                        plugin_proxy.host_);
+
+                    return Ack{};
                 },
             });
     });

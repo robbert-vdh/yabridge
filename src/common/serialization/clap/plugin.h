@@ -117,6 +117,7 @@ struct SupportedPluginExtensions {
     bool supports_audio_ports = false;
     bool supports_note_ports = false;
     bool supports_params = false;
+    bool supports_tail = false;
 
     /**
      * Get a list of `<bool, extension_name>` tuples for the supported
@@ -129,6 +130,7 @@ struct SupportedPluginExtensions {
         s.value1b(supports_audio_ports);
         s.value1b(supports_note_ports);
         s.value1b(supports_params);
+        s.value1b(supports_tail);
     }
 };
 

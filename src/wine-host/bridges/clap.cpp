@@ -32,7 +32,9 @@ ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
       note_ports(static_cast<const clap_plugin_note_ports_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_NOTE_PORTS))),
       params(static_cast<const clap_plugin_params_t*>(
-          plugin.get_extension(&plugin, CLAP_EXT_PARAMS))) {}
+          plugin.get_extension(&plugin, CLAP_EXT_PARAMS))),
+      tail(static_cast<const clap_plugin_tail_t*>(
+          plugin.get_extension(&plugin, CLAP_EXT_TAIL))) {}
 
 ClapPluginExtensions::ClapPluginExtensions() noexcept {}
 
@@ -41,7 +43,8 @@ clap::plugin::SupportedPluginExtensions ClapPluginExtensions::supported()
     return clap::plugin::SupportedPluginExtensions{
         .supports_audio_ports = audio_ports != nullptr,
         .supports_note_ports = note_ports != nullptr,
-        .supports_params = params != nullptr};
+        .supports_params = params != nullptr,
+        .supports_tail = tail != nullptr};
 }
 
 ClapPluginInstance::ClapPluginInstance(
@@ -659,6 +662,14 @@ void ClapBridge::register_plugin_instance(
                         //                                   in, out);
 
                         return clap::ext::params::plugin::FlushResponse{};
+                    },
+                    [&](const clap::ext::tail::plugin::Get& request)
+                        -> clap::ext::tail::plugin::Get::Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return instance.extensions.tail->get(
+                            instance.plugin.get());
                     },
                 });
         });
