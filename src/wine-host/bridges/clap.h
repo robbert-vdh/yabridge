@@ -247,6 +247,17 @@ class ClapBridge : public HostBridge {
     }
 
     /**
+     * Send a callback message to the host from a plugin instance's audio
+     * thread. This is separate from `send_message()`, which shares one socket
+     * for all plugin instances.
+     */
+    template <typename T>
+    typename T::Response send_audio_thread_message(const T& object) {
+        return sockets_.send_audio_thread_callback_message(
+            object, std::pair<ClapLogger&, bool>(logger_, true));
+    }
+
+    /**
      * When called from the GUI thread, spawn a new thread and call
      * `send_message()` from there, and then handle functions passed by calls to
      * `do_mutual_recursion_on_gui_thread()` and

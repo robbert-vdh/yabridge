@@ -329,6 +329,28 @@ class ClapSockets final : public Sockets {
     }
 
     /**
+     * Send a message from the Wine plugin host to the native plugin to handle
+     * an audio thread callback. Since those functions are called from a hot
+     * loop we want every instance to have a dedicated socket and thread for
+     * handling those. These calls also always reuse buffers to minimize
+     * allocations.
+     *
+     * @tparam T Some object in the `ClapAudioThreadCallbackRequest` variant.
+     *   All of these objects need to have an `owner_instance_id` field.
+     */
+    template <typename T>
+    typename T::Response send_audio_thread_callback_message(
+        const T& object,
+        std::optional<std::pair<ClapLogger&, bool>> logging) {
+        typename T::Response response_object;
+        thread_local SerializationBuffer<256> audio_thread_buffer{};
+
+        return audio_thread_sockets_.at(object.owner_instance_id)
+            .callback_.receive_into(object, response_object, logging,
+                                    audio_thread_buffer);
+    }
+
+    /**
      * For sending messages from the host to the plugin. After we have a better
      * idea of what our communication model looks like we'll probably want to
      * provide an abstraction similar to `Vst2EventHandler`. This only handles
