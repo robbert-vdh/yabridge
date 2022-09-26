@@ -60,6 +60,7 @@ class Vst3Logger {
     // way we can filter out the log message for the response together with the
     // request.
 
+    // Main thread control messages
     bool log_request(bool is_host_plugin,
                      const Vst3PluginFactoryProxy::Construct&);
     bool log_request(bool is_host_plugin, const Vst3PlugViewProxy::Destruct&);
@@ -189,6 +190,7 @@ class Vst3Logger {
         bool is_host_plugin,
         const YaXmlRepresentationController::GetXmlRepresentationStream&);
 
+    // Audio processor control messages
     bool log_request(bool is_host_plugin,
                      const YaAudioProcessor::SetBusArrangements&);
     bool log_request(bool is_host_plugin,
@@ -216,6 +218,7 @@ class Vst3Logger {
     bool log_request(bool is_host_plugin,
                      const YaPrefetchableSupport::GetPrefetchableSupport&);
 
+    // Main thread callbacks
     bool log_request(bool is_host_plugin,
                      const Vst3ContextMenuProxy::Destruct&);
     bool log_request(bool is_host_plugin, const WantsConfiguration&);
@@ -254,6 +257,7 @@ class Vst3Logger {
     bool log_request(bool is_host_plugin,
                      const YaUnitHandler2::NotifyUnitByBusChange&);
 
+    // Main thread control message responses
     void log_response(bool is_host_plugin, const Ack&);
     void log_response(bool is_host_plugin,
                       const UniversalTResult&,
@@ -322,6 +326,7 @@ class Vst3Logger {
                       const YaXmlRepresentationController::
                           GetXmlRepresentationStreamResponse&);
 
+    // Audio processor control message responses
     void log_response(bool is_host_plugin,
                       const YaAudioProcessor::GetBusArrangementResponse&);
     void log_response(bool is_host_plugin,
@@ -339,6 +344,7 @@ class Vst3Logger {
         bool is_host_plugin,
         const YaPrefetchableSupport::GetPrefetchableSupportResponse&);
 
+    // Main thread callback responses
     void log_response(bool is_host_plugin,
                       const YaComponentHandler3::CreateContextMenuResponse&);
     void log_response(bool is_host_plugin,

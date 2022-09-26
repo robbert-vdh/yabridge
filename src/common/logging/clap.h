@@ -71,6 +71,7 @@ class ClapLogger {
     // `log_request()` call returned `true`. This way we can filter out the
     // log message for the response together with the request.
 
+    // Main thread control messages
     bool log_request(bool is_host_plugin, const clap::plugin_factory::List&);
     bool log_request(bool is_host_plugin, const clap::plugin_factory::Create&);
     bool log_request(bool is_host_plugin, const clap::plugin::Init&);
@@ -96,6 +97,7 @@ class ClapLogger {
     bool log_request(bool is_host_plugin,
                      const clap::ext::params::plugin::TextToValue&);
 
+    // Audio thread control messages
     bool log_request(bool is_host_plugin, const clap::plugin::StartProcessing&);
     bool log_request(bool is_host_plugin, const clap::plugin::StopProcessing&);
     bool log_request(bool is_host_plugin, const clap::plugin::Reset&);
@@ -103,6 +105,7 @@ class ClapLogger {
                      const clap::ext::params::plugin::Flush&);
     bool log_request(bool is_host_plugin, const clap::ext::tail::plugin::Get&);
 
+    // Main thread callbacks
     bool log_request(bool is_host_plugin, const WantsConfiguration&);
     bool log_request(bool is_host_plugin, const clap::host::RequestRestart&);
     bool log_request(bool is_host_plugin, const clap::host::RequestProcess&);
@@ -122,9 +125,11 @@ class ClapLogger {
     bool log_request(bool is_host_plugin,
                      const clap::ext::params::host::RequestFlush&);
 
+    // Audio thread callbacks
     bool log_request(bool is_host_plugin,
                      const clap::ext::tail::host::Changed&);
 
+    // Main thread control message responses
     void log_response(bool is_host_plugin, const Ack&);
     void log_response(bool is_host_plugin,
                       const clap::plugin_factory::ListResponse&);
@@ -148,6 +153,7 @@ class ClapLogger {
     void log_response(bool is_host_plugin,
                       const clap::ext::params::plugin::FlushResponse&);
 
+    // Main thread callback responses
     void log_response(bool is_host_plugin, const Configuration&);
 
     template <typename T>
