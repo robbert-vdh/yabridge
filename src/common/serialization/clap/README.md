@@ -18,7 +18,7 @@ Yabridge currently tracks CLAP 1.1.1. The implementation status for CLAP's core 
 | `clap.audio-ports-config` | :x: Not supported yet |
 | `clap.event-registry`     | :x: Not supported yet |
 | `clap.gui`                | :x: Not supported yet |
-| `clap.latency`            | :x: Not supported yet |
+| `clap.latency`            | :heavy_check_mark:    |
 | `clap.log`                | :x: Not supported yet |
 | `clap.note-name`          | :x: Not supported yet |
 | `clap.note-ports`         | :heavy_check_mark:    |

@@ -96,6 +96,8 @@ class ClapLogger {
                      const clap::ext::params::plugin::ValueToText&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::params::plugin::TextToValue&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::latency::plugin::Get&);
 
     // Audio thread control messages
     bool log_request(bool is_host_plugin, const clap::plugin::StartProcessing&);
@@ -124,6 +126,8 @@ class ClapLogger {
                      const clap::ext::params::host::Clear&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::params::host::RequestFlush&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::latency::host::Changed&);
 
     // Audio thread callbacks
     bool log_request(bool is_host_plugin,

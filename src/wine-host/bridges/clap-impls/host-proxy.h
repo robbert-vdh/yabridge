@@ -19,6 +19,7 @@
 #include <atomic>
 
 #include <clap/ext/audio-ports.h>
+#include <clap/ext/latency.h>
 #include <clap/ext/note-ports.h>
 #include <clap/ext/params.h>
 #include <clap/ext/tail.h>
@@ -72,6 +73,8 @@ class clap_host_proxy {
     static void CLAP_ABI ext_audio_ports_rescan(const clap_host_t* host,
                                                 uint32_t flags);
 
+    static void CLAP_ABI ext_latency_changed(const clap_host_t* host);
+
     static uint32_t CLAP_ABI
     ext_note_ports_supported_dialects(const clap_host_t* host);
     static void CLAP_ABI ext_note_ports_rescan(const clap_host_t* host,
@@ -109,6 +112,7 @@ class clap_host_proxy {
     // depends on whether the plugin supported this extension when the host
     // called `clap_plugin::init()`.
     const clap_host_audio_ports_t ext_audio_ports_vtable;
+    const clap_host_latency_t ext_latency_vtable;
     const clap_host_note_ports_t ext_note_ports_vtable;
     const clap_host_params_t ext_params_vtable;
     const clap_host_tail_t ext_tail_vtable;

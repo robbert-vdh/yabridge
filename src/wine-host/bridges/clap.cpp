@@ -29,6 +29,8 @@ namespace fs = ghc::filesystem;
 ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
     : audio_ports(static_cast<const clap_plugin_audio_ports_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_AUDIO_PORTS))),
+      latency(static_cast<const clap_plugin_latency_t*>(
+          plugin.get_extension(&plugin, CLAP_EXT_LATENCY))),
       note_ports(static_cast<const clap_plugin_note_ports_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_NOTE_PORTS))),
       params(static_cast<const clap_plugin_params_t*>(
@@ -42,6 +44,7 @@ clap::plugin::SupportedPluginExtensions ClapPluginExtensions::supported()
     const noexcept {
     return clap::plugin::SupportedPluginExtensions{
         .supports_audio_ports = audio_ports != nullptr,
+        .supports_latency = latency != nullptr,
         .supports_note_ports = note_ports != nullptr,
         .supports_params = params != nullptr,
         .supports_tail = tail != nullptr};
@@ -341,6 +344,14 @@ void ClapBridge::run() {
                     return clap::ext::audio_ports::plugin::GetResponse{
                         .result = std::nullopt};
                 }
+            },
+            [&](clap::ext::latency::plugin::Get& request)
+                -> clap::ext::latency::plugin::Get::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We'll ignore the main thread requirement for simple lookups
+                // to avoid the synchronisation costs in hot code paths
+                return instance.extensions.latency->get(instance.plugin.get());
             },
             [&](const clap::ext::note_ports::plugin::Count& request)
                 -> clap::ext::note_ports::plugin::Count::Response {

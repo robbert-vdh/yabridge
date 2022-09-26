@@ -48,6 +48,9 @@ clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
           .is_rescan_flag_supported = ext_audio_ports_is_rescan_flag_supported,
           .rescan = ext_audio_ports_rescan,
       }),
+      ext_latency_vtable(clap_host_latency_t{
+          .changed = ext_latency_changed,
+      }),
       ext_note_ports_vtable(clap_host_note_ports_t{
           .supported_dialects = ext_note_ports_supported_dialects,
           .rescan = ext_note_ports_rescan,
@@ -71,6 +74,9 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
     if (self->supported_extensions_.supports_audio_ports &&
         strcmp(extension_id, CLAP_EXT_AUDIO_PORTS) == 0) {
         extension_ptr = &self->ext_audio_ports_vtable;
+    } else if (self->supported_extensions_.supports_latency &&
+               strcmp(extension_id, CLAP_EXT_LATENCY) == 0) {
+        extension_ptr = &self->ext_latency_vtable;
     } else if (self->supported_extensions_.supports_note_ports &&
                strcmp(extension_id, CLAP_EXT_NOTE_PORTS) == 0) {
         extension_ptr = &self->ext_note_ports_vtable;
@@ -155,6 +161,14 @@ void CLAP_ABI clap_host_proxy::ext_audio_ports_rescan(const clap_host_t* host,
 
     self->bridge_.send_main_thread_message(clap::ext::audio_ports::host::Rescan{
         .owner_instance_id = self->owner_instance_id(), .flags = flags});
+}
+
+void CLAP_ABI clap_host_proxy::ext_latency_changed(const clap_host_t* host) {
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_main_thread_message(clap::ext::latency::host::Changed{
+        .owner_instance_id = self->owner_instance_id()});
 }
 
 uint32_t CLAP_ABI

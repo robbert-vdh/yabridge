@@ -115,6 +115,22 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
 
                     return Ack{};
                 },
+                [&](const clap::ext::latency::host::Changed& request)
+                    -> clap::ext::latency::host::Changed::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    plugin_proxy
+                        .run_on_main_thread(
+                            [&, host = plugin_proxy.host_,
+                             latency =
+                                 plugin_proxy.host_extensions_.latency]() {
+                                latency->changed(host);
+                            })
+                        .wait();
+
+                    return Ack{};
+                },
                 [&](const clap::ext::note_ports::host::SupportedDialects&
                         request)
                     -> clap::ext::note_ports::host::SupportedDialects::

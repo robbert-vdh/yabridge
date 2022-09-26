@@ -23,6 +23,7 @@
 #include "../bitsery/ext/message-reference.h"
 #include "../utils.h"
 #include "clap/ext/audio-ports.h"
+#include "clap/ext/latency.h"
 #include "clap/ext/note-ports.h"
 #include "clap/ext/params.h"
 #include "clap/ext/tail.h"
@@ -53,6 +54,7 @@ using ClapMainThreadControlRequest =
                  clap::plugin::Deactivate,
                  clap::ext::audio_ports::plugin::Count,
                  clap::ext::audio_ports::plugin::Get,
+                 clap::ext::latency::plugin::Get,
                  clap::ext::note_ports::plugin::Count,
                  clap::ext::note_ports::plugin::Get,
                  clap::ext::params::plugin::Count,
@@ -147,6 +149,7 @@ using ClapMainThreadCallbackRequest =
     std::variant<WantsConfiguration,
                  clap::host::RequestRestart,
                  clap::host::RequestProcess,
+                 clap::ext::latency::host::Changed,
                  clap::ext::audio_ports::host::IsRescanFlagSupported,
                  clap::ext::audio_ports::host::Rescan,
                  clap::ext::note_ports::host::SupportedDialects,

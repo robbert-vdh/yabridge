@@ -21,6 +21,8 @@
 ClapHostExtensions::ClapHostExtensions(const clap_host& host) noexcept
     : audio_ports(static_cast<const clap_host_audio_ports_t*>(
           host.get_extension(&host, CLAP_EXT_AUDIO_PORTS))),
+      latency(static_cast<const clap_host_latency_t*>(
+          host.get_extension(&host, CLAP_EXT_LATENCY))),
       note_ports(static_cast<const clap_host_note_ports_t*>(
           host.get_extension(&host, CLAP_EXT_NOTE_PORTS))),
       params(static_cast<const clap_host_params_t*>(
@@ -34,6 +36,7 @@ clap::host::SupportedHostExtensions ClapHostExtensions::supported()
     const noexcept {
     return clap::host::SupportedHostExtensions{
         .supports_audio_ports = audio_ports != nullptr,
+        .supports_latency = latency != nullptr,
         .supports_note_ports = note_ports != nullptr,
         .supports_params = params != nullptr,
         .supports_tail = tail != nullptr};
@@ -64,6 +67,9 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
       ext_audio_ports_vtable(clap_plugin_audio_ports_t{
           .count = ext_audio_ports_count,
           .get = ext_audio_ports_get,
+      }),
+      ext_latency_vtable(clap_plugin_latency_t{
+          .get = ext_latency_get,
       }),
       ext_note_ports_vtable(clap_plugin_note_ports_t{
           .count = ext_note_ports_count,
@@ -210,6 +216,9 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
     if (self->supported_extensions_.supports_audio_ports &&
         strcmp(id, CLAP_EXT_AUDIO_PORTS) == 0) {
         extension_ptr = &self->ext_audio_ports_vtable;
+    } else if (self->supported_extensions_.supports_latency &&
+               strcmp(id, CLAP_EXT_LATENCY) == 0) {
+        extension_ptr = &self->ext_latency_vtable;
     } else if (self->supported_extensions_.supports_note_ports &&
                strcmp(id, CLAP_EXT_NOTE_PORTS) == 0) {
         extension_ptr = &self->ext_note_ports_vtable;
@@ -272,6 +281,15 @@ clap_plugin_proxy::ext_audio_ports_get(const clap_plugin_t* plugin,
     } else {
         return false;
     }
+}
+
+uint32_t CLAP_ABI
+clap_plugin_proxy::ext_latency_get(const clap_plugin_t* plugin) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::latency::plugin::Get{.instance_id = self->instance_id()});
 }
 
 uint32_t CLAP_ABI

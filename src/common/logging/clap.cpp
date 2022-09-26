@@ -218,6 +218,13 @@ bool ClapLogger::log_request(
 }
 
 bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::latency::plugin::Get& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin_latency::get()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::plugin::StartProcessing& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id << ": clap_plugin::start_processing()";
@@ -340,6 +347,14 @@ bool ClapLogger::log_request(
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.owner_instance_id
                 << ": clap_host_params::request_flush()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::latency::host::Changed& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_latency::changed()";
     });
 }
 
