@@ -263,7 +263,7 @@ class Vst3Sockets final : public Sockets {
         typename T::Response& response_object,
         size_t instance_id,
         std::optional<std::pair<Vst3Logger&, bool>> logging) {
-        thread_local SerializationBuffer<256> audio_processor_buffer{};
+        thread_local SerializationBuffer<2048> audio_processor_buffer{};
 
         return audio_processor_sockets_.at(instance_id)
             .receive_into(object, response_object, logging,

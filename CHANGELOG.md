@@ -10,6 +10,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 TODO: Mention CLAP. Because, you know, kinda important new feature.
 
+# Changed
+
+- Slightly optimized the use of serialization buffers to reduce memory usage for
+  VST3 audio threads and to potentially speed up parameter information queries
+  for parameters with lots of text.
+
 ### Fixed
 
 - Fixed a minor memory leak in the Wine->X11 drag-and-drop implementation when

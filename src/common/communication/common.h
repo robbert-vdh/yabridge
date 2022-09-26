@@ -1110,6 +1110,8 @@ class TypedMessageHandler : public AdHocSocketHandler<Thread> {
                 // every time, but on the audio processor side we store the
                 // actual variant within an object and we then use some hackery
                 // to always keep the large process data object in memory.
+                // NOTE: Unlike the VST2 version, this persistent buffer is only
+                //       used for audio thread messages
                 thread_local SerializationBuffer<256> persistent_buffer{};
                 thread_local Request persistent_object;
 
