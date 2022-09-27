@@ -82,6 +82,7 @@ if with_clap
     '../common/serialization/clap/ext/params.cpp',
     '../common/serialization/clap/host.cpp',
     '../common/serialization/clap/plugin.cpp',
+    '../common/serialization/clap/stream.cpp',
     '../common/utils.cpp',
     '../include/llvm/small-vector.cpp',
     'bridges/clap-impls/plugin-proxy.cpp',
