@@ -46,6 +46,11 @@ class Stream {
     Stream(const clap_istream_t& original);
 
     /**
+     * The buffer's size in bytes, used for logging.
+     */
+    inline size_t size() const noexcept { return buffer_.size(); }
+
+    /**
      * Get a `clap_ostream_t` for this buffer that the plugin can write to. This
      * is only valid as long as this object is not moved.
      */
