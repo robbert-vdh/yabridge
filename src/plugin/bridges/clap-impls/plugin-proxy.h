@@ -112,6 +112,54 @@ class clap_plugin_proxy {
      */
     inline size_t instance_id() const { return instance_id_; }
 
+    /**
+     * Asynchronously run a function on the host's main thread, returning the
+     * result as a future.
+     */
+    template <std::invocable F>
+    std::future<std::invoke_result_t<F>> run_on_main_thread(F&& fn) {
+        using Result = std::invoke_result_t<F>;
+
+        std::promise<Result> response_promise{};
+        std::future<Result> response_future = response_promise.get_future();
+        pending_callbacks_.push(HostCallback(
+            [fn = std::forward<F>(fn),
+             response_promise = std::move(response_promise)]() mutable {
+                if constexpr (std::is_void_v<Result>) {
+                    fn();
+                    response_promise.set_value();
+                } else {
+                    response_promise.set_value(fn());
+                }
+            }));
+
+        // In theory the host will now call `clap_plugin::on_main_thread()`,
+        // where we can pop the function from the queue
+        host_->request_callback(host_);
+
+        return response_future;
+    }
+
+    /**
+     * The `clap_host_t*` passed when creating the instance. Any callbacks made
+     * by the proxied plugin instance must go through here.
+     */
+    const clap_host_t* host_;
+
+    /**
+     * The host's supported extensions. These will be populated in the
+     * `clap_plugin::init()` call.
+     */
+    ClapHostExtensions host_extensions_;
+
+    /**
+     * A handler for receiving audio thread callbacks. Set when initializing the
+     * plugin. This is needed to minimize blocking during those callbacks, as
+     * certain CLAP extensions allow callbacks on the audio thread.
+     */
+    std::jthread audio_thread_handler_;
+
+   protected:
     static bool CLAP_ABI plugin_init(const struct clap_plugin* plugin);
     static void CLAP_ABI plugin_destroy(const struct clap_plugin* plugin);
     static bool CLAP_ABI plugin_activate(const struct clap_plugin* plugin,
@@ -169,53 +217,6 @@ class clap_plugin_proxy {
                                           const clap_output_events_t* out);
 
     static uint32_t CLAP_ABI ext_tail_get(const clap_plugin_t* plugin);
-
-    /**
-     * Asynchronously run a function on the host's main thread, returning the
-     * result as a future.
-     */
-    template <std::invocable F>
-    std::future<std::invoke_result_t<F>> run_on_main_thread(F&& fn) {
-        using Result = std::invoke_result_t<F>;
-
-        std::promise<Result> response_promise{};
-        std::future<Result> response_future = response_promise.get_future();
-        pending_callbacks_.push(HostCallback(
-            [fn = std::forward<F>(fn),
-             response_promise = std::move(response_promise)]() mutable {
-                if constexpr (std::is_void_v<Result>) {
-                    fn();
-                    response_promise.set_value();
-                } else {
-                    response_promise.set_value(fn());
-                }
-            }));
-
-        // In theory the host will now call `clap_plugin::on_main_thread()`,
-        // where we can pop the function from the queue
-        host_->request_callback(host_);
-
-        return response_future;
-    }
-
-    /**
-     * The `clap_host_t*` passed when creating the instance. Any callbacks made
-     * by the proxied plugin instance must go through here.
-     */
-    const clap_host_t* host_;
-
-    /**
-     * The host's supported extensions. These will be populated in the
-     * `clap_plugin::init()` call.
-     */
-    ClapHostExtensions host_extensions_;
-
-    /**
-     * A handler for receiving audio thread callbacks. Set when initializing the
-     * plugin. This is needed to minimize blocking during those callbacks, as
-     * certain CLAP extensions allow callbacks on the audio thread.
-     */
-    std::jthread audio_thread_handler_;
 
    private:
     ClapPluginBridge& bridge_;

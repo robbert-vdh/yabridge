@@ -61,6 +61,14 @@ class clap_host_proxy {
      */
     inline size_t owner_instance_id() const { return owner_instance_id_; }
 
+    /**
+     * The extensions supported by the host, set just before calling
+     * `clap_plugin::init()` on the bridged plugin. We'll allow the plugin to
+     * query these extensions through `clap_host::get_extension()`.
+     */
+    clap::host::SupportedHostExtensions supported_extensions_;
+
+   protected:
     static const void* CLAP_ABI host_get_extension(const struct clap_host* host,
                                                    const char* extension_id);
     static void CLAP_ABI host_request_restart(const struct clap_host* host);
@@ -88,13 +96,6 @@ class clap_host_proxy {
     static void CLAP_ABI ext_params_request_flush(const clap_host_t* host);
 
     static void CLAP_ABI ext_tail_changed(const clap_host_t* host);
-
-    /**
-     * The extensions supported by the host, set just before calling
-     * `clap_plugin::init()` on the bridged plugin. We'll allow the plugin to
-     * query these extensions through `clap_host::get_extension()`.
-     */
-    clap::host::SupportedHostExtensions supported_extensions_;
 
    private:
     ClapBridge& bridge_;
