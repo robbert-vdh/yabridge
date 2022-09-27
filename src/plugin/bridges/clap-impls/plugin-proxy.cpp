@@ -27,6 +27,8 @@ ClapHostExtensions::ClapHostExtensions(const clap_host& host) noexcept
           host.get_extension(&host, CLAP_EXT_NOTE_PORTS))),
       params(static_cast<const clap_host_params_t*>(
           host.get_extension(&host, CLAP_EXT_PARAMS))),
+      state(static_cast<const clap_host_state_t*>(
+          host.get_extension(&host, CLAP_EXT_STATE))),
       tail(static_cast<const clap_host_tail_t*>(
           host.get_extension(&host, CLAP_EXT_TAIL))) {}
 
@@ -39,6 +41,7 @@ clap::host::SupportedHostExtensions ClapHostExtensions::supported()
         .supports_latency = latency != nullptr,
         .supports_note_ports = note_ports != nullptr,
         .supports_params = params != nullptr,
+        .supports_state = state != nullptr,
         .supports_tail = tail != nullptr};
 }
 
@@ -82,6 +85,10 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
           .value_to_text = ext_params_value_to_text,
           .text_to_value = ext_params_text_to_value,
           .flush = ext_params_flush,
+      }),
+      ext_state_vtable(clap_plugin_state_t{
+          .save = ext_state_save,
+          .load = ext_state_load,
       }),
       ext_tail_vtable(clap_plugin_tail_t{
           .get = ext_tail_get,
@@ -225,6 +232,9 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
     } else if (self->supported_extensions_.supports_params &&
                strcmp(id, CLAP_EXT_PARAMS) == 0) {
         extension_ptr = &self->ext_params_vtable;
+    } else if (self->supported_extensions_.supports_state &&
+               strcmp(id, CLAP_EXT_STATE) == 0) {
+        extension_ptr = &self->ext_state_vtable;
     } else if (self->supported_extensions_.supports_tail &&
                strcmp(id, CLAP_EXT_TAIL) == 0) {
         extension_ptr = &self->ext_tail_vtable;
@@ -434,6 +444,33 @@ clap_plugin_proxy::ext_params_flush(const clap_plugin_t* plugin,
     // process, so always using the audio thread here is safe
     self->bridge_.send_audio_thread_message(
         clap::ext::params::plugin::Flush{.instance_id = self->instance_id()});
+}
+
+bool CLAP_ABI clap_plugin_proxy::ext_state_save(const clap_plugin_t* plugin,
+                                                const clap_ostream_t* stream) {
+    assert(plugin && plugin->plugin_data && stream);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    const clap::ext::state::plugin::SaveResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::ext::state::plugin::Save{.instance_id = self->instance_id()});
+    if (response.result) {
+        response.result->write_to_stream(*stream);
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool CLAP_ABI clap_plugin_proxy::ext_state_load(const clap_plugin_t* plugin,
+                                                const clap_istream_t* stream) {
+    assert(plugin && plugin->plugin_data && stream);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::state::plugin::Load{.instance_id = self->instance_id(),
+                                       .stream = *stream});
 }
 
 uint32_t CLAP_ABI clap_plugin_proxy::ext_tail_get(const clap_plugin_t* plugin) {

@@ -60,6 +60,9 @@ clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
           .clear = ext_params_clear,
           .request_flush = ext_params_request_flush,
       }),
+      ext_state_vtable(clap_host_state_t{
+          .mark_dirty = ext_state_mark_dirty,
+      }),
       ext_tail_vtable(clap_host_tail_t{
           .changed = ext_tail_changed,
       }) {}
@@ -83,6 +86,9 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
     } else if (self->supported_extensions_.supports_params &&
                strcmp(extension_id, CLAP_EXT_PARAMS) == 0) {
         extension_ptr = &self->ext_params_vtable;
+    } else if (self->supported_extensions_.supports_state &&
+               strcmp(extension_id, CLAP_EXT_STATE) == 0) {
+        extension_ptr = &self->ext_state_vtable;
     } else if (self->supported_extensions_.supports_tail &&
                strcmp(extension_id, CLAP_EXT_TAIL) == 0) {
         extension_ptr = &self->ext_tail_vtable;
@@ -220,6 +226,14 @@ clap_host_proxy::ext_params_request_flush(const clap_host_t* host) {
     self->bridge_.send_audio_thread_message(
         clap::ext::params::host::RequestFlush{.owner_instance_id =
                                                   self->owner_instance_id()});
+}
+
+void CLAP_ABI clap_host_proxy::ext_state_mark_dirty(const clap_host_t* host) {
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_main_thread_message(clap::ext::state::host::MarkDirty{
+        .owner_instance_id = self->owner_instance_id()});
 }
 
 void CLAP_ABI clap_host_proxy::ext_tail_changed(const clap_host_t* host) {

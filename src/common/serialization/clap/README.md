@@ -26,7 +26,7 @@ Yabridge currently tracks CLAP 1.1.1. The implementation status for CLAP's core 
 | `clap.params`             | :heavy_check_mark:    |
 | `clap.posix-fd-support`   | :x: Not supported yet |
 | `clap.render`             | :x: Not supported yet |
-| `clap.state`              | :x: Not supported yet |
+| `clap.state`              | :heavy_check_mark:    |
 | `clap.tail`               | :heavy_check_mark:    |
 | `clap.thread-check`       | :x: Not supported yet |
 | `clap.thread-pool`        | :x: Not supported yet |

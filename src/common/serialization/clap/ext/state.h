@@ -68,6 +68,7 @@ struct Load {
     template <typename S>
     void serialize(S& s) {
         s.value8b(instance_id);
+        s.object(stream);
     }
 };
 

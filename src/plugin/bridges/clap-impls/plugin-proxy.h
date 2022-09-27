@@ -24,6 +24,7 @@
 #include <clap/ext/latency.h>
 #include <clap/ext/note-ports.h>
 #include <clap/ext/params.h>
+#include <clap/ext/state.h>
 #include <clap/ext/tail.h>
 #include <clap/plugin.h>
 #include <rigtorp/MPMCQueue.h>
@@ -64,6 +65,7 @@ struct ClapHostExtensions {
     const clap_host_latency_t* latency = nullptr;
     const clap_host_note_ports_t* note_ports = nullptr;
     const clap_host_params_t* params = nullptr;
+    const clap_host_state_t* state = nullptr;
     const clap_host_tail_t* tail = nullptr;
 };
 
@@ -216,6 +218,11 @@ class clap_plugin_proxy {
                                           const clap_input_events_t* in,
                                           const clap_output_events_t* out);
 
+    static bool CLAP_ABI ext_state_save(const clap_plugin_t* plugin,
+                                        const clap_ostream_t* stream);
+    static bool CLAP_ABI ext_state_load(const clap_plugin_t* plugin,
+                                        const clap_istream_t* stream);
+
     static uint32_t CLAP_ABI ext_tail_get(const clap_plugin_t* plugin);
 
    private:
@@ -248,6 +255,7 @@ class clap_plugin_proxy {
     const clap_plugin_latency_t ext_latency_vtable;
     const clap_plugin_note_ports_t ext_note_ports_vtable;
     const clap_plugin_params_t ext_params_vtable;
+    const clap_plugin_state_t ext_state_vtable;
     const clap_plugin_tail_t ext_tail_vtable;
 
     /**

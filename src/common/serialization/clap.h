@@ -62,7 +62,9 @@ using ClapMainThreadControlRequest =
                  clap::ext::params::plugin::GetInfo,
                  clap::ext::params::plugin::GetValue,
                  clap::ext::params::plugin::ValueToText,
-                 clap::ext::params::plugin::TextToValue>;
+                 clap::ext::params::plugin::TextToValue,
+                 clap::ext::state::plugin::Save,
+                 clap::ext::state::plugin::Load>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadControlRequest& payload) {
@@ -152,7 +154,8 @@ using ClapMainThreadCallbackRequest =
                  clap::ext::note_ports::host::SupportedDialects,
                  clap::ext::note_ports::host::Rescan,
                  clap::ext::params::host::Rescan,
-                 clap::ext::params::host::Clear>;
+                 clap::ext::params::host::Clear,
+                 clap::ext::state::host::MarkDirty>;
 
 template <typename S>
 void serialize(S& s, ClapMainThreadCallbackRequest& payload) {

@@ -22,6 +22,7 @@
 #include <clap/ext/latency.h>
 #include <clap/ext/note-ports.h>
 #include <clap/ext/params.h>
+#include <clap/ext/state.h>
 #include <clap/ext/tail.h>
 #include <clap/host.h>
 
@@ -95,6 +96,8 @@ class clap_host_proxy {
                                           clap_param_clear_flags flags);
     static void CLAP_ABI ext_params_request_flush(const clap_host_t* host);
 
+    static void CLAP_ABI ext_state_mark_dirty(const clap_host_t* host);
+
     static void CLAP_ABI ext_tail_changed(const clap_host_t* host);
 
    private:
@@ -116,6 +119,7 @@ class clap_host_proxy {
     const clap_host_latency_t ext_latency_vtable;
     const clap_host_note_ports_t ext_note_ports_vtable;
     const clap_host_params_t ext_params_vtable;
+    const clap_host_state_t ext_state_vtable;
     const clap_host_tail_t ext_tail_vtable;
 
     /**

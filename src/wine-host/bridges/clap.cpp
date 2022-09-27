@@ -35,6 +35,8 @@ ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
           plugin.get_extension(&plugin, CLAP_EXT_NOTE_PORTS))),
       params(static_cast<const clap_plugin_params_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_PARAMS))),
+      state(static_cast<const clap_plugin_state_t*>(
+          plugin.get_extension(&plugin, CLAP_EXT_STATE))),
       tail(static_cast<const clap_plugin_tail_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_TAIL))) {}
 
@@ -47,6 +49,7 @@ clap::plugin::SupportedPluginExtensions ClapPluginExtensions::supported()
         .supports_latency = latency != nullptr,
         .supports_note_ports = note_ports != nullptr,
         .supports_params = params != nullptr,
+        .supports_state = state != nullptr,
         .supports_tail = tail != nullptr};
 }
 
@@ -453,6 +456,35 @@ void ClapBridge::run() {
                     return clap::ext::params::plugin::TextToValueResponse{
                         .result = std::nullopt};
                 }
+            },
+            [&](clap::ext::state::plugin::Save& request)
+                -> clap::ext::state::plugin::Save::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     state = instance.extensions.state]() {
+                        clap::stream::Stream stream{};
+                        if (state->save(plugin, stream.ostream())) {
+                            return clap::ext::state::plugin::SaveResponse{
+                                .result = std::move(stream)};
+                        } else {
+                            return clap::ext::state::plugin::SaveResponse{
+                                .result = std::nullopt};
+                        }
+                    })
+                    .get();
+            },
+            [&](clap::ext::state::plugin::Load& request)
+                -> clap::ext::state::plugin::Load::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     state = instance.extensions.state]() {
+                        return state->load(plugin, request.stream.istream());
+                    })
+                    .get();
             },
         });
 }

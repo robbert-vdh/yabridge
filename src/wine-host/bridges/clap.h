@@ -70,6 +70,7 @@ struct ClapPluginExtensions {
     const clap_plugin_latency_t* latency = nullptr;
     const clap_plugin_note_ports_t* note_ports = nullptr;
     const clap_plugin_params_t* params = nullptr;
+    const clap_plugin_state_t* state = nullptr;
     const clap_plugin_tail_t* tail = nullptr;
 };
 
