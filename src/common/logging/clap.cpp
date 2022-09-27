@@ -221,6 +221,24 @@ bool ClapLogger::log_request(bool is_host_plugin,
 }
 
 bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::state::plugin::Save& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_state::save(clap_ostream_t*)";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::state::plugin::Load& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message
+            << request.instance_id
+            << ": clap_plugin_state::load(stream = <clap_istream_t* containing "
+            << request.stream.size() << " bytes>)";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::plugin::StartProcessing& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id << ": clap_plugin::start_processing()";
@@ -351,6 +369,14 @@ bool ClapLogger::log_request(bool is_host_plugin,
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.owner_instance_id
                 << ": clap_host_latency::changed()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::state::host::MarkDirty& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_state::mark_dirty()";
     });
 }
 
@@ -512,6 +538,19 @@ void ClapLogger::log_response(
     return log_response_base(is_host_plugin, [&](auto& message) {
         // TODO: Log output event count
         message << "TODO: Log output event count";
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::state::plugin::SaveResponse& response) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.result) {
+            message << "true, <clap_ostream_t* containing "
+                    << response.result->size() << " bytes>";
+        } else {
+            message << "false";
+        }
     });
 }
 
