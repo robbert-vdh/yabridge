@@ -13,25 +13,25 @@ Yabridge currently tracks CLAP 1.1.1. The implementation status for CLAP's core 
 | `clap.plugin-factory`                     | :heavy_check_mark:                                     |
 | `clap.plugin-invalidation-factory/draft0` | :x: Not supported yet                                  |
 
-| extension                 | status                |
-| ------------------------- | --------------------- |
-| `clap.audio-ports`        | :heavy_check_mark:    |
-| `clap.audio-ports-config` | :x: Not supported yet |
-| `clap.event-registry`     | :x: Not supported yet |
-| `clap.gui`                | :x: Not supported yet |
-| `clap.latency`            | :heavy_check_mark:    |
-| `clap.log`                | :x: Not supported yet |
-| `clap.note-name`          | :x: Not supported yet |
-| `clap.note-ports`         | :heavy_check_mark:    |
-| `clap.params`             | :heavy_check_mark:    |
-| `clap.posix-fd-support`   | :x: Not supported yet |
-| `clap.render`             | :x: Not supported yet |
-| `clap.state`              | :heavy_check_mark:    |
-| `clap.tail`               | :heavy_check_mark:    |
-| `clap.thread-check`       | :x: Not supported yet |
-| `clap.thread-pool`        | :x: Not supported yet |
-| `clap.timer-support`      | :x: Not supported yet |
-| `clap.voice-info`         | :x: Not supported yet |
+| extension                 | status                                             |
+| ------------------------- | -------------------------------------------------- |
+| `clap.audio-ports`        | :heavy_check_mark:                                 |
+| `clap.audio-ports-config` | :x: Not supported yet                              |
+| `clap.event-registry`     | :x: Not needed for any of the supported extensions |
+| `clap.gui`                | :x: Not supported yet                              |
+| `clap.latency`            | :heavy_check_mark:                                 |
+| `clap.log`                | :x: Not supported yet                              |
+| `clap.note-name`          | :x: Not supported yet                              |
+| `clap.note-ports`         | :heavy_check_mark:                                 |
+| `clap.params`             | :heavy_check_mark:                                 |
+| `clap.posix-fd-support`   | :x: Not supported yet                              |
+| `clap.render`             | :x: Not supported yet                              |
+| `clap.state`              | :heavy_check_mark:                                 |
+| `clap.tail`               | :heavy_check_mark:                                 |
+| `clap.thread-check`       | :x: Not supported yet                              |
+| `clap.thread-pool`        | :x: Not supported yet                              |
+| `clap.timer-support`      | :x: Not supported yet                              |
+| `clap.voice-info`         | :x: Not supported yet                              |
 
 | draft extension                  | status                |
 | -------------------------------- | --------------------- |
