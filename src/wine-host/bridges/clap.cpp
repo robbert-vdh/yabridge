@@ -29,6 +29,8 @@ namespace fs = ghc::filesystem;
 ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
     : audio_ports(static_cast<const clap_plugin_audio_ports_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_AUDIO_PORTS))),
+      gui(static_cast<const clap_plugin_gui_t*>(
+          plugin.get_extension(&plugin, CLAP_EXT_GUI))),
       latency(static_cast<const clap_plugin_latency_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_LATENCY))),
       note_ports(static_cast<const clap_plugin_note_ports_t*>(
@@ -46,6 +48,7 @@ clap::plugin::SupportedPluginExtensions ClapPluginExtensions::supported()
     const noexcept {
     return clap::plugin::SupportedPluginExtensions{
         .supports_audio_ports = audio_ports != nullptr,
+        .supports_gui = gui != nullptr,
         .supports_latency = latency != nullptr,
         .supports_note_ports = note_ports != nullptr,
         .supports_params = params != nullptr,
@@ -347,6 +350,226 @@ void ClapBridge::run() {
                     return clap::ext::audio_ports::plugin::GetResponse{
                         .result = std::nullopt};
                 }
+            },
+            [&](const clap::ext::gui::plugin::IsApiSupported& request)
+                -> clap::ext::gui::plugin::IsApiSupported::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     gui = instance.extensions.gui]() {
+                        // It's a bit unnecessary to bridge the entire
+                        // `is_api_supported()` function since we'll only bridge
+                        // a single config (non-floating, X11), but this is
+                        // makes it easier to expand in the future. The X11 API
+                        // type gets translated to WIN32 for the plugin. We also
+                        // prematurely return false when `is_floating` is false
+                        // because we cannot set the transient window correctly
+                        // when the plugin opens its own Wine window.
+                        switch (request.api) {
+                            case clap::ext::gui::ApiType::X11:
+                                return gui->is_api_supported(
+                                    plugin, CLAP_WINDOW_API_WIN32,
+                                    request.is_floating);
+                                break;
+                        }
+                    })
+                    .get();
+            },
+            [&](const clap::ext::gui::plugin::Create& request)
+                -> clap::ext::gui::plugin::Create::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     gui = instance.extensions.gui]() {
+                        // We don't need to do anything here yet. The actual
+                        // window is created at the final `.set_parent()` call.
+                        // Like the above function, we'll translate the API type
+                        // and `is_floating` will always be `false`.
+                        switch (request.api) {
+                            case clap::ext::gui::ApiType::X11:
+                                return gui->create(plugin,
+                                                   CLAP_WINDOW_API_WIN32,
+                                                   request.is_floating);
+                                break;
+                        }
+                    })
+                    .get();
+            },
+            [&](const clap::ext::gui::plugin::Destroy& request)
+                -> clap::ext::gui::plugin::Destroy::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     gui = instance.extensions.gui,
+                                     &editor = instance.editor]() {
+                        gui->destroy(plugin);
+
+                        // Cleanup is handled through RAII
+                        editor.reset();
+
+                        return Ack{};
+                    })
+                    .get();
+            },
+            [&](clap::ext::gui::plugin::SetScale& request)
+                -> clap::ext::gui::plugin::SetScale::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     gui = instance.extensions.gui]() {
+                        return gui->set_scale(plugin, request.scale);
+                    })
+                    .get();
+            },
+            [&](const clap::ext::gui::plugin::GetSize& request)
+                -> clap::ext::gui::plugin::GetSize::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     gui = instance.extensions.gui]() {
+                        uint32_t width{};
+                        uint32_t height{};
+                        const bool result =
+                            gui->get_size(plugin, &width, &height);
+
+                        return clap::ext::gui::plugin::GetSizeResponse{
+                            .result = result, .width = width, .height = height};
+                    })
+                    .get();
+            },
+            [&](clap::ext::gui::plugin::CanResize& request)
+                -> clap::ext::gui::plugin::CanResize::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     gui = instance.extensions.gui]() {
+                        return gui->can_resize(plugin);
+                    })
+                    .get();
+            },
+            [&](const clap::ext::gui::plugin::GetResizeHints& request)
+                -> clap::ext::gui::plugin::GetResizeHints::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     gui = instance.extensions.gui]() {
+                        clap_gui_resize_hints_t hints{};
+                        if (gui->get_resize_hints(plugin, &hints)) {
+                            return clap::ext::gui::plugin::
+                                GetResizeHintsResponse{.result =
+                                                           std::move(hints)};
+                        } else {
+                            return clap::ext::gui::plugin::
+                                GetResizeHintsResponse{.result = std::nullopt};
+                        }
+                    })
+                    .get();
+            },
+            [&](const clap::ext::gui::plugin::AdjustSize& request)
+                -> clap::ext::gui::plugin::AdjustSize::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     gui = instance.extensions.gui]() {
+                        uint32_t width = request.width;
+                        uint32_t height = request.height;
+                        const bool result =
+                            gui->adjust_size(plugin, &width, &height);
+
+                        return clap::ext::gui::plugin::AdjustSizeResponse{
+                            .result = result,
+                            .updated_width = width,
+                            .updated_height = height};
+                    })
+                    .get();
+            },
+            [&](const clap::ext::gui::plugin::SetSize& request)
+                -> clap::ext::gui::plugin::SetSize::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     gui = instance.extensions.gui]() {
+                        return gui->set_size(plugin, request.width,
+                                             request.height);
+                    })
+                    .get();
+            },
+            [&](const clap::ext::gui::plugin::SetParent& request)
+                -> clap::ext::gui::plugin::SetParent::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     gui = instance.extensions.gui,
+                                     &editor = instance.editor]() {
+                        Editor& editor_instance =
+                            editor.emplace(main_context_, config_,
+                                           generic_logger_, request.x11_window);
+
+                        const clap_window_t window{
+                            .api = CLAP_WINDOW_API_WIN32,
+                            .win32 = editor_instance.get_win32_handle()};
+                        const bool result = gui->set_parent(plugin, &window);
+
+                        // Set the window's initial size according to what the
+                        // plugin reports. Otherwise get rid of the editor again
+                        // if the plugin didn't embed itself in it.
+                        if (result) {
+                            uint32_t width{};
+                            uint32_t height{};
+                            if (gui->get_size(plugin, &width, &height)) {
+                                editor->resize(width, height);
+                            }
+
+                            // NOTE: There's zero reason why the window couldn't
+                            //       already be visible from the start, but
+                            //       Waves V13 VST3 plugins think it would be a
+                            //       splendid idea to randomly dereference null
+                            //       pointers when the window is already
+                            //       visible. Thanks Waves. We'll do the same
+                            //       thing for CLAP plugins just to be safe
+                            editor->show();
+                        } else {
+                            editor.reset();
+                        }
+
+                        return result;
+                    })
+                    .get();
+            },
+            [&](const clap::ext::gui::plugin::Show& request)
+                -> clap::ext::gui::plugin::Show::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We don't need any special handling for our editor window, but
+                // the plugin may use these functions to suspend drawing or stop
+                // other tasks while the window is hdden
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     gui = instance.extensions.gui]() {
+                        return gui->show(plugin);
+                    })
+                    .get();
+            },
+            [&](const clap::ext::gui::plugin::Hide& request)
+                -> clap::ext::gui::plugin::Hide::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     gui = instance.extensions.gui]() {
+                        return gui->hide(plugin);
+                    })
+                    .get();
             },
             [&](clap::ext::latency::plugin::Get& request)
                 -> clap::ext::latency::plugin::Get::Response {
