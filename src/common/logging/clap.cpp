@@ -145,6 +145,122 @@ bool ClapLogger::log_request(
 
 bool ClapLogger::log_request(
     bool is_host_plugin,
+    const clap::ext::gui::plugin::IsApiSupported& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_gui::is_api_supported(api = ";
+        switch (request.api) {
+            case clap::ext::gui::ApiType::X11:
+                message << request.instance_id << "\"" << CLAP_WINDOW_API_X11
+                        << "\" (will be translated to \""
+                        << CLAP_WINDOW_API_WIN32 << "\")";
+                break;
+        }
+        message << ", is_floating = "
+                << (request.is_floating ? "true" : "false") << ")";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::gui::plugin::Create& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin_gui::create(api = ";
+        switch (request.api) {
+            case clap::ext::gui::ApiType::X11:
+                message << request.instance_id << "\"" << CLAP_WINDOW_API_X11
+                        << "\" (will be translated to \""
+                        << CLAP_WINDOW_API_WIN32 << "\")";
+                break;
+        }
+        message << ", is_floating = "
+                << (request.is_floating ? "true" : "false") << ")";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::gui::plugin::Destroy& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin_gui::destroy()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::gui::plugin::SetScale& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_gui::set_scale(scale = " << request.scale
+                << ")";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::gui::plugin::GetSize& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_gui::get_size(*width, *height)";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::gui::plugin::CanResize& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin_gui::can_resize()";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::gui::plugin::GetResizeHints& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_gui::get_resize_hints(*hints)";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::gui::plugin::AdjustSize& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_gui::adjust_size(*width = " << request.width
+                << ", *height = " << request.height << ")";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::gui::plugin::SetSize& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_gui::set_size(width = " << request.width
+                << ", height = " << request.height << ")";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::gui::plugin::SetParent& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_gui::set_parent(window = <X11 window "
+                << request.x11_window << ">)";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::gui::plugin::Show& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin_gui::show()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::gui::plugin::Hide& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin_gui::hide()";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
     const clap::ext::note_ports::plugin::Count& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id
@@ -319,6 +435,50 @@ bool ClapLogger::log_request(
 
 bool ClapLogger::log_request(
     bool is_host_plugin,
+    const clap::ext::gui::host::ResizeHintsChanged& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_gui::resize_hints_changed()";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::gui::host::RequestResize& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_gui::request_resize(width = " << request.width
+                << ", height = " << request.height << ")";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::gui::host::RequestShow& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_gui::request_show()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::gui::host::RequestHide& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_gui::request_hide()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::gui::host::Closed& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_gui::closed(was_destroyed = "
+                << request.was_destroyed << ")";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
     const clap::ext::note_ports::host::SupportedDialects& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.owner_instance_id
@@ -464,6 +624,54 @@ void ClapLogger::log_response(
         if (response.result) {
             message << "true, <clap_audio_port_info_t* for \""
                     << response.result->name << "\">";
+        } else {
+            message << "false";
+        }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::gui::plugin::GetSizeResponse& response) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.result) {
+            message << "true, *width = " << response.width
+                    << ", *height = " << response.height;
+        } else {
+            message << "false";
+        }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::gui::plugin::GetResizeHintsResponse& response) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.result) {
+            message
+                << "true, <clap_resize_hints_t* with can_resize_horizontally = "
+                << (response.result->can_resize_horizontally ? "true" : "false")
+                << ", can_resize_vertically = "
+                << (response.result->can_resize_vertically ? "true" : "false")
+                << ", preserve_aspect_ratio = "
+                << (response.result->preserve_aspect_ratio ? "true" : "false")
+                << ", aspect_ratio_width = "
+                << response.result->aspect_ratio_width
+                << ", aspect_ratio_height = "
+                << response.result->aspect_ratio_height << ">";
+        } else {
+            message << "false";
+        }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::gui::plugin::AdjustSizeResponse& response) {
+    return log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.result) {
+            message << "true, *width = " << response.updated_width
+                    << ", *height = " << response.updated_height;
         } else {
             message << "false";
         }

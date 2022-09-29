@@ -83,6 +83,28 @@ class ClapLogger {
     bool log_request(bool is_host_plugin,
                      const clap::ext::audio_ports::plugin::Get&);
     bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::plugin::IsApiSupported&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::plugin::Create&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::plugin::Destroy&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::plugin::SetScale&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::plugin::GetSize&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::plugin::CanResize&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::plugin::GetResizeHints&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::plugin::AdjustSize&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::plugin::SetSize&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::plugin::SetParent&);
+    bool log_request(bool is_host_plugin, const clap::ext::gui::plugin::Show&);
+    bool log_request(bool is_host_plugin, const clap::ext::gui::plugin::Hide&);
+    bool log_request(bool is_host_plugin,
                      const clap::ext::note_ports::plugin::Count&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::note_ports::plugin::Get&);
@@ -121,6 +143,15 @@ class ClapLogger {
     bool log_request(bool is_host_plugin,
                      const clap::ext::audio_ports::host::Rescan&);
     bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::host::ResizeHintsChanged&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::host::RequestResize&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::host::RequestShow&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::gui::host::RequestHide&);
+    bool log_request(bool is_host_plugin, const clap::ext::gui::host::Closed&);
+    bool log_request(bool is_host_plugin,
                      const clap::ext::note_ports::host::SupportedDialects&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::note_ports::host::Rescan&);
@@ -150,6 +181,12 @@ class ClapLogger {
                       const clap::plugin::ActivateResponse&);
     void log_response(bool is_host_plugin,
                       const clap::ext::audio_ports::plugin::GetResponse&);
+    void log_response(bool is_host_plugin,
+                      const clap::ext::gui::plugin::GetSizeResponse&);
+    void log_response(bool is_host_plugin,
+                      const clap::ext::gui::plugin::GetResizeHintsResponse&);
+    void log_response(bool is_host_plugin,
+                      const clap::ext::gui::plugin::AdjustSizeResponse&);
     void log_response(bool is_host_plugin,
                       const clap::ext::note_ports::plugin::GetResponse&);
     void log_response(bool is_host_plugin,
