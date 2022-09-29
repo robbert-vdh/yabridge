@@ -191,6 +191,40 @@ class clap_plugin_proxy {
                                              bool is_input,
                                              clap_audio_port_info_t* info);
 
+    static bool CLAP_ABI ext_gui_is_api_supported(const clap_plugin_t* plugin,
+                                                  const char* api,
+                                                  bool is_floating);
+    static bool CLAP_ABI ext_gui_get_preferred_api(const clap_plugin_t* plugin,
+                                                   const char** api,
+                                                   bool* is_floating);
+    static bool CLAP_ABI ext_gui_create(const clap_plugin_t* plugin,
+                                        const char* api,
+                                        bool is_floating);
+    static void CLAP_ABI ext_gui_destroy(const clap_plugin_t* plugin);
+    static bool CLAP_ABI ext_gui_set_scale(const clap_plugin_t* plugin,
+                                           double scale);
+    static bool CLAP_ABI ext_gui_get_size(const clap_plugin_t* plugin,
+                                          uint32_t* width,
+                                          uint32_t* height);
+    static bool CLAP_ABI ext_gui_can_resize(const clap_plugin_t* plugin);
+    static bool CLAP_ABI
+    ext_gui_get_resize_hints(const clap_plugin_t* plugin,
+                             clap_gui_resize_hints_t* hints);
+    static bool CLAP_ABI ext_gui_adjust_size(const clap_plugin_t* plugin,
+                                             uint32_t* width,
+                                             uint32_t* height);
+    static bool CLAP_ABI ext_gui_set_size(const clap_plugin_t* plugin,
+                                          uint32_t width,
+                                          uint32_t height);
+    static bool CLAP_ABI ext_gui_set_parent(const clap_plugin_t* plugin,
+                                            const clap_window_t* window);
+    static bool CLAP_ABI ext_gui_set_transient(const clap_plugin_t* plugin,
+                                               const clap_window_t* window);
+    static void CLAP_ABI ext_gui_suggest_title(const clap_plugin_t* plugin,
+                                               const char* title);
+    static bool CLAP_ABI ext_gui_show(const clap_plugin_t* plugin);
+    static bool CLAP_ABI ext_gui_hide(const clap_plugin_t* plugin);
+
     static uint32_t CLAP_ABI ext_latency_get(const clap_plugin_t* plugin);
 
     static uint32_t CLAP_ABI ext_note_ports_count(const clap_plugin_t* plugin,
@@ -254,6 +288,7 @@ class clap_plugin_proxy {
     // depends on whether the plugin supported this extension when we called
     // `clap_plugin::init()`.
     const clap_plugin_audio_ports_t ext_audio_ports_vtable;
+    const clap_plugin_gui_t ext_gui_vtable;
     const clap_plugin_latency_t ext_latency_vtable;
     const clap_plugin_note_ports_t ext_note_ports_vtable;
     const clap_plugin_params_t ext_params_vtable;

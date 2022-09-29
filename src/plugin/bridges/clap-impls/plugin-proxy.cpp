@@ -74,6 +74,23 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
           .count = ext_audio_ports_count,
           .get = ext_audio_ports_get,
       }),
+      ext_gui_vtable(clap_plugin_gui_t{
+          .is_api_supported = ext_gui_is_api_supported,
+          .get_preferred_api = ext_gui_get_preferred_api,
+          .create = ext_gui_create,
+          .destroy = ext_gui_destroy,
+          .set_scale = ext_gui_set_scale,
+          .get_size = ext_gui_get_size,
+          .can_resize = ext_gui_can_resize,
+          .get_resize_hints = ext_gui_get_resize_hints,
+          .adjust_size = ext_gui_adjust_size,
+          .set_size = ext_gui_set_size,
+          .set_parent = ext_gui_set_parent,
+          .set_transient = ext_gui_set_transient,
+          .suggest_title = ext_gui_suggest_title,
+          .show = ext_gui_show,
+          .hide = ext_gui_hide,
+      }),
       ext_latency_vtable(clap_plugin_latency_t{
           .get = ext_latency_get,
       }),
@@ -226,6 +243,9 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
     if (self->supported_extensions_.supports_audio_ports &&
         strcmp(id, CLAP_EXT_AUDIO_PORTS) == 0) {
         extension_ptr = &self->ext_audio_ports_vtable;
+    } else if (self->supported_extensions_.supports_gui &&
+               strcmp(id, CLAP_EXT_GUI) == 0) {
+        extension_ptr = &self->ext_gui_vtable;
     } else if (self->supported_extensions_.supports_latency &&
                strcmp(id, CLAP_EXT_LATENCY) == 0) {
         extension_ptr = &self->ext_latency_vtable;
@@ -294,6 +314,202 @@ clap_plugin_proxy::ext_audio_ports_get(const clap_plugin_t* plugin,
     } else {
         return false;
     }
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_gui_is_api_supported(const clap_plugin_t* plugin,
+                                            const char* api,
+                                            bool is_floating) {
+    assert(plugin && plugin->plugin_data && api);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    // We only support embedded X11 windows for now
+    if (strcmp(api, CLAP_WINDOW_API_X11) != 0 || is_floating) {
+        return false;
+    }
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::gui::plugin::IsApiSupported{
+            .instance_id = self->instance_id(),
+            // This will be translated to WIN32 on the Wine plugin host side
+            .api = clap::ext::gui::ApiType::X11,
+            .is_floating = is_floating});
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_gui_get_preferred_api(const clap_plugin_t* plugin,
+                                             const char** api,
+                                             bool* is_floating) {
+    assert(plugin && plugin->plugin_data && api && is_floating);
+
+    // We only support floating X11 windows right now
+    *api = CLAP_WINDOW_API_X11;
+    *is_floating = false;
+
+    return true;
+}
+
+bool CLAP_ABI clap_plugin_proxy::ext_gui_create(const clap_plugin_t* plugin,
+                                                const char* api,
+                                                bool is_floating) {
+    assert(plugin && plugin->plugin_data && api);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    // We only support embedded X11 windows for now
+    if (strcmp(api, CLAP_WINDOW_API_X11) != 0 || is_floating) {
+        return false;
+    }
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::gui::plugin::Create{
+            .instance_id = self->instance_id(),
+            // This will be translated to WIN32 on the Wine plugin host side
+            .api = clap::ext::gui::ApiType::X11,
+            .is_floating = is_floating});
+}
+
+void CLAP_ABI clap_plugin_proxy::ext_gui_destroy(const clap_plugin_t* plugin) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    self->bridge_.send_main_thread_message(
+        clap::ext::gui::plugin::Destroy{.instance_id = self->instance_id()});
+}
+
+bool CLAP_ABI clap_plugin_proxy::ext_gui_set_scale(const clap_plugin_t* plugin,
+                                                   double scale) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::gui::plugin::SetScale{.instance_id = self->instance_id(),
+                                         .scale = scale});
+}
+
+bool CLAP_ABI clap_plugin_proxy::ext_gui_get_size(const clap_plugin_t* plugin,
+                                                  uint32_t* width,
+                                                  uint32_t* height) {
+    assert(plugin && plugin->plugin_data && width && height);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    const clap::ext::gui::plugin::GetSizeResponse response =
+        self->bridge_.send_main_thread_message(clap::ext::gui::plugin::GetSize{
+            .instance_id = self->instance_id()});
+
+    if (response.result) {
+        *width = response.width;
+        *height = response.height;
+    }
+
+    return response.result;
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_gui_can_resize(const clap_plugin_t* plugin) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::gui::plugin::CanResize{.instance_id = self->instance_id()});
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_gui_get_resize_hints(const clap_plugin_t* plugin,
+                                            clap_gui_resize_hints_t* hints) {
+    assert(plugin && plugin->plugin_data && hints);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    const clap::ext::gui::plugin::GetResizeHintsResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::ext::gui::plugin::GetResizeHints{.instance_id =
+                                                       self->instance_id()});
+    if (response.result) {
+        *hints = *response.result;
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_gui_adjust_size(const clap_plugin_t* plugin,
+                                       uint32_t* width,
+                                       uint32_t* height) {
+    assert(plugin && plugin->plugin_data && width && height);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    const clap::ext::gui::plugin::AdjustSizeResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::ext::gui::plugin::AdjustSize{
+                .instance_id = self->instance_id(),
+                .width = *width,
+                .height = *height});
+
+    if (response.result) {
+        *width = response.updated_width;
+        *height = response.updated_height;
+    }
+
+    return response.result;
+}
+
+bool CLAP_ABI clap_plugin_proxy::ext_gui_set_size(const clap_plugin_t* plugin,
+                                                  uint32_t width,
+                                                  uint32_t height) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::gui::plugin::SetSize{.instance_id = self->instance_id(),
+                                        .width = width,
+                                        .height = height});
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_gui_set_parent(const clap_plugin_t* plugin,
+                                      const clap_window_t* window) {
+    assert(plugin && plugin->plugin_data && window);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    // We only support X11 windows right now, so this will always be an X11
+    // window
+    return self->bridge_.send_main_thread_message(
+        clap::ext::gui::plugin::SetParent{.instance_id = self->instance_id(),
+                                          .x11_window = window->x11});
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_gui_set_transient(const clap_plugin_t* plugin,
+                                         const clap_window_t* window) {
+    assert(plugin && plugin->plugin_data && window);
+
+    // We don't support floating windows right now
+    return false;
+}
+
+void CLAP_ABI
+clap_plugin_proxy::ext_gui_suggest_title(const clap_plugin_t* plugin,
+                                         const char* title) {
+    assert(plugin && plugin->plugin_data && title);
+
+    // We don't support floating windows right now
+}
+
+bool CLAP_ABI clap_plugin_proxy::ext_gui_show(const clap_plugin_t* plugin) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::gui::plugin::Show{.instance_id = self->instance_id()});
+}
+
+bool CLAP_ABI clap_plugin_proxy::ext_gui_hide(const clap_plugin_t* plugin) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::gui::plugin::Hide{.instance_id = self->instance_id()});
 }
 
 uint32_t CLAP_ABI
