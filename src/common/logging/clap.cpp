@@ -554,7 +554,7 @@ void ClapLogger::log_response(bool is_host_plugin, const Ack&) {
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::plugin_factory::ListResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         if (response.descriptors) {
             message << "<clap_plugin_factory* containing "
                     << response.descriptors->size() << " plugin descriptors>";
@@ -567,7 +567,7 @@ void ClapLogger::log_response(
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::plugin_factory::CreateResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         if (response.instance_id) {
             message << "<clap_plugin_t* with instance ID "
                     << *response.instance_id << ">";
@@ -579,7 +579,7 @@ void ClapLogger::log_response(
 
 void ClapLogger::log_response(bool is_host_plugin,
                               const clap::plugin::InitResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         message << (response.result ? "true" : "false")
                 << ", supported plugin extensions: ";
 
@@ -607,7 +607,7 @@ void ClapLogger::log_response(bool is_host_plugin,
 
 void ClapLogger::log_response(bool is_host_plugin,
                               const clap::plugin::ActivateResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         message << (response.result ? "true" : "false");
         if (response.result && response.updated_audio_buffers_config) {
             message << ", <new shared memory configuration for \""
@@ -620,7 +620,7 @@ void ClapLogger::log_response(bool is_host_plugin,
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::ext::audio_ports::plugin::GetResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message << "true, <clap_audio_port_info_t* for \""
                     << response.result->name << "\">";
@@ -633,7 +633,7 @@ void ClapLogger::log_response(
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::ext::gui::plugin::GetSizeResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message << "true, *width = " << response.width
                     << ", *height = " << response.height;
@@ -646,7 +646,7 @@ void ClapLogger::log_response(
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::ext::gui::plugin::GetResizeHintsResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message
                 << "true, <clap_resize_hints_t* with can_resize_horizontally = "
@@ -668,7 +668,7 @@ void ClapLogger::log_response(
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::ext::gui::plugin::AdjustSizeResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message << "true, *width = " << response.updated_width
                     << ", *height = " << response.updated_height;
@@ -681,7 +681,7 @@ void ClapLogger::log_response(
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::ext::note_ports::plugin::GetResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message << "true, <clap_note_port_info_t* for \""
                     << response.result->name << "\">";
@@ -694,7 +694,7 @@ void ClapLogger::log_response(
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::ext::params::plugin::GetInfoResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message << "true, <clap_param_info_t* for \""
                     << response.result->name << "\">";
@@ -707,7 +707,7 @@ void ClapLogger::log_response(
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::ext::params::plugin::GetValueResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message << "true, " << *response.result;
         } else {
@@ -719,7 +719,7 @@ void ClapLogger::log_response(
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::ext::params::plugin::ValueToTextResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message << "true, \"" << *response.result << '"';
         } else {
@@ -731,7 +731,7 @@ void ClapLogger::log_response(
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::ext::params::plugin::TextToValueResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message << "true, " << *response.result;
         } else {
@@ -743,7 +743,7 @@ void ClapLogger::log_response(
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::ext::params::plugin::FlushResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         // TODO: Log output event count
         message << "TODO: Log output event count";
     });
@@ -752,7 +752,7 @@ void ClapLogger::log_response(
 void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::ext::state::plugin::SaveResponse& response) {
-    return log_response_base(is_host_plugin, [&](auto& message) {
+    log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message << "true, <clap_ostream_t* containing "
                     << response.result->size() << " bytes>";
