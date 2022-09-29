@@ -224,16 +224,14 @@ class ClapBridge : public HostBridge {
      */
     void run() override;
 
-    // TODO: Editor resizing
-    // /**
-    //  * If the plugin instance has an editor, resize the wrapper window to
-    //  match
-    //  * the new size. This is called from `IPlugFrame::resizeView()` to make
-    //  sure
-    //  * we do the resize before the request gets sent to the host.
-    //  */
-    // bool maybe_resize_editor(size_t instance_id,
-    //                          const Steinberg::ViewRect& new_size);
+    /**
+     * If the plugin instance has an editor, resize the wrapper window to match
+     * the new size. This is called from `clap_host_gui::request_resize()` after
+     * the host returns `true`.
+     */
+    bool maybe_resize_editor(size_t instance_id,
+                             uint16_t width,
+                             uint16_t height);
 
    protected:
     void close_sockets() override;

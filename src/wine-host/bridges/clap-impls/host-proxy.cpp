@@ -195,11 +195,20 @@ bool CLAP_ABI clap_host_proxy::ext_gui_request_resize(const clap_host_t* host,
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    return self->bridge_.send_main_thread_message(
+    const bool result = self->bridge_.send_main_thread_message(
         clap::ext::gui::host::RequestResize{
             .owner_instance_id = self->owner_instance_id(),
             .width = width,
             .height = height});
+
+    // If the resize request was accepted by the host, then we'll also resize
+    // our editor window
+    if (result) {
+        self->bridge_.maybe_resize_editor(self->owner_instance_id_, width,
+                                          height);
+    }
+
+    return result;
 }
 
 bool CLAP_ABI clap_host_proxy::ext_gui_request_show(const clap_host_t* host) {

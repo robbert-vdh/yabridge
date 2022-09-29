@@ -499,9 +499,19 @@ void ClapBridge::run() {
 
                 return main_context_
                     .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui]() {
-                        return gui->set_size(plugin, request.width,
-                                             request.height);
+                                     gui = instance.extensions.gui,
+                                     &editor = instance.editor]() {
+                        if (gui->set_size(plugin, request.width,
+                                          request.height)) {
+                            // Also resize the editor window. We do the same
+                            // thing when the plugin requests a resize.
+                            assert(editor);
+                            editor->resize(request.width, request.height);
+
+                            return true;
+                        } else {
+                            return false;
+                        }
                     })
                     .get();
             },
@@ -714,18 +724,19 @@ void ClapBridge::run() {
         });
 }
 
-// TODO: Implement this
-// bool ClapBridge::maybe_resize_editor(size_t instance_id,
-//                                      const Steinberg::ViewRect& new_size) {
-//     const auto& [instance, _] = get_instance(instance_id);
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+bool ClapBridge::maybe_resize_editor(size_t instance_id,
+                                     uint16_t width,
+                                     uint16_t height) {
+    const auto& [instance, _] = get_instance(instance_id);
 
-//     if (instance.editor) {
-//         instance.editor->resize(new_size.getWidth(), new_size.getHeight());
-//         return true;
-//     } else {
-//         return false;
-//     }
-// }
+    if (instance.editor) {
+        instance.editor->resize(width, height);
+        return true;
+    } else {
+        return false;
+    }
+}
 
 void ClapBridge::close_sockets() {
     sockets_.close();
