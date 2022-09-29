@@ -21,6 +21,7 @@
 #include <vector>
 
 #include <clap/ext/audio-ports.h>
+#include <clap/ext/gui.h>
 #include <clap/ext/latency.h>
 #include <clap/ext/note-ports.h>
 #include <clap/ext/params.h>
@@ -62,6 +63,7 @@ struct ClapHostExtensions {
     clap::host::SupportedHostExtensions supported() const noexcept;
 
     const clap_host_audio_ports_t* audio_ports = nullptr;
+    const clap_host_gui_t* gui = nullptr;
     const clap_host_latency_t* latency = nullptr;
     const clap_host_note_ports_t* note_ports = nullptr;
     const clap_host_params_t* params = nullptr;

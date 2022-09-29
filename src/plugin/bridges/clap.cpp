@@ -115,6 +115,55 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
 
                     return Ack{};
                 },
+                [&](const clap::ext::gui::host::ResizeHintsChanged& request)
+                    -> clap::ext::gui::host::ResizeHintsChanged::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    // This callback is thread-safe
+                    plugin_proxy.host_extensions_.gui->resize_hints_changed(
+                        plugin_proxy.host_);
+
+                    return Ack{};
+                },
+                [&](const clap::ext::gui::host::RequestResize& request)
+                    -> clap::ext::gui::host::RequestResize::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    // This callback is thread-safe
+                    return plugin_proxy.host_extensions_.gui->request_resize(
+                        plugin_proxy.host_, request.width, request.height);
+                },
+                [&](const clap::ext::gui::host::RequestShow& request)
+                    -> clap::ext::gui::host::RequestShow::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    // This callback is thread-safe
+                    return plugin_proxy.host_extensions_.gui->request_show(
+                        plugin_proxy.host_);
+                },
+                [&](const clap::ext::gui::host::RequestHide& request)
+                    -> clap::ext::gui::host::RequestHide::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    // This callback is thread-safe
+                    return plugin_proxy.host_extensions_.gui->request_hide(
+                        plugin_proxy.host_);
+                },
+                [&](const clap::ext::gui::host::Closed& request)
+                    -> clap::ext::gui::host::Closed::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    // This callback is thread-safe
+                    plugin_proxy.host_extensions_.gui->closed(
+                        plugin_proxy.host_, request.was_destroyed);
+
+                    return Ack{};
+                },
                 [&](const clap::ext::latency::host::Changed& request)
                     -> clap::ext::latency::host::Changed::Response {
                     const auto& [plugin_proxy, _] =
