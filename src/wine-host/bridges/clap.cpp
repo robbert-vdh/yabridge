@@ -368,6 +368,7 @@ void ClapBridge::run() {
                         // when the plugin opens its own Wine window.
                         switch (request.api) {
                             case clap::ext::gui::ApiType::X11:
+                            default:
                                 return gui->is_api_supported(
                                     plugin, CLAP_WINDOW_API_WIN32,
                                     request.is_floating);
@@ -389,6 +390,7 @@ void ClapBridge::run() {
                         // and `is_floating` will always be `false`.
                         switch (request.api) {
                             case clap::ext::gui::ApiType::X11:
+                            default:
                                 return gui->create(plugin,
                                                    CLAP_WINDOW_API_WIN32,
                                                    request.is_floating);

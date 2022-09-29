@@ -151,6 +151,7 @@ bool ClapLogger::log_request(
                 << ": clap_plugin_gui::is_api_supported(api = ";
         switch (request.api) {
             case clap::ext::gui::ApiType::X11:
+            default:
                 message << request.instance_id << "\"" << CLAP_WINDOW_API_X11
                         << "\" (will be translated to \""
                         << CLAP_WINDOW_API_WIN32 << "\")";
@@ -167,6 +168,7 @@ bool ClapLogger::log_request(bool is_host_plugin,
         message << request.instance_id << ": clap_plugin_gui::create(api = ";
         switch (request.api) {
             case clap::ext::gui::ApiType::X11:
+            default:
                 message << request.instance_id << "\"" << CLAP_WINDOW_API_X11
                         << "\" (will be translated to \""
                         << CLAP_WINDOW_API_WIN32 << "\")";
