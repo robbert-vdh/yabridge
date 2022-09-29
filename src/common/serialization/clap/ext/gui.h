@@ -272,7 +272,9 @@ struct SetParent {
     native_size_t instance_id;
 
     // We only support X11 right now, so we can simplify this a little
-    clap_xwnd x11_window;
+    // NOTE: This should be a `clap_xwnd`, but that's defined as an `unsigned
+    //       long` which is 32-bit on Windows and 64-bit on Linux
+    uint64_t x11_window;
 
     template <typename S>
     void serialize(S& s) {
