@@ -48,6 +48,13 @@ clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
           .is_rescan_flag_supported = ext_audio_ports_is_rescan_flag_supported,
           .rescan = ext_audio_ports_rescan,
       }),
+      ext_gui_vtable(clap_host_gui_t{
+          .resize_hints_changed = ext_gui_resize_hints_changed,
+          .request_resize = ext_gui_request_resize,
+          .request_show = ext_gui_request_show,
+          .request_hide = ext_gui_request_hide,
+          .closed = ext_gui_closed,
+      }),
       ext_latency_vtable(clap_host_latency_t{
           .changed = ext_latency_changed,
       }),
@@ -77,6 +84,9 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
     if (self->supported_extensions_.supports_audio_ports &&
         strcmp(extension_id, CLAP_EXT_AUDIO_PORTS) == 0) {
         extension_ptr = &self->ext_audio_ports_vtable;
+    } else if (self->supported_extensions_.supports_gui &&
+               strcmp(extension_id, CLAP_EXT_GUI) == 0) {
+        extension_ptr = &self->ext_gui_vtable;
     } else if (self->supported_extensions_.supports_latency &&
                strcmp(extension_id, CLAP_EXT_LATENCY) == 0) {
         extension_ptr = &self->ext_latency_vtable;
@@ -167,6 +177,57 @@ void CLAP_ABI clap_host_proxy::ext_audio_ports_rescan(const clap_host_t* host,
 
     self->bridge_.send_main_thread_message(clap::ext::audio_ports::host::Rescan{
         .owner_instance_id = self->owner_instance_id(), .flags = flags});
+}
+
+void CLAP_ABI
+clap_host_proxy::ext_gui_resize_hints_changed(const clap_host_t* host) {
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_main_thread_message(
+        clap::ext::gui::host::ResizeHintsChanged{
+            .owner_instance_id = self->owner_instance_id()});
+}
+
+bool CLAP_ABI clap_host_proxy::ext_gui_request_resize(const clap_host_t* host,
+                                                      uint32_t width,
+                                                      uint32_t height) {
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::gui::host::RequestResize{
+            .owner_instance_id = self->owner_instance_id(),
+            .width = width,
+            .height = height});
+}
+
+bool CLAP_ABI clap_host_proxy::ext_gui_request_show(const clap_host_t* host) {
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::gui::host::RequestShow{.owner_instance_id =
+                                              self->owner_instance_id()});
+}
+
+bool CLAP_ABI clap_host_proxy::ext_gui_request_hide(const clap_host_t* host) {
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::gui::host::RequestHide{.owner_instance_id =
+                                              self->owner_instance_id()});
+}
+
+void CLAP_ABI clap_host_proxy::ext_gui_closed(const clap_host_t* host,
+                                              bool was_destroyed) {
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_main_thread_message(clap::ext::gui::host::Closed{
+        .owner_instance_id = self->owner_instance_id(),
+        .was_destroyed = was_destroyed});
 }
 
 void CLAP_ABI clap_host_proxy::ext_latency_changed(const clap_host_t* host) {
