@@ -755,8 +755,6 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
             VstRect* editor_rect = nullptr;
             plugin->dispatcher(plugin, effEditGetRect, 0, 0, &editor_rect, 0.0);
             if (editor_rect) {
-                std::cerr << editor_rect->right << std::endl;
-                std::cerr << editor_rect->bottom << std::endl;
                 editor_->resize(editor_rect->right - editor_rect->left,
                                 editor_rect->bottom - editor_rect->top);
             }

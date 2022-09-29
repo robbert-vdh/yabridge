@@ -20,6 +20,7 @@ TODO: Mention CLAP. Because, you know, kinda important new feature.
 
 - Fixed a minor memory leak in the Wine->X11 drag-and-drop implementation when
   converting Windows file paths.
+- Removed leftover debug prints when opening VST2 editor.
 
 ### yabridgectl
 
