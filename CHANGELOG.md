@@ -8,7 +8,21 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-TODO: Mention CLAP. Because, you know, kinda important new feature.
+- TODO: Mention CLAP. Because, you know, kinda important new feature.
+- TODO: Remove mention of `vst3_no_scaling` from the readme.
+
+# Added
+
+- The new `editor_disable_host_scaling` compatibility prevents hosts from
+  setting an explicit DPI scaling factor for the editor. In some cases this can
+  help with inconsistent scaling when using HiDPI scaling. This option affects
+  **VST3** and **CLAP** plugins and it replaces the old `vst3_no_scaling`
+  option.
+
+# Removed
+
+- The `vst3_no_scaling` compatibility option has been removed in favor of the
+  new `editor_disable_host_scaling` option.
 
 # Changed
 

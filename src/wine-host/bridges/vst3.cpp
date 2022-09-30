@@ -997,13 +997,14 @@ void Vst3Bridge::run() {
             [&](YaPlugViewContentScaleSupport::SetContentScaleFactor& request)
                 -> YaPlugViewContentScaleSupport::SetContentScaleFactor::
                     Response {
-                        if (config_.vst3_no_scaling) {
-                            std::cerr << "The host requested the editor GUI to "
-                                         "be scaled by a factor of "
-                                      << request.factor
-                                      << ", but the 'vst3_no_scale' option is "
-                                         "enabled. Ignoring the request."
-                                      << std::endl;
+                        if (config_.editor_disable_host_scaling) {
+                            std::cerr
+                                << "The host requested the editor GUI to be "
+                                   "scaled by a factor of "
+                                << request.factor
+                                << ", but the 'editor_disable_host_scaling' "
+                                   "option is enabled. Ignoring the request."
+                                << std::endl;
                             return Steinberg::kNotImplemented;
                         } else {
                             return main_context_

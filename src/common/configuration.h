@@ -150,7 +150,7 @@ class Configuration {
      * that with a Wine font DPI of 192 plugins often do draw correctly at 200%
      * scale.
      */
-    bool vst3_no_scaling = false;
+    bool editor_disable_host_scaling = false;
 
     /**
      * If a merged bundle contains both the 64-bit and the 32-bit versions of a
@@ -203,7 +203,7 @@ class Configuration {
         s.ext(frame_rate, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.value4b(v); });
         s.value1b(hide_daw);
-        s.value1b(vst3_no_scaling);
+        s.value1b(editor_disable_host_scaling);
         s.value1b(vst3_prefer_32bit);
 
         s.ext(matched_file, bitsery::ext::InPlaceOptional(),

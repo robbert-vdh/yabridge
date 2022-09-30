@@ -291,6 +291,9 @@ class PluginBridge {
         if (config_.editor_coordinate_hack) {
             other_options.push_back("editor: coordinate hack");
         }
+        if (config_.editor_disable_host_scaling) {
+            other_options.push_back("editor: no host DPI scaling");
+        }
         if (config_.editor_force_dnd) {
             other_options.push_back("editor: force drag-and-drop");
         }
@@ -305,9 +308,6 @@ class PluginBridge {
         }
         if (config_.hide_daw) {
             other_options.push_back("hack: hide DAW name");
-        }
-        if (config_.vst3_no_scaling) {
-            other_options.push_back("vst3: no GUI scaling");
         }
         if (config_.vst3_prefer_32bit) {
             other_options.push_back("vst3: prefer 32-bit");
