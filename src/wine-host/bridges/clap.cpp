@@ -420,12 +420,22 @@ void ClapBridge::run() {
                 -> clap::ext::gui::plugin::SetScale::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui]() {
-                        return gui->set_scale(plugin, request.scale);
-                    })
-                    .get();
+                if (config_.editor_disable_host_scaling) {
+                    std::cerr << "The host requested the editor GUI to be "
+                                 "scaled by a factor of "
+                              << request.scale
+                              << ", but the 'editor_disable_host_scaling' "
+                                 "option is enabled. Ignoring the request."
+                              << std::endl;
+                    return false;
+                } else {
+                    return main_context_
+                        .run_in_context([&, plugin = instance.plugin.get(),
+                                         gui = instance.extensions.gui]() {
+                            return gui->set_scale(plugin, request.scale);
+                        })
+                        .get();
+                }
             },
             [&](const clap::ext::gui::plugin::GetSize& request)
                 -> clap::ext::gui::plugin::GetSize::Response {
