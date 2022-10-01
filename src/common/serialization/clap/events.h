@@ -308,6 +308,26 @@ class EventList {
     void write_back_outputs(const clap_output_events_t& out_events) const;
 
     /**
+     * Get a `clap_input_events_t` interface for this event list that the plugin
+     * can read the events from. This is only valid as long as this object is
+     * not moved.
+     */
+    const clap_input_events_t* input_events();
+    /**
+     * Get a `clap_output_events_t` interface for this event list that the
+     * plugin can push events to. This is only valid as long as this object is
+     * not moved.
+     */
+    const clap_output_events_t* output_events();
+
+    static uint32_t CLAP_ABI in_size(const struct clap_input_events* list);
+    static const clap_event_header_t* CLAP_ABI
+    in_get(const struct clap_input_events* list, uint32_t index);
+
+    static bool CLAP_ABI out_try_push(const struct clap_output_events* list,
+                                      const clap_event_header_t* event);
+
+    /**
      * Return the number of events we store. Used in debug logs.
      */
     inline size_t size() const noexcept { return events_.size(); }
@@ -319,6 +339,10 @@ class EventList {
 
    private:
     llvm::SmallVector<Event, 64> events_;
+
+    // These are populated in the `input_events()` and `output_events()` methods
+    clap_input_events_t input_events_vtable_{};
+    clap_output_events_t output_events_vtable_{};
 };
 
 }  // namespace events

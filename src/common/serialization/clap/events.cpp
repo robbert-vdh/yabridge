@@ -159,5 +159,53 @@ void EventList::write_back_outputs(
     }
 }
 
+const clap_input_events_t* EventList::input_events() {
+    input_events_vtable_.ctx = this;
+    input_events_vtable_.size = in_size;
+    input_events_vtable_.get = in_get;
+
+    return &input_events_vtable_;
+}
+
+const clap_output_events_t* EventList::output_events() {
+    output_events_vtable_.ctx = this;
+    output_events_vtable_.try_push = out_try_push;
+
+    return &output_events_vtable_;
+}
+
+uint32_t CLAP_ABI EventList::in_size(const struct clap_input_events* list) {
+    assert(list && list->ctx);
+    auto self = static_cast<const EventList*>(list->ctx);
+
+    return self->events_.size();
+}
+
+const clap_event_header_t* CLAP_ABI
+EventList::in_get(const struct clap_input_events* list, uint32_t index) {
+    assert(list && list->ctx);
+    auto self = static_cast<const EventList*>(list->ctx);
+
+    if (index < self->events_.size()) {
+        return self->events_[index].get();
+    } else {
+        return nullptr;
+    }
+}
+
+bool CLAP_ABI EventList::out_try_push(const struct clap_output_events* list,
+                                      const clap_event_header_t* event) {
+    assert(list && list->ctx && event);
+    auto self = static_cast<EventList*>(list->ctx);
+
+    if (std::optional<Event> parsed_event = Event::parse(*event);
+        parsed_event) {
+        self->events_.emplace_back(std::move(*parsed_event));
+    }
+
+    // We'll pretend we accepted the event even if we don't recognize it
+    return true;
+}
+
 }  // namespace events
 }  // namespace clap
