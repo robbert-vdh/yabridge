@@ -653,13 +653,23 @@ void CLAP_ABI
 clap_plugin_proxy::ext_params_flush(const clap_plugin_t* plugin,
                                     const clap_input_events_t* in,
                                     const clap_output_events_t* out) {
-    assert(plugin && plugin->plugin_data);
+    assert(plugin && plugin->plugin_data && in && out);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    // This will not allocate below 64 events. Since flush will primarily be
+    // called on the main thread, we don't really care about minimizing
+    // allocations beyond that point here.
+    clap::events::EventList events{};
+    events.repopulate(*in);
 
     // This may also be called on the audio thread and it is never called during
     // process, so always using the audio thread here is safe
-    self->bridge_.send_audio_thread_message(
-        clap::ext::params::plugin::Flush{.instance_id = self->instance_id()});
+    const clap::ext::params::plugin::FlushResponse response =
+        self->bridge_.send_audio_thread_message(
+            clap::ext::params::plugin::Flush{.instance_id = self->instance_id(),
+                                             .in = std::move(events)});
+
+    response.out.write_back_outputs(*out);
 }
 
 bool CLAP_ABI clap_plugin_proxy::ext_state_save(const clap_plugin_t* plugin,

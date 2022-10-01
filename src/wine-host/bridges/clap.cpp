@@ -941,16 +941,18 @@ void ClapBridge::register_plugin_instance(
 
                         return Ack{};
                     },
-                    [&](const clap::ext::params::plugin::Flush& request)
+                    [&](clap::ext::params::plugin::Flush& request)
                         -> clap::ext::params::plugin::Flush::Response {
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
 
-                        // TODO: Implement this
-                        // instance.extensions.params->flush(instance.plugin.get(),
-                        //                                   in, out);
+                        clap::events::EventList out{};
+                        instance.extensions.params->flush(
+                            instance.plugin.get(), request.in.input_events(),
+                            out.output_events());
 
-                        return clap::ext::params::plugin::FlushResponse{};
+                        return clap::ext::params::plugin::FlushResponse{
+                            .out = std::move(out)};
                     },
                     [&](const clap::ext::tail::plugin::Get& request)
                         -> clap::ext::tail::plugin::Get::Response {
