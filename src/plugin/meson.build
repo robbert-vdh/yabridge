@@ -80,6 +80,7 @@ if with_clap
     '../common/serialization/clap/ext/audio-ports.cpp',
     '../common/serialization/clap/ext/note-ports.cpp',
     '../common/serialization/clap/ext/params.cpp',
+    '../common/serialization/clap/events.cpp',
     '../common/serialization/clap/host.cpp',
     '../common/serialization/clap/plugin.cpp',
     '../common/serialization/clap/stream.cpp',

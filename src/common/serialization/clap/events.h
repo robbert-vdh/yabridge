@@ -269,6 +269,12 @@ struct Midi2 {
  */
 struct alignas(16) Event {
     /**
+     * Parse a CLAP event. Returns a nullopt if yabridge does not support the
+     * event.
+     */
+    static std::optional<Event> parse(const clap_event_header_t& generic_event);
+
+    /**
      * The time from the event header.
      */
     uint32_t time;
