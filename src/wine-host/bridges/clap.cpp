@@ -846,8 +846,7 @@ std::optional<AudioShmBuffer::Config> ClapBridge::setup_shared_audio_buffers(
     // `ClapProcess::reconstruct()` before passing the reconstructed process
     // data to `clap_plugin::process()`.
     auto set_port_pointers =
-        [&, &process_buffers =
-                instance.process_buffers]<std::invocable<uint32_t, uint32_t> F>(
+        [&]<std::invocable<uint32_t, uint32_t> F>(
             std::vector<std::vector<void*>>& port_pointers,
             const std::vector<std::vector<uint32_t>>& offsets,
             F&& get_channel_pointer) {
