@@ -21,9 +21,11 @@
 
 #include <bitsery/traits/string.h>
 #include <clap/events.h>
+#include <llvm/small-vector.h>
 
 #include "../bitsery/ext/in-place-variant.h"
 #include "../bitsery/ext/native-pointer.h"
+#include "../bitsery/traits/small-vector.h"
 #include "../common.h"
 
 namespace clap {
@@ -273,6 +275,50 @@ struct alignas(16) Event {
     void serialize(S& s) {
         s.ext(payload, bitsery::ext::InPlaceVariant{});
     }
+};
+
+/**
+ * A list storing one or more CLAP events. Can be used for both input and output
+ * events.
+ */
+class EventList {
+   public:
+    /**
+     * We only provide a default constructor here, because we need to fill the
+     * existing object with new events every processing cycle to avoid
+     * reallocating a new object every time.
+     */
+    EventList() noexcept;
+
+    /**
+     * Read data from a `clap_input_events_t` into this existing object. This
+     * minimizes reallocations by keeping `events_` as is.
+     */
+    void repopulate(const clap_input_events_t& in_events);
+
+    /**
+     * Remove all events. Used at the start of the process function for the
+     * output event list.
+     */
+    void clear() noexcept;
+
+    /**
+     * Write the stored events to the host's `clap_output_events_t`.
+     */
+    void write_back_outputs(const clap_output_events_t& out_events) const;
+
+    /**
+     * Return the number of events we store. Used in debug logs.
+     */
+    inline size_t size() const noexcept { return events_.size(); }
+
+    template <typename S>
+    void serialize(S& s) {
+        s.container(events_, 1 << 16);
+    }
+
+   private:
+    llvm::SmallVector<Event, 64> events_;
 };
 
 }  // namespace events

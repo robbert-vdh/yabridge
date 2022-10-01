@@ -128,5 +128,36 @@ const clap_event_header_t* Event::get() const {
         payload);
 }
 
+EventList::EventList() noexcept {}
+
+void EventList::repopulate(const clap_input_events_t& in_events) {
+    events_.clear();
+
+    const uint32_t num_events = in_events.size(&in_events);
+    for (uint32_t i = 0; i < num_events; i++) {
+        const clap_event_header_t* event = in_events.get(&in_events, i);
+        assert(event);
+
+        if (std::optional<Event> parsed_event = Event::parse(*event);
+            parsed_event) {
+            events_.emplace_back(std::move(*parsed_event));
+        }
+    }
+}
+
+void EventList::clear() noexcept {
+    events_.clear();
+}
+
+void EventList::write_back_outputs(
+    const clap_output_events_t& out_events) const {
+    for (const auto& event : events_) {
+        // We'll ignore the result here, we can't handle it anyways and maybe
+        // some hosts will return `false` for events they don't recognize
+        // instead of only when out of memory
+        out_events.try_push(&out_events, event.get());
+    }
+}
+
 }  // namespace events
 }  // namespace clap

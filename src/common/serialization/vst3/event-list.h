@@ -249,7 +249,7 @@ class YaEventList : public Steinberg::Vst::IEventList {
     size_t num_events() const noexcept;
 
     /**
-     * Write these events an output events queue on the `ProcessData` object
+     * Write these events to an output events queue on the `ProcessData` object
      * provided by the host.
      */
     void write_back_outputs(Steinberg::Vst::IEventList& output_events) const;
