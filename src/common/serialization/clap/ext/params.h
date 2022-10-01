@@ -24,6 +24,7 @@
 
 #include "../../../bitsery/ext/in-place-optional.h"
 #include "../../common.h"
+#include "../events.h"
 
 // Serialization messages for `clap/ext/params.h`
 
@@ -215,11 +216,11 @@ struct TextToValue {
  * The response to the `clap::ext::params::Flush` message defined below.
  */
 struct FlushResponse {
-    // TODO: Output events
+    clap::events::EventList out;
 
     template <typename S>
     void serialize(S& s) {
-        // TODO: Output events
+        s.object(out);
     }
 };
 
@@ -230,12 +231,12 @@ struct Flush {
     using Response = FlushResponse;
 
     native_size_t instance_id;
-    // TODO: Input events
+    clap::events::EventList in;
 
     template <typename S>
     void serialize(S& s) {
         s.value8b(instance_id);
-        // TODO: Input events
+        s.object(in);
     }
 };
 

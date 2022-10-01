@@ -380,9 +380,10 @@ bool ClapLogger::log_request(bool is_host_plugin,
 bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::ext::params::plugin::Flush& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
-        // TODO: Add event counts
         message << request.instance_id
-                << ": clap_plugin_params::flush(*in, *out)";
+                << ": clap_plugin_params::flush(*in = <clap_input_events_t* "
+                   "containing "
+                << request.in.size() << " events>, *out)";
     });
 }
 
@@ -746,8 +747,8 @@ void ClapLogger::log_response(
     bool is_host_plugin,
     const clap::ext::params::plugin::FlushResponse& response) {
     log_response_base(is_host_plugin, [&](auto& message) {
-        // TODO: Log output event count
-        message << "TODO: Log output event count";
+        message << "<clap_output_events_t* containing " << response.out.size()
+                << " events>";
     });
 }
 
