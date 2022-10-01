@@ -23,171 +23,84 @@ std::optional<Event> Event::parse(const clap_event_header_t& generic_event) {
     std::optional<decltype(Event::payload)> payload;
     if (generic_event.space_id == CLAP_CORE_EVENT_SPACE_ID) {
         switch (generic_event.type) {
-            case CLAP_EVENT_NOTE_ON: {
-                const auto& event =
-                    reinterpret_cast<const clap_event_note_t&>(generic_event);
-                payload = payload::Note{
-                    .event_type = payload::NoteEventType::On,
-                    .note_id = event.note_id,
-                    .port_index = event.port_index,
-                    .channel = event.channel,
-                    .key = event.key,
-                    .velocity = event.velocity,
-                };
-            } break;
-            case CLAP_EVENT_NOTE_OFF: {
-                const auto& event =
-                    reinterpret_cast<const clap_event_note_t&>(generic_event);
-                payload = payload::Note{
-                    .event_type = payload::NoteEventType::Off,
-                    .note_id = event.note_id,
-                    .port_index = event.port_index,
-                    .channel = event.channel,
-                    .key = event.key,
-                    .velocity = event.velocity,
-                };
-            } break;
-            case CLAP_EVENT_NOTE_CHOKE: {
-                const auto& event =
-                    reinterpret_cast<const clap_event_note_t&>(generic_event);
-                payload = payload::Note{
-                    .event_type = payload::NoteEventType::Choke,
-                    .note_id = event.note_id,
-                    .port_index = event.port_index,
-                    .channel = event.channel,
-                    .key = event.key,
-                    .velocity = event.velocity,
-                };
-            } break;
+            case CLAP_EVENT_NOTE_ON:
+            case CLAP_EVENT_NOTE_OFF:
+            case CLAP_EVENT_NOTE_CHOKE:
             case CLAP_EVENT_NOTE_END: {
                 const auto& event =
                     reinterpret_cast<const clap_event_note_t&>(generic_event);
-                payload = payload::Note{
-                    .event_type = payload::NoteEventType::End,
-                    .note_id = event.note_id,
-                    .port_index = event.port_index,
-                    .channel = event.channel,
-                    .key = event.key,
-                    .velocity = event.velocity,
-                };
+
+                // The original event type can be restored from the header
+                payload = payload::Note{.event = event};
             } break;
             case CLAP_EVENT_NOTE_EXPRESSION: {
                 const auto& event =
                     reinterpret_cast<const clap_event_note_expression_t&>(
                         generic_event);
-                payload = payload::NoteExpression{
-                    .expression_id = event.expression_id,
-                    .note_id = event.note_id,
-                    .port_index = event.port_index,
-                    .channel = event.channel,
-                    .key = event.key,
-                    .value = event.value,
-                };
+                payload = payload::NoteExpression{.event = event};
             } break;
             case CLAP_EVENT_PARAM_VALUE: {
                 const auto& event =
                     reinterpret_cast<const clap_event_param_value_t&>(
                         generic_event);
-                payload = payload::ParamValue{
-                    .param_id = event.param_id,
-                    .cookie = static_cast<native_size_t>(
-                        reinterpret_cast<size_t>(event.cookie)),
-                    .note_id = event.note_id,
-                    .port_index = event.port_index,
-                    .channel = event.channel,
-                    .key = event.key,
-                    .value = event.value,
-                };
+                payload = payload::ParamValue{.event = event};
             } break;
             case CLAP_EVENT_PARAM_MOD: {
                 const auto& event =
                     reinterpret_cast<const clap_event_param_mod_t&>(
                         generic_event);
-                payload = payload::ParamMod{
-                    .param_id = event.param_id,
-                    .cookie = static_cast<native_size_t>(
-                        reinterpret_cast<size_t>(event.cookie)),
-                    .note_id = event.note_id,
-                    .port_index = event.port_index,
-                    .channel = event.channel,
-                    .key = event.key,
-                    .amount = event.amount,
-                };
+                payload = payload::ParamMod{.event = event};
             } break;
-            case CLAP_EVENT_PARAM_GESTURE_BEGIN: {
-                const auto& event =
-                    reinterpret_cast<const clap_event_param_gesture_t&>(
-                        generic_event);
-                payload = payload::ParamGesture{
-                    .gesture_type = payload::ParamGestureType::Begin,
-                    .param_id = event.param_id,
-                };
-            } break;
+            case CLAP_EVENT_PARAM_GESTURE_BEGIN:
             case CLAP_EVENT_PARAM_GESTURE_END: {
                 const auto& event =
                     reinterpret_cast<const clap_event_param_gesture_t&>(
                         generic_event);
-                payload = payload::ParamGesture{
-                    .gesture_type = payload::ParamGestureType::End,
-                    .param_id = event.param_id,
-                };
+                payload = payload::ParamGesture{.event = event};
             } break;
             case CLAP_EVENT_TRANSPORT: {
                 const auto& event =
                     reinterpret_cast<const clap_event_transport_t&>(
                         generic_event);
-                payload = payload::Transport{
-                    .flags = event.flags,
-                    .song_pos_beats = event.song_pos_beats,
-                    .song_pos_seconds = event.song_pos_seconds,
-                    .tempo = event.tempo,
-                    .tempo_inc = event.tempo_inc,
-                    .loop_start_beats = event.loop_start_beats,
-                    .loop_end_beats = event.loop_end_beats,
-                    .loop_start_seconds = event.loop_start_seconds,
-                    .loop_end_seconds = event.loop_end_seconds,
-                    .bar_start = event.bar_start,
-                    .bar_number = event.bar_number,
-                    .tsig_num = event.tsig_num,
-                    .tsig_denom = event.tsig_denom,
-                };
+                payload = payload::Transport{.event = event};
             } break;
             case CLAP_EVENT_MIDI: {
                 const auto& event =
                     reinterpret_cast<const clap_event_midi_t&>(generic_event);
-                payload = payload::Midi{
-                    .port_index = event.port_index,
-                    .data{event.data[0], event.data[1], event.data[2]},
-                };
+                payload = payload::Midi{.event = event};
             } break;
             case CLAP_EVENT_MIDI_SYSEX: {
                 const auto& event =
                     reinterpret_cast<const clap_event_midi_sysex_t&>(
                         generic_event);
+
                 assert(event.buffer);
-                payload = payload::MidiSysex{
-                    .port_index = event.port_index,
+                const auto sysex_payload = payload::MidiSysex{
+                    .event =
+                        clap_event_midi_sysex_t{
+                            .header = event.header,
+                            .port_index = event.port_index,
+                            // The buffer and size fields will be restored
+                            // during the `get_header()` call. Nulling the
+                            // pointer and zeroing the size should make
+                            // incorrect usage much easier to spot than leaving
+                            // them dangling.
+                            .buffer = nullptr,
+                            .size = 0},
                     .buffer =
                         std::string(reinterpret_cast<const char*>(event.buffer),
-                                    event.size),
-                };
+                                    event.size)};
             } break;
             case CLAP_EVENT_MIDI2: {
                 const auto& event =
                     reinterpret_cast<const clap_event_midi2_t&>(generic_event);
-                payload = payload::Midi2{
-                    .port_index = event.port_index,
-                    .data{event.data[0], event.data[1], event.data[2],
-                          event.data[3]},
-                };
+                payload = payload::Midi2{.event = event};
             } break;
         }
     }
 
     if (payload) {
-        return Event{.time = generic_event.time,
-                     .flags = generic_event.flags,
-                     .payload = std::move(*payload)};
+        return Event{.payload = std::move(*payload)};
     } else {
         return std::nullopt;
     }

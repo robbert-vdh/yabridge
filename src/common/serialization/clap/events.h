@@ -23,48 +23,36 @@
 #include <clap/events.h>
 
 #include "../bitsery/ext/in-place-variant.h"
+#include "../bitsery/ext/native-pointer.h"
 #include "../common.h"
 
 namespace clap {
 namespace events {
 
 /**
- * The actual event data. `clap::events::Event` stores these as a variant
- * alongside the timestamp and flags for the original event header.
+ * The actual event data. `clap::events::Event` stores these as a variant.
+ * Ideally we'd store only the non-header payload data, but the
+ * `clap_input_events::get()` function requires us to return a pointer to the
+ * header, so if we did that then we'd need to create a second buffer containing
+ * the serialzed events.
  */
 namespace payload {
 
 /**
- * `Note` can be a variety of note events.
- */
-enum class NoteEventType : uint8_t {
-    On,
-    Off,
-    Choke,
-    End,
-};
-
-/**
- * The payload for `clap_event_note`.
+ * The payload for `clap_event_note`. This is used for multiple event types,
+ * which are encoded through `event.header.type`.
  */
 struct Note {
-    NoteEventType event_type;
-
-    int32_t note_id;
-    int16_t port_index;
-    int16_t channel;
-    int16_t key;
-
-    double velocity;
+    clap_event_note_t event;
 
     template <typename S>
     void serialize(S& s) {
-        s.value1b(event_type);
-        s.value4b(note_id);
-        s.value2b(port_index);
-        s.value2b(channel);
-        s.value2b(key);
-        s.value8b(velocity);
+        s.object(event.header);
+        s.value4b(event.note_id);
+        s.value2b(event.port_index);
+        s.value2b(event.channel);
+        s.value2b(event.key);
+        s.value8b(event.velocity);
     }
 };
 
@@ -72,23 +60,17 @@ struct Note {
  * The payload for `clap_event_note_expression`.
  */
 struct NoteExpression {
-    clap_note_expression expression_id;
-
-    int32_t note_id;
-    int16_t port_index;
-    int16_t channel;
-    int16_t key;
-
-    double value;
+    clap_event_note_expression_t event;
 
     template <typename S>
     void serialize(S& s) {
-        s.value4b(expression_id);
-        s.value4b(note_id);
-        s.value2b(port_index);
-        s.value2b(channel);
-        s.value2b(key);
-        s.value8b(value);
+        s.object(event.header);
+        s.value4b(event.expression_id);
+        s.value4b(event.note_id);
+        s.value2b(event.port_index);
+        s.value2b(event.channel);
+        s.value2b(event.key);
+        s.value8b(event.value);
     }
 };
 
@@ -96,30 +78,26 @@ struct NoteExpression {
  * The payload for `clap_event_param_value`.
  */
 struct ParamValue {
-    clap_id param_id;
-    // This is a pointer. Using `native_size_t`/the host system's pointer size
-    // here will allow bridged 32-bit plugins to work correctly.
-    // XXX: This will silently blow up when using 32-bit yabridge on a 64-bit
-    //      system with 64-bit plugins, but that's such a specific use case that
-    //      we won't even bother.
-    native_size_t cookie;
-
-    int32_t note_id;
-    int16_t port_index;
-    int16_t channel;
-    int16_t key;
-
-    double value;
+    clap_event_param_value_t event;
 
     template <typename S>
     void serialize(S& s) {
-        s.value4b(param_id);
-        s.value8b(cookie);
-        s.value4b(note_id);
-        s.value2b(port_index);
-        s.value2b(channel);
-        s.value2b(key);
-        s.value8b(value);
+        s.object(event.header);
+        s.value4b(event.param_id);
+        // The cookie is a pointer. Using `native_size_t`/the host system's
+        // pointer size here will allow bridged 32-bit plugins to work
+        // correctly.
+        // XXX: This will silently blow up when using 32-bit yabridge on a
+        //      64-bit system with 64-bit plugins, but that's such a specific
+        //      use case that we won't even bother. Building 32-bit yabridge
+        //      with CLAP support on 64-bit symbols has been disabled to prevent
+        //      this from being an issue.
+        s.ext(event.cookie, bitsery::ext::NativePointer{});
+        s.value4b(event.note_id);
+        s.value2b(event.port_index);
+        s.value2b(event.channel);
+        s.value2b(event.key);
+        s.value8b(event.value);
     }
 };
 
@@ -127,49 +105,33 @@ struct ParamValue {
  * The payload for `clap_event_param_mod`.
  */
 struct ParamMod {
-    clap_id param_id;
-    // Same as above
-    native_size_t cookie;
-
-    int32_t note_id;
-    int16_t port_index;
-    int16_t channel;
-    int16_t key;
-
-    double amount;
+    clap_event_param_mod_t event;
 
     template <typename S>
     void serialize(S& s) {
-        s.value4b(param_id);
-        s.value8b(cookie);
-        s.value4b(note_id);
-        s.value2b(port_index);
-        s.value2b(channel);
-        s.value2b(key);
-        s.value8b(amount);
+        s.object(event.header);
+        s.value4b(event.param_id);
+        // Same as the above
+        s.ext(event.cookie, bitsery::ext::NativePointer{});
+        s.value4b(event.note_id);
+        s.value2b(event.port_index);
+        s.value2b(event.channel);
+        s.value2b(event.key);
+        s.value8b(event.amount);
     }
 };
 
 /**
- * `ParamGesture` can both be a `CLAP_EVENT_PARAM_GESTURE_BEGIN` and a
- * `CLAP_EVENT_PARAM_GESTURE_END`.
- */
-enum class ParamGestureType : uint8_t {
-    Begin,
-    End,
-};
-
-/**
- * The payload for `clap_event_param_gesture`.
+ * The payload for `clap_event_param_gesture`. This is used for multiple event
+ * types, which are encoded through `event.header.type`.
  */
 struct ParamGesture {
-    ParamGestureType gesture_type;
-    clap_id param_id;
+    clap_event_param_gesture_t event;
 
     template <typename S>
     void serialize(S& s) {
-        s.value1b(gesture_type);
-        s.value4b(param_id);
+        s.object(event.header);
+        s.value4b(event.param_id);
     }
 };
 
@@ -177,40 +139,24 @@ struct ParamGesture {
  * The payload for `clap_event_transport`.
  */
 struct Transport {
-    uint32_t flags;
-
-    clap_beattime song_pos_beats;
-    clap_sectime song_pos_seconds;
-
-    double tempo;
-    double tempo_inc;
-
-    clap_beattime loop_start_beats;
-    clap_beattime loop_end_beats;
-    clap_sectime loop_start_seconds;
-    clap_sectime loop_end_seconds;
-
-    clap_beattime bar_start;
-    int32_t bar_number;
-
-    uint16_t tsig_num;
-    uint16_t tsig_denom;
+    clap_event_transport_t event;
 
     template <typename S>
     void serialize(S& s) {
-        s.value4b(flags);
-        s.value8b(song_pos_beats);
-        s.value8b(song_pos_seconds);
-        s.value8b(tempo);
-        s.value8b(tempo_inc);
-        s.value8b(loop_start_beats);
-        s.value8b(loop_end_beats);
-        s.value8b(loop_start_seconds);
-        s.value8b(loop_end_seconds);
-        s.value8b(bar_start);
-        s.value4b(bar_number);
-        s.value2b(tsig_num);
-        s.value2b(tsig_denom);
+        s.object(event.header);
+        s.value4b(event.flags);
+        s.value8b(event.song_pos_beats);
+        s.value8b(event.song_pos_seconds);
+        s.value8b(event.tempo);
+        s.value8b(event.tempo_inc);
+        s.value8b(event.loop_start_beats);
+        s.value8b(event.loop_end_beats);
+        s.value8b(event.loop_start_seconds);
+        s.value8b(event.loop_end_seconds);
+        s.value8b(event.bar_start);
+        s.value4b(event.bar_number);
+        s.value2b(event.tsig_num);
+        s.value2b(event.tsig_denom);
     }
 };
 
@@ -218,13 +164,13 @@ struct Transport {
  * The payload for `clap_event_midi`.
  */
 struct Midi {
-    uint16_t port_index;
-    uint8_t data[3];
+    clap_event_midi_t event;
 
     template <typename S>
     void serialize(S& s) {
-        s.value2b(port_index);
-        s.container4b(data);
+        s.object(event.header);
+        s.value2b(event.port_index);
+        s.container1b(event.data);
     }
 };
 
@@ -232,18 +178,36 @@ struct Midi {
  * The payload for `clap_event_midi_sysex`.
  */
 struct MidiSysex {
-    uint16_t port_index;
-    // We're not expecting a lot of SysEx events, and `std::string`'s small
-    // string optimization should make it possible to send small sysex events
-    // without allocations. An alternative that won't allocate as quickly would
-    // be to store the data in a vector and to only store a tag here, but I
-    // don't think it's necessary at the moment.
+    clap_event_midi_sysex_t event;
+
+    /**
+     * The actual SysEx event data. The pointer in `event` is set to the string
+     * data after the event has been created. As long as this event is not moved
+     * that pointer will remain valid.
+     *
+     * We're not expecting a lot of SysEx events, and `std::string`'s small
+     * string optimization should make it possible to send small sysex events
+     * without allocations. An alternative that won't allocate as quickly would
+     * be to store the data in a vector and to only store a tag here, but I
+     * don't think it's necessary at the moment.
+     */
     std::string buffer;
 
     template <typename S>
     void serialize(S& s) {
-        s.value2b(port_index);
+        s.object(event.header);
+        s.value2b(event.port_index);
+
         s.text1b(buffer, 1 << 16);
+
+        // NOTE: These will need to be set when retrieving the event using
+        //       `clap_input_events::get()`. We could set the pointer here, but
+        //       in the off chance that there are a lot more events than we can
+        //       handle and the vector is reallocated to avoid dropping events,
+        //       then these pointers would become dangling. Making sure these
+        //       are null until the event is retrieved is probably for the best.
+        event.buffer = nullptr;
+        event.size = 0;
     }
 };
 
@@ -251,13 +215,13 @@ struct MidiSysex {
  * The payload for `clap_event_midi2`.
  */
 struct Midi2 {
-    uint16_t port_index;
-    uint32_t data[4];
+    clap_event_midi2_t event;
 
     template <typename S>
     void serialize(S& s) {
-        s.value2b(port_index);
-        s.container4b(data);
+        s.object(event.header);
+        s.value2b(event.port_index);
+        s.container4b(event.data);
     }
 };
 
@@ -275,16 +239,13 @@ struct alignas(16) Event {
     static std::optional<Event> parse(const clap_event_header_t& generic_event);
 
     /**
-     * The time from the event header.
-     */
-    uint32_t time;
-    /**
-     * The flags from the event header.
-     */
-    uint32_t flags;
-
-    /**
-     * The actual event data. This also encodes the type, size, and space ID.
+     * The actual event data. These also contain the header because storing the
+     * entire `clap_event_*_t` struct is the only way to serialize the event
+     * list in a way that doesn't require us to create a second event list in
+     * that format after deserializing the events. An alternative would be to
+     * write the event in the proper format to a buffer before returning it from
+     * `clap_input_events::get()`, but that would cause unexpected lifetime
+     * issues.
      */
     std::variant<payload::Note,
                  payload::NoteExpression,
@@ -303,11 +264,21 @@ struct alignas(16) Event {
 
     template <typename S>
     void serialize(S& s) {
-        s.value4b(time);
-        s.value4b(flags);
         s.ext(payload, bitsery::ext::InPlaceVariant{});
     }
 };
 
 }  // namespace events
 }  // namespace clap
+
+template <typename S>
+void serialize(S& s, clap_event_header_t& event_header) {
+    // Feels a bit weird serializing this, but assuming the host/plugin set it
+    // correctly it will be fine. And this is kind of a host implementation
+    // detail for storing the events in a packed list anyways.
+    s.value4b(event_header.size);
+    s.value4b(event_header.time);
+    s.value2b(event_header.space_id);
+    s.value2b(event_header.type);
+    s.value4b(event_header.flags);
+}
