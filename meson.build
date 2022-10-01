@@ -27,6 +27,12 @@ with_system_asio = get_option('system-asio')
 with_winedbg = get_option('winedbg')
 with_vst3 = get_option('vst3')
 
+# Cookies can't be stored correctly when the native host is 32-bit and the
+# bridged plugin is 64-bit
+if with_clap and with_32bit_libraries and is_64bit_system
+  error('CLAP support will not work correctly when using 32-bit yabridge libraries together with 64-bit host binaries.')
+endif
+
 #
 # Compiler flags
 #
