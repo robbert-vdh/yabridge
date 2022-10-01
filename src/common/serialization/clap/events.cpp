@@ -16,6 +16,8 @@
 
 #include "events.h"
 
+#include "../../utils.h"
+
 namespace clap {
 namespace events {
 
@@ -104,6 +106,26 @@ std::optional<Event> Event::parse(const clap_event_header_t& generic_event) {
     } else {
         return std::nullopt;
     }
+}
+
+const clap_event_header_t* Event::get() const {
+    return std::visit(
+        overload{[](payload::MidiSysex& event) -> const clap_event_header_t* {
+                     // These events contain heap data pointers. We store this
+                     // data using an `std::string` alongside the event struct,
+                     // but we can only set the pointer here just before
+                     // returning the event in case it was moved inbetween
+                     // deserialization and this function being called.
+                     event.event.buffer =
+                         reinterpret_cast<const uint8_t*>(event.buffer.data());
+                     event.event.size = event.buffer.size();
+
+                     return &event.event.header;
+                 },
+                 [](const auto& event) -> const clap_event_header_t* {
+                     return &event.event.header;
+                 }},
+        payload);
 }
 
 }  // namespace events

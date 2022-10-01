@@ -239,6 +239,12 @@ struct alignas(16) Event {
     static std::optional<Event> parse(const clap_event_header_t& generic_event);
 
     /**
+     * Get the `clap_event_header_t*` representation for this event. The pointer
+     * is valid as long as this struct isn't moved.
+     */
+    const clap_event_header_t* get() const;
+
+    /**
      * The actual event data. These also contain the header because storing the
      * entire `clap_event_*_t` struct is the only way to serialize the event
      * list in a way that doesn't require us to create a second event list in
@@ -247,19 +253,20 @@ struct alignas(16) Event {
      * `clap_input_events::get()`, but that would cause unexpected lifetime
      * issues.
      */
-    std::variant<payload::Note,
-                 payload::NoteExpression,
-                 payload::ParamValue,
-                 payload::ParamMod,
-                 payload::ParamGesture,
-                 // Most events are about the same length, but having the
-                 // transport in here sadly doubles this struct's size
-                 // TODO: Pack the events at some point, this will require
-                 //       special handling for SysEx events
-                 payload::Transport,
-                 payload::Midi,
-                 payload::MidiSysex,
-                 payload::Midi2>
+    mutable std::variant<
+        payload::Note,
+        payload::NoteExpression,
+        payload::ParamValue,
+        payload::ParamMod,
+        payload::ParamGesture,
+        // Most events are about the same length, but having the transport in
+        // here sadly doubles this struct's size
+        // TODO: Pack the events at some point, this will require special
+        //       handling for SysEx events
+        payload::Transport,
+        payload::Midi,
+        payload::MidiSysex,
+        payload::Midi2>
         payload;
 
     template <typename S>
