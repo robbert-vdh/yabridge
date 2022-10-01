@@ -52,17 +52,17 @@ Stream::Stream(const clap_istream_t& original) {
 }
 
 const clap_ostream_t* Stream::ostream() {
-    ostream_vtable.write = ostream_write;
-    ostream_vtable.ctx = this;
+    ostream_vtable_.write = ostream_write;
+    ostream_vtable_.ctx = this;
 
-    return &ostream_vtable;
+    return &ostream_vtable_;
 }
 
 const clap_istream_t* Stream::istream() {
-    istream_vtable.read = istream_read;
-    istream_vtable.ctx = this;
+    istream_vtable_.read = istream_read;
+    istream_vtable_.ctx = this;
 
-    return &istream_vtable;
+    return &istream_vtable_;
 }
 
 void Stream::write_to_stream(const clap_ostream_t& original) const {
@@ -104,11 +104,11 @@ int64_t CLAP_ABI Stream::istream_read(const struct clap_istream* stream,
     // `self->read_pos` is a cursor in the buffer. CLAP streams always read from
     // begin to end with no way to rewind.
     const size_t num_bytes_read = std::min(
-        static_cast<size_t>(size), self->buffer_.size() - self->read_pos);
+        static_cast<size_t>(size), self->buffer_.size() - self->read_pos_);
 
-    std::copy_n(self->buffer_.data() + self->read_pos, num_bytes_read,
+    std::copy_n(self->buffer_.data() + self->read_pos_, num_bytes_read,
                 static_cast<uint8_t*>(buffer));
-    self->read_pos += num_bytes_read;
+    self->read_pos_ += num_bytes_read;
 
     return static_cast<int64_t>(num_bytes_read);
 }

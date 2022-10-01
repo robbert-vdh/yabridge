@@ -86,11 +86,11 @@ class Stream {
     /**
      * The current position in the buffer used in `istream_read()`.
      */
-    size_t read_pos = 0;
+    size_t read_pos_ = 0;
 
     // These are populated in the `ostream()` and `istream()` methods
-    clap_ostream_t ostream_vtable{};
-    clap_istream_t istream_vtable{};
+    clap_ostream_t ostream_vtable_{};
+    clap_istream_t istream_vtable_{};
 };
 
 }  // namespace stream
