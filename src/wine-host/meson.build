@@ -86,6 +86,7 @@ if with_clap
     '../common/serialization/clap/events.cpp',
     '../common/serialization/clap/host.cpp',
     '../common/serialization/clap/plugin.cpp',
+    '../common/serialization/clap/process.cpp',
     '../common/serialization/clap/stream.cpp',
     'bridges/clap-impls/host-proxy.cpp',
     'bridges/clap.cpp',

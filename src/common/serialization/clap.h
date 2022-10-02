@@ -32,6 +32,7 @@
 #include "clap/ext/tail.h"
 #include "clap/host.h"
 #include "clap/plugin-factory.h"
+#include "clap/process.h"
 #include "common.h"
 
 // The CLAP communication strategy is identical to what we do for VST3.
