@@ -18,10 +18,7 @@
 
 #include "../../utils.h"
 
-YaProcessData::YaProcessData() noexcept
-    :  // This needs to be zero initialized so we can safely call
-       // `create_response()` on the plugin side
-      reconstructed_process_data_() {}
+YaProcessData::YaProcessData() noexcept {}
 
 void YaProcessData::repopulate(const Steinberg::Vst::ProcessData& process_data,
                                AudioShmBuffer& shared_audio_buffers) {

@@ -59,29 +59,28 @@ class YaProcessData {
      * Copy data from a host provided `ProcessData` object during a process
      * call. This struct can then be serialized, and
      * `YaProcessData::reconstruct()` can then be used again to recreate the
-     * original `ProcessData` object. This will avoid allocating unless it's
+     * original `ProcessData` object. This avoids allocating unless it's
      * absolutely necessary (e.g. when we receive more parameter changes than
      * we've received in previous calls).
      *
-     * During this process the input audio will be written to
-     * `shared_audio_buffers`. There's no direct link between this
-     * `YaProcessData` object and those buffers, but they should be used as a
-     * pair. This is a bit ugly, but optimizations sadly never made code
-     * prettier.
+     * The input audio buffer will be copied to `shared_audio_buffers`. There's
+     * no direct link between this `YaProcessData` object and those buffers, but
+     * they should be treated as a pair. This is a bit ugly, but optimizations
+     * sadly never made code prettier.
      */
     void repopulate(const Steinberg::Vst::ProcessData& process_data,
                     AudioShmBuffer& shared_audio_buffers);
 
     /**
-     * Reconstruct the original `ProcessData` object passed to the constructor
-     * and return it. This is used in the Wine plugin host when processing an
+     * Reconstruct the original `ProcessData` object passed to `repopulate()`
+     * and return it. This is used in the Wine plugin host when handling an
      * `IAudioProcessor::process()` call.
      *
      * Because the actual audio is stored in an `AudioShmBuffer` outside of this
      * object, we need to make sure that the `AudioBusBuffers` objects we're
      * using point to the correct buffer even after a resize. To make it more
      * difficult for us to mess this up, we'll store those bus-channel pointers
-     * in `Vst3Bridge::InstanceInterfaces` and we'll point the pointers in our
+     * in `Vst3Bridge::Vst3PluginInstance` and we'll point the pointers in our
      * `inputs` and `outputs` fields directly to those pointers. They will have
      * been set up during `IAudioProcessor::setActive()`.
      *
@@ -185,7 +184,7 @@ class YaProcessData {
     /**
      * The processing mode copied directly from the input struct.
      */
-    int32 process_mode_;
+    int32 process_mode_ = 0;
 
     /**
      * The symbolic sample size (see `Steinberg::Vst::SymbolicSampleSizes`) is
@@ -193,12 +192,12 @@ class YaProcessData {
      * union of array of either single or double precision floating point
      * arrays. This field determines which of those variants should be used.
      */
-    int32 symbolic_sample_size_;
+    int32 symbolic_sample_size_ = 0;
 
     /**
      * The number of samples in each audio buffer.
      */
-    int32 num_samples_;
+    int32 num_samples_ = 0;
 
     /**
      * This contains metadata about the input buffers for every bus. During
@@ -263,9 +262,10 @@ class YaProcessData {
     Response response_object_;
 
     /**
-     * The process data we reconstruct from the other fields during `get()`.
+     * The process data we reconstruct from the other fields during
+     * `reconstruct()`.
      */
-    Steinberg::Vst::ProcessData reconstructed_process_data_;
+    Steinberg::Vst::ProcessData reconstructed_process_data_{};
 };
 
 namespace Steinberg {
