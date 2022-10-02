@@ -57,8 +57,8 @@ Vst2Bridge* current_bridge_instance = nullptr;
  *
  * NOTE: This is needed for Voxengo VST2 plugins in Renoise. When
  *       `effSetChunk()` is called from the GUI thread, Voxengo VST2 plugins
- *       will (wrongly) call `audioMasterUpdateDisplay()` while handling that
- *       call. Renoise then calls `effGetProgram()` while handling that which
+ *       will (wrongly) call `audioMasterUpdateDisplay()` during that
+ *       call. Renoise then calls `effGetProgram()` during that which
  *       shouldn't cause any issues, but the Voxengo plugins try to lock
  *       recursive mutexes on both functions so `effGetProgram()` _has_ to be
  *       called on the same thread that is currently calling
@@ -89,7 +89,7 @@ static const std::unordered_set<int> safe_mutually_recursive_requests{
  * involve GUI operations.
  *
  * NOTE: `effMainsChanged` is the odd one here. EZdrummer interacts with the
- *       Win32 message loop while handling this function. If we don't execute
+ *       Win32 message loop during this function. If we don't execute
  *       this from the main GUI thread, then EZdrummer won't produce any sound.
  * NOTE: `effSetChunk` and `effGetChunk` should be callable from any thread, but
  *       Algonaut Atlas doesn't restore chunk data unless `effSetChunk` is run

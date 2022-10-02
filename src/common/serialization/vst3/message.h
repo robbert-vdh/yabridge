@@ -110,7 +110,7 @@ class YaMessagePtr : public Steinberg::Vst::IMessage {
  * Instead, we'll send a thin wrapper that only stores a name and a pointer to
  * the actual object. This is needed in case the plugin tries to store the
  * `IMessage` object, thinking it's backed by a smart pointer. This means that
- * the message we pass while handling `IConnectionPoint::notify` should live as
+ * the message we pass during `IConnectionPoint::notify` should live as
  * long as the original message object, thus we'll use a pointer to get back the
  * original message object.
  *

@@ -147,7 +147,7 @@ struct Vst3PluginInstance {
      * If the host passes an `IPlugFrame` object during `IPlugView::setFrame()`,
      * then we'll store a proxy object here and then pass it to
      * `plug_view->setFrame()`. Will be initialized with a null pointer until
-     * used. When we destroy `plug_view` while handling
+     * used. When we destroy `plug_view` during
      * `Vst3PlugViewProxy::Destruct`, we'll also destroy (our pointer of) this
      * proxy object.
      */

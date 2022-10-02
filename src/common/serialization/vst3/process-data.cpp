@@ -127,7 +127,7 @@ Steinberg::Vst::ProcessData& YaProcessData::reconstruct(
 
     // The actual audio data is contained within a shared memory object, and the
     // input and output pointers point to regions in that object. These pointers
-    // are calculated while handling `IAudioProcessor::setActive()`.
+    // are calculated during `IAudioProcessor::setActive()`.
     // NOTE: The 32-bit and 64-bit audio pointers are a union, and since this is
     //       a raw memory buffer we can set either `channelBuffers32` or
     //       `channelBuffers64` to point at that buffer as long as we do the

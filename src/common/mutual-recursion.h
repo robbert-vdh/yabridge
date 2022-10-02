@@ -64,7 +64,7 @@ template <typename Thread>
 class MutualRecursionHelper {
    public:
     /**
-     * Run `fn` from a new thread, while handling calls to `handle()` and
+     * Run `fn` from a new thread, during calls to `handle()` and
      * `maybe_handle()` on this thread. See the docstring on
      * `MutualRecursionHelper` for more information on this mechanism.
      *

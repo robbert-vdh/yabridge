@@ -1826,7 +1826,7 @@ size_t Vst3Bridge::register_object_instance(
 
 void Vst3Bridge::unregister_object_instance(size_t instance_id) {
     // Tear the dedicated audio processing socket down again if we
-    // created one while handling `Vst3PluginProxy::Construct`
+    // created one during `Vst3PluginProxy::Construct`
     if (const auto& [instance, _] = get_instance(instance_id);
         instance.interfaces.audio_processor || instance.interfaces.component) {
         sockets_.remove_audio_processor(instance_id);
