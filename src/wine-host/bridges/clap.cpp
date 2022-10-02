@@ -899,72 +899,109 @@ void ClapBridge::register_plugin_instance(
     // Every plugin instance gets its own audio thread along with sockets for
     // host->plugin control messages and plugin->host callbacks
     std::promise<void> socket_listening_latch;
-    object_instances_.at(instance_id).audio_thread_handler =
-        Win32Thread([&, instance_id]() {
-            set_realtime_priority(true);
+    object_instances_.at(instance_id)
+        .audio_thread_handler = Win32Thread([&, instance_id]() {
+        set_realtime_priority(true);
 
-            // XXX: Like with VST2 worker threads, when using plugin groups the
-            //      thread names from different plugins will clash. Not a huge
-            //      deal probably, since duplicate thread names are still more
-            //      useful than no thread names.
-            const std::string thread_name =
-                "audio-" + std::to_string(instance_id);
-            pthread_setname_np(pthread_self(), thread_name.c_str());
+        // XXX: Like with VST2 worker threads, when using plugin groups the
+        //      thread names from different plugins will clash. Not a huge
+        //      deal probably, since duplicate thread names are still more
+        //      useful than no thread names.
+        const std::string thread_name = "audio-" + std::to_string(instance_id);
+        pthread_setname_np(pthread_self(), thread_name.c_str());
 
-            sockets_.add_audio_thread_and_listen_control(
-                instance_id, socket_listening_latch,
-                overload{
-                    [&](const clap::plugin::StartProcessing& request)
-                        -> clap::plugin::StartProcessing::Response {
-                        const auto& [instance, _] =
-                            get_instance(request.instance_id);
+        sockets_.add_audio_thread_and_listen_control(
+            instance_id, socket_listening_latch,
+            overload{
+                [&](const clap::plugin::StartProcessing& request)
+                    -> clap::plugin::StartProcessing::Response {
+                    const auto& [instance, _] =
+                        get_instance(request.instance_id);
 
-                        return instance.plugin->start_processing(
-                            instance.plugin.get());
-                    },
-                    [&](const clap::plugin::StopProcessing& request)
-                        -> clap::plugin::StopProcessing::Response {
-                        const auto& [instance, _] =
-                            get_instance(request.instance_id);
+                    return instance.plugin->start_processing(
+                        instance.plugin.get());
+                },
+                [&](const clap::plugin::StopProcessing& request)
+                    -> clap::plugin::StopProcessing::Response {
+                    const auto& [instance, _] =
+                        get_instance(request.instance_id);
 
-                        instance.plugin->stop_processing(instance.plugin.get());
+                    instance.plugin->stop_processing(instance.plugin.get());
 
-                        return Ack{};
-                    },
-                    [&](const clap::plugin::Reset& request)
-                        -> clap::plugin::Reset::Response {
-                        const auto& [instance, _] =
-                            get_instance(request.instance_id);
+                    return Ack{};
+                },
+                [&](const clap::plugin::Reset& request)
+                    -> clap::plugin::Reset::Response {
+                    const auto& [instance, _] =
+                        get_instance(request.instance_id);
 
-                        instance.plugin->reset(instance.plugin.get());
+                    instance.plugin->reset(instance.plugin.get());
 
-                        return Ack{};
-                    },
+                    return Ack{};
+                },
+                [&](const MessageReference<clap::plugin::Process>& request_ref)
+                    -> clap::plugin::Process::Response {
+                    // NOTE: To prevent allocations we keep this actual
+                    //       `clap::plugin::Process` object around as part of a
+                    //       static thread local `ClapAudioThreadControlRequest`
+                    //       object, and we only store a reference to it in our
+                    //       variant (this is done during the deserialization in
+                    //       `bitsery::ext::MessageReference`)
+                    clap::plugin::Process& request = request_ref.get();
+
+                    // As suggested by Jack Winter, we'll synchronize this
+                    // thread's audio processing priority with that of the
+                    // host's audio thread every once in a while
+                    if (request.new_realtime_priority) {
+                        set_realtime_priority(true,
+                                              *request.new_realtime_priority);
+                    }
+
+                    const auto& [instance, _] =
+                        get_instance(request.instance_id);
+
+                    // Most plugins will already enable FTZ, but there are a
+                    // handful of plugins that don't that suffer from extreme
+                    // DSP load increases when they start producing denormals
+                    ScopedFlushToZero ftz_guard;
+
+                    // The actual audio is stored in the shared memory
+                    // buffers, so the reconstruction function will need to
+                    // know where it should point the `AudioBusBuffers` to
                     // TODO: Once we add the render extension, process on the
                     //       main thread when doing offline rendering
-                    [&](clap::ext::params::plugin::Flush& request)
-                        -> clap::ext::params::plugin::Flush::Response {
-                        const auto& [instance, _] =
-                            get_instance(request.instance_id);
+                    auto& reconstructed = request.process.reconstruct(
+                        instance.process_buffers_input_pointers,
+                        instance.process_buffers_output_pointers);
+                    clap_process_status result = instance.plugin->process(
+                        instance.plugin.get(), &reconstructed);
 
-                        clap::events::EventList out{};
-                        instance.extensions.params->flush(
-                            instance.plugin.get(), request.in.input_events(),
-                            out.output_events());
+                    return clap::plugin::ProcessResponse{
+                        .result = result,
+                        .output_data = request.process.create_response()};
+                },
+                [&](clap::ext::params::plugin::Flush& request)
+                    -> clap::ext::params::plugin::Flush::Response {
+                    const auto& [instance, _] =
+                        get_instance(request.instance_id);
 
-                        return clap::ext::params::plugin::FlushResponse{
-                            .out = std::move(out)};
-                    },
-                    [&](const clap::ext::tail::plugin::Get& request)
-                        -> clap::ext::tail::plugin::Get::Response {
-                        const auto& [instance, _] =
-                            get_instance(request.instance_id);
+                    clap::events::EventList out{};
+                    instance.extensions.params->flush(instance.plugin.get(),
+                                                      request.in.input_events(),
+                                                      out.output_events());
 
-                        return instance.extensions.tail->get(
-                            instance.plugin.get());
-                    },
-                });
-        });
+                    return clap::ext::params::plugin::FlushResponse{
+                        .out = std::move(out)};
+                },
+                [&](const clap::ext::tail::plugin::Get& request)
+                    -> clap::ext::tail::plugin::Get::Response {
+                    const auto& [instance, _] =
+                        get_instance(request.instance_id);
+
+                    return instance.extensions.tail->get(instance.plugin.get());
+                },
+            });
+    });
 
     // Wait for the new socket to be listening on before continuing. Otherwise
     // the native plugin may try to connect to it before our thread is up and

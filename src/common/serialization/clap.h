@@ -110,48 +110,48 @@ struct ClapAudioThreadControlRequest {
     template <typename T>
     ClapAudioThreadControlRequest(T request) : payload(std::move(request)) {}
 
-    using Payload = std::variant<clap::plugin::StartProcessing,
-                                 clap::plugin::StopProcessing,
-                                 clap::plugin::Reset,
-                                 clap::ext::params::plugin::Flush,
-                                 clap::ext::tail::plugin::Get>;
+    using Payload =
+        std::variant<clap::plugin::StartProcessing,
+                     clap::plugin::StopProcessing,
+                     clap::plugin::Reset,
+                     // The actual value for this will be stored in the
+                     // `process_request` field on `clap_plugin_proxy`. That way
+                     // we don't have to destroy the object (and deallocate all
+                     // vectors in it) on the Wine side during every processing
+                     // cycle.
+                     MessageReference<clap::plugin::Process>,
+                     clap::ext::params::plugin::Flush,
+                     clap::ext::tail::plugin::Get>;
 
     Payload payload;
 
     template <typename S>
     void serialize(S& s) {
-        s.ext(
-            payload,
-            bitsery::ext::InPlaceVariant{
-                // TODO: Process data
-                // [&](S& s,
-                //     MessageReference<YaAudioProcessor::Process>& request_ref)
-                //     {
-                //     // When serializing this reference we'll read the data
-                //     // directly from the referred to object. During
-                //     // deserializing we'll deserialize into the persistent and
-                //     // thread local `process_request` object (see
-                //     // `ClapSockets::add_audio_processor_and_listen`) and then
-                //     // reassign the reference to point to that object.
-                //     s.ext(request_ref,
-                //           bitsery::ext::MessageReference(process_request_));
-                // },
-                [](S& s, auto& request) { s.object(request); }});
+        s.ext(payload,
+              bitsery::ext::InPlaceVariant{
+                  [&](S& s,
+                      MessageReference<clap::plugin::Process>& request_ref) {
+                      // When serializing this reference we'll read the data
+                      // directly from the referred to object. During
+                      // deserializing we'll deserialize into the persistent and
+                      // thread local `process_request` object (see
+                      // `ClapSockets::add_audio_thread_and_listen_control`) and
+                      // then reassign the reference to point to that object.
+                      s.ext(request_ref,
+                            bitsery::ext::MessageReference(process_request_));
+                  },
+                  [](S& s, auto& request) { s.object(request); }});
     }
 
-    // TODO: Process data, update docstring
-    // /**
-    //  * Used for deserializing the
-    //  `MessageReference<YaAudioProcessor::Process>`
-    //  * variant. When we encounter this variant, we'll actually deserialize
-    //  the
-    //  * object into this object, and we'll then reassign the reference to
-    //  point
-    //  * to this object. That way we can keep it around as a thread local
-    //  object
-    //  * to prevent unnecessary allocations.
-    //  */
-    // std::optional<YaAudioProcessor::Process> process_request_;
+    /**
+     * Used for deserializing the
+     * `MessageReference<clap::plugin::process::Process>` variant. When we
+     * encounter this variant, we'll actually deserialize the object into this
+     * object, and we'll then reassign the reference to point to this object.
+     * That way we can keep it around as a thread local object to prevent
+     * unnecessary allocations.
+     */
+    std::optional<clap::plugin::Process> process_request_;
 };
 
 /**
