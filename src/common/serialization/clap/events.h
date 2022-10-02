@@ -28,6 +28,8 @@
 #include "../bitsery/traits/small-vector.h"
 #include "../common.h"
 
+// Serialization messages for `clap/events.h`
+
 namespace clap {
 namespace events {
 
