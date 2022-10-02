@@ -19,20 +19,8 @@
 #include "../../utils.h"
 
 YaProcessData::YaProcessData() noexcept
-    // This response object acts as an optimization. It stores pointers to the
-    // original fields in our objects, so we can both only serialize those
-    // fields when sending the response from the Wine side. This lets us avoid
-    // allocations by not having to copy or move the data. On the plugin side we
-    // need to be careful to deserialize into an existing
-    // `YaAudioProcessor::ProcessResponse` object with a response object that
-    // belongs to an actual process data object, because with these changes it's
-    // no longer possible to deserialize those results into a new ad-hoc created
-    // object.
-    : response_object_{.outputs = &outputs_,
-                       .output_parameter_changes = &output_parameter_changes_,
-                       .output_events = &output_events_},
-      // This needs to be zero initialized so we can safely call
-      // `create_response()` on the plugin side
+    :  // This needs to be zero initialized so we can safely call
+       // `create_response()` on the plugin side
       reconstructed_process_data_() {}
 
 void YaProcessData::repopulate(const Steinberg::Vst::ProcessData& process_data,
@@ -196,8 +184,19 @@ Steinberg::Vst::ProcessData& YaProcessData::reconstruct(
 }
 
 YaProcessData::Response& YaProcessData::create_response() noexcept {
-    // NOTE: We return an object that only contains references to these original
-    //       fields to avoid any copies or moves
+    // This response object acts as an optimization. It stores pointers to the
+    // original fields in our objects, so we can both only serialize those
+    // fields when sending the response from the Wine side. This lets us avoid
+    // allocations by not having to copy or move the data. On the plugin side we
+    // need to be careful to deserialize into an existing
+    // `YaAudioProcessor::ProcessResponse` object with a response object that
+    // belongs to an actual process data object, because with these changes it's
+    // no longer possible to deserialize those results into a new ad-hoc created
+    // object.
+    response_object_.outputs = &outputs_;
+    response_object_.output_parameter_changes = &output_parameter_changes_;
+    response_object_.output_events = &output_events_;
+
     return response_object_;
 }
 
