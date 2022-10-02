@@ -51,12 +51,7 @@ struct Note {
 
     template <typename S>
     void serialize(S& s) {
-        s.object(event.header);
-        s.value4b(event.note_id);
-        s.value2b(event.port_index);
-        s.value2b(event.channel);
-        s.value2b(event.key);
-        s.value8b(event.velocity);
+        s.object(event);
     }
 };
 
@@ -68,13 +63,7 @@ struct NoteExpression {
 
     template <typename S>
     void serialize(S& s) {
-        s.object(event.header);
-        s.value4b(event.expression_id);
-        s.value4b(event.note_id);
-        s.value2b(event.port_index);
-        s.value2b(event.channel);
-        s.value2b(event.key);
-        s.value8b(event.value);
+        s.object(event);
     }
 };
 
@@ -86,22 +75,7 @@ struct ParamValue {
 
     template <typename S>
     void serialize(S& s) {
-        s.object(event.header);
-        s.value4b(event.param_id);
-        // The cookie is a pointer. Using `native_size_t`/the host system's
-        // pointer size here will allow bridged 32-bit plugins to work
-        // correctly.
-        // XXX: This will silently blow up when using 32-bit yabridge on a
-        //      64-bit system with 64-bit plugins, but that's such a specific
-        //      use case that we won't even bother. Building 32-bit yabridge
-        //      with CLAP support on 64-bit symbols has been disabled to prevent
-        //      this from being an issue.
-        s.ext(event.cookie, bitsery::ext::NativePointer{});
-        s.value4b(event.note_id);
-        s.value2b(event.port_index);
-        s.value2b(event.channel);
-        s.value2b(event.key);
-        s.value8b(event.value);
+        s.object(event);
     }
 };
 
@@ -113,15 +87,7 @@ struct ParamMod {
 
     template <typename S>
     void serialize(S& s) {
-        s.object(event.header);
-        s.value4b(event.param_id);
-        // Same as the above
-        s.ext(event.cookie, bitsery::ext::NativePointer{});
-        s.value4b(event.note_id);
-        s.value2b(event.port_index);
-        s.value2b(event.channel);
-        s.value2b(event.key);
-        s.value8b(event.amount);
+        s.object(event);
     }
 };
 
@@ -134,8 +100,7 @@ struct ParamGesture {
 
     template <typename S>
     void serialize(S& s) {
-        s.object(event.header);
-        s.value4b(event.param_id);
+        s.object(event);
     }
 };
 
@@ -147,20 +112,7 @@ struct Transport {
 
     template <typename S>
     void serialize(S& s) {
-        s.object(event.header);
-        s.value4b(event.flags);
-        s.value8b(event.song_pos_beats);
-        s.value8b(event.song_pos_seconds);
-        s.value8b(event.tempo);
-        s.value8b(event.tempo_inc);
-        s.value8b(event.loop_start_beats);
-        s.value8b(event.loop_end_beats);
-        s.value8b(event.loop_start_seconds);
-        s.value8b(event.loop_end_seconds);
-        s.value8b(event.bar_start);
-        s.value4b(event.bar_number);
-        s.value2b(event.tsig_num);
-        s.value2b(event.tsig_denom);
+        s.object(event);
     }
 };
 
@@ -172,9 +124,7 @@ struct Midi {
 
     template <typename S>
     void serialize(S& s) {
-        s.object(event.header);
-        s.value2b(event.port_index);
-        s.container1b(event.data);
+        s.object(event);
     }
 };
 
@@ -223,9 +173,7 @@ struct Midi2 {
 
     template <typename S>
     void serialize(S& s) {
-        s.object(event.header);
-        s.value2b(event.port_index);
-        s.container4b(event.data);
+        s.object(event);
     }
 };
 
@@ -360,4 +308,99 @@ void serialize(S& s, clap_event_header_t& event_header) {
     s.value2b(event_header.space_id);
     s.value2b(event_header.type);
     s.value4b(event_header.flags);
+}
+
+template <typename S>
+void serialize(S& s, clap_event_note_t& event) {
+    s.object(event.header);
+    s.value4b(event.note_id);
+    s.value2b(event.port_index);
+    s.value2b(event.channel);
+    s.value2b(event.key);
+    s.value8b(event.velocity);
+}
+
+template <typename S>
+void serialize(S& s, clap_event_note_expression_t& event) {
+    s.object(event.header);
+    s.value4b(event.expression_id);
+    s.value4b(event.note_id);
+    s.value2b(event.port_index);
+    s.value2b(event.channel);
+    s.value2b(event.key);
+    s.value8b(event.value);
+}
+
+template <typename S>
+void serialize(S& s, clap_event_param_value_t& event) {
+    s.object(event.header);
+    s.value4b(event.param_id);
+    // The cookie is a pointer. Using `native_size_t`/the host system's pointer
+    // size here will allow bridged 32-bit plugins to work correctly.
+    // XXX: This will silently blow up when using 32-bit yabridge on a 64-bit
+    //      system with 64-bit plugins, but that's such a specific use case that
+    //      we won't even bother. Building 32-bit yabridge with CLAP support on
+    //      64-bit symbols has been disabled to prevent this from being an
+    //      issue.
+    s.ext(event.cookie, bitsery::ext::NativePointer{});
+    s.value4b(event.note_id);
+    s.value2b(event.port_index);
+    s.value2b(event.channel);
+    s.value2b(event.key);
+    s.value8b(event.value);
+}
+
+template <typename S>
+void serialize(S& s, clap_event_param_mod_t& event) {
+    s.object(event.header);
+    s.value4b(event.param_id);
+    // Same as the above
+    s.ext(event.cookie, bitsery::ext::NativePointer{});
+    s.value4b(event.note_id);
+    s.value2b(event.port_index);
+    s.value2b(event.channel);
+    s.value2b(event.key);
+    s.value8b(event.amount);
+}
+
+template <typename S>
+void serialize(S& s, clap_event_param_gesture_t& event) {
+    s.object(event.header);
+    s.value4b(event.param_id);
+}
+
+template <typename S>
+void serialize(S& s, clap_event_transport_t& event) {
+    s.object(event.header);
+    s.value4b(event.flags);
+    s.value8b(event.song_pos_beats);
+    s.value8b(event.song_pos_seconds);
+    s.value8b(event.tempo);
+    s.value8b(event.tempo_inc);
+    s.value8b(event.loop_start_beats);
+    s.value8b(event.loop_end_beats);
+    s.value8b(event.loop_start_seconds);
+    s.value8b(event.loop_end_seconds);
+    s.value8b(event.bar_start);
+    s.value4b(event.bar_number);
+    s.value2b(event.tsig_num);
+    s.value2b(event.tsig_denom);
+}
+
+template <typename S>
+void serialize(S& s, clap_event_midi_t& event) {
+    s.object(event.header);
+    s.value2b(event.port_index);
+    s.container1b(event.data);
+}
+
+// `clap_event_midi_sysex_t` can't be serialized without special handling, so
+// we'll serialize it directly inside of `clap::events::payload::MidiSysex` to
+// reduce the risk of this causing problems in the future
+
+template <typename S>
+void serialize(S& s, clap_event_midi2_t& event) {
+    s.object(event.header);
+    s.value2b(event.port_index);
+    s.container4b(event.data);
 }
