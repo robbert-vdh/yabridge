@@ -377,6 +377,74 @@ bool ClapLogger::log_request(bool is_host_plugin,
     });
 }
 
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const MessageReference<clap::plugin::Process>& request_wrapper) {
+    return log_request_base(
+        is_host_plugin, Logger::Verbosity::all_events, [&](auto& message) {
+            // This is incredibly verbose, but if you're really a plugin that
+            // handles processing in a weird way you're going to need all of
+            // this
+            const clap::plugin::Process& request = request_wrapper.get();
+
+            // TODO: The channel counts are now capped at what the plugin
+            //       supports (based on the audio buffers we set up during
+            //       `IAudioProcessor::setActive()`). Some hosts may send more
+            //       buffers, but we don't reflect that in the output right now.
+            std::ostringstream num_input_channels;
+            num_input_channels << "[";
+            bool is_first = true;
+            for (size_t i = 0; i < request.process.audio_inputs_.size(); i++) {
+                const auto& port = request.process.audio_inputs_[i];
+                num_input_channels << (is_first ? "" : ", ")
+                                   << port.channel_count;
+                if (port.latency) {
+                    num_input_channels << " (" << port.latency
+                                       << " sample latency)";
+                }
+                if (port.constant_mask > 0) {
+                    num_input_channels << " (silence)";
+                }
+
+                is_first = false;
+            }
+            num_input_channels << "]";
+
+            std::ostringstream num_output_channels;
+            num_output_channels << "[";
+            is_first = true;
+            for (size_t i = 0; i < request.process.audio_outputs_.size(); i++) {
+                const auto& port = request.process.audio_outputs_[i];
+                num_output_channels << (is_first ? "" : ", ")
+                                    << port.channel_count;
+                if (port.latency) {
+                    num_output_channels << " (" << port.latency
+                                        << " sample latency)";
+                }
+                if (port.constant_mask > 0) {
+                    num_output_channels << " (silence)";
+                }
+
+                is_first = false;
+            }
+            num_output_channels << "]";
+
+            message << request.instance_id
+                    << ": clap_plugin::process(process = <clap_process_t* with "
+                       "steady_time = "
+                    << request.process.steady_time_
+                    << ", frames_count = " << request.process.frames_count_
+                    << ", transport = "
+                    << (request.process.transport_ ? "<clap_event_transport_t*>"
+                                                   : "<nullptr>")
+                    << ", audio_input_channels = " << num_input_channels.str()
+                    << ", audio_output_channels = " << num_output_channels.str()
+                    << ", in_events = <clap_input_events* with "
+                    << request.process.in_events_.size()
+                    << " events>, out_events = <clap_out_events_t*>>)";
+        });
+}
+
 bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::ext::params::plugin::Flush& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
@@ -762,6 +830,61 @@ void ClapLogger::log_response(
         } else {
             message << "false";
         }
+    });
+}
+
+void ClapLogger::log_response(bool is_host_plugin,
+                              const clap::plugin::ProcessResponse& response) {
+    log_response_base(is_host_plugin, [&](auto& message) {
+        // This is incredibly verbose, but if you're really a plugin that
+        // handles processing in a weird way you're going to need all of this
+        assert(response.output_data.audio_outputs &&
+               response.output_data.out_events);
+
+        std::ostringstream num_output_channels;
+        num_output_channels << "[";
+        bool is_first = true;
+        for (size_t i = 0; i < response.output_data.audio_outputs->size();
+             i++) {
+            const auto& port = (*response.output_data.audio_outputs)[i];
+            num_output_channels << (is_first ? "" : ", ") << port.channel_count;
+            if (port.latency) {
+                num_output_channels << " (" << port.latency
+                                    << " sample latency)";
+            }
+            if (port.constant_mask > 0) {
+                num_output_channels << " (silence)";
+            }
+
+            is_first = false;
+        }
+        num_output_channels << "]";
+
+        switch (response.result) {
+            case CLAP_PROCESS_ERROR:
+                message << "CLAP_PROCESS_ERROR";
+                break;
+            case CLAP_PROCESS_CONTINUE:
+                message << "CLAP_PROCESS_CONTINUE";
+                break;
+            case CLAP_PROCESS_CONTINUE_IF_NOT_QUIET:
+                message << "CLAP_PROCESS_CONTINUE_IF_NOT_QUIET";
+                break;
+            case CLAP_PROCESS_TAIL:
+                message << "CLAP_PROCESS_TAIL";
+                break;
+            case CLAP_PROCESS_SLEEP:
+                message << "CLAP_PROCESS_SLEEP";
+                break;
+            default:
+                message << "unknown status " << response.result;
+                break;
+        }
+
+        message << ", <clap_audio_buffer_t array with "
+                << num_output_channels.str()
+                << " channels>, <clap_output_events_t* with "
+                << response.output_data.out_events->size() << " events>";
     });
 }
 
