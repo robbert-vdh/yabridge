@@ -267,6 +267,13 @@ class clap_plugin_proxy {
     clap::plugin::Descriptor descriptor_;
 
     /**
+     * We'll periodically synchronize the Wine host's audio thread priority with
+     * that of the host. Since the overhead from doing so does add up, we'll
+     * only do this every once in a while.
+     */
+    time_t last_audio_thread_priority_synchronization_ = 0;
+
+    /**
      * A shared memory object to share audio buffers between the native plugin
      * and the Wine plugin host. Copying audio is the most significant source of
      * bridging overhead during audio processing, and this way we can reduce the
@@ -276,6 +283,29 @@ class clap_plugin_proxy {
      * This will be set up during `clap_plugin::activate()`.
      */
     std::optional<AudioShmBuffer> process_buffers_;
+
+    /**
+     * We'll reuse the request objects for the process call so we can keep the
+     * process data object (which contains vectors and other heap allocated data
+     * structure) alive. We'll then just fill this object with new data every
+     * processing cycle to prevent allocations. Then, we pass a
+     * `MessageReference<clap::plugin::Process>` to our sockets. This together
+     * with `bitisery::ext::MessageReference` will let us serialize from and to
+     * existing objects without having to copy or reallocate them.
+     *
+     * To reduce the amount of copying during audio processing we'll write the
+     * audio data to a shared memory object stored in `process_buffers_` first.
+     */
+    clap::plugin::Process process_request_;
+
+    /**
+     * The response object we'll get in return when we send the
+     * `process_request_` object above to the Wine plugin host. This object also
+     * contains heap data, so we also want to reuse this. This is initialized to
+     * contain the `process_request_`'s response object so the response can be
+     * deserialized in place.
+     */
+    clap::plugin::ProcessResponse process_response_;
 
     /**
      * The vtable for `clap_plugin`, requires that this object is never moved or

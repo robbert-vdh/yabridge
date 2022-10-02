@@ -9,6 +9,7 @@ Yabridge currently tracks CLAP 1.1.1. The implementation status for CLAP's core 
 | core feature                              | status                                                 |
 | ----------------------------------------- | ------------------------------------------------------ |
 | Core plugin and host functionality        | :warning: Everything but actual audio processing works |
+| Audio processing                          | :heavy_check_mark:                                     |
 | Events                                    | :heavy_check_mark:                                     |
 | Streams                                   | :heavy_check_mark:                                     |
 | `clap.plugin-factory`                     | :heavy_check_mark:                                     |

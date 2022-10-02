@@ -125,21 +125,21 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
             object, std::pair<ClapLogger&, bool>(logger_, true));
     }
 
-    // /**
-    //  * Send an audio thread control message to a specific plugin instance,
-    //  * receiving the results into an existing object. This is similar to the
-    //  * `send_audio_thread_message()` above, but this lets us avoid
-    //  allocations
-    //  * in response objects that contain heap data.
-    //  */
-    // template <typename T>
-    // typename T::Response& receive_audio_thread_message_into(
-    //     const T& object,
-    //     typename T::Response& response_object) {
-    //     return sockets_.receive_audio_processor_message_into(
-    //         object, response_object,
-    //         std::pair<ClapLogger&, bool>(logger_, true));
-    // }
+    /**
+     * Send an audio thread control message to a specific plugin instance,
+     * receiving the results into an existing object. This is similar to the
+     * `send_audio_thread_message()` above, but this lets us avoid
+     allocations
+     * in response objects that contain heap data.
+     */
+    template <typename T>
+    typename T::Response& receive_audio_thread_message_into(
+        const T& object,
+        typename T::Response& response_object) {
+        return sockets_.receive_audio_thread_control_message_into(
+            object, response_object,
+            std::pair<ClapLogger&, bool>(logger_, true));
+    }
 
     // TODO: Do we need this for CLAP? If we do, update the docstring
     // /**

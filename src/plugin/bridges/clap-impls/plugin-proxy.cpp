@@ -223,11 +223,59 @@ clap_plugin_proxy::plugin_reset(const struct clap_plugin* plugin) {
 clap_process_status CLAP_ABI
 clap_plugin_proxy::plugin_process(const struct clap_plugin* plugin,
                                   const clap_process_t* process) {
-    assert(plugin && plugin->plugin_data);
-    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+    assert(plugin && plugin->plugin_data && process);
+    auto self = static_cast<clap_plugin_proxy*>(plugin->plugin_data);
 
-    // TODO: Implement
-    return CLAP_PROCESS_ERROR;
+    // We'll synchronize the scheduling priority of the audio thread on the Wine
+    // plugin host with that of the host's audio thread every once in a while
+    std::optional<int> new_realtime_priority = std::nullopt;
+    time_t now = time(nullptr);
+    if (now > self->last_audio_thread_priority_synchronization_ +
+                  audio_thread_priority_synchronization_interval) {
+        new_realtime_priority = get_realtime_priority();
+        self->last_audio_thread_priority_synchronization_ = now;
+    }
+
+    // We reuse this existing object to avoid allocations.
+    // `clap::process::Process::repopulate()` will write the input audio to the
+    // shared audio buffers, so they're not stored within the request object
+    // itself.
+    assert(self->process_buffers_);
+    self->process_request_.instance_id = self->instance_id();
+    self->process_request_.process.repopulate(*process,
+                                              *self->process_buffers_);
+    self->process_request_.new_realtime_priority = new_realtime_priority;
+
+    // HACK: This is a bit ugly. This `clap::process::Process::Response` object
+    //       actually contains pointers to the corresponding `YaProcessData`
+    //       fields in this object, so we can only send back the fields that are
+    //       actually relevant. This is necessary to avoid allocating copies or
+    //       moves on the Wine side. This `create_response()` function creates a
+    //       response object that points to the fields in
+    //       `process_request_.data`, so when we deserialize into
+    //       `process_response_` we end up actually writing to the actual
+    //       `process_request_.data` object. Thus we can also call
+    //       `process_request_.data.write_back_outputs()` later.
+    //
+    //       `clap::process::Process::Response::serialize()` should make this a
+    //       lot clearer.
+    self->process_response_.output_data =
+        self->process_request_.process.create_response();
+
+    // We'll also receive the response into an existing object so we can also
+    // avoid heap allocations there
+    self->bridge_.receive_audio_thread_message_into(
+        MessageReference<clap::plugin::Process>(self->process_request_),
+        self->process_response_);
+
+    // At this point the shared audio buffers should contain the output audio,
+    // so we'll write that back to the host along with any metadata (which in
+    // practice are only the silence flags), as well as any output parameter
+    // changes and events
+    self->process_request_.process.write_back_outputs(*process,
+                                                      *self->process_buffers_);
+
+    return self->process_response_.result;
 }
 
 const void* CLAP_ABI
