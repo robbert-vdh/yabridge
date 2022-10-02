@@ -940,6 +940,8 @@ void ClapBridge::register_plugin_instance(
 
                         return Ack{};
                     },
+                    // TODO: Once we add the render extension, process on the
+                    //       main thread when doing offline rendering
                     [&](clap::ext::params::plugin::Flush& request)
                         -> clap::ext::params::plugin::Flush::Response {
                         const auto& [instance, _] =
