@@ -27,6 +27,7 @@
 #include "../audio-shm.h"
 #include "../common.h"
 #include "host.h"
+#include "process.h"
 #include "version.h"
 
 // Serialization messages for `clap/plugin.h`
@@ -284,7 +285,58 @@ struct Reset {
     }
 };
 
-// TODO: Process
+/**
+ * The response to the `clap::plugin::Plugin` message defined below. This
+ * `Response` object contains pointers into an already allocated
+ * `clap::process::Process` object so the data can be serialized in place as an
+ * optimization.
+ */
+struct ProcessResponse {
+    clap_process_status result;
+    clap::process::Process::Response output_data;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value4b(result);
+        s.object(output_data);
+    }
+};
+
+/**
+ * Message struct for `clap_plugin::stop_processing()`. This
+ * `clap::process::Process` object wraps around all input audio buffersand
+ * events along with the other process data provided by the host so we can send
+ * it to the Wine plugin host. We can then use
+ * `clap::process::Process::reconstruct()` on the Wine plugin host side to
+ * reconstruct the original `clap_process_t` object, and we then finally use
+ * `clap::process::Process::create_response()` to create a response object that
+ * we can write the plugin's changes back to the `clap_process_t` object
+ * provided by the host.
+ */
+struct Process {
+    using Response = ProcessResponse;
+
+    native_size_t instance_id;
+
+    clap::process::Process process;
+
+    /**
+     * We'll periodically synchronize the realtime priority setting of the
+     * host's audio thread with the Wine plugin host. We'll do this
+     * approximately every ten seconds, as doing this getting and setting
+     * scheduler information has a non trivial amount of overhead (even if it's
+     * only a single microsoecond).
+     */
+    std::optional<int> new_realtime_priority;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value8b(instance_id);
+        s.object(process);
+        s.ext(new_realtime_priority, bitsery::ext::InPlaceOptional{},
+              [](S& s, int& priority) { s.value4b(priority); });
+    }
+};
 
 }  // namespace plugin
 }  // namespace clap
