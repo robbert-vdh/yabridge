@@ -255,8 +255,8 @@ class ClapBridge : public HostBridge {
      */
     template <typename T>
     typename T::Response send_audio_thread_message(const T& object) {
-        return sockets_.send_audio_thread_callback_message(
-            object, std::pair<ClapLogger&, bool>(logger_, true));
+        return sockets_.send_audio_thread_callback_message(object,
+                                                           std::nullopt);
     }
 
     /**
