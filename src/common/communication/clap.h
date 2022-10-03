@@ -347,8 +347,7 @@ class ClapSockets final : public Sockets {
         std::optional<std::pair<ClapLogger&, bool>> logging) {
         typename T::Response response_object;
         return audio_thread_sockets_.at(object.owner_instance_id)
-            .callback_.receive_into(object, response_object, logging,
-                                    audio_thread_buffer());
+            .callback_.receive_into(object, response_object, logging);
     }
 
     /**
