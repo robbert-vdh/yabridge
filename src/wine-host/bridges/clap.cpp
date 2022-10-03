@@ -458,6 +458,9 @@ void ClapBridge::run() {
                 -> clap::ext::gui::plugin::CanResize::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
+                // TODO: Qtractor calls this in response to request_resize(), so
+                //       we need to handle mutual recursion here. We should do
+                //       this for all GUI functions just to be safe.
                 return main_context_
                     .run_in_context([&, plugin = instance.plugin.get(),
                                      gui = instance.extensions.gui]() {
