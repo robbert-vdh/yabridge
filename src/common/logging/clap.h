@@ -36,6 +36,14 @@ class ClapLogger {
     inline void log(const std::string& message) { logger_.log(message); }
 
     /**
+     * Used to filter misbehavior messages in the CLAP log extension
+     * implementation.
+     *
+     * @see Logger::verbosity
+     */
+    inline Logger::Verbosity verbosity() { return logger_.verbosity_; }
+
+    /**
      * Log calls to `clap_plugin::get_extension()` and
      * `clap_host::get_extension()`. This makes it possible to tell which
      * extensions the host or plugin is querying, and which of those we don't
