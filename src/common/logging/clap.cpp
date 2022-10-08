@@ -586,15 +586,6 @@ bool ClapLogger::log_request(bool is_host_plugin,
     });
 }
 
-bool ClapLogger::log_request(
-    bool is_host_plugin,
-    const clap::ext::params::host::RequestFlush& request) {
-    return log_request_base(is_host_plugin, [&](auto& message) {
-        message << request.owner_instance_id
-                << ": clap_host_params::request_flush()";
-    });
-}
-
 bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::ext::latency::host::Changed& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
@@ -643,6 +634,15 @@ bool ClapLogger::log_request(bool is_host_plugin,
                 break;
         }
         message << ", message = \"" << request.msg << "\")";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::params::host::RequestFlush& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_params::request_flush()";
     });
 }
 

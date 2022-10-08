@@ -170,14 +170,14 @@ class ClapLogger {
     bool log_request(bool is_host_plugin,
                      const clap::ext::params::host::Clear&);
     bool log_request(bool is_host_plugin,
-                     const clap::ext::params::host::RequestFlush&);
-    bool log_request(bool is_host_plugin,
                      const clap::ext::latency::host::Changed&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::state::host::MarkDirty&);
 
     // Audio thread callbacks
     bool log_request(bool is_host_plugin, const clap::ext::log::host::Log&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::params::host::RequestFlush&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::tail::host::Changed&);
 
