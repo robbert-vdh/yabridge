@@ -253,14 +253,16 @@ class ClapBridge : public HostBridge {
      * explanatio nof why this is needed.
      */
     template <typename T>
-    typename T::Response send_mutually_recursive_message(const T& object) {
+    typename T::Response send_mutually_recursive_main_thread_message(
+        const T& object) {
         if (main_context_.is_gui_thread()) {
             return mutual_recursion_.fork(
                 [&]() { return send_main_thread_message(object); });
         } else {
             logger_.log_trace([]() {
-                return "'ClapBridge::send_mutually_recursive_message()' called "
-                       "from a non-GUI thread, sending the message directly";
+                return "'ClapBridge::send_mutually_recursive_main_thread_"
+                       "message()' called from a non-GUI thread, sending the "
+                       "message directly";
             });
             send_main_thread_message(object);
         }
@@ -268,13 +270,14 @@ class ClapBridge : public HostBridge {
 
     /**
      * Crazy functions ask for crazy naming. This is the other part of
-     * `send_mutually_recursive_message()`, for executing mutually recursive
-     * functions on the GUI thread. If another thread is currently calling that
-     * function (from the UI thread), then we'll execute `fn` from the UI thread
-     * using the IO context started in the above function. Otherwise `f` will be
-     * run on the UI thread through `main_context_` as usual.
+     * `send_mutually_recursive_main_thread_message()`, for executing mutually
+     * recursive functions on the GUI thread. If another thread is currently
+     * calling that function (from the UI thread), then we'll execute `fn` from
+     * the UI thread using the IO context started in the above function.
+     * Otherwise `f` will be run on the UI thread through `main_context_` as
+     * usual.
      *
-     * @see ClapBridge::send_mutually_recursive_message
+     * @see ClapBridge::send_mutually_recursive_main_thread_message
      */
     template <std::invocable F>
     std::invoke_result_t<F> do_mutual_recursion_on_gui_thread(F&& fn) {
@@ -417,8 +420,8 @@ class ClapBridge : public HostBridge {
     std::shared_mutex object_instances_mutex_;
 
     /**
-     * Used in `send_mutually_recursive_message()` to be able to execute
-     * functions from that same calling thread (through
+     * Used in `send_mutually_recursive_main_thread_message()` to be able to
+     * execute functions from that same calling thread (through
      * `do_mutual_recursion_on_gui_thread()` and
      * `do_mutual_recursion_on_off_thread()`) while we're waiting for a
      * response.
