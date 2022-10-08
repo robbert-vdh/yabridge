@@ -355,9 +355,11 @@ void ClapBridge::run() {
                 -> clap::ext::gui::plugin::IsApiSupported::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui]() {
+                // See below and the comment in `host-proxy.cpp` for why this is
+                // sprinkled all over the place
+                return do_mutual_recursion_on_gui_thread(
+                    [&, plugin = instance.plugin.get(),
+                     gui = instance.extensions.gui]() {
                         // It's a bit unnecessary to bridge the entire
                         // `is_api_supported()` function since we'll only bridge
                         // a single config (non-floating, X11), but this is
@@ -374,16 +376,15 @@ void ClapBridge::run() {
                                     request.is_floating);
                                 break;
                         }
-                    })
-                    .get();
+                    });
             },
             [&](const clap::ext::gui::plugin::Create& request)
                 -> clap::ext::gui::plugin::Create::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui]() {
+                return do_mutual_recursion_on_gui_thread(
+                    [&, plugin = instance.plugin.get(),
+                     gui = instance.extensions.gui]() {
                         // We don't need to do anything here yet. The actual
                         // window is created at the final `.set_parent()` call.
                         // Like the above function, we'll translate the API type
@@ -396,25 +397,23 @@ void ClapBridge::run() {
                                                    request.is_floating);
                                 break;
                         }
-                    })
-                    .get();
+                    });
             },
             [&](const clap::ext::gui::plugin::Destroy& request)
                 -> clap::ext::gui::plugin::Destroy::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui,
-                                     &editor = instance.editor]() {
+                return do_mutual_recursion_on_gui_thread(
+                    [&, plugin = instance.plugin.get(),
+                     gui = instance.extensions.gui,
+                     &editor = instance.editor]() {
                         gui->destroy(plugin);
 
                         // Cleanup is handled through RAII
                         editor.reset();
 
                         return Ack{};
-                    })
-                    .get();
+                    });
             },
             [&](clap::ext::gui::plugin::SetScale& request)
                 -> clap::ext::gui::plugin::SetScale::Response {
@@ -526,10 +525,14 @@ void ClapBridge::run() {
                 -> clap::ext::gui::plugin::SetParent::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui,
-                                     &editor = instance.editor]() {
+                // NOTE: This one in particular needs the mutual recursion
+                //       because Surge XT calls this function immediately when
+                //       inserting, and when the host opens the GUI at the same
+                //       time this would otherwise deadlock
+                return do_mutual_recursion_on_gui_thread(
+                    [&, plugin = instance.plugin.get(),
+                     gui = instance.extensions.gui,
+                     &editor = instance.editor]() {
                         Editor& editor_instance =
                             editor.emplace(main_context_, config_,
                                            generic_logger_, request.x11_window);
@@ -562,8 +565,7 @@ void ClapBridge::run() {
                         }
 
                         return result;
-                    })
-                    .get();
+                    });
             },
             [&](const clap::ext::gui::plugin::Show& request)
                 -> clap::ext::gui::plugin::Show::Response {

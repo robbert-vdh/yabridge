@@ -291,6 +291,9 @@ clap_host_proxy::ext_params_rescan(const clap_host_t* host,
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
+    // NOTE: This one in particular needs the mutual recursion because Surge XT
+    //       calls this function immediately when inserting, and when the host
+    //       opens the GUI at the same time this would otherwise deadlock
     self->bridge_.send_mutually_recursive_main_thread_message(
         clap::ext::params::host::Rescan{
             .owner_instance_id = self->owner_instance_id(), .flags = flags});
