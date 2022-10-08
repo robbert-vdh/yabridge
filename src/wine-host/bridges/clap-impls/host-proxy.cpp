@@ -63,6 +63,9 @@ clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
       ext_latency_vtable(clap_host_latency_t{
           .changed = ext_latency_changed,
       }),
+      ext_log_vtable(clap_host_log_t{
+          .log = ext_log_log,
+      }),
       ext_note_ports_vtable(clap_host_note_ports_t{
           .supported_dialects = ext_note_ports_supported_dialects,
           .rescan = ext_note_ports_rescan,
@@ -99,6 +102,11 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
     } else if (self->supported_extensions_.supports_latency &&
                strcmp(extension_id, CLAP_EXT_LATENCY) == 0) {
         extension_ptr = &self->ext_latency_vtable;
+    } else if (strcmp(extension_id, CLAP_EXT_LOG) == 0) {
+        // This extension is always supported. We'll bridge it if the host also
+        // supports it, or we'll print the message if it doesn't. That allows us
+        // to filter misbehavior messages.
+        extension_ptr = &self->ext_log_vtable;
     } else if (self->supported_extensions_.supports_note_ports &&
                strcmp(extension_id, CLAP_EXT_NOTE_PORTS) == 0) {
         extension_ptr = &self->ext_note_ports_vtable;
@@ -263,6 +271,59 @@ void CLAP_ABI clap_host_proxy::ext_latency_changed(const clap_host_t* host) {
     self->bridge_.send_mutually_recursive_main_thread_message(
         clap::ext::latency::host::Changed{.owner_instance_id =
                                               self->owner_instance_id()});
+}
+
+void CLAP_ABI clap_host_proxy::ext_log_log(const clap_host_t* host,
+                                           clap_log_severity severity,
+                                           const char* msg) {
+    assert(host && host->host_data && msg);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    // We'll always support this extension, even if the host doesn't. That
+    // allows us to filter misbehavior messages from the CLAP helper.
+    if ((severity == CLAP_LOG_HOST_MISBEHAVING ||
+         severity == CLAP_LOG_PLUGIN_MISBEHAVING) &&
+        self->bridge_.logger_.verbosity() < Logger::Verbosity::all_events) {
+        return;
+    }
+
+    // We'll bridge this if possible, otherwise we'll just print the message to
+    // the logger (through STDERR)
+    if (self->supported_extensions_.supports_log) {
+        self->bridge_.send_audio_thread_message(clap::ext::log::host::Log{
+            .owner_instance_id = self->owner_instance_id(),
+            .severity = severity,
+            .msg = msg});
+    } else {
+        switch (severity) {
+            case CLAP_LOG_DEBUG:
+                std::cerr << "[DEBUG] ";
+                break;
+            case CLAP_LOG_INFO:
+                std::cerr << "[INFO] ";
+                break;
+            case CLAP_LOG_WARNING:
+                std::cerr << "[WARNING] ";
+                break;
+            case CLAP_LOG_ERROR:
+                std::cerr << "[ERROR] ";
+                break;
+            case CLAP_LOG_FATAL:
+                std::cerr << "[FATAL] ";
+                break;
+            case CLAP_LOG_HOST_MISBEHAVING:
+                std::cerr << "[HOST_MISBEHAVING] ";
+                break;
+            case CLAP_LOG_PLUGIN_MISBEHAVING:
+                std::cerr << "[PLUGIN_MISBEHAVING] ";
+                break;
+            default:
+                std::cerr << "[unknown log level " << severity << "] ";
+                break;
+        }
+
+        std::cerr << msg << std::endl;
+    }
 }
 
 uint32_t CLAP_ABI

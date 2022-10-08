@@ -21,6 +21,7 @@
 #include <clap/ext/audio-ports.h>
 #include <clap/ext/gui.h>
 #include <clap/ext/latency.h>
+#include <clap/ext/log.h>
 #include <clap/ext/note-ports.h>
 #include <clap/ext/params.h>
 #include <clap/ext/state.h>
@@ -95,6 +96,10 @@ class clap_host_proxy {
 
     static void CLAP_ABI ext_latency_changed(const clap_host_t* host);
 
+    static void CLAP_ABI ext_log_log(const clap_host_t* host,
+                                     clap_log_severity severity,
+                                     const char* msg);
+
     static uint32_t CLAP_ABI
     ext_note_ports_supported_dialects(const clap_host_t* host);
     static void CLAP_ABI ext_note_ports_rescan(const clap_host_t* host,
@@ -134,10 +139,15 @@ class clap_host_proxy {
     const clap_host_audio_ports_t ext_audio_ports_vtable;
     const clap_host_gui_t ext_gui_vtable;
     const clap_host_latency_t ext_latency_vtable;
+    // This is also always available regardless of the proxied host. That way we
+    // can filter out plugin/host misbehavior messages on lower yabridge
+    // verbosity levels.
+    const clap_host_log_t ext_log_vtable;
     const clap_host_note_ports_t ext_note_ports_vtable;
     const clap_host_params_t ext_params_vtable;
     const clap_host_state_t ext_state_vtable;
     const clap_host_tail_t ext_tail_vtable;
+    // This is always available regardless of the proxied host
     const clap_host_thread_check_t ext_thread_check_vtable;
 
     /**

@@ -199,6 +199,7 @@ void serialize(S& s, ClapMainThreadCallbackRequest& payload) {
  */
 using ClapAudioThreadCallbackRequest =
     std::variant<WantsConfiguration,
+                 clap::ext::log::host::Log,
                  clap::ext::params::host::RequestFlush,
                  clap::ext::tail::host::Changed>;
 

@@ -25,6 +25,8 @@ ClapHostExtensions::ClapHostExtensions(const clap_host& host) noexcept
           host.get_extension(&host, CLAP_EXT_GUI))),
       latency(static_cast<const clap_host_latency_t*>(
           host.get_extension(&host, CLAP_EXT_LATENCY))),
+      log(static_cast<const clap_host_log_t*>(
+          host.get_extension(&host, CLAP_EXT_LOG))),
       note_ports(static_cast<const clap_host_note_ports_t*>(
           host.get_extension(&host, CLAP_EXT_NOTE_PORTS))),
       params(static_cast<const clap_host_params_t*>(
@@ -42,6 +44,7 @@ clap::host::SupportedHostExtensions ClapHostExtensions::supported()
         .supports_audio_ports = audio_ports != nullptr,
         .supports_gui = gui != nullptr,
         .supports_latency = latency != nullptr,
+        .supports_log = log != nullptr,
         .supports_note_ports = note_ports != nullptr,
         .supports_params = params != nullptr,
         .supports_state = state != nullptr,

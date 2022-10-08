@@ -346,6 +346,17 @@ void ClapPluginBridge::register_plugin_proxy(
                     //        hell. I haven't been able to figure out why.
                     return {};
                 },
+                [&](const clap::ext::log::host::Log& request)
+                    -> clap::ext::log::host::Log::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    plugin_proxy.host_extensions_.log->log(plugin_proxy.host_,
+                                                           request.severity,
+                                                           request.msg.c_str());
+
+                    return Ack{};
+                },
                 [&](const clap::ext::params::host::RequestFlush& request)
                     -> clap::ext::params::host::RequestFlush::Response {
                     const auto& [plugin_proxy, _] =

@@ -45,7 +45,7 @@ struct Log {
     void serialize(S& s) {
         s.value8b(owner_instance_id);
         s.value4b(severity);
-        s.text(msg, 1 << 16);
+        s.text1b(msg, 1 << 16);
     }
 };
 
