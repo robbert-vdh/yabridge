@@ -262,12 +262,9 @@ class ClapBridge : public HostBridge {
     /**
      * When called from the GUI thread, spawn a new thread and call
      * `send_message()` from there, and then handle functions passed by calls to
-     * `do_mutual_recursion_on_gui_thread()` and
-     * `do_mutual_recursion_on_off_thread()` on this thread until we get a
-     * response back. See the function in `Vst3Bridge` for a much more in-depth
-     * explanatio nof why this is neede.d
-     *
-     * TODO: Is this needed for CLAP?
+     * `do_mutual_recursion_on_gui_thread()` this thread until we get a response
+     * back. See the function in `Vst3Bridge` for a much more in-depth
+     * explanatio nof why this is needed.
      */
     template <typename T>
     typename T::Response send_mutually_recursive_message(const T& object) {
@@ -275,15 +272,11 @@ class ClapBridge : public HostBridge {
             return mutual_recursion_.fork(
                 [&]() { return send_main_thread_message(object); });
         } else {
-            // TODO: Remove if this isn't needed
             logger_.log_trace([]() {
                 return "'ClapBridge::send_mutually_recursive_message()' called "
                        "from a non-GUI thread, sending the message directly";
             });
             send_main_thread_message(object);
-
-            // return audio_thread_mutual_recursion_.fork(
-            //     [&]() { return send_message(object); });
         }
     }
 
@@ -309,24 +302,6 @@ class ClapBridge : public HostBridge {
             return main_context_.run_in_context(std::forward<F>(fn)).get();
         }
     }
-
-    // TODO: Check if this is needed, remove if it isn't
-
-    // /**
-    //  * The same as the above function, but we'll just execute the function on
-    //  * this thread when the mutual recursion context is not active.
-    //  *
-    //  * @see ClapBridge::do_mutual_recursion_on_gui_thread
-    //  */
-    // template <std::invocable F>
-    // std::invoke_result_t<F> do_mutual_recursion_on_off_thread(F&& fn) {
-    //     if (const auto result = audio_thread_mutual_recursion_.maybe_handle(
-    //             std::forward<F>(fn))) {
-    //         return *result;
-    //     } else {
-    //         return mutual_recursion_.handle(std::forward<F>(fn));
-    //     }
-    // }
 
     /**
      * Fetch the plugin instance along with a lock valid for the instance's
@@ -463,28 +438,4 @@ class ClapBridge : public HostBridge {
      * response.
      */
     MutualRecursionHelper<Win32Thread> mutual_recursion_;
-
-    // TODO: Check if this is needed, remove it if it isn't
-    // /**
-    //  * The same thing as above, but just for the pair of
-    //  * `IEditController::setParamNormalized()` and
-    //  * `IComponentHandler::performEdit()`, when
-    //  * `IComponentHandler::performEdit()` is called from an audio thread.
-    //  *
-    //  * HACK: This is sadly needed to work around an interaction between a bug
-    //  in
-    //  *       JUCE with a bug in Ardour/Mixbus. JUCE calls
-    //  *       `IComponentHandler::performEdit()` from the audio thread instead
-    //  of
-    //  *       using the output parameters, and Ardour/Mixbus immediately call
-    //  *       `IEditController::setParamNormalized()` with the same value
-    //  after
-    //  *       the plugin calls `IComponentHandler::performEdit()`. Both of
-    //  these
-    //  *       functions need to be run on the same thread (because of
-    //  recursive
-    //  *       mutexes), but they may not interfere with the GUI thread if
-    //  *       `IComponentHandler::performEdit()` wasn't called from there.
-    //  */
-    // MutualRecursionHelper<Win32Thread> audio_thread_mutual_recursion_;
 };
