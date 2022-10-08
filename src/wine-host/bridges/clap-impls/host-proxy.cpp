@@ -184,7 +184,7 @@ clap_host_proxy::ext_gui_resize_hints_changed(const clap_host_t* host) {
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    self->bridge_.send_main_thread_message(
+    self->bridge_.send_mutually_recursive_main_thread_message(
         clap::ext::gui::host::ResizeHintsChanged{
             .owner_instance_id = self->owner_instance_id()});
 }
@@ -195,11 +195,12 @@ bool CLAP_ABI clap_host_proxy::ext_gui_request_resize(const clap_host_t* host,
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    const bool result = self->bridge_.send_main_thread_message(
-        clap::ext::gui::host::RequestResize{
-            .owner_instance_id = self->owner_instance_id(),
-            .width = width,
-            .height = height});
+    const bool result =
+        self->bridge_.send_mutually_recursive_main_thread_message(
+            clap::ext::gui::host::RequestResize{
+                .owner_instance_id = self->owner_instance_id(),
+                .width = width,
+                .height = height});
 
     // If the resize request was accepted by the host, then we'll also resize
     // our editor window
@@ -215,7 +216,7 @@ bool CLAP_ABI clap_host_proxy::ext_gui_request_show(const clap_host_t* host) {
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    return self->bridge_.send_main_thread_message(
+    return self->bridge_.send_mutually_recursive_main_thread_message(
         clap::ext::gui::host::RequestShow{.owner_instance_id =
                                               self->owner_instance_id()});
 }
@@ -224,7 +225,7 @@ bool CLAP_ABI clap_host_proxy::ext_gui_request_hide(const clap_host_t* host) {
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    return self->bridge_.send_main_thread_message(
+    return self->bridge_.send_mutually_recursive_main_thread_message(
         clap::ext::gui::host::RequestHide{.owner_instance_id =
                                               self->owner_instance_id()});
 }

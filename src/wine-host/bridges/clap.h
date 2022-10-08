@@ -264,7 +264,7 @@ class ClapBridge : public HostBridge {
                        "message()' called from a non-GUI thread, sending the "
                        "message directly";
             });
-            send_main_thread_message(object);
+            return send_main_thread_message(object);
         }
     }
 

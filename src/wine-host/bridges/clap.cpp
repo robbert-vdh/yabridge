@@ -429,21 +429,20 @@ void ClapBridge::run() {
                               << std::endl;
                     return false;
                 } else {
-                    return main_context_
-                        .run_in_context([&, plugin = instance.plugin.get(),
-                                         gui = instance.extensions.gui]() {
+                    return do_mutual_recursion_on_gui_thread(
+                        [&, plugin = instance.plugin.get(),
+                         gui = instance.extensions.gui]() {
                             return gui->set_scale(plugin, request.scale);
-                        })
-                        .get();
+                        });
                 }
             },
             [&](const clap::ext::gui::plugin::GetSize& request)
                 -> clap::ext::gui::plugin::GetSize::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui]() {
+                return do_mutual_recursion_on_gui_thread(
+                    [&, plugin = instance.plugin.get(),
+                     gui = instance.extensions.gui]() {
                         uint32_t width{};
                         uint32_t height{};
                         const bool result =
@@ -451,49 +450,46 @@ void ClapBridge::run() {
 
                         return clap::ext::gui::plugin::GetSizeResponse{
                             .result = result, .width = width, .height = height};
-                    })
-                    .get();
+                    });
             },
             [&](clap::ext::gui::plugin::CanResize& request)
                 -> clap::ext::gui::plugin::CanResize::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                // TODO: Qtractor calls this in response to request_resize(), so
-                //       we need to handle mutual recursion here. We should do
-                //       this for all GUI functions just to be safe.
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui]() {
+                return do_mutual_recursion_on_gui_thread(
+                    [&, plugin = instance.plugin.get(),
+                     gui = instance.extensions.gui]() {
                         return gui->can_resize(plugin);
-                    })
-                    .get();
+                    });
             },
             [&](const clap::ext::gui::plugin::GetResizeHints& request)
                 -> clap::ext::gui::plugin::GetResizeHints::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui]() {
-                        clap_gui_resize_hints_t hints{};
-                        if (gui->get_resize_hints(plugin, &hints)) {
-                            return clap::ext::gui::plugin::
-                                GetResizeHintsResponse{.result =
-                                                           std::move(hints)};
-                        } else {
-                            return clap::ext::gui::plugin::
-                                GetResizeHintsResponse{.result = std::nullopt};
-                        }
-                    })
-                    .get();
+                return do_mutual_recursion_on_gui_thread([&,
+                                                          plugin =
+                                                              instance.plugin
+                                                                  .get(),
+                                                          gui = instance
+                                                                    .extensions
+                                                                    .gui]() {
+                    clap_gui_resize_hints_t hints{};
+                    if (gui->get_resize_hints(plugin, &hints)) {
+                        return clap::ext::gui::plugin::GetResizeHintsResponse{
+                            .result = std::move(hints)};
+                    } else {
+                        return clap::ext::gui::plugin::GetResizeHintsResponse{
+                            .result = std::nullopt};
+                    }
+                });
             },
             [&](const clap::ext::gui::plugin::AdjustSize& request)
                 -> clap::ext::gui::plugin::AdjustSize::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui]() {
+                return do_mutual_recursion_on_gui_thread(
+                    [&, plugin = instance.plugin.get(),
+                     gui = instance.extensions.gui]() {
                         uint32_t width = request.width;
                         uint32_t height = request.height;
                         const bool result =
@@ -503,17 +499,16 @@ void ClapBridge::run() {
                             .result = result,
                             .updated_width = width,
                             .updated_height = height};
-                    })
-                    .get();
+                    });
             },
             [&](const clap::ext::gui::plugin::SetSize& request)
                 -> clap::ext::gui::plugin::SetSize::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui,
-                                     &editor = instance.editor]() {
+                return do_mutual_recursion_on_gui_thread(
+                    [&, plugin = instance.plugin.get(),
+                     gui = instance.extensions.gui,
+                     &editor = instance.editor]() {
                         if (gui->set_size(plugin, request.width,
                                           request.height)) {
                             // Also resize the editor window. We do the same
@@ -525,8 +520,7 @@ void ClapBridge::run() {
                         } else {
                             return false;
                         }
-                    })
-                    .get();
+                    });
             },
             [&](const clap::ext::gui::plugin::SetParent& request)
                 -> clap::ext::gui::plugin::SetParent::Response {
@@ -578,23 +572,21 @@ void ClapBridge::run() {
                 // We don't need any special handling for our editor window, but
                 // the plugin may use these functions to suspend drawing or stop
                 // other tasks while the window is hdden
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui]() {
+                return do_mutual_recursion_on_gui_thread(
+                    [&, plugin = instance.plugin.get(),
+                     gui = instance.extensions.gui]() {
                         return gui->show(plugin);
-                    })
-                    .get();
+                    });
             },
             [&](const clap::ext::gui::plugin::Hide& request)
                 -> clap::ext::gui::plugin::Hide::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return main_context_
-                    .run_in_context([&, plugin = instance.plugin.get(),
-                                     gui = instance.extensions.gui]() {
+                return do_mutual_recursion_on_gui_thread(
+                    [&, plugin = instance.plugin.get(),
+                     gui = instance.extensions.gui]() {
                         return gui->hide(plugin);
-                    })
-                    .get();
+                    });
             },
             [&](clap::ext::latency::plugin::Get& request)
                 -> clap::ext::latency::plugin::Get::Response {
