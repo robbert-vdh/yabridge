@@ -78,6 +78,9 @@ class ClapAudioThreadSockets {
         callback_.close();
     }
 
+    // TODO: These don't need mutual recursion. Make that optional to save some
+    //       threads.
+
     /**
      * Used for host->plugin audio thread function calls.
      */
