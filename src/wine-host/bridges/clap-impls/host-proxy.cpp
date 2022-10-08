@@ -19,6 +19,11 @@
 #include "../../../common/serialization/clap/version.h"
 #include "../clap.h"
 
+// NOTE: The liberal use of `send_mutually_recursive_main_thread_message()` here
+//       is because otherwise it's very easy to run into a deadlock when both
+//       sides use `clap_host::request_callback()`+`clap_plugin::on_main_thread`
+//       at the same time
+
 clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
                                  size_t owner_instance_id,
                                  clap::host::Host host_args)
@@ -122,8 +127,9 @@ clap_host_proxy::host_request_restart(const struct clap_host* host) {
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    self->bridge_.send_main_thread_message(clap::host::RequestRestart{
-        .owner_instance_id = self->owner_instance_id()});
+    self->bridge_.send_mutually_recursive_main_thread_message(
+        clap::host::RequestRestart{.owner_instance_id =
+                                       self->owner_instance_id()});
 }
 
 void CLAP_ABI
@@ -131,8 +137,9 @@ clap_host_proxy::host_request_process(const struct clap_host* host) {
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    self->bridge_.send_main_thread_message(clap::host::RequestProcess{
-        .owner_instance_id = self->owner_instance_id()});
+    self->bridge_.send_mutually_recursive_main_thread_message(
+        clap::host::RequestProcess{.owner_instance_id =
+                                       self->owner_instance_id()});
 }
 
 void CLAP_ABI
@@ -172,7 +179,7 @@ bool CLAP_ABI clap_host_proxy::ext_audio_ports_is_rescan_flag_supported(
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    return self->bridge_.send_main_thread_message(
+    return self->bridge_.send_mutually_recursive_main_thread_message(
         clap::ext::audio_ports::host::IsRescanFlagSupported{
             .owner_instance_id = self->owner_instance_id(), .flag = flag});
 }
@@ -182,8 +189,9 @@ void CLAP_ABI clap_host_proxy::ext_audio_ports_rescan(const clap_host_t* host,
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    self->bridge_.send_main_thread_message(clap::ext::audio_ports::host::Rescan{
-        .owner_instance_id = self->owner_instance_id(), .flags = flags});
+    self->bridge_.send_mutually_recursive_main_thread_message(
+        clap::ext::audio_ports::host::Rescan{
+            .owner_instance_id = self->owner_instance_id(), .flags = flags});
 }
 
 void CLAP_ABI
@@ -242,17 +250,19 @@ void CLAP_ABI clap_host_proxy::ext_gui_closed(const clap_host_t* host,
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    self->bridge_.send_main_thread_message(clap::ext::gui::host::Closed{
-        .owner_instance_id = self->owner_instance_id(),
-        .was_destroyed = was_destroyed});
+    self->bridge_.send_mutually_recursive_main_thread_message(
+        clap::ext::gui::host::Closed{
+            .owner_instance_id = self->owner_instance_id(),
+            .was_destroyed = was_destroyed});
 }
 
 void CLAP_ABI clap_host_proxy::ext_latency_changed(const clap_host_t* host) {
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    self->bridge_.send_main_thread_message(clap::ext::latency::host::Changed{
-        .owner_instance_id = self->owner_instance_id()});
+    self->bridge_.send_mutually_recursive_main_thread_message(
+        clap::ext::latency::host::Changed{.owner_instance_id =
+                                              self->owner_instance_id()});
 }
 
 uint32_t CLAP_ABI
@@ -260,7 +270,7 @@ clap_host_proxy::ext_note_ports_supported_dialects(const clap_host_t* host) {
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    return self->bridge_.send_main_thread_message(
+    return self->bridge_.send_mutually_recursive_main_thread_message(
         clap::ext::note_ports::host::SupportedDialects{
             .owner_instance_id = self->owner_instance_id()});
 }
@@ -270,8 +280,9 @@ void CLAP_ABI clap_host_proxy::ext_note_ports_rescan(const clap_host_t* host,
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    self->bridge_.send_main_thread_message(clap::ext::note_ports::host::Rescan{
-        .owner_instance_id = self->owner_instance_id(), .flags = flags});
+    self->bridge_.send_mutually_recursive_main_thread_message(
+        clap::ext::note_ports::host::Rescan{
+            .owner_instance_id = self->owner_instance_id(), .flags = flags});
 }
 
 void CLAP_ABI
@@ -280,8 +291,9 @@ clap_host_proxy::ext_params_rescan(const clap_host_t* host,
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    self->bridge_.send_main_thread_message(clap::ext::params::host::Rescan{
-        .owner_instance_id = self->owner_instance_id(), .flags = flags});
+    self->bridge_.send_mutually_recursive_main_thread_message(
+        clap::ext::params::host::Rescan{
+            .owner_instance_id = self->owner_instance_id(), .flags = flags});
 }
 
 void CLAP_ABI clap_host_proxy::ext_params_clear(const clap_host_t* host,
@@ -290,10 +302,11 @@ void CLAP_ABI clap_host_proxy::ext_params_clear(const clap_host_t* host,
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    self->bridge_.send_main_thread_message(clap::ext::params::host::Clear{
-        .owner_instance_id = self->owner_instance_id(),
-        .param_id = param_id,
-        .flags = flags});
+    self->bridge_.send_mutually_recursive_main_thread_message(
+        clap::ext::params::host::Clear{
+            .owner_instance_id = self->owner_instance_id(),
+            .param_id = param_id,
+            .flags = flags});
 }
 
 void CLAP_ABI
@@ -310,8 +323,9 @@ void CLAP_ABI clap_host_proxy::ext_state_mark_dirty(const clap_host_t* host) {
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
-    self->bridge_.send_main_thread_message(clap::ext::state::host::MarkDirty{
-        .owner_instance_id = self->owner_instance_id()});
+    self->bridge_.send_mutually_recursive_main_thread_message(
+        clap::ext::state::host::MarkDirty{.owner_instance_id =
+                                              self->owner_instance_id()});
 }
 
 void CLAP_ABI clap_host_proxy::ext_tail_changed(const clap_host_t* host) {
