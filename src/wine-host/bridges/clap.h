@@ -160,20 +160,6 @@ struct ClapPluginInstance {
      * it, so we're also preventing this for CLAP as a precaution.
      */
     bool is_initialized = false;
-
-    // TODO: Add this when we add support for audio processing
-    // /**
-    //  * The plugin's current process setup, containing information about the
-    //  * buffer sizes, sample rate, and processing mode. Used for setting up
-    //  * shared memory audio buffers, and to know whether the plugin instance
-    //  is
-    //  * currently in offline processing mode or not. The latter is needed as a
-    //  * HACK for IK Multimedia's T-RackS 5 because those plugins will deadlock
-    //  if
-    //  * they don't process audio from the GUI thread while doing offline
-    //  * processing.
-    //  */
-    // std::optional<Steinberg::Vst::ProcessSetup> process_setup;
 };
 
 /**
