@@ -612,6 +612,41 @@ bool ClapLogger::log_request(bool is_host_plugin,
 }
 
 bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::log::host::Log& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_log::log(severity = ";
+        switch (request.severity) {
+            case CLAP_LOG_DEBUG:
+                message << "CLAP_LOG_DEBUG";
+                break;
+            case CLAP_LOG_INFO:
+                message << "CLAP_LOG_INFO";
+                break;
+            case CLAP_LOG_WARNING:
+                message << "CLAP_LOG_WARNING";
+                break;
+            case CLAP_LOG_ERROR:
+                message << "CLAP_LOG_ERROR";
+                break;
+            case CLAP_LOG_FATAL:
+                message << "CLAP_LOG_FATAL";
+                break;
+            case CLAP_LOG_HOST_MISBEHAVING:
+                message << "CLAP_LOG_HOST_MISBEHAVING";
+                break;
+            case CLAP_LOG_PLUGIN_MISBEHAVING:
+                message << "CLAP_LOG_PLUGIN_MISBEHAVING";
+                break;
+            default:
+                message << request.severity << " (unknown)";
+                break;
+        }
+        message << ", message = \"" << request.msg << "\")";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::ext::tail::host::Changed& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.owner_instance_id << ": clap_host_tail::changed()";

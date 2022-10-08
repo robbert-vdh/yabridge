@@ -169,6 +169,7 @@ class ClapLogger {
                      const clap::ext::state::host::MarkDirty&);
 
     // Audio thread callbacks
+    bool log_request(bool is_host_plugin, const clap::ext::log::host::Log&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::tail::host::Changed&);
 
