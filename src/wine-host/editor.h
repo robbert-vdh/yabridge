@@ -211,7 +211,7 @@ class Editor {
      * Get the Win32 window handle so it can be passed to an `effEditOpen()`
      * call.
      */
-    HWND get_win32_handle() const noexcept;
+    HWND win32_handle() const noexcept;
 
     /**
      * Returns `true` if the window manager supports the EWMH active window

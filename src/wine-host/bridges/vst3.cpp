@@ -793,7 +793,7 @@ void Vst3Bridge::run() {
                             x11_handle);
                         const tresult result =
                             instance.plug_view_instance->plug_view->attached(
-                                editor_instance.get_win32_handle(),
+                                editor_instance.win32_handle(),
                                 type.c_str());
 
                         // Set the window's initial size according to what the

@@ -547,7 +547,7 @@ void ClapBridge::run() {
 
                         const clap_window_t window{
                             .api = CLAP_WINDOW_API_WIN32,
-                            .win32 = editor_instance.get_win32_handle()};
+                            .win32 = editor_instance.win32_handle()};
                         const bool result = gui->set_parent(plugin, &window);
 
                         // Set the window's initial size according to what the

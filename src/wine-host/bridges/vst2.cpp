@@ -745,7 +745,7 @@ intptr_t Vst2Bridge::dispatch_wrapper(AEffect* plugin,
 
             const intptr_t result =
                 plugin->dispatcher(plugin, opcode, index, value,
-                                   editor_instance.get_win32_handle(), option);
+                                   editor_instance.win32_handle(), option);
 
             // Make sure the wrapper window has the correct initial size. The
             // plugin can later change this size using `audioMasterSizeWindow`.

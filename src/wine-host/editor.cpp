@@ -755,7 +755,7 @@ void Editor::handle_x11_events() noexcept {
     }
 }
 
-HWND Editor::get_win32_handle() const noexcept {
+HWND Editor::win32_handle() const noexcept {
     return win32_window_.handle_;
 }
 
