@@ -228,6 +228,9 @@ bool CLAP_ABI clap_host_proxy::ext_gui_request_resize(const clap_host_t* host,
             self->bridge_.editor_size(self->owner_instance_id());
         current_size && current_size->width == width &&
         current_size->height == height) {
+        std::cerr << "WARNING: The plugin tried to request a resize to its "
+                     "current size, ignoring the request"
+                  << std::endl;
         return true;
     }
 
