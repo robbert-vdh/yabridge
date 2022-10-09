@@ -4,12 +4,16 @@
 [![Discord](https://img.shields.io/discord/786993304197267527.svg?label=Discord&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/pyNeweqadf)
 
 Yet Another way to use Windows audio plugins on Linux. Yabridge seamlessly
-supports using both 32-bit and 64-bit Windows VST2, VST3, and CLAP plugins in
+supports using both 32-bit and 64-bit Windows VST2, VST3, and CLAP\* plugins in
 64-bit Linux plugin hosts as if they were native plugins, with optional support
 for [plugin groups](#plugin-groups) to enable inter-plugin communication for
 VST2 plugins and quick startup times. Its modern concurrent architecture and
 focus on transparency allows yabridge to be both fast and highly compatible,
 while also staying easy to debug and maintain.
+
+<sup>
+  *CLAP support is currently only available on the master branch.
+</sup>
 
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
