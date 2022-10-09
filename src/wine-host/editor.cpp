@@ -270,6 +270,7 @@ Editor::Editor(MainContext& main_context,
       x11_connection_(xcb_connect(nullptr, nullptr), xcb_disconnect),
       dnd_proxy_handle_(WineXdndProxy::get_handle()),
       client_area_(get_maximum_screen_dimensions(*x11_connection_)),
+      wrapper_window_size_({128, 128}),
       // Create a window without any decoratiosn for easy embedding. The
       // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to
       // be drawn without any decorations (making resizes behave as you'd
@@ -319,7 +320,8 @@ Editor::Editor(MainContext& main_context,
       parent_window_(parent_window_handle),
       wrapper_window_(
           x11_connection_,
-          [parent_window = parent_window_](
+          [parent_window = parent_window_,
+           wrapper_window_size = wrapper_window_size_](
               std::shared_ptr<xcb_connection_t> x11_connection,
               xcb_window_t window) {
               xcb_generic_error_t* error = nullptr;
@@ -330,10 +332,11 @@ Editor::Editor(MainContext& main_context,
                                        &error));
               THROW_X11_ERROR(error);
 
-              xcb_create_window(x11_connection.get(), XCB_COPY_FROM_PARENT,
-                                window, query_reply->root, 0, 0, 128, 128, 0,
-                                XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                XCB_COPY_FROM_PARENT, 0, nullptr);
+              xcb_create_window(
+                  x11_connection.get(), XCB_COPY_FROM_PARENT, window,
+                  query_reply->root, 0, 0, wrapper_window_size.width,
+                  wrapper_window_size.height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                  XCB_COPY_FROM_PARENT, 0, nullptr);
           }),
       wine_window_(get_x11_handle(win32_window_.handle_)),
       host_window_(find_host_window(*x11_connection_,
@@ -428,6 +431,12 @@ void Editor::resize(uint16_t width, uint16_t height) {
     xcb_configure_window(x11_connection_.get(), wrapper_window_.window_,
                          value_mask, values.data());
     xcb_flush(x11_connection_.get());
+
+    // NOTE: This lets us skip resize requests in CLAP plugins when the plugin
+    //       tries to resize to its current size. This fixes resize loops when
+    //       using the CLAP JUCE Extensions.
+    wrapper_window_size_.width = width;
+    wrapper_window_size_.height = height;
 
     // When the `editor_coordinate_hack` option is enabled, we will make sure
     // that the window is actually placed at (0, 0) coordinates. Otherwise some

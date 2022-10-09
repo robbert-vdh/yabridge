@@ -262,6 +262,11 @@ class Editor {
     void run_timer_proc();
 
     /**
+     * Get the editor's (or, the wrapper window's) current size.
+     */
+    inline Size size() const noexcept { return wrapper_window_size_; }
+
+    /**
      * Whether to reposition `win32_window_` to (0, 0) every time the window
      * resizes. This can help with buggy plugins that use the (top level)
      * window's screen coordinates when drawing their GUI.
@@ -361,11 +366,16 @@ class Editor {
      * will be set to a size that's large enough to be able to enter full screen
      * on a single display. This is more of a theoretical maximum size, as the
      * plugin will only use a portion of this window to draw to. Because we're
-     * not changing the size of the Wine window and simply letting the user or
-     * the host resize the X11 parent window it's been embedded in instead,
-     * resizing will feel smooth and native.
+     * not changing the size of the Wine window and only resize the wrapper
+     * window it's been embedded in, resizing will feel smooth and native.
      */
     const Size client_area_;
+
+    /**
+     * The size of the wrapper window. We'll prevent CLAP resize requests when
+     * the wrapper window is already at the correct size.
+     */
+    Size wrapper_window_size_;
 
     /**
      * The handle for the window created through Wine that the plugin uses to

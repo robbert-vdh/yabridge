@@ -218,6 +218,19 @@ bool CLAP_ABI clap_host_proxy::ext_gui_request_resize(const clap_host_t* host,
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
 
+    // HACK: Surge XT/the CLAP JUCE Extensions get stuck in a resize loop when
+    //       the host tries to resize the window. It will send
+    //       `clap_host_gui::request_resize()` in response to
+    //       `clap_plugin_gui::set_size()` with the same size it has just set.
+    //       We'll need to filter these calls out to prevent this from causing
+    //       issues.
+    if (const std::optional<Size> current_size =
+            self->bridge_.editor_size(self->owner_instance_id());
+        current_size && current_size->width == width &&
+        current_size->height == height) {
+        return true;
+    }
+
     const bool result =
         self->bridge_.send_mutually_recursive_main_thread_message(
             clap::ext::gui::host::RequestResize{

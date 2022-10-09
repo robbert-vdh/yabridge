@@ -219,6 +219,12 @@ class ClapBridge : public HostBridge {
                              uint16_t width,
                              uint16_t height);
 
+    /**
+     * Get the plugin instance's current editor size, if it has an active
+     * editor.
+     */
+    std::optional<Size> editor_size(size_t instance_id);
+
    protected:
     void close_sockets() override;
 
