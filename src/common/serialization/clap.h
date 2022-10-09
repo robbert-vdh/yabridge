@@ -31,6 +31,7 @@
 #include "clap/ext/params.h"
 #include "clap/ext/state.h"
 #include "clap/ext/tail.h"
+#include "clap/ext/voice-info.h"
 #include "clap/host.h"
 #include "clap/plugin-factory.h"
 #include "clap/process.h"
