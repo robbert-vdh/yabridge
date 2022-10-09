@@ -133,7 +133,8 @@ struct SetScale {
 };
 
 /**
- * The response to the `clap::ext::params::GetSize` message defined below.
+ * The response to the `clap::ext::params::plugin::GetSize` message defined
+ * below.
  */
 struct GetSizeResponse {
     bool result;
@@ -178,8 +179,8 @@ struct CanResize {
 };
 
 /**
- * The response to the `clap::ext::params::GetResizeHints` message defined
- * below.
+ * The response to the `clap::ext::params::plugin::GetResizeHints` message
+ * defined below.
  */
 struct GetResizeHintsResponse {
     // This doesn't require a special wrapper since the struct only contains
@@ -209,7 +210,8 @@ struct GetResizeHints {
 };
 
 /**
- * The response to the `clap::ext::params::AdjustSize` message defined below.
+ * The response to the `clap::ext::params::plugin::AdjustSize` message defined
+ * below.
  */
 struct AdjustSizeResponse {
     bool result;

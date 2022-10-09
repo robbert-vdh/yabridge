@@ -93,7 +93,8 @@ struct Count {
 };
 
 /**
- * The response to the `clap::ext::params::GetInfo` message defined below.
+ * The response to the `clap::ext::params::plugin::GetInfo` message defined
+ * below.
  */
 struct GetInfoResponse {
     std::optional<ParamInfo> result;
@@ -122,7 +123,8 @@ struct GetInfo {
 };
 
 /**
- * The response to the `clap::ext::params::GetValue` message defined below.
+ * The response to the `clap::ext::params::plugin::GetValue` message defined
+ * below.
  */
 struct GetValueResponse {
     std::optional<double> result;
@@ -151,7 +153,8 @@ struct GetValue {
 };
 
 /**
- * The response to the `clap::ext::params::ValueToText` message defined below.
+ * The response to the `clap::ext::params::plugin::ValueToText` message defined
+ * below.
  */
 struct ValueToTextResponse {
     std::optional<std::string> result;
@@ -182,7 +185,8 @@ struct ValueToText {
 };
 
 /**
- * The response to the `clap::ext::params::TextToValue` message defined below.
+ * The response to the `clap::ext::params::plugin::TextToValue` message defined
+ * below.
  */
 struct TextToValueResponse {
     std::optional<double> result;
@@ -213,7 +217,7 @@ struct TextToValue {
 };
 
 /**
- * The response to the `clap::ext::params::Flush` message defined below.
+ * The response to the `clap::ext::params::plugin::Flush` message defined below.
  */
 struct FlushResponse {
     clap::events::EventList out;

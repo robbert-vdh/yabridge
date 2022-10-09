@@ -30,7 +30,7 @@ namespace state {
 namespace plugin {
 
 /**
- * The response to the `clap::ext::state::Save` message defined below.
+ * The response to the `clap::ext::state::plugin::Save` message defined below.
  */
 struct SaveResponse {
     std::optional<clap::stream::Stream> result;

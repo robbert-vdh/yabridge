@@ -118,7 +118,8 @@ struct Count {
 };
 
 /**
- * The response to the `clap::ext::audio_ports::Get` message defined below.
+ * The response to the `clap::ext::audio_ports::plugin::Get` message defined
+ * below.
  */
 struct GetResponse {
     std::optional<AudioPortInfo> result;

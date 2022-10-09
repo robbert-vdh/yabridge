@@ -85,7 +85,8 @@ struct Count {
 };
 
 /**
- * The response to the `clap::ext::note_ports::Get` message defined below.
+ * The response to the `clap::ext::note_ports::plugin::Get` message defined
+ * below.
  */
 struct GetResponse {
     std::optional<NotePortInfo> result;
