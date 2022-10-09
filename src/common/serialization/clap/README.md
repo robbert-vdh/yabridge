@@ -33,7 +33,7 @@ Yabridge currently tracks CLAP 1.1.1. The implementation status for CLAP's core 
 | `clap.thread-check`       | :heavy_check_mark: No bridging involved                      |
 | `clap.thread-pool`        | :x: Not supported yet                                        |
 | `clap.timer-support`      | :x: Not supported yet                                        |
-| `clap.voice-info`         | :x: Not supported yet                                        |
+| `clap.voice-info`         | :heavy_check_mark:                                           |
 
 | draft extension                  | status                |
 | -------------------------------- | --------------------- |

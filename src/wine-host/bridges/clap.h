@@ -73,6 +73,7 @@ struct ClapPluginExtensions {
     const clap_plugin_params_t* params = nullptr;
     const clap_plugin_state_t* state = nullptr;
     const clap_plugin_tail_t* tail = nullptr;
+    const clap_plugin_voice_info_t* voice_info = nullptr;
 };
 
 /**

@@ -40,7 +40,9 @@ ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
       state(static_cast<const clap_plugin_state_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_STATE))),
       tail(static_cast<const clap_plugin_tail_t*>(
-          plugin.get_extension(&plugin, CLAP_EXT_TAIL))) {}
+          plugin.get_extension(&plugin, CLAP_EXT_TAIL))),
+      voice_info(static_cast<const clap_plugin_voice_info_t*>(
+          plugin.get_extension(&plugin, CLAP_EXT_VOICE_INFO))) {}
 
 ClapPluginExtensions::ClapPluginExtensions() noexcept {}
 
@@ -53,7 +55,8 @@ clap::plugin::SupportedPluginExtensions ClapPluginExtensions::supported()
         .supports_note_ports = note_ports != nullptr,
         .supports_params = params != nullptr,
         .supports_state = state != nullptr,
-        .supports_tail = tail != nullptr};
+        .supports_tail = tail != nullptr,
+        .supports_voice_info = voice_info != nullptr};
 }
 
 ClapPluginInstance::ClapPluginInstance(
@@ -733,6 +736,25 @@ void ClapBridge::run() {
                     .run_in_context([&, plugin = instance.plugin.get(),
                                      state = instance.extensions.state]() {
                         return state->load(plugin, request.stream.istream());
+                    })
+                    .get();
+            },
+            [&](clap::ext::voice_info::plugin::Get& request)
+                -> clap::ext::voice_info::plugin::Get::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     voice_info =
+                                         instance.extensions.voice_info]() {
+                        clap_voice_info_t info{};
+                        if (voice_info->get(plugin, &info)) {
+                            return clap::ext::voice_info::plugin::GetResponse{
+                                .result = std::move(info)};
+                        } else {
+                            return clap::ext::voice_info::plugin::GetResponse{
+                                .result = std::nullopt};
+                        }
                     })
                     .get();
             },

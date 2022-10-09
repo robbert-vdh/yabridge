@@ -84,6 +84,9 @@ clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
       ext_thread_check_vtable(clap_host_thread_check_t{
           .is_main_thread = ext_thread_check_is_main_thread,
           .is_audio_thread = ext_thread_check_is_audio_thread,
+      }),
+      ext_voice_info_vtable(clap_host_voice_info_t{
+          .changed = ext_voice_info_changed,
       }) {}
 
 const void* CLAP_ABI
@@ -122,6 +125,9 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
     } else if (strcmp(extension_id, CLAP_EXT_THREAD_CHECK) == 0) {
         // This extension doesn't require any bridging
         extension_ptr = &self->ext_thread_check_vtable;
+    } else if (self->supported_extensions_.supports_voice_info &&
+               strcmp(extension_id, CLAP_EXT_VOICE_INFO) == 0) {
+        extension_ptr = &self->ext_voice_info_vtable;
     }
 
     self->bridge_.logger_.log_extension_query("clap_host::get_extension",
@@ -431,4 +437,12 @@ clap_host_proxy::ext_thread_check_is_audio_thread(const clap_host_t* host) {
     // We don't keep track of audio threads, but as long as the plugin doesn't
     // do audio thread stuff on the GUI thread everything's fine
     return !self->bridge_.main_context_.is_gui_thread();
+}
+
+void CLAP_ABI clap_host_proxy::ext_voice_info_changed(const clap_host_t* host) {
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_main_thread_message(clap::ext::voice_info::host::Changed{
+        .owner_instance_id = self->owner_instance_id()});
 }

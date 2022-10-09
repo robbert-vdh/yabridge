@@ -24,6 +24,7 @@
 #include <clap/ext/params.h>
 #include <clap/ext/state.h>
 #include <clap/ext/tail.h>
+#include <clap/ext/voice-info.h>
 
 namespace clap {
 namespace host {
@@ -35,7 +36,7 @@ Host::Host(const clap_host_t& original)
       url(original.url ? std::optional(original.url) : std::nullopt),
       version((assert(original.version), original.version)) {}
 
-std::array<std::pair<bool, const char*>, 8> SupportedHostExtensions::list()
+std::array<std::pair<bool, const char*>, 9> SupportedHostExtensions::list()
     const noexcept {
     return {std::pair(supports_audio_ports, CLAP_EXT_AUDIO_PORTS),
             std::pair(supports_gui, CLAP_EXT_GUI),
@@ -44,7 +45,8 @@ std::array<std::pair<bool, const char*>, 8> SupportedHostExtensions::list()
             std::pair(supports_note_ports, CLAP_EXT_NOTE_PORTS),
             std::pair(supports_params, CLAP_EXT_PARAMS),
             std::pair(supports_state, CLAP_EXT_STATE),
-            std::pair(supports_tail, CLAP_EXT_TAIL)};
+            std::pair(supports_tail, CLAP_EXT_TAIL),
+            std::pair(supports_voice_info, CLAP_EXT_VOICE_INFO)};
 }
 
 }  // namespace host

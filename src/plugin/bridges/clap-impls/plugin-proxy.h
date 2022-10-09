@@ -28,6 +28,7 @@
 #include <clap/ext/params.h>
 #include <clap/ext/state.h>
 #include <clap/ext/tail.h>
+#include <clap/ext/voice-info.h>
 #include <clap/plugin.h>
 #include <rigtorp/MPMCQueue.h>
 #include <function2/function2.hpp>
@@ -71,6 +72,7 @@ struct ClapHostExtensions {
     const clap_host_params_t* params = nullptr;
     const clap_host_state_t* state = nullptr;
     const clap_host_tail_t* tail = nullptr;
+    const clap_host_voice_info_t* voice_info = nullptr;
 };
 
 /**
@@ -263,6 +265,9 @@ class clap_plugin_proxy {
 
     static uint32_t CLAP_ABI ext_tail_get(const clap_plugin_t* plugin);
 
+    static bool CLAP_ABI ext_voice_info_get(const clap_plugin_t* plugin,
+                                            clap_voice_info_t* info);
+
    private:
     ClapPluginBridge& bridge_;
     size_t instance_id_;
@@ -326,6 +331,7 @@ class clap_plugin_proxy {
     const clap_plugin_params_t ext_params_vtable;
     const clap_plugin_state_t ext_state_vtable;
     const clap_plugin_tail_t ext_tail_vtable;
+    const clap_plugin_voice_info_t ext_voice_info_vtable;
 
     /**
      * The extensions supported by the bridged plugin. Set after a successful

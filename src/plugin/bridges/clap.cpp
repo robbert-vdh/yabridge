@@ -259,6 +259,22 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
 
                     return Ack{};
                 },
+                [&](const clap::ext::voice_info::host::Changed& request)
+                    -> clap::ext::voice_info::host::Changed::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    plugin_proxy
+                        .run_on_main_thread(
+                            [&, host = plugin_proxy.host_,
+                             voice_info =
+                                 plugin_proxy.host_extensions_.voice_info]() {
+                                voice_info->changed(host);
+                            })
+                        .wait();
+
+                    return Ack{};
+                },
             });
     });
 }

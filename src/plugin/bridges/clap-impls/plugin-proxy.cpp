@@ -34,7 +34,9 @@ ClapHostExtensions::ClapHostExtensions(const clap_host& host) noexcept
       state(static_cast<const clap_host_state_t*>(
           host.get_extension(&host, CLAP_EXT_STATE))),
       tail(static_cast<const clap_host_tail_t*>(
-          host.get_extension(&host, CLAP_EXT_TAIL))) {}
+          host.get_extension(&host, CLAP_EXT_TAIL))),
+      voice_info(static_cast<const clap_host_voice_info_t*>(
+          host.get_extension(&host, CLAP_EXT_VOICE_INFO))) {}
 
 ClapHostExtensions::ClapHostExtensions() noexcept {}
 
@@ -48,7 +50,8 @@ clap::host::SupportedHostExtensions ClapHostExtensions::supported()
         .supports_note_ports = note_ports != nullptr,
         .supports_params = params != nullptr,
         .supports_state = state != nullptr,
-        .supports_tail = tail != nullptr};
+        .supports_tail = tail != nullptr,
+        .supports_voice_info = voice_info != nullptr};
 }
 
 clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
@@ -115,6 +118,9 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
       }),
       ext_tail_vtable(clap_plugin_tail_t{
           .get = ext_tail_get,
+      }),
+      ext_voice_info_vtable(clap_plugin_voice_info_t{
+          .get = ext_voice_info_get,
       }),
       // These function objects are relatively large, and we probably won't be
       // getting that many of them
@@ -309,6 +315,9 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
     } else if (self->supported_extensions_.supports_tail &&
                strcmp(id, CLAP_EXT_TAIL) == 0) {
         extension_ptr = &self->ext_tail_vtable;
+    } else if (self->supported_extensions_.supports_voice_info &&
+               strcmp(id, CLAP_EXT_VOICE_INFO) == 0) {
+        extension_ptr = &self->ext_voice_info_vtable;
     }
 
     self->bridge_.logger_.log_extension_query("clap_plugin::get_extension",
@@ -756,4 +765,22 @@ uint32_t CLAP_ABI clap_plugin_proxy::ext_tail_get(const clap_plugin_t* plugin) {
 
     return self->bridge_.send_audio_thread_message(
         clap::ext::tail::plugin::Get{.instance_id = self->instance_id()});
+}
+
+bool CLAP_ABI clap_plugin_proxy::ext_voice_info_get(const clap_plugin_t* plugin,
+                                                    clap_voice_info_t* info) {
+    assert(plugin && plugin->plugin_data && info);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    const clap::ext::voice_info::plugin::GetResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::ext::voice_info::plugin::Get{.instance_id =
+                                                   self->instance_id()});
+    if (response.result) {
+        *info = *response.result;
+
+        return true;
+    } else {
+        return false;
+    }
 }

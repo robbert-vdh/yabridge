@@ -27,6 +27,7 @@
 #include <clap/ext/state.h>
 #include <clap/ext/tail.h>
 #include <clap/ext/thread-check.h>
+#include <clap/ext/voice-info.h>
 #include <clap/host.h>
 
 #include "../../common/serialization/clap/plugin-factory.h"
@@ -121,6 +122,8 @@ class clap_host_proxy {
     static bool CLAP_ABI
     ext_thread_check_is_audio_thread(const clap_host_t* host);
 
+    static void CLAP_ABI ext_voice_info_changed(const clap_host_t* host);
+
    private:
     ClapBridge& bridge_;
     size_t owner_instance_id_;
@@ -149,6 +152,7 @@ class clap_host_proxy {
     const clap_host_tail_t ext_tail_vtable;
     // This is always available regardless of the proxied host
     const clap_host_thread_check_t ext_thread_check_vtable;
+    const clap_host_voice_info_t ext_voice_info_vtable;
 
     /**
      * Keeps track of whether there are pending host callbacks. Used to prevent
