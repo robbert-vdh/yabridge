@@ -356,6 +356,15 @@ bool ClapLogger::log_request(bool is_host_plugin,
     });
 }
 
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::voice_info::plugin::Get& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_voice_info::get(*info)";
+    });
+}
+
 bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::plugin::StartProcessing& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
@@ -599,6 +608,15 @@ bool ClapLogger::log_request(bool is_host_plugin,
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.owner_instance_id
                 << ": clap_host_state::mark_dirty()";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::voice_info::host::Changed& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_voice_info::changed()";
     });
 }
 
@@ -862,6 +880,24 @@ void ClapLogger::log_response(
         if (response.result) {
             message << "true, <clap_ostream_t* containing "
                     << response.result->size() << " bytes>";
+        } else {
+            message << "false";
+        }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::voice_info::plugin::GetResponse& response) {
+    log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.result) {
+            message << "true, <clap_voice_info_t* with voice_count = "
+                    << response.result->voice_count
+                    << ", voice_capacity = " << response.result->voice_capacity
+                    << ", flags = "
+                    << std::bitset<sizeof(response.result->flags) * 8>(
+                           response.result->flags)
+                    << ">";
         } else {
             message << "false";
         }
