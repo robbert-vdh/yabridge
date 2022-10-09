@@ -369,8 +369,7 @@ struct Vst2EventResult {
         s.value8b(return_value);
 
         s.object(payload);
-        s.ext(value_payload, bitsery::ext::InPlaceOptional(),
-              [](S& s, auto& v) { s.object(v); });
+        s.ext(value_payload, bitsery::ext::InPlaceOptional());
     }
 };
 
@@ -479,8 +478,7 @@ struct Vst2Event {
         s.value4b(option);
 
         s.object(payload);
-        s.ext(value_payload, bitsery::ext::InPlaceOptional(),
-              [](S& s, auto& v) { s.object(v); });
+        s.ext(value_payload, bitsery::ext::InPlaceOptional());
     }
 };
 

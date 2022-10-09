@@ -101,8 +101,7 @@ struct GetInfoResponse {
 
     template <typename S>
     void serialize(S& s) {
-        s.ext(result, bitsery::ext::InPlaceOptional(),
-              [](S& s, auto& v) { s.object(v); });
+        s.ext(result, bitsery::ext::InPlaceOptional());
     }
 };
 
