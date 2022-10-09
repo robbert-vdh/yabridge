@@ -147,9 +147,7 @@ Please let me know if there are any issues with other hosts.
       `yabridgectl add "$HOME/.wine/drive_c/Program Files/Common Files/CLAP"` to
       add that directory to yabridge.
 
-      **Note that the currently released version of yabridge does not yet
-      support CLAP. Right now CLAP support is only available on the master
-      branch.**
+      **Yabridge 4.0.2 does does not yet support CLAP bridging.**
 
 4. Finally, you'll need to run `yabridgectl sync` to finish setting up yabridge
    for all of your plugins. After doing so, your VST2, VST3, and CLAP plugins
