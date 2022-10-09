@@ -1314,7 +1314,7 @@ void Vst3Bridge::run() {
         });
 }
 
-bool Vst3Bridge::maybe_resize_editor(size_t instance_id,
+bool Vst3Bridge::resize_editor(size_t instance_id,
                                      const Steinberg::ViewRect& new_size) {
     const auto& [instance, _] = get_instance(instance_id);
 

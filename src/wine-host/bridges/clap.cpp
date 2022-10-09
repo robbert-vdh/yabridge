@@ -740,9 +740,9 @@ void ClapBridge::run() {
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-bool ClapBridge::maybe_resize_editor(size_t instance_id,
-                                     uint16_t width,
-                                     uint16_t height) {
+bool ClapBridge::resize_editor(size_t instance_id,
+                               uint16_t width,
+                               uint16_t height) {
     const auto& [instance, _] = get_instance(instance_id);
 
     if (instance.editor) {

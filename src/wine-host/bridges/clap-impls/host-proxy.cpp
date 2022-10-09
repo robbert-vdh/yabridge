@@ -241,8 +241,7 @@ bool CLAP_ABI clap_host_proxy::ext_gui_request_resize(const clap_host_t* host,
     // If the resize request was accepted by the host, then we'll also resize
     // our editor window
     if (result) {
-        self->bridge_.maybe_resize_editor(self->owner_instance_id_, width,
-                                          height);
+        self->bridge_.resize_editor(self->owner_instance_id_, width, height);
     }
 
     return result;

@@ -215,9 +215,7 @@ class ClapBridge : public HostBridge {
      * the new size. This is called from `clap_host_gui::request_resize()` after
      * the host returns `true`.
      */
-    bool maybe_resize_editor(size_t instance_id,
-                             uint16_t width,
-                             uint16_t height);
+    bool resize_editor(size_t instance_id, uint16_t width, uint16_t height);
 
     /**
      * Get the plugin instance's current editor size, if it has an active
