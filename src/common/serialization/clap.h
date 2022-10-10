@@ -29,6 +29,7 @@
 #include "clap/ext/log.h"
 #include "clap/ext/note-ports.h"
 #include "clap/ext/params.h"
+#include "clap/ext/render.h"
 #include "clap/ext/state.h"
 #include "clap/ext/tail.h"
 #include "clap/ext/voice-info.h"
