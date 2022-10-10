@@ -6,14 +6,14 @@ for more information on how the serialization works.
 
 Yabridge currently tracks CLAP 1.1.1. The implementation status for CLAP's core feature and extensions can be found below:
 
-| core feature                              | status                                                 |
-| ----------------------------------------- | ------------------------------------------------------ |
-| Core plugin and host functionality        | :warning: Everything but actual audio processing works |
-| Audio processing                          | :heavy_check_mark:                                     |
-| Events                                    | :heavy_check_mark:                                     |
-| Streams                                   | :heavy_check_mark:                                     |
-| `clap.plugin-factory`                     | :heavy_check_mark:                                     |
-| `clap.plugin-invalidation-factory/draft0` | :x: Not supported yet                                  |
+| core feature                              | status                |
+| ----------------------------------------- | --------------------- |
+| Core plugin and host functionality        | :heavy_check_mark:    |
+| Audio processing                          | :heavy_check_mark:    |
+| Events                                    | :heavy_check_mark:    |
+| Streams                                   | :heavy_check_mark:    |
+| `clap.plugin-factory`                     | :heavy_check_mark:    |
+| `clap.plugin-invalidation-factory/draft0` | :x: Not supported yet |
 
 | extension                 | status                                                       |
 | ------------------------- | ------------------------------------------------------------ |
