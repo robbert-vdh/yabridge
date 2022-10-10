@@ -128,6 +128,11 @@ class ClapLogger {
                      const clap::ext::params::plugin::TextToValue&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::latency::plugin::Get&);
+    bool log_request(
+        bool is_host_plugin,
+        const clap::ext::render::plugin::HasHardRealtimeRequirement&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::render::plugin::Set&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::state::plugin::Save&);
     bool log_request(bool is_host_plugin,

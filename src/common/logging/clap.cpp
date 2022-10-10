@@ -338,6 +338,34 @@ bool ClapLogger::log_request(bool is_host_plugin,
     });
 }
 
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::render::plugin::HasHardRealtimeRequirement& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_render::has_hard_realtime_requirement()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::render::plugin::Set& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin_render::set(mode = ";
+        switch (request.mode) {
+            case CLAP_RENDER_REALTIME:
+                message << "CLAP_RENDER_REALTIME";
+                break;
+            case CLAP_RENDER_OFFLINE:
+                message << "CLAP_RENDER_OFFLINE";
+                break;
+            default:
+                message << request.mode << " (unknown)";
+                break;
+        }
+        message << ")";
+    });
+}
+
 bool ClapLogger::log_request(bool is_host_plugin,
                              const clap::ext::state::plugin::Save& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
