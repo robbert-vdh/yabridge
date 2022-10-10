@@ -112,6 +112,11 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
           .text_to_value = ext_params_text_to_value,
           .flush = ext_params_flush,
       }),
+      ext_render_vtable(clap_plugin_render_t{
+          .has_hard_realtime_requirement =
+              ext_render_has_hard_realtime_requirement,
+          .set = ext_render_set,
+      }),
       ext_state_vtable(clap_plugin_state_t{
           .save = ext_state_save,
           .load = ext_state_load,
@@ -309,6 +314,9 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
     } else if (self->supported_extensions_.supports_params &&
                strcmp(id, CLAP_EXT_PARAMS) == 0) {
         extension_ptr = &self->ext_params_vtable;
+    } else if (self->supported_extensions_.supports_render &&
+               strcmp(id, CLAP_EXT_RENDER) == 0) {
+        extension_ptr = &self->ext_render_vtable;
     } else if (self->supported_extensions_.supports_state &&
                strcmp(id, CLAP_EXT_STATE) == 0) {
         extension_ptr = &self->ext_state_vtable;
@@ -730,6 +738,26 @@ clap_plugin_proxy::ext_params_flush(const clap_plugin_t* plugin,
                                              .in = std::move(events)});
 
     response.out.write_back_outputs(*out);
+}
+
+bool CLAP_ABI clap_plugin_proxy::ext_render_has_hard_realtime_requirement(
+    const clap_plugin_t* plugin) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::render::plugin::HasHardRealtimeRequirement{
+            .instance_id = self->instance_id()});
+}
+
+bool CLAP_ABI clap_plugin_proxy::ext_render_set(const clap_plugin_t* plugin,
+                                                clap_plugin_render_mode mode) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::render::plugin::Set{.instance_id = self->instance_id(),
+                                       .mode = mode});
 }
 
 bool CLAP_ABI clap_plugin_proxy::ext_state_save(const clap_plugin_t* plugin,

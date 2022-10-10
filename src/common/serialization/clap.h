@@ -81,6 +81,8 @@ using ClapMainThreadControlRequest =
                  clap::ext::params::plugin::GetValue,
                  clap::ext::params::plugin::ValueToText,
                  clap::ext::params::plugin::TextToValue,
+                 clap::ext::render::plugin::HasHardRealtimeRequirement,
+                 clap::ext::render::plugin::Set,
                  clap::ext::state::plugin::Save,
                  clap::ext::state::plugin::Load,
                  clap::ext::voice_info::plugin::Get>;

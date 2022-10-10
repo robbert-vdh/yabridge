@@ -37,6 +37,8 @@ ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
           plugin.get_extension(&plugin, CLAP_EXT_NOTE_PORTS))),
       params(static_cast<const clap_plugin_params_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_PARAMS))),
+      render(static_cast<const clap_plugin_render_t*>(
+          plugin.get_extension(&plugin, CLAP_EXT_RENDER))),
       state(static_cast<const clap_plugin_state_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_STATE))),
       tail(static_cast<const clap_plugin_tail_t*>(
@@ -54,6 +56,7 @@ clap::plugin::SupportedPluginExtensions ClapPluginExtensions::supported()
         .supports_latency = latency != nullptr,
         .supports_note_ports = note_ports != nullptr,
         .supports_params = params != nullptr,
+        .supports_render = render != nullptr,
         .supports_state = state != nullptr,
         .supports_tail = tail != nullptr,
         .supports_voice_info = voice_info != nullptr};
@@ -710,6 +713,40 @@ void ClapBridge::run() {
                         .result = std::nullopt};
                 }
             },
+            [&](clap::ext::render::plugin::HasHardRealtimeRequirement& request)
+                -> clap::ext::render::plugin::HasHardRealtimeRequirement::
+                    Response {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
+
+                        return main_context_
+                            .run_in_context([&, plugin = instance.plugin.get(),
+                                             render =
+                                                 instance.extensions.render]() {
+                                return render->has_hard_realtime_requirement(
+                                    plugin);
+                            })
+                            .get();
+                    },
+            [&](clap::ext::render::plugin::Set& request)
+                -> clap::ext::render::plugin::Set::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context([&, plugin = instance.plugin.get(),
+                                     render = instance.extensions.render,
+                                     &render_mode = instance.render_mode]() {
+                        if (render->set(plugin, request.mode)) {
+                            // This is used later to do offline processing on
+                            // the GUI thread
+                            render_mode = request.mode;
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    })
+                    .get();
+            },
             [&](clap::ext::state::plugin::Save& request)
                 -> clap::ext::state::plugin::Save::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
@@ -1005,13 +1042,28 @@ void ClapBridge::register_plugin_instance(
                     // The actual audio is stored in the shared memory
                     // buffers, so the reconstruction function will need to
                     // know where it should point the `AudioBusBuffers` to
-                    // TODO: Once we add the render extension, process on the
-                    //       main thread when doing offline rendering
+                    // HACK: The VST3 version of IK-Multimedia's T-RackS 5 will
+                    //       hang if audio processing is done from the audio
+                    //       thread while the plugin is in offline processing
+                    //       mode. So as a precaution, we'll also do offline
+                    //       processing for CLAP plugins on the GUI thread.
+                    clap_process_status result;
                     auto& reconstructed = request.process.reconstruct(
                         instance.process_buffers_input_pointers,
                         instance.process_buffers_output_pointers);
-                    clap_process_status result = instance.plugin->process(
-                        instance.plugin.get(), &reconstructed);
+                    if (instance.render_mode == CLAP_RENDER_OFFLINE) {
+                        result =
+                            main_context_
+                                .run_in_context([&instance = instance,
+                                                 &reconstructed]() {
+                                    return instance.plugin->process(
+                                        instance.plugin.get(), &reconstructed);
+                                })
+                                .get();
+                    } else {
+                        result = instance.plugin->process(instance.plugin.get(),
+                                                          &reconstructed);
+                    }
 
                     return clap::plugin::ProcessResponse{
                         .result = result,

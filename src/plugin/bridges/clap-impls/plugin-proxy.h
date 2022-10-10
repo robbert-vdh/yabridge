@@ -26,6 +26,7 @@
 #include <clap/ext/log.h>
 #include <clap/ext/note-ports.h>
 #include <clap/ext/params.h>
+#include <clap/ext/render.h>
 #include <clap/ext/state.h>
 #include <clap/ext/tail.h>
 #include <clap/ext/voice-info.h>
@@ -258,6 +259,11 @@ class clap_plugin_proxy {
                                           const clap_input_events_t* in,
                                           const clap_output_events_t* out);
 
+    static bool CLAP_ABI
+    ext_render_has_hard_realtime_requirement(const clap_plugin_t* plugin);
+    static bool CLAP_ABI ext_render_set(const clap_plugin_t* plugin,
+                                        clap_plugin_render_mode mode);
+
     static bool CLAP_ABI ext_state_save(const clap_plugin_t* plugin,
                                         const clap_ostream_t* stream);
     static bool CLAP_ABI ext_state_load(const clap_plugin_t* plugin,
@@ -329,6 +335,7 @@ class clap_plugin_proxy {
     const clap_plugin_latency_t ext_latency_vtable;
     const clap_plugin_note_ports_t ext_note_ports_vtable;
     const clap_plugin_params_t ext_params_vtable;
+    const clap_plugin_render_t ext_render_vtable;
     const clap_plugin_state_t ext_state_vtable;
     const clap_plugin_tail_t ext_tail_vtable;
     const clap_plugin_voice_info_t ext_voice_info_vtable;

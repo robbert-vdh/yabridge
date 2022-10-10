@@ -120,6 +120,7 @@ struct SupportedPluginExtensions {
     bool supports_latency = false;
     bool supports_note_ports = false;
     bool supports_params = false;
+    bool supports_render = false;
     bool supports_state = false;
     bool supports_tail = false;
     bool supports_voice_info = false;
@@ -128,7 +129,7 @@ struct SupportedPluginExtensions {
      * Get a list of `<bool, extension_name>` tuples for the supported
      * extensions. Used during logging.
      */
-    std::array<std::pair<bool, const char*>, 8> list() const noexcept;
+    std::array<std::pair<bool, const char*>, 9> list() const noexcept;
 
     template <typename S>
     void serialize(S& s) {
@@ -137,6 +138,7 @@ struct SupportedPluginExtensions {
         s.value1b(supports_latency);
         s.value1b(supports_note_ports);
         s.value1b(supports_params);
+        s.value1b(supports_render);
         s.value1b(supports_state);
         s.value1b(supports_tail);
         s.value1b(supports_voice_info);

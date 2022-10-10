@@ -71,6 +71,7 @@ struct ClapPluginExtensions {
     const clap_plugin_latency_t* latency = nullptr;
     const clap_plugin_note_ports_t* note_ports = nullptr;
     const clap_plugin_params_t* params = nullptr;
+    const clap_plugin_render_t* render = nullptr;
     const clap_plugin_state_t* state = nullptr;
     const clap_plugin_tail_t* tail = nullptr;
     const clap_plugin_voice_info_t* voice_info = nullptr;
@@ -161,6 +162,14 @@ struct ClapPluginInstance {
      * it, so we're also preventing this for CLAP as a precaution.
      */
     bool is_initialized = false;
+
+    /**
+     * The instance's current rendering mode. This should not be needed, but
+     * we'll process offline renders on the main thread. T-RackS 5's VST2 and
+     * VST3 versions deadlock if offline rendering is done from an audio thread,
+     * so we'll take precautions and also do this for CLAP.
+     */
+    clap_plugin_render_mode render_mode = CLAP_RENDER_REALTIME;
 };
 
 /**

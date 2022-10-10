@@ -21,6 +21,7 @@
 #include <clap/ext/latency.h>
 #include <clap/ext/note-ports.h>
 #include <clap/ext/params.h>
+#include <clap/ext/render.h>
 #include <clap/ext/state.h>
 #include <clap/ext/tail.h>
 #include <clap/ext/voice-info.h>
@@ -83,13 +84,14 @@ const clap_plugin_descriptor_t* Descriptor::get() const {
     return &clap_descriptor;
 }
 
-std::array<std::pair<bool, const char*>, 8> SupportedPluginExtensions::list()
+std::array<std::pair<bool, const char*>, 9> SupportedPluginExtensions::list()
     const noexcept {
     return {std::pair(supports_audio_ports, CLAP_EXT_AUDIO_PORTS),
             std::pair(supports_gui, CLAP_EXT_GUI),
             std::pair(supports_latency, CLAP_EXT_LATENCY),
             std::pair(supports_note_ports, CLAP_EXT_NOTE_PORTS),
             std::pair(supports_params, CLAP_EXT_PARAMS),
+            std::pair(supports_render, CLAP_EXT_RENDER),
             std::pair(supports_state, CLAP_EXT_STATE),
             std::pair(supports_tail, CLAP_EXT_TAIL),
             std::pair(supports_voice_info, CLAP_EXT_VOICE_INFO)};
