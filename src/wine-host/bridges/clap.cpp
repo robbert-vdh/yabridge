@@ -514,22 +514,28 @@ void ClapBridge::run() {
                     [&, plugin = instance.plugin.get(),
                      gui = instance.extensions.gui,
                      &editor = instance.editor]() {
-                        assert(editor);
-
                         // HACK: We need to resize the editor window before
                         //       setting the size on the plugin. Surge XT and
                         //       presumably other CLAP JUCE Extensions plugins
                         //       will request a resize to the same size that was
                         //       just set. This causes a resize loop, so we'll
                         //       try to prevent resizes to the same size.
-                        const Size old_size = editor->size();
-                        editor->resize(request.width, request.height);
+                        //       The host is allowed to call this before
+                        //       `set_parent()`, so the editor instance may not
+                        //       yet exist.
+                        Size old_size{};
+                        if (editor) {
+                            old_size = editor->size();
+                            editor->resize(request.width, request.height);
+                        }
 
                         if (gui->set_size(plugin, request.width,
                                           request.height)) {
                             return true;
                         } else {
-                            editor->resize(old_size.width, old_size.height);
+                            if (editor) {
+                                editor->resize(old_size.width, old_size.height);
+                            }
 
                             return false;
                         }
