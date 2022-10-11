@@ -383,7 +383,7 @@ hide_daw = true
 editor_force_dnd = true
 frame_rate = 24
 
-["LoopCloud*"]
+["Loopcloud*"]
 disable_pipes = true
 
 # Simple glob patterns can be used to avoid unneeded repetition
