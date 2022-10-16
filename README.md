@@ -76,7 +76,7 @@ Please let me know if there are any issues with other hosts.
    guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
 
 1. Depending on your distro you can install yabridge and its yabridgectl
-   companion utility through your distro's package manager or by using the using
+   companion utility through your distro's package manager or by using
    a binary archive from the GitHub releases page. Keep in mind that the distro
    packages mentioned below may not always be up to date, and some may also not
    be compiled with support for 32-bit plugins.
