@@ -22,7 +22,7 @@ namespace clap {
 namespace ext {
 namespace audio_ports {
 
-AudioPortType parse_port_type(const char* port_type) {
+AudioPortType parse_audio_port_type(const char* port_type) {
     if (!port_type) {
         return AudioPortType::Unknown;
     }
@@ -55,7 +55,7 @@ AudioPortInfo::AudioPortInfo(const clap_audio_port_info_t& original)
       name(original.name),
       flags(original.flags),
       channel_count(original.channel_count),
-      port_type(parse_port_type(original.port_type)),
+      port_type(parse_audio_port_type(original.port_type)),
       in_place_pair(original.in_place_pair) {}
 
 void AudioPortInfo::reconstruct(clap_audio_port_info_t& port_info) const {
