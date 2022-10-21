@@ -91,6 +91,12 @@ class ClapLogger {
     bool log_request(bool is_host_plugin,
                      const clap::ext::audio_ports::plugin::Get&);
     bool log_request(bool is_host_plugin,
+                     const clap::ext::audio_ports_config::plugin::Count&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::audio_ports_config::plugin::Get&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::audio_ports_config::plugin::Select&);
+    bool log_request(bool is_host_plugin,
                      const clap::ext::gui::plugin::IsApiSupported&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::gui::plugin::Create&);
@@ -160,6 +166,8 @@ class ClapLogger {
     bool log_request(bool is_host_plugin,
                      const clap::ext::audio_ports::host::Rescan&);
     bool log_request(bool is_host_plugin,
+                     const clap::ext::audio_ports_config::host::Rescan&);
+    bool log_request(bool is_host_plugin,
                      const clap::ext::gui::host::ResizeHintsChanged&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::gui::host::RequestResize&);
@@ -201,6 +209,9 @@ class ClapLogger {
                       const clap::plugin::ActivateResponse&);
     void log_response(bool is_host_plugin,
                       const clap::ext::audio_ports::plugin::GetResponse&);
+    void log_response(
+        bool is_host_plugin,
+        const clap::ext::audio_ports_config::plugin::GetResponse&);
     void log_response(bool is_host_plugin,
                       const clap::ext::gui::plugin::GetSizeResponse&);
     void log_response(bool is_host_plugin,

@@ -145,6 +145,35 @@ bool ClapLogger::log_request(
 
 bool ClapLogger::log_request(
     bool is_host_plugin,
+    const clap::ext::audio_ports_config::plugin::Count& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_audio_ports_config::count()";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::audio_ports_config::plugin::Get& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_audio_ports_config::get(index = "
+                << request.index << ", *config)";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::ext::audio_ports_config::plugin::Select& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_audio_ports_config::select(config_id = "
+                << request.config_id << ")";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
     const clap::ext::gui::plugin::IsApiSupported& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id
@@ -543,6 +572,15 @@ bool ClapLogger::log_request(
 
 bool ClapLogger::log_request(
     bool is_host_plugin,
+    const clap::ext::audio_ports_config::host::Rescan& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_audio_ports_config::rescan()";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
     const clap::ext::gui::host::ResizeHintsChanged& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.owner_instance_id
@@ -775,6 +813,19 @@ void ClapLogger::log_response(
     log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message << "true, <clap_audio_port_info_t* for \""
+                    << response.result->name << "\">";
+        } else {
+            message << "false";
+        }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::audio_ports_config::plugin::GetResponse& response) {
+    log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.result) {
+            message << "true, <clap_audio_ports_config_t* for \""
                     << response.result->name << "\">";
         } else {
             message << "false";
