@@ -813,7 +813,10 @@ void ClapLogger::log_response(
     log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
             message << "true, <clap_audio_port_info_t* for \""
-                    << response.result->name << "\">";
+                    << response.result->name
+                    << "\", id = " << response.result->id
+                    << ", channel_count = " << response.result->channel_count
+                    << ">";
         } else {
             message << "false";
         }
@@ -825,8 +828,9 @@ void ClapLogger::log_response(
     const clap::ext::audio_ports_config::plugin::GetResponse& response) {
     log_response_base(is_host_plugin, [&](auto& message) {
         if (response.result) {
-            message << "true, <clap_audio_ports_config_t* for \""
-                    << response.result->name << "\">";
+            message << "true, <clap_audio_port_config_t* for \""
+                    << response.result->name
+                    << "\", id = " << response.result->id << ">";
         } else {
             message << "false";
         }
