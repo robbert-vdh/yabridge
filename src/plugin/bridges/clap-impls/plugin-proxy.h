@@ -20,6 +20,7 @@
 #include <thread>
 #include <vector>
 
+#include <clap/ext/audio-ports-config.h>
 #include <clap/ext/audio-ports.h>
 #include <clap/ext/gui.h>
 #include <clap/ext/latency.h>
@@ -66,6 +67,7 @@ struct ClapHostExtensions {
     clap::host::SupportedHostExtensions supported() const noexcept;
 
     const clap_host_audio_ports_t* audio_ports = nullptr;
+    const clap_host_audio_ports_config_t* audio_ports_config = nullptr;
     const clap_host_gui_t* gui = nullptr;
     const clap_host_latency_t* latency = nullptr;
     const clap_host_log_t* log = nullptr;
@@ -195,6 +197,16 @@ class clap_plugin_proxy {
                                              uint32_t index,
                                              bool is_input,
                                              clap_audio_port_info_t* info);
+
+    static uint32_t CLAP_ABI
+    ext_audio_ports_config_count(const clap_plugin_t* plugin);
+    static bool CLAP_ABI
+    ext_audio_ports_config_get(const clap_plugin_t* plugin,
+                               uint32_t index,
+                               clap_audio_ports_config_t* config);
+    static bool CLAP_ABI
+    ext_audio_ports_config_select(const clap_plugin_t* plugin,
+                                  clap_id config_id);
 
     static bool CLAP_ABI ext_gui_is_api_supported(const clap_plugin_t* plugin,
                                                   const char* api,
@@ -331,6 +343,7 @@ class clap_plugin_proxy {
     // depends on whether the plugin supported this extension when we called
     // `clap_plugin::init()`.
     const clap_plugin_audio_ports_t ext_audio_ports_vtable;
+    const clap_plugin_audio_ports_config_t ext_audio_ports_config_vtable;
     const clap_plugin_gui_t ext_gui_vtable;
     const clap_plugin_latency_t ext_latency_vtable;
     const clap_plugin_note_ports_t ext_note_ports_vtable;

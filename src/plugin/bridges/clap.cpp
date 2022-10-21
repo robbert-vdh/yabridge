@@ -115,6 +115,22 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
 
                     return Ack{};
                 },
+                [&](const clap::ext::audio_ports_config::host::Rescan& request)
+                    -> clap::ext::audio_ports_config::host::Rescan::Response {
+                    const auto& [plugin_proxy, _] =
+                        get_proxy(request.owner_instance_id);
+
+                    plugin_proxy
+                        .run_on_main_thread(
+                            [&, host = plugin_proxy.host_,
+                             audio_ports_config = plugin_proxy.host_extensions_
+                                                      .audio_ports_config]() {
+                                audio_ports_config->rescan(host);
+                            })
+                        .wait();
+
+                    return Ack{};
+                },
                 [&](const clap::ext::gui::host::ResizeHintsChanged& request)
                     -> clap::ext::gui::host::ResizeHintsChanged::Response {
                     const auto& [plugin_proxy, _] =

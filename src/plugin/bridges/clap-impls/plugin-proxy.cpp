@@ -21,6 +21,8 @@
 ClapHostExtensions::ClapHostExtensions(const clap_host& host) noexcept
     : audio_ports(static_cast<const clap_host_audio_ports_t*>(
           host.get_extension(&host, CLAP_EXT_AUDIO_PORTS))),
+      audio_ports_config(static_cast<const clap_host_audio_ports_config_t*>(
+          host.get_extension(&host, CLAP_EXT_AUDIO_PORTS_CONFIG))),
       gui(static_cast<const clap_host_gui_t*>(
           host.get_extension(&host, CLAP_EXT_GUI))),
       latency(static_cast<const clap_host_latency_t*>(
@@ -44,6 +46,7 @@ clap::host::SupportedHostExtensions ClapHostExtensions::supported()
     const noexcept {
     return clap::host::SupportedHostExtensions{
         .supports_audio_ports = audio_ports != nullptr,
+        .supports_audio_ports_config = audio_ports_config != nullptr,
         .supports_gui = gui != nullptr,
         .supports_latency = latency != nullptr,
         .supports_log = log != nullptr,
@@ -79,6 +82,11 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
       ext_audio_ports_vtable(clap_plugin_audio_ports_t{
           .count = ext_audio_ports_count,
           .get = ext_audio_ports_get,
+      }),
+      ext_audio_ports_config_vtable(clap_plugin_audio_ports_config_t{
+          .count = ext_audio_ports_config_count,
+          .get = ext_audio_ports_config_get,
+          .select = ext_audio_ports_config_select,
       }),
       ext_gui_vtable(clap_plugin_gui_t{
           .is_api_supported = ext_gui_is_api_supported,
@@ -302,6 +310,9 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
     if (self->supported_extensions_.supports_audio_ports &&
         strcmp(id, CLAP_EXT_AUDIO_PORTS) == 0) {
         extension_ptr = &self->ext_audio_ports_vtable;
+    } else if (self->supported_extensions_.supports_audio_ports_config &&
+               strcmp(id, CLAP_EXT_AUDIO_PORTS_CONFIG) == 0) {
+        extension_ptr = &self->ext_audio_ports_config_vtable;
     } else if (self->supported_extensions_.supports_gui &&
                strcmp(id, CLAP_EXT_GUI) == 0) {
         extension_ptr = &self->ext_gui_vtable;
@@ -379,6 +390,47 @@ clap_plugin_proxy::ext_audio_ports_get(const clap_plugin_t* plugin,
     } else {
         return false;
     }
+}
+
+uint32_t CLAP_ABI
+clap_plugin_proxy::ext_audio_ports_config_count(const clap_plugin_t* plugin) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::audio_ports_config::plugin::Count{.instance_id =
+                                                         self->instance_id()});
+}
+
+bool CLAP_ABI clap_plugin_proxy::ext_audio_ports_config_get(
+    const clap_plugin_t* plugin,
+    uint32_t index,
+    clap_audio_ports_config_t* config) {
+    assert(plugin && plugin->plugin_data && config);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    const clap::ext::audio_ports_config::plugin::GetResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::ext::audio_ports_config::plugin::Get{
+                .instance_id = self->instance_id(), .index = index});
+    if (response.result) {
+        response.result->reconstruct(*config);
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_audio_ports_config_select(const clap_plugin_t* plugin,
+                                                 clap_id config_id) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::audio_ports_config::plugin::Select{
+            .instance_id = self->instance_id(), .config_id = config_id});
 }
 
 bool CLAP_ABI

@@ -18,6 +18,7 @@
 
 #include <atomic>
 
+#include <clap/ext/audio-ports-config.h>
 #include <clap/ext/audio-ports.h>
 #include <clap/ext/gui.h>
 #include <clap/ext/latency.h>
@@ -86,6 +87,8 @@ class clap_host_proxy {
     static void CLAP_ABI ext_audio_ports_rescan(const clap_host_t* host,
                                                 uint32_t flags);
 
+    static void CLAP_ABI ext_audio_ports_config_rescan(const clap_host_t* host);
+
     static void CLAP_ABI ext_gui_resize_hints_changed(const clap_host_t* host);
     static bool CLAP_ABI ext_gui_request_resize(const clap_host_t* host,
                                                 uint32_t width,
@@ -140,6 +143,7 @@ class clap_host_proxy {
     // depends on whether the plugin supported this extension when the host
     // called `clap_plugin::init()`.
     const clap_host_audio_ports_t ext_audio_ports_vtable;
+    const clap_host_audio_ports_config_t ext_audio_ports_config_vtable;
     const clap_host_gui_t ext_gui_vtable;
     const clap_host_latency_t ext_latency_vtable;
     // This is also always available regardless of the proxied host. That way we

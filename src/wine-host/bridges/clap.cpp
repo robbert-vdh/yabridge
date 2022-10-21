@@ -29,6 +29,8 @@ namespace fs = ghc::filesystem;
 ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
     : audio_ports(static_cast<const clap_plugin_audio_ports_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_AUDIO_PORTS))),
+      audio_ports_config(static_cast<const clap_plugin_audio_ports_config_t*>(
+          plugin.get_extension(&plugin, CLAP_EXT_AUDIO_PORTS_CONFIG))),
       gui(static_cast<const clap_plugin_gui_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_GUI))),
       latency(static_cast<const clap_plugin_latency_t*>(
@@ -52,6 +54,7 @@ clap::plugin::SupportedPluginExtensions ClapPluginExtensions::supported()
     const noexcept {
     return clap::plugin::SupportedPluginExtensions{
         .supports_audio_ports = audio_ports != nullptr,
+        .supports_audio_ports_config = audio_ports_config != nullptr,
         .supports_gui = gui != nullptr,
         .supports_latency = latency != nullptr,
         .supports_note_ports = note_ports != nullptr,
@@ -356,6 +359,45 @@ void ClapBridge::run() {
                     return clap::ext::audio_ports::plugin::GetResponse{
                         .result = std::nullopt};
                 }
+            },
+            [&](const clap::ext::audio_ports_config::plugin::Count& request)
+                -> clap::ext::audio_ports_config::plugin::Count::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in hot code paths
+                return instance.extensions.audio_ports_config->count(
+                    instance.plugin.get());
+            },
+            [&](const clap::ext::audio_ports_config::plugin::Get& request)
+                -> clap::ext::audio_ports_config::plugin::Get::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in hot code paths
+                clap_audio_ports_config_t config{};
+                if (instance.extensions.audio_ports_config->get(
+                        instance.plugin.get(), request.index, &config)) {
+                    return clap::ext::audio_ports_config::plugin::GetResponse{
+                        .result = config};
+                } else {
+                    return clap::ext::audio_ports_config::plugin::GetResponse{
+                        .result = std::nullopt};
+                }
+            },
+            [&](const clap::ext::audio_ports_config::plugin::Select& request)
+                -> clap::ext::audio_ports_config::plugin::Select::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                return main_context_
+                    .run_in_context(
+                        [&, plugin = instance.plugin.get(),
+                         audio_ports_config =
+                             instance.extensions.audio_ports_config]() {
+                            return audio_ports_config->select(
+                                plugin, request.config_id);
+                        })
+                    .get();
             },
             [&](const clap::ext::gui::plugin::IsApiSupported& request)
                 -> clap::ext::gui::plugin::IsApiSupported::Response {

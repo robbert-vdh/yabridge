@@ -53,6 +53,9 @@ clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
           .is_rescan_flag_supported = ext_audio_ports_is_rescan_flag_supported,
           .rescan = ext_audio_ports_rescan,
       }),
+      ext_audio_ports_config_vtable(clap_host_audio_ports_config_t{
+          .rescan = ext_audio_ports_config_rescan,
+      }),
       ext_gui_vtable(clap_host_gui_t{
           .resize_hints_changed = ext_gui_resize_hints_changed,
           .request_resize = ext_gui_request_resize,
@@ -99,6 +102,9 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
     if (self->supported_extensions_.supports_audio_ports &&
         strcmp(extension_id, CLAP_EXT_AUDIO_PORTS) == 0) {
         extension_ptr = &self->ext_audio_ports_vtable;
+    } else if (self->supported_extensions_.supports_audio_ports_config &&
+               strcmp(extension_id, CLAP_EXT_AUDIO_PORTS_CONFIG) == 0) {
+        extension_ptr = &self->ext_audio_ports_config_vtable;
     } else if (self->supported_extensions_.supports_gui &&
                strcmp(extension_id, CLAP_EXT_GUI) == 0) {
         extension_ptr = &self->ext_gui_vtable;
@@ -206,6 +212,16 @@ void CLAP_ABI clap_host_proxy::ext_audio_ports_rescan(const clap_host_t* host,
     self->bridge_.send_mutually_recursive_main_thread_message(
         clap::ext::audio_ports::host::Rescan{
             .owner_instance_id = self->owner_instance_id(), .flags = flags});
+}
+
+void CLAP_ABI
+clap_host_proxy::ext_audio_ports_config_rescan(const clap_host_t* host) {
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_mutually_recursive_main_thread_message(
+        clap::ext::audio_ports_config::host::Rescan{
+            .owner_instance_id = self->owner_instance_id()});
 }
 
 void CLAP_ABI
