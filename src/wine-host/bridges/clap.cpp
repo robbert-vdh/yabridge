@@ -35,6 +35,8 @@ ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
           plugin.get_extension(&plugin, CLAP_EXT_GUI))),
       latency(static_cast<const clap_plugin_latency_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_LATENCY))),
+      note_name(static_cast<const clap_plugin_note_name_t*>(
+          plugin.get_extension(&plugin, CLAP_EXT_NOTE_NAME))),
       note_ports(static_cast<const clap_plugin_note_ports_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_NOTE_PORTS))),
       params(static_cast<const clap_plugin_params_t*>(
@@ -57,6 +59,7 @@ clap::plugin::SupportedPluginExtensions ClapPluginExtensions::supported()
         .supports_audio_ports_config = audio_ports_config != nullptr,
         .supports_gui = gui != nullptr,
         .supports_latency = latency != nullptr,
+        .supports_note_name = note_name != nullptr,
         .supports_note_ports = note_ports != nullptr,
         .supports_params = params != nullptr,
         .supports_render = render != nullptr,
@@ -659,6 +662,31 @@ void ClapBridge::run() {
                 // We'll ignore the main thread requirement for simple lookups
                 // to avoid the synchronisation costs in hot code paths
                 return instance.extensions.latency->get(instance.plugin.get());
+            },
+            [&](const clap::ext::note_name::plugin::Count& request)
+                -> clap::ext::note_name::plugin::Count::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in hot code paths
+                return instance.extensions.note_name->count(
+                    instance.plugin.get());
+            },
+            [&](const clap::ext::note_name::plugin::Get& request)
+                -> clap::ext::note_name::plugin::Get::Response {
+                const auto& [instance, _] = get_instance(request.instance_id);
+
+                // We'll ignore the main thread requirement for simple array
+                // lookups to avoid the synchronisation costs in hot code paths
+                clap_note_name_t note_name{};
+                if (instance.extensions.note_name->get(
+                        instance.plugin.get(), request.index, &note_name)) {
+                    return clap::ext::note_name::plugin::GetResponse{
+                        .result = note_name};
+                } else {
+                    return clap::ext::note_name::plugin::GetResponse{
+                        .result = std::nullopt};
+                }
             },
             [&](const clap::ext::note_ports::plugin::Count& request)
                 -> clap::ext::note_ports::plugin::Count::Response {

@@ -246,6 +246,11 @@ class clap_plugin_proxy {
 
     static uint32_t CLAP_ABI ext_latency_get(const clap_plugin_t* plugin);
 
+    static uint32_t CLAP_ABI ext_note_name_count(const clap_plugin_t* plugin);
+    static bool CLAP_ABI ext_note_name_get(const clap_plugin_t* plugin,
+                                           uint32_t index,
+                                           clap_note_name_t* note_name);
+
     static uint32_t CLAP_ABI ext_note_ports_count(const clap_plugin_t* plugin,
                                                   bool is_input);
     static bool CLAP_ABI ext_note_ports_get(const clap_plugin_t* plugin,
@@ -348,6 +353,7 @@ class clap_plugin_proxy {
     const clap_plugin_audio_ports_config_t ext_audio_ports_config_vtable;
     const clap_plugin_gui_t ext_gui_vtable;
     const clap_plugin_latency_t ext_latency_vtable;
+    const clap_plugin_note_name_t ext_note_name_vtable;
     const clap_plugin_note_ports_t ext_note_ports_vtable;
     const clap_plugin_params_t ext_params_vtable;
     const clap_plugin_render_t ext_render_vtable;

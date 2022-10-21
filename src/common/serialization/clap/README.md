@@ -23,7 +23,7 @@ Yabridge currently tracks CLAP 1.1.1. The implementation status for CLAP's core 
 | `clap.gui`                | :heavy_check_mark: Currently only does embedded GUIs                    |
 | `clap.latency`            | :heavy_check_mark:                                                      |
 | `clap.log`                | :heavy_check_mark: Always supported with or without bridging            |
-| `clap.note-name`          | :x: Not supported yet                                                   |
+| `clap.note-name`          | :heavy_check_mark:                                                      |
 | `clap.note-ports`         | :heavy_check_mark:                                                      |
 | `clap.params`             | :heavy_check_mark:                                                      |
 | `clap.posix-fd-support`   | :heavy_exclamation_mark: Not used by Windows plugins                    |

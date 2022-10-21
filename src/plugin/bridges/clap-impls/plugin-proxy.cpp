@@ -111,6 +111,10 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
       ext_latency_vtable(clap_plugin_latency_t{
           .get = ext_latency_get,
       }),
+      ext_note_name_vtable(clap_plugin_note_name_t{
+          .count = ext_note_name_count,
+          .get = ext_note_name_get,
+      }),
       ext_note_ports_vtable(clap_plugin_note_ports_t{
           .count = ext_note_ports_count,
           .get = ext_note_ports_get,
@@ -322,6 +326,9 @@ clap_plugin_proxy::plugin_get_extension(const struct clap_plugin* plugin,
     } else if (self->supported_extensions_.supports_latency &&
                strcmp(id, CLAP_EXT_LATENCY) == 0) {
         extension_ptr = &self->ext_latency_vtable;
+    } else if (self->supported_extensions_.supports_note_name &&
+               strcmp(id, CLAP_EXT_NOTE_NAME) == 0) {
+        extension_ptr = &self->ext_note_name_vtable;
     } else if (self->supported_extensions_.supports_note_ports &&
                strcmp(id, CLAP_EXT_NOTE_PORTS) == 0) {
         extension_ptr = &self->ext_note_ports_vtable;
@@ -639,6 +646,36 @@ clap_plugin_proxy::ext_latency_get(const clap_plugin_t* plugin) {
 
     return self->bridge_.send_main_thread_message(
         clap::ext::latency::plugin::Get{.instance_id = self->instance_id()});
+}
+
+uint32_t CLAP_ABI
+clap_plugin_proxy::ext_note_name_count(const clap_plugin_t* plugin) {
+    assert(plugin && plugin->plugin_data);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    return self->bridge_.send_main_thread_message(
+        clap::ext::note_name::plugin::Count{.instance_id =
+                                                self->instance_id()});
+}
+
+bool CLAP_ABI
+clap_plugin_proxy::ext_note_name_get(const clap_plugin_t* plugin,
+                                     uint32_t index,
+                                     clap_note_name_t* note_name) {
+    assert(plugin && plugin->plugin_data && note_name);
+    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+
+    const clap::ext::note_name::plugin::GetResponse response =
+        self->bridge_.send_main_thread_message(
+            clap::ext::note_name::plugin::Get{
+                .instance_id = self->instance_id(), .index = index});
+    if (response.result) {
+        response.result->reconstruct(*note_name);
+
+        return true;
+    } else {
+        return false;
+    }
 }
 
 uint32_t CLAP_ABI

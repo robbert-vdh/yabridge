@@ -79,6 +79,8 @@ using ClapMainThreadControlRequest =
                  clap::ext::gui::plugin::Show,
                  clap::ext::gui::plugin::Hide,
                  clap::ext::latency::plugin::Get,
+                 clap::ext::note_name::plugin::Count,
+                 clap::ext::note_name::plugin::Get,
                  clap::ext::note_ports::plugin::Count,
                  clap::ext::note_ports::plugin::Get,
                  clap::ext::params::plugin::Count,
