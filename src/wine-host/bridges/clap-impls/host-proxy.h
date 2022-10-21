@@ -23,6 +23,7 @@
 #include <clap/ext/gui.h>
 #include <clap/ext/latency.h>
 #include <clap/ext/log.h>
+#include <clap/ext/note-name.h>
 #include <clap/ext/note-ports.h>
 #include <clap/ext/params.h>
 #include <clap/ext/state.h>
@@ -104,6 +105,8 @@ class clap_host_proxy {
                                      clap_log_severity severity,
                                      const char* msg);
 
+    static void CLAP_ABI ext_note_name_changed(const clap_host_t* host);
+
     static uint32_t CLAP_ABI
     ext_note_ports_supported_dialects(const clap_host_t* host);
     static void CLAP_ABI ext_note_ports_rescan(const clap_host_t* host,
@@ -150,6 +153,7 @@ class clap_host_proxy {
     // can filter out plugin/host misbehavior messages on lower yabridge
     // verbosity levels.
     const clap_host_log_t ext_log_vtable;
+    const clap_host_note_name_t ext_note_name_vtable;
     const clap_host_note_ports_t ext_note_ports_vtable;
     const clap_host_params_t ext_params_vtable;
     const clap_host_state_t ext_state_vtable;

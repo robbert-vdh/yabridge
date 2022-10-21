@@ -86,6 +86,7 @@ struct SupportedHostExtensions {
     bool supports_gui = false;
     bool supports_latency = false;
     bool supports_log = false;
+    bool supports_note_name = false;
     bool supports_note_ports = false;
     bool supports_params = false;
     bool supports_state = false;
@@ -96,7 +97,7 @@ struct SupportedHostExtensions {
      * Get a list of `<bool, extension_name>` tuples for the supported
      * extensions. Used during logging.
      */
-    std::array<std::pair<bool, const char*>, 10> list() const noexcept;
+    std::array<std::pair<bool, const char*>, 11> list() const noexcept;
 
     template <typename S>
     void serialize(S& s) {
@@ -105,6 +106,7 @@ struct SupportedHostExtensions {
         s.value1b(supports_gui);
         s.value1b(supports_latency);
         s.value1b(supports_log);
+        s.value1b(supports_note_name);
         s.value1b(supports_note_ports);
         s.value1b(supports_params);
         s.value1b(supports_state);

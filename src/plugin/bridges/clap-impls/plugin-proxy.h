@@ -25,6 +25,7 @@
 #include <clap/ext/gui.h>
 #include <clap/ext/latency.h>
 #include <clap/ext/log.h>
+#include <clap/ext/note-name.h>
 #include <clap/ext/note-ports.h>
 #include <clap/ext/params.h>
 #include <clap/ext/render.h>
@@ -71,6 +72,7 @@ struct ClapHostExtensions {
     const clap_host_gui_t* gui = nullptr;
     const clap_host_latency_t* latency = nullptr;
     const clap_host_log_t* log = nullptr;
+    const clap_host_note_name_t* note_name = nullptr;
     const clap_host_note_ports_t* note_ports = nullptr;
     const clap_host_params_t* params = nullptr;
     const clap_host_state_t* state = nullptr;

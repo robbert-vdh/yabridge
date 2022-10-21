@@ -69,6 +69,9 @@ clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
       ext_log_vtable(clap_host_log_t{
           .log = ext_log_log,
       }),
+      ext_note_name_vtable(clap_host_note_name_t{
+          .changed = ext_note_name_changed,
+      }),
       ext_note_ports_vtable(clap_host_note_ports_t{
           .supported_dialects = ext_note_ports_supported_dialects,
           .rescan = ext_note_ports_rescan,
@@ -116,6 +119,9 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
         // supports it, or we'll print the message if it doesn't. That allows us
         // to filter misbehavior messages.
         extension_ptr = &self->ext_log_vtable;
+    } else if (self->supported_extensions_.supports_note_name &&
+               strcmp(extension_id, CLAP_EXT_NOTE_NAME) == 0) {
+        extension_ptr = &self->ext_note_name_vtable;
     } else if (self->supported_extensions_.supports_note_ports &&
                strcmp(extension_id, CLAP_EXT_NOTE_PORTS) == 0) {
         extension_ptr = &self->ext_note_ports_vtable;
@@ -361,6 +367,15 @@ void CLAP_ABI clap_host_proxy::ext_log_log(const clap_host_t* host,
 
         std::cerr << msg << std::endl;
     }
+}
+
+void CLAP_ABI clap_host_proxy::ext_note_name_changed(const clap_host_t* host) {
+    assert(host && host->host_data);
+    auto self = static_cast<const clap_host_proxy*>(host->host_data);
+
+    self->bridge_.send_mutually_recursive_main_thread_message(
+        clap::ext::note_name::host::Changed{.owner_instance_id =
+                                                self->owner_instance_id()});
 }
 
 uint32_t CLAP_ABI

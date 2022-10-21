@@ -183,6 +183,7 @@ using ClapMainThreadCallbackRequest =
                  clap::ext::gui::host::RequestShow,
                  clap::ext::gui::host::RequestHide,
                  clap::ext::gui::host::Closed,
+                 clap::ext::note_name::host::Changed,
                  clap::ext::note_ports::host::SupportedDialects,
                  clap::ext::note_ports::host::Rescan,
                  clap::ext::params::host::Rescan,
