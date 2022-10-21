@@ -61,8 +61,8 @@ AudioPortType parse_audio_port_type(const char* port_type);
 const char* audio_port_type_to_string(AudioPortType port_type);
 
 /**
- * A serializable version of `clap_audio_port_info` that owns all of the data it
- * references.
+ * A serializable version of `clap_audio_port_info_t` that owns all of the data
+ * it references.
  */
 struct AudioPortInfo {
     /**

@@ -78,6 +78,7 @@ if with_clap
     '../common/plugins.cpp',
     '../common/process.cpp',
     '../common/serialization/clap/ext/audio-ports.cpp',
+    '../common/serialization/clap/ext/audio-ports-config.cpp',
     '../common/serialization/clap/ext/note-ports.cpp',
     '../common/serialization/clap/ext/params.cpp',
     '../common/serialization/clap/events.cpp',

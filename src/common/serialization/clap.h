@@ -23,6 +23,7 @@
 #include "../bitsery/ext/message-reference.h"
 #include "../utils.h"
 #include "clap/events.h"
+#include "clap/ext/audio-ports-config.h"
 #include "clap/ext/audio-ports.h"
 #include "clap/ext/gui.h"
 #include "clap/ext/latency.h"
