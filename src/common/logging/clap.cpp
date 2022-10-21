@@ -292,6 +292,23 @@ bool ClapLogger::log_request(bool is_host_plugin,
 
 bool ClapLogger::log_request(
     bool is_host_plugin,
+    const clap::ext::note_name::plugin::Count& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id << ": clap_plugin_note_name::count()";
+    });
+}
+
+bool ClapLogger::log_request(bool is_host_plugin,
+                             const clap::ext::note_name::plugin::Get& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": clap_plugin_note_name::get(index = " << request.index
+                << ", *note_name)";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
     const clap::ext::note_ports::plugin::Count& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id
@@ -625,6 +642,15 @@ bool ClapLogger::log_request(bool is_host_plugin,
 
 bool ClapLogger::log_request(
     bool is_host_plugin,
+    const clap::ext::note_name::host::Changed& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.owner_instance_id
+                << ": clap_host_note_name::changed()";
+    });
+}
+
+bool ClapLogger::log_request(
+    bool is_host_plugin,
     const clap::ext::note_ports::host::SupportedDialects& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.owner_instance_id
@@ -879,6 +905,22 @@ void ClapLogger::log_response(
         if (response.result) {
             message << "true, *width = " << response.updated_width
                     << ", *height = " << response.updated_height;
+        } else {
+            message << "false";
+        }
+    });
+}
+
+void ClapLogger::log_response(
+    bool is_host_plugin,
+    const clap::ext::note_name::plugin::GetResponse& response) {
+    log_response_base(is_host_plugin, [&](auto& message) {
+        if (response.result) {
+            message << "true, <clap_note_port_info_t* for \""
+                    << response.result->name
+                    << "\" with port = " << response.result->port
+                    << ", key = " << response.result->key
+                    << ", channel = " << response.result->channel << ">";
         } else {
             message << "false";
         }

@@ -119,6 +119,10 @@ class ClapLogger {
     bool log_request(bool is_host_plugin, const clap::ext::gui::plugin::Show&);
     bool log_request(bool is_host_plugin, const clap::ext::gui::plugin::Hide&);
     bool log_request(bool is_host_plugin,
+                     const clap::ext::note_name::plugin::Count&);
+    bool log_request(bool is_host_plugin,
+                     const clap::ext::note_name::plugin::Get&);
+    bool log_request(bool is_host_plugin,
                      const clap::ext::note_ports::plugin::Count&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::note_ports::plugin::Get&);
@@ -177,6 +181,8 @@ class ClapLogger {
                      const clap::ext::gui::host::RequestHide&);
     bool log_request(bool is_host_plugin, const clap::ext::gui::host::Closed&);
     bool log_request(bool is_host_plugin,
+                     const clap::ext::note_name::host::Changed&);
+    bool log_request(bool is_host_plugin,
                      const clap::ext::note_ports::host::SupportedDialects&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::note_ports::host::Rescan&);
@@ -218,6 +224,8 @@ class ClapLogger {
                       const clap::ext::gui::plugin::GetResizeHintsResponse&);
     void log_response(bool is_host_plugin,
                       const clap::ext::gui::plugin::AdjustSizeResponse&);
+    void log_response(bool is_host_plugin,
+                      const clap::ext::note_name::plugin::GetResponse&);
     void log_response(bool is_host_plugin,
                       const clap::ext::note_ports::plugin::GetResponse&);
     void log_response(bool is_host_plugin,
