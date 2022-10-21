@@ -4,7 +4,7 @@ See
 [docs/architecture.md](https://github.com/robbert-vdh/yabridge/blob/master/docs/architecture.md)
 for more information on how the serialization works.
 
-Yabridge currently tracks CLAP 1.1.1. The implementation status for CLAP's core feature and extensions can be found below:
+Yabridge currently tracks CLAP 1.1.2. The implementation status for CLAP's core feature and extensions can be found below:
 
 | core feature                              | status                                                   |
 | ----------------------------------------- | -------------------------------------------------------- |
