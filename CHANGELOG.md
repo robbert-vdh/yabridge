@@ -45,11 +45,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - The VST3 dependency is now at tag `v3.7.5_build_44-patched-2`. The only
   difference is that the version in the `meson.build` file was bumped from 3.7.3
   to 3.7.5.
-- As of right now (2022-08-31), the new CLAP wrap dependency uses a fork of CLAP
-  because upstream does not contain calling conventions.
+- The new CLAP support requires version 1.1.2 of the CLAP headers because
+  earlier versions did not yet contain calling conventions.
   (<https://github.com/free-audio/clap/issues/153>,
-  <https://github.com/free-audio/clap/pull/154>). Yabridge will build with
-  upstream CLAP, but using it will result in memory errors.
+  <https://github.com/free-audio/clap/pull/154>). Building against older
+  versions will result in memory errors.
 
 ## [4.0.2] - 2022-06-27
 
