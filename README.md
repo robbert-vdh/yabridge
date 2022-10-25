@@ -47,11 +47,11 @@ Yabridge has been tested under the following hosts using Wine Staging 7.18:
 
 | Host                | VST2               | VST3                                                                 | CLAP                                                          |
 | ------------------- | ------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Bitwig Studio 4.3.9 | :heavy_check_mark: | :heavy_check_mark:                                                   | :warning: yabridge's CLAP support is still a work in progress |
-| REAPER 6.67         | :heavy_check_mark: | :heavy_check_mark:                                                   | :warning: yabridge's CLAP support is still a work in progress |
+| Bitwig Studio 4.4.1 | :heavy_check_mark: | :heavy_check_mark:                                                   | :warning: yabridge's CLAP support is still a work in progress |
+| REAPER 6.68         | :heavy_check_mark: | :heavy_check_mark:                                                   | :warning: yabridge's CLAP support is still a work in progress |
 | Carla 2.5.0         | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                         |
-| Qtractor 0.9.28     | :heavy_check_mark: | :warning: VST3 editor window may not have the correct size           | :warning: yabridge's CLAP support is still a work in progress |
-| Renoise 3.3.2       | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly | Does not support CLAP                                         |
+| Qtractor 0.9.29     | :heavy_check_mark: | :warning: VST3 editor window may not have the correct size           | :warning: yabridge's CLAP support is still a work in progress |
+| Renoise 3.4.2       | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly | Does not support CLAP                                         |
 | Waveform 12.1.3     | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                         |
 | Ardour 6.9          | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                         |
 | Mixbus 7.0.140      | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                         |
