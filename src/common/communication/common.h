@@ -25,7 +25,7 @@
 #include <bitsery/traits/vector.h>
 
 #ifdef __WINE__
-#include "../wine-host/asio-fix.h"
+#include "../wine-host/use-linux-asio.h"
 #endif
 #include <llvm/small-vector.h>
 #include <asio/io_context.hpp>

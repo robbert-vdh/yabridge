@@ -28,7 +28,7 @@
 // Asio there
 #ifndef WITHOUT_ASIO
 #ifdef __WINE__
-#include "../wine-host/asio-fix.h"
+#include "../wine-host/use-linux-asio.h"
 #endif
 
 #include <asio/posix/stream_descriptor.hpp>

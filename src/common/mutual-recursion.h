@@ -21,7 +21,7 @@
 #include <type_traits>
 
 #ifdef __WINE__
-#include "../wine-host/asio-fix.h"
+#include "../wine-host/use-linux-asio.h"
 #endif
 #include <asio/dispatch.hpp>
 #include <asio/io_context.hpp>
