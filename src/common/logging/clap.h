@@ -275,9 +275,6 @@ class ClapLogger {
         logger_.log_trace(std::forward<F>(fn));
     }
 
-    Logger& logger_;
-
-   private:
     /**
      * Log a request with a standard prefix based on the boolean flag we pass to
      * every logging function so we don't have to repeat it everywhere.
@@ -331,4 +328,6 @@ class ClapLogger {
         callback(message);
         log(message.str());
     }
+
+    Logger& logger_;
 };
