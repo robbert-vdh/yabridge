@@ -172,8 +172,6 @@ MainContext::WatchdogGuard MainContext::register_watchdog(HostBridge& bridge) {
 
 void MainContext::async_handle_watchdog_timer(
     std::chrono::steady_clock::duration interval) {
-    // Try to keep a steady framerate, but add in delays to let other events
-    // get handled if the GUI message handling somehow takes very long.
     watchdog_timer_.expires_at(std::chrono::steady_clock::now() + interval);
     watchdog_timer_.async_wait([&](const std::error_code& error) {
         if (error) {

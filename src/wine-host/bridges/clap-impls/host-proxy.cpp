@@ -91,6 +91,10 @@ clap_host_proxy::clap_host_proxy(ClapBridge& bridge,
           .is_main_thread = ext_thread_check_is_main_thread,
           .is_audio_thread = ext_thread_check_is_audio_thread,
       }),
+      ext_timer_support_vtable(clap_host_timer_support_t{
+          .register_timer = ext_timer_support_register_timer,
+          .unregister_timer = ext_timer_support_unregister_timer,
+      }),
       ext_voice_info_vtable(clap_host_voice_info_t{
           .changed = ext_voice_info_changed,
       }) {}
@@ -134,6 +138,9 @@ clap_host_proxy::host_get_extension(const struct clap_host* host,
     } else if (self->supported_extensions_.supports_tail &&
                strcmp(extension_id, CLAP_EXT_TAIL) == 0) {
         extension_ptr = &self->ext_tail_vtable;
+    } else if (strcmp(extension_id, CLAP_EXT_TIMER_SUPPORT) == 0) {
+        // This extension doesn't require any bridging
+        extension_ptr = &self->ext_timer_support_vtable;
     } else if (strcmp(extension_id, CLAP_EXT_THREAD_CHECK) == 0) {
         // This extension doesn't require any bridging
         extension_ptr = &self->ext_thread_check_vtable;
@@ -453,6 +460,77 @@ void CLAP_ABI clap_host_proxy::ext_tail_changed(const clap_host_t* host) {
 }
 
 bool CLAP_ABI
+clap_host_proxy::ext_timer_support_register_timer(const clap_host_t* host,
+                                                  uint32_t period_ms,
+                                                  clap_id* timer_id) {
+    assert(host && host->host_data && timer_id);
+    auto self = static_cast<clap_host_proxy*>(host->host_data);
+
+    // There's no message for this, so we'll just format the logging inline
+    // since it may still be useful
+    const auto log_response =
+        self->bridge_.logger_.log_request_base(false, [&](auto& message) {
+            message << self->owner_instance_id()
+                    << ": clap_host_timer_support::register_timer(period_ms = "
+                    << period_ms << ", *timer_id)";
+        });
+
+    // In case the plugin somehow does not implement the plugin side of the
+    // interface then we should just not register the timer at all
+    const auto& [instance, _] =
+        self->bridge_.get_instance(self->owner_instance_id());
+    if (!instance.extensions.timer_support) {
+        if (log_response) {
+            self->bridge_.logger_.log_response_base(
+                false, [&](auto& message) { message << "false"; });
+        }
+
+        return false;
+    }
+
+    *timer_id = self->next_timer_id_.fetch_add(1);
+    self->timers_.emplace(
+        *timer_id, ClapTimer{.interval = asio::chrono::milliseconds(period_ms),
+                             .timer = asio::steady_timer(
+                                 self->bridge_.main_context_.context_)});
+
+    // This timer will keep rescheduling itself until it is removed
+    self->async_schedule_timer_support_timer(*timer_id);
+
+    if (log_response) {
+        self->bridge_.logger_.log_response_base(false, [&](auto& message) {
+            message << "true, *timer_id = " << *timer_id;
+        });
+    }
+
+    return true;
+}
+
+bool CLAP_ABI
+clap_host_proxy::ext_timer_support_unregister_timer(const clap_host_t* host,
+                                                    clap_id timer_id) {
+    assert(host && host->host_data);
+    auto self = static_cast<clap_host_proxy*>(host->host_data);
+
+    const auto log_response =
+        self->bridge_.logger_.log_request_base(false, [&](auto& message) {
+            message << self->owner_instance_id()
+                    << ": clap_host_timer_support::unregister_timer(timer_id = "
+                    << timer_id << ")";
+        });
+
+    // This implicitly cancels the timers
+    const bool result = self->timers_.erase(timer_id) > 0;
+    if (log_response) {
+        self->bridge_.logger_.log_response_base(false, [&](auto& message) {
+            message << (result ? "true" : "false");
+        });
+    }
+
+    return result;
+}
+
+bool CLAP_ABI
 clap_host_proxy::ext_thread_check_is_main_thread(const clap_host_t* host) {
     assert(host && host->host_data);
     auto self = static_cast<const clap_host_proxy*>(host->host_data);
@@ -476,4 +554,28 @@ void CLAP_ABI clap_host_proxy::ext_voice_info_changed(const clap_host_t* host) {
 
     self->bridge_.send_main_thread_message(clap::ext::voice_info::host::Changed{
         .owner_instance_id = self->owner_instance_id()});
+}
+
+void clap_host_proxy::async_schedule_timer_support_timer(clap_id timer_id) {
+    auto& clap_timer = timers_.at(timer_id);
+
+    // Try to keep a steady framerate, but add in tiny delays so this timer
+    // can't starve our other main thread tasks for resources
+    clap_timer.timer.expires_at(
+        std::max(clap_timer.timer.expiry() + clap_timer.interval,
+                 std::chrono::steady_clock::now() + clap_timer.interval / 8));
+    clap_timer.timer.async_wait([this, timer_id](const std::error_code& error) {
+        // If the timer has been removed (either as a result of unregistering it
+        // or the entire instance being removed), then this callback will still
+        // be called but with an error set
+        if (error) {
+            return;
+        }
+
+        const auto& [instance, _] = bridge_.get_instance(owner_instance_id());
+        instance.extensions.timer_support->on_timer(instance.plugin.get(),
+                                                    timer_id);
+
+        async_schedule_timer_support_timer(timer_id);
+    });
 }

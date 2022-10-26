@@ -29,13 +29,28 @@
 #include <clap/ext/state.h>
 #include <clap/ext/tail.h>
 #include <clap/ext/thread-check.h>
+#include <clap/ext/timer-support.h>
 #include <clap/ext/voice-info.h>
 #include <clap/host.h>
+
+#include "../../use-linux-asio.h"
+
+#include <asio/steady_timer.hpp>
 
 #include "../../common/serialization/clap/plugin-factory.h"
 
 // Forward declaration to avoid circular includes
 class ClapBridge;
+
+/**
+ * A timer registered by the plugin.
+ *
+ * @see clap_host_proxy::timers_
+ */
+struct ClapTimer {
+    asio::chrono::steady_clock::duration interval;
+    asio::steady_timer timer;
+};
 
 /**
  * A proxy for a plugin's `clap_host`.
@@ -124,6 +139,14 @@ class clap_host_proxy {
     static void CLAP_ABI ext_tail_changed(const clap_host_t* host);
 
     static bool CLAP_ABI
+    ext_timer_support_register_timer(const clap_host_t* host,
+                                     uint32_t period_ms,
+                                     clap_id* timer_id);
+    static bool CLAP_ABI
+    ext_timer_support_unregister_timer(const clap_host_t* host,
+                                       clap_id timer_id);
+
+    static bool CLAP_ABI
     ext_thread_check_is_main_thread(const clap_host_t* host);
     static bool CLAP_ABI
     ext_thread_check_is_audio_thread(const clap_host_t* host);
@@ -131,6 +154,12 @@ class clap_host_proxy {
     static void CLAP_ABI ext_voice_info_changed(const clap_host_t* host);
 
    private:
+    /**
+     * Activate and schedule a timer-support timer. When the timer procs, this
+     * function is called again and again until the timer is removed.
+     */
+    void async_schedule_timer_support_timer(clap_id timer_id);
+
     ClapBridge& bridge_;
     size_t owner_instance_id_;
     clap::host::Host host_args_;
@@ -160,6 +189,8 @@ class clap_host_proxy {
     const clap_host_tail_t ext_tail_vtable;
     // This is always available regardless of the proxied host
     const clap_host_thread_check_t ext_thread_check_vtable;
+    // This is always available regardless of the proxied host
+    const clap_host_timer_support_t ext_timer_support_vtable;
     const clap_host_voice_info_t ext_voice_info_vtable;
 
     /**
@@ -169,4 +200,13 @@ class clap_host_proxy {
      * `clap_plugin::on_main_thread()` is called.
      */
     std::atomic_bool has_pending_host_callbacks_ = false;
+
+    /**
+     * Any timers the plugin has registered through the `timer-support`
+     * extension. The timers are registered on the `bridge_`'s IO context.
+     * Likely not used on Windows, but who knows. This should not need an
+     * accompanying mutex since it's exclusively accessed from the main thread.
+     */
+    std::unordered_map<clap_id, ClapTimer> timers_;
+    std::atomic_uint32_t next_timer_id_ = 0;
 };

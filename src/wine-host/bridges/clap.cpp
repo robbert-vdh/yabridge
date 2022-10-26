@@ -47,6 +47,8 @@ ClapPluginExtensions::ClapPluginExtensions(const clap_plugin& plugin) noexcept
           plugin.get_extension(&plugin, CLAP_EXT_STATE))),
       tail(static_cast<const clap_plugin_tail_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_TAIL))),
+      timer_support(static_cast<const clap_plugin_timer_support_t*>(
+          plugin.get_extension(&plugin, CLAP_EXT_TIMER_SUPPORT))),
       voice_info(static_cast<const clap_plugin_voice_info_t*>(
           plugin.get_extension(&plugin, CLAP_EXT_VOICE_INFO))) {}
 

@@ -76,6 +76,9 @@ struct ClapPluginExtensions {
     const clap_plugin_render_t* render = nullptr;
     const clap_plugin_state_t* state = nullptr;
     const clap_plugin_tail_t* tail = nullptr;
+    // Used for the timer-support extension implementation purely on the Wine
+    // side
+    const clap_plugin_timer_support_t* timer_support = nullptr;
     const clap_plugin_voice_info_t* voice_info = nullptr;
 };
 
