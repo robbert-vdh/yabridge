@@ -43,7 +43,7 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging 7.18:
+Yabridge has been tested under the following hosts using Wine Staging 7.19:
 
 | Host                | VST2               | VST3                                                                 | CLAP                                                          |
 | ------------------- | ------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------- |
