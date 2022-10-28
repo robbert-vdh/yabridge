@@ -8,6 +8,7 @@ if is_64bit_system
 
     asio_dep,
     bitsery_dep,
+    dbus_dep,
     function2_dep,
     ghc_filesystem_dep,
     rt_dep,
@@ -37,6 +38,7 @@ if with_bitbridge
     asio_dep,
     ghc_filesystem_dep,
     bitsery_dep,
+    dbus_dep,
     function2_dep,
     rt_dep,
     tomlplusplus_dep,

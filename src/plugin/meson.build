@@ -7,6 +7,7 @@ vst2_plugin_deps = [
 
   asio_dep,
   bitsery_dep,
+  dbus_dep,
   dl_dep,
   ghc_filesystem_dep,
   rt_dep,
@@ -21,6 +22,7 @@ if with_clap
     asio_dep,
     bitsery_dep,
     clap_dep,
+    dbus_dep,
     dl_dep,
     function2_dep,
     ghc_filesystem_dep,
@@ -36,6 +38,7 @@ if with_vst3
 
     asio_dep,
     bitsery_dep,
+    dbus_dep,
     dl_dep,
     function2_dep,
     ghc_filesystem_dep,

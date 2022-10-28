@@ -4,6 +4,7 @@
 chainloader_deps = [
   configuration_dep,
 
+  dbus_dep,
   dl_dep,
   ghc_filesystem_dep,
   rt_dep,
