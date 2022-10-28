@@ -21,9 +21,6 @@ page lists some of those.
 - Replace the use of `notify-send` for notifications with using `libdbus`
   directly. Most systems will have both available by default, but some less
   common distros split `notify-send` from the rest of the `libnotify` package.
-- Consider adding an option for yabridgectl to set up VST2 plugins in `~/.vst`.
-  As discussed in a couple places already doing so would come with a number of
-  downsides and potential pitfalls so this may not happen.
 
 # Somewhere in the future, possibly
 
