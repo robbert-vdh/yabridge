@@ -8,11 +8,22 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- TODO: Mention CLAP. Because, you know, kinda important new feature.
+- TODO: Rewrite the CLAP blurb below.
 - TODO: Remove mention of `vst3_no_scaling` from the readme.
 
 # Added
 
+- Yabridge 5.0 now supports bridging [CLAP](https://cleveraudio.org/) plugins.
+  CLAP is a [collaborative
+  effort](https://github.com/free-audio/clap/blob/main/Contributors.md) by
+  plugin and host developers of all backgrounds to create a permissively
+  licensed, modern plugin standard that is simple, portable, extensible, and
+  resilient to errors. Yabridge 5.0.0's CLAP bridging supports [all official
+  CLAP 1.1
+  extensions](https://github.com/robbert-vdh/yabridge/blob/master/src/common/serialization/clap/README.md)
+  aside from the audio thread pool extension. Support for the extension will be
+  added in a future yabridge release as Windows-only plugins that rely on the
+  feature get released.
 - The new `editor_disable_host_scaling` compatibility prevents hosts from
   setting an explicit DPI scaling factor for the editor. In some cases this can
   help with inconsistent scaling when using HiDPI scaling. This option affects
