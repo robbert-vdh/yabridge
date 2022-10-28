@@ -38,6 +38,9 @@ use crate::files::{LibArchitecture, NativeFile};
 /// moment without causing issues.
 const YABRIDGE_HOST_EXPECTED_OUTPUT_PREFIX: &str = "Usage: yabridge-";
 
+const LIBDBUS_NAME: &str = "libdbus-1.so.3";
+const LIBDBUS_FALLBACK_NAME: &str = "libdbus-1.so";
+
 /// Wrapper around [`reflink::reflink_or_copy()`](reflink::reflink_or_copy) with a human readable
 /// error message.
 pub fn copy_or_reflink<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> Result<Option<u64>> {
@@ -467,8 +470,9 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
 /// Check whether yabridge's (optional) external dependencies are installed. Right now this only
 /// checks for libdbus, as this is used to relay important information when something's very wrong.
 pub fn verify_external_dependencies() -> Result<()> {
-    let libdbus_name = libloading::library_filename("dbus-1");
-    let libdbus_available = unsafe { libloading::Library::new(&libdbus_name) }.is_ok();
+    let libdbus_available = unsafe { libloading::Library::new(&LIBDBUS_NAME) }
+        .or_else(|_| unsafe { libloading::Library::new(&LIBDBUS_FALLBACK_NAME) })
+        .is_ok();
     if !libdbus_available {
         eprintln!(
             "\n{}",
@@ -477,7 +481,7 @@ pub fn verify_external_dependencies() -> Result<()> {
                  you will also not receive any notifcations when something is wrong. D-Bus should \
                  already be installed on the system, so if you're seeing this warning then \
                  something is probably very wrong.",
-                libdbus_name.to_str().unwrap().bright_white(),
+                LIBDBUS_NAME.bright_white(),
             ))
         );
     }
