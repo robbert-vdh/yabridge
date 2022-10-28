@@ -24,6 +24,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   aside from the audio thread pool extension. Support for the extension will be
   added in a future yabridge release as Windows-only plugins that rely on the
   feature get released.
+- Notifications are now sent by directly talking to D-Bus instead of using the
+  `notify-send` command line tool. This ensures that you'll always see
+  yabridge's notifications, even when using more niche distros where you may not
+  have `notify-send` installed by default.
 - The new `editor_disable_host_scaling` compatibility prevents hosts from
   setting an explicit DPI scaling factor for the editor. In some cases this can
   help with inconsistent scaling when using HiDPI scaling. This option affects
@@ -61,6 +65,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   (<https://github.com/free-audio/clap/issues/153>,
   <https://github.com/free-audio/clap/pull/154>). Building against older
   versions will result in memory errors.
+- The Meson build now requires the `libdbus-1` package to be installed.
+  Yabridge's binaries will not link against the shared library, but it does use
+  the definitions from the headers to dynamically link against D-Bus at runtime
+  when it needs to send a desktop notification.
 
 ## [4.0.2] - 2022-06-27
 

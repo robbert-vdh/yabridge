@@ -241,7 +241,7 @@ else
   bitsery_dep = dependency('bitsery', version : '>=5.2.0')
 endif
 
-# The DBus headers are also only accessed through the include path. We don't
+# The D-Bus headers are also only accessed through the include path. We don't
 # link to libdbus-1 to make soname changes don't completely break yabridge.
 dbus_dep = dependency('dbus-1').partial_dependency(compile_args : true, includes : true)
 function2_dep = dependency('function2', version : '>=4.0.0')

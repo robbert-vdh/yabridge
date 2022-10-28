@@ -16,12 +16,6 @@ page lists some of those.
 - An easier [updater](https://github.com/robbert-vdh/yabridge/issues/51) through
   a new `yabridgectl update` command for distros that don't package yabridge.
 
-# For a major release
-
-- Replace the use of `notify-send` for notifications with using `libdbus`
-  directly. Most systems will have both available by default, but some less
-  common distros split `notify-send` from the rest of the `libnotify` package.
-
 # Somewhere in the future, possibly
 
 - CLAP audio thread pool support. Implementing this efficiently is less than

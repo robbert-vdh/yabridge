@@ -22,14 +22,11 @@
 #include <ghc/filesystem.hpp>
 #include <optional>
 
-// TODO: At some point, provide an alternative to notify-send by dlopen()-ing
-//       libdbus instead. Some more obscure distros won't have notify-send
-//       available.
-
 /**
- * Send a desktop notification using `notify-send`. Used for diagnostics when a
- * plugin fails to load since the user may not be checking the output in a
- * terminal.
+ * Send a desktop notification using the D-Bus notifications protocol
+ * (<https://specifications.freedesktop.org/notification-spec/notification-spec-latest.html>).
+ * Used for diagnostics when a plugin fails to load since the user may not be
+ * checking the output in a terminal.
  *
  * @param title The title (or technically, summary) of the notification.
  * @param body The message to display. This can contain line feeds, and it any
@@ -40,7 +37,7 @@
  *   user can more easily navigate to the plugin's path.
  *
  * @return Whether the notification was sent. This will be false if
- *   `notify-send` is not available.
+ *   `libdbus-1.so` is not available.
  */
 bool send_notification(const std::string& title,
                        const std::string body,
