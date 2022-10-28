@@ -575,9 +575,8 @@ Aside from that, these are some known caveats:
   XEmbed [compatibility option](#compatibility-options) may help, but Wine's
   XEmbed implementation also introduces other rendering issues.
 
-There are also some third party extension features for both VST2.4 and VST3 that
-have not been implemented yet. See the [roadmap](./ROADMAP.md) for a list of
-future plans.
+There are also some (third party) plugin API extensions for that have not been
+implemented yet. See the [roadmap](./ROADMAP.md) for a list of future plans.
 
 ## Troubleshooting common issues
 

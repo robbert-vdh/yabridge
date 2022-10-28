@@ -27,6 +27,8 @@ page lists some of those.
 
 # Somewhere in the future, possibly
 
+- CLAP audio thread pool support. Implementing this efficiently is less than
+  trivial, and there are currently no plugins that can benefit from it.
 - REAPER's vendor specific [VST2.4](https://www.reaper.fm/sdk/vst/vst_ext.php)
   and
   [VST3](https://github.com/justinfrankel/reaper-sdk/blob/main/sdk/reaper_vst3_interfaces.h)
