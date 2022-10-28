@@ -833,8 +833,9 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // This check is only performed once per combination of Wine and yabridge versions
     verify_wine_setup(config)?;
 
-    // Yabridge uses notify-send to relay important information when something's very wrong, so
-    // we'll check whether this is installed
+    // Yabridge uses D-Bus notifications to relay important information when something's very wrong,
+    // so we'll check whether `libdbus-1.so` is available (even though it would be very odd if it
+    // isn't)
     verify_external_dependencies()?;
 
     Ok(())
