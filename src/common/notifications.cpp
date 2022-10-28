@@ -176,8 +176,10 @@ bool send_notification(const std::string& title,
     assert(
         libdbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &app_name));
 
-    // TODO: Add the replacing thing, see if that helps prevent notifications
-    //       from stacking up
+    // It would be nice to be able to replace old notifications so we don't
+    // accidentally spam the user when every plugin outputs the same message,
+    // but we can't really do this since during plugin scanning every plugin
+    // will likely be loaded in a fresh process
     const dbus_uint32_t replaces_id = 0;
     assert(libdbus_message_iter_append_basic(&iter, DBUS_TYPE_UINT32,
                                              &replaces_id));
