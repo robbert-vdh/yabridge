@@ -19,6 +19,7 @@
 #include <atomic>
 #include <cassert>
 #include <iostream>
+#include <mutex>
 
 #include <dbus/dbus.h>
 #include <dlfcn.h>
