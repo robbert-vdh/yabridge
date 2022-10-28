@@ -8,7 +8,6 @@ if is_64bit_system
 
     asio_dep,
     bitsery_dep,
-    dbus_dep,
     function2_dep,
     ghc_filesystem_dep,
     rt_dep,
@@ -38,7 +37,6 @@ if with_bitbridge
     asio_dep,
     ghc_filesystem_dep,
     bitsery_dep,
-    dbus_dep,
     function2_dep,
     rt_dep,
     tomlplusplus_dep,
@@ -65,7 +63,6 @@ host_sources = files(
   '../common/logging/common.cpp',
   '../common/logging/vst2.cpp',
   '../common/audio-shm.cpp',
-  '../common/notifications.cpp',
   '../common/plugins.cpp',
   '../common/process.cpp',
   '../common/utils.cpp',

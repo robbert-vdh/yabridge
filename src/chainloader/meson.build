@@ -19,6 +19,7 @@ vst2_chainloader_sources = files(
   '../common/linking.cpp',
   '../common/notifications.cpp',
   '../common/process.cpp',
+  '../common/utils.cpp',
   'utils.cpp',
   'vst2-chainloader.cpp',
 )
@@ -29,6 +30,7 @@ if with_clap
     '../common/linking.cpp',
     '../common/notifications.cpp',
     '../common/process.cpp',
+    '../common/utils.cpp',
     'utils.cpp',
     'clap-chainloader.cpp',
   )
@@ -40,6 +42,7 @@ if with_vst3
     '../common/linking.cpp',
     '../common/notifications.cpp',
     '../common/process.cpp',
+    '../common/utils.cpp',
     'utils.cpp',
     'vst3-chainloader.cpp',
   )

@@ -141,6 +141,17 @@ std::optional<rlim_t> get_rttime_limit() noexcept;
 bool is_watchdog_timer_disabled();
 
 /**
+ * Escape XML entities within a string. Used inside of desktop notifications.
+ */
+std::string xml_escape(std::string string);
+
+/**
+ * URL encode a file path. We won't escape forward slashes, and `path` should
+ * not yet include the `file://` prefix.
+ */
+std::string url_encode_path(std::string path);
+
+/**
  * An implementation of BSD's `strlcpy()` function specialized for copying C++
  * strings to char buffers.
  * https://linux.die.net/man/3/strlcpy
