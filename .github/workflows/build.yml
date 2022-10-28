@@ -31,9 +31,12 @@ jobs:
     # https://github.community/t5/GitHub-Actions/reusing-sharing-inheriting-steps-between-jobs-declarations/td-p/37849
     steps:
       - uses: actions/checkout@v2
-      # Needed for git-describe to do anything useful
+      # Needed for git-describe to do anything useful, the safe directory
+      # workaround is needed for https://github.com/actions/runner/issues/2033
       - name: Fetch all git history
-        run: git fetch --force --prune --tags --unshallow
+        run: |
+          git config --global --add safe.directory /__w/yabridge/yabridge
+          git fetch --force --prune --tags --unshallow
       - name: Determine build archive name
         run: |
           echo "ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04.tar.gz" >> "$GITHUB_ENV"
@@ -71,8 +74,12 @@ jobs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
     steps:
       - uses: actions/checkout@v2
+      # Needed for git-describe to do anything useful, the safe directory
+      # workaround is needed for https://github.com/actions/runner/issues/2033
       - name: Fetch all git history
-        run: git fetch --force --prune --tags --unshallow
+        run: |
+          git config --global --add safe.directory /__w/yabridge/yabridge
+          git fetch --force --prune --tags --unshallow
       - name: Determine build archive name
         run: |
           echo "ARCHIVE_NAME=yabridge-$(git describe --always).tar.gz" >> "$GITHUB_ENV"
@@ -112,8 +119,12 @@ jobs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
     steps:
       - uses: actions/checkout@v2
+      # Needed for git-describe to do anything useful, the safe directory
+      # workaround is needed for https://github.com/actions/runner/issues/2033
       - name: Fetch all git history
-        run: git fetch --force --prune --tags --unshallow
+        run: |
+          git config --global --add safe.directory /__w/yabridge/yabridge
+          git fetch --force --prune --tags --unshallow
       - name: Determine build archive name
         run: |
           echo "ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04-32bit.tar.gz" >> "$GITHUB_ENV"
@@ -152,9 +163,12 @@ jobs:
         working-directory: tools/yabridgectl
     steps:
       - uses: actions/checkout@v2
-      # Needed for git-describe to do anything useful
+      # Needed for git-describe to do anything useful, the safe directory
+      # workaround is needed for https://github.com/actions/runner/issues/2033
       - name: Fetch all git history
-        run: git fetch --force --prune --tags --unshallow
+        run: |
+          git config --global --add safe.directory /__w/yabridge/yabridge
+          git fetch --force --prune --tags --unshallow
       - name: Determine build archive name
         run: |
           echo "ARCHIVE_NAME=yabridgectl-$(git describe --always).tar.gz" >> "$GITHUB_ENV"
