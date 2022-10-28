@@ -72,7 +72,7 @@ bool setup_libdbus() {
     do {                                                                    \
         lib##name =                                                         \
             reinterpret_cast<decltype(lib##name)>(dlsym(handle, #name));    \
-        if (!(name)) {                                                      \
+        if (!lib##name) {                                                   \
             logger.log("Could not find '" + std::string(#name) + "' in '" + \
                        std::string(libdbus_library_name) +                  \
                        "', not sending desktop notifications");             \
