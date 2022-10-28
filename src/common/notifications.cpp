@@ -28,8 +28,8 @@
 #include "process.h"
 #include "utils.h"
 
-constexpr char libdbus_library_name[] = "libdbus-1.so";
-constexpr char libdbus_library_fallback_name[] = "libdbus-1.so.3";
+constexpr char libdbus_library_name[] = "libdbus-1.so.3";
+constexpr char libdbus_library_fallback_name[] = "libdbus-1.so";
 
 std::atomic<void*> libdbus_handle = nullptr;
 std::mutex libdbus_mutex;
