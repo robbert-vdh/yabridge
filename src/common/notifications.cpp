@@ -29,6 +29,7 @@
 #include "utils.h"
 
 constexpr char libdbus_library_name[] = "libdbus-1.so";
+constexpr char libdbus_library_fallback_name[] = "libdbus-1.so.3";
 
 std::atomic<void*> libdbus_handle = nullptr;
 std::mutex libdbus_mutex;
@@ -76,9 +77,12 @@ bool setup_libdbus() {
 
     void* handle = dlopen(libdbus_library_name, RTLD_LAZY | RTLD_LOCAL);
     if (!handle) {
-        logger.log("Could not load '" + std::string(libdbus_library_name) +
-                   "', not sending desktop notifications");
-        return false;
+        handle = dlopen(libdbus_library_fallback_name, RTLD_LAZY | RTLD_LOCAL);
+        if (!handle) {
+            logger.log("Could not load '" + std::string(libdbus_library_name) +
+                       "', not sending desktop notifications");
+            return false;
+        }
     }
 
 #define X(name)                                                             \
