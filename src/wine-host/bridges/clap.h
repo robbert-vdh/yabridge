@@ -327,8 +327,6 @@ class ClapBridge : public HostBridge {
      *
      * This only has to be used instead of directly writing to `std::cerr` when
      * the message should be hidden on lower verbosity levels.
-     *
-     * TODO: Actually use this
      */
     ClapLogger logger_;
 

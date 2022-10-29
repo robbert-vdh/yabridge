@@ -141,47 +141,6 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
             std::pair<ClapLogger&, bool>(logger_, true));
     }
 
-    // TODO: Do we need this for CLAP? If we do, update the docstring
-    // /**
-    //  * Send a message, and allow other threads to call functions on _this
-    //  * thread_ while we're waiting for a response. This lets us execute
-    //  * functions from the host's GUI thread while it is also calling
-    //  functions
-    //  * from that same thread. Because of that, we also know that while this
-    //  * function is being called the host won't be able to handle any
-    //  `IRunLoop`
-    //  * events. We need this to support REAPER, because REAPER requires
-    //  function
-    //  * calls involving the GUI to be run from the GUI thread. Grep for
-    //  * `run_gui_task` for instances of this.
-    //  *
-    //  * We use the same trick in `ClapBridge`.
-    //  */
-    // template <typename T>
-    // typename T::Response send_mutually_recursive_message(const T& object) {
-    //     return mutual_recursion_.fork([&]() { return send_message(object);
-    //     });
-    // }
-
-    // /**
-    //  * If `send_mutually_recursive_message()` is currently being called, then
-    //  * run `fn` on the thread that's currently calling that function and
-    //  return
-    //  * the result of the call. If there's currently no mutually recursive
-    //  * function call going on, this will return an `std::nullopt`, and the
-    //  * caller should call `fn` itself.
-    //  *
-    //  * @return The result of calling `fn`, if `fn` was called.
-    //  *
-    //  * @see ClapPlugViewProxyImpl::run_gui_task
-    //  */
-    // template <std::invocable F>
-    // std::optional<std::invoke_result_t<F>>
-    // maybe_run_on_mutual_recursion_thread(
-    //     F&& fn) {
-    //     return mutual_recursion_.maybe_handle(std::forward<F>(fn));
-    // }
-
     /**
      * The logging facility used for this instance of yabridge. Wraps around
      * `PluginBridge::generic_logger`.
@@ -229,13 +188,4 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
      *       processing, but it's still something we should avoid at all costs.
      */
     std::shared_mutex plugin_proxies_mutex_;
-
-    // TODO: Do we need this in CLAP?
-    // /**
-    //  * Used in `ClapBridge::send_mutually_recursive_message()` to be able to
-    //  * execute functions from that same calling thread while we're waiting
-    //  for a
-    //  * response. This is used in `ClapPlugViewProxyImpl::run_loop_tasks()`.
-    //  */
-    // MutualRecursionHelper<std::jthread> mutual_recursion_;
 };
