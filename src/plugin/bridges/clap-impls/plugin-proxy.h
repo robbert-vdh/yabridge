@@ -128,6 +128,10 @@ class clap_plugin_proxy {
     /**
      * Asynchronously run a function on the host's main thread, returning the
      * result as a future.
+     *
+     * Instead of calling this directly, `ClapBridge::run_on_main_thread()`
+     * should be used instead. That also handles mutually recursive main thread
+     * callbacks.
      */
     template <std::invocable F>
     std::future<std::invoke_result_t<F>> run_on_main_thread(F&& fn) {

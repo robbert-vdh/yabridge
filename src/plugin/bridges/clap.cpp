@@ -60,11 +60,10 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [plugin_proxy, _] =
                         get_proxy(request.owner_instance_id);
 
-                    plugin_proxy
-                        .run_on_main_thread([host = plugin_proxy.host_]() {
-                            host->request_restart(host);
-                        })
-                        .wait();
+                    run_on_main_thread(plugin_proxy, [host = plugin_proxy
+                                                                 .host_]() {
+                        host->request_restart(host);
+                    }).wait();
 
                     return Ack{};
                 },
@@ -73,11 +72,10 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [plugin_proxy, _] =
                         get_proxy(request.owner_instance_id);
 
-                    plugin_proxy
-                        .run_on_main_thread([host = plugin_proxy.host_]() {
-                            host->request_process(host);
-                        })
-                        .wait();
+                    run_on_main_thread(plugin_proxy, [host = plugin_proxy
+                                                                 .host_]() {
+                        host->request_process(host);
+                    }).wait();
 
                     return Ack{};
                 },
@@ -88,15 +86,16 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                             const auto& [plugin_proxy, _] =
                                 get_proxy(request.owner_instance_id);
 
-                            return plugin_proxy
-                                .run_on_main_thread(
-                                    [&, host = plugin_proxy.host_,
-                                     audio_ports = plugin_proxy.host_extensions_
-                                                       .audio_ports]() {
-                                        return audio_ports
-                                            ->is_rescan_flag_supported(
-                                                host, request.flag);
-                                    })
+                            return run_on_main_thread(
+                                       plugin_proxy,
+                                       [&, host = plugin_proxy.host_,
+                                        audio_ports =
+                                            plugin_proxy.host_extensions_
+                                                .audio_ports]() {
+                                           return audio_ports
+                                               ->is_rescan_flag_supported(
+                                                   host, request.flag);
+                                       })
                                 .get();
                         },
                 [&](const clap::ext::audio_ports::host::Rescan& request)
@@ -104,13 +103,13 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [plugin_proxy, _] =
                         get_proxy(request.owner_instance_id);
 
-                    plugin_proxy
-                        .run_on_main_thread(
-                            [&, host = plugin_proxy.host_,
-                             audio_ports =
-                                 plugin_proxy.host_extensions_.audio_ports]() {
-                                audio_ports->rescan(host, request.flags);
-                            })
+                    run_on_main_thread(
+                        plugin_proxy,
+                        [&, host = plugin_proxy.host_,
+                         audio_ports =
+                             plugin_proxy.host_extensions_.audio_ports]() {
+                            audio_ports->rescan(host, request.flags);
+                        })
                         .wait();
 
                     return Ack{};
@@ -120,13 +119,13 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [plugin_proxy, _] =
                         get_proxy(request.owner_instance_id);
 
-                    plugin_proxy
-                        .run_on_main_thread(
-                            [&, host = plugin_proxy.host_,
-                             audio_ports_config = plugin_proxy.host_extensions_
-                                                      .audio_ports_config]() {
-                                audio_ports_config->rescan(host);
-                            })
+                    run_on_main_thread(
+                        plugin_proxy,
+                        [&, host = plugin_proxy.host_,
+                         audio_ports_config = plugin_proxy.host_extensions_
+                                                  .audio_ports_config]() {
+                            audio_ports_config->rescan(host);
+                        })
                         .wait();
 
                     return Ack{};
@@ -185,13 +184,12 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [plugin_proxy, _] =
                         get_proxy(request.owner_instance_id);
 
-                    plugin_proxy
-                        .run_on_main_thread(
-                            [&, host = plugin_proxy.host_,
-                             latency =
-                                 plugin_proxy.host_extensions_.latency]() {
-                                latency->changed(host);
-                            })
+                    run_on_main_thread(
+                        plugin_proxy,
+                        [&, host = plugin_proxy.host_,
+                         latency = plugin_proxy.host_extensions_.latency]() {
+                            latency->changed(host);
+                        })
                         .wait();
 
                     return Ack{};
@@ -201,13 +199,13 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [plugin_proxy, _] =
                         get_proxy(request.owner_instance_id);
 
-                    plugin_proxy
-                        .run_on_main_thread(
-                            [&, host = plugin_proxy.host_,
-                             note_name =
-                                 plugin_proxy.host_extensions_.note_name]() {
-                                note_name->changed(host);
-                            })
+                    run_on_main_thread(
+                        plugin_proxy,
+                        [&, host = plugin_proxy.host_,
+                         note_name =
+                             plugin_proxy.host_extensions_.note_name]() {
+                            note_name->changed(host);
+                        })
                         .wait();
 
                     return Ack{};
@@ -219,14 +217,15 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                             const auto& [plugin_proxy, _] =
                                 get_proxy(request.owner_instance_id);
 
-                            return plugin_proxy
-                                .run_on_main_thread(
-                                    [host = plugin_proxy.host_,
-                                     note_ports = plugin_proxy.host_extensions_
-                                                      .note_ports]() {
-                                        return note_ports->supported_dialects(
-                                            host);
-                                    })
+                            return run_on_main_thread(
+                                       plugin_proxy,
+                                       [host = plugin_proxy.host_,
+                                        note_ports =
+                                            plugin_proxy.host_extensions_
+                                                .note_ports]() {
+                                           return note_ports
+                                               ->supported_dialects(host);
+                                       })
                                 .get();
                         },
                 [&](const clap::ext::note_ports::host::Rescan& request)
@@ -234,13 +233,13 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [plugin_proxy, _] =
                         get_proxy(request.owner_instance_id);
 
-                    plugin_proxy
-                        .run_on_main_thread(
-                            [&, host = plugin_proxy.host_,
-                             note_ports =
-                                 plugin_proxy.host_extensions_.note_ports]() {
-                                note_ports->rescan(host, request.flags);
-                            })
+                    run_on_main_thread(
+                        plugin_proxy,
+                        [&, host = plugin_proxy.host_,
+                         note_ports =
+                             plugin_proxy.host_extensions_.note_ports]() {
+                            note_ports->rescan(host, request.flags);
+                        })
                         .wait();
 
                     return Ack{};
@@ -250,12 +249,14 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [plugin_proxy, _] =
                         get_proxy(request.owner_instance_id);
 
-                    plugin_proxy
-                        .run_on_main_thread(
-                            [&, host = plugin_proxy.host_,
-                             params = plugin_proxy.host_extensions_.params]() {
-                                params->rescan(host, request.flags);
-                            })
+                    // TODO: Handle mutual recursion here and for latency
+                    // changes
+                    run_on_main_thread(
+                        plugin_proxy,
+                        [&, host = plugin_proxy.host_,
+                         params = plugin_proxy.host_extensions_.params]() {
+                            params->rescan(host, request.flags);
+                        })
                         .wait();
 
                     return Ack{};
@@ -265,13 +266,13 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [plugin_proxy, _] =
                         get_proxy(request.owner_instance_id);
 
-                    plugin_proxy
-                        .run_on_main_thread(
-                            [&, host = plugin_proxy.host_,
-                             params = plugin_proxy.host_extensions_.params]() {
-                                params->clear(host, request.param_id,
-                                              request.flags);
-                            })
+                    run_on_main_thread(
+                        plugin_proxy,
+                        [&, host = plugin_proxy.host_,
+                         params = plugin_proxy.host_extensions_.params]() {
+                            params->clear(host, request.param_id,
+                                          request.flags);
+                        })
                         .wait();
 
                     return Ack{};
@@ -281,12 +282,12 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [plugin_proxy, _] =
                         get_proxy(request.owner_instance_id);
 
-                    plugin_proxy
-                        .run_on_main_thread(
-                            [&, host = plugin_proxy.host_,
-                             state = plugin_proxy.host_extensions_.state]() {
-                                state->mark_dirty(host);
-                            })
+                    run_on_main_thread(
+                        plugin_proxy,
+                        [&, host = plugin_proxy.host_,
+                         state = plugin_proxy.host_extensions_.state]() {
+                            state->mark_dirty(host);
+                        })
                         .wait();
 
                     return Ack{};
@@ -296,13 +297,13 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [plugin_proxy, _] =
                         get_proxy(request.owner_instance_id);
 
-                    plugin_proxy
-                        .run_on_main_thread(
-                            [&, host = plugin_proxy.host_,
-                             voice_info =
-                                 plugin_proxy.host_extensions_.voice_info]() {
-                                voice_info->changed(host);
-                            })
+                    run_on_main_thread(
+                        plugin_proxy,
+                        [&, host = plugin_proxy.host_,
+                         voice_info =
+                             plugin_proxy.host_extensions_.voice_info]() {
+                            voice_info->changed(host);
+                        })
                         .wait();
 
                     return Ack{};

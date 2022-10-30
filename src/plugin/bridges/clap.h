@@ -142,45 +142,81 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
     }
 
     // TODO: Do we need this for CLAP? If we do, update the docstring
-    // /**
-    //  * Send a message, and allow other threads to call functions on _this
-    //  * thread_ while we're waiting for a response. This lets us execute
-    //  * functions from the host's GUI thread while it is also calling
-    //  functions
-    //  * from that same thread. Because of that, we also know that while this
-    //  * function is being called the host won't be able to handle any
-    //  `IRunLoop`
-    //  * events. We need this to support REAPER, because REAPER requires
-    //  function
-    //  * calls involving the GUI to be run from the GUI thread. Grep for
-    //  * `run_gui_task` for instances of this.
-    //  *
-    //  * We use the same trick in `ClapBridge`.
-    //  */
-    // template <typename T>
-    // typename T::Response send_mutually_recursive_message(const T& object) {
-    //     return mutual_recursion_.fork([&]() { return send_message(object);
-    //     });
-    // }
+    /**
+     * Send a message meant to be executed on the main thread, and allow other
+     * threads to call functions on _this thread_ while we're waiting for a
+     * response. This lets us execute functions from the host's main thread
+     * while it is also calling functions from that same thread. Because of
+     * that, we also know that while this function is being called the host
+     * won't be able to handle any `clap_host::request_callback()` requests. We
+     * need this for a couple situations, like a plugin calling
+     * `clap_host_*::rescan()` during state loading.
+     *
+     * We use the same trick in `ClapBridge`.
+     */
+    template <typename T>
+    typename T::Response send_mutually_recursive_main_thread_message(
+        const T& object) {
+        return mutual_recursion_.fork(
+            [&]() { return send_main_thread_message(object); });
+    }
 
-    // /**
-    //  * If `send_mutually_recursive_message()` is currently being called, then
-    //  * run `fn` on the thread that's currently calling that function and
-    //  return
-    //  * the result of the call. If there's currently no mutually recursive
-    //  * function call going on, this will return an `std::nullopt`, and the
-    //  * caller should call `fn` itself.
-    //  *
-    //  * @return The result of calling `fn`, if `fn` was called.
-    //  *
-    //  * @see ClapPlugViewProxyImpl::run_gui_task
-    //  */
-    // template <std::invocable F>
-    // std::optional<std::invoke_result_t<F>>
-    // maybe_run_on_mutual_recursion_thread(
-    //     F&& fn) {
-    //     return mutual_recursion_.maybe_handle(std::forward<F>(fn));
-    // }
+    /**
+     * Run a callback on the host's GUI thread.
+     *
+     * If `send_mutually_recursive_main_thread_message()` is currently being
+     * called, then run `fn` on the thread that's currently calling that
+     * function and return the result of the call.
+     *
+     * Otherwise, use `clap_plugin_proxy::run_on_main_thread()` to use CLAP's
+     * `clap_plugin::request_callback()` mechanic.
+     *
+     * @return The result of calling `fn`
+     *
+     * @see clap_plugin_proxy::run_on_main_thread
+     */
+    template <std::invocable F>
+    std::future<std::invoke_result_t<F>> run_on_main_thread(
+        clap_plugin_proxy& plugin,
+        F&& fn) {
+        using Result = std::invoke_result_t<F>;
+
+        // If `ClapBridge::send_mutually_recursive_main_thread_message()` is
+        // currently being called, then we'll call `fn` from that same thread.
+        // Otherwise we'll schedule the task to be run using the host's main
+        // thread using `clap_host::request_callback()`. This is needed because
+        // `request_callback()` won't do anything if that thread is currently
+        // blocked.
+
+        // Modifying the `mutual_recursion_` methods to handle `void` correctly
+        // would lead to a lot more template soup, so we'll just work around it
+        // here.
+        // TODO: At some point, do improve the API so it can handle void without
+        //       workaorunds
+        if constexpr (std::is_void_v<Result>) {
+            if (const auto result =
+                    mutual_recursion_.maybe_handle([f = std::forward<F>(fn)]() {
+                        f();
+                        return Ack{};
+                    })) {
+                // Apparently there's no way to just create a ready future
+                std::promise<void> result_promise;
+                result_promise.set_value();
+
+                return result_promise.get_future();
+            }
+        } else {
+            if (const auto result =
+                    mutual_recursion_.maybe_handle(std::forward<F>(fn))) {
+                std::promise<Result> result_promise;
+                result_promise.set_value(std::move(*result));
+
+                return result_promise.get_future();
+            }
+        }
+
+        return plugin.run_on_main_thread(std::forward<F>(fn));
+    }
 
     /**
      * The logging facility used for this instance of yabridge. Wraps around
@@ -230,12 +266,11 @@ class ClapPluginBridge : PluginBridge<ClapSockets<std::jthread>> {
      */
     std::shared_mutex plugin_proxies_mutex_;
 
-    // TODO: Do we need this in CLAP?
-    // /**
-    //  * Used in `ClapBridge::send_mutually_recursive_message()` to be able to
-    //  * execute functions from that same calling thread while we're waiting
-    //  for a
-    //  * response. This is used in `ClapPlugViewProxyImpl::run_loop_tasks()`.
-    //  */
-    // MutualRecursionHelper<std::jthread> mutual_recursion_;
+    /**
+     * Used in `ClapBridge::send_mutually_recursive_message()` to be able to
+     * execute functions from that same calling thread while we're waiting for a
+     * response. See the uses for `send_mutually_recursive_message()` for use
+     * cases where this is needed.
+     */
+    MutualRecursionHelper<std::jthread> mutual_recursion_;
 };

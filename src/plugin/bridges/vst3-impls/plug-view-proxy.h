@@ -143,7 +143,7 @@ class Vst3PlugViewProxyImpl : public Vst3PlugViewProxy {
 
         // If `Vst3Bridge::send_mutually_recursive_message()` is currently being
         // called (because the host is calling one of `IPlugView`'s methods from
-        // its UGI thread), then we'll call `fn` from that same thread.
+        // its GUI thread), then we'll call `fn` from that same thread.
         // Otherwise we'll schedule the task to be run from an event handler
         // registered to the host's run loop, if that exists. Finally if the
         // host does not support `IRunLoop`, then we'll just run `fn` directly.
