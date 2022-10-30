@@ -191,8 +191,10 @@ bool CLAP_ABI clap_plugin_proxy::plugin_activate(
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<clap_plugin_proxy*>(plugin->plugin_data);
 
+    // NOTE: Plugins may perform latency change callbacks during this function,
+    //       so we'll allow mutual recursion here just in case
     const clap::plugin::ActivateResponse response =
-        self->bridge_.send_main_thread_message(
+        self->bridge_.send_mutually_recursive_main_thread_message(
             clap::plugin::Activate{.instance_id = self->instance_id(),
                                    .sample_rate = sample_rate,
                                    .min_frames_count = min_frames_count,
@@ -874,7 +876,11 @@ bool CLAP_ABI clap_plugin_proxy::ext_state_load(const clap_plugin_t* plugin,
     assert(plugin && plugin->plugin_data && stream);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
-    return self->bridge_.send_main_thread_message(
+    // NOTE: We need to be able to handle mutual recursion here. DPF will call
+    //       `clap_host_params::rescan()` during state loading, and that
+    //       callback needs to be handled on the main thread. Other plugins may
+    //       also do latency change calblacks in this function.
+    return self->bridge_.send_mutually_recursive_main_thread_message(
         clap::ext::state::plugin::Load{.instance_id = self->instance_id(),
                                        .stream = *stream});
 }
