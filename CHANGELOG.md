@@ -8,31 +8,39 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- TODO: Rewrite the CLAP blurb below.
 - TODO: Remove mention of `vst3_no_scaling` from the readme.
 
 # Added
 
-- Yabridge 5.0 now supports bridging [CLAP](https://cleveraudio.org/) plugins.
-  CLAP is a [collaborative
-  effort](https://github.com/free-audio/clap/blob/main/Contributors.md) by
-  plugin and host developers of all backgrounds to create a permissively
-  licensed, modern plugin standard that is simple, portable, extensible, and
-  resilient to errors. Yabridge 5.0.0's CLAP bridging supports [all official
-  CLAP 1.1
+- Yabridge 5.0 now supports bridging [CLAP](https://cleveraudio.org/) plugins in
+  addition to its existing VST2 and VST3 plugin support. CLAP is a
+  [collaborative
+  effort](https://github.com/free-audio/clap/blob/main/Contributors.md) by a
+  group of plugin and host developers of all backgrounds to create a
+  permissively licensed, extensible plugin standard that is simple while
+  simultaneously catering to the needs of plugin developers, host developers,
+  and users alike. When bridged under yabridge, these plugins are likely to have
+  lower bridging overhead than their VST2 and VST3 counterparts while also being
+  more responsive and offering better support for instrument plugins and
+  parameter modulation.
+
+  Yabridge 5.0.0's CLAP bridging supports [all official CLAP 1.1
   extensions](https://github.com/robbert-vdh/yabridge/blob/master/src/common/serialization/clap/README.md)
-  aside from the audio thread pool extension. Support for the extension will be
+  except for the audio thread pool extension. Support for that extension will be
   added in a future yabridge release as Windows-only plugins that rely on the
   feature get released.
-- Notifications are now sent by directly talking to D-Bus instead of using the
-  `notify-send` command line tool. This ensures that you'll always see
-  yabridge's notifications, even when using more niche distros where you may not
-  have `notify-send` installed by default.
-- The new `editor_disable_host_scaling` compatibility prevents hosts from
-  setting an explicit DPI scaling factor for the editor. In some cases this can
-  help with inconsistent scaling when using HiDPI scaling. This option affects
-  **VST3** and **CLAP** plugins and it replaces the old `vst3_no_scaling`
-  option.
+
+- Desktop notifications no longer rely on the `notify-send` command line tool,
+  and are now sent by directly talking to D-Bus instead. This ensures that
+  you'll always see yabridge's notifications when something important happens,
+  even when using more niche distros where you may not have `notify-send`
+  installed by default.
+- A new `editor_disable_host_scaling` `yabridge.toml` [compatibility
+  option](https://github.com/robbert-vdh/yabridge#compatibility-options) lets
+  you prevent hosts from setting an explicit DPI scaling factor for a plugin's
+  editor. In some cases this can help with inconsistent scaling when using HiDPI
+  displays. This option affects both **VST3** and **CLAP** plugins and it
+  replaces the older `vst3_no_scaling` option.
 
 # Removed
 
@@ -42,8 +50,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 # Changed
 
 - Slightly optimized the use of serialization buffers to reduce memory usage for
-  VST3 audio threads and to potentially speed up parameter information queries
-  for parameters with lots of text.
+  VST3 audio threads. This change also potentially speeds up parameter
+  information queries for parameters with lots of associated text.
 
 ### Fixed
 
@@ -57,17 +65,17 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Packaging notes
 
-- The VST3 dependency is now at tag `v3.7.5_build_44-patched-2`. The only
-  difference is that the version in the `meson.build` file was bumped from 3.7.3
-  to 3.7.5.
 - The new CLAP support requires version 1.1.2 of the CLAP headers because
   earlier versions did not yet contain calling conventions.
   (<https://github.com/free-audio/clap/issues/153>,
   <https://github.com/free-audio/clap/pull/154>). Building against older
   versions will result in memory errors.
+- The VST3 dependency is now at tag `v3.7.5_build_44-patched-2`. The only
+  difference with the previous `v3.7.5_build_44-patched` is a fixed version
+  number in the `meson.build` file.
 - The Meson build now requires the `libdbus-1` package to be installed.
-  Yabridge's binaries will not link against the shared library, but it does use
-  the definitions from the headers to dynamically link against D-Bus at runtime
+  Yabridge's binaries don't dynamically link against the shared library, but it
+  does use the definitions from the headers to load `libdbus-1.so.3` at runtime
   when it needs to send a desktop notification.
 
 ## [4.0.2] - 2022-06-27
