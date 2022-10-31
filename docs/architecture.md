@@ -256,13 +256,13 @@ are non-virtual, but we can safely make them virtual in our case.
 
 ## CLAP plugins
 
-Fundamentally the CLAP bridging is very similar to the VST3 bridging. Yabridge
-has both plugin and host proxy objects that expose the same extensions as the
-plugin and host objects they are proxying. The main difference with the VST3
-approach is that thread requirements are more strictly upheld since CLAP
-documents thread requirements for every function calls, and that each plugin
-instance now has an audio thread callback socket for the handful of interfaces
-that use those.
+Fundamentally the CLAP bridging is very similar to the VST3 bridging with some
+minor style and consistency improvements. Yabridge creates plugin and host proxy
+objects that expose the same extensions as the plugin and host objects they are
+proxying. The main difference compared to the VST3 approach is that thread
+requirements are more strictly upheld since CLAP documents thread requirements
+for every function calls, and that each plugin instance now has an audio thread
+callback socket for the handful of interfaces that use those.
 
 ## Audio buffers
 
