@@ -4,16 +4,12 @@
 [![Discord](https://img.shields.io/discord/786993304197267527.svg?label=Discord&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/pyNeweqadf)
 
 Yet Another way to use Windows audio plugins on Linux. Yabridge seamlessly
-supports using both 32-bit and 64-bit Windows VST2, VST3, and CLAP\* plugins in
+supports using both 32-bit and 64-bit Windows VST2, VST3, and CLAP plugins in
 64-bit Linux plugin hosts as if they were native plugins, with optional support
 for [plugin groups](#plugin-groups) to enable inter-plugin communication for
 VST2 plugins and quick startup times. Its modern concurrent architecture and
 focus on transparency allows yabridge to be both fast and highly compatible,
 while also staying easy to debug and maintain.
-
-<sup>
-  *CLAP support is currently only available on the master branch.
-</sup>
 
 ![yabridge screenshot](https://raw.githubusercontent.com/robbert-vdh/yabridge/master/screenshot.png)
 
@@ -108,26 +104,31 @@ Please let me know if there are any issues with other hosts.
         `tar -C ~/.local/share -xavf yabridge-x.y.z.tar.gz`. If you're
         extracting the archive using a GUI file manager or archive tool, then
         make sure that hidden files and directories are visible by pressing
-        <kbd>Ctrl+H</kbd>.
-     3. **Whenever any step below mentions running `yabridgectl <something>`,
+        <kbd>Ctrl+H</kbd>. You should also double check that your archive
+        extraction tool didn't create an additional subdirectory in
+        `~/.local/share`. Dragging and dropping the `yabridge` directory from
+        the archive directly to `~/.local/share` is the best way to make sure
+        this doesn't happen.
+     3. **Whenever any step after this mentions running `yabridgectl <something>`,
         then you should run `~/.local/share/yabridge/yabridgectl <something>`
-        instead** as `~/.local/share/yabridge` is not in your search path so
-        your shell won't be able to find yabridgectl otherwise.
+        instead.**
 
         Alternatively, you can also add that directory to your shell's search
-        path so you'll be able to run `yabridgectl` directly. If you don't know
+        path. That way you can run `yabridgectl` directly. If you don't know
         what that means, then add `export PATH="$PATH:$HOME/.local/share/yabridge"`
         to the end of `~/.bashrc` and reopen your terminal.
 
-2. Setting up and updating yabridge for your plugins is done though
-   `yabridgectl`. The general idea is that you install your plugins to their
-   default locations within a Wine prefix just like you would on Windows, and
-   you yabridgectl then manages those plugin directories for you. That way you
-   only need to run a single command whenever you install or remove a plugin.
-   Both yabridge and yabridgectl will automatically detect your yabridge
-   installation if you used one of the installation methods described above.
+2. Setting up and updating yabridge for your plugins is done though the
+   `yabridgectl` command line utility. The basic idea is that you first install
+   your Windows plugins to their default locations within a Wine prefix just
+   like you would on regular Windows. and yabridgectl then manages those plugin
+   directories for you. You then tell yabridgectl where it can find those
+   plugins so it can manage them for you. That way you only ever need to run a
+   single command whenever you install or remove a plugin. Both yabridge and
+   yabridgectl will automatically detect your yabridge installation if you used
+   one of the installation methods from step 1.
 
-3. To tell yabridgectl where it can find your Windows VST2, VST3, and CLAP
+   To tell yabridgectl where it can find your Windows VST2, VST3, and CLAP
    plugins, you can use yabridgectl's `add`, `rm` and `list` commands to add,
    remove, and list the plugin directories yabridgectl is managing for you. You
    can also use `yabridgectl status` to get an overview of the current settings
@@ -147,59 +148,51 @@ Please let me know if there are any issues with other hosts.
       `yabridgectl add "$HOME/.wine/drive_c/Program Files/Common Files/CLAP"` to
       add that directory to yabridge.
 
-      **Yabridge 4.0.2 does does not yet support CLAP bridging.**
-
-4. Finally, you'll need to run `yabridgectl sync` to finish setting up yabridge
+3. Finally, you'll need to run `yabridgectl sync` to finish setting up yabridge
    for all of your plugins. After doing so, your VST2, VST3, and CLAP plugins
    will be set up in `~/.vst/yabridge`, `~/.vst3/yabridge`, and
-   `~/.clap/yabridge`. Make sure your DAW searches `~/.vst`, `~/.vst3`, and
-   `~/.clap` for VST2, VST3, and CLAP plugins and you will be good to go.
+   `~/.clap/yabridge` respectively. Make sure your DAW searches `~/.vst`,
+   `~/.vst3`, and `~/.clap` for VST2, VST3, and CLAP plugins and you will be
+   good to go.
 
 ### Bitbridge
 
-If you have downloaded the prebuilt version of yabridge or if have followed the
-instructions from the [bitbridge](#32-bit-bitbridge) section below, then
-yabridge is also able to load 32-bit plugins. The installation procedure for
-32-bit plugins is exactly the same as for 64-bit plugins. Yabridge will
-automatically detect whether a plugin is 32-bit or 64-bit on startup and it will
-handle it accordingly.
-
-If you want to use the 32-bit version of a VST3 plugin when you also have the
-64-bit version installed, then you may have to enable the `vst3_prefer_32bit`
-[compatibility
-option](https://github.com/robbert-vdh/yabridge#compatibility-options) if those
-two plugins are located in the same VST3 bundle in `~/.vst3/yabridge`.
+Yabridge can also load 32-bit Windows plugins so you can use them in your 64-bit
+Linux DAW. Yabridge will automatically detect whether a plugin is 32-bit or
+64-bit on startup and it will handle it accordingly. If you've installed
+yabridge through a distro package, then it may be possible that your distro has
+disabled this feature.
 
 ### Wine prefixes
 
-It is also possible to use yabridge with multiple Wine prefixes. Yabridge will
-automatically detect and use the Wine prefix the plugin's `.dll`, `.vst3`, or
-`.clap` file is located in. Alternatively, you can set the `WINEPREFIX`
-environment variable to override the Wine prefix for _all instances_ of
-yabridge.
+It is also possible to use yabridge with multiple Wine prefixes at the same
+time. Yabridge will automatically detect and use the Wine prefix the Windows
+plugin's `.dll`, `.vst3`, or `.clap` file is located in. Alternatively, you can
+set the `WINEPREFIX` environment variable to override the Wine prefix for _all
+yabridge plugins_.
 
 ### Drag-and-drop
 
 Yabridge supports drag-and-drop both from a native (X11) Linux application to
-plugins running under yabridge, as well as drag-and-drop from yabridge to native
-X11 applications like your DAW. When dragging things from a plugin to your DAW,
-then depending on which DAW you're using it may look like the drop is going to
-fail while still hodling down the left mouse button. That's expected, since both
-yabridge's and Wine's own drag-and-drop systems are active at the same time. If
-you're using yabridge in _REAPER_ or _Carla_, then you may need to enable a
-[compatibility option](#compatibility-options) to prevent those hosts from
-stealing the drop.
+plugins running under yabridge, as well as from yabridge plugins to native X11
+applications like your DAW or your file browser. When dragging things from a
+plugin to your DAW, then depending on which DAW you're using it may look like
+the drop is going to fail while you're still holding down the left mouse button.
+That's expected, since yabridge's and Wine's own drag-and-drop systems are
+active at the same time. If you're using yabridge in _REAPER_ or _Carla_, then
+you may need to enable a [compatibility option](#compatibility-options) to
+prevent those hosts from stealing the drop.
 
 ### Input focus grabbing
 
-Yabridge tries to be clever about the way grabbing input focus for a plugin and
-subsequently giving it back to the host works. One important detail here is that
-when grabbing input focus, yabridge will always focus the _parent window_ passed
-by the host for the plugin to embed itself into. This means that hosts like
-Bitwig Studio can still process common keys like <kbd>Space</kbd> for play/pause
-even while interacting with a plugin's GUI. The downside of this approach is
-that this also means that in those hosts you simply cannot type a space
-character, as the key will always go to the host.
+Yabridge tries to be clever about the way grabbing and releasing input focus for
+a plugin works. One important detail here is that when grabbing input focus,
+yabridge will always focus the _parent window_ passed by the host for the plugin
+to embed itself into. This means that hosts like Bitwig Studio can still process
+common key bindings like <kbd>Space</kbd> for play/pause even while you are
+interacting with a plugin's GUI. The downside of this approach is that this also
+means that in those hosts you simply cannot type a space character, as the key
+will always go to the host.
 
 For the very specific situations where you may want to focus the plugin's editor
 directly so that all keyboard input goes to Wine, you can hold down the
@@ -215,7 +208,7 @@ current version of Wine Staging, then you may want to try downgrading to an
 earlier version of Wine. This can be done as follows:
 
 - On Debian, Ubuntu, Linux Mint and other apt-based distros, you can use the
-  command below to install Wine Staging 6.14 after you add the WineHQ
+  command below to install Wine Staging 7.8 after you add the WineHQ
   repositories linked above. This command is a bit cryptic because on these
   distros the Wine package is split up into multiple smaller packages, and the
   package versions include the distros codename (e.g. `focal`, or `buster`) as
@@ -289,22 +282,25 @@ a single process using [plugin groups](#plugin-groups), and there are also a
 number of [compatibility options](#compatibility-options) available to improve
 compatibility with certain hosts and plugins.
 
-Configuring yabridge is done through a `yabridge.toml` file located in either
-the same directory as the plugin's `.so` file you're trying to configure, or in
-any of its parent directories. In most cases, you'll want to create this file as
-either `~/.vst/yabridge/yabridge.toml`, `~/.vst3/yabridge/yabridge.toml`, or
-`~/.clap/yabridge/yabridge.toml` depending on the type of the plugin you want to
-configure. Configuration files contain several _sections_. Each section can
-match one or more plugins using case sensitive
+Configuring yabridge is done by creating a `yabridge.toml` file located in
+either the same directory as the bridged plugin `.so` or `.clap` file you're
+trying to configure, or in any of its parent directories. In most cases, this
+file should be created as either `~/.vst/yabridge/yabridge.toml`,
+`~/.vst3/yabridge/yabridge.toml`, or `~/.clap/yabridge/yabridge.toml` depending
+on the type of plugin you want to configure.
+
+Configuration files contain several _sections_. Each section can match one or
+more plugins using case sensitive
 [glob](https://www.man7.org/linux/man-pages/man7/glob.7.html) patterns that
-match paths to yabridge `.so` files relative to the `yabridge.toml` file. If a
-section is matched for a plugin, then the settings under that section are
-applied to the plugin. To avoid confusion, only the first `yabridge.toml` file
-found and only the first matching glob pattern within that file will be
-considered. See below for an [example](#example) of a `yabridge.toml` file. To
-make debugging easier, yabridge will print the used `yabridge.toml` file and the
-matched section within it on startup, as well as all of the options that have
-been set.
+match paths to yabridge `.so` and `.clap` files relative to the `yabridge.toml`
+file, as well as a list of options to apply to the matched plugins. These glob
+patterns can also match entire directories, in which case the settings are
+applied to all plugins under that directory or one of its subdirectories. To
+avoid confusion, only the first `yabridge.toml` file found and only the first
+matching glob pattern within that file will be considered. See below for an
+[example](#example) of a `yabridge.toml` file. To make debugging easier,
+yabridge will print the used `yabridge.toml` file and the matched section within
+it on startup, as well as all of the options that have been set.
 
 ### Plugin groups
 
@@ -336,16 +332,16 @@ you load a new plugin._
 
 ### Compatibility options
 
-| Option                                                            | Values                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ----------------------------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `disable_pipes`                                                   | `{true,false,<string>}` | When this option is enabled, yabridge will redirect the Wine plugin host's output streams to a file without any further processing. See the [known issues](#known-issues-and-fixes) section for a list of plugins where this may be useful. This can be set to a boolean, in which case the output will be written to `$XDG_RUNTIME_DIR/yabridge-plugin-output.log`, or to an absolute path (with no expansion for tildes or environment variables). Defaults to `false`.           |
-| `editor_coordinate_hack`                                          | `{true,false}`          | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware E27_ and _Soundtoys Crystallizer_. Defaults to `false`.                                   |
-| `editor_disable_host_scaling` (`vst3_no_scaling` in yabridge 4.x) | `{true,false}`          | Disable host-driven HiDPI scaling for VST3 and CLAP plugins. Wine currently does not have proper fractional HiDPI support, so you might have to enable this option if you're using a HiDPI display. In most cases setting the font DPI in `winecfg`'s graphics tab to 192 will cause plugins to scale correctly at 200% size. Defaults to `false`.                                                                                                                                  |
-| `editor_force_dnd`                                                | `{true,false}`          | This option forcefully enables drag-and-drop support in _REAPER_. Because REAPER's FX window supports drag-and-drop itself, dragging a file onto a plugin editor will cause the drop to be intercepted by the FX window. This makes it impossible to drag files onto plugins in REAPER under normal circumstances. Setting this option to `true` will strip drag-and-drop support from the FX window, thus allowing files to be dragged onto the plugin again. Defaults to `false`. |
-| `editor_xembed`                                                   | `{true,false}`          | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't always work properly with it, but it could be useful in certain setups. You may need to use [this Wine patch](https://github.com/psycha0s/airwave/blob/master/fix-xembed-wine-windows.patch) if you're getting blank editor windows. Defaults to `false`.                                                |
-| `frame_rate`                                                      | `<number>`              | The rate at which Win32 events are being handled and usually also the refresh rate of a plugin's editor GUI. When using plugin groups all plugins share the same event handling loop, so in those the last loaded plugin will set the refresh rate. Defaults to `60`.                                                                                                                                                                                                               |
-| `hide_daw`                                                        | `{true,false}`          | Don't report the name of the actual DAW to the plugin. See the [known issues](#known-issues-and-fixes) section for a list of situations where this may be useful. This affects VST2, VST3, and CLAP plugins. Defaults to `false`.                                                                                                                                                                                                                                                   |
-| `vst3_prefer_32bit`                                               | `{true,false}`          | Use the 32-bit version of a VST3 plugin instead the 64-bit version if both are installed and they're in the same VST3 bundle inside of `~/.vst3/yabridge`. You likely won't need this.                                                                                                                                                                                                                                                                                              |
+| Option                        | Values                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `disable_pipes`               | `{true,false,<string>}` | When this option is enabled, yabridge will redirect the Wine plugin host's output streams to a file without any further processing. See the [known issues](#known-issues-and-fixes) section for a list of plugins where this may be useful. This can be set to a boolean, in which case the output will be written to `$XDG_RUNTIME_DIR/yabridge-plugin-output.log`, or to an absolute path (with no expansion for tildes or environment variables). Defaults to `false`.           |
+| `editor_coordinate_hack`      | `{true,false}`          | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware E27_ and _Soundtoys Crystallizer_. Defaults to `false`.                                   |
+| `editor_disable_host_scaling` | `{true,false}`          | Disable host-driven HiDPI scaling for VST3 and CLAP plugins. Wine currently does not have proper fractional HiDPI support, so you might have to enable this option if you're using a HiDPI display. In most cases setting the font DPI in `winecfg`'s graphics tab to 192 will cause plugins to scale correctly at 200% size. Defaults to `false`.                                                                                                                                  |
+| `editor_force_dnd`            | `{true,false}`          | This option forcefully enables drag-and-drop support in _REAPER_. Because REAPER's FX window supports drag-and-drop itself, dragging a file onto a plugin editor will cause the drop to be intercepted by the FX window. This makes it impossible to drag files onto plugins in REAPER under normal circumstances. Setting this option to `true` will strip drag-and-drop support from the FX window, thus allowing files to be dragged onto the plugin again. Defaults to `false`. |
+| `editor_xembed`               | `{true,false}`          | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't always work properly with it, but it could be useful in certain setups. You may need to use [this Wine patch](https://github.com/psycha0s/airwave/blob/master/fix-xembed-wine-windows.patch) if you're getting blank editor windows. Defaults to `false`.                                                |
+| `frame_rate`                  | `<number>`              | The rate at which Win32 events are being handled and usually also the refresh rate of a plugin's editor GUI. When using plugin groups all plugins share the same event handling loop, so in those the last loaded plugin will set the refresh rate. Defaults to `60`.                                                                                                                                                                                                               |
+| `hide_daw`                    | `{true,false}`          | Don't report the name of the actual DAW to the plugin. See the [known issues](#known-issues-and-fixes) section for a list of situations where this may be useful. This affects VST2, VST3, and CLAP plugins. Defaults to `false`.                                                                                                                                                                                                                                                   |
+| `vst3_prefer_32bit`           | `{true,false}`          | Use the 32-bit version of a VST3 plugin instead the 64-bit version if both are installed and they're in the same VST3 bundle inside of `~/.vst3/yabridge`. You likely won't need this.                                                                                                                                                                                                                                                                                              |
 
 These options are workarounds for issues mentioned in the [known
 issues](#known-issues-and-fixes) section. Depending on the hosts
@@ -433,8 +429,8 @@ editor_force_dnd = true
 editor_disable_host_scaling = true
 ```
 
-And with CLAP plugins you match on the `.clap` file, just like the VST2 config
-file matches on `.so` files:
+With CLAP plugins, you match on the Linux `.clap` plugin file, just like
+matching on `.so` files for a VST2 config file:
 
 ```toml
 # ~/.clap/yabridge/yabridge.toml

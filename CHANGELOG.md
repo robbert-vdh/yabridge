@@ -8,8 +8,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- TODO: Remove mention of `vst3_no_scaling` from the readme.
-
 # Added
 
 - Yabridge 5.0 now supports bridging [CLAP](https://cleveraudio.org/) plugins in
