@@ -15,12 +15,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   [collaborative
   effort](https://github.com/free-audio/clap/blob/main/Contributors.md) by a
   group of plugin and host developers of all backgrounds to create a
-  permissively licensed, extensible plugin standard that is simple while
-  simultaneously catering to the needs of plugin developers, host developers,
-  and users alike. When bridged under yabridge, these plugins are likely to have
-  lower bridging overhead than their VST2 and VST3 counterparts while also being
-  more responsive and offering better support for instrument plugins and
-  parameter modulation.
+  permissively licensed extensible plugin standard that is simple while also
+  catering to the needs of plugin developers, host developers, and musicians
+  alike. When bridged under yabridge, these plugins are likely to have lower
+  bridging overhead than their VST2 and VST3 counterparts while also being more
+  responsive and offering better support for instrument plugins and parameter
+  modulation.
 
   Yabridge 5.0.0's CLAP bridging supports [all official CLAP 1.1
   extensions](https://github.com/robbert-vdh/yabridge/blob/master/src/common/serialization/clap/README.md)
@@ -55,7 +55,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixed a minor memory leak in the Wine->X11 drag-and-drop implementation when
   converting Windows file paths.
-- Removed leftover debug prints when opening VST2 editor.
+- Removed leftover debug prints when opening VST2 editors.
 
 ### yabridgectl
 
@@ -71,10 +71,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - The VST3 dependency is now at tag `v3.7.5_build_44-patched-2`. The only
   difference with the previous `v3.7.5_build_44-patched` is a fixed version
   number in the `meson.build` file.
-- The Meson build now requires the `libdbus-1` package to be installed.
-  Yabridge's binaries don't dynamically link against the shared library, but it
-  does use the definitions from the headers to load `libdbus-1.so.3` at runtime
-  when it needs to send a desktop notification.
+- The Meson build now requires the `libdbus-1` development package to be
+  installed. Yabridge's binaries don't dynamically link against the shared
+  library, but they do use the definitions from the headers to load
+  `libdbus-1.so.3` at runtime when it needs to send a desktop notification.
 
 ## [4.0.2] - 2022-06-27
 
