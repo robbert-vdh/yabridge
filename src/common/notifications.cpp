@@ -227,3 +227,5 @@ bool send_notification(const std::string& title,
 
     return result;
 }
+
+#undef LIBDBUS_FUNCTIONS
