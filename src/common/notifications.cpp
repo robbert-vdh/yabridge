@@ -173,51 +173,46 @@ bool send_notification(const std::string& title,
 
     // Can't use `dbus_message_append_args` because that doesn't support
     // dictionaries
-    DBusMessageIter iter;
+    DBusMessageIter iter{};
     libdbus_message_iter_init_append(message.get(), &iter);
 
     const char* app_name = "yabridge";
-    assert(
-        libdbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &app_name));
+    libdbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &app_name);
 
     // It would be nice to be able to replace old notifications so we don't
     // accidentally spam the user when every plugin outputs the same message,
     // but we can't really do this since during plugin scanning every plugin
     // will likely be loaded in a fresh process
     const dbus_uint32_t replaces_id = 0;
-    assert(libdbus_message_iter_append_basic(&iter, DBUS_TYPE_UINT32,
-                                             &replaces_id));
+    libdbus_message_iter_append_basic(&iter, DBUS_TYPE_UINT32, &replaces_id);
 
     const char* app_icon = "";
-    assert(
-        libdbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &app_icon));
+    libdbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &app_icon);
 
     const char* title_cstr = title.c_str();
-    assert(libdbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING,
-                                             &title_cstr));
+    libdbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &title_cstr);
 
     const std::string formatted_body_str = formatted_body.str();
     const char* formatted_body_cstr = formatted_body_str.c_str();
-    assert(libdbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING,
-                                             &formatted_body_cstr));
+    libdbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING,
+                                      &formatted_body_cstr);
 
     // Our actions array is empty
     DBusMessageIter array_iter;
-    assert(libdbus_message_iter_open_container(
-        &iter, DBUS_TYPE_ARRAY, DBUS_TYPE_STRING_AS_STRING, &array_iter));
-    assert(libdbus_message_iter_close_container(&iter, &array_iter));
+    libdbus_message_iter_open_container(
+        &iter, DBUS_TYPE_ARRAY, DBUS_TYPE_STRING_AS_STRING, &array_iter);
+    libdbus_message_iter_close_container(&iter, &array_iter);
 
     // We also don't have any hints, but we can't use the simple
     // `libdbus_message_append_args` API because we can't use it to add an empty
     // hints dictionary
-    assert(libdbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{sv}",
-                                               &array_iter));
-    assert(libdbus_message_iter_close_container(&iter, &array_iter));
+    libdbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{sv}",
+                                        &array_iter);
+    libdbus_message_iter_close_container(&iter, &array_iter);
 
     // -1 is an implementation specific default duration
     const dbus_int32_t expiry_timeout = -1;
-    assert(libdbus_message_iter_append_basic(&iter, DBUS_TYPE_INT32,
-                                             &expiry_timeout));
+    libdbus_message_iter_append_basic(&iter, DBUS_TYPE_INT32, &expiry_timeout);
 
     // And after all of that we can finally send the actual notification
     dbus_uint32_t message_serial = libdbus_message_get_serial(message.get());
