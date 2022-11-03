@@ -63,6 +63,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Packaging notes
 
+- There are new `libyabridge-clap.so` and `libyabridge-chainloader-clap.so`
+  files need to be included in the package.
 - The new CLAP support requires version 1.1.2 of the CLAP headers because
   earlier versions did not yet contain calling conventions.
   (<https://github.com/free-audio/clap/issues/153>,
