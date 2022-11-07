@@ -560,14 +560,19 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
                                 let converted_json =
                                     serde_jsonrc::to_string_pretty(&converted_module_info)
                                         .context("Could not format JSON file")?;
-                                util::write(target_moduleinfo_path, converted_json)
+                                util::write(&target_moduleinfo_path, converted_json)
                             });
-                        if let Err(error) = result {
-                            eprintln!(
-                                "Error converting '{}', skipping...\n{}",
-                                original_moduleinfo_path.display(),
-                                error
-                            );
+                        match result {
+                            Ok(_) => {
+                                managed_vst3_bundle_files.insert(target_moduleinfo_path);
+                            }
+                            Err(error) => {
+                                eprintln!(
+                                    "Error converting '{}', skipping...\n{}",
+                                    original_moduleinfo_path.display(),
+                                    error
+                                );
+                            }
                         }
                     }
 
