@@ -40,7 +40,8 @@ while also staying easy to debug and maintain.
 ## Tested with
 
 Yabridge has been tested under the following hosts using Wine Staging **7.20**
-(Wine 7.21 breaks yabridge and should be avoided for now):
+(Wine 7.21 [breaks yabridge](https://bugs.winehq.org/show_bug.cgi?id=53912) and
+should be avoided for now):
 
 | Host                  | VST2               | VST3                                                                 | CLAP                                                           |
 | --------------------- | ------------------ | -------------------------------------------------------------------- | -------------------------------------------------------------- |
