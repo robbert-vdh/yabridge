@@ -49,6 +49,12 @@ constexpr uint8_t xcb_event_type_mask = 0b0111'1111;
 constexpr char xdnd_aware_property_name[] = "XdndAware";
 
 /**
+ * The name of the Win32 window class we'll use for the Win32 window that the
+ * plugin can embed itself in.
+ */
+constexpr char yabridge_window_class_name[] = "yabridge plugin";
+
+/**
  * Get the atom with the specified name. May throw when
  * `xcb_intern_atom_reply()` returns an error. Returns `XCB_ATOM_NONE` when the
  * atom doesn't exist. We define this here because we'll also need to fetch a

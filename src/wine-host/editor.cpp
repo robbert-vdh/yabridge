@@ -42,12 +42,6 @@ using namespace std::literals::string_literals;
     } while (0)
 
 /**
- * The name of the Win32 window class we'll use for the Win32 window that the
- * plugin can embed itself in.
- */
-constexpr char yabridge_window_class_name[] = "yabridge plugin";
-
-/**
  * The Win32 timer ID we'll use to periodically call the VST2 `effeditidle`
  * function with. We have to do this on a timer because the function has to be
  * called from the GUI thread, and it should also be called while the Win32
