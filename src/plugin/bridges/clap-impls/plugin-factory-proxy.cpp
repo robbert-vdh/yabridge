@@ -27,7 +27,7 @@ clap_plugin_factory_proxy::clap_plugin_factory_proxy(
           .create_plugin = plugin_factory_create_plugin,
       }),
       bridge_(bridge),
-      descriptors_(std::move(descriptors)){};
+      descriptors_(std::move(descriptors)) {}
 
 uint32_t CLAP_ABI clap_plugin_factory_proxy::plugin_factory_get_plugin_count(
     const struct clap_plugin_factory* factory) {
