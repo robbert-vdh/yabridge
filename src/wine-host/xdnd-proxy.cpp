@@ -59,7 +59,7 @@ constexpr char mime_text_plain_name[] = "text/plain";
 //        Revert this once Wine 7.21 is old enough that noone uses it anymore.
 // static const HCURSOR dnd_accepted_cursor = LoadCursor(nullptr, IDC_HAND);
 inline HCURSOR dnd_accepted_cursor() {
-    static HCURSOR cursor{};
+    static HCURSOR cursor = nullptr;
     if (!cursor) {
         cursor = LoadCursor(nullptr, IDC_HAND);
     }
@@ -68,7 +68,7 @@ inline HCURSOR dnd_accepted_cursor() {
 }
 // static const HCURSOR dnd_denied_cursor = LoadCursor(nullptr, IDC_NO);
 inline HCURSOR dnd_denied_cursor() {
-    static HCURSOR cursor{};
+    static HCURSOR cursor = nullptr;
     if (!cursor) {
         cursor = LoadCursor(nullptr, IDC_NO);
     }

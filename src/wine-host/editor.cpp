@@ -127,7 +127,7 @@ constexpr uint32_t xembed_focus_first = 1;
  */
 // static const HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
 inline HCURSOR arrow_cursor() {
-    static HCURSOR cursor{};
+    static HCURSOR cursor = nullptr;
     if (!cursor) {
         cursor = LoadCursor(nullptr, IDC_ARROW);
     }
