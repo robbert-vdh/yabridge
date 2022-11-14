@@ -8,6 +8,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+# Fixed
+
+- Added a temporary workaround for yabridge hanging indefinitely on startup as
+  the result of a new bug in Wine 7.21:
+  https://bugs.winehq.org/show_bug.cgi?id=53912
+
 # yabridgectl
 
 - Fixed converted VST 3.7.5 `moduleinfo.json` files being considered orphan
