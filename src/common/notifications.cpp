@@ -20,6 +20,7 @@
 #include <cassert>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 
 #include <dbus/dbus.h>
 #include <dlfcn.h>
