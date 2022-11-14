@@ -39,9 +39,13 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging 7.21
-(versions before yabridge 5.0.1 won't work with Wine 7.21 because of Wine bug
-[#53912](https://bugs.winehq.org/show_bug.cgi?id=53912)):
+Yabridge has been tested under the following hosts using Wine Staging **7.20**.
+Yabridge 5.0.1 contains a hotfix for a Wine bug
+[#53912](https://bugs.winehq.org/show_bug.cgi?id=53912) that breaks yabridge
+with Wine 7.21, but it doesn't work with the builds on GitHub. Instead of trying
+to find yet a another workaround that may also not work in certain situations
+it's probably for the best to stick with Wine Staging 7.20 or below until Wine
+fixes this.
 
 | Host                  | VST2               | VST3                                                                 | CLAP                                                           |
 | --------------------- | ------------------ | -------------------------------------------------------------------- | -------------------------------------------------------------- |
