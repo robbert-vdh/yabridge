@@ -214,7 +214,7 @@ current version of Wine Staging, then you may want to try downgrading to an
 earlier version of Wine. This can be done as follows:
 
 - On Debian, Ubuntu, Linux Mint and other apt-based distros, you can use the
-  command below to install Wine Staging 7.8 after you add the WineHQ
+  command below to install Wine Staging 7.20 after you add the WineHQ
   repositories linked above. This command is a bit cryptic because on these
   distros the Wine package is split up into multiple smaller packages, and the
   package versions include the distros codename (e.g. `focal`, or `buster`) as
@@ -222,7 +222,7 @@ earlier version of Wine. This can be done as follows:
   you want to install, and then run these commands under Bash:
 
   ```shell
-  version=7.8
+  version=7.20
   variant=staging
   codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ { print $3; exit 0 } END { exit 1 }' /etc/apt/sources.list /etc/apt/sources.list.d/*.list || awk '/^Suites:/ { print $2; exit }' /etc/apt/sources.list /etc/apt/sources.list.d/wine*.sources)
   suffix=$(dpkg --compare-versions "$version" ge 6.1 && ((dpkg --compare-versions "$version" eq 6.17 && echo "-2") || echo "-1"))
