@@ -586,6 +586,11 @@ If your problem is not listed here, then feel free to post on the [issue
 tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask about it in
 the yabridge [Discord](https://discord.gg/pyNeweqadf).
 
+- Yabridge will likely not work with Wine 7.21 because of Wine bug
+  [#53912](https://bugs.winehq.org/show_bug.cgi?id=53912). For the time being
+  it's best to stick with Wine Staging 7.20. See above for [downgrading
+  instructions](#downgrading-wine).
+
 - Both yabridgectl and yabridge try to diagnose many common issues for you. If
   you're running into crashes or other issues, then try launching your DAW from
   a terminal and reading the log output for any clues. Bitwig Studio writes
