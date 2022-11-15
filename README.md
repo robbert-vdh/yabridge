@@ -597,6 +597,11 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   plugin output to `~/.BitwigStudio/log/engine.log`, so you may need to look
   there instead.
 
+- If a plugin seems to work fine except for the fact that the GUI never seems to
+  update when you interact with it, then try installing
+  [DXVK](https://github.com/doitsujin/dxvk). Many recent JUCE-based plugins
+  don't redraw anymore when using WineD3D.
+
 - Try to use a clean Wine prefix when testing misbehaving plugins. Either
   temporarily rename `~/.wine` to something else, or set the `WINEPREFIX`
   environment variable to a directory path to have Wine use that as a prefix.
