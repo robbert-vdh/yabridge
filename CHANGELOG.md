@@ -10,6 +10,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 # Fixed
 
+- Changed the behavior when setting window positions for yabridge's editor. This
+  may avoid a painfully slow redraw in the _Audio Nebula Aurora FM_ plugin when
+  dragging the editor window around.
+
+## [5.0.1] - 2022-11-14
+
+# Fixed
+
 - Added a temporary workaround for yabridge hanging indefinitely on startup as
   the result of a new bug in Wine 7.21:
   https://bugs.winehq.org/show_bug.cgi?id=53912
