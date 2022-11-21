@@ -77,6 +77,9 @@ Please let me know if there are any issues with other hosts.
    check out Wine's [user
    guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
 
+   **As mentioned above, Wine (Staging) 7.21 may not work correctly with
+   yabridge.** See below for [downgrading instructions](#downgrading-wine).
+
 1. Depending on your distro you can install yabridge and its yabridgectl
    companion utility through your distro's package manager or by using
    a binary archive from the GitHub releases page. Keep in mind that the distro
