@@ -30,7 +30,7 @@ jobs:
     # these steps
     # https://github.community/t5/GitHub-Actions/reusing-sharing-inheriting-steps-between-jobs-declarations/td-p/37849
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       # Needed for git-describe to do anything useful, the safe directory
       # workaround is needed for https://github.com/actions/runner/issues/2033
       - name: Fetch all git history
@@ -61,7 +61,7 @@ jobs:
 
           tar -caf "$ARCHIVE_NAME" yabridge
           rm -rf yabridge
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ${{ env.ARCHIVE_NAME }}
           path: ${{ env.ARCHIVE_NAME }}
@@ -73,7 +73,7 @@ jobs:
     outputs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       # Needed for git-describe to do anything useful, the safe directory
       # workaround is needed for https://github.com/actions/runner/issues/2033
       - name: Fetch all git history
@@ -103,7 +103,7 @@ jobs:
 
           tar -caf "$ARCHIVE_NAME" yabridge
           rm -rf yabridge
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ${{ env.ARCHIVE_NAME }}
           path: ${{ env.ARCHIVE_NAME }}
@@ -118,7 +118,7 @@ jobs:
     outputs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       # Needed for git-describe to do anything useful, the safe directory
       # workaround is needed for https://github.com/actions/runner/issues/2033
       - name: Fetch all git history
@@ -148,7 +148,7 @@ jobs:
 
           tar -caf "$ARCHIVE_NAME" yabridge
           rm -rf yabridge
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ${{ env.ARCHIVE_NAME }}
           path: ${{ env.ARCHIVE_NAME }}
@@ -162,7 +162,7 @@ jobs:
       run:
         working-directory: tools/yabridgectl
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       # Needed for git-describe to do anything useful, the safe directory
       # workaround is needed for https://github.com/actions/runner/issues/2033
       - name: Fetch all git history
@@ -189,7 +189,7 @@ jobs:
 
           tar -caf "$ARCHIVE_NAME" yabridgectl
           rm -rf yabridgectl
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ${{ env.ARCHIVE_NAME }}
           # For some reason there's no way to tell GitHub actions to run actions
