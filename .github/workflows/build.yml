@@ -173,11 +173,7 @@ jobs:
         run: |
           echo "ARCHIVE_NAME=yabridgectl-$(git describe --always).tar.gz" >> "$GITHUB_ENV"
       - name: Set up Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          default: true
+        uses: dtolnay/rust-toolchain@stable
       - name: Build the binaries
         run: cargo build --release
       - name: Strip remaining debug symbols
