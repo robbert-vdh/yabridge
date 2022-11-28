@@ -12,7 +12,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Changed the behavior when setting window positions for yabridge's editor. This
   may avoid a painfully slow redraw in the _Audio Nebula Aurora FM_ plugin when
-  dragging the editor window around.
+  dragging the editor window around. This may also help with other slow to
+  redraw GUI, and especially with window managers that send excessive events on
+  window movement like in Cinnamon and XFCE.
 
 ## [5.0.1] - 2022-11-14
 
