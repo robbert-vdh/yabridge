@@ -104,7 +104,10 @@ Please let me know if there are any issues with other hosts.
      distro, you can simply download and install a prebuilt version of yabridge:
 
      1. First download the latest version of yabridge from the [releases
-        page](https://github.com/robbert-vdh/yabridge/releases).
+        page](https://github.com/robbert-vdh/yabridge/releases). If you're using
+        a distro that's older than Ubuntu 20.04 such as Ubuntu 18.04, Debian 10,
+        Linux Mint 19, or AV Linux MXE 2021, then you should download the
+        version that ends with `-ubuntu-18.04.tar.gz`.
      2. Extract the contents of the downloaded archive to `~/.local/share`, such
         that the file `~/.local/share/yabridge/yabridgectl` exists after
         extracting. You can extract an archive here from the command line with
