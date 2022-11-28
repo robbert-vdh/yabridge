@@ -13,24 +13,25 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - The yabridge builds on the GitHub releases page now have the unity build
   option disabled. This _may_ work around the same Wine bug
   [#53912](https://bugs.winehq.org/show_bug.cgi?id=53912) mentioned in the last
-  release, as the issue has not yet been fixed for Wine 7.22. But since this is
-  a low level bug within Wine, there's no guarantee that everything will work
-  correctly. If you still experience crashes or freezes with yabridge, then do
-  consider
+  release, as the bug has not yet been fixed for Wine 7.22. Since this is a low
+  level bug within Wine, there's no guarantee that everything will work
+  correctly until the bug gets fixed. If you still experience crashes or freezes
+  with yabridge, then do consider
   [downgrading](https://github.com/robbert-vdh/yabridge#downgrading-wine) back
   to Wine Staging 7.20.
 
   **The `-ubuntu-18.04.tar.xz` builds are no longer provided from this release
-  onwards as they were still affected by the abovementioned bug.**
+  as they were still affected by the abovementioned bug despite all of the
+  workarounds.**
 
-- Yabridge's build system now errors out when doing unity builds with compiling
-  with Wine 7.21 and 7.22.
+- Yabridge's build system now errors out when enabling unity builds while
+  compiling with Wine 7.21 and 7.22.
 
 # Fixed
 
 - Changed the behavior when setting window positions for yabridge's editor. This
-  may avoid a painfully slow redraw in the _Audio Nebula Aurora FM_ plugin when
-  dragging the editor window around. This may also help with other slow to
+  avoids a painfully slow redraw in the _Audio Nebula Aurora FM_ plugin when
+  dragging the editor window around. The change may also help with other slow to
   redraw GUI, and especially with window managers that send excessive events on
   window movement like in Cinnamon and XFCE.
 
@@ -38,7 +39,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - The `--unity=on` build option should be removed for the time being as this
   together with the VST3 SDK triggers the above mentioned [Wine
-  bug](https://bugs.winehq.org/show_bug.cgi?id=53912).
+  bug](https://bugs.winehq.org/show_bug.cgi?id=53912). Make sure to run
+  `yabridge-host.exe` (just that, with no `wine` in front of it) at least once
+  with Wine Staging 7.21 or 7.22 after building to make sure the build works
+  correctly. It should print a usage message if it does.
 
 ## [5.0.1] - 2022-11-14
 
