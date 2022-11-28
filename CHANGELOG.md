@@ -8,6 +8,20 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+# Changed
+
+- The yabridge builds on the GitHub releases page now have the unity build
+  option disabled. This _may_ work around the same Wine bug
+  [#53912](https://bugs.winehq.org/show_bug.cgi?id=53912) mentioned in the last
+  release, as the issue has not yet been fixed for Wine 7.22. But since this is
+  a low level bug within Wine, there's no guarantee that everything will work
+  correctly. If you still experience crashes or freezes with yabridge, then do
+  consider
+  [downgrading](https://github.com/robbert-vdh/yabridge#downgrading-wine) back
+  to Wine Staging 7.20.
+- Yabridge's build system now errors out when doing unity builds with compiling
+  with Wine 7.21 and 7.22.
+
 # Fixed
 
 - Changed the behavior when setting window positions for yabridge's editor. This
@@ -15,6 +29,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   dragging the editor window around. This may also help with other slow to
   redraw GUI, and especially with window managers that send excessive events on
   window movement like in Cinnamon and XFCE.
+
+### Packaging notes
+
+- The `--unity=on` build option should be removed for the time being as this
+  together with the VST3 SDK triggers the above mentioned [Wine
+  bug](https://bugs.winehq.org/show_bug.cgi?id=53912).
 
 ## [5.0.1] - 2022-11-14
 

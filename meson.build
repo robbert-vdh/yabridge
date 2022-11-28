@@ -165,6 +165,19 @@ if wine_version.returncode() == 0
     message('- Using legacy winedbg argument quoting')
     compiler_options += '-DWINEDBG_LEGACY_ARGUMENT_QUOTING'
   endif
+  # If the bug is not fixed in time for Wine 7.23, which is probably won't be,
+  # then this conditional won't be effective anymore for already released
+  # yabridge builds. But it may prevent some incorrectly packaged yabridge
+  # builds in the meantime.
+  if wine_version.stdout().version_compare('>=7.21') and \
+     wine_version.stdout().version_compare('<7.23') and \
+     get_option('unity') == 'on'
+    error('This version of Wine contains a bug that may cause yabridge to freeze ' +
+          'or crash on startup when the --unity=true option is enabled. ' +
+          'Remove this error from the meson.build file at your own risk if you ' +
+          'want to keep using unity builds.\n\n' +
+          'https://bugs.winehq.org/show_bug.cgi?id=53912')
+  endif
 else
   warning('Unable to determine the current Wine version')
 endif
