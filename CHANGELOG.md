@@ -19,6 +19,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   consider
   [downgrading](https://github.com/robbert-vdh/yabridge#downgrading-wine) back
   to Wine Staging 7.20.
+
+  **The `-ubuntu-18.04.tar.xz` builds are no longer provided from this release
+  onwards as they were still affected by the abovementioned bug.**
+
 - Yabridge's build system now errors out when doing unity builds with compiling
   with Wine 7.21 and 7.22.
 
