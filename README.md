@@ -457,6 +457,10 @@ include:
 
 - If plugins have missing, invisible, or misaligned text, then installing
   `corefonts` or `allfonts` through `winetricks` may help.
+- If a plugin seems to work fine except for the fact that the GUI never seems to
+  update when you interact with it, then try installing
+  [DXVK](https://github.com/doitsujin/dxvk). Many recent JUCE-based plugins
+  don't redraw anymore when using WineD3D.
 - **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
   `gdiplus` through `winetricks`. You may also want to disable the tooltips by
   going to the global settings tab, unchecking 'Show help tooltips', and
@@ -588,7 +592,9 @@ implemented yet. See the [roadmap](./ROADMAP.md) for a list of future plans.
 
 If your problem is not listed here, then feel free to post on the [issue
 tracker](https://github.com/robbert-vdh/yabridge/issues) or to ask about it in
-the yabridge [Discord](https://discord.gg/pyNeweqadf).
+the yabridge [Discord](https://discord.gg/pyNeweqadf). Also check the [known
+issues and fixes](#known-issues-and-fixes) section above for help with
+plugin-specific issues.
 
 - Yabridge may not work correctly with Wine 7.21 and 7.22 depending on how
   yabridge was built because of Wine bug
@@ -601,11 +607,6 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf).
   a terminal and reading the log output for any clues. Bitwig Studio writes
   plugin output to `~/.BitwigStudio/log/engine.log`, so you may need to look
   there instead.
-
-- If a plugin seems to work fine except for the fact that the GUI never seems to
-  update when you interact with it, then try installing
-  [DXVK](https://github.com/doitsujin/dxvk). Many recent JUCE-based plugins
-  don't redraw anymore when using WineD3D.
 
 - Try to use a clean Wine prefix when testing misbehaving plugins. Either
   temporarily rename `~/.wine` to something else, or set the `WINEPREFIX`
