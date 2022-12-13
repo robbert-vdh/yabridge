@@ -41,15 +41,17 @@ while also staying easy to debug and maintain.
 
 Yabridge has been tested under the following hosts using Wine Staging **7.20**.
 Wine 7.21 and 7.22 contain a major regression
-[#53912](https://bugs.winehq.org/show_bug.cgi?id=53912) that break yabridge. The
-current yabridge 5.0.2 build up on GitHub contains several workarounds to still
-be able to use the latest version of Wine with yabridge. But if you're getting
-crashes or freezes, do consider [downgrading](#downgrading-wine) back to Wine
-Staging 7.20.
+[#53912](https://bugs.winehq.org/show_bug.cgi?id=53912) that breaks yabridge.
+The current yabridge 5.0.2 build up on GitHub contains several workarounds to
+still be able to use the latest version of Wine with yabridge. But if you're
+getting crashes or freezes, do consider [downgrading](#downgrading-wine) back to
+Wine Staging 7.20.
+
+Wine **8.0-rc1** completely breaks yabridge, and it should be avoided.
 
 | Host                  | VST2               | VST3                                                                 | CLAP                                                 |
 | --------------------- | ------------------ | -------------------------------------------------------------------- | ---------------------------------------------------- |
-| Bitwig Studio 4.4.3\* | :heavy_check_mark: | :heavy_check_mark:                                                   | :heavy_check_mark:                                   |
+| Bitwig Studio 4.4.5\* | :heavy_check_mark: | :heavy_check_mark:                                                   | :heavy_check_mark:                                   |
 | REAPER 6.71           | :heavy_check_mark: | :heavy_check_mark:                                                   | :heavy_check_mark:                                   |
 | Carla 2.5.0           | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                |
 | Qtractor 0.9.29       | :heavy_check_mark: | :warning: VST3 editor windows may not have the correct size          | :warning: Qtractor may not support every CLAP plugin |
@@ -78,8 +80,9 @@ Please let me know if there are any issues with other hosts.
    guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
 
    **As mentioned above, Wine (Staging) 7.21 and 7.22 may not work correctly
-   with yabridge.** See below for [downgrading instructions](#downgrading-wine)
-   if yabridge immediately crashes or freezes for you.
+   with yabridge, and Wine 8.0-rc1 will not work with yabridge at all.** See
+   below for [downgrading instructions](#downgrading-wine) if yabridge
+   immediately crashes or freezes for you.
 
 1. Depending on your distro you can install yabridge and its yabridgectl
    companion utility through your distro's package manager or by using
@@ -600,7 +603,8 @@ plugin-specific issues.
   yabridge was built because of Wine bug
   [#53912](https://bugs.winehq.org/show_bug.cgi?id=53912). If you experience
   crashes or freezes, you may want to stick with Wine Staging 7.20. See above
-  for [downgrading instructions](#downgrading-wine).
+  for [downgrading instructions](#downgrading-wine). Wine 8.0-rc1 will not work
+  with yabridge at all.
 
 - Both yabridgectl and yabridge try to diagnose many common issues for you. If
   you're running into crashes or other issues, then try launching your DAW from
