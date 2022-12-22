@@ -823,7 +823,7 @@ The following dependencies are included in the repository as a Meson wrap:
 - Version 3.7.5 of the [VST3 SDK](https://github.com/robbert-vdh/vst3sdk) with
   some [patches](https://github.com/robbert-vdh/yabridge/blob/master/tools/patch-vst3-sdk.sh)
   to allow Winelib compilation
-- Version 1.1.1 of the [CLAP headers](https://github.com/free-audio/clap).
+- Version 1.1.4 of the [CLAP headers](https://github.com/free-audio/clap).
 
 The project can then be compiled with the command below. ~~You can remove or
 change the unity size argument if building takes up too much RAM, or you can

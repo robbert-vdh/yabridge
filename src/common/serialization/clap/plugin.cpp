@@ -48,7 +48,7 @@ Descriptor::Descriptor(const clap_plugin_descriptor_t& original)
       description(original.description ? std::optional(original.description)
                                        : std::nullopt) {
     // The features array is stored as an envp-style null terminated array
-    const char** orig_features = original.features;
+    const char* const* orig_features = original.features;
     if (orig_features) {
         while (*orig_features) {
             features.push_back(*orig_features);
