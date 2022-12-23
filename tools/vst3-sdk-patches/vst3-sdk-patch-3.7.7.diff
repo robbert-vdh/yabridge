@@ -1,0 +1,165 @@
+Submodule pluginterfaces contains modified content
+diff --git a/pluginterfaces/base/fstrdefs.h b/pluginterfaces/base/fstrdefs.h
+index 848e8ee..8ddec09 100644
+--- a/pluginterfaces/base/fstrdefs.h
++++ b/pluginterfaces/base/fstrdefs.h
+@@ -22,6 +22,16 @@
+ /** string methods defines unicode / ASCII */
+ //----------------------------------------------------------------------------
+ 
++// We can use most of the VST3 SDK's Windows UTF-16 functionality by just
++// creating aliases for equivalent Linux functions
++#if __WINE__
++#define wcsicmp wcscasecmp
++#define wcsnicmp wcsncasecmp
++#define _vsnwprintf vswprintf
++#define stricmp	strcasecmp
++#define strnicmp strncasecmp
++#endif
++
+ // 16 bit string operations
+ #if SMTG_CPP11	// if c++11 unicode string literals
+ 	#define SMTG_CPP11_CAT_PRIVATE_DONT_USE(a,b)			a ## b
+diff --git a/pluginterfaces/base/ftypes.h b/pluginterfaces/base/ftypes.h
+index 133dbba..33ecae3 100644
+--- a/pluginterfaces/base/ftypes.h
++++ b/pluginterfaces/base/ftypes.h
+@@ -154,7 +154,7 @@ namespace Steinberg
+ // always inline macros (only when RELEASE is 1)
+ //----------------------------------------------------------------------------
+ #if RELEASE
+-    #if SMTG_OS_MACOS || SMTG_OS_LINUX || defined(__MINGW32__)
++    #if SMTG_OS_MACOS || SMTG_OS_LINUX || defined(__WINE__)
+ 		#define SMTG_ALWAYS_INLINE	__inline__ __attribute__((__always_inline__))
+ 		#define SMTG_NEVER_INLINE __attribute__((noinline))
+ 	#elif SMTG_OS_WINDOWS
+diff --git a/pluginterfaces/base/ustring.cpp b/pluginterfaces/base/ustring.cpp
+index 24a412f..8e631c9 100644
+--- a/pluginterfaces/base/ustring.cpp
++++ b/pluginterfaces/base/ustring.cpp
+@@ -38,6 +38,10 @@
+ 
+ #endif
+ 
++#ifdef __WINE__
++#include <wchar.h>
++#endif
++
+ //------------------------------------------------------------------------
+ namespace Steinberg {
+ 
+@@ -173,7 +177,7 @@ bool UString::scanFloat (double& value) const
+ bool UString::printFloat (double value, int32 precision)
+ {
+ #if SMTG_OS_WINDOWS
+-	return swprintf ((wchar_t*)thisBuffer, L"%.*lf", precision, value) != -1;
++	return swprintf ((wchar_t*)thisBuffer, thisSize, L"%.*lf", precision, value) != -1;
+ #elif SMTG_OS_MACOS
+ 	bool result = false;
+ 	CFStringRef cfStr = CFStringCreateWithFormat (0, 0, CFSTR("%.*lf"), precision, value);
+@@ -238,7 +242,7 @@ bool UString::scanInt (int64& value) const
+ bool UString::printInt (int64 value)
+ {
+ #if SMTG_OS_WINDOWS
+-	return swprintf ((wchar_t*)thisBuffer, L"%I64d", value) != -1;
++	return swprintf ((wchar_t*)thisBuffer, thisSize, L"%I64d", value) != -1;
+ 
+ #elif SMTG_OS_MACOS
+ 	CFStringRef cfStr = CFStringCreateWithFormat (0, 0, CFSTR("%lld"), value);
+Submodule public.sdk contains modified content
+diff --git a/public.sdk/source/common/systemclipboard_win32.cpp b/public.sdk/source/common/systemclipboard_win32.cpp
+index c5cb2b8..2ee3d65 100644
+--- a/public.sdk/source/common/systemclipboard_win32.cpp
++++ b/public.sdk/source/common/systemclipboard_win32.cpp
+@@ -111,7 +111,7 @@ bool copyTextToClipboard (const std::string& text)
+ 	{
+ 		if (auto* data = static_cast<WCHAR*> (GlobalLock (memory)))
+ 		{
+-#if defined(__MINGW32__)
++#if defined(__WINE__)
+ 			memcpy (data, wideStr.data (), byteSize);
+ #else
+ 			memcpy_s (data, byteSize, wideStr.data (), byteSize);
+diff --git a/public.sdk/source/vst/hosting/module_win32.cpp b/public.sdk/source/vst/hosting/module_win32.cpp
+index 2ba9319..d764a4c 100644
+--- a/public.sdk/source/vst/hosting/module_win32.cpp
++++ b/public.sdk/source/vst/hosting/module_win32.cpp
+@@ -44,35 +44,10 @@
+ #include <algorithm>
+ #include <iostream>
+ 
+-#if SMTG_CPP17
+-
+-#if __has_include(<filesystem>)
+-#define USE_FILESYSTEM 1
+-#elif __has_include(<experimental/filesystem>)
+-#define USE_FILESYSTEM 0
+-#endif
+-
+-#else // !SMTG_CPP17
+-
+-#define USE_FILESYSTEM 0
+-
+-#endif // SMTG_CPP17
+-
+-#if USE_FILESYSTEM == 1
+-
+-#include <filesystem>
+-namespace filesystem = std::filesystem;
+-
+-#else // USE_FILESYSTEM == 0
+-
+-// The <experimental/filesystem> header is deprecated. It is superseded by the C++17 <filesystem>
+-// header. You can define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING to silence the
+-// warning, otherwise the build will fail in VS2019 16.3.0
+-#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
+-#include <experimental/filesystem>
+-namespace filesystem = std::experimental::filesystem;
+-
+-#endif // USE_FILESYSTEM
++// `std::filesystem` doesn't work correctly with wineg++, resulting in weird
++// memory errors. This library is a drop-in replacement.
++#include <ghc/filesystem.hpp>
++namespace filesystem = ghc::filesystem;
+ 
+ #pragma comment(lib, "Shell32")
+ 
+@@ -405,13 +380,13 @@ void findFilesWithExt (const filesystem::path& path, const std::string& ext,
+ 				filesystem::path result;
+ 				if (checkVST3Package (p, &result))
+ 				{
+-					pathList.push_back (result.generic_u8string ());
++					pathList.push_back (result.generic_string ());
+ 					continue;
+ 				}
+ 				findFilesWithExt (cp, ext, pathList, recursive);
+ 			}
+ 			else
+-				pathList.push_back (cp.generic_u8string ());
++				pathList.push_back (cp.generic_string ());
+ 		}
+ 		else if (recursive)
+ 		{
+@@ -431,18 +406,18 @@ void findFilesWithExt (const filesystem::path& path, const std::string& ext,
+ 							filesystem::path result;
+ 							if (checkVST3Package (*resolvedLink, &result))
+ 							{
+-								pathList.push_back (result.generic_u8string ());
++								pathList.push_back (result.generic_string ());
+ 								continue;
+ 							}
+ 							findFilesWithExt (*resolvedLink, ext, pathList, recursive);
+ 						}
+ 						else
+-							pathList.push_back (resolvedLink->generic_u8string ());
++							pathList.push_back (resolvedLink->generic_string ());
+ 					}
+ 					else if (filesystem::is_directory (*resolvedLink))
+ 					{
+-						const auto& str = resolvedLink->generic_u8string ();
+-						if (cp.generic_u8string ().compare (0, str.size (), str.data (),
++						const auto& str = resolvedLink->generic_string ();
++						if (cp.generic_string ().compare (0, str.size (), str.data (),
+ 						                                    str.size ()) != 0)
+ 							findFilesWithExt (*resolvedLink, ext, pathList, recursive);
+ 					}

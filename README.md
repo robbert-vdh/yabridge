@@ -820,7 +820,7 @@ The following dependencies are included in the repository as a Meson wrap:
 - [function2](https://github.com/Naios/function2)
 - [`ghc::filesystem`](https://github.com/gulrak/filesystem)
 - [tomlplusplus](https://github.com/marzer/tomlplusplus)
-- Version 3.7.5 of the [VST3 SDK](https://github.com/robbert-vdh/vst3sdk) with
+- Version 3.7.7 of the [VST3 SDK](https://github.com/robbert-vdh/vst3sdk) with
   some [patches](https://github.com/robbert-vdh/yabridge/blob/master/tools/patch-vst3-sdk.sh)
   to allow Winelib compilation
 - Version 1.1.4 of the [CLAP headers](https://github.com/free-audio/clap).
