@@ -11,6 +11,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Packaging notes
 
 - The CLAP dependency has been updated to version 1.1.4.
+- The `patch-vst3-sdk.sh` script now applies a handwritten diff to the SDK
+  instead of patching the SDK using sed. This makes it easier to use older (but
+  still API-compatible) VST3 SDK versions with yabridge and it makes the
+  patching less brittle. The patches can be found in `tools/vst3-sdk-patches`.
 
 ## [5.0.2] - 2022-11-28
 

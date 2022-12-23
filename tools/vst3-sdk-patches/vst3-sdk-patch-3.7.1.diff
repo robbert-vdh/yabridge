@@ -1,0 +1,669 @@
+Submodule base contains modified content
+diff --git a/base/source/fdebug.cpp b/base/source/fdebug.cpp
+index 496d75c..594e17e 100644
+--- a/base/source/fdebug.cpp
++++ b/base/source/fdebug.cpp
+@@ -52,9 +52,9 @@
+ #if _MSC_VER
+ #include <intrin.h>
+ #endif
+-#include <Windows.h>
+-#define vsnprintf _vsnprintf
+-#define snprintf _snprintf
++#include <windows.h>
++#define vsnprintf vsnprintf
++#define snprintf snprintf
+ 
+ #elif SMTG_OS_MACOS
+ #include <errno.h>
+diff --git a/base/source/fdynlib.cpp b/base/source/fdynlib.cpp
+index 2702e12..50bf04e 100644
+--- a/base/source/fdynlib.cpp
++++ b/base/source/fdynlib.cpp
+@@ -40,7 +40,7 @@
+ #include "base/source/fstring.h"
+ 
+ #if SMTG_OS_WINDOWS
+-#include <Windows.h>
++#include <windows.h>
+ 
+ #elif SMTG_OS_MACOS
+ #include <mach-o/dyld.h>
+diff --git a/base/source/fstring.cpp b/base/source/fstring.cpp
+index 11b69eb..5fbdb4f 100644
+--- a/base/source/fstring.cpp
++++ b/base/source/fstring.cpp
+@@ -46,8 +46,8 @@
+ #include <cstdarg>
+ #include <utility>
+ 
+-#if SMTG_OS_WINDOWS
+-#include <Windows.h>
++#if 0
++#include <windows.h>
+ #ifdef _MSC_VER
+ #pragma warning (disable : 4244)
+ #pragma warning (disable : 4267)
+@@ -62,7 +62,7 @@
+ 
+ #endif // DEVELOPMENT
+ #endif // _MSC_VER
+-#endif // SMTG_OS_WINDOWS
++#endif // 0
+ 
+ #ifndef kPrintfBufferSize
+ #define kPrintfBufferSize 4096
+@@ -201,7 +201,7 @@ static bool fromCFStringRef (Steinberg::char8* dest, Steinberg::int32 destSize,
+ }
+ #endif // SMTG_OS_MACOS
+ 
+-#if SMTG_OS_WINDOWS
++#if 0
+ #define stricmp16 wcsicmp
+ #define strnicmp16 wcsnicmp
+ #define strrchr16 wcsrchr
+@@ -231,7 +231,7 @@ static bool fromCFStringRef (Steinberg::char8* dest, Steinberg::int32 destSize,
+ #define wtol _wtol
+ #define wtof _wtof
+ 
+-#elif SMTG_OS_LINUX
++#elif 1
+ #include <codecvt>
+ #include <locale>
+ #include <cstring>
+@@ -240,8 +240,16 @@ static bool fromCFStringRef (Steinberg::char8* dest, Steinberg::int32 destSize,
+ #include <cassert>
+ #include <wchar.h>
+ 
+-using ConverterFacet = std::codecvt_utf8_utf16<char16_t>;
+-using Converter = std::wstring_convert<ConverterFacet, char16_t>;
++#ifdef __WINE__
++    using ConverterFacet = std::codecvt_utf8_utf16<wchar_t>;
++#else
++    using ConverterFacet = std::codecvt_utf8_utf16<char16_t>;
++#endif
++#ifdef __WINE__
++    using Converter = std::wstring_convert<ConverterFacet, wchar_t>;
++#else
++    using Converter = std::wstring_convert<ConverterFacet, char16_t>;
++#endif
+ 
+ //------------------------------------------------------------------------
+ static ConverterFacet& converterFacet ()
+@@ -417,7 +425,7 @@ static inline Steinberg::int32 sprintf16 (Steinberg::char16* str, const Steinber
+ 	return vsnwprintf (str, -1, format, marker);
+ }
+ 
+-#endif // SMTG_OS_LINUX
++#endif // 1
+ 
+ /*
+ UTF-8                EF BB BF 
+@@ -1569,7 +1577,7 @@ bool ConstString::scanFloat (double& value, uint32 offset, bool scanToEnd) const
+ //-----------------------------------------------------------------------------
+ char16 ConstString::toLower (char16 c)
+ {
+-	#if SMTG_OS_WINDOWS
++	#if 0
+ 		WCHAR temp[2] = {c, 0};
+         ::CharLowerW (temp);
+         return temp[0];
+@@ -1586,7 +1594,7 @@ char16 ConstString::toLower (char16 c)
+ 				return characters[0];
+ 		}
+ 		return c;
+-	#elif SMTG_OS_LINUX
++	#elif 1
+ 	#warning DEPRECATED No Linux implementation
+ 	assert(false && "DEPRECATED No Linux implementation");
+ 		return c;
+@@ -1598,7 +1606,7 @@ char16 ConstString::toLower (char16 c)
+ //-----------------------------------------------------------------------------
+ char16 ConstString::toUpper (char16 c)
+ {
+-	#if SMTG_OS_WINDOWS
++	#if 0
+ 		WCHAR temp[2] = {c, 0};
+         ::CharUpperW (temp);
+         return temp[0];
+@@ -1615,7 +1623,7 @@ char16 ConstString::toUpper (char16 c)
+ 				return characters[0];
+ 		}
+ 		return c;
+-    #elif SMTG_OS_LINUX
++    #elif 1
+ 	#warning DEPRECATED No Linux implementation
+ 	assert(false && "DEPRECATED No Linux implementation");
+ 		return c;
+@@ -1629,7 +1637,7 @@ char8 ConstString::toLower (char8 c)
+ {
+ 	if ((c >= 'A') && (c <= 'Z'))
+ 		return c + ('a' - 'A');
+-	#if SMTG_OS_WINDOWS
++	#if 0
+ 		CHAR temp[2] = {c, 0};
+         ::CharLowerA (temp);
+         return temp[0];
+@@ -1643,7 +1651,7 @@ char8 ConstString::toUpper (char8 c)
+ {
+ 	if ((c >= 'a') && (c <= 'z'))
+ 		return c - ('a' - 'A');
+-	#if SMTG_OS_WINDOWS
++	#if 0
+ 		CHAR temp[2] = {c, 0};
+         ::CharUpperA (temp);
+         return temp[0];
+@@ -1870,7 +1878,7 @@ int32 ConstString::multiByteToWideString (char16* dest, const char8* source, int
+ 		return 0;
+ 	}
+ 	int32 result = 0;
+-#if SMTG_OS_WINDOWS
++#if 0
+ 	result = MultiByteToWideChar (sourceCodePage, MB_ERR_INVALID_CHARS, source, -1, dest, charCount);
+ #endif
+ 
+@@ -1893,7 +1901,7 @@ int32 ConstString::multiByteToWideString (char16* dest, const char8* source, int
+ 	}
+ #endif
+ 
+-#if SMTG_OS_LINUX
++#if 1
+ 	if (sourceCodePage == kCP_ANSI || sourceCodePage == kCP_US_ASCII || sourceCodePage == kCP_Utf8)
+ 	{
+ 		if (dest == nullptr)
+@@ -1928,7 +1936,7 @@ int32 ConstString::multiByteToWideString (char16* dest, const char8* source, int
+ //-----------------------------------------------------------------------------
+ int32 ConstString::wideStringToMultiByte (char8* dest, const char16* wideString, int32 charCount, uint32 destCodePage)
+ {
+-#if SMTG_OS_WINDOWS
++#if 0
+ 	return WideCharToMultiByte (destCodePage, 0, wideString, -1, dest, charCount, 0, 0);
+ 
+ #elif SMTG_OS_MACOS
+@@ -1952,7 +1960,7 @@ int32 ConstString::wideStringToMultiByte (char8* dest, const char16* wideString,
+ 	}
+ 	return result;
+ 
+-#elif SMTG_OS_LINUX
++#elif 1
+ 	int32 result = 0;
+ 	if (destCodePage == kCP_Utf8)
+ 	{
+@@ -2015,7 +2023,7 @@ bool ConstString::isNormalized (UnicodeNormalization n)
+ 	if (isWide == false)
+ 		return false;
+ 
+-#if SMTG_OS_WINDOWS
++#if 0
+ #ifdef UNICODE
+ 	if (n != kUnicodeNormC)
+ 		return false;
+@@ -2273,7 +2281,7 @@ bool String::normalize (UnicodeNormalization n)
+ 	if (buffer16 == 0)
+ 		return true;
+ 
+-#if SMTG_OS_WINDOWS
++#if 0
+ #ifdef UNICODE
+ 	if (n != kUnicodeNormC)
+ 		return false;
+diff --git a/base/source/timer.cpp b/base/source/timer.cpp
+index a3559ac..bc42431 100644
+--- a/base/source/timer.cpp
++++ b/base/source/timer.cpp
+@@ -202,7 +202,7 @@ Timer* Timer::create (ITimerCallback* callback, uint32 milliseconds)
+ 
+ #elif SMTG_OS_WINDOWS
+ 
+-#include <Windows.h>
++#include <windows.h>
+ #include <algorithm>
+ #include <list>
+ 
+diff --git a/base/thread/source/fcondition.cpp b/base/thread/source/fcondition.cpp
+index 9e61153..6c1815f 100644
+--- a/base/thread/source/fcondition.cpp
++++ b/base/thread/source/fcondition.cpp
+@@ -78,7 +78,7 @@ extern "C" {
+ #include <sys/time.h>
+ //------------------------------------------------------------------------
+ #elif SMTG_OS_WINDOWS
+-#include <Windows.h>
++#include <windows.h>
+ #endif
+ 
+ namespace Steinberg {
+diff --git a/base/thread/source/flock.cpp b/base/thread/source/flock.cpp
+index 98fdf12..d92055d 100644
+--- a/base/thread/source/flock.cpp
++++ b/base/thread/source/flock.cpp
+@@ -50,7 +50,7 @@
+ #define _WIN32_WINNT WINVER
+ #endif
+ 
+-#include <Windows.h>
++#include <windows.h>
+ #include <objbase.h>
+ #define INIT_CS(cs) \
+ 	InitializeCriticalSection ((LPCRITICAL_SECTION)&cs);
+Submodule pluginterfaces contains modified content
+diff --git a/pluginterfaces/base/fstrdefs.h b/pluginterfaces/base/fstrdefs.h
+index 00eaa1d..7370a6d 100644
+--- a/pluginterfaces/base/fstrdefs.h
++++ b/pluginterfaces/base/fstrdefs.h
+@@ -25,7 +25,7 @@
+ // 16 bit string operations
+ #if SMTG_CPP11	// if c++11 unicode string literals
+ 	#define SMTG_CPP11_CAT_PRIVATE_DONT_USE(a,b)			a ## b
+-	#if SMTG_OS_WINDOWS
++	#if __WINE__
+ 		#define STR16(x) SMTG_CPP11_CAT_PRIVATE_DONT_USE(L,x)
+ 	#else
+ 		#define STR16(x) SMTG_CPP11_CAT_PRIVATE_DONT_USE(u,x)
+@@ -47,11 +47,11 @@
+ #define str8BufferSize(buffer) (sizeof(buffer)/sizeof(Steinberg::char8))
+ #define str16BufferSize(buffer) (sizeof(buffer)/sizeof(Steinberg::char16))
+ 
+-#if SMTG_OS_WINDOWS
++#if 0
+ #define FORMAT_INT64A "I64d"
+ #define FORMAT_UINT64A "I64u"
+ 
+-#elif SMTG_OS_MACOS || SMTG_OS_LINUX
++#elif SMTG_OS_MACOS || 1
+ #define FORMAT_INT64A  "lld"
+ #define FORMAT_UINT64A "llu"
+ #define stricmp		strcasecmp
+@@ -73,13 +73,13 @@
+ //----------------------------------------------------------------------------
+ // newline
+ //----------------------------------------------------------------------------
+-#if SMTG_OS_WINDOWS
++#if 0
+ #define ENDLINE_A   "\r\n"
+ #define ENDLINE_W   STR ("\r\n")
+ #elif SMTG_OS_MACOS
+ #define ENDLINE_A   "\r"
+ #define ENDLINE_W   STR ("\r")
+-#elif SMTG_OS_LINUX
++#elif 1
+ #define ENDLINE_A   "\n"
+ #define ENDLINE_W   STR ("\n")
+ #endif
+@@ -90,7 +90,7 @@
+ #define ENDLINE ENDLINE_A
+ #endif
+ 
+-#if SMTG_OS_WINDOWS && !defined(__GNUC__) && defined(_MSC_VER) && (_MSC_VER < 1900)
++#if 0 && !defined(__GNUC__) && defined(_MSC_VER) && (_MSC_VER < 1900)
+ #define stricmp _stricmp
+ #define strnicmp _strnicmp
+ #define snprintf _snprintf
+diff --git a/pluginterfaces/base/ftypes.h b/pluginterfaces/base/ftypes.h
+index 1f95bd1..826f311 100644
+--- a/pluginterfaces/base/ftypes.h
++++ b/pluginterfaces/base/ftypes.h
+@@ -93,7 +93,7 @@ namespace Steinberg
+ 	typedef char char8;
+ #ifdef _NATIVE_WCHAR_T_DEFINED
+ 	typedef __wchar_t char16;
+-#elif defined(__MINGW32__)
++#elif defined(__WINE__)
+ 	typedef wchar_t char16;
+ #elif SMTG_CPP11
+ 	typedef char16_t char16;
+@@ -172,7 +172,7 @@ namespace Steinberg
+ // always inline macros (only when RELEASE is 1)
+ //----------------------------------------------------------------------------
+ #if RELEASE
+-    #if SMTG_OS_MACOS || SMTG_OS_LINUX || defined(__MINGW32__)
++    #if SMTG_OS_MACOS || SMTG_OS_LINUX || defined(__WINE__)
+ 		#define SMTG_ALWAYS_INLINE	__inline__ __attribute__((__always_inline__))
+ 		#define SMTG_NEVER_INLINE __attribute__((noinline))
+ 	#elif SMTG_OS_WINDOWS
+diff --git a/pluginterfaces/base/ustring.cpp b/pluginterfaces/base/ustring.cpp
+index 24a412f..1113642 100644
+--- a/pluginterfaces/base/ustring.cpp
++++ b/pluginterfaces/base/ustring.cpp
+@@ -16,7 +16,7 @@
+ 
+ #include "ustring.h"
+ 
+-#if SMTG_OS_WINDOWS
++#if 0
+ #include <cstdio>
+ 
+ #ifdef _MSC_VER
+@@ -26,7 +26,7 @@
+ #elif SMTG_OS_MACOS
+ #include <CoreFoundation/CoreFoundation.h>
+ 
+-#elif SMTG_OS_LINUX
++#elif 1
+ #include <cstring>
+ #include <string>
+ #include <codecvt>
+@@ -42,12 +42,16 @@
+ namespace Steinberg {
+ 
+ //------------------------------------------------------------------------
+-#if SMTG_OS_LINUX
++#if 1
+ 
+ //------------------------------------------------------------------------
+ namespace {
+ 
+-using Converter = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>;
++#ifdef __WINE__
++    using Converter = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>;
++#else
++    using Converter = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>;
++#endif
+ 
+ //------------------------------------------------------------------------
+ Converter& converter ()
+@@ -60,7 +64,7 @@ Converter& converter ()
+ } // anonymous
+ 
+ //------------------------------------------------------------------------
+-#endif // SMTG_OS_LINUX
++#endif // 1
+ 
+ //------------------------------------------------------------------------
+ /** Copy strings of different character width. */
+@@ -145,7 +149,7 @@ const UString& UString::toAscii (char* dst, int32 dstSize) const
+ //------------------------------------------------------------------------
+ bool UString::scanFloat (double& value) const
+ {
+-#if SMTG_OS_WINDOWS
++#if 0
+ 	return swscanf ((const wchar_t*)thisBuffer, L"%lf", &value) != -1;
+ 
+ #elif TARGET_API_MAC_CARBON
+@@ -158,7 +162,7 @@ bool UString::scanFloat (double& value) const
+ 	}
+ 	return false;
+ 
+-#elif SMTG_OS_LINUX
++#elif 1
+ 	auto str = converter ().to_bytes (thisBuffer);
+ 	return sscanf (str.data (), "%lf", &value) == 1;
+ 
+@@ -172,7 +176,7 @@ bool UString::scanFloat (double& value) const
+ //------------------------------------------------------------------------
+ bool UString::printFloat (double value, int32 precision)
+ {
+-#if SMTG_OS_WINDOWS
++#if 0
+ 	return swprintf ((wchar_t*)thisBuffer, L"%.*lf", precision, value) != -1;
+ #elif SMTG_OS_MACOS
+ 	bool result = false;
+@@ -186,7 +190,7 @@ bool UString::printFloat (double value, int32 precision)
+ 		return true;
+ 	}
+ 	return result;
+-#elif SMTG_OS_LINUX
++#elif 1
+ 	auto utf8Buffer = reinterpret_cast<char*> (thisBuffer);
+ 	auto len = snprintf (utf8Buffer, thisSize, "%.*lf", precision, value);
+ 	if (len > 0)
+@@ -210,7 +214,7 @@ bool UString::printFloat (double value, int32 precision)
+ //------------------------------------------------------------------------
+ bool UString::scanInt (int64& value) const
+ {
+-#if SMTG_OS_WINDOWS
++#if 0
+ 	return swscanf ((const wchar_t*)thisBuffer, L"%I64d", &value) != -1;
+ 
+ #elif SMTG_OS_MACOS
+@@ -223,7 +227,7 @@ bool UString::scanInt (int64& value) const
+ 	}
+ 	return false;
+ 
+-#elif SMTG_OS_LINUX
++#elif 1
+ 	auto str = converter ().to_bytes (thisBuffer);
+ 	return sscanf (str.data (), "%lld", &value) == 1;
+ 
+@@ -237,7 +241,7 @@ bool UString::scanInt (int64& value) const
+ //------------------------------------------------------------------------
+ bool UString::printInt (int64 value)
+ {
+-#if SMTG_OS_WINDOWS
++#if 0
+ 	return swprintf ((wchar_t*)thisBuffer, L"%I64d", value) != -1;
+ 
+ #elif SMTG_OS_MACOS
+@@ -251,7 +255,7 @@ bool UString::printInt (int64 value)
+ 		return true;
+ 	}
+ 	return false;
+-#elif SMTG_OS_LINUX
++#elif 1
+ 	auto utf8Buffer = reinterpret_cast<char*> (thisBuffer);
+ 	auto len = snprintf (utf8Buffer, thisSize, "%lld", value);
+ 	if (len > 0)
+Submodule public.sdk contains modified content
+diff --git a/public.sdk/samples/vst-hosting/editorhost/source/platform/win32/platform.cpp b/public.sdk/samples/vst-hosting/editorhost/source/platform/win32/platform.cpp
+index 510f2c0..cdf90c4 100644
+--- a/public.sdk/samples/vst-hosting/editorhost/source/platform/win32/platform.cpp
++++ b/public.sdk/samples/vst-hosting/editorhost/source/platform/win32/platform.cpp
+@@ -40,7 +40,7 @@
+ #include "public.sdk/samples/vst-hosting/editorhost/source/platform/win32/window.h"
+ #include "public.sdk/source/vst/utility/stringconvert.h"
+ 
+-#include <Windows.h>
++#include <windows.h>
+ #include <string>
+ #include <vector>
+ #include <algorithm>
+diff --git a/public.sdk/samples/vst-hosting/editorhost/source/platform/win32/window.h b/public.sdk/samples/vst-hosting/editorhost/source/platform/win32/window.h
+index ae6512f..b9c5933 100644
+--- a/public.sdk/samples/vst-hosting/editorhost/source/platform/win32/window.h
++++ b/public.sdk/samples/vst-hosting/editorhost/source/platform/win32/window.h
+@@ -39,7 +39,7 @@
+ 
+ #include "public.sdk/samples/vst-hosting/editorhost/source/platform/iwindow.h"
+ #include "public.sdk/source/vst/utility/optional.h"
+-#include <Windows.h>
++#include <windows.h>
+ #include <vector>
+ 
+ //------------------------------------------------------------------------
+diff --git a/public.sdk/samples/vst-hosting/validator/source/validator.cpp b/public.sdk/samples/vst-hosting/validator/source/validator.cpp
+index aa19e60..2c7aa23 100644
+--- a/public.sdk/samples/vst-hosting/validator/source/validator.cpp
++++ b/public.sdk/samples/vst-hosting/validator/source/validator.cpp
+@@ -48,7 +48,7 @@
+ #include "pluginterfaces/vst/ivstunits.h"
+ 
+ #if SMTG_OS_WINDOWS
+-#include <Windows.h>
++#include <windows.h>
+ #include <conio.h>
+ #endif
+ 
+diff --git a/public.sdk/source/common/openurl.cpp b/public.sdk/source/common/openurl.cpp
+index 4bdda99..36f08f3 100644
+--- a/public.sdk/source/common/openurl.cpp
++++ b/public.sdk/source/common/openurl.cpp
+@@ -39,7 +39,7 @@
+ #include "pluginterfaces/base/ftypes.h"
+ 
+ #if SMTG_OS_WINDOWS
+-#include <Windows.h>
++#include <windows.h>
+ #else
+ #include <cstdlib>
+ #endif
+diff --git a/public.sdk/source/common/systemclipboard_win32.cpp b/public.sdk/source/common/systemclipboard_win32.cpp
+index 6ffb7f6..a6dad8e 100644
+--- a/public.sdk/source/common/systemclipboard_win32.cpp
++++ b/public.sdk/source/common/systemclipboard_win32.cpp
+@@ -35,7 +35,7 @@
+ #include "pluginterfaces/base/fplatform.h"
+ 
+ #if SMTG_OS_WINDOWS
+-#include <Windows.h>
++#include <windows.h>
+ #include <vector>
+ 
+ //------------------------------------------------------------------------
+@@ -111,7 +111,7 @@ bool copyTextToClipboard (const std::string& text)
+ 	{
+ 		if (auto* data = static_cast<WCHAR*> (GlobalLock (memory)))
+ 		{
+-#if defined(__MINGW32__)
++#if defined(__WINE__)
+ 			memcpy (data, wideStr.data (), byteSize);
+ #else
+ 			memcpy_s (data, byteSize, wideStr.data (), byteSize);
+diff --git a/public.sdk/source/common/threadchecker_win32.cpp b/public.sdk/source/common/threadchecker_win32.cpp
+index 0a43df0..4664b73 100644
+--- a/public.sdk/source/common/threadchecker_win32.cpp
++++ b/public.sdk/source/common/threadchecker_win32.cpp
+@@ -38,7 +38,7 @@
+ 
+ #if SMTG_OS_WINDOWS
+ 
+-#include <Windows.h>
++#include <windows.h>
+ 
+ //------------------------------------------------------------------------
+ namespace Steinberg {
+diff --git a/public.sdk/source/main/dllmain.cpp b/public.sdk/source/main/dllmain.cpp
+index 937e3c7..3e87d54 100644
+--- a/public.sdk/source/main/dllmain.cpp
++++ b/public.sdk/source/main/dllmain.cpp
+@@ -37,7 +37,7 @@
+ 
+ #include "pluginterfaces/base/ftypes.h"
+ 
+-#include <Windows.h>
++#include <windows.h>
+ 
+ #if defined(_MSC_VER) && defined(DEVELOPMENT)
+ #include <crtdbg.h>
+diff --git a/public.sdk/source/vst/aaxwrapper/aaxwrapper.cpp b/public.sdk/source/vst/aaxwrapper/aaxwrapper.cpp
+index 2b7e323..0e07250 100644
+--- a/public.sdk/source/vst/aaxwrapper/aaxwrapper.cpp
++++ b/public.sdk/source/vst/aaxwrapper/aaxwrapper.cpp
+@@ -77,7 +77,7 @@ static_assert (AAX_SDK_CURRENT_REVISION >= AAX_SDK_2p3p2_REVISION,
+ #endif
+ 
+ #if SMTG_OS_WINDOWS
+-#include <Windows.h>
++#include <windows.h>
+ #define getCurrentThread() ((void*)(size_t)GetCurrentThreadId ())
+ #else
+ #include <pthread.h>
+diff --git a/public.sdk/source/vst/hosting/module_win32.cpp b/public.sdk/source/vst/hosting/module_win32.cpp
+index e41c528..24c35bf 100644
+--- a/public.sdk/source/vst/hosting/module_win32.cpp
++++ b/public.sdk/source/vst/hosting/module_win32.cpp
+@@ -37,21 +37,21 @@
+ #include "../utility/optional.h"
+ #include "../utility/stringconvert.h"
+ #include "module.h"
+-#include <ShlObj.h>
+-#include <Windows.h>
++#include <shlobj.h>
++#include <windows.h>
+ #include <algorithm>
+ #include <iostream>
+ 
+ #if _HAS_CXX17 && defined(_MSC_VER)
+-#include <filesystem>
+-using namespace std;
++#include <boost/filesystem.hpp>
++namespace filesystem = boost::filesystem;
+ #else
+ // The <experimental/filesystem> header is deprecated. It is superseded by the C++17 <filesystem>
+ // header. You can define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING to silence the
+ // warning, otherwise the build will fail in VS2020 16.3.0
+ #define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
+-#include <experimental/filesystem>
+-using namespace std::experimental;
++#include <boost/filesystem.hpp>
++namespace filesystem = boost::filesystem;
+ #endif
+ 
+ #pragma comment(lib, "Shell32")
+@@ -225,7 +225,7 @@ VST3::Optional<filesystem::path> resolveShellLink (const filesystem::path& p)
+ #if USE_OLE
+ 	Ole::instance ();
+ 
+-	IShellLink* shellLink = nullptr;
++	IShellLinkW* shellLink = nullptr;
+ 	if (!SUCCEEDED (CoCreateInstance (CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
+ 	                                  IID_IShellLink, reinterpret_cast<LPVOID*> (&shellLink))))
+ 		return {};
+@@ -235,7 +235,7 @@ VST3::Optional<filesystem::path> resolveShellLink (const filesystem::path& p)
+ 	        shellLink->QueryInterface (IID_IPersistFile, reinterpret_cast<void**> (&persistFile))))
+ 		return {};
+ 
+-	if (!SUCCEEDED (persistFile->Load (p.native ().data (), STGM_READ)))
++	if (!SUCCEEDED (persistFile->Load (p.wstring ().data (), STGM_READ)))
+ 		return {};
+ 
+ 	if (!SUCCEEDED (shellLink->Resolve (nullptr, MAKELONG (SLR_NO_UI, 500))))
+@@ -273,23 +273,23 @@ void findFilesWithExt (const filesystem::path& path, const std::string& ext,
+ 		const auto& cpExt = cp.extension ();
+ 		if (cpExt == ext)
+ 		{
+-			if ((p.status ().type () == filesystem::file_type::directory) ||
++			if ((p.status ().type () == filesystem::file_type::directory_file) ||
+ 			    isFolderSymbolicLink (p))
+ 			{
+ 				filesystem::path finalPath (p);
+ 				if (checkVST3Package (finalPath))
+ 				{
+-					pathList.push_back (finalPath.generic_u8string ());
++					pathList.push_back (finalPath.generic_string ());
+ 					continue;
+ 				}
+ 				findFilesWithExt (cp, ext, pathList, recursive);
+ 			}
+ 			else
+-				pathList.push_back (cp.generic_u8string ());
++				pathList.push_back (cp.generic_string ());
+ 		}
+ 		else if (recursive)
+ 		{
+-			if (p.status ().type () == filesystem::file_type::directory)
++			if (p.status ().type () == filesystem::file_type::directory_file)
+ 			{
+ 				findFilesWithExt (cp, ext, pathList, recursive);
+ 			}
+@@ -305,18 +305,18 @@ void findFilesWithExt (const filesystem::path& path, const std::string& ext,
+ 							filesystem::path finalPath (*resolvedLink);
+ 							if (checkVST3Package (finalPath))
+ 							{
+-								pathList.push_back (finalPath.generic_u8string ());
++								pathList.push_back (finalPath.generic_string ());
+ 								continue;
+ 							}
+ 							findFilesWithExt (*resolvedLink, ext, pathList, recursive);
+ 						}
+ 						else
+-							pathList.push_back (resolvedLink->generic_u8string ());
++							pathList.push_back (resolvedLink->generic_string ());
+ 					}
+ 					else if (filesystem::is_directory (*resolvedLink))
+ 					{
+-						const auto& str = resolvedLink->generic_u8string ();
+-						if (cp.generic_u8string ().compare (0, str.size (), str.data (),
++						const auto& str = resolvedLink->generic_string ();
++						if (cp.generic_string ().compare (0, str.size (), str.data (),
+ 						                                    str.size ()) != 0)
+ 							findFilesWithExt (*resolvedLink, ext, pathList, recursive);
+ 					}
+@@ -406,7 +406,7 @@ Module::SnapshotList Module::getSnapshots (const std::string& modulePath)
+ 	for (auto& png : pngList)
+ 	{
+ 		filesystem::path p (png);
+-		auto filename = p.filename ().generic_u8string ();
++		auto filename = p.filename ().generic_string ();
+ 		auto uid = Snapshot::decodeUID (filename);
+ 		if (!uid)
+ 			continue;
