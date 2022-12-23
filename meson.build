@@ -151,7 +151,7 @@ endif
 #
 # https://bugs.winehq.org/show_bug.cgi?id=49138
 wine_version = run_command(
-  'sh', '-c', '''wine --version | grep --only-matching -E '[0-9]+\.[0-9]+(rc[0-9]+)?' | head -n1''',
+  'sh', '-c', '''wine --version | grep --only-matching -E '[0-9]+\.[0-9]+(-?rc[0-9]+)?' | head -n1''',
   check : false
 )
 if wine_version.returncode() == 0
