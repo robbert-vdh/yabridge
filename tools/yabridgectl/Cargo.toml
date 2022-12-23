@@ -2,7 +2,7 @@
 name = "yabridgectl"
 # This version is linked to yabridge's version for clarity's sake and because
 # there's not a lot going on here
-version = "5.0.2"
+version = "5.0.3"
 authors = ["Robbert van der Helm <mail@robbertvanderhelm.nl>"]
 edition = "2021"
 description = "Optional utility to help set up yabridge"
