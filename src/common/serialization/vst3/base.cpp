@@ -66,9 +66,16 @@ const Steinberg::Vst::TChar* u16string_to_tchar_pointer(
 #endif
 }
 
+// GCC 12.2's `std::to_array()` throws spurious array access out of bounds
+// warnings
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+
 WineUID::WineUID() noexcept {}
 WineUID::WineUID(const Steinberg::TUID& tuid) noexcept
     : uid_(std::to_array(tuid)) {}
+
+#pragma GCC diagnostic pop
 
 ArrayUID WineUID::get_native_uid() const noexcept {
     // We need to shuffle the first 8 bytes around to convert between the
