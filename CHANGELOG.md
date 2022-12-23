@@ -8,6 +8,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+# Changed
+
+- The yabridge 5.0.3 binaries up on the GitHub releases page (and in the
+  [`yabridge-bin`](https://aur.archlinux.org/packages/yabridge-bin) AUR package)
+  now work again with every Wine version after Wine 5.7, including 7.21, 7.22,
+  and the 8.0 release candidates. All workarounds for Wine 7.21 and 7.22 have
+  been reverted. See Wine bug
+  [#53912](https://bugs.winehq.org/show_bug.cgi?id=53912) for more information.
+
 ### Packaging notes
 
 - The VST3 dependency has been updated to target version 3.7.7 with tag
