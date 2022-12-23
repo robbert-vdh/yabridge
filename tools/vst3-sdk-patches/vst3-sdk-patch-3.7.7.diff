@@ -1,6 +1,6 @@
 Submodule pluginterfaces contains modified content
 diff --git a/pluginterfaces/base/fstrdefs.h b/pluginterfaces/base/fstrdefs.h
-index 848e8ee..8ddec09 100644
+index 848e8ee..8846d31 100644
 --- a/pluginterfaces/base/fstrdefs.h
 +++ b/pluginterfaces/base/fstrdefs.h
 @@ -22,6 +22,16 @@
@@ -81,7 +81,7 @@ index c5cb2b8..2ee3d65 100644
  #else
  			memcpy_s (data, byteSize, wideStr.data (), byteSize);
 diff --git a/public.sdk/source/vst/hosting/module_win32.cpp b/public.sdk/source/vst/hosting/module_win32.cpp
-index 2ba9319..d764a4c 100644
+index 2ba9319..ab6d72a 100644
 --- a/public.sdk/source/vst/hosting/module_win32.cpp
 +++ b/public.sdk/source/vst/hosting/module_win32.cpp
 @@ -44,35 +44,10 @@
@@ -124,6 +124,15 @@ index 2ba9319..d764a4c 100644
  
  #pragma comment(lib, "Shell32")
  
+@@ -320,7 +295,7 @@ VST3::Optional<filesystem::path> resolveShellLink (const filesystem::path& p)
+ #elif USE_OLE
+ 	Ole::instance ();
+ 
+-	IShellLink* shellLink = nullptr;
++	IShellLinkW* shellLink = nullptr;
+ 	if (!SUCCEEDED (CoCreateInstance (CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
+ 	                                  IID_IShellLink, reinterpret_cast<LPVOID*> (&shellLink))))
+ 		return {};
 @@ -405,13 +380,13 @@ void findFilesWithExt (const filesystem::path& path, const std::string& ext,
  				filesystem::path result;
  				if (checkVST3Package (p, &result))
