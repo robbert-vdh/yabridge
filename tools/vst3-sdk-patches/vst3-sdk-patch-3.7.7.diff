@@ -13,7 +13,7 @@ index 848e8ee..8ddec09 100644
 +#define wcsicmp wcscasecmp
 +#define wcsnicmp wcsncasecmp
 +#define _vsnwprintf vswprintf
-+#define stricmp	strcasecmp
++#define stricmp strcasecmp
 +#define strnicmp strncasecmp
 +#endif
 +
