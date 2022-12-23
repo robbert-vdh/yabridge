@@ -825,17 +825,13 @@ The following dependencies are included in the repository as a Meson wrap:
   to allow Winelib compilation
 - Version 1.1.4 of the [CLAP headers](https://github.com/free-audio/clap).
 
-The project can then be compiled with the command below. ~~You can remove or
+The project can then be compiled with the command below. You can remove or
 change the unity size argument if building takes up too much RAM, or you can
 disable unity builds completely by getting rid of `--unity=on` at the cost of
-slightly longer build times.~~ This build command used to contain the
-`--unity=on --unity-size=1000` option to reduce compile times and to allow for
-better optimization. These options have temporarily been removed as they'll
-result in a non-functional yabridge when used with Wine 7.21 and 7.22 due to
-Wine bug [#53912](https://bugs.winehq.org/show_bug.cgi?id=53912).
+slightly longer build times.
 
 ```shell
-meson setup build --buildtype=release --cross-file=cross-wine.conf
+meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000
 ninja -C build
 ```
 
