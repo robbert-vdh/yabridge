@@ -53,28 +53,8 @@ constexpr char mime_text_uri_list_name[] = "text/uri-list";
 constexpr char mime_text_plain_name[] = "text/plain";
 
 // We can cheat by just using the Win32 cursors instead of providing our own
-// FIXME: these used to be loaded as a constant, but Wine 7.21 caused this
-//        static initialization to hang indefinitely:
-//        https://bugs.winehq.org/show_bug.cgi?id=53912
-//        Revert this once Wine 7.21 is old enough that noone uses it anymore.
-// static const HCURSOR dnd_accepted_cursor = LoadCursor(nullptr, IDC_HAND);
-inline HCURSOR dnd_accepted_cursor() {
-    static HCURSOR cursor = nullptr;
-    if (!cursor) {
-        cursor = LoadCursor(nullptr, IDC_HAND);
-    }
-
-    return cursor;
-}
-// static const HCURSOR dnd_denied_cursor = LoadCursor(nullptr, IDC_NO);
-inline HCURSOR dnd_denied_cursor() {
-    static HCURSOR cursor = nullptr;
-    if (!cursor) {
-        cursor = LoadCursor(nullptr, IDC_NO);
-    }
-
-    return cursor;
-}
+static const HCURSOR dnd_accepted_cursor = LoadCursor(nullptr, IDC_HAND);
+static const HCURSOR dnd_denied_cursor = LoadCursor(nullptr, IDC_NO);
 
 /**
  * We're doing a bit of a hybrid between a COM-style reference counted smart
@@ -357,9 +337,9 @@ void WineXdndProxy::run_xdnd_loop() {
             //      off. Would it be better to just not do anything
             //      at all here?
             if (accepts_drop) {
-                SetCursor(dnd_accepted_cursor());
+                SetCursor(dnd_accepted_cursor);
             } else {
-                SetCursor(dnd_denied_cursor());
+                SetCursor(dnd_denied_cursor);
             }
 
             last_window_accepted_status = accepts_drop;

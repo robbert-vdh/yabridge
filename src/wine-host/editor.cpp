@@ -113,21 +113,8 @@ constexpr uint32_t xembed_focus_first = 1;
 
 /**
  * The default arrow cursor used in Windows.
- *
- * FIXME: This used to be loaded as a constant, but Wine 7.21 caused this static
- *        initialization to hang indefinitely:
- *        https://bugs.winehq.org/show_bug.cgi?id=53912
- *        Revert this once Wine 7.21 is old enough that noone uses it anymore.
  */
-// static const HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
-inline HCURSOR arrow_cursor() {
-    static HCURSOR cursor = nullptr;
-    if (!cursor) {
-        cursor = LoadCursor(nullptr, IDC_ARROW);
-    }
-
-    return cursor;
-}
+static const HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
 
 /**
  * Find the the ancestors for the given window. This returns a list of window
@@ -1235,7 +1222,7 @@ LRESULT CALLBACK window_proc(HWND handle,
         //       plugin and keep this as a default.
         case WM_SETCURSOR: {
             if (GetCursor() == nullptr) {
-                SetCursor(arrow_cursor());
+                SetCursor(arrow_cursor);
             }
         } break;
         // NOTE: Needed for our `is_cursor_in_wine_window()` implementation. Our
@@ -1405,7 +1392,7 @@ ATOM get_window_class() noexcept {
         window_class.style = CS_DBLCLKS;
         window_class.lpfnWndProc = window_proc;
         window_class.hInstance = GetModuleHandle(nullptr);
-        window_class.hCursor = arrow_cursor();
+        window_class.hCursor = arrow_cursor;
         window_class.lpszClassName = yabridge_window_class_name;
 
         window_class_handle = RegisterClassEx(&window_class);
