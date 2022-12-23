@@ -17,6 +17,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   instead of patching the SDK using sed. This makes it easier to use older (but
   still API-compatible) VST3 SDK versions with yabridge and it makes the
   patching less brittle. The patches can be found in `tools/vst3-sdk-patches`.
+- Since the workarounds from yabridge 5.0.1 and 5.0.2 have been reverted, the
+  Meson build will now throw an error when trying to build against Wine 7.21,
+  7.22, or 8.0-rc1. Yabridge binaries built against these Wine versions will not
+  work correctly.
+- Yabridge built against Wine 8.0-rc2 will also work with older Wine versions,
+  including the aforementioned ones that previously required workarounds.
+  Yabridge built against older Wine versions will not work with Wine 8.0-rc2 or
+  later.
+- Unity builds can safely be re-enabled again.
 
 ## [5.0.2] - 2022-11-28
 

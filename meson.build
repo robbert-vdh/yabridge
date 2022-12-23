@@ -151,49 +151,51 @@ endif
 #
 # https://bugs.winehq.org/show_bug.cgi?id=49138
 wine_version = run_command(
-  'sh', '-c', '''wine --version | grep --only-matching -E '[0-9]+\.[0-9]+' | head -n1''',
+  'sh', '-c', '''wine --version | grep --only-matching -E '[0-9]+\.[0-9]+(rc[0-9]+)?' | head -n1''',
   check : false
 )
 if wine_version.returncode() == 0
-  message('Targetting Wine @0@'.format(wine_version.stdout()))
-  if wine_version.stdout().version_compare('>=5.7') and \
-     wine_version.stdout().version_compare('<6.0')
+  wine_version = wine_version.stdout()
+  message('Targetting Wine @0@'.format(wine_version))
+
+  # Wine versions below 5.7 will segfault in `CoCreateGuid` which gets called
+  # during static initialization. I'm not exactly sure why this is happening,
+  # but to prevent this from causing more headaches and confusion in the future
+  # we should just immediately error out when building yabridge's VST3 support
+  # with these older Wine versions.
+  if wine_version.version_compare('<5.7') and with_vst3
+    error('Because of a bug in Wine < 5.7\n' +
+          'you cannot build yabridge with VST3 support using these older Wine versions.\n' +
+          'Use the \'-Dvst3=false\' build option to disable VST3 support.\n\n' +
+          'https://github.com/robbert-vdh/yabridge/issues/63#issuecomment-757369645')
+  endif
+  # This version of yabridge will not work when built against Wine 7.21, 7.22,
+  # or 8.0-rc1 because of https://bugs.winehq.org/show_bug.cgi?id=53912. We'll
+  # outright prevent building yabridge with these versions to avoid broken
+  # yabridge builds. If anyone's reading this because you ran into the error
+  # below, either build with Wine 8.0-rc2+, or stick with yabridge 5.0.2 if
+  # you're stuck with Wine 7.22.
+  if wine_version.version_compare('>=7.21') and \
+     wine_version.version_compare('<8.0rc2')
+    error('Building this version of yabridge against Wine ' + wine_version +
+          'would result in nonfunctional binaries. Either build yabridge 5.0.2 ' +
+          'with Wine 7.22, or switch to Wine 8.0-rc2+. Yabridge built with 8.0-rc2+ ' +
+          'will also work with older Wine versions, but yabridge built against older ' +
+          'Wine versions will not work with Wine 7.21+.\n\n' +
+          'https://bugs.winehq.org/show_bug.cgi?id=53912')
+  endif
+
+  if wine_version.version_compare('>=5.7') and \
+     wine_version.version_compare('<6.0')
     message('- Using the cdecl calling convention')
     compiler_options += '-DWINE_USE_CDECL'
   endif
-  if wine_version.stdout().version_compare('<6.23') and with_winedbg
+  if wine_version.version_compare('<6.23') and with_winedbg
     message('- Using legacy winedbg argument quoting')
     compiler_options += '-DWINEDBG_LEGACY_ARGUMENT_QUOTING'
   endif
-  # If the bug is not fixed in time for Wine 7.23, which is probably won't be,
-  # then this conditional won't be effective anymore for already released
-  # yabridge builds. But it may prevent some incorrectly packaged yabridge
-  # builds in the meantime.
-  if wine_version.stdout().version_compare('>=7.21') and \
-     wine_version.stdout().version_compare('<7.23') and \
-     get_option('unity') == 'on'
-    error('This version of Wine contains a bug that may cause yabridge to freeze ' +
-          'or crash on startup when the --unity=true option is enabled. ' +
-          'Remove this error from the meson.build file at your own risk if you ' +
-          'want to keep using unity builds.\n\n' +
-          'https://bugs.winehq.org/show_bug.cgi?id=53912')
-  endif
 else
   warning('Unable to determine the current Wine version')
-endif
-
-# Wine versions below 5.7 will segfault in `CoCreateGuid` which gets called
-# during static initialization. I'm not exactly sure why this is happening, but
-# to prevent this from causing more headaches and confusion in the future we
-# should just immediately error out when building yabridge's VST3 support with
-# these older Wine versions.
-if wine_version.returncode() == 0 and \
-   wine_version.stdout().version_compare('<5.7') and \
-   with_vst3
-  error('Because of a bug in Wine < 5.7\n' +
-        'you cannot build yabridge with VST3 support using these older Wine versions.\n' +
-        'Use the \'-Dvst3=false\' build option to disable VST3 support.\n\n' +
-        'https://github.com/robbert-vdh/yabridge/issues/63#issuecomment-757369645')
 endif
 
 #
