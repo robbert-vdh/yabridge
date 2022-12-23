@@ -8,7 +8,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [5.0.3] - 2022-20-23
 
-# Changed
+### Changed
 
 - The yabridge 5.0.3 binaries up on the GitHub releases page (and in the
   [`yabridge-bin`](https://aur.archlinux.org/packages/yabridge-bin) AUR package)
