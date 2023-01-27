@@ -175,8 +175,11 @@ if wine_version.returncode() == 0
   # yabridge builds. If anyone's reading this because you ran into the error
   # below, either build with Wine 8.0-rc2+, or stick with yabridge 5.0.2 if
   # you're stuck with Wine 7.22.
+  # NOTE: Meson considers 8.0 to be below 8.0rc2, so this third check is also
+  #       needed
   if wine_version.version_compare('>=7.21') and \
-     wine_version.version_compare('<8.0rc2')
+     wine_version.version_compare('<8.0rc2') and \
+     wine_version.version_compare('!=8.0')
     error('Building this version of yabridge against Wine ' + wine_version +
           'would result in nonfunctional binaries. Either build yabridge 5.0.2 ' +
           'with Wine 7.22, or switch to Wine 8.0-rc2+. Yabridge built with 8.0-rc2+ ' +
