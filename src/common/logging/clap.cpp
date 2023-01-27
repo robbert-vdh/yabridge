@@ -54,14 +54,14 @@ void ClapLogger::log_on_main_thread(size_t instance_id) {
 }
 
 bool ClapLogger::log_request(bool is_host_plugin,
-                             const clap::plugin_factory::List&) {
+                             const clap::factory::plugin_factory::List&) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << "clap_plugin_factory::list()";
     });
 }
 
 bool ClapLogger::log_request(bool is_host_plugin,
-                             const clap::plugin_factory::Create& request) {
+                             const clap::factory::plugin_factory::Create& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << "clap_plugin_factory::create(host = <clap_host_t*>, "
                    "plugin_id = \""
@@ -769,7 +769,7 @@ void ClapLogger::log_response(bool is_host_plugin, const Ack&) {
 
 void ClapLogger::log_response(
     bool is_host_plugin,
-    const clap::plugin_factory::ListResponse& response) {
+    const clap::factory::plugin_factory::ListResponse& response) {
     log_response_base(is_host_plugin, [&](auto& message) {
         if (response.descriptors) {
             message << "<clap_plugin_factory* containing "
@@ -782,7 +782,7 @@ void ClapLogger::log_response(
 
 void ClapLogger::log_response(
     bool is_host_plugin,
-    const clap::plugin_factory::CreateResponse& response) {
+    const clap::factory::plugin_factory::CreateResponse& response) {
     log_response_base(is_host_plugin, [&](auto& message) {
         if (response.instance_id) {
             message << "<clap_plugin_t* with instance ID "

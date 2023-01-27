@@ -19,7 +19,7 @@
 #include <codecvt>
 #include <locale>
 
-#include <clap/plugin-factory.h>
+#include <clap/factory/plugin-factory.h>
 
 // Generated inside of the build directory
 #include <version.h>
@@ -183,15 +183,15 @@ void ClapBridge::run() {
                 //        variant without it.
                 return {};
             },
-            [&](const clap::plugin_factory::List&)
-                -> clap::plugin_factory::List::Response {
+            [&](const clap::factory::plugin_factory::List&)
+                -> clap::factory::plugin_factory::List::Response {
                 return main_context_
                     .run_in_context([&]() {
                         plugin_factory_ =
                             static_cast<const clap_plugin_factory_t*>(
                                 entry_->get_factory(CLAP_PLUGIN_FACTORY_ID));
                         if (!plugin_factory_) {
-                            return clap::plugin_factory::ListResponse{
+                            return clap::factory::plugin_factory::ListResponse{
                                 .descriptors = std::nullopt};
                         }
 
@@ -214,13 +214,13 @@ void ClapBridge::run() {
                             descriptors.push_back(*descriptor);
                         }
 
-                        return clap::plugin_factory::ListResponse{
+                        return clap::factory::plugin_factory::ListResponse{
                             .descriptors = descriptors};
                     })
                     .get();
             },
-            [&](clap::plugin_factory::Create& request)
-                -> clap::plugin_factory::Create::Response {
+            [&](clap::factory::plugin_factory::Create& request)
+                -> clap::factory::plugin_factory::Create::Response {
                 return main_context_
                     .run_in_context([&]() {
                         // This assertion should never be hit, but you can never
@@ -241,10 +241,10 @@ void ClapBridge::run() {
                         if (plugin) {
                             register_plugin_instance(plugin,
                                                      std::move(host_proxy));
-                            return clap::plugin_factory::CreateResponse{
+                            return clap::factory::plugin_factory::CreateResponse{
                                 .instance_id = instance_id};
                         } else {
-                            return clap::plugin_factory::CreateResponse{
+                            return clap::factory::plugin_factory::CreateResponse{
                                 .instance_id = std::nullopt};
                         }
                     })

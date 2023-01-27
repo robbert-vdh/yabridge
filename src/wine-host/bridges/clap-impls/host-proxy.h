@@ -37,7 +37,7 @@
 
 #include <asio/steady_timer.hpp>
 
-#include "../../common/serialization/clap/plugin-factory.h"
+#include "../../common/serialization/clap/factory/plugin-factory.h"
 
 // Forward declaration to avoid circular includes
 class ClapBridge;

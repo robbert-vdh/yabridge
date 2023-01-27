@@ -76,8 +76,8 @@ clap_plugin_factory_proxy::plugin_factory_create_plugin(
         return nullptr;
     }
 
-    const clap::plugin_factory::CreateResponse response =
-        self->bridge_.send_main_thread_message(clap::plugin_factory::Create{
+    const clap::factory::plugin_factory::CreateResponse response =
+        self->bridge_.send_main_thread_message(clap::factory::plugin_factory::Create{
             .host = *host, .plugin_id = plugin_id});
     if (response.instance_id) {
         // This plugin proxy is tied to the instance ID created on the Wine

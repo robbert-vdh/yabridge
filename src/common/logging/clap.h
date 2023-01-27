@@ -80,8 +80,8 @@ class ClapLogger {
     // log message for the response together with the request.
 
     // Main thread control messages
-    bool log_request(bool is_host_plugin, const clap::plugin_factory::List&);
-    bool log_request(bool is_host_plugin, const clap::plugin_factory::Create&);
+    bool log_request(bool is_host_plugin, const clap::factory::plugin_factory::List&);
+    bool log_request(bool is_host_plugin, const clap::factory::plugin_factory::Create&);
     bool log_request(bool is_host_plugin, const clap::plugin::Init&);
     bool log_request(bool is_host_plugin, const clap::plugin::Destroy&);
     bool log_request(bool is_host_plugin, const clap::plugin::Activate&);
@@ -207,9 +207,9 @@ class ClapLogger {
     // Main thread control message responses
     void log_response(bool is_host_plugin, const Ack&);
     void log_response(bool is_host_plugin,
-                      const clap::plugin_factory::ListResponse&);
+                      const clap::factory::plugin_factory::ListResponse&);
     void log_response(bool is_host_plugin,
-                      const clap::plugin_factory::CreateResponse&);
+                      const clap::factory::plugin_factory::CreateResponse&);
     void log_response(bool is_host_plugin, const clap::plugin::InitResponse&);
     void log_response(bool is_host_plugin,
                       const clap::plugin::ActivateResponse&);

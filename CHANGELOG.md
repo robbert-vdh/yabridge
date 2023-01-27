@@ -14,6 +14,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   version comparison function considers `8.0` to be a lower version than
   `8.0rc2`.
 
+### Packaging notes
+
+- The CLAP dependency has been updated to target version 1.1.7.
+
 ## [5.0.3] - 2022-12-23
 
 ### Changed

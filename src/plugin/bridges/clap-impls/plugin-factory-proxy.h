@@ -18,7 +18,7 @@
 
 #include <vector>
 
-#include <clap/plugin-factory.h>
+#include <clap/factory/plugin-factory.h>
 
 #include "../../common/serialization/clap/plugin.h"
 
@@ -44,7 +44,7 @@ class clap_plugin_factory_proxy {
 
     /**
      * Construct the plugin factory proxy based on the plugin descriptors
-     * retrieved from a `clap::plugin_factory::ListReponse`.
+     * retrieved from a `clap::factory::plugin_factory::ListReponse`.
      */
     clap_plugin_factory_proxy(
         ClapPluginBridge& bridge,

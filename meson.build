@@ -278,8 +278,7 @@ wine_threads_dep = declare_dependency(link_args : '-lpthread')
 wine_uuid_dep = declare_dependency(link_args : '-luuid')
 
 if with_clap
-  # 1.1.3 should be API compatible with 1.1.4
-  clap_dep = dependency('clap', version : '>=1.1.3')
+  clap_dep = dependency('clap', version : '==1.1.7')
 endif
 
 # We need to build the VST3 SDK dependencies in tree because Meson won't let us

@@ -16,17 +16,19 @@
 
 #pragma once
 
-#include "../common.h"
-#include "host.h"
-#include "plugin.h"
+#include "../../common.h"
+#include "../host.h"
+#include "../plugin.h"
 
 // Serialization messages for `clap/plugin-factory.h`
 
 namespace clap {
+namespace factory {
 namespace plugin_factory {
 
 /**
- * The response to the `clap::plugin_factory::List` message defined below.
+ * The response to the `clap::factory::plugin_factory::List` message defined
+ * below.
  */
 struct ListResponse {
     /**
@@ -57,7 +59,8 @@ struct List {
 };
 
 /**
- * The response to the `clap::plugin_factory::Create` message defined below.
+ * The response to the `clap::factory::plugin_factory::Create` message defined
+ * below.
  */
 struct CreateResponse {
     /**
@@ -99,4 +102,5 @@ struct Create {
 };
 
 }  // namespace plugin_factory
+}  // namespace factory
 }  // namespace clap

@@ -22,7 +22,7 @@
 #include <string>
 
 #include <clap/entry.h>
-#include <clap/plugin-factory.h>
+#include <clap/factory/plugin-factory.h>
 #include <clap/plugin.h>
 
 #include "../../common/audio-shm.h"

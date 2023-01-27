@@ -35,8 +35,8 @@
 #include "clap/ext/state.h"
 #include "clap/ext/tail.h"
 #include "clap/ext/voice-info.h"
+#include "clap/factory/plugin-factory.h"
 #include "clap/host.h"
-#include "clap/plugin-factory.h"
 #include "clap/process.h"
 #include "common.h"
 
@@ -55,8 +55,8 @@
 //        serialize this without it.
 using ClapMainThreadControlRequest =
     std::variant<WantsConfiguration,
-                 clap::plugin_factory::List,
-                 clap::plugin_factory::Create,
+                 clap::factory::plugin_factory::List,
+                 clap::factory::plugin_factory::Create,
                  clap::plugin::Init,
                  clap::plugin::Destroy,
                  clap::plugin::Activate,

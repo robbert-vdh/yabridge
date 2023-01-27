@@ -332,8 +332,8 @@ const void* ClapPluginBridge::get_factory(const char* factory_id) {
         if (!plugin_factory_) {
             // If the plugin does not support this factory type, then we'll also
             // return a null poitner
-            const clap::plugin_factory::ListResponse response =
-                send_main_thread_message(clap::plugin_factory::List{});
+            const clap::factory::plugin_factory::ListResponse response =
+                send_main_thread_message(clap::factory::plugin_factory::List{});
             if (!response.descriptors) {
                 return nullptr;
             }
