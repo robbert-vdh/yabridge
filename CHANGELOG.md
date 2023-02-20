@@ -13,6 +13,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Configuring the Meson build now works correctly on Wine 8.0 final. Meson's
   version comparison function considers `8.0` to be a lower version than
   `8.0rc2`.
+- The tomlplusplus dependency in the Meson build new avoids linking against
+  tomlplusplus' shared libraries. These were recently introduced, and depending
+  on the environment Meson may try to link them to the binaries even though the
+  library is used in headers only mode.
 
 ### Packaging notes
 
