@@ -693,8 +693,15 @@ negative side effects:
 - First of all, you'll want to make sure that you can run programs with realtime
   scheduling. Note that on Arch and Manjaro this does not necessarily require a
   realtime kernel as they include the `PREEMPT` patch set in their regular
-  kernels. You can verify that this is working correctly by running `chrt -f 10 whoami`, which should print your username, and running `uname -a` should print
+  kernels. You can verify that this is working correctly by running `chrt -f 10 whoami`,
+  which should print your username, and running `uname -a` should print
   something that contains `PREEMPT` in the output.
+
+  If the `uname -a` output contains `PREEMPT_DYNAMIC`, then run either
+  `zgrep PREEMPT /proc/config.gz` or `grep PREEMPT "/boot/config-$(uname -r)"`
+  depending on your distro. If `CONFIG_PREEMPT` is not set, then either add the
+  `preempt=full` kernel parameter or better yet, switch to a kernel that's
+  optimized for low latencies.
 
 - You can also try enabling the `threadirqs` kernel parameter and using which
   can in some situations help with xruns. After enabling this, you can use
