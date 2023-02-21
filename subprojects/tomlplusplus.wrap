@@ -1,7 +1,7 @@
 [wrap-git]
 url = https://github.com/marzer/tomlplusplus.git
-# Tag v3.0.1
-revision = 8e669aa6990e0ed219c169d491472d749f54c393
+# Tag v3.3.0
+revision = c635f21
 depth = 1
 
 [provide]

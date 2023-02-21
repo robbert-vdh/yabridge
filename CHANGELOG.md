@@ -21,6 +21,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Packaging notes
 
 - The CLAP dependency has been updated to target version 1.1.7.
+- The tomlplusplus dependency has been updated to target version 3.3.0.
 
 ## [5.0.3] - 2022-12-23
 

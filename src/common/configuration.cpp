@@ -16,13 +16,50 @@
 
 #include "configuration.h"
 
-// tomlplusplus recently got some Windows fixes, but they cause compilation
-// errors and we don't need them so we'll just disable them outright
-#define TOML_WINDOWS_COMPAT 0
-
 #include <fnmatch.h>
-#include <toml++/toml.h>
 #include <fstream>
+
+// By default tomlplusplus is no longer headers when using the package config
+// file. We don't want to link against third party shared libraries in yabridge.
+#ifdef TOML_SHARED_LIB
+
+#undef TOML_SHARED_LIB
+#undef TOML_HEADER_ONLY
+#define TOML_HEADER_ONLY 1
+
+#endif
+
+// tomlplusplus recently got some Windows fixes, but they cause compilation
+// errors and we don't need them so we'll just disable them outright. Disabling
+// `TOML_ENABLE_WINDOWS_COMPAT` is no longer enough, and you can't disable
+// `TOML_WINDOWS` directly. This is the same trick used in `use-asio-linux.h`.
+#ifdef __WINE__
+
+#pragma push_macro("WIN32")
+#pragma push_macro("_WIN32")
+#pragma push_macro("__WIN32__")
+#pragma push_macro("__NT__")
+#pragma push_macro("__CYGWIN__")
+
+#undef WIN32
+#undef _WIN32
+#undef __WIN32__
+#undef __NT__
+#undef __CYGWIN__
+
+#endif
+
+#include <toml++/toml.h>
+
+#ifdef __WINE__
+
+#pragma pop_macro("WIN32")
+#pragma pop_macro("_WIN32")
+#pragma pop_macro("__WIN32__")
+#pragma pop_macro("__NT__")
+#pragma pop_macro("__CYGWIN__")
+
+#endif
 
 #include "utils.h"
 
