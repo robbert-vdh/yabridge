@@ -155,7 +155,11 @@ jobs:
 
   build-yabridgectl:
     name: Build yabridgectl
-    runs-on: ubuntu-18.04
+    # FIXME: The ubuntu-18.04 runner has been deprecated but since it doesn't cause any
+    #        issues we'll keep it around for a bit longer
+    # runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
+    container: robbert/docker-yabridge:bionic
     outputs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
     defaults:
@@ -172,6 +176,11 @@ jobs:
       - name: Determine build archive name
         run: |
           echo "ARCHIVE_NAME=yabridgectl-$(git describe --always).tar.gz" >> "$GITHUB_ENV"
+        # FIXME: Needed as long as we use the docker image
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y curl
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Build the binaries
