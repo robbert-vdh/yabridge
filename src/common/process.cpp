@@ -194,13 +194,15 @@ Process::Handle::~Handle() {
     }
 }
 
-Process::Handle::Handle(Handle&& o) noexcept : pid_(o.pid_) {
+Process::Handle::Handle(Handle&& o) noexcept
+    : detached_(o.detached_), pid_(o.pid_) {
     o.detached_ = true;
 }
 
 Process::Handle& Process::Handle::operator=(Handle&& o) noexcept {
     o.detached_ = true;
 
+    detached_ = o.detached_;
     pid_ = o.pid_;
 
     return *this;

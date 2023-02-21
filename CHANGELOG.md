@@ -10,6 +10,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed a regression from yabridge 4.0.0 where plugin groups would not exit
+  correctly. When removing a plugin instance that was part of a plugin group, it
+  would block until the group host process had exited, causing the host to
+  stall.
 - Configuring the Meson build now works correctly on Wine 8.0 final. Meson's
   version comparison function considers `8.0` to be a lower version than
   `8.0rc2`.
