@@ -1,3 +1,17 @@
+Submodule base contains modified content
+diff --git a/base/source/fdebug.cpp b/base/source/fdebug.cpp
+index b1d1dcc..9093022 100644
+--- a/base/source/fdebug.cpp
++++ b/base/source/fdebug.cpp
+@@ -117,8 +117,6 @@ bool AmIBeingDebugged ()
+ #if _MSC_VER
+ #include <intrin.h>
+ #endif
+-#define vsnprintf _vsnprintf
+-#define snprintf _snprintf
+ 
+ #elif SMTG_OS_MACOS
+ #include <errno.h>
 Submodule pluginterfaces contains modified content
 diff --git a/pluginterfaces/base/fstrdefs.h b/pluginterfaces/base/fstrdefs.h
 index 848e8ee..8846d31 100644
