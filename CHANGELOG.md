@@ -12,15 +12,17 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixed a regression from yabridge 4.0.0 where plugin groups would not exit
   correctly. When removing a plugin instance that was part of a plugin group, it
-  would block until the group host process had exited, causing the host to
-  stall.
+  would block until the group host process had exited. This in turn resulted in
+  hangs if the group host process hosted more than one plugin instance.
 - Configuring the Meson build now works correctly on Wine 8.0 final. Meson's
   version comparison function considers `8.0` to be a lower version than
   `8.0rc2`.
 - The tomlplusplus dependency in the Meson build new avoids linking against
   tomlplusplus' shared libraries. These were recently introduced, and depending
-  on the environment Meson may try to link them to the binaries even though the
-  library is used in headers only mode.
+  on the build environment Meson may still try to link them despite tomlplusplus
+  being used in headers only mode. This is to keep yabridge's plugin libraries
+  free of dependencies outside of the C and C++ standard libraries, avoiding
+  potential symbol clashes.
 
 ### Packaging notes
 
