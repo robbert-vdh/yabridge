@@ -70,6 +70,14 @@ ProcessEnvironment PluginInfo::create_host_env() const {
                },
                wine_prefix_);
 
+    // As of writing upstream Wine does not yet have a Wayland driver, but one
+    // is in the process of being merged. If this ever becomes enabled by
+    // default on distros, Wine could suddenly start using using Wayland instead
+    // of X11. This would break yabridge's embedding and drag-and-drop handling.
+    // So we'll preemptively avoid this by unsetting the `WAYLAND_DISPLAY`
+    // environment variable.
+    env.erase("WAYLAND_DISPLAY");
+
     return env;
 }
 

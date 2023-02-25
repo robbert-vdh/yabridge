@@ -174,6 +174,13 @@ void ProcessEnvironment::insert(const std::string& key,
     variables_.push_back(key + "=" + value);
 }
 
+size_t ProcessEnvironment::erase(const std::string& key) {
+    return std::erase_if(variables_, [&key](const std::string& variable) {
+        return variable.starts_with(key) && variable.size() > key.size() &&
+               variable[key.size()] == '=';
+    });
+}
+
 char* const* ProcessEnvironment::make_environ() const {
     recreated_environ_.clear();
 

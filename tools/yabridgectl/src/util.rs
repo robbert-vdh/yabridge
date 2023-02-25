@@ -356,6 +356,10 @@ pub fn verify_wine_setup(config: &mut Config) -> Result<()> {
     let wine_binary = env::var("WINELOADER").unwrap_or_else(|_| String::from("wine"));
     let wine_version_output = Command::new(&wine_binary)
         .arg("--version")
+        // NOTE: This mimics the setup used in `PluginInfo::create_host_env()`. The X11 window
+        //       embedding will break when future Wine versions start defaulting to a native Wayland
+        //       driver, so we'll prevent that from happening.
+        .env_remove("WAYLAND_DISPLAY")
         .output()
         .with_context(|| {
             format!(

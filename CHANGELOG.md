@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Yabridge now preemptively unsets the `WAYLAND_DISPLAY` environment variable
+  when launching Wine. Upstream Wine currently does not yet have a Wayland
+  driver, but future versions may. When that happens yabridge's X11 window
+  embedding would otherwise suddenly start breaking spectacularly. This change
+  makes sure that Wine will keep using X11 even if Wayland support becomes
+  available at some point.
+
 ## [5.0.4] - 2023-02-23
 
 ### Fixed

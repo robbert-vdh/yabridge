@@ -79,6 +79,9 @@ struct PluginInfo {
      * `WINEPREFIX` was already set then nothing will be changed. Otherwise
      * we'll set `WINEPREFIX` to the detected Wine prefix, or it will be left
      * unset if we could not detect a prefix.
+     *
+     * This also unsets `WAYLAND_DISPLAY` so if Wine has been compiled with
+     * Wayland support, it won't suddenly start using that over X11.
      */
     ProcessEnvironment create_host_env() const;
 

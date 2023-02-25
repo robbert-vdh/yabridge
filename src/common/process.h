@@ -102,6 +102,14 @@ class ProcessEnvironment {
     void insert(const std::string& key, const std::string& value);
 
     /**
+     * Remove an environment variable from the environment. Returns the number
+     * of elements erased (to stay consistent with the STL map interface). This
+     * can be higher than 1 if the map contains duplicate or overwritten
+     * environment variables.
+     */
+    size_t erase(const std::string& key);
+
+    /**
      * Create an environ-like object from the updated environment that can be
      * passed to the `exec*e()` functions. These pointers will be invalidated
      * when this object changes or when gets dropped.
