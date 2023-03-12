@@ -17,6 +17,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   makes sure that Wine will keep using X11 even if Wayland support becomes
   available at some point.
 
+### yabridgectl
+
+- VST 3.7.5 `moduleinfo.json` files without a `Compatibility` field are now
+  supported. Previously this would result in a parsing error because the whole
+  point of the `moduleinfo.json` files is to provide `Compatibility` mappings
+  for older VST2 plugins.
+
 ## [5.0.4] - 2023-02-23
 
 ### Fixed

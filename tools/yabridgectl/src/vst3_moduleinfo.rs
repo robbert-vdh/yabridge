@@ -28,8 +28,12 @@ use std::fmt::Write;
 pub struct ModuleInfo {
     #[serde(rename = "Classes")]
     classes: Vec<Class>,
+    // The whole point of moduleinfo.json is so plugins can provide these compatibility mappings,
+    // but apparently there are now plugins that have a moduleinfo file without compatibility
+    // mappings
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "Compatibility")]
-    compatibility_mappings: Vec<CompatibilityMapping>,
+    compatibility_mappings: Option<Vec<CompatibilityMapping>>,
     #[serde(flatten)]
     other: serde_jsonrc::Map<String, serde_jsonrc::Value>,
 }
@@ -64,10 +68,13 @@ impl ModuleInfo {
             class.cid = encode_hex_uid(&rewrite_uid_byte_order(&decode_hex_uid(&class.cid)?));
         }
 
-        for mapping in &mut self.compatibility_mappings {
-            mapping.new = encode_hex_uid(&rewrite_uid_byte_order(&decode_hex_uid(&mapping.new)?));
-            for cid in &mut mapping.old {
-                *cid = encode_hex_uid(&rewrite_uid_byte_order(&decode_hex_uid(cid)?))
+        if let Some(compatibility_mappings) = &mut self.compatibility_mappings {
+            for mapping in compatibility_mappings {
+                mapping.new =
+                    encode_hex_uid(&rewrite_uid_byte_order(&decode_hex_uid(&mapping.new)?));
+                for cid in &mut mapping.old {
+                    *cid = encode_hex_uid(&rewrite_uid_byte_order(&decode_hex_uid(cid)?))
+                }
             }
         }
 
