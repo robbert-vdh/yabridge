@@ -207,7 +207,8 @@ class PluginBridge {
                     << "   With a low memory locking limit, yabridge may not be"
                     << std::endl;
                 init_msg << "   be able to lock its shared memory audio "
-                            "buffers into";
+                            "buffers into"
+                         << std::endl;
                 init_msg << "   main memory. Performance may be degraded until "
                             "you fix "
                          << std::endl;
