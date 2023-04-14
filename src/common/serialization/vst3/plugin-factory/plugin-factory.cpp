@@ -118,7 +118,8 @@ int32 PLUGIN_API YaPluginFactory3::countClasses() {
 
 tresult PLUGIN_API YaPluginFactory3::getClassInfo(Steinberg::int32 index,
                                                   Steinberg::PClassInfo* info) {
-    if (index >= static_cast<int32>(arguments_.class_infos_1.size())) {
+    if (index < 0 ||
+        index >= static_cast<int32>(arguments_.class_infos_1.size())) {
         return Steinberg::kInvalidArgument;
     }
 
@@ -134,7 +135,8 @@ tresult PLUGIN_API YaPluginFactory3::getClassInfo(Steinberg::int32 index,
 
 tresult PLUGIN_API
 YaPluginFactory3::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
-    if (index >= static_cast<int32>(arguments_.class_infos_2.size())) {
+    if (index < 0 ||
+        index >= static_cast<int32>(arguments_.class_infos_2.size())) {
         return Steinberg::kInvalidArgument;
     }
 
@@ -151,7 +153,8 @@ YaPluginFactory3::getClassInfo2(int32 index, Steinberg::PClassInfo2* info) {
 tresult PLUGIN_API
 YaPluginFactory3::getClassInfoUnicode(int32 index,
                                       Steinberg::PClassInfoW* info) {
-    if (index >= static_cast<int32>(arguments_.class_infos_unicode.size())) {
+    if (index < 0 ||
+        index >= static_cast<int32>(arguments_.class_infos_unicode.size())) {
         return Steinberg::kInvalidArgument;
     }
 

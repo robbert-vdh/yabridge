@@ -71,7 +71,8 @@ tresult PLUGIN_API YaParamValueQueue::getPoint(
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     int32& sampleOffset /*out*/,
     Steinberg::Vst::ParamValue& value /*out*/) {
-    if (index < static_cast<int32>(queue_.size())) {
+    // Indices are signed integers, fun
+    if (index >= 0 && index < static_cast<int32>(queue_.size())) {
         sampleOffset = queue_[index].first;
         value = queue_[index].second;
 

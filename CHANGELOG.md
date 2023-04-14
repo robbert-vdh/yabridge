@@ -17,6 +17,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   makes sure that Wine will keep using X11 even if Wayland support becomes
   available at some point.
 
+### Fixed
+
+- Negative indices were not treated as invalid arguments in some of the VST3
+  interface implementations and could cause crashes if a plugin for instance
+  tried to query a parameter value with signed index -1. This has now been
+  fixed. The issue only appeared with the VST3 validator, and not with any
+  regular hosts.
+
 ### yabridgectl
 
 - VST 3.7.5 `moduleinfo.json` files without a `Compatibility` field are now
