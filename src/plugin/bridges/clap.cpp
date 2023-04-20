@@ -249,8 +249,6 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
                     const auto& [plugin_proxy, _] =
                         get_proxy(request.owner_instance_id);
 
-                    // TODO: Handle mutual recursion here and for latency
-                    // changes
                     run_on_main_thread(
                         plugin_proxy,
                         [&, host = plugin_proxy.host_,
