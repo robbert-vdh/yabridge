@@ -28,6 +28,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   request a host callback while the host simultaneously tried to create another
   instance of the same plugin. This would result in a deadlock. An example of a
   plugin that triggered this is _PolyChrome DSP's McRocklin Suite_.
+- Mutually recursive callbacks are now enabled for more CLAP lifetime function
+  calls. This was also needed to avoid a deadlock in _PolyChrome DSP's McRocklin
+  Suite_, as it changes its latency while being initialized.
 
 ### yabridgectl
 

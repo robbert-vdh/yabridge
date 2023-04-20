@@ -156,10 +156,12 @@ bool CLAP_ABI clap_plugin_proxy::plugin_init(const struct clap_plugin* plugin) {
     // plugin host so it can expose the same interfaces there.
     self->host_extensions_ = ClapHostExtensions(*self->host_);
 
+    // NOTE: McRocklin Suite changes the latency during the init call
     const clap::plugin::InitResponse response =
-        self->bridge_.send_main_thread_message(clap::plugin::Init{
-            .instance_id = self->instance_id(),
-            .supported_host_extensions = self->host_extensions_.supported()});
+        self->bridge_.send_mutually_recursive_main_thread_message(
+            clap::plugin::Init{.instance_id = self->instance_id(),
+                               .supported_host_extensions =
+                                   self->host_extensions_.supported()});
 
     // This determines which extensions the host is allowed to query in
     // `clap_plugin::get_extension()`
@@ -175,7 +177,7 @@ clap_plugin_proxy::plugin_destroy(const struct clap_plugin* plugin) {
 
     // This will clean everything related to this instance up on the Wine plugin
     // host side
-    self->bridge_.send_main_thread_message(
+    self->bridge_.send_mutually_recursive_main_thread_message(
         clap::plugin::Destroy{.instance_id = self->instance_id()});
 
     // And this deallocates and destroys `self`
@@ -220,7 +222,7 @@ clap_plugin_proxy::plugin_deactivate(const struct clap_plugin* plugin) {
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
-    self->bridge_.send_main_thread_message(
+    self->bridge_.send_mutually_recursive_main_thread_message(
         clap::plugin::Deactivate{.instance_id = self->instance_id()});
 }
 
@@ -440,7 +442,7 @@ clap_plugin_proxy::ext_audio_ports_config_select(const clap_plugin_t* plugin,
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
-    return self->bridge_.send_main_thread_message(
+    return self->bridge_.send_mutually_recursive_main_thread_message(
         clap::ext::audio_ports_config::plugin::Select{
             .instance_id = self->instance_id(), .config_id = config_id});
 }
@@ -489,7 +491,7 @@ bool CLAP_ABI clap_plugin_proxy::ext_gui_create(const clap_plugin_t* plugin,
         return false;
     }
 
-    return self->bridge_.send_main_thread_message(
+    return self->bridge_.send_mutually_recursive_main_thread_message(
         clap::ext::gui::plugin::Create{
             .instance_id = self->instance_id(),
             // This will be translated to WIN32 on the Wine plugin host side
@@ -501,7 +503,7 @@ void CLAP_ABI clap_plugin_proxy::ext_gui_destroy(const clap_plugin_t* plugin) {
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
 
-    self->bridge_.send_main_thread_message(
+    self->bridge_.send_mutually_recursive_main_thread_message(
         clap::ext::gui::plugin::Destroy{.instance_id = self->instance_id()});
 }
 

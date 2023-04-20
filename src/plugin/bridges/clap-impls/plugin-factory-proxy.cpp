@@ -77,8 +77,9 @@ clap_plugin_factory_proxy::plugin_factory_create_plugin(
     }
 
     const clap::factory::plugin_factory::CreateResponse response =
-        self->bridge_.send_main_thread_message(clap::factory::plugin_factory::Create{
-            .host = *host, .plugin_id = plugin_id});
+        self->bridge_.send_mutually_recursive_main_thread_message(
+            clap::factory::plugin_factory::Create{.host = *host,
+                                                  .plugin_id = plugin_id});
     if (response.instance_id) {
         // This plugin proxy is tied to the instance ID created on the Wine
         // side. That way we can link function calls from the host to the
