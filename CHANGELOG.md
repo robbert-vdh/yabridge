@@ -24,6 +24,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   tried to query a parameter value with signed index -1. This has now been
   fixed. The issue only appeared with the VST3 validator, and not with any
   regular hosts.
+- Fixed a race condition that could occur when a CLAP plugin instance would
+  request a host callback while the host simultaneously tried to create another
+  instance of the same plugin. This would result in a deadlock. An example of a
+  plugin that triggered this is _PolyChrome DSP's McRocklin Suite_.
 
 ### yabridgectl
 

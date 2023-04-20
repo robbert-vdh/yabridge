@@ -188,21 +188,26 @@ clap_host_proxy::host_request_callback(const struct clap_host* host) {
     bool expected = false;
     if (self->has_pending_host_callbacks_.compare_exchange_strong(expected,
                                                                   true)) {
-        // We're acquiring a lock on the instance and then move it into the task
-        // to prevent this instance from being removed before this callback has
-        // been run
-        auto instance_lock =
-            self->bridge_.get_instance(self->owner_instance_id());
-        self->bridge_.main_context_.schedule_task(
-            [self, instance_lock = std::move(instance_lock)]() {
-                const auto& [instance, _] = instance_lock;
+        self->bridge_.main_context_.schedule_task([self]() {
+            try {
+                const auto& [instance, _] =
+                    self->bridge_.get_instance(self->owner_instance_id());
                 self->has_pending_host_callbacks_.store(false);
 
                 self->bridge_.logger_.log_on_main_thread(
                     self->owner_instance_id());
 
                 instance.plugin->on_main_thread(instance.plugin.get());
-            });
+            } catch (const std::out_of_range&) {
+                // In case the plugin has been removed in the meantime, we
+                // should just ignore that silently. A previous version of this
+                // acquired the lock before the `schedule_task()` call and moved
+                // it into this closure, but that leads to a nasty difficult to
+                // track down race condition when a plugin requests a callback
+                // while at the same time the host tries to create another
+                // plugin instance (which requires unique access to the mutex).
+            }
+        });
     }
 }
 
