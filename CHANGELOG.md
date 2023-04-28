@@ -10,6 +10,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- When dragging plugin windows around, yabridge now waits for the mouse buttons
+  to be released before informing Wine about the window's new screen
+  coordinates. This prevents constant flickering when dragging plugin windows
+  around with some plugin and window manager combinations.
 - Yabridge now preemptively unsets the `WAYLAND_DISPLAY` environment variable
   when launching Wine. Upstream Wine currently does not yet have a Wayland
   driver, but future versions may. When that happens yabridge's X11 window

@@ -234,6 +234,11 @@ class Editor {
      * Lie to the Wine window about its coordinates on the screen for
      * reparenting without using XEmbed. See the comment at the top of the
      * implementation on why this is needed.
+     *
+     * One of the events that trigger this is `ConfigureNotify` messages. Some
+     * WMs may continuously send this message while dragging a window around. To
+     * avoid flickering, the main `handle_x11_events()` function will wait to
+     * call this function until the all mouse buttons have been released.
      */
     void fix_local_coordinates() const;
 
@@ -311,6 +316,12 @@ class Editor {
      * If we cannot obtain the X11 cursor position, then this returns a nullopt.
      */
     std::optional<POINT> get_current_pointer_position() const noexcept;
+
+    /**
+     * Checks whether any mouse button is held. Used to defer calling
+     * `fix_local_coordinates()` when dragging windows around.
+     */
+    bool is_mouse_button_held() const;
 
     /**
      * Returns `true` if the currently active window (as per
@@ -450,6 +461,15 @@ class Editor {
      *       the mouse is within the window.
      */
     xcb_window_t host_window_;
+
+    /**
+     * Used to delay calling `fix_local_coordinates()` when dragging windows
+     * around with the mouse. Some WMs will continuously send `ConfigureNotify`
+     * messages when dragging windows around, and the `fix_local_coordinates()`
+     * function may cause the window to blink. This becomes a but jarring if it
+     * happens 60 times per second while dragging windows around.
+     */
+    bool should_fix_local_coordinates_ = false;
 
     /**
      * The atom corresponding to `_NET_ACTIVE_WINDOW`.

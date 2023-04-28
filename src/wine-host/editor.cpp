@@ -469,6 +469,17 @@ void Editor::handle_x11_events() noexcept {
     //       function calls involving it will fail. All functions called from
     //       here should be able to handle that cleanly.
     try {
+        // HACK: See the docstrings on `should_fix_local_coordinates_` and
+        //       `fix_local_coordinates()`
+        if (should_fix_local_coordinates_ && !is_mouse_button_held()) {
+            logger_.log_editor_trace([&]() {
+                return "DEBUG: Performing spooled local coordinate fix";
+            });
+
+            fix_local_coordinates();
+            should_fix_local_coordinates_ = false;
+        }
+
         std::unique_ptr<xcb_generic_event_t> generic_event;
         while (generic_event.reset(xcb_poll_for_event(x11_connection_.get())),
                generic_event != nullptr) {
@@ -551,7 +562,21 @@ void Editor::handle_x11_events() noexcept {
                         event->window == parent_window_ ||
                         event->window == wrapper_window_.window_) {
                         if (!use_xembed_) {
-                            fix_local_coordinates();
+                            // NOTE: See the docstring on this field. This
+                            //       avoids flickering with some window manager
+                            //       and plugin combinations when dragging
+                            //       plugin windows around.
+                            if (is_mouse_button_held()) {
+                                logger_.log_editor_trace([&]() {
+                                    return "DEBUG: ConfigureNotify received "
+                                           "while mouse button is held down, "
+                                           "spooling the coordinate fix";
+                                });
+
+                                should_fix_local_coordinates_ = true;
+                            } else {
+                                fix_local_coordinates();
+                            }
                         }
                     }
                 } break;
@@ -957,6 +982,18 @@ std::optional<POINT> Editor::get_current_pointer_position() const noexcept {
     return POINT{
         .x = query_pointer_reply->root_x + (win32_pos.left - x11_x_pos),
         .y = query_pointer_reply->root_y + (win32_pos.top - x11_y_pos)};
+}
+
+bool Editor::is_mouse_button_held() const {
+    xcb_generic_error_t* error = nullptr;
+    const xcb_query_pointer_cookie_t pointer_query_cookie =
+        xcb_query_pointer(x11_connection_.get(), host_window_);
+    const std::unique_ptr<xcb_query_pointer_reply_t> pointer_query_reply(
+        xcb_query_pointer_reply(x11_connection_.get(), pointer_query_cookie,
+                                &error));
+    THROW_X11_ERROR(error);
+
+    return pointer_query_reply->mask != 0;
 }
 
 bool Editor::is_wine_window_active() const {
