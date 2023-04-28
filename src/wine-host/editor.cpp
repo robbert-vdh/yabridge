@@ -748,7 +748,8 @@ void Editor::handle_x11_events() noexcept {
             }
         }
     } catch (const std::runtime_error& error) {
-        std::cerr << error.what() << std::endl;
+        std::cerr << "Error occurred while handling X11 events, continuing: "
+                  << error.what() << std::endl;
     }
 }
 
