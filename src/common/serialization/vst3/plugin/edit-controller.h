@@ -98,11 +98,37 @@ class YaEditController : public Steinberg::Vst::IEditController {
     getState(Steinberg::IBStream* state) override = 0;
 
     /**
-     * Message to pass through a call to `IEditController::getParameterCount()`
-     * to the Wine plugin host.
+     * All of a plugin's parameter infos.
+     *
+     * @see GetParameterInfos
      */
-    struct GetParameterCount {
-        using Response = PrimitiveResponse<int32>;
+    struct GetParameterInfosResponse {
+        /**
+         * All of the plugin's parameter infos. If the plugin somehow returned
+         * an error for a parameter that should be in range, then this contains
+         * a nullopt value.
+         */
+        std::vector<std::optional<Steinberg::Vst::ParameterInfo>> infos;
+
+        template <typename S>
+        void serialize(S& s) {
+            s.container(infos, 1 << 16, [](S& s, auto& v) {
+                s.ext(v, bitsery::ext::InPlaceOptional{});
+            });
+        }
+    };
+
+    /**
+     * Get all of the plugin's parameter information using both
+     * `IEditController::getParameterCount()` and
+     * `IEditController::getParameterInfo()`. This is queried all at once and
+     * then cached until the plugin asks for a rescan to speed up loading for
+     * plugins with huge amounts of parameters, and plugins like Kontakt that
+     * may tell the host to rescan for parameters hundreds of times in a row
+     * (https://github.com/robbert-vdh/yabridge/issues/236).
+     */
+    struct GetParameterInfos {
+        using Response = GetParameterInfosResponse;
 
         native_size_t instance_id;
 
@@ -113,41 +139,6 @@ class YaEditController : public Steinberg::Vst::IEditController {
     };
 
     virtual int32 PLUGIN_API getParameterCount() override = 0;
-
-    /**
-     * The response code and returned parameter information for a call to
-     * `IEditController::getParameterInfo(param_index, &info)`.
-     */
-    struct GetParameterInfoResponse {
-        UniversalTResult result;
-        Steinberg::Vst::ParameterInfo info;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.object(result);
-            s.object(info);
-        }
-    };
-
-    /**
-     * Message to pass through a call to
-     * `IEditController::getParameterInfo(param_index, &info)` to the Wine
-     * plugin host.
-     */
-    struct GetParameterInfo {
-        using Response = GetParameterInfoResponse;
-
-        native_size_t instance_id;
-
-        int32 param_index;
-
-        template <typename S>
-        void serialize(S& s) {
-            s.value8b(instance_id);
-            s.value4b(param_index);
-        }
-    };
-
     virtual tresult PLUGIN_API
     getParameterInfo(int32 paramIndex,
                      Steinberg::Vst::ParameterInfo& info /*out*/) override = 0;

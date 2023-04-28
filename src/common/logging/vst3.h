@@ -82,9 +82,7 @@ class Vst3Logger {
     bool log_request(bool is_host_plugin,
                      const YaEditController::SetComponentState&);
     bool log_request(bool is_host_plugin,
-                     const YaEditController::GetParameterCount&);
-    bool log_request(bool is_host_plugin,
-                     const YaEditController::GetParameterInfo&);
+                     const YaEditController::GetParameterInfos&);
     bool log_request(bool is_host_plugin,
                      const YaEditController::GetParamStringByValue&);
     bool log_request(bool is_host_plugin,
@@ -272,7 +270,7 @@ class Vst3Logger {
     void log_response(bool is_host_plugin,
                       const Vst3PluginProxy::GetStateResponse&);
     void log_response(bool is_host_plugin,
-                      const YaEditController::GetParameterInfoResponse&,
+                      const YaEditController::GetParameterInfosResponse&,
                       bool from_cache = false);
     void log_response(bool is_host_plugin,
                       const YaEditController::GetParamStringByValueResponse&);

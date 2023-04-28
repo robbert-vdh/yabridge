@@ -623,72 +623,75 @@ Vst3PluginProxyImpl::setComponentState(Steinberg::IBStream* state) {
 }
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getParameterCount() {
-    const auto request =
-        YaEditController::GetParameterCount{.instance_id = instance_id()};
-
+    // Parameter information is queried all at once to work around a Kontakt
+    // bug, see https://github.com/robbert-vdh/yabridge/issues/236
     {
+        // We'll assume that the plugin has at least one parameter. If it does
+        // not have any parameters then everything will work as expected, except
+        // that the parameter count is not cached.
         std::lock_guard lock(function_result_cache_mutex_);
-        if (function_result_cache_.parameter_count) {
-            const bool log_response =
-                bridge_.logger_.log_request(true, request);
-            if (log_response) {
-                bridge_.logger_.log_response(
-                    true,
-                    YaEditController::GetParameterCount::Response(
-                        *function_result_cache_.parameter_count),
-                    true);
-            }
-
-            return *function_result_cache_.parameter_count;
+        if (!function_result_cache_.parameter_info.empty()) {
+            // We can't cleanly log here, but it also doesn't really matter
+            return static_cast<int32>(
+                function_result_cache_.parameter_info.size());
         }
     }
 
-    const int32 result = bridge_.send_message(request);
+    // The first time either of these two functions is called we'll fetch the
+    // infos for all parameters. These are cleared when the plugin triggers a
+    // component restart.
+    query_parameter_info();
 
-    {
-        std::lock_guard lock(function_result_cache_mutex_);
-        function_result_cache_.parameter_count = result;
-    }
-
-    return result;
+    std::lock_guard lock(function_result_cache_mutex_);
+    return static_cast<int32>(function_result_cache_.parameter_info.size());
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
     int32 paramIndex,
     Steinberg::Vst::ParameterInfo& info /*out*/) {
-    const auto request = YaEditController::GetParameterInfo{
-        .instance_id = instance_id(), .param_index = paramIndex};
+    // The integer parameter indices are _fun_
+    if (paramIndex < 0) {
+        return Steinberg::kInvalidArgument;
+    }
 
+    // See above
     {
         std::lock_guard lock(function_result_cache_mutex_);
-        if (auto it = function_result_cache_.parameter_info.find(paramIndex);
-            it != function_result_cache_.parameter_info.end()) {
-            const bool log_response =
-                bridge_.logger_.log_request(true, request);
-            if (log_response) {
-                bridge_.logger_.log_response(
-                    true,
-                    YaEditController::GetParameterInfo::Response{
-                        .result = Steinberg::kResultOk, .info = it->second},
-                    true);
+        if (!function_result_cache_.parameter_info.empty()) {
+            if (paramIndex <
+                static_cast<int32>(
+                    function_result_cache_.parameter_info.size())) {
+                if (const auto& result =
+                        function_result_cache_.parameter_info[paramIndex]) {
+                    info = *result;
+                    return Steinberg::kResultOk;
+                } else {
+                    return Steinberg::kResultFalse;
+                }
+            } else {
+                return Steinberg::kInvalidArgument;
             }
-
-            info = it->second;
-
-            return Steinberg::kResultOk;
         }
     }
 
-    const GetParameterInfoResponse response = bridge_.send_message(request);
+    // The first time either of these two functions is called we'll fetch the
+    // infos for all parameters. These are cleared when the plugin triggers a
+    // component restart.
+    query_parameter_info();
 
-    info = response.info;
-
-    {
-        std::lock_guard lock(function_result_cache_mutex_);
-        function_result_cache_.parameter_info[paramIndex] = response.info;
+    std::lock_guard lock(function_result_cache_mutex_);
+    if (paramIndex <
+        static_cast<int32>(function_result_cache_.parameter_info.size())) {
+        if (const auto& result =
+                function_result_cache_.parameter_info[paramIndex]) {
+            info = *result;
+            return Steinberg::kResultOk;
+        } else {
+            return Steinberg::kResultFalse;
+        }
+    } else {
+        return Steinberg::kInvalidArgument;
     }
-
-    return response.result;
 }
 
 tresult PLUGIN_API Vst3PluginProxyImpl::getParamStringByValue(
@@ -1374,6 +1377,14 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getXmlRepresentationStream(
             "'IXmlRepresentationController::getXmlRepresentationStream()'");
         return Steinberg::kInvalidArgument;
     }
+}
+
+void Vst3PluginProxyImpl::query_parameter_info() {
+    std::lock_guard lock(function_result_cache_mutex_);
+
+    const GetParameterInfosResponse response = bridge_.send_message(
+        YaEditController::GetParameterInfos{.instance_id = instance_id()});
+    function_result_cache_.parameter_info = std::move(response.infos);
 }
 
 void Vst3PluginProxyImpl::clear_bus_cache() noexcept {

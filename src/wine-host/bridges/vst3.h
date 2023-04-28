@@ -308,8 +308,7 @@ class Vst3Bridge : public HostBridge {
      * the new size. This is called from `IPlugFrame::resizeView()` to make sure
      * we do the resize before the request gets sent to the host.
      */
-    bool resize_editor(size_t instance_id,
-                             const Steinberg::ViewRect& new_size);
+    bool resize_editor(size_t instance_id, const Steinberg::ViewRect& new_size);
 
     /**
      * Register a context with with `context_menu`'s ID and owner in

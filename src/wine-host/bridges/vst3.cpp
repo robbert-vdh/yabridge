@@ -400,23 +400,34 @@ void Vst3Bridge::run() {
                 return instance.interfaces.edit_controller->setComponentState(
                     &request.state);
             },
-            [&](const YaEditController::GetParameterCount& request)
-                -> YaEditController::GetParameterCount::Response {
+            [&](const YaEditController::GetParameterInfos& request)
+                -> YaEditController::GetParameterInfos::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
-                return instance.interfaces.edit_controller->getParameterCount();
-            },
-            [&](YaEditController::GetParameterInfo& request)
-                -> YaEditController::GetParameterInfo::Response {
-                Steinberg::Vst::ParameterInfo info{};
-                const auto& [instance, _] = get_instance(request.instance_id);
+                // This is an optimization mostly for Kontakt, which may tell
+                // tell the host to rescan its 3000 parameters hundreds of times
+                // in rapid succession. Querying all parameters at once can save
+                // minutes of waiting around on slower machines.
+                const int num_parameters =
+                    instance.interfaces.edit_controller->getParameterCount();
 
-                const tresult result =
-                    instance.interfaces.edit_controller->getParameterInfo(
-                        request.param_index, info);
+                std::vector<std::optional<Steinberg::Vst::ParameterInfo>> infos;
+                infos.reserve(num_parameters);
+                for (int i = 0; i < num_parameters; i++) {
+                    // This should never fail, but we can't make things up and
+                    // we don't want to change parameter orders around so we'll
+                    // store a nullopt if the plugin returns an error here
+                    Steinberg::Vst::ParameterInfo info{};
+                    if (instance.interfaces.edit_controller->getParameterInfo(
+                            i, info) == Steinberg::kResultOk) {
+                        infos.push_back(std::move(info));
+                    } else {
+                        infos.push_back(std::nullopt);
+                    }
+                }
 
-                return YaEditController::GetParameterInfoResponse{
-                    .result = result, .info = std::move(info)};
+                return YaEditController::GetParameterInfosResponse{
+                    .infos = std::move(infos)};
             },
             [&](const YaEditController::GetParamStringByValue& request)
                 -> YaEditController::GetParamStringByValue::Response {
@@ -793,8 +804,7 @@ void Vst3Bridge::run() {
                             x11_handle);
                         const tresult result =
                             instance.plug_view_instance->plug_view->attached(
-                                editor_instance.win32_handle(),
-                                type.c_str());
+                                editor_instance.win32_handle(), type.c_str());
 
                         // Set the window's initial size according to what the
                         // plugin reports. Otherwise get rid of the editor again
@@ -1315,7 +1325,7 @@ void Vst3Bridge::run() {
 }
 
 bool Vst3Bridge::resize_editor(size_t instance_id,
-                                     const Steinberg::ViewRect& new_size) {
+                               const Steinberg::ViewRect& new_size) {
     const auto& [instance, _] = get_instance(instance_id);
 
     if (instance.editor) {

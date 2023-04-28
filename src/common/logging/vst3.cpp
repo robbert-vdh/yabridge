@@ -233,20 +233,10 @@ bool Vst3Logger::log_request(
 
 bool Vst3Logger::log_request(
     bool is_host_plugin,
-    const YaEditController::GetParameterCount& request) {
+    const YaEditController::GetParameterInfos& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id
-                << ": IEditController::getParameterCount()";
-    });
-}
-
-bool Vst3Logger::log_request(
-    bool is_host_plugin,
-    const YaEditController::GetParameterInfo& request) {
-    return log_request_base(is_host_plugin, [&](auto& message) {
-        message << request.instance_id
-                << ": IEditController::getParameterInfo(paramIndex = "
-                << request.param_index << ", &info)";
+                << ": IEditController::getParameterInfo(..., &info) (batched)";
     });
 }
 
@@ -1478,17 +1468,13 @@ void Vst3Logger::log_response(
 
 void Vst3Logger::log_response(
     bool is_host_plugin,
-    const YaEditController::GetParameterInfoResponse& response,
+    const YaEditController::GetParameterInfosResponse& response,
     bool from_cache) {
     log_response_base(is_host_plugin, [&](auto& message) {
-        message << response.result.string();
-        if (response.result == Steinberg::kResultOk) {
-            std::string param_title =
-                VST3::StringConvert::convert(response.info.title);
-            message << ", <ParameterInfo for '" << param_title << "'>";
-            if (from_cache) {
-                message << " (from cache)";
-            }
+        message << "<ParameterInfo> for " << response.infos.size()
+                << " parameters";
+        if (from_cache) {
+            message << " (from cache)";
         }
     });
 }

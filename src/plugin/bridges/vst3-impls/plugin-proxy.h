@@ -399,6 +399,14 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
 
    private:
     /**
+     * Query information for all of the plugin's parameters and writes the
+     * results to `function_result_cache_`. Acquires a lock on the struct in the
+     * process, so it must not be locked before calling this function (thanks
+     * STL).
+     */
+    void query_parameter_info();
+
+    /**
      * Clear the bus count and information cache. We need this cache for REAPER
      * as it makes `num_inputs + num_outputs + 2` function calls to retrieve
      * this information every single processing cycle. For plugins with a lot of
@@ -529,13 +537,19 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
          */
         std::map<int32, tresult> can_process_sample_size;
         /**
-         * Memoizes `IEditController::getParameterCount()`.
+         * Memoizes `IEditController::getParameterCount()` and
+         * `IEditController::getParameterInfo()`. This information is queried
+         * all at to work around a Kontakt bug where they tell the host to
+         * rescan the parameters hundreds of times in a row when loading a patch
+         * that has hundreds of custom parameters instead of doing it only once
+         * at the end.
+         *
+         * Because the plugin _can_ return an error when fetching the info for a
+         * parameter that should be in range, this array stores `std::optional`s
+         * so we can do the same thing here.
          */
-        std::optional<int32> parameter_count;
-        /**
-         * Memoizes `IEditController::getParameterInfo()`.
-         */
-        std::unordered_map<int32, Steinberg::Vst::ParameterInfo> parameter_info;
+        std::vector<std::optional<Steinberg::Vst::ParameterInfo>>
+            parameter_info;
     };
 
     /**
