@@ -251,8 +251,13 @@ ClapPluginBridge::ClapPluginBridge(const ghc::filesystem::path& plugin_path)
 
                     run_on_main_thread(
                         plugin_proxy,
-                        [&, host = plugin_proxy.host_,
+                        [&, plugin_proxy = &plugin_proxy,
+                         host = plugin_proxy.host_,
                          params = plugin_proxy.host_extensions_.params]() {
+                            // Parameter information is cached and fetched in
+                            // bulk as an optimization
+                            plugin_proxy->clear_param_info_cache();
+
                             params->rescan(host, request.flags);
                         })
                         .wait();

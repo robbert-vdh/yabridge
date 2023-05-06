@@ -80,8 +80,10 @@ class ClapLogger {
     // log message for the response together with the request.
 
     // Main thread control messages
-    bool log_request(bool is_host_plugin, const clap::factory::plugin_factory::List&);
-    bool log_request(bool is_host_plugin, const clap::factory::plugin_factory::Create&);
+    bool log_request(bool is_host_plugin,
+                     const clap::factory::plugin_factory::List&);
+    bool log_request(bool is_host_plugin,
+                     const clap::factory::plugin_factory::Create&);
     bool log_request(bool is_host_plugin, const clap::plugin::Init&);
     bool log_request(bool is_host_plugin, const clap::plugin::Destroy&);
     bool log_request(bool is_host_plugin, const clap::plugin::Activate&);
@@ -127,9 +129,7 @@ class ClapLogger {
     bool log_request(bool is_host_plugin,
                      const clap::ext::note_ports::plugin::Get&);
     bool log_request(bool is_host_plugin,
-                     const clap::ext::params::plugin::Count&);
-    bool log_request(bool is_host_plugin,
-                     const clap::ext::params::plugin::GetInfo&);
+                     const clap::ext::params::plugin::GetInfos&);
     bool log_request(bool is_host_plugin,
                      const clap::ext::params::plugin::GetValue&);
     bool log_request(bool is_host_plugin,
@@ -229,7 +229,8 @@ class ClapLogger {
     void log_response(bool is_host_plugin,
                       const clap::ext::note_ports::plugin::GetResponse&);
     void log_response(bool is_host_plugin,
-                      const clap::ext::params::plugin::GetInfoResponse&);
+                      const clap::ext::params::plugin::GetInfosResponse&,
+                      bool from_cache = false);
     void log_response(bool is_host_plugin,
                       const clap::ext::params::plugin::GetValueResponse&);
     void log_response(bool is_host_plugin,

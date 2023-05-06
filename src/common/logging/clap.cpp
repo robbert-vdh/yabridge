@@ -60,8 +60,9 @@ bool ClapLogger::log_request(bool is_host_plugin,
     });
 }
 
-bool ClapLogger::log_request(bool is_host_plugin,
-                             const clap::factory::plugin_factory::Create& request) {
+bool ClapLogger::log_request(
+    bool is_host_plugin,
+    const clap::factory::plugin_factory::Create& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << "clap_plugin_factory::create(host = <clap_host_t*>, "
                    "plugin_id = \""
@@ -328,20 +329,12 @@ bool ClapLogger::log_request(
     });
 }
 
-bool ClapLogger::log_request(bool is_host_plugin,
-                             const clap::ext::params::plugin::Count& request) {
-    return log_request_base(is_host_plugin, [&](auto& message) {
-        message << request.instance_id << ": clap_plugin_params::count()";
-    });
-}
-
 bool ClapLogger::log_request(
     bool is_host_plugin,
-    const clap::ext::params::plugin::GetInfo& request) {
+    const clap::ext::params::plugin::GetInfos& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
         message << request.instance_id
-                << ": clap_plugin_params::get_info(param_index = "
-                << request.param_index << ", *param_info)";
+                << ": clap_plugin_params::get_info(..., *param_info) (batched)";
     });
 }
 
@@ -942,13 +935,13 @@ void ClapLogger::log_response(
 
 void ClapLogger::log_response(
     bool is_host_plugin,
-    const clap::ext::params::plugin::GetInfoResponse& response) {
+    const clap::ext::params::plugin::GetInfosResponse& response,
+    bool from_cache) {
     log_response_base(is_host_plugin, [&](auto& message) {
-        if (response.result) {
-            message << "true, <clap_param_info_t* for \""
-                    << response.result->name << "\">";
-        } else {
-            message << "false";
+        message << "<clap_param_info_t*> for " << response.infos.size()
+                << " parameters";
+        if (from_cache) {
+            message << " (from cache)";
         }
     });
 }

@@ -146,6 +146,11 @@ clap_plugin_proxy::clap_plugin_proxy(ClapPluginBridge& bridge,
       // getting that many of them
       pending_callbacks_(128) {}
 
+void clap_plugin_proxy::clear_param_info_cache() {
+    std::lock_guard lock(param_info_cache_mutex_);
+    param_info_cache_.clear();
+}
+
 bool CLAP_ABI clap_plugin_proxy::plugin_init(const struct clap_plugin* plugin) {
     assert(plugin && plugin->plugin_data);
     auto self = static_cast<clap_plugin_proxy*>(plugin->plugin_data);
@@ -719,10 +724,17 @@ clap_plugin_proxy::ext_note_ports_get(const clap_plugin_t* plugin,
 uint32_t CLAP_ABI
 clap_plugin_proxy::ext_params_count(const clap_plugin_t* plugin) {
     assert(plugin && plugin->plugin_data);
-    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+    auto self = static_cast<clap_plugin_proxy*>(plugin->plugin_data);
 
-    return self->bridge_.send_main_thread_message(
-        clap::ext::params::plugin::Count{.instance_id = self->instance_id()});
+    // The infos for all of a plugin's parameters is queried in a batch and then
+    // cached. This was needed in the VST3 bridge to work around a bug in
+    // Kontakt (see the similarly named function there for more information),
+    // and the CAP bridge does the same thing for consistency's sake. This cache
+    // is cleared when the plugin asks the host to rescan its parameters.
+    self->maybe_query_parameter_info();
+
+    std::lock_guard lock(self->param_info_cache_mutex_);
+    return self->param_info_cache_.size();
 }
 
 bool CLAP_ABI
@@ -730,16 +742,18 @@ clap_plugin_proxy::ext_params_get_info(const clap_plugin_t* plugin,
                                        uint32_t param_index,
                                        clap_param_info_t* param_info) {
     assert(plugin && plugin->plugin_data && param_info);
-    auto self = static_cast<const clap_plugin_proxy*>(plugin->plugin_data);
+    auto self = static_cast<clap_plugin_proxy*>(plugin->plugin_data);
 
-    const clap::ext::params::plugin::GetInfoResponse response =
-        self->bridge_.send_main_thread_message(
-            clap::ext::params::plugin::GetInfo{
-                .instance_id = self->instance_id(),
-                .param_index = param_index});
-    if (response.result) {
-        response.result->reconstruct(*param_info);
+    // See above
+    self->maybe_query_parameter_info();
 
+    std::lock_guard lock(self->param_info_cache_mutex_);
+    if (param_index > self->param_info_cache_.size()) {
+        return false;
+    }
+
+    if (const auto& info = self->param_info_cache_[param_index]) {
+        info->reconstruct(*param_info);
         return true;
     } else {
         return false;
@@ -910,5 +924,20 @@ bool CLAP_ABI clap_plugin_proxy::ext_voice_info_get(const clap_plugin_t* plugin,
         return true;
     } else {
         return false;
+    }
+}
+
+void clap_plugin_proxy::maybe_query_parameter_info() {
+    std::lock_guard lock(param_info_cache_mutex_);
+
+    // We'll assume that the plugin has at least one parameter. If it does not
+    // have any parameters then everything will work as expected, except that
+    // the parameter count is not cached.
+    if (param_info_cache_.empty()) {
+        const clap::ext::params::plugin::GetInfosResponse response =
+            bridge_.send_main_thread_message(
+                clap::ext::params::plugin::GetInfos{.instance_id =
+                                                        instance_id()});
+        param_info_cache_ = std::move(response.infos);
     }
 }

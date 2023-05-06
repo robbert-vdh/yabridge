@@ -10,9 +10,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Parameter information for VST3 plugins is now queried all at once. This should
-  work around a bug in _Kontakt_ that would cause loading patches with lots of
-  exposed parameters to become very slow in **REAPER**
+- Parameter information for VST3 and CLAP plugins is now queried all at once.
+  This should work around a bug in VST3 _Kontakt_ that would cause loading
+  patches with lots of exposed parameters to become very slow in **REAPER**
   ([#236](https://github.com/robbert-vdh/yabridge/issues/236)).
 - When dragging plugin windows around, yabridge now waits for the mouse buttons
   to be released before informing Wine about the window's new screen

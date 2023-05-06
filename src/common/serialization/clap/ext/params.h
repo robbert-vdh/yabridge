@@ -79,45 +79,41 @@ struct ParamInfo {
 namespace plugin {
 
 /**
- * Message struct for `clap_plugin_params::count()`.
- */
-struct Count {
-    using Response = PrimitiveResponse<uint32_t>;
-
-    native_size_t instance_id;
-
-    template <typename S>
-    void serialize(S& s) {
-        s.value8b(instance_id);
-    }
-};
-
-/**
- * The response to the `clap::ext::params::plugin::GetInfo` message defined
+ * The response to the `clap::ext::params::plugin::GetInfos` message defined
  * below.
  */
-struct GetInfoResponse {
-    std::optional<ParamInfo> result;
+struct GetInfosResponse {
+    /**
+     * All of the plugin's parameter infos. If the plugin somehow returned an
+     * error for a parameter that should be in range, then this contains a
+     * nullopt value.
+     */
+    std::vector<std::optional<ParamInfo>> infos;
 
     template <typename S>
     void serialize(S& s) {
-        s.ext(result, bitsery::ext::InPlaceOptional());
+        s.container(infos, 1 << 16, [](S& s, auto& v) {
+            s.ext(v, bitsery::ext::InPlaceOptional{});
+        });
     }
 };
 
 /**
- * Message struct for `clap_plugin_params::get_info()`.
+ * Message struct for querying the information for all parameters using
+ * `clap_plugin_params::count()` and `clap_plugin_params::get_info()`. This
+ * information is then cached until the plugin tells the host that the
+ * parameters have changed. No specific plugins or hosts seem to require this at
+ * the moment, but this mimics the behavior of the VST3 bridge which needed this
+ * to work around a Kontakt bug.
  */
-struct GetInfo {
-    using Response = GetInfoResponse;
+struct GetInfos {
+    using Response = GetInfosResponse;
 
     native_size_t instance_id;
-    uint32_t param_index;
 
     template <typename S>
     void serialize(S& s) {
         s.value8b(instance_id);
-        s.value4b(param_index);
     }
 };
 

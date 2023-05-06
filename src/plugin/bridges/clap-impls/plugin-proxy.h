@@ -36,6 +36,7 @@
 #include <rigtorp/MPMCQueue.h>
 #include <function2/function2.hpp>
 
+#include "../../common/serialization/clap/ext/params.h"
 #include "../../common/serialization/clap/plugin.h"
 
 // Forward declaration to avoid circular includes
@@ -156,6 +157,13 @@ class clap_plugin_proxy {
 
         return response_future;
     }
+
+    /**
+     * Clear the parameter information cache. Needs to be called when the plugin
+     * calls `clap_host_params::rescan()`. This cache is used to fetch
+     * information for all parameters at once.
+     */
+    void clear_param_info_cache();
 
     /**
      * The `clap_host_t*` passed when creating the instance. Any callbacks made
@@ -298,6 +306,14 @@ class clap_plugin_proxy {
                                             clap_voice_info_t* info);
 
    private:
+    /**
+     * Query information for all of the plugin's parameters and writes the
+     * results to `param_info_cache_` if necessary. Otherwise does nothing.
+     * Acquires a lock on the struct in the process, so it must not be locked
+     * before calling this function.
+     */
+    void maybe_query_parameter_info();
+
     ClapPluginBridge& bridge_;
     size_t instance_id_;
     clap::plugin::Descriptor descriptor_;
@@ -377,4 +393,14 @@ class clap_plugin_proxy {
      * socket needs to make a main thread function call, it will
      */
     rigtorp::MPMCQueue<HostCallback> pending_callbacks_;
+
+    /**
+     * Caches the info structs for all of a plugin's parameters. This is queried
+     * all at once the first time the interacts with the param extension. When
+     * the plugin asks the host to rescan its parameters, this cache is cleared.
+     * The `std::optional` is used to handle the case where a plugin may return
+     * `false` when querying info for a parameter that should be in range.
+     */
+    std::vector<std::optional<clap::ext::params::ParamInfo>> param_info_cache_;
+    std::mutex param_info_cache_mutex_;
 };

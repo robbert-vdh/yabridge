@@ -241,11 +241,11 @@ void ClapBridge::run() {
                         if (plugin) {
                             register_plugin_instance(plugin,
                                                      std::move(host_proxy));
-                            return clap::factory::plugin_factory::CreateResponse{
-                                .instance_id = instance_id};
+                            return clap::factory::plugin_factory::
+                                CreateResponse{.instance_id = instance_id};
                         } else {
-                            return clap::factory::plugin_factory::CreateResponse{
-                                .instance_id = std::nullopt};
+                            return clap::factory::plugin_factory::
+                                CreateResponse{.instance_id = std::nullopt};
                         }
                     })
                     .get();
@@ -716,30 +716,40 @@ void ClapBridge::run() {
                         .result = std::nullopt};
                 }
             },
-            [&](const clap::ext::params::plugin::Count& request)
-                -> clap::ext::params::plugin::Count::Response {
+            [&](const clap::ext::params::plugin::GetInfos& request)
+                -> clap::ext::params::plugin::GetInfos::Response {
                 const auto& [instance, _] = get_instance(request.instance_id);
 
                 // We'll ignore the main thread requirement for simple array
-                // lookups to avoid the synchronisation costs in hot code paths
-                return instance.extensions.params->count(instance.plugin.get());
-            },
-            [&](const clap::ext::params::plugin::GetInfo& request)
-                -> clap::ext::params::plugin::GetInfo::Response {
-                const auto& [instance, _] = get_instance(request.instance_id);
+                // lookups to avoid the synchronisation costs in hot code paths.
+                // We also deviate from yabridge's usual bridging approach by
+                // querying the infos for all parameters at once and then
+                // caching them until told to invalidate that cache. This was
+                // required to get acceptable performance when loading certain
+                // patches in Kontakt's VST3 version. To be consistent, CLAP
+                // bridging uses a similar caching mechanism.
+                // TODO: Also do this for VST2, will require replacing the VST2
+                //       bridging with an approach similar to VST3 and CLAP
+                const uint32_t num_parameters =
+                    instance.extensions.params->count(instance.plugin.get());
 
-                // We'll ignore the main thread requirement for simple array
-                // lookups to avoid the synchronisation costs in hot code paths
-                clap_param_info_t param_info{};
-                if (instance.extensions.params->get_info(instance.plugin.get(),
-                                                         request.param_index,
-                                                         &param_info)) {
-                    return clap::ext::params::plugin::GetInfoResponse{
-                        .result = param_info};
-                } else {
-                    return clap::ext::params::plugin::GetInfoResponse{
-                        .result = std::nullopt};
+                std::vector<std::optional<clap::ext::params::ParamInfo>> infos;
+                infos.reserve(num_parameters);
+                for (uint32_t i = 0; i < num_parameters; i++) {
+                    // This should never fail, but we can't make things up and
+                    // we don't want to change parameter orders around so we'll
+                    // store a nullopt if the plugin returns an error here
+                    clap_param_info_t info{};
+                    if (instance.extensions.params->get_info(
+                            instance.plugin.get(), i, &info)) {
+                        infos.push_back(std::move(info));
+                    } else {
+                        infos.push_back(std::nullopt);
+                    }
                 }
+
+                return clap::ext::params::plugin::GetInfosResponse{
+                    .infos = std::move(infos)};
             },
             [&](const clap::ext::params::plugin::GetValue& request)
                 -> clap::ext::params::plugin::GetValue::Response {
