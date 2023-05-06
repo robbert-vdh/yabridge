@@ -400,11 +400,11 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
    private:
     /**
      * Query information for all of the plugin's parameters and writes the
-     * results to `function_result_cache_`. Acquires a lock on the struct in the
-     * process, so it must not be locked before calling this function (thanks
-     * STL).
+     * results to `function_result_cache_` if necessary. Otherwise does nothing.
+     * Acquires a lock on the struct in the process, so it must not be locked
+     * before calling this function (thanks STL).
      */
-    void query_parameter_info();
+    void maybe_query_parameter_info();
 
     /**
      * Clear the bus count and information cache. We need this cache for REAPER

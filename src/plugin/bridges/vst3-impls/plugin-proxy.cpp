@@ -624,23 +624,11 @@ Vst3PluginProxyImpl::setComponentState(Steinberg::IBStream* state) {
 
 int32 PLUGIN_API Vst3PluginProxyImpl::getParameterCount() {
     // Parameter information is queried all at once to work around a Kontakt
-    // bug, see https://github.com/robbert-vdh/yabridge/issues/236
-    {
-        // We'll assume that the plugin has at least one parameter. If it does
-        // not have any parameters then everything will work as expected, except
-        // that the parameter count is not cached.
-        std::lock_guard lock(function_result_cache_mutex_);
-        if (!function_result_cache_.parameter_info.empty()) {
-            // We can't cleanly log here, but it also doesn't really matter
-            return static_cast<int32>(
-                function_result_cache_.parameter_info.size());
-        }
-    }
-
-    // The first time either of these two functions is called we'll fetch the
-    // infos for all parameters. These are cleared when the plugin triggers a
-    // component restart.
-    query_parameter_info();
+    // bug, see <https://github.com/robbert-vdh/yabridge/issues/236>. The first
+    // time either of these two functions is called we'll fetch the infos for
+    // all parameters. These are cleared when the plugin triggers a component
+    // restart.
+    maybe_query_parameter_info();
 
     std::lock_guard lock(function_result_cache_mutex_);
     return static_cast<int32>(function_result_cache_.parameter_info.size());
@@ -655,29 +643,7 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getParameterInfo(
     }
 
     // See above
-    {
-        std::lock_guard lock(function_result_cache_mutex_);
-        if (!function_result_cache_.parameter_info.empty()) {
-            if (paramIndex <
-                static_cast<int32>(
-                    function_result_cache_.parameter_info.size())) {
-                if (const auto& result =
-                        function_result_cache_.parameter_info[paramIndex]) {
-                    info = *result;
-                    return Steinberg::kResultOk;
-                } else {
-                    return Steinberg::kResultFalse;
-                }
-            } else {
-                return Steinberg::kInvalidArgument;
-            }
-        }
-    }
-
-    // The first time either of these two functions is called we'll fetch the
-    // infos for all parameters. These are cleared when the plugin triggers a
-    // component restart.
-    query_parameter_info();
+    maybe_query_parameter_info();
 
     std::lock_guard lock(function_result_cache_mutex_);
     if (paramIndex <
@@ -1379,12 +1345,17 @@ tresult PLUGIN_API Vst3PluginProxyImpl::getXmlRepresentationStream(
     }
 }
 
-void Vst3PluginProxyImpl::query_parameter_info() {
+void Vst3PluginProxyImpl::maybe_query_parameter_info() {
     std::lock_guard lock(function_result_cache_mutex_);
 
-    const GetParameterInfosResponse response = bridge_.send_message(
-        YaEditController::GetParameterInfos{.instance_id = instance_id()});
-    function_result_cache_.parameter_info = std::move(response.infos);
+    // We'll assume that the plugin has at least one parameter. If it does not
+    // have any parameters then everything will work as expected, except that
+    // the parameter count is not cached.
+    if (function_result_cache_.parameter_info.empty()) {
+        const GetParameterInfosResponse response = bridge_.send_message(
+            YaEditController::GetParameterInfos{.instance_id = instance_id()});
+        function_result_cache_.parameter_info = std::move(response.infos);
+    }
 }
 
 void Vst3PluginProxyImpl::clear_bus_cache() noexcept {
