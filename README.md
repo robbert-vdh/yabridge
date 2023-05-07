@@ -39,11 +39,11 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging 8.5.
+Yabridge has been tested under the following hosts using Wine Staging 8.7.
 
 | Host                              | VST2               | VST3                                                                 | CLAP                                                 |
 | --------------------------------- | ------------------ | -------------------------------------------------------------------- | ---------------------------------------------------- |
-| Bitwig Studio 4.4.10/5.0 beta 2\* | :heavy_check_mark: | :heavy_check_mark:                                                   | :heavy_check_mark:                                   |
+| Bitwig Studio 4.4.10/5.0 beta 6\* | :heavy_check_mark: | :heavy_check_mark:                                                   | :heavy_check_mark:                                   |
 | REAPER 6.73                       | :heavy_check_mark: | :heavy_check_mark:                                                   | :heavy_check_mark:                                   |
 | Carla 2.5.3                       | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                |
 | Qtractor 0.9.29                   | :heavy_check_mark: | :warning: VST3 editor windows may not have the correct size          | :warning: Qtractor may not support every CLAP plugin |
