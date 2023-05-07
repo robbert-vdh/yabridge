@@ -18,6 +18,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   to be released before informing Wine about the window's new screen
   coordinates. This prevents constant flickering when dragging plugin windows
   around with some plugin and window manager combinations.
+- Since the above change limits the number of times a plugin GUI potentially has
+  to redraw when dragging the window around to once, the workaround added to
+  yabridge 5.0.2 for _Audio Nebula Aurora FM_ implementing drawing in a very
+  suboptimal way has be reverted. This removes flickering when resizing for a
+  lot of plugin GUIs again.
 - Yabridge now preemptively unsets the `WAYLAND_DISPLAY` environment variable
   when launching Wine. Upstream Wine currently does not yet have a Wayland
   driver, but future versions may. When that happens yabridge's X11 window

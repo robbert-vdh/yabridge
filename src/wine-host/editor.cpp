@@ -448,7 +448,7 @@ void Editor::resize(uint16_t width, uint16_t height) {
         });
         SetWindowPos(win32_window_.handle_, nullptr, 0, 0, 0, 0,
                      SWP_NOSIZE | SWP_NOREDRAW | SWP_NOACTIVATE |
-                         SWP_NOOWNERZORDER | SWP_DEFERERASE);
+                         SWP_NOOWNERZORDER | SWP_DEFERERASE | SWP_NOCOPYBITS);
 
         // Make sure that after the resize the screen coordinates always match
         // up properly. Without this Soundtoys Crystallizer might appear choppy
@@ -1205,7 +1205,7 @@ LRESULT CALLBACK window_proc(HWND handle,
                 handle, GWLP_USERDATA,
                 static_cast<LONG_PTR>(reinterpret_cast<size_t>(editor)));
         } break;
-        // Setting `SWP_DEFERERASE` somewhat reduces flickering on
+        // Setting `SWP_NOCOPYBITS` somewhat reduces flickering on
         // `fix_local_coordinates()` calls with plugins that don't do double
         // buffering since it speeds up the redrawing process.
         case WM_WINDOWPOSCHANGING: {
@@ -1216,7 +1216,7 @@ LRESULT CALLBACK window_proc(HWND handle,
             }
 
             WINDOWPOS* info = reinterpret_cast<WINDOWPOS*>(lParam);
-            info->flags |= SWP_DEFERERASE;
+            info->flags |= SWP_DEFERERASE | SWP_NOCOPYBITS;
         } break;
         case WM_TIMER: {
             auto editor = reinterpret_cast<Editor*>(
