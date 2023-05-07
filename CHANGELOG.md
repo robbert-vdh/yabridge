@@ -21,24 +21,23 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Yabridge now preemptively unsets the `WAYLAND_DISPLAY` environment variable
   when launching Wine. Upstream Wine currently does not yet have a Wayland
   driver, but future versions may. When that happens yabridge's X11 window
-  embedding would otherwise suddenly start breaking spectacularly. This change
-  makes sure that Wine will keep using X11 even if Wayland support becomes
-  available at some point.
+  embedding may suddenly start breaking spectacularly. This change makes sure
+  that Wine will keep using X11 even if Wayland support becomes available at
+  some point.
 
 ### Fixed
 
-- Negative indices were not treated as invalid arguments in some of the VST3
-  interface implementations and could cause crashes if a plugin for instance
-  tried to query a parameter value with signed index -1. This has now been
-  fixed. The issue only appeared with the VST3 validator, and not with any
-  regular hosts.
 - Fixed a race condition that could occur when a CLAP plugin instance would
   request a host callback while the host simultaneously tried to create another
   instance of the same plugin. This would result in a deadlock. An example of a
   plugin that triggered this is _PolyChrome DSP's McRocklin Suite_.
 - Mutually recursive callbacks are now enabled for more CLAP lifetime function
-  calls. This was also needed to avoid a deadlock in _PolyChrome DSP's McRocklin
-  Suite_, as it changes its latency while being initialized.
+  calls. This was another change needed to avoid a deadlock in _PolyChrome DSP's
+  McRocklin Suite_, as it changes its latency while being initialized.
+- Negative indices were not treated as invalid arguments in some of the VST3
+  interface implementations and could cause crashes if a plugin tried to query a
+  parameter value with signed index -1. This has now been fixed. The issue only
+  appeared with the VST3 validator, and not with any regular hosts or DAWs.
 
 ### yabridgectl
 
