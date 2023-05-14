@@ -60,6 +60,11 @@ compiler_options = [
   # CPUs, but when we're compiling the 32-bit bitbridge we need to manually add
   # this flag.
   '-msse2',
+  # FIXME: Bitsery relies on the definitions from `<cstdint>`, which is no
+  #        longer included transitively with GCC 13. This should be removed once
+  #        bitsery is updated to support GCC 13.
+  '-include',
+  'cstdint',
 ]
 
 chainloader_compiler_options = [
