@@ -676,6 +676,32 @@ plugin-specific issues.
   instances of a single VST2 plugin, using the VST3 or CLAP version of that
   plugin may also help since they'll share a single process.
 
+  Alternatively you can try increasing Xorg's limit itself.
+  First, check what your current limit is:
+  In a terminal, run: `less /var/log/Xorg.0.1` (or use any other text editor)
+  Search for a line containing "MaxClients". This then states the currently set
+  limit.
+  Then check if higher values are supported:
+  In a terminal, run: `/usr/lib/Xorg -maxclients 9999`
+  This should give an error message and show some information like this:
+
+  > maxclients must be one of 64, 128, 256, 512, 1024 or 2048
+
+  Let's say we pick 1024. Here's how to apply it.
+  Create this file (will require sudo): `/etc/X11/xorg.conf.d/99-maxclients.conf`
+  Add this content:
+
+  ```
+  Section "ServerFlags"
+      Option "MaxClients" "1024"
+  EndSection
+  ```
+
+  Save and reboot your system. Once you are logged back in, you can verify that
+  the setting has been applied by using the same approach for checking the
+  previously set limit (see above). Now it should be less likely to run into the
+  previous issue regarding "too many clients" when opening lots of plugins.
+
 - If you're using a `WINELOADER` that runs the Wine process under a separate
   namespace while the host is not sandboxed, then you'll have to use the
   `YABRIDGE_NO_WATCHDOG` environment variable to disable the watchdog timer. If
