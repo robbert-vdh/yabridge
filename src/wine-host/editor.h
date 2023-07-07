@@ -486,4 +486,14 @@ class Editor {
      * The atom corresponding to `_XEMBED`.
      */
     xcb_atom_t xcb_xembed_message_;
+
+    /**
+     * Used to indicate whether key events detected on wine window should
+     * additionally be forwarded to host window. Toggled via a 'shift + hover
+     * + XCB_ENTER_NOTIFY' mechanism.
+     *
+     * NOTE: This is more of a "top-level switch" and only really used for
+     *       REAPER. Furthermore, only a subset of key events is forwarded.
+     */
+    bool forward_key_events_to_host_ = true;
 };
