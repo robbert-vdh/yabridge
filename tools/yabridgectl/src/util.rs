@@ -227,22 +227,20 @@ pub fn normalize_path(path: &Path) -> PathBuf {
 /// This is a bit messy, and with yabridge 2.1 automatically searching in `~/.local/share/yabridge`
 /// it's probably not really needed anymore, but it could still be useful in some edge case
 /// scenarios.
-pub fn verify_path_setup(config: &Config) -> Result<bool> {
+pub fn verify_path_setup() -> Result<bool> {
     // First we'll check `~/.local/share/yabridge`, since that's a special location where yabridge
     // will always search
-    let xdg_data_yabridge_exists = config::yabridge_directories()
-        .map(|dirs| {
-            dirs.get_data_home()
-                .join(YABRIDGE_HOST_EXE_NAME)
-                .is_executable()
-        })
+    let xdg_data_yabridge = config::yabridge_directories().map(|dirs| dirs.get_data_home());
+    let xdg_data_yabridge_exists = xdg_data_yabridge
+        .map(|data_home| data_home.join(YABRIDGE_HOST_EXE_NAME).is_executable())
         .unwrap_or(false);
     if xdg_data_yabridge_exists {
         return Ok(true);
     }
 
     // Then we'll check the login shell, since DAWs launched from the GUI will have the same
-    // environment
+    // environment. This check is mostly vestigial since people really shouldn't be installing
+    // yabridge to random locations anymore.
     match env::var("SHELL") {
         Ok(shell_path) => {
             // `$SHELL` will often contain a full path, but it doesn't have to
@@ -307,18 +305,17 @@ pub fn verify_path_setup(config: &Config) -> Result<bool> {
                     eprintln!(
                         "\n{}",
                         wrap(&format!(
-                            "Warning: 'yabridge-host.exe' is not present in your login shell's \
-                             search path. Yabridge won't be able to run using the copy-based \
-                             installation method until this is fixed.\n\
-                             Add '{}' to {}'s login shell {} environment variable. See the \
-                             troubleshooting section of the readme for more details. Rerun this \
-                             command to verify that the variable has been set correctly, and then \
-                             reboot your system to complete the setup.\n\
+                            "Warning: '{}' is not present in either '{}' your login shell's \
+                             search path. You may not have extracted yabridge's files to the correct location. \
+                             See the readme's usage section for more details. Rerun this command to verify \
+                             that the variable has been set correctly.\n\
                              \n\
-                             https://github.com/robbert-vdh/yabridge#troubleshooting-common-issues",
-                            config.files()?.vst2_chainloader.parent().unwrap().display(),
-                            shell.bright_white(),
-                            "PATH".bright_white()
+                             https://github.com/robbert-vdh/yabridge#usage",
+                            "yabridge-host.exe".bright_white(),
+                            // We could grab the actual `$XDG_DATA_HOME` location here but most
+                            // people will not have set that environment variable and this looks a
+                            // bit clearer
+                            "~/.local/share/yabridge".bright_white(),
                         ))
                     );
 

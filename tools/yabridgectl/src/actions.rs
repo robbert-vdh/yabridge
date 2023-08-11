@@ -833,7 +833,7 @@ pub fn do_sync(config: &mut Config, options: &SyncOptions) -> Result<()> {
     // The path setup is to make sure that the `libyabridge-chainloader-{clap,vst2,vst3}.so` copies can
     // find `yabridge-host.exe` and by extension the plugin libraries. That last part should already
     // be the case if we get to this point though.
-    verify_path_setup(config)?;
+    verify_path_setup()?;
 
     // This check is only performed once per combination of Wine and yabridge versions
     verify_wine_setup(config)?;

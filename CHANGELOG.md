@@ -8,6 +8,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### yabridgectl
+
+- Some outdated warning messages have been updated to make yabridge's current
+  state.
+
 ### Packaging notes
 
 - This release includes a workaround to make bitsery compile with GCC 13 due to
