@@ -308,11 +308,13 @@ impl Config {
         let yabridge_host_exe = which(YABRIDGE_HOST_EXE_NAME).ok();
         let yabridge_host_exe_so = yabridge_host_exe
             .as_ref()
-            .map(|path| path.with_extension("exe.so"));
+            .map(|path| path.with_extension("exe.so"))
+            .filter(|path| path.exists());
         let yabridge_host_32_exe = which(YABRIDGE_HOST_32_EXE_NAME).ok();
         let yabridge_host_32_exe_so = yabridge_host_32_exe
             .as_ref()
-            .map(|path| path.with_extension("exe.so"));
+            .map(|path| path.with_extension("exe.so"))
+            .filter(|path| path.exists());
 
         Ok(YabridgeFiles {
             vst2_chainloader,
