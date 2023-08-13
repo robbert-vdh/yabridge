@@ -304,7 +304,10 @@ impl Config {
         };
 
         // `yabridge-host.exe` should either be in the search path, or it should be in
-        // `~/.local/share/yabridge` (which was appended to the `$PATH` at the start of `main()`)
+        // `~/.local/share/yabridge` (which was appended to the `$PATH` at the start of `main()`).
+        // `which()` also ensures that the files are executable. Some methods of extracting and
+        // copying archive strip the executable bit, in which case they will show up as not found
+        // here.
         let yabridge_host_exe = which(YABRIDGE_HOST_EXE_NAME).ok();
         let yabridge_host_exe_so = yabridge_host_exe
             .as_ref()

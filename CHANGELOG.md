@@ -11,7 +11,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### yabridgectl
 
 - Some outdated warning messages have been updated to make yabridge's current
-  state.
+  state. There are also additional warnings when detecting common installation
+  issues.
 
 ### Packaging notes
 

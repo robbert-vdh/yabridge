@@ -231,11 +231,26 @@ pub fn verify_path_setup() -> Result<bool> {
     // First we'll check `~/.local/share/yabridge`, since that's a special location where yabridge
     // will always search
     let xdg_data_yabridge = config::yabridge_directories().map(|dirs| dirs.get_data_home());
-    let xdg_data_yabridge_exists = xdg_data_yabridge
-        .map(|data_home| data_home.join(YABRIDGE_HOST_EXE_NAME).is_executable())
-        .unwrap_or(false);
-    if xdg_data_yabridge_exists {
-        return Ok(true);
+    let xdg_yabridge_host_exe_path =
+        xdg_data_yabridge.map(|data_home| data_home.join(YABRIDGE_HOST_EXE_NAME));
+    match xdg_yabridge_host_exe_path {
+        Ok(path) if path.is_executable() => return Ok(true),
+        // If the file does exist but is not executable, it's almost certainly a mistake. This has
+        // happened once or twice before. Some archive extraction programs seem to strip the
+        // executable bits.
+        Ok(path) if path.exists() => {
+            eprintln!(
+                "\n{}",
+                wrap(&format!(
+                    "WARNING: '{}' exists but is not executable. Something probably went wrong \
+                     when extracting yabridge's files.",
+                    path.display().to_string().bright_white(),
+                ))
+            );
+
+            return Ok(false);
+        }
+        _ => (),
     }
 
     // Then we'll check the login shell, since DAWs launched from the GUI will have the same
