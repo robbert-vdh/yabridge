@@ -28,7 +28,6 @@ use std::os::unix::fs as unix_fs;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use textwrap::Wrapper;
 
 use crate::config::{self, Config, KnownConfig, YABRIDGE_HOST_32_EXE_NAME, YABRIDGE_HOST_EXE_NAME};
 use crate::files::{LibArchitecture, NativeFile};
@@ -297,7 +296,7 @@ pub fn verify_path_setup() -> Result<bool> {
                         "\n{}",
                         wrap(&format!(
                             "WARNING: Yabridgectl does not know how to handle your login shell \
-                             '{}', skipping PATH environment variable check. Feel free to open a \
+                             '{}', skipping the PATH environment variable check. Feel free to open a \
                              feature request in order to get yabridgectl to support your shell.\n\
                              \n\
                              https://github.com/robbert-vdh/yabridge/issues",
@@ -340,7 +339,7 @@ pub fn verify_path_setup() -> Result<bool> {
                     eprintln!(
                         "\n{}",
                         wrap(&format!(
-                            "Warning: could not run {} as a login shell, skipping PATH setup \
+                            "Warning: could not run {} as a login shell, skipping the PATH setup \
                              check: {}",
                             shell.bright_white(),
                             err
@@ -352,7 +351,7 @@ pub fn verify_path_setup() -> Result<bool> {
             }
         }
         Err(_) => {
-            eprintln!("\nWarning: Could not determine login shell, skipping PATH setup check");
+            eprintln!("\nWarning: Could not determine login shell, skipping the PATH setup check");
 
             Ok(true)
         }
@@ -508,7 +507,7 @@ pub fn verify_external_dependencies() -> Result<()> {
 /// Wrap a long paragraph of text to terminal width, or 80 characters if the width of the terminal
 /// can't be determined. Everything after the first line gets indented with four spaces.
 pub fn wrap(text: &str) -> String {
-    let wrapper = Wrapper::with_termwidth().subsequent_indent("    ");
+    let options = textwrap::Options::with_termwidth().subsequent_indent("    ");
 
-    wrapper.fill(text)
+    textwrap::fill(text, options)
 }
