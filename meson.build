@@ -243,14 +243,14 @@ if with_system_asio
   endif
 
   asio_version = meson.get_compiler('cpp', native : true).get_define('ASIO_VERSION', prefix : '#include <asio.hpp>')
-  if asio_version.to_int() < 102000
-    error('Expected version 1.22.0 of the asio library or higher, found @0@ (MMmmrr)'.format(asio_version))
+  if asio_version.to_int() < 102800
+    error('Expected version 1.28.0 of the asio library or higher, found @0@ (MMmmrr)'.format(asio_version))
   endif
 
   # This is a dummy dependency, since the library is only accessible implicitly through the system include path
   asio_dep = declare_dependency()
 else
-  asio_dep = dependency('asio', version : '>=1.22.0')
+  asio_dep = dependency('asio', version : '>=1.28.0')
 endif
 
 if meson.version().version_compare('>=0.60')

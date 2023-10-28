@@ -1,7 +1,7 @@
 [wrap-git]
 url = https://github.com/chriskohlhoff/asio.git
-# This is tag asio-1-22-1
-revision = bba12d10501418fd3789ce01c9f86a77d37df7ed
+# This is tag asio-1-28-2
+revision = 7609450f71434bdc9fbd9491a9505b423c2a8496
 depth = 1
 patch_directory = asio
 
