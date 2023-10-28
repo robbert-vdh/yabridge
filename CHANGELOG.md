@@ -25,8 +25,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - This release includes a workaround to make bitsery compile with GCC 13 due to
   changes in transitive header includes.
 - The asio dependency has been updated to target version 1.28.2.
-- The bitsery dependency has been updated to version 5.2.3.
-- The function2 dependency has been updated to version 4.2.3.
+- The bitsery dependency has been updated to version 5.2.3 (revision version
+  bump).
+- The function2 dependency has been updated to version 4.2.3 (revision version
+  bump).
 - The tomlplusplus dependency has been updated to target version 3.4.0.
 
 ## [5.0.5] - 2023-05-07
