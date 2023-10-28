@@ -81,14 +81,14 @@ class PluginBridge {
     PluginBridge(PluginType plugin_type,
                  const ghc::filesystem::path& plugin_path,
                  F&& create_socket_instance)
-        // This is still correct for VST3 plugins because we can configure an
-        // entire directory (the module's bundle) at once
-        : config_(load_config_for(plugin_path)),
-          info_(plugin_type, plugin_path, config_.vst3_prefer_32bit),
-          io_context_(),
+        : io_context_(),
           sockets_(create_socket_instance(io_context_, info_)),
           generic_logger_(Logger::create_from_environment(
               create_logger_prefix(sockets_.base_dir_))),
+          // This works for both individual files (VST2 and CLAP) and entire
+          // directories (VST3)
+          config_(load_config_for(plugin_path, generic_logger_)),
+          info_(plugin_type, plugin_path, config_.vst3_prefer_32bit),
           plugin_host_(
               config_.group
                   ? std::unique_ptr<HostProcess>(std::make_unique<GroupHost>(
@@ -438,19 +438,6 @@ class PluginBridge {
         }
     }
 
-    /**
-     * The configuration for this instance of yabridge. Set based on the values
-     * from a `yabridge.toml`, if it exists.
-     *
-     * @see ../utils.h:load_config_for
-     */
-    Configuration config_;
-
-    /**
-     * Information about the plugin we're bridging.
-     */
-    const PluginInfo info_;
-
     asio::io_context io_context_;
 
     /**
@@ -470,6 +457,19 @@ class PluginBridge {
      * @see Logger::create_from_env
      */
     Logger generic_logger_;
+
+    /**
+     * The configuration for this instance of yabridge. Set based on the values
+     * from a `yabridge.toml`, if it exists.
+     *
+     * @see ../utils.h:load_config_for
+     */
+    Configuration config_;
+
+    /**
+     * Information about the plugin we're bridging.
+     */
+    const PluginInfo info_;
 
     /**
      * The Wine process hosting our plugins. In the case of group hosts a

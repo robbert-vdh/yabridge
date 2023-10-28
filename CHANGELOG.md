@@ -8,6 +8,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Parsing failures for `yabridge.toml` files will no longer cause plugins to
+  fail to load. If that happens, you'll now get a desktop notification and the
+  plugin will use the default settings instead.
+
 ### yabridgectl
 
 - Some outdated warning messages have been updated to make yabridge's current

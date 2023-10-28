@@ -29,7 +29,7 @@ Configuration::Configuration() noexcept {}
 Configuration::Configuration(const fs::path& config_path,
                              const fs::path& yabridge_path)
     : Configuration() {
-    // Will throw a `toml::parsing_error` if the file cannot be parsed. Better
+    // Will throw a `toml::parse_error` if the file cannot be parsed. Better
     // to throw here rather than failing silently since syntax errors would
     // otherwise be impossible to spot. We'll also have to sort all tables by
     // the location in the file since tomlplusplus internally uses ordered maps

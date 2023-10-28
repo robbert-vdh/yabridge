@@ -19,6 +19,7 @@
 #include <variant>
 
 #include "../common/configuration.h"
+#include "../common/logging/common.h"
 #include "../common/plugins.h"
 #include "../common/process.h"
 #include "../common/utils.h"
@@ -238,12 +239,17 @@ ghc::filesystem::path generate_group_endpoint(
  * See the docstrong on the `Configuration` class for more details on how to
  * choose the config file to load.
  *
- * This function will take any optional compile-time features that have not been
- * enabled into account.
+ * If the configuration file has syntax errors, then an error will be logged and
+ * the defaults will be used instead.
+ *
+ * This function will also take any optional compile-time features that have not
+ * been enabled into account.
  *
  * @param yabridge_path The path to the .so file that's being loaded.by the VST
  *   host. This will be used both for the starting location of the search and to
  *   determine which section in the config file to use.
+ * @param logger The logger used to log parsing errors to. Parsing errors are
+ *   non-fatal, but they should still be very visible.
  *
  * @return Either a configuration object populated with values from matched glob
  *   pattern within the found configuration file, or an empty configuration
@@ -252,7 +258,8 @@ ghc::filesystem::path generate_group_endpoint(
  *
  * @see Configuration
  */
-Configuration load_config_for(const ghc::filesystem::path& yabridge_path);
+Configuration load_config_for(const ghc::filesystem::path& yabridge_path,
+                              Logger& logger);
 
 /**
  * Starting from the starting file or directory, go up in the directory

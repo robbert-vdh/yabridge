@@ -30,9 +30,9 @@
  * plugins that will be hosted in the same process rather than individually so
  * they can share resources. Configuration file loading works as follows:
  *
- * 1. `load_config_for(path)` from `src/plugin/utils.h` gets called with a path
- *    to the copy of or symlink to `libyabridge-{clap,vst2,vst3}.so` that the
- *    plugin host has tried to load.
+ * 1. `load_config_for(path, ...)` from `src/plugin/utils.h` gets called with a
+ *    path to the copy of or symlink to `libyabridge-{clap,vst2,vst3}.so` that
+ *    the plugin host has tried to load.
  * 2. We start looking for a file named `yabridge.toml` in the same directory as
  *    that `.so` file, iteratively continuing to search one directory higher
  *    until we either find the file or we reach the filesystem root.
@@ -64,7 +64,7 @@ class Configuration {
      * configuration file. Will leave the object empty if the plugin cannot be
      * matched to any of the patterns. Not meant to be used directly.
      *
-     * @throw toml::parsing_error If the file could not be parsed.
+     * @throw toml::parse_error If the file could not be parsed.
      *
      * @see ../plugin/utils.h:load_config_for
      */

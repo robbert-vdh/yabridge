@@ -23,6 +23,8 @@
 #include <config.h>
 
 #include "../common/configuration.h"
+#include "../common/notifications.h"
+#include "../common/toml++.h"
 #include "../common/utils.h"
 
 namespace fs = ghc::filesystem;
@@ -396,7 +398,7 @@ ghc::filesystem::path generate_group_endpoint(
     return get_temporary_directory() / socket_name.str();
 }
 
-Configuration load_config_for(const fs::path& yabridge_path) {
+Configuration load_config_for(const fs::path& yabridge_path, Logger& logger) {
     // First find the closest `yabridge.tmol` file for the plugin, falling back
     // to default configuration settings if it doesn't exist
     const std::optional<fs::path> config_file =
@@ -405,5 +407,25 @@ Configuration load_config_for(const fs::path& yabridge_path) {
         return Configuration();
     }
 
-    return Configuration(*config_file, yabridge_path);
+    try {
+        return Configuration(*config_file, yabridge_path);
+    } catch (const toml::parse_error& error) {
+        // Parsing failures should be non-fatal since that leads to a pretty
+        // confusing user experience (see
+        // https://github.com/robbert-vdh/yabridge/issues/282). They should,
+        // however, still result in a visible error.
+        logger.log("");
+        logger.log("The configuration file at '" + config_file->string() +
+                   "' could not be parsed:");
+        logger.log(error.what());
+        logger.log("");
+
+        send_notification(
+            "Failed to parse yabridge.toml file",
+            "The configuration file at '" + config_file->string() +
+                "' could not be parsed: " + std::string(error.description()),
+            std::nullopt);
+
+        return Configuration();
+    }
 }
