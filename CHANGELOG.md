@@ -24,6 +24,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - This release includes a workaround to make bitsery compile with GCC 13 due to
   changes in transitive header includes.
+- The tomlplusplus dependency has been updated to target version 3.4.0.
 
 ## [5.0.5] - 2023-05-07
 

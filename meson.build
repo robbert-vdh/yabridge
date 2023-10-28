@@ -270,8 +270,10 @@ dbus_dep = dependency('dbus-1').partial_dependency(compile_args : true, includes
 function2_dep = dependency('function2', version : '>=4.0.0')
 ghc_filesystem_dep = dependency('ghc_filesystem', modules : 'ghcFilesystem::ghc_filesystem', version : '>=1.5.0')
 threads_dep = dependency('threads')
-# Tomlplusplus recently added a shraed library version. We don't want to link to that.
-tomlplusplus_dep = dependency('tomlplusplus', version : '>=3.3.0', default_options : ['compile_library=false']).partial_dependency(compile_args : true, includes : true)
+# Tomlplusplus recently added a shraed library version. We don't want to link to
+# that. `compile_library` is deprecated but it (incorrectly) defaults to `true`
+# so we can't omit it.
+tomlplusplus_dep = dependency('tomlplusplus', version : '>=3.4.0', default_options : ['compile_library=false']).partial_dependency(compile_args : true, includes : true)
 
 dl_dep = declare_dependency(link_args : '-ldl')
 rt_dep = declare_dependency(link_args : '-lrt')
