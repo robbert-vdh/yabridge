@@ -29,6 +29,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   bump).
 - The function2 dependency has been updated to version 4.2.3 (revision version
   bump).
+- The `ghc::filesystem` dependency has been updated to version 1.5.14 (revision
+  version bump).
 - The tomlplusplus dependency has been updated to target version 3.4.0.
 
 ## [5.0.5] - 2023-05-07
