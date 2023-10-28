@@ -1,7 +1,7 @@
 [wrap-git]
 url = https://github.com/free-audio/clap.git
-# This is tag 1.1.7
-revision = 065d685d4e9657f0344f350eef748be2b4d8e318
+# This is tag 1.1.9
+revision = 094bb76c85366a13cc6c49292226d8608d6ae50c
 depth = 1
 patch_directory = clap
 

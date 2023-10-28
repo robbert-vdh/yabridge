@@ -24,6 +24,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - This release includes a workaround to make bitsery compile with GCC 13 due to
   changes in transitive header includes.
+- The CLAP dependency has been updated to target version 1.1.9 (revision version
+  update).
 - The asio dependency has been updated to target version 1.28.2.
 - The bitsery dependency has been updated to version 5.2.3 (revision version
   bump).

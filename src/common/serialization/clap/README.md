@@ -35,17 +35,19 @@ Yabridge currently tracks CLAP 1.1.2. The implementation status for CLAP's core 
 | `clap.timer-support`      | :heavy_check_mark: No bridging involved                                 |
 | `clap.voice-info`         | :heavy_check_mark:                                                      |
 
-| draft extension                  | status                                                   |
-| -------------------------------- | -------------------------------------------------------- |
-| `clap.ambisonic.draft/0`         | :x: Will be supported once the extension gets stabilized |
-| `clap.check_for_update.draft/0`  | :x: Will be supported once the extension gets stabilized |
-| `clap.cv.draft/0`                | :x: Will be supported once the extension gets stabilized |
-| `clap.file-reference.draft/0`    | :x: Will be supported once the extension gets stabilized |
-| `clap.midi-mappings.draft/0`     | :x: Will be supported once the extension gets stabilized |
-| `clap.preset-load.draft/0`       | :x: Will be supported once the extension gets stabilized |
-| `clap.quick-controls.draft/0`    | :x: Will be supported once the extension gets stabilized |
-| `clap.state-context.draft/1`     | :x: Will be supported once the extension gets stabilized |
-| `clap.surround.draft/1`          | :x: Will be supported once the extension gets stabilized |
-| `clap.track-info.draft/0`        | :x: Will be supported once the extension gets stabilized |
-| `clap.transport-control.draft/0` | :x: Will be supported once the extension gets stabilized |
-| `clap.tuning.draft/2`            | :x: Will be supported once the extension gets stabilized |
+| draft extension                        | status                                                   |
+| -------------------------------------- | -------------------------------------------------------- |
+| `clap.ambisonic.draft*`                | :x: Will be supported once the extension gets stabilized |
+| `clap.configurable-audio-ports.draft*` | :x: Will be supported once the extension gets stabilized |
+| `clap.extensible-audio-ports.draft*`   | :x: Will be supported once the extension gets stabilized |
+| `clap.check_for_update.draft*`         | :x: Will be supported once the extension gets stabilized |
+| `clap.cv.draft*`                       | :x: Will be supported once the extension gets stabilized |
+| `clap.file-reference.draft*`           | :x: Will be supported once the extension gets stabilized |
+| `clap.midi-mappings.draft*`            | :x: Will be supported once the extension gets stabilized |
+| `clap.preset-load.draft*`              | :x: Will be supported once the extension gets stabilized |
+| `clap.quick-controls.draft*`           | :x: Will be supported once the extension gets stabilized |
+| `clap.state-context.draft*`            | :x: Will be supported once the extension gets stabilized |
+| `clap.surround.draft*`                 | :x: Will be supported once the extension gets stabilized |
+| `clap.track-info.draft*`               | :x: Will be supported once the extension gets stabilized |
+| `clap.transport-control.draft*`        | :x: Will be supported once the extension gets stabilized |
+| `clap.tuning.draft*`                   | :x: Will be supported once the extension gets stabilized |
