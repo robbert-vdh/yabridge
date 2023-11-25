@@ -608,6 +608,23 @@ plugin-specific issues.
   of your plugins to use that specific Wine prefix, then you should unset it to
   allow yabridge to automatically detect Wine prefixes for you.
 
+- If you get a warning about a low `RLIMIT_RTTIME` value of 200000 microseconds,
+  then your DAW is running in an environment where _rtkit_ is active. Rtkit is
+  used to grant realtime scheduling privileges to applications in environments
+  where users can't do that themselves, but it also imposes severe limitations
+  on what those applications can do. Applications known for doing this are:
+
+  - **PipeWire**. With PipeWire versions above 0.3.44, you simply need to make
+    sure your user has realtime priviliges. Follow the instructions from the
+    section below to enable this and then reboot your system.
+  - **GNOME 45+**. Recent GNOME shell versions started using rtkit in the shell
+    itself. As far as I'm aware, this happens unconditionally, and masking the
+    rtkit service to prevent it from running is the only workaround. Make sure
+    your user has realtime priviliges set up according to the instructions from
+    the section below, and then run `sudo systemctl mask rtkit-daemon.service`.
+    The warning should disappear after rebooting. Please let me know if anyone
+    knows a better solution for this problem!
+
 - If yabridge prints errors or warnings about memory locking limits, then that
   means that you have not yet set up realtime privileges for your user. Setting
   the memlock limit to unlimited (or -1) is usually part of this process. How
@@ -621,16 +638,6 @@ plugin-specific issues.
   `/etc/security/limits.d/audio.conf` exists, then you can simply add yourself
   to the `audio` group and reboot. In any other case you may need to [set this
   up yourself](https://jackaudio.org/faq/linux_rt_config.html).
-
-- The above process also applies to warnings about low `RLIMIT_RTTIME` values
-  when using PipeWire's JACK implementation. If you don't change this, then
-  certain slow loading plugins may crash during initialization or at any other
-  time. **Starting with PipeWire 0.3.44, you only need to make sure your user
-  has realtime privileges to resolve this warning.** If your user does not have
-  these permissions, then PipeWire will use RTKit instead of regular realtime
-  scheduling which requires this limit to be set for it to work. You may also
-  want to give [this](https://github.com/robbert-vdh/dotfiles#pipewire)
-  optimized PipeWire configuration a try.
 
 - If you're seeing errors related to Wine either when running `yabridgectl sync`
   or when trying to load a plugin, then it can be that your installed version of
