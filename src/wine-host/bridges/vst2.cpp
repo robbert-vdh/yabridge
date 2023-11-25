@@ -98,12 +98,16 @@ static const std::unordered_set<int> safe_mutually_recursive_requests{
  *       New Sonic Arts' Vice plugin spawns a new thread and calls drawing code
  *       while changing sample rate and block size. We'll need to see if doing
  *       this on the main thread introduces any regressions.
+ * NOTE: `effVendorSpecific` is used by Renoise to set the content scale, so it
+ *       needs to run on the main thread:
+ *
+ *       (<https://github.com/juce-framework/JUCE/blob/d054f0d14dcac387aebda44ce5d792b5e7a625b3/modules/juce_audio_plugin_client/juce_audio_plugin_client_VST2.cpp#L1812-L1814>)
  */
 static const std::unordered_set<int> unsafe_requests{
-    effOpen,          effClose,       effEditGetRect,   effEditOpen,
-    effEditClose,     effEditIdle,    effEditTop,       effMainsChanged,
-    effGetChunk,      effSetChunk,    effBeginLoadBank, effBeginLoadProgram,
-    effSetSampleRate, effSetBlockSize};
+    effOpen,          effClose,        effEditGetRect,   effEditOpen,
+    effEditClose,     effEditIdle,     effEditTop,       effMainsChanged,
+    effGetChunk,      effSetChunk,     effBeginLoadBank, effBeginLoadProgram,
+    effSetSampleRate, effSetBlockSize, effVendorSpecific};
 
 /**
  * These opcodes from `unsafe_requests` should be run under realtime scheduling
