@@ -398,7 +398,7 @@ ghc::filesystem::path generate_group_endpoint(
     return get_temporary_directory() / socket_name.str();
 }
 
-Configuration load_config_for(const fs::path& yabridge_path, Logger& logger) {
+Configuration load_config_for(const fs::path& yabridge_path) {
     // First find the closest `yabridge.tmol` file for the plugin, falling back
     // to default configuration settings if it doesn't exist
     const std::optional<fs::path> config_file =
@@ -410,6 +410,8 @@ Configuration load_config_for(const fs::path& yabridge_path, Logger& logger) {
     try {
         return Configuration(*config_file, yabridge_path);
     } catch (const toml::parse_error& error) {
+        Logger logger = Logger::create_exception_logger();
+
         // Parsing failures should be non-fatal since that leads to a pretty
         // confusing user experience (see
         // https://github.com/robbert-vdh/yabridge/issues/282). They should,

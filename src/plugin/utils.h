@@ -248,8 +248,6 @@ ghc::filesystem::path generate_group_endpoint(
  * @param yabridge_path The path to the .so file that's being loaded.by the VST
  *   host. This will be used both for the starting location of the search and to
  *   determine which section in the config file to use.
- * @param logger The logger used to log parsing errors to. Parsing errors are
- *   non-fatal, but they should still be very visible.
  *
  * @return Either a configuration object populated with values from matched glob
  *   pattern within the found configuration file, or an empty configuration
@@ -258,8 +256,7 @@ ghc::filesystem::path generate_group_endpoint(
  *
  * @see Configuration
  */
-Configuration load_config_for(const ghc::filesystem::path& yabridge_path,
-                              Logger& logger);
+Configuration load_config_for(const ghc::filesystem::path& yabridge_path);
 
 /**
  * Starting from the starting file or directory, go up in the directory
