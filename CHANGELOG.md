@@ -14,6 +14,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   fail to load. If that happens, you'll now get a desktop notification and the
   plugin will use the default settings instead.
 
+### Fixed
+
+- Fixed freezes in new versions of **Renoise** when it tries to set DPI scaling
+  for VST2 plugins.
+
 ### yabridgectl
 
 - Some outdated warning messages have been updated to make yabridge's current
