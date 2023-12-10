@@ -14,6 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// Generated inside of the build directory
+#include <version.h>
+
 #include "../common/linking.h"
 #include "bridges/vst3.h"
 
@@ -164,4 +167,12 @@ yabridge_module_get_plugin_factory(Vst3PluginBridge* instance) {
     assert(instance);
 
     return instance->get_plugin_factory();
+}
+
+/**
+ * Returns the yabridge version in use. Can be queried by hosts through the
+ * chainloader. Both functions have the same name and signature.
+ */
+extern "C" YABRIDGE_EXPORT const char* yabridge_version() {
+    return yabridge_git_version;
 }

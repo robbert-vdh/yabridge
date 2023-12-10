@@ -54,7 +54,7 @@ PluginFactory* (*yabridge_module_get_plugin_factory)(
 // This bridges the `yabridge_version()` call from the plugin library. This
 // function was added later, so through weird version mixing it may be missing
 // on the yabridge library.
-char* (*remote_yabridge_version)() = nullptr;
+const char* (*remote_yabridge_version)() = nullptr;
 
 /**
  * The bridge instance for this chainloader. This is initialized when
@@ -164,7 +164,7 @@ extern "C" YABRIDGE_EXPORT PluginFactory* GetPluginFactory() {
  * wouldn't be very useful, and that would also cause the chainloader to be
  * rebuilt on every git commit in development.
  */
-extern "C" YABRIDGE_EXPORT char* yabridge_version() {
+extern "C" YABRIDGE_EXPORT const char* yabridge_version() {
     if (!initialize_library() || !remote_yabridge_version) {
         return nullptr;
     }

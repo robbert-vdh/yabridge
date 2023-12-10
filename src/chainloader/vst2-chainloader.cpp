@@ -52,7 +52,7 @@ AEffect* (*yabridge_plugin_init)(audioMasterCallback host_callback,
 // This bridges the `yabridge_version()` call from the plugin library. This
 // function was added later, so through weird version mixing it may be missing
 // on the yabridge library.
-char* (*remote_yabridge_version)() = nullptr;
+const char* (*remote_yabridge_version)() = nullptr;
 
 /**
  * The first time one of the exported functions from this library gets called,
@@ -127,7 +127,7 @@ YABRIDGE_EXPORT AEffect* deprecated_main(audioMasterCallback audioMaster) {
  * wouldn't be very useful, and that would also cause the chainloader to be
  * rebuilt on every git commit in development.
  */
-extern "C" YABRIDGE_EXPORT char* yabridge_version() {
+extern "C" YABRIDGE_EXPORT const char* yabridge_version() {
     if (!initialize_library() || !remote_yabridge_version) {
         return nullptr;
     }

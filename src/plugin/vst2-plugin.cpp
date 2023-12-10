@@ -16,6 +16,9 @@
 
 #include <vestige/aeffectx.h>
 
+// Generated inside of the build directory
+#include <version.h>
+
 #include "../common/linking.h"
 #include "bridges/vst2.h"
 
@@ -129,4 +132,12 @@ extern "C" YABRIDGE_EXPORT AEffect* yabridge_plugin_init(
 
         return nullptr;
     }
+}
+
+/**
+ * Returns the yabridge version in use. Can be queried by hosts through the
+ * chainloader. Both functions have the same name and signature.
+ */
+extern "C" YABRIDGE_EXPORT const char* yabridge_version() {
+    return yabridge_git_version;
 }

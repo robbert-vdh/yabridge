@@ -18,6 +18,9 @@
 
 #include <clap/entry.h>
 
+// Generated inside of the build directory
+#include <version.h>
+
 #include "bridges/clap.h"
 
 using namespace std::literals::string_literals;
@@ -166,4 +169,12 @@ extern "C" YABRIDGE_EXPORT const void* yabridge_module_get_factory(
     assert(factory_id);
 
     return instance->get_factory(factory_id);
+}
+
+/**
+ * Returns the yabridge version in use. Can be queried by hosts through the
+ * chainloader. Both functions have the same name and signature.
+ */
+extern "C" YABRIDGE_EXPORT const char* yabridge_version() {
+    return yabridge_git_version;
 }
