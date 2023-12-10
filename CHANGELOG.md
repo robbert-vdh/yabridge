@@ -13,7 +13,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - The yabridge libraries now export a `yabridge_version` function that hosts can
   query to get the yabridge version in use. This will return the yabridge
   version that would be loaded when using the plugin, also when called on the
-  chainloading libraries.
+  chainloading libraries. This is used to fix a regression in **Ardour** 7.3+
+  once version 8.2 is released.
 
 ### Changed
 
