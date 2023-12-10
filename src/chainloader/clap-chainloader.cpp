@@ -51,6 +51,11 @@ void (*yabridge_module_free)(ClapPluginBridge* instance) = nullptr;
 const void* (*yabridge_module_get_factory)(ClapPluginBridge* instance,
                                            const char* factory_id) = nullptr;
 
+// This bridges the `yabridge_version()` call from the plugin library. This
+// function was added later, so through weird version mixing it may be missing
+// on the yabridge library.
+char* (*remote_yabridge_version)() = nullptr;
+
 /**
  * The bridge instance for this chainloader. This is initialized when
  * `clap_entry.init` first gets called.
@@ -89,21 +94,27 @@ bool initialize_library() {
         return false;
     }
 
-#define LOAD_FUNCTION(name)                                                 \
+#define MAYBE_LOAD_FUNCTION(name)                                           \
     do {                                                                    \
         (name) =                                                            \
             reinterpret_cast<decltype(name)>(dlsym(library_handle, #name)); \
-        if (!(name)) {                                                      \
-            log_failing_dlsym(yabridge_clap_plugin_name, #name);            \
-            return false;                                                   \
-        }                                                                   \
+    } while (false)
+#define LOAD_FUNCTION(name)                                      \
+    do {                                                         \
+        MAYBE_LOAD_FUNCTION(name);                               \
+        if (!(name)) {                                           \
+            log_failing_dlsym(yabridge_clap_plugin_name, #name); \
+            return false;                                        \
+        }                                                        \
     } while (false)
 
     LOAD_FUNCTION(yabridge_module_init);
     LOAD_FUNCTION(yabridge_module_free);
     LOAD_FUNCTION(yabridge_module_get_factory);
+    MAYBE_LOAD_FUNCTION(remote_yabridge_version);
 
 #undef LOAD_FUNCTION
+#undef MAYBE_LOAD_FUNCTION
 
     return true;
 }
@@ -163,3 +174,17 @@ CLAP_EXPORT const clap_plugin_entry_t clap_entry = {
 };
 
 #pragma GCC diagnostic pop
+
+/**
+ * This returns the actual yabridge library's version through
+ * `yabridge_version()`. Reporting the version associated with this chainloader
+ * wouldn't be very useful, and that would also cause the chainloader to be
+ * rebuilt on every git commit in development.
+ */
+extern "C" YABRIDGE_EXPORT char* yabridge_version() {
+    if (!initialize_library() || !remote_yabridge_version) {
+        return nullptr;
+    }
+
+    return remote_yabridge_version();
+}

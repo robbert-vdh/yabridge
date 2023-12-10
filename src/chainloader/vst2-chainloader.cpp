@@ -49,6 +49,11 @@ using AEffect = void;
 AEffect* (*yabridge_plugin_init)(audioMasterCallback host_callback,
                                  const char* plugin_path) = nullptr;
 
+// This bridges the `yabridge_version()` call from the plugin library. This
+// function was added later, so through weird version mixing it may be missing
+// on the yabridge library.
+char* (*remote_yabridge_version)() = nullptr;
+
 /**
  * The first time one of the exported functions from this library gets called,
  * we'll need to load the corresponding `libyabridge-*.so` file and fetch the
@@ -72,19 +77,25 @@ bool initialize_library() {
         return false;
     }
 
-#define LOAD_FUNCTION(name)                                                 \
+#define MAYBE_LOAD_FUNCTION(name)                                           \
     do {                                                                    \
         (name) =                                                            \
             reinterpret_cast<decltype(name)>(dlsym(library_handle, #name)); \
-        if (!(name)) {                                                      \
-            log_failing_dlsym(yabridge_vst2_plugin_name, #name);            \
-            return false;                                                   \
-        }                                                                   \
+    } while (false)
+#define LOAD_FUNCTION(name)                                      \
+    do {                                                         \
+        MAYBE_LOAD_FUNCTION(name);                               \
+        if (!(name)) {                                           \
+            log_failing_dlsym(yabridge_vst2_plugin_name, #name); \
+            return false;                                        \
+        }                                                        \
     } while (false)
 
     LOAD_FUNCTION(yabridge_plugin_init);
+    MAYBE_LOAD_FUNCTION(remote_yabridge_version);
 
 #undef LOAD_FUNCTION
+#undef MAYBE_LOAD_FUNCTION
 
     return true;
 }
@@ -108,4 +119,18 @@ extern "C" YABRIDGE_EXPORT AEffect* deprecated_main(
     audioMasterCallback audioMaster) asm("main");
 YABRIDGE_EXPORT AEffect* deprecated_main(audioMasterCallback audioMaster) {
     return VSTPluginMain(audioMaster);
+}
+
+/**
+ * This returns the actual yabridge library's version through
+ * `yabridge_version()`. Reporting the version associated with this chainloader
+ * wouldn't be very useful, and that would also cause the chainloader to be
+ * rebuilt on every git commit in development.
+ */
+extern "C" YABRIDGE_EXPORT char* yabridge_version() {
+    if (!initialize_library() || !remote_yabridge_version) {
+        return nullptr;
+    }
+
+    return remote_yabridge_version();
 }

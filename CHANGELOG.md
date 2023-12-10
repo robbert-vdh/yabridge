@@ -8,6 +8,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- The yabridge libraries now export a `yabridge_version` function that hosts can
+  query to get the yabridge version in use. This will return the yabridge
+  version that would be loaded when using the plugin, also when called on the
+  chainloading libraries.
+
 ### Changed
 
 - Parsing failures for `yabridge.toml` files will no longer cause plugins to
