@@ -21,6 +21,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### yabridgectl
 
+- Yabridgectl's command line interface looks slightly differently again after
+  some dependency updates. The behavior remains the same.
 - Some outdated warning messages have been updated to make yabridge's current
   state. There are also additional warnings when detecting common installation
   issues.

@@ -5,13 +5,13 @@ name = "yabridgectl"
 version = "5.0.5"
 authors = ["Robbert van der Helm <mail@robbertvanderhelm.nl>"]
 edition = "2021"
-description = "Optional utility to help set up yabridge"
+description = "Utility for setting up and managing yabridge"
 repository = "https://github.com/robbert-vdh/yabridge"
 license = "GPL-3.0-or-later"
 
 [dependencies]
 anyhow = "1.0.52"
-clap = { version = "3.0.6", features = ["cargo", "env", "wrap_help"] }
+clap = { version = "4.3.21", features = ["cargo", "derive", "wrap_help"] }
 colored = "2.0.0"
 is_executable = "1.0.1"
 goblin = { version = "0.6", default_features = false, features = ["std", "pe32", "pe64"] }

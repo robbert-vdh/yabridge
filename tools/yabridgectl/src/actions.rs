@@ -17,6 +17,7 @@
 //! Handlers for the subcommands, just to keep `main.rs` clean.
 
 use anyhow::{Context, Result};
+use clap::ValueEnum;
 use colored::Colorize;
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -215,11 +216,21 @@ pub fn show_status(config: &Config) -> Result<()> {
 }
 
 /// Options passed to `yabridgectl set`, see `main()` for the definitions of these options.
-pub struct SetOptions<'a> {
+pub struct SetOptions {
     pub path: Option<PathBuf>,
     pub path_auto: bool,
-    pub vst2_location: Option<&'a str>,
+    pub vst2_location: Option<Vst2Location>,
     pub no_verify: Option<bool>,
+}
+
+/// The location bridged VST2 plugins are set up in.
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum Vst2Location {
+    /// Sets bridged VST2 plugins up in '~/.vst/yabridge', the default option.
+    Centralized,
+    /// Places the yabridge '.so' file alongside the plugin's '.dll' file in the plugin's directory,
+    /// exists only for legacy purposes.
+    Inline,
 }
 
 /// Change configuration settings. The actual options are defined in the clap [app](clap::App).
@@ -233,9 +244,10 @@ pub fn set_settings(config: &mut Config, options: &SetOptions) -> Result<()> {
     }
 
     match options.vst2_location {
-        Some("centralized") => config.vst2_location = Vst2InstallationLocation::Centralized,
-        Some("inline") => config.vst2_location = Vst2InstallationLocation::Inline,
-        Some(s) => unimplemented!("Unexpected installation method '{}'", s),
+        Some(Vst2Location::Centralized) => {
+            config.vst2_location = Vst2InstallationLocation::Centralized
+        }
+        Some(Vst2Location::Inline) => config.vst2_location = Vst2InstallationLocation::Inline,
         None => (),
     }
 

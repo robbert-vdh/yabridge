@@ -15,12 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anyhow::Result;
-use clap::{command, Arg, Command};
+use clap::builder::TypedValueParser;
+use clap::{command, value_parser, Arg, Command};
 use colored::Colorize;
 use std::collections::HashSet;
 use std::env;
 use std::path::{Path, PathBuf};
 
+use crate::actions::Vst2Location;
 use crate::config::Config;
 
 mod actions;
@@ -44,15 +46,10 @@ fn main() -> Result<()> {
 
     let mut config = Config::read()?;
 
-    // Used for validation in `yabridgectl rm <path>`
-    let plugin_directories: HashSet<&Path> = config
-        .plugin_dirs
-        .iter()
-        .map(|path| path.as_path())
-        .collect();
-    // Used for validation in `yabridgectl blacklist rm <path>`
-    let blacklist_entries: HashSet<&Path> =
-        config.blacklist.iter().map(|path| path.as_path()).collect();
+    // Used for parsing and validation in `yabridgectl rm <path>`
+    let plugin_directories: HashSet<PathBuf> = config.plugin_dirs.iter().cloned().collect();
+    // Used for parsing and validation in `yabridgectl blacklist rm <path>`
+    let blacklist_entries: HashSet<PathBuf> = config.blacklist.iter().cloned().collect();
 
     let matches = command!()
         .subcommand_required(true)
@@ -64,8 +61,7 @@ fn main() -> Result<()> {
                 .arg(
                     Arg::new("path")
                         .help("Path to a directory containing Windows VST2, VST3, or CLAP plugins")
-                        .validator(validate_directory)
-                        .takes_value(true)
+                        .value_parser(parse_directory_path)
                         .required(true),
                 ),
         )
@@ -76,8 +72,7 @@ fn main() -> Result<()> {
                 .arg(
                     Arg::new("path")
                         .help("Path to a previously added directory")
-                        .validator(|path| match_in_path_list(Path::new(path), &plugin_directories))
-                        .takes_value(true)
+                        .value_parser(parse_path_from_set(plugin_directories))
                         .required(true),
                 ),
         )
@@ -138,8 +133,7 @@ fn main() -> Result<()> {
                              then yabridgectl will look in both '/usr/lib' and \
                              '~/.local/share/yabridge' by default.",
                         )
-                        .validator(validate_path)
-                        .takes_value(true)
+                        .value_parser(parse_directory_path)
                         .conflicts_with("path_auto"),
                 )
                 .arg(
@@ -156,19 +150,8 @@ fn main() -> Result<()> {
                     Arg::new("vst2_location")
                         .long("vst2-location")
                         .help("Where to set up VST2 plugins")
-                        .long_help(
-                            format!(
-                                "Where to set up VST2 plugins. '{}' (the default) causes bridged \
-                                 VST2 plugins to be set up in `~/.vst/yabridge.` '{}' causes \
-                                 bridged VST2 plugins to be set up next to the original '.dll' \
-                                 file.",
-                                "centralized".bright_white(),
-                                "inline".bright_white()
-                            )
-                            .as_ref(),
-                        )
-                        .possible_values(["centralized", "inline"])
-                        .takes_value(true),
+                        .long_help("Where to set up VST2 plugins.")
+                        .value_parser(value_parser!(Vst2Location)),
                 )
                 .arg(
                     Arg::new("no_verify")
@@ -179,8 +162,7 @@ fn main() -> Result<()> {
                              temporarily by passing the '--no-verify' option to 'yabridgectl \
                              sync'.",
                         )
-                        .possible_values(["true", "false"])
-                        .takes_value(true),
+                        .value_parser(value_parser!(bool)),
                 ),
         )
         .subcommand(
@@ -201,8 +183,7 @@ fn main() -> Result<()> {
                         .arg(
                             Arg::new("path")
                                 .help("Path to a file or a directory")
-                                .validator(validate_path)
-                                .takes_value(true)
+                                .value_parser(parse_path)
                                 .required(true),
                         ),
                 )
@@ -213,11 +194,7 @@ fn main() -> Result<()> {
                         .arg(
                             Arg::new("path")
                                 .help("Path to a previously added file or directory")
-                                .validator(|path| {
-                                    match_in_path_list(Path::new(path), &blacklist_entries)
-                                })
-                                .validator(validate_path)
-                                .takes_value(true)
+                                .value_parser(parse_path_from_set(blacklist_entries))
                                 .required(true),
                         ),
                 )
@@ -242,31 +219,24 @@ fn main() -> Result<()> {
     match matches.subcommand() {
         Some(("add", options)) => actions::add_directory(
             &mut config,
-            options
-                .value_of_t_or_exit::<PathBuf>("path")
-                .canonicalize()?,
+            options.get_one::<PathBuf>("path").unwrap().canonicalize()?,
         ),
         Some(("rm", options)) => {
-            // Clap sadly doesn't have custom parsers/transforms, so we need to rerun the validator
-            // to get the result
-            let path = match_in_path_list(
-                &options.value_of_t_or_exit::<PathBuf>("path"),
-                &plugin_directories,
+            actions::remove_directory(
+                &mut config,
+                // The parser already ensures that this value exists in the plugin locations set
+                options.get_one::<PathBuf>("path").unwrap(),
             )
-            .unwrap()
-            .to_owned();
-
-            actions::remove_directory(&mut config, &path)
         }
         Some(("list", _)) => actions::list_directories(&config),
         Some(("status", _)) => actions::show_status(&config),
         Some(("sync", options)) => actions::do_sync(
             &mut config,
             &actions::SyncOptions {
-                force: options.is_present("force"),
-                no_verify: options.is_present("no-verify"),
-                prune: options.is_present("prune"),
-                verbose: options.is_present("verbose"),
+                force: options.get_flag("force"),
+                no_verify: options.get_flag("no-verify"),
+                prune: options.get_flag("prune"),
+                verbose: options.get_flag("verbose"),
             },
         ),
         Some(("set", options)) => actions::set_settings(
@@ -275,30 +245,24 @@ fn main() -> Result<()> {
                 // We've already verified that the path is valid, so we should only be getting
                 // errors for missing arguments
                 path: options
-                    .value_of_t::<PathBuf>("path")
-                    .ok()
+                    .get_one::<PathBuf>("path")
                     .and_then(|path| path.canonicalize().ok()),
-                path_auto: options.is_present("path_auto"),
-                vst2_location: options.value_of("vst2_location"),
-                no_verify: options.value_of("no_verify").map(|value| value == "true"),
+                path_auto: options.get_flag("path_auto"),
+                vst2_location: options.get_one::<Vst2Location>("vst2_location").copied(),
+                no_verify: options.get_one::<bool>("no_verify").copied(),
             },
         ),
         Some(("blacklist", blacklist)) => match blacklist.subcommand() {
             Some(("add", options)) => actions::blacklist::add_path(
                 &mut config,
-                options
-                    .value_of_t_or_exit::<PathBuf>("path")
-                    .canonicalize()?,
+                options.get_one::<PathBuf>("path").unwrap().canonicalize()?,
             ),
             Some(("rm", options)) => {
-                let path = match_in_path_list(
-                    &options.value_of_t_or_exit::<PathBuf>("path"),
-                    &blacklist_entries,
+                actions::blacklist::remove_path(
+                    &mut config,
+                    // The parser already ensures that this value exists in the plugin locations set
+                    options.get_one::<PathBuf>("path").unwrap(),
                 )
-                .unwrap()
-                .to_owned();
-
-                actions::blacklist::remove_path(&mut config, &path)
             }
             Some(("list", _)) => actions::blacklist::list_paths(&config),
             Some(("clear", _)) => actions::blacklist::clear(&mut config),
@@ -308,76 +272,86 @@ fn main() -> Result<()> {
     }
 }
 
-/// Verify that a path exists and that is is either a directory or a symlink to a directory.
-fn validate_directory(path: &str) -> Result<(), String> {
-    validate_path(path)?;
-
-    let path = Path::new(path);
-    if path.is_dir() {
-        Ok(())
-    } else {
-        Err(format!("'{}' is not a directory", path.display()))
-    }
-}
-
-/// Verify that a path exists, used for validating arguments.
-fn validate_path(path: &str) -> Result<(), String> {
+/// Verify that a path exists. Used for validating arguments.
+fn parse_path(path: &str) -> Result<PathBuf, String> {
     let path = Path::new(path);
 
     if path.exists() {
-        Ok(())
+        Ok(path.to_owned())
     } else {
-        Err(format!(
-            "File or directory '{}' could not be found",
-            path.display()
-        ))
+        Err(String::from("File or directory could not be found."))
     }
 }
 
-/// Find `path` in `candidates` and return it as an absolute path. If the path is relative, we will
-/// try to resolve as much of it as possible (in case the referred to file doesn't exist anymore).
-/// We don't iteratively try to resolve symlinks until a candidate matches a path in `candidates`,
-/// but this can match a relative path to a symlink that's in the paths list.
-fn match_in_path_list<'a>(path: &Path, candidates: &'a HashSet<&Path>) -> Result<&'a Path, String> {
-    let absolute_path = if path.is_absolute() {
-        path.to_owned()
+/// [`parse_path()`], but for directories or symlinks to directories.
+fn parse_directory_path(path: &str) -> Result<PathBuf, String> {
+    let path = Path::new(path);
+
+    if path.exists() {
+        if path.is_dir() {
+            Ok(path.to_owned())
+        } else {
+            Err(String::from("Path is not a directory."))
+        }
     } else {
-        // This absolute absolute_path is also needed for the `utils::normalize_path()` below
-        std::env::current_dir()
-            .expect("Couldn't get current directory")
-            .join(path)
-    };
-    if let Some(path) = candidates.get(absolute_path.as_path()) {
-        return Ok(path);
+        Err(String::from("Directory could not be found."))
     }
+}
 
-    // This will include a trailing slash if `path` was `.`. All paths entered through yabridgectl
-    // will be cannonicalized and won't contain a trailing slash, but we'll try both variants
-    // anyways just in case someone edited the config file.
-    let normalized_path = util::normalize_path(absolute_path.as_path());
+/// Constructs a parser that checks if `path` is in the set of locations, and returns an absolute
+/// path to the location if it is. This is similar to using `Arg::possible_values()`, except that it
+/// also tries to resolve symlinks, relative paths, and other common variations. If the path is
+/// relative, we will try to resolve as much of it as possible (in case the referred to file doesn't
+/// exist anymore). We don't iteratively try to resolve symlinks until a candidate matches a path in
+/// `candidates`, but this can match a relative path to a symlink that's in the paths list.
+fn parse_path_from_set(candidates: HashSet<PathBuf>) -> impl TypedValueParser<Value = PathBuf> {
+    move |value: &str| -> Result<PathBuf, String> {
+        // This path does not need to exist, since a plugin location may no longer exist on disk
+        let path = Path::new(value);
+        let absolute_path = if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            // This absolute absolute_path is also needed for the `utils::normalize_path()` below
+            std::env::current_dir()
+                .expect("Couldn't get current directory")
+                .join(path)
+        };
 
-    // Is there a nicer way to strip trailing slashes with the standard library?
-    let normalized_path_str = normalized_path
-        .to_str()
-        .expect("Input path contains invalid characters");
-    let normalized_path_without_slash = if normalized_path_str.ends_with('/') {
-        Path::new(normalized_path_str.trim_end_matches('/'))
-    } else {
-        normalized_path.as_path()
-    };
-    // This ia bit of a hack, but it works
-    let normalized_path_with_slash = normalized_path.join("");
+        // If the absolute path is not in the plugin locations verbatim, we'll try a couple
+        // different variations
+        if let Some(matching_path) = candidates.get(absolute_path.as_path()) {
+            return Ok(matching_path.to_path_buf());
+        }
 
-    if let Some(path) = candidates
-        .get(normalized_path_without_slash)
-        .or_else(|| candidates.get(normalized_path_with_slash.as_path()))
-    {
-        return Ok(path);
+        // This will include a trailing slash if `path` was `.`. All paths entered through
+        // yabridgectl will be cannonicalized and won't contain a trailing slash, but we'll try both
+        // variants anyways just in case someone edited the config file.
+        let normalized_path = util::normalize_path(absolute_path.as_path());
+
+        // Is there a nicer way to strip trailing slashes with the standard library?
+        let normalized_path_str = normalized_path
+            .to_str()
+            .expect("Input path contains invalid characters");
+        let normalized_path_without_slash = if normalized_path_str.ends_with('/') {
+            Path::new(normalized_path_str.trim_end_matches('/'))
+        } else {
+            normalized_path.as_path()
+        };
+        // This ia bit of a hack, but it works
+        let normalized_path_with_slash = normalized_path.join("");
+
+        if let Some(found_path) = candidates
+            .get(normalized_path_without_slash)
+            .or_else(|| candidates.get(normalized_path_with_slash.as_path()))
+        {
+            return Ok(found_path.to_path_buf());
+        }
+
+        // There's sadly no way to use clap's normal error formatting for possible values here since
+        // parts of the API are not exposed
+        Err(format!(
+            "Not a known path.\n\n       Possible options are: {}",
+            format!("{:?}", candidates).green()
+        ))
     }
-
-    Err(format!(
-        "'{}' is not a known path.\n\n\tPossible options are: {}",
-        path.display(),
-        format!("{:?}", candidates).green()
-    ))
 }
