@@ -94,27 +94,27 @@ bool initialize_library() {
         return false;
     }
 
-#define MAYBE_LOAD_FUNCTION(name)                                           \
+#define LOAD_FUNCTION(name)                                                 \
     do {                                                                    \
         (name) =                                                            \
             reinterpret_cast<decltype(name)>(dlsym(library_handle, #name)); \
-    } while (false)
-#define LOAD_FUNCTION(name)                                      \
-    do {                                                         \
-        MAYBE_LOAD_FUNCTION(name);                               \
-        if (!(name)) {                                           \
-            log_failing_dlsym(yabridge_clap_plugin_name, #name); \
-            return false;                                        \
-        }                                                        \
+        if (!(name)) {                                                      \
+            log_failing_dlsym(yabridge_clap_plugin_name, #name);            \
+            return false;                                                   \
+        }                                                                   \
     } while (false)
 
     LOAD_FUNCTION(yabridge_module_init);
     LOAD_FUNCTION(yabridge_module_free);
     LOAD_FUNCTION(yabridge_module_get_factory);
-    MAYBE_LOAD_FUNCTION(remote_yabridge_version);
+
+    // This one can be a null pointer if the function does not yet exist in this
+    // yabridge version
+    remote_yabridge_version =
+        reinterpret_cast<decltype(remote_yabridge_version)>(
+            dlsym(library_handle, "yabridge_version"));
 
 #undef LOAD_FUNCTION
-#undef MAYBE_LOAD_FUNCTION
 
     return true;
 }
