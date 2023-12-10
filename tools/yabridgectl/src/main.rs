@@ -16,7 +16,7 @@
 
 use anyhow::Result;
 use clap::builder::TypedValueParser;
-use clap::{command, value_parser, Arg, Command};
+use clap::{command, value_parser, Arg, ArgAction, Command};
 use colored::Colorize;
 use std::collections::HashSet;
 use std::env;
@@ -94,25 +94,29 @@ fn main() -> Result<()> {
                     Arg::new("force")
                         .short('f')
                         .long("force")
-                        .help("Always update files, even not necessary"),
+                        .help("Always update files, even not necessary")
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("no-verify")
                         .short('n')
                         .long("no-verify")
-                        .help("Skip post-installation setup checks"),
+                        .help("Skip post-installation setup checks")
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("prune")
                         .short('p')
                         .long("prune")
-                        .help("Remove unrelated or leftover .so files"),
+                        .help("Remove unrelated or leftover .so files")
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("verbose")
                         .short('v')
                         .long("verbose")
-                        .help("Print information about plugins being set up or skipped"),
+                        .help("Print information about plugins being set up or skipped")
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .subcommand(
