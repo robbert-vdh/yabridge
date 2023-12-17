@@ -457,8 +457,11 @@ include:
   going to the global settings tab, unchecking 'Show help tooltips', and
   clicking on the save icon next to 'Preferences'.
 - **Native Instruments** plugins work, but the latest version of Native Access
-  doesn't run under Wine. You can find Native Access 1 on the [legacy
-  installers](https://support.native-instruments.com/hc/en-us/articles/360000407909-Native-Access-1-Legacy-Installers-for-Older-Operating-Systems)
+  needs some extra work to run under wine. See the [wineHQ page](https://appdb.winehq.org/objectManager.php?sClass=version&iId=41820)
+  for information on how to get it running.
+
+  The legacy version `1.X` still can be installed directly. You can find it on the
+  [legacy installers](https://support.native-instruments.com/hc/en-us/articles/360000407909-Native-Access-1-Legacy-Installers-for-Older-Operating-Systems)
   page on Native Instruments' website. To get the installer to finish correctly,
   open `winecfg` and set the reported Windows version to Windows 10. Otherwise
   the installer will be stuck on installing an ISO driver. To work around this
