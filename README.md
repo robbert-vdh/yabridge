@@ -44,12 +44,12 @@ Yabridge has been tested under the following hosts using Wine Staging 9.0-rc1.
 | Host              | VST2               | VST3                                                                 | CLAP                                                 |
 | ----------------- | ------------------ | -------------------------------------------------------------------- | ---------------------------------------------------- |
 | Bitwig Studio 5.1 | :heavy_check_mark: | :heavy_check_mark:                                                   | :heavy_check_mark:                                   |
-| REAPER 7.02       | :heavy_check_mark: | :heavy_check_mark:                                                   | :heavy_check_mark:                                   |
+| REAPER 7.07       | :heavy_check_mark: | :heavy_check_mark:                                                   | :heavy_check_mark:                                   |
 | Carla 2.5.5       | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                |
 | Qtractor 0.9.29   | :heavy_check_mark: | :warning: VST3 editor windows may not have the correct size          | :warning: Qtractor may not support every CLAP plugin |
-| Renoise 3.4.2     | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly | Does not support CLAP                                |
+| Renoise 3.4.3     | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly | Does not support CLAP                                |
 | Waveform 12.1.3   | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                |
-| Ardour 8.1        | :heavy_check_mark: | :warning: Some plugins may cause Ardour 7.3 and up to freeze         | Does not support CLAP                                |
+| Ardour 8.1        | :heavy_check_mark: | :warning: Some plugins may cause Ardour 7.3-8.1 to freeze            | Does not support CLAP                                |
 | Mixbus 7.0.140    | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                |
 
 Please let me know if there are any issues with other hosts.
