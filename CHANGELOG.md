@@ -11,16 +11,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - The yabridge libraries now export a `yabridge_version` function that hosts can
-  query to get the yabridge version in use. This will return the yabridge
-  version that would be loaded when using the plugin, also when called on the
-  chainloading libraries. This is used to fix a regression in **Ardour** 7.3+
-  once version 8.2 is released.
+  query to know that a plugin is a yabridge plugin, and which version of
+  yabridge is in use. **Ardour** 8.2 will use this to fix a regression in Ardour
+  7.3 that could cause some VST3 plugins to freeze.
 
 ### Changed
 
 - Parsing failures for `yabridge.toml` files will no longer cause plugins to
-  fail to load. If that happens, you'll now get a desktop notification and the
-  plugin will use the default settings instead.
+  fail to load. If this does happen, you'll now get a desktop notification and
+  the plugin will simply use the default settings instead.
 
 ### Fixed
 
@@ -31,9 +30,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Yabridgectl's command line interface looks slightly differently again after
   some dependency updates. The behavior remains the same.
-- Some outdated warning messages have been updated to make yabridge's current
-  state. There are also additional warnings when detecting common installation
-  issues.
+- Some outdated warning messages have been updated to match yabridge's current
+  state. There are also some additional warnings for common installation issues.
 
 ### Packaging notes
 
