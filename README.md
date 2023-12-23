@@ -94,10 +94,9 @@ Please let me know if there are any issues with other hosts.
      distro, you can simply download and install a prebuilt version of yabridge:
 
      1. First download the latest version of yabridge from the [releases
-        page](https://github.com/robbert-vdh/yabridge/releases). If you're using
-        a distro that's older than Ubuntu 20.04 such as Ubuntu 18.04, Debian 10,
-        Linux Mint 19, or AV Linux MXE 2021, then you should download the
-        version that ends with `-ubuntu-18.04.tar.gz`.
+        page](https://github.com/robbert-vdh/yabridge/releases). These binaries
+        currently target Ubuntu 20.04, and should work on any other distro
+        that's newer than that.
      2. Extract the contents of the downloaded archive to `~/.local/share`, such
         that the file `~/.local/share/yabridge/yabridgectl` exists after
         extracting. You can extract an archive here from the command line with
@@ -836,7 +835,7 @@ up the new changes._
 To compile yabridge, you'll need [Meson](https://mesonbuild.com/index.html) and
 the following dependencies:
 
-- GCC 10+[\*](#building-ubuntu-18.04)
+- GCC 10+
 - A Wine installation with `winegcc` and the development headers. The latest
   commits contain a workaround for a winelib [compilation
   issue](https://bugs.winehq.org/show_bug.cgi?id=49138) with Wine 5.7+.
@@ -866,17 +865,6 @@ ninja -C build
 
 After you've finished building you can follow the instructions under the
 [usage](#usage) section on how to set up yabridge.
-
-<sup id="building-ubuntu-18.04">
-  *The version of GCC that ships with Ubuntu 18.04 by default is too old to
-  compile yabridge. If you do wish to build yabridge from scratch rather than
-  using the <a
-  href="https://github.com/robbert-vdh/yabridge/actions?query=workflow%3A%22Automated+builds%22+branch%3Amaster">prebuilt
-  binaries</a>, then you should take a look at the <a
-  href="https://github.com/robbert-vdh/docker-yabridge/blob/master/bionic/Dockerfile">docker
-  image</a> used when building yabridge on Ubuntu 18.04 for on overview of what
-  would need to be installed to compile on Ubuntu 18.04.
-</sup>
 
 ### 32-bit bitbridge
 
