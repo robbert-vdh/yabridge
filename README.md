@@ -62,18 +62,18 @@ Please let me know if there are any issues with other hosts.
 
 ## Usage
 
-0. First of all, yabridge requires a recent-ish version of Wine (Staging). Users
-   of Debian, Ubuntu, Linux Mint and Pop!\_OS should install Wine Staging from
+0. First of all, yabridge requires a recent-ish stable version of WineHQ 9.0. Users
+   of Debian, Ubuntu, Linux Mint and Pop!\_OS should install WineHQ Stable from
    the [WineHQ repositories](https://wiki.winehq.org/Download) as the Wine
-   versions provided by those distro's repositories may be too old to be used
+   versions provided by those distro's repositories may be too old or incompatible to be used
    with yabridge. On other distros you should be able to just install
-   `wine-staging` using your distro's package manager.
+   `winehq-stable` using your distro's package manager.
 
    For a general overview on how to use Wine to install Windows applications,
    check out Wine's [user
    guide](https://wiki.winehq.org/Wine_User%27s_Guide#Using_Wine).
 
-1. Depending on your distro you can install yabridge and its yabridgectl
+1.1. Depending on your distro you can install yabridge and its yabridgectl
    companion utility through your distro's package manager or by using
    a binary archive from the GitHub releases page. Keep in mind that the distro
    packages mentioned below may not always be up to date, and some may also not
@@ -118,6 +118,10 @@ Please let me know if there are any issues with other hosts.
         path. That way you can run `yabridgectl` directly. If you don't know
         what that means, then add `export PATH="$PATH:$HOME/.local/share/yabridge"`
         to the end of `~/.bashrc` and reopen your terminal.
+
+1.2 (alternative). You can also just clone the repository using `git` utility:
+        `cd ~/.local/share && git clone https://github.com/robbert-vdh/yabridge`
+
 
 2. Setting up and updating yabridge for your plugins is done though the
    `yabridgectl` command line utility. The basic idea is that you first install
