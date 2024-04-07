@@ -57,9 +57,19 @@ std::mutex libdbus_mutex;
 LIBDBUS_FUNCTIONS
 #undef X
 
+/**
+ * The deleter used for `libdbus_connection`. `libdbus_connection` can't
+ * directly reference `libdbus_connection_unref` directly because it will not
+ * yet have been initialized until just before `libdbus_connection` gets
+ * initialized.
+ */
+static void close_dbus_connection(DBusConnection* connection) {
+    libdbus_connection_unref(connection);
+}
+
 std::unique_ptr<DBusConnection, void (*)(DBusConnection*)> libdbus_connection(
     nullptr,
-    libdbus_connection_unref);
+    close_dbus_connection);
 
 /**
  * Try to set up D-Bus. Returns `false` if a function could not be resolved or
