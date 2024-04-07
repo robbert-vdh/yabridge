@@ -40,7 +40,7 @@ while also staying easy to debug and maintain.
 ## Tested with
 
 Yabridge has been tested under the following hosts using Wine Staging 9.4.
-**Wine 9.5 will currently not work with yabridge. See
+**Wine 9.5 and 9.6 will not work with yabridge because of a Wine bug. See
 [#320](https://github.com/robbert-vdh/yabridge/issues/320)**.
 
 | Host                | VST2               | VST3                                                                 | CLAP                                                 |
