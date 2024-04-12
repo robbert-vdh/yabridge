@@ -51,7 +51,7 @@ Yabridge has been tested under the following hosts using Wine Staging 9.4.
 | Qtractor 0.9.29     | :heavy_check_mark: | :warning: VST3 editor windows may not have the correct size          | :warning: Qtractor may not support every CLAP plugin |
 | Renoise 3.4.3       | :heavy_check_mark: | :warning: Renoise doesn't handle VST3 editor window sizing correctly | Does not support CLAP                                |
 | Waveform 12.1.3     | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                |
-| Ardour 8.1          | :heavy_check_mark: | :warning: Some plugins may cause Ardour 7.3-8.1 to freeze            | Does not support CLAP                                |
+| Ardour 8.1          | :heavy_check_mark: | :warning: <span title="LMMS does not currently support VST3 plugins. It only supports VST2, but some VST2 plugins may take longer to load."> Some plugins may cause Ardour 7.3-8.1 to freeze            | Does not support CLAP                                |
 | Mixbus 7.0.140      | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                |
 | LMMS 1.3.0-alpha.1.568+g1f5f28fd8 | :heavy_check_mark: Some VST2 plugins might take a while to load. | Does not support VST3, but supports VST2. | Does not support CLAP                                |
 
