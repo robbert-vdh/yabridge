@@ -53,6 +53,8 @@ Yabridge has been tested under the following hosts using Wine Staging 9.4.
 | Waveform 12.1.3     | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                |
 | Ardour 8.1          | :heavy_check_mark: | :warning: Some plugins may cause Ardour 7.3-8.1 to freeze            | Does not support CLAP                                |
 | Mixbus 7.0.140      | :heavy_check_mark: | :heavy_check_mark:                                                   | Does not support CLAP                                |
+| LMMS 1.3.0-alpha.1.568+g1f5f28fd8 | :heavy_check_mark: Some VST2 plugins might take a while to load. | Does not support VST3, but supports VST2. | Does not support CLAP                                |
+
 
 Please let me know if there are any issues with other hosts.
 
