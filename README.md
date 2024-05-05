@@ -535,6 +535,7 @@ include:
   and Crystallizer, may have their GUI appear in the wrong location after the
   GUI has been expanded. You can enable an alternative [editor hosting
   mode](#compatibility-options) to fix this.
+- **Viper** requires you to install `gdiplus` through `winetricks`. 
 - When using recent _Applied Acoustics_ plugins like **Chromaphone 3** under
   _Bitwig Studio_, text entry will cause the plugin to crash because Chromaphone
   uses a different text entry method when it detects Bitwig. You can use the
