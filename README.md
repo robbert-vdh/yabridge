@@ -247,6 +247,13 @@ earlier version of Wine. This can be done as follows:
   `IgnorePkg` field in `/etc/pacman.conf` and it won't be updated again
   automatically.
 
+- Alternatively, you may install Wine manually: download one of archived Wine builds (for example, from [this repository](https://github.com/Kron4ek/Wine-Builds/releases)) and unpack a tar.gz
+  archive to your desired location. Then, add a link to your `wine` binary in
+  `/usr/bin/wine` directory:
+  ```shell
+  sudo ln -s /path-to-your-wine-build/bin/wine /usr/bin/wine
+  ```
+
 ### Installing a development build
 
 If you want to try to a development version of yabridge, then you can do so as
