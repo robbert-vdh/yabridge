@@ -60,53 +60,6 @@ jobs:
           name: ${{ env.ARCHIVE_NAME }}
           path: ${{ env.ARCHIVE_NAME }}
 
-  # This is still based on the now removed `build-bionic`, but for a 32-bit only
-  # version of yabridge. We don't plan on distributing this, but we'll just have
-  # this available for AV Linux. We currently don't do 32-bit builds of
-  # yabridgectl though, but as long as this keeps building there's no harm in
-  # keeping this around.
-  build-32-bit:
-    name: Build on Ubuntu 18.04 (32-bit build)
-    runs-on: ubuntu-latest
-    container: robbert/docker-yabridge:bionic
-    outputs:
-      artifact-name: ${{ env.ARCHIVE_NAME }}
-    steps:
-      - uses: actions/checkout@v3
-      # Needed for git-describe to do anything useful, the safe directory
-      # workaround is needed for https://github.com/actions/runner/issues/2033
-      - name: Fetch all git history
-        run: |
-          git config --global --add safe.directory /__w/yabridge/yabridge
-          git fetch --force --prune --tags --unshallow
-      - name: Determine build archive name
-        run: |
-          echo "ARCHIVE_NAME=yabridge-$(git describe --always)-ubuntu-18.04-32bit.tar.gz" >> "$GITHUB_ENV"
-      - name: Build the binaries
-        run: |
-          mkdir -p /tmp/prefix
-          export WINEPREFIX=/tmp/prefix
-
-          # Statically link to libstdc++ on Ubuntu 18.04, and also target a
-          # 32-bit OS. CLAP support is disabled here because it won't work with
-          # 64-bit plugins.
-          meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=10000 -Dbitbridge=true -Dclap=false -Dcpp_link_args='-mwindows -static-libstdc++' -Dbuild.cpp_args='-m32' -Dbuild.cpp_link_args='-m32 -static-libstdc++'
-          ninja -C build
-      - name: Strip remaining debug symbols
-        run: strip build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-host{,-32}.exe.so
-      - name: Create an archive for the binaries
-        run: |
-          mkdir yabridge
-          cp build/libyabridge{,-chainloader}-{vst2,vst3}.so build/yabridge-host{,-32}.exe{,.so} yabridge
-          cp CHANGELOG.md README.md yabridge
-
-          tar -caf "$ARCHIVE_NAME" yabridge
-          rm -rf yabridge
-      - uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.ARCHIVE_NAME }}
-          path: ${{ env.ARCHIVE_NAME }}
-
   build-yabridgectl:
     name: Build yabridgectl
     runs-on: ubuntu-latest
