@@ -10,6 +10,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed DPI scaling causing windows contents to become larger than they should
+  be when using **Wine 9.17+** and Wine's font DPI scaling feature.
 - Fixed a potential segfault when unloading yabridge.
 
 ## [5.1.0] - 2023-12-23

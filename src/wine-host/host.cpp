@@ -88,6 +88,12 @@ int YABRIDGE_EXPORT
 
     std::cerr << "Initializing " << host_name << std::endl;
 
+    // NOTE: Without this, Wine 9.17+ will try to scale surface bitmaps in the
+    //       X11 driver, which results in window client areas being larger than
+    //       should be.
+    //       https://github.com/robbert-vdh/yabridge/issues/368
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE);
+
     // NOTE: Some plugins use Microsoft COM, but don't initialize it first and
     //       just pray the host does it for them. Examples of this are
     //       PSPaudioware's InfiniStrip and Shattered Glass Audio Code Red Free.
