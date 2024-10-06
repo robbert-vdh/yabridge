@@ -39,12 +39,12 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging 9.8.
-**Wine 9.5-9.7 will not work with yabridge because of a Wine bug, either upgrade to Wine 9.8 or downgrade to Wine 9.4**.
+Yabridge has been tested under the following hosts using Wine Staging 9.19.
+**See [#368](https://github.com/robbert-vdh/yabridge/issues/368) for the current status of DPI scaling with Wine 9.17+.**.
 
 | Host                | VST2               | VST3                                                        | CLAP                                                 |
 | ------------------- | ------------------ | ----------------------------------------------------------- | ---------------------------------------------------- |
-| Bitwig Studio 5.1.7 | :heavy_check_mark: | :heavy_check_mark:                                          | :heavy_check_mark:                                   |
+| Bitwig Studio 5.2.4 | :heavy_check_mark: | :heavy_check_mark:                                          | :heavy_check_mark:                                   |
 | REAPER 7.12         | :heavy_check_mark: | :heavy_check_mark:                                          | :heavy_check_mark:                                   |
 | Carla 2.5.5         | :heavy_check_mark: | :heavy_check_mark:                                          | Does not support CLAP                                |
 | Qtractor 0.9.29     | :heavy_check_mark: | :warning: VST3 editor windows may not have the correct size | :warning: Qtractor may not support every CLAP plugin |
