@@ -109,11 +109,8 @@ jobs:
 
   build-yabridgectl:
     name: Build yabridgectl
-    # FIXME: The ubuntu-18.04 runner has been deprecated but since it doesn't cause any
-    #        issues we'll keep it around for a bit longer
-    # runs-on: ubuntu-18.04
     runs-on: ubuntu-latest
-    container: robbert/docker-yabridge:bionic
+    container: robbert/docker-yabridge:focal
     outputs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
     defaults:
