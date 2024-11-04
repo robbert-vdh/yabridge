@@ -14,7 +14,7 @@ anyhow = "1.0.52"
 clap = { version = "4.3.21", features = ["cargo", "derive", "wrap_help"] }
 colored = "2.0.0"
 is_executable = "1.0.1"
-goblin = { version = "0.6", default_features = false, features = ["std", "pe32", "pe64"] }
+goblin = { version = "0.6", default-features = false, features = ["std", "pe32", "pe64"] }
 libloading = "0.7.3"
 promptly = "0.3.1"
 # Version 0.1.3 from crates.io assumes a 64-bit toolchain
