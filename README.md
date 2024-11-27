@@ -40,18 +40,18 @@ while also staying easy to debug and maintain.
 ## Tested with
 
 Yabridge has been tested under the following hosts using Wine Staging 9.19.
-**See [#368](https://github.com/robbert-vdh/yabridge/issues/368) for the current status of DPI scaling with Wine 9.17+.**.
+**See [#368](https://github.com/robbert-vdh/yabridge/issues/382) for information about GUI problems with Wine 9.22.**.
 
-| Host                | VST2               | VST3                                                        | CLAP                                                 |
-| ------------------- | ------------------ | ----------------------------------------------------------- | ---------------------------------------------------- |
-| Bitwig Studio 5.2.4 | :heavy_check_mark: | :heavy_check_mark:                                          | :heavy_check_mark:                                   |
-| REAPER 7.12         | :heavy_check_mark: | :heavy_check_mark:                                          | :heavy_check_mark:                                   |
-| Carla 2.5.5         | :heavy_check_mark: | :heavy_check_mark:                                          | Does not support CLAP                                |
-| Qtractor 0.9.29     | :heavy_check_mark: | :warning: VST3 editor windows may not have the correct size | :warning: Qtractor may not support every CLAP plugin |
-| Renoise 3.4.3       | :heavy_check_mark: | :heavy_check_mark:                                          | Does not support CLAP                                |
-| Waveform 12.1.3     | :heavy_check_mark: | :heavy_check_mark:                                          | Does not support CLAP                                |
-| Ardour 8.1          | :heavy_check_mark: | :warning: Some plugins may cause Ardour 7.3-8.1 to freeze   | Does not support CLAP                                |
-| Mixbus 7.0.140      | :heavy_check_mark: | :heavy_check_mark:                                          | Does not support CLAP                                |
+| Host                   | VST2               | VST3                                                        | CLAP                                                 |
+| ---------------------- | ------------------ | ----------------------------------------------------------- | ---------------------------------------------------- |
+| Bitwig Studio 5.3 beta | :heavy_check_mark: | :heavy_check_mark:                                          | :heavy_check_mark:                                   |
+| REAPER 7.12            | :heavy_check_mark: | :heavy_check_mark:                                          | :heavy_check_mark:                                   |
+| Carla 2.5.5            | :heavy_check_mark: | :heavy_check_mark:                                          | Does not support CLAP                                |
+| Qtractor 0.9.29        | :heavy_check_mark: | :warning: VST3 editor windows may not have the correct size | :warning: Qtractor may not support every CLAP plugin |
+| Renoise 3.4.3          | :heavy_check_mark: | :heavy_check_mark:                                          | Does not support CLAP                                |
+| Waveform 12.1.3        | :heavy_check_mark: | :heavy_check_mark:                                          | Does not support CLAP                                |
+| Ardour 8.1             | :heavy_check_mark: | :warning: Some plugins may cause Ardour 7.3-8.1 to freeze   | Does not support CLAP                                |
+| Mixbus 7.0.140         | :heavy_check_mark: | :heavy_check_mark:                                          | Does not support CLAP                                |
 
 Please let me know if there are any issues with other hosts.
 
