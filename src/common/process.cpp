@@ -334,7 +334,7 @@ Process::StatusResult Process::spawn_get_status() const {
  * we won't use `vfork()`, but instead we'll just manually close all non-STDIO
  * file descriptors.
  */
-static void close_non_stdio_file_descriptions(
+static void close_non_stdio_file_descriptors(
     posix_spawn_file_actions_t& actions) {
 #if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 34)
     posix_spawn_file_actions_addclosefrom_np(&actions, STDERR_FILENO + 1);
@@ -391,7 +391,7 @@ Process::HandleResult Process::spawn_child_piped(
     posix_spawn_file_actions_adddup2(&actions, stderr_pipe_fds[1],
                                      STDERR_FILENO);
     // We'll close the four pipe fds along with the rest of the file descriptors
-    close_non_stdio_file_descriptions(actions);
+    close_non_stdio_file_descriptors(actions);
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
@@ -437,7 +437,7 @@ Process::HandleResult Process::spawn_child_redirected(
                                      O_WRONLY | O_CREAT | O_APPEND, 0640);
     posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, filename.c_str(),
                                      O_WRONLY | O_CREAT | O_APPEND, 0640);
-    close_non_stdio_file_descriptions(actions);
+    close_non_stdio_file_descriptors(actions);
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
