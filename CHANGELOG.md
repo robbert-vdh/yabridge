@@ -6,7 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.1.1] - 2024-11-04
+## [Unreleased]
+
+### Fixed
+
+- Worked around an interaction between **Ubuntu 24.10** and certain hosts like
+  **Ardour** that would cause yabridge to hang and eventually crash the host by
+  consuming too much memory. This only affected the prebuilt binaries from the
+  releases page.
+
+## [5.1.1] - 2024-12-23
 
 ### Fixed
 

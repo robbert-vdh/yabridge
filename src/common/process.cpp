@@ -19,6 +19,7 @@
 #include <cassert>
 #include <iostream>
 
+#include <dlfcn.h>
 #include <spawn.h>
 #include <sys/wait.h>
 
@@ -323,6 +324,48 @@ Process::StatusResult Process::spawn_get_status() const {
     }
 }
 
+/**
+ * Add file handle close actions to a `posix_spawn_file_actions_t` that close
+ * all non-stdio file descriptors.
+ *
+ * If the Wine process outlives the host, then it may cause issues if our
+ * process is still keeping the host's file descriptors alive that. This can
+ * prevent Ardour from restarting after an unexpected shutdown. Because of this
+ * we won't use `vfork()`, but instead we'll just manually close all non-STDIO
+ * file descriptors.
+ */
+static void close_non_stdio_file_descriptions(
+    posix_spawn_file_actions_t& actions) {
+#if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 34)
+    posix_spawn_file_actions_addclosefrom_np(&actions, STDERR_FILENO + 1);
+#else
+    // NOTE: As of writing, yabridge is compiled on Ubuntu 20.04, where
+    //       `posix_spawn_file_actions_addclosefrom_np()` is not yet available.
+    //       For whatever reason that may be, on Ubuntu 24.10 closing all file
+    //       handles manually becomes very slow and starts to leak memory when
+    //       running yabridge under Ardour. We could bump the minimum Ubuntu
+    //       version supported by the binaries and always use this function, but
+    //       loading the function at runtime should be fine and gives us better
+    //       compatibility even if yabridge is compiled on an older distro.
+    //
+    //       https://github.com/robbert-vdh/yabridge/issues/377
+    int (*posix_spawn_file_actions_addclosefrom_np)(posix_spawn_file_actions_t*,
+                                                    int);
+    posix_spawn_file_actions_addclosefrom_np =
+        reinterpret_cast<decltype(posix_spawn_file_actions_addclosefrom_np)>(
+            dlsym(nullptr, "posix_spawn_file_actions_addclosefrom_np"));
+
+    if (posix_spawn_file_actions_addclosefrom_np) {
+        posix_spawn_file_actions_addclosefrom_np(&actions, STDERR_FILENO + 1);
+    } else {
+        const int max_fds = static_cast<int>(sysconf(_SC_OPEN_MAX));
+        for (int fd = STDERR_FILENO + 1; fd < max_fds; fd++) {
+            posix_spawn_file_actions_addclose(&actions, fd);
+        }
+    }
+#endif
+}
+
 #ifndef WITHOUT_ASIO
 Process::HandleResult Process::spawn_child_piped(
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -348,20 +391,7 @@ Process::HandleResult Process::spawn_child_piped(
     posix_spawn_file_actions_adddup2(&actions, stderr_pipe_fds[1],
                                      STDERR_FILENO);
     // We'll close the four pipe fds along with the rest of the file descriptors
-
-// NOTE: If the Wine process outlives the host, then it may cause issues if
-//       our process is still keeping the host's file descriptors alive
-//       that. This can prevent Ardour from restarting after an unexpected
-//       shutdown. Because of this we won't use `vfork()`, but instead we'll
-//       just manually close all non-STDIO file descriptors.
-#if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 34)
-    posix_spawn_file_actions_addclosefrom_np(&actions, STDERR_FILENO + 1);
-#else
-    const int max_fds = static_cast<int>(sysconf(_SC_OPEN_MAX));
-    for (int fd = STDERR_FILENO + 1; fd < max_fds; fd++) {
-        posix_spawn_file_actions_addclose(&actions, fd);
-    }
-#endif
+    close_non_stdio_file_descriptions(actions);
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
@@ -407,16 +437,7 @@ Process::HandleResult Process::spawn_child_redirected(
                                      O_WRONLY | O_CREAT | O_APPEND, 0640);
     posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, filename.c_str(),
                                      O_WRONLY | O_CREAT | O_APPEND, 0640);
-
-    // See the note in the other function
-#if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 34)
-    posix_spawn_file_actions_addclosefrom_np(&actions, STDERR_FILENO + 1);
-#else
-    const int max_fds = static_cast<int>(sysconf(_SC_OPEN_MAX));
-    for (int fd = STDERR_FILENO + 1; fd < max_fds; fd++) {
-        posix_spawn_file_actions_addclose(&actions, fd);
-    }
-#endif
+    close_non_stdio_file_descriptions(actions);
 
     pid_t child_pid = 0;
     const auto result = posix_spawnp(&child_pid, command_.c_str(), &actions,
