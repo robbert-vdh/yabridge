@@ -148,7 +148,8 @@ fn main() -> Result<()> {
                             "Automatically locate yabridge's files. This can be used after \
                              manually setting a path with the '--path' option to revert back to \
                              the default auto detection behaviour.",
-                        ),
+                        )
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("vst2_location")
