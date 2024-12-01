@@ -39,7 +39,7 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging 9.19.
+Yabridge has been tested under the following hosts using Wine Staging 9.21.
 **See [#368](https://github.com/robbert-vdh/yabridge/issues/382) for information about GUI problems with Wine 9.22.**.
 
 | Host                   | VST2               | VST3                                                        | CLAP                                                 |
