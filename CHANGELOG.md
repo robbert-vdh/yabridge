@@ -15,6 +15,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   consuming too much memory. This only affected the prebuilt binaries from the
   releases page.
 
+### yabridgectl
+
+- Fixed a regression that caused `yabridgectl set --path-auto` to no longer
+  work.
+
 ## [5.1.1] - 2024-12-23
 
 ### Fixed
