@@ -27,6 +27,7 @@
 #pragma push_macro("_WIN32")
 #undef _WIN32
 #include <xcb/xcb.h>
+#include <xcb/xcb_icccm.h>
 #pragma pop_macro("_WIN32")
 
 #include "../common/configuration.h"
@@ -393,6 +394,12 @@ class Editor {
      * the wrapper window is already at the correct size.
      */
     Size wrapper_window_size_;
+
+    /**
+     * Last received configurations for the host and parent windows.
+     */
+    xcb_configure_notify_event_t host_window_config_;
+    xcb_configure_notify_event_t parent_window_config_;
 
     /**
      * The handle for the window created through Wine that the plugin uses to
