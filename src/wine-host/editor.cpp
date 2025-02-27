@@ -267,7 +267,6 @@ Editor::Editor(MainContext& main_context,
       logger_(logger),
       x11_connection_(xcb_connect(nullptr, nullptr), xcb_disconnect),
       dnd_proxy_handle_(WineXdndProxy::get_handle()),
-      client_area_(get_maximum_screen_dimensions(*x11_connection_)),
       wrapper_window_size_({128, 128}),
       host_window_config_({}),
       parent_window_config_({}),
@@ -282,23 +281,10 @@ Editor::Editor(MainContext& main_context,
                                    reinterpret_cast<LPCSTR>(get_window_class()),
                                    "yabridge plugin",
                                    WS_POPUP,
-                                   // NOTE: With certain DEs/WMs (notably,
-                                   //       Cinnamon), Wine does not render the
-                                   //       window at all when using a primary
-                                   //       display that's positioned to the
-                                   //       right of another display. Presumably
-                                   //       it tries to manually clip the client
-                                   //       rendered client area to the physical
-                                   //       display. During the reparenting and
-                                   //       `fix_local_coordinates()` the window
-                                   //       will be moved to `(0, 0)` anyways,
-                                   //       but setting its initial position
-                                   //       according to the primary display
-                                   //       fixes these rendering issues.
-                                   GetSystemMetrics(SM_XVIRTUALSCREEN),
-                                   GetSystemMetrics(SM_YVIRTUALSCREEN),
-                                   client_area_.width,
-                                   client_area_.height,
+                                   0,
+                                   0,
+                                   wrapper_window_size_.width,
+                                   wrapper_window_size_.height,
                                    nullptr,
                                    nullptr,
                                    GetModuleHandle(nullptr),
@@ -454,13 +440,6 @@ void Editor::resize(uint16_t width, uint16_t height) {
         SetWindowPos(win32_window_.handle_, nullptr, 0, 0, 0, 0,
                      SWP_NOSIZE | SWP_NOREDRAW | SWP_NOACTIVATE |
                          SWP_NOOWNERZORDER | SWP_DEFERERASE | SWP_NOCOPYBITS);
-
-        // Make sure that after the resize the screen coordinates always match
-        // up properly. Without this Soundtoys Crystallizer might appear choppy
-        // or skip a frame during their resize animation (which somehow calls
-        // `audioMasterSizeWindow()` with the same size a bunch of times in a
-        // row).
-        fix_local_coordinates();
     }
 }
 
@@ -474,17 +453,6 @@ void Editor::handle_x11_events() noexcept {
     //       function calls involving it will fail. All functions called from
     //       here should be able to handle that cleanly.
     try {
-        // HACK: See the docstrings on `should_fix_local_coordinates_` and
-        //       `fix_local_coordinates()`
-        if (should_fix_local_coordinates_ && !is_mouse_button_held()) {
-            logger_.log_editor_trace([&]() {
-                return "DEBUG: Performing spooled local coordinate fix";
-            });
-
-            fix_local_coordinates();
-            should_fix_local_coordinates_ = false;
-        }
-
         std::unique_ptr<xcb_generic_event_t> generic_event;
         while (generic_event.reset(xcb_poll_for_event(x11_connection_.get())),
                generic_event != nullptr) {
@@ -603,28 +571,6 @@ void Editor::handle_x11_events() noexcept {
                             reinterpret_cast<char*>(&translated_event));
                         xcb_flush(x11_connection_.get());
                     }
-
-                    if (event->window == host_window_ ||
-                        event->window == parent_window_ ||
-                        event->window == wrapper_window_.window_) {
-                        if (!use_xembed_) {
-                            // NOTE: See the docstring on this field. This
-                            //       avoids flickering with some window manager
-                            //       and plugin combinations when dragging
-                            //       plugin windows around.
-                            if (is_mouse_button_held()) {
-                                logger_.log_editor_trace([&]() {
-                                    return "DEBUG: ConfigureNotify received "
-                                           "while mouse button is held down, "
-                                           "spooling the coordinate fix";
-                                });
-
-                                should_fix_local_coordinates_ = true;
-                            } else {
-                                fix_local_coordinates();
-                            }
-                        }
-                    }
                 } break;
                 // We're listening for `ConfigureRequest` events on the
                 //  wrapper window. This is received whenever Wine wants
@@ -723,10 +669,6 @@ void Editor::handle_x11_events() noexcept {
 
                     if (window == parent_window_ ||
                         window == wrapper_window_.window_) {
-                        if (!use_xembed_) {
-                            fix_local_coordinates();
-                        }
-
                         // In case the WM somehow does not support
                         // `_NET_ACTIVE_WINDOW`, a more naive focus grabbing
                         // method implemented in the `WM_PARENTNOTIFY` handler
@@ -875,67 +817,6 @@ HWND Editor::win32_handle() const noexcept {
     return win32_window_.handle_;
 }
 
-void Editor::fix_local_coordinates() const {
-    if (use_xembed_) {
-        return;
-    }
-
-    // We're purposely not using XEmbed here. This has the consequence that wine
-    // still thinks that any X and Y coordinates are relative to the x11 window
-    // root instead of the parent window provided by the DAW, causing all sorts
-    // of GUI interactions to break. To alleviate this we'll just lie to Wine
-    // and tell it that it's located at the parent window's location on the root
-    // window. We also will keep the child window at its largest possible size
-    // to allow for smooth resizing. This works because the embedding hierarchy
-    // is DAW window -> Win32 window (created in this class) -> VST plugin
-    // window created by the plugin itself. In this case it doesn't matter that
-    // the Win32 window is larger than the part of the client area the plugin
-    // draws to since any excess will be clipped off by the parent window.
-    const xcb_window_t root = get_root_window(*x11_connection_, parent_window_);
-
-    // We can't directly use the `event.x` and `event.y` coordinates because the
-    // parent window may also be embedded inside another window.
-    // NOTE: Tracktion Waveform uses client side decorations, and for VST2
-    //       plugins they forgot to add a separate parent window that's already
-    //       offset correctly. Instead, they'll have the plugin embed itself
-    //       inside directly inside of the dialog, and Waveform then moves the
-    //       window 27 pixels down. That's why we cannot use `parent_window_`
-    //       here.
-    xcb_generic_error_t* error = nullptr;
-    const xcb_translate_coordinates_cookie_t translate_cookie =
-        xcb_translate_coordinates(x11_connection_.get(),
-                                  wrapper_window_.window_, root, 0, 0);
-    const std::unique_ptr<xcb_translate_coordinates_reply_t>
-        translated_coordinates(xcb_translate_coordinates_reply(
-            x11_connection_.get(), translate_cookie, &error));
-    THROW_X11_ERROR(error);
-
-    xcb_configure_notify_event_t translated_event{};
-    translated_event.response_type = XCB_CONFIGURE_NOTIFY;
-    translated_event.event = wine_window_;
-    translated_event.window = wine_window_;
-    // This should be set to the same sizes the window was created on. Since
-    // we're not using `SetWindowPos` to resize the Window, Wine can get a bit
-    // confused when we suddenly report a different client area size. Without
-    // this certain plugins (such as those by Valhalla DSP) would break.
-    translated_event.width = client_area_.width;
-    translated_event.height = client_area_.height;
-    translated_event.x = translated_coordinates->dst_x;
-    translated_event.y = translated_coordinates->dst_y;
-
-    logger_.log_editor_trace([&]() {
-        return "DEBUG: Spoofing local coordinates to (" +
-               std::to_string(translated_event.x) + ", " +
-               std::to_string(translated_event.y) + ")";
-    });
-
-    xcb_send_event(
-        x11_connection_.get(), false, wine_window_,
-        XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
-        reinterpret_cast<char*>(&translated_event));
-    xcb_flush(x11_connection_.get());
-}
-
 void Editor::set_input_focus(bool grab) const {
     // NOTE: When grabbing focus, you can hold down the shift key to focus the
     //       Wine window directly. This allows you to use the space key in
@@ -1075,18 +956,6 @@ std::optional<POINT> Editor::get_current_pointer_position() const noexcept {
     return POINT{
         .x = query_pointer_reply->root_x + (win32_pos.left - x11_x_pos),
         .y = query_pointer_reply->root_y + (win32_pos.top - x11_y_pos)};
-}
-
-bool Editor::is_mouse_button_held() const {
-    xcb_generic_error_t* error = nullptr;
-    const xcb_query_pointer_cookie_t pointer_query_cookie =
-        xcb_query_pointer(x11_connection_.get(), host_window_);
-    const std::unique_ptr<xcb_query_pointer_reply_t> pointer_query_reply(
-        xcb_query_pointer_reply(x11_connection_.get(), pointer_query_cookie,
-                                &error));
-    THROW_X11_ERROR(error);
-
-    return pointer_query_reply->mask != 0;
 }
 
 bool Editor::is_wine_window_active() const {
