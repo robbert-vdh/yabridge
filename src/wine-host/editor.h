@@ -232,18 +232,6 @@ class Editor {
     bool supports_ewmh_active_window() const;
 
     /**
-     * Lie to the Wine window about its coordinates on the screen for
-     * reparenting without using XEmbed. See the comment at the top of the
-     * implementation on why this is needed.
-     *
-     * One of the events that trigger this is `ConfigureNotify` messages. Some
-     * WMs may continuously send this message while dragging a window around. To
-     * avoid flickering, the main `handle_x11_events()` function will wait to
-     * call this function until the all mouse buttons have been released.
-     */
-    void fix_local_coordinates() const;
-
-    /**
      * Steal or release keyboard focus. This is done whenever the user clicks on
      * the window since we don't have a way to detect whether the client window
      * is calling `SetFocus()`. See the comment inside of this function for more
@@ -319,12 +307,6 @@ class Editor {
     std::optional<POINT> get_current_pointer_position() const noexcept;
 
     /**
-     * Checks whether any mouse button is held. Used to defer calling
-     * `fix_local_coordinates()` when dragging windows around.
-     */
-    bool is_mouse_button_held() const;
-
-    /**
      * Returns `true` if the currently active window (as per
      * `_NET_ACTIVE_WINDOW`) contains `wine_window_`. If the window manager does
      * not support this hint, this will always return false.
@@ -378,16 +360,6 @@ class Editor {
      * per process, and it gets freed again when the last handle gets dropped.
      */
     WineXdndProxy::Handle dnd_proxy_handle_;
-
-    /**
-     * The Wine window's client area, or the maximum size of that window. This
-     * will be set to a size that's large enough to be able to enter full screen
-     * on a single display. This is more of a theoretical maximum size, as the
-     * plugin will only use a portion of this window to draw to. Because we're
-     * not changing the size of the Wine window and only resize the wrapper
-     * window it's been embedded in, resizing will feel smooth and native.
-     */
-    const Size client_area_;
 
     /**
      * The size of the wrapper window. We'll prevent CLAP resize requests when
@@ -468,15 +440,6 @@ class Editor {
      *       the mouse is within the window.
      */
     xcb_window_t host_window_;
-
-    /**
-     * Used to delay calling `fix_local_coordinates()` when dragging windows
-     * around with the mouse. Some WMs will continuously send `ConfigureNotify`
-     * messages when dragging windows around, and the `fix_local_coordinates()`
-     * function may cause the window to blink. This becomes a but jarring if it
-     * happens 60 times per second while dragging windows around.
-     */
-    bool should_fix_local_coordinates_ = false;
 
     /**
      * The atom corresponding to `_NET_ACTIVE_WINDOW`.
