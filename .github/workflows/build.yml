@@ -25,7 +25,7 @@ jobs:
     outputs:
       artifact-name: ${{ env.ARCHIVE_NAME }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       # Needed for git-describe to do anything useful, the safe directory
       # workaround is needed for https://github.com/actions/runner/issues/2033
       - name: Fetch all git history
@@ -55,7 +55,7 @@ jobs:
 
           tar -caf "$ARCHIVE_NAME" yabridge
           rm -rf yabridge
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARCHIVE_NAME }}
           path: ${{ env.ARCHIVE_NAME }}
@@ -70,7 +70,7 @@ jobs:
       run:
         working-directory: tools/yabridgectl
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       # Needed for git-describe to do anything useful, the safe directory
       # workaround is needed for https://github.com/actions/runner/issues/2033
       - name: Fetch all git history
@@ -98,7 +98,7 @@ jobs:
 
           tar -caf "$ARCHIVE_NAME" yabridgectl
           rm -rf yabridgectl
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARCHIVE_NAME }}
           # For some reason there's no way to tell GitHub actions to run actions
