@@ -1183,19 +1183,6 @@ LRESULT CALLBACK window_proc(HWND handle,
                 handle, GWLP_USERDATA,
                 static_cast<LONG_PTR>(reinterpret_cast<size_t>(editor)));
         } break;
-        // Setting `SWP_NOCOPYBITS` somewhat reduces flickering on
-        // `fix_local_coordinates()` calls with plugins that don't do double
-        // buffering since it speeds up the redrawing process.
-        case WM_WINDOWPOSCHANGING: {
-            auto editor = reinterpret_cast<Editor*>(
-                GetWindowLongPtr(handle, GWLP_USERDATA));
-            if (!editor || editor->use_xembed_) {
-                break;
-            }
-
-            WINDOWPOS* info = reinterpret_cast<WINDOWPOS*>(lParam);
-            info->flags |= SWP_DEFERERASE | SWP_NOCOPYBITS;
-        } break;
         case WM_TIMER: {
             auto editor = reinterpret_cast<Editor*>(
                 GetWindowLongPtr(handle, GWLP_USERDATA));
