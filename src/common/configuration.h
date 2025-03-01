@@ -113,14 +113,6 @@ class Configuration {
     bool editor_force_dnd = false;
 
     /**
-     * Use XEmbed instead of yabridge's normal editor embedding method. Wine's
-     * XEmbed support is not very polished yet and tends to lead to rendering
-     * issues, so this is disabled by default. Also, editor resizing won't work
-     * reliably when XEmbed is enabled.
-     */
-    bool editor_xembed = false;
-
-    /**
      * The number of times per second we'll handle the event loop. In most
      * plugins this also controls the plugin editor GUI's refresh rate.
      *
@@ -199,7 +191,6 @@ class Configuration {
               [](S& s, auto& v) { s.ext(v, bitsery::ext::GhcPath{}); });
         s.value1b(editor_coordinate_hack);
         s.value1b(editor_force_dnd);
-        s.value1b(editor_xembed);
         s.ext(frame_rate, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.value4b(v); });
         s.value1b(hide_daw);

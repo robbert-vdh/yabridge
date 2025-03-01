@@ -54,8 +54,7 @@ constexpr size_t idle_timer_id = 1337;
  * The X11 event mask for the host window, which in most DAWs except for Ardour
  * and REAPER will be the same as `parent_window_`.
  */
-constexpr uint32_t host_event_mask =
-    XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_VISIBILITY_CHANGE;
+constexpr uint32_t host_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
 
 /**
  * The X11 event mask for the parent window. We'll use this for input focus
@@ -64,7 +63,7 @@ constexpr uint32_t host_event_mask =
  * reparents.
  */
 constexpr uint32_t parent_event_mask =
-    host_event_mask | XCB_EVENT_MASK_FOCUS_CHANGE |
+    XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_FOCUS_CHANGE |
     XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW;
 
 /**
@@ -108,21 +107,6 @@ constexpr uint32_t icccm_wm_state_normal = 1;
 
 // `xdnd_aware_property_name` was moved to `editor.h` so the unity build
 // succeeds
-
-/**
- * Client message name for XEmbed messages. See
- * https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html.
- */
-constexpr char xembed_message_name[] = "_XEMBED";
-
-// Constants from the XEmbed spec
-constexpr uint32_t xembed_protocol_version = 0;
-
-constexpr uint32_t xembed_embedded_notify_msg = 0;
-constexpr uint32_t xembed_window_activate_msg = 1;
-constexpr uint32_t xembed_focus_in_msg = 4;
-
-constexpr uint32_t xembed_focus_first = 1;
 
 /**
  * The default arrow cursor used in Windows.
@@ -275,7 +259,6 @@ Editor::Editor(MainContext& main_context,
                std::optional<fu2::unique_function<void()>> timer_proc)
     : use_coordinate_hack_(config.editor_coordinate_hack),
       use_force_dnd_(config.editor_force_dnd),
-      use_xembed_(config.editor_xembed),
       logger_(logger),
       x11_connection_(xcb_connect(nullptr, nullptr), xcb_disconnect),
       dnd_proxy_handle_(WineXdndProxy::get_handle()),
@@ -370,24 +353,16 @@ Editor::Editor(MainContext& main_context,
                   << std::endl;
     }
 
-    // When using XEmbed we'll need the atoms for the corresponding properties
-    xcb_xembed_message_ =
-        get_atom_by_name(*x11_connection_, xembed_message_name);
-
-    // When not using XEmbed, Wine will interpret any local coordinates as
-    // global coordinates. To work around this we'll tell the Wine window it's
-    // located at its actual coordinates on screen rather than somewhere within.
-    // For robustness's sake this should be done both when the actual window the
-    // Wine window is embedded in (which may not be the parent window) is moved
-    // or resized, and when the user moves his mouse over the window because
-    // this is sometimes needed for plugin groups. We also listen for
-    // EnterNotify and LeaveNotify events on the Wine window so we can grab and
-    // release input focus as necessary. And lastly we'll look out for
-    // reparents, so we can make sure that the window does not get stolen by the
-    // window manager and that we correctly handle the host reparenting
-    // `parent_window_` themselves.
-    // If we do enable XEmbed support, we'll also listen for visibility changes
-    // and trigger the embedding when the window becomes visible
+    // If you naively reparent `wine_window_` to `parent_window_`, Wine will
+    // interpret any local coordinates as global coordinates. To work around
+    // this, we'll tell the Wine window where on screen it's located in the
+    // `XCB_CONFIGURE_NOTIFY` handler. This happens any time the window the Wine
+    // window is embedded in (which may not be the parent window) is moved or
+    // resized. We also listen for EnterNotify and LeaveNotify events on the
+    // Wine window so we can grab and release input focus as necessary. And
+    // lastly we'll look out for reparents, so we can make sure that the window
+    // does not get stolen by the window manager and that we correctly handle
+    // the host reparenting `parent_window_` themselves.
     xcb_change_window_attributes(x11_connection_.get(), host_window_,
                                  XCB_CW_EVENT_MASK, &host_event_mask);
     xcb_change_window_attributes(x11_connection_.get(), parent_window_,
@@ -399,22 +374,11 @@ Editor::Editor(MainContext& main_context,
     // First reparent our dumb wrapper window to the host's window, and then
     // embed the Wine window into our wrapper window
     do_reparent(wrapper_window_.window_, parent_window_);
+
     xcb_map_window(x11_connection_.get(), wrapper_window_.window_);
     xcb_flush(x11_connection_.get());
 
-    if (use_xembed_) {
-        // This call alone doesn't do anything. We need to call this function a
-        // second time on visibility change because Wine's XEmbed implementation
-        // does not work properly (which is why we remvoed XEmbed support in the
-        // first place).
-        do_xembed();
-    } else {
-        // Embed the Win32 window into the window provided by the host. Instead
-        // of using the XEmbed protocol, we'll register a few events and manage
-        // the child window ourselves. This is a hack to work around the issue's
-        // described in `Editor`'s docstring'.
-        do_reparent(wine_window_, wrapper_window_.window_);
-    }
+    do_reparent(wine_window_, wrapper_window_.window_);
 }
 
 void Editor::resize(uint16_t width, uint16_t height) {
@@ -634,25 +598,6 @@ void Editor::handle_x11_events() noexcept {
                         wine_window_, xcb_wm_state_property_,
                         xcb_wm_state_property_, 32, 2, values.data());
                     xcb_flush(x11_connection_.get());
-                } break;
-                // Start the XEmbed procedure when the window becomes visible,
-                // since most hosts will only show the window after the plugin
-                // has embedded itself into it.
-                case XCB_VISIBILITY_NOTIFY: {
-                    const auto event =
-                        reinterpret_cast<xcb_visibility_notify_event_t*>(
-                            generic_event.get());
-                    logger_.log_editor_trace([&]() {
-                        return "DEBUG: VisibilityNotify for window " +
-                               std::to_string(event->window);
-                    });
-
-                    if (event->window == host_window_ ||
-                        event->window == parent_window_) {
-                        if (use_xembed_) {
-                            do_xembed();
-                        }
-                    }
                 } break;
                 // We want to grab keyboard input focus when the user hovers
                 // over our embedded Wine window AND that window is a child of
@@ -1069,27 +1014,6 @@ bool Editor::supports_ewmh_active_window() const {
     return active_window_property_exists;
 }
 
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-void Editor::send_xembed_message(xcb_window_t window,
-                                 uint32_t message,
-                                 uint32_t detail,
-                                 uint32_t data1,
-                                 uint32_t data2) const noexcept {
-    xcb_client_message_event_t event{};
-    event.response_type = XCB_CLIENT_MESSAGE;
-    event.type = xcb_xembed_message_;
-    event.window = window;
-    event.format = 32;
-    event.data.data32[0] = XCB_CURRENT_TIME;
-    event.data.data32[1] = message;
-    event.data.data32[2] = detail;
-    event.data.data32[3] = data1;
-    event.data.data32[4] = data2;
-
-    xcb_send_event(x11_connection_.get(), false, window,
-                   XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&event));
-}
-
 void Editor::do_reparent(xcb_window_t child, xcb_window_t new_parent) const {
     const xcb_void_cookie_t reparent_cookie = xcb_reparent_window_checked(
         x11_connection_.get(), child, new_parent, 0, 0);
@@ -1136,28 +1060,6 @@ void Editor::do_reparent(xcb_window_t child, xcb_window_t new_parent) const {
         });
     }
 
-    xcb_flush(x11_connection_.get());
-}
-
-void Editor::do_xembed() const {
-    if (!use_xembed_) {
-        return;
-    }
-
-    // If we're embedding using XEmbed, then we'll have to go through the whole
-    // XEmbed dance here. See the spec for more information on how this works:
-    // https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html#lifecycle
-    do_reparent(wine_window_, wrapper_window_.window_);
-
-    // Let the Wine window know it's being embedded into the parent window
-    send_xembed_message(wine_window_, xembed_embedded_notify_msg, 0,
-                        wrapper_window_.window_, xembed_protocol_version);
-    send_xembed_message(wine_window_, xembed_focus_in_msg, xembed_focus_first,
-                        0, 0);
-    send_xembed_message(wine_window_, xembed_window_activate_msg, 0, 0, 0);
-    xcb_flush(x11_connection_.get());
-
-    xcb_map_window(x11_connection_.get(), wine_window_);
     xcb_flush(x11_connection_.get());
 }
 
@@ -1415,15 +1317,16 @@ bool is_cursor_in_wine_window(
 
     if (HWND windows_window = WindowFromPoint(*windows_pointer_pos);
         windows_window && windows_window != windows_desktop_window) {
-        // NOTE: Because resizing reparented Wine windows without XEmbed is a
-        //       bit janky, yabridge creates windows with client areas large
-        //       enough to fit the entire screen, and the plugin then embeds its
-        //       own GUI in a portion of that. The result is that
-        //       `WindowFromPoint()` will still return that same huge window
-        //       when we hover over an area to the right or to the bottom of a
-        //       plugin GUI. We can easily detect by just checking the window
-        //       class name. Also check out the `WM_NCHITTEST` implementation in
-        //       the message loop above.
+        // NOTE: It could happen that the reparented Wine window extends beyond
+        //       the host's window. In that case `WindowFromPoint()` will still
+        //       think we're hovering over the plugin's GUI when hovering over
+        //       an area to the right or to the bottom of a plugin GUI. We can
+        //       easily detect by just checking the window class name. Also
+        //       check out the `WM_NCHITTEST` implementation in the message loop
+        //       above.
+        //
+        //       This may not be necessary anymore with the new window
+        //       configuration approach.
         std::array<char, 64> window_class_name{0};
         GetClassName(windows_window, window_class_name.data(),
                      window_class_name.size());

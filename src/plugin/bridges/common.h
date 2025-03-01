@@ -298,9 +298,6 @@ class PluginBridge {
         if (config_.editor_force_dnd) {
             other_options.push_back("editor: force drag-and-drop");
         }
-        if (config_.editor_xembed) {
-            other_options.push_back("editor: XEmbed");
-        }
         if (config_.frame_rate) {
             std::ostringstream option;
             option << "frame rate: " << std::setprecision(2)

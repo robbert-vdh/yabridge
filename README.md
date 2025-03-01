@@ -337,7 +337,6 @@ you load a new plugin._
 | `editor_coordinate_hack`      | `{true,false}`          | Compatibility option for plugins that rely on the absolute screen coordinates of the window they're embedded in. Since the Wine window gets embedded inside of a window provided by your DAW, these coordinates won't match up and the plugin would end up drawing in the wrong location without this option. Currently the only known plugins that require this option are _PSPaudioware E27_ and _Soundtoys Crystallizer_. Defaults to `false`.                                   |
 | `editor_disable_host_scaling` | `{true,false}`          | Disable host-driven HiDPI scaling for VST3 and CLAP plugins. Wine currently does not have proper fractional HiDPI support, so you might have to enable this option if you're using a HiDPI display. In most cases setting the font DPI in `winecfg`'s graphics tab to 192 will cause plugins to scale correctly at 200% size. Defaults to `false`.                                                                                                                                  |
 | `editor_force_dnd`            | `{true,false}`          | This option forcefully enables drag-and-drop support in _REAPER_. Because REAPER's FX window supports drag-and-drop itself, dragging a file onto a plugin editor will cause the drop to be intercepted by the FX window. This makes it impossible to drag files onto plugins in REAPER under normal circumstances. Setting this option to `true` will strip drag-and-drop support from the FX window, thus allowing files to be dragged onto the plugin again. Defaults to `false`. |
-| `editor_xembed`               | `{true,false}`          | Use Wine's XEmbed implementation instead of yabridge's normal window embedding method. Some plugins will have redrawing issues when using XEmbed and editor resizing won't always work properly with it, but it could be useful in certain setups. You may need to use [this Wine patch](https://github.com/psycha0s/airwave/blob/master/fix-xembed-wine-windows.patch) if you're getting blank editor windows. Defaults to `false`.                                                |
 | `frame_rate`                  | `<number>`              | The rate at which Win32 events are being handled and usually also the refresh rate of a plugin's editor GUI. When using plugin groups all plugins share the same event handling loop, so in those the last loaded plugin will set the refresh rate. Defaults to `60`.                                                                                                                                                                                                               |
 | `hide_daw`                    | `{true,false}`          | Don't report the name of the actual DAW to the plugin. See the [known issues](#known-issues-and-fixes) section for a list of situations where this may be useful. This affects VST2, VST3, and CLAP plugins. Defaults to `false`.                                                                                                                                                                                                                                                   |
 | `vst3_prefer_32bit`           | `{true,false}`          | Use the 32-bit version of a VST3 plugin instead the 64-bit version if both are installed and they're in the same VST3 bundle inside of `~/.vst3/yabridge`. You likely won't need this.                                                                                                                                                                                                                                                                                              |
@@ -367,9 +366,6 @@ group = "toneboosters"
 
 ["PSPaudioware"]
 editor_coordinate_hack = true
-
-["Analog Lab 3.so"]
-editor_xembed = true
 
 ["Chromaphone 3.so"]
 hide_daw = true
@@ -570,13 +566,6 @@ Aside from that, these are some known caveats:
   VST 2.4 has no way to let the host know that those labels have been updated.
   Deactivating and reactivating the plugin will cause these labels to be updated
   again for the current patch.
-- The Cinnamon desktop environment has some quirks with its window management
-  that affect yabridge's plugin editor embedding. Most notably some plugins may
-  flicker while dragging windows around, and there may be [rendering
-  issues](https://github.com/robbert-vdh/yabridge/issues/89) when using multiple
-  monitors depending on which screen has been set as primary. Enabling the
-  XEmbed [compatibility option](#compatibility-options) may help, but Wine's
-  XEmbed implementation also introduces other rendering issues.
 
 There are also some (third party) plugin API extensions for that have not been
 implemented yet. See the [roadmap](./ROADMAP.md) for a list of future plans.

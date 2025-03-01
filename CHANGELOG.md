@@ -25,6 +25,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
+- The `editor_xembed` compatibility option has been removed. This option hasn't
+  worked properly for the last couple major Wine releases.
 - Out of the box support for building a 32-bit version of yabridge for use in
   64-bit machines has been dropped as part of solving a compatibility issue with
   newer Meson versions
