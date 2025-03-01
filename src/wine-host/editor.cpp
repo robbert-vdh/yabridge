@@ -257,8 +257,7 @@ Editor::Editor(MainContext& main_context,
                Logger& logger,
                const size_t parent_window_handle,
                std::optional<fu2::unique_function<void()>> timer_proc)
-    : use_coordinate_hack_(config.editor_coordinate_hack),
-      use_force_dnd_(config.editor_force_dnd),
+    : use_force_dnd_(config.editor_force_dnd),
       logger_(logger),
       x11_connection_(xcb_connect(nullptr, nullptr), xcb_disconnect),
       dnd_proxy_handle_(WineXdndProxy::get_handle()),
@@ -401,22 +400,6 @@ void Editor::resize(uint16_t width, uint16_t height) {
     //       using the CLAP JUCE Extensions.
     wrapper_window_size_.width = width;
     wrapper_window_size_.height = height;
-
-    // When the `editor_coordinate_hack` option is enabled, we will make sure
-    // that the window is actually placed at (0, 0) coordinates. Otherwise some
-    // plugins that rely on screen coordinates, like the Soundtoys plugins and
-    // older PSPaudioware plugins, will draw their GUI at the wrong location
-    // because they look at the (top level) window's screen coordinates instead
-    // of their own relative coordinates. We don't do by default as this also
-    // interferes with resize handles.
-    if (use_coordinate_hack_) {
-        logger_.log_editor_trace([]() {
-            return "DEBUG: Resetting Wine window position back to (0, 0)";
-        });
-        SetWindowPos(win32_window_.handle_, nullptr, 0, 0, 0, 0,
-                     SWP_NOSIZE | SWP_NOREDRAW | SWP_NOACTIVATE |
-                         SWP_NOOWNERZORDER | SWP_DEFERERASE | SWP_NOCOPYBITS);
-    }
 }
 
 void Editor::show() noexcept {

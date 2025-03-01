@@ -268,13 +268,6 @@ class Editor {
     inline Size size() const noexcept { return wrapper_window_size_; }
 
     /**
-     * Whether to reposition `win32_window_` to (0, 0) every time the window
-     * resizes. This can help with buggy plugins that use the (top level)
-     * window's screen coordinates when drawing their GUI.
-     */
-    const bool use_coordinate_hack_;
-
-    /**
      * Whether the `editor_force_dnd` workaround for REAPER should be activated.
      * See the implementation in `editor.cpp` for more details.
      */
