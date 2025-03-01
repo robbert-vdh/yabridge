@@ -90,9 +90,22 @@ constexpr char active_window_property_name[] = "_NET_ACTIVE_WINDOW";
 
 /**
  * We'll use this property to filter windows for `host_window_`. Like `xprop`
- * and `xwininfo`, we'll only consider windows with this property set.
+ * and `xwininfo`, we'll only consider windows with this property set, although
+ * we won't filter on whether or not the window is actually visible because it
+ * may be minimalized when the plugin's GUI is being opened.
  */
-constexpr char wm_state_property_name[] = "WM_STATE";
+constexpr char icccm_wm_state_property_name[] = "WM_STATE";
+
+/**
+ * This `WM_STATE` property value indicates that a window is a visible top level
+ * window. Needs to be set on Wine's window as part of emulating the behavior of
+ * a minimal window manager.
+ *
+ * Taken from the ICCCM specification:
+ *
+ * <https://x.org/releases/X11R7.6/doc/xorg-docs/specs/ICCCM/icccm.html#wm_state_property>
+ */
+constexpr uint32_t icccm_wm_state_normal = 1;
 
 // `xdnd_aware_property_name` was moved to `editor.h` so the unity build
 // succeeds
@@ -302,7 +315,7 @@ Editor::Editor(MainContext& main_context,
           }
       }),
       xcb_wm_state_property_(
-          get_atom_by_name(*x11_connection_, wm_state_property_name)),
+          get_atom_by_name(*x11_connection_, icccm_wm_state_property_name)),
       parent_window_(parent_window_handle),
       wrapper_window_(
           x11_connection_,
@@ -614,9 +627,12 @@ void Editor::handle_x11_events() noexcept {
                     });
                     xcb_map_window(x11_connection_.get(), wine_window_);
 
-                    const std::array<uint32_t, 2> values{XCB_ICCCM_WM_STATE_NORMAL, 0};
-                    xcb_change_property(x11_connection_.get(), XCB_PROP_MODE_REPLACE, wine_window_, xcb_wm_state_property_,
-                                        xcb_wm_state_property_, 32, 2, values.data());
+                    const std::array<uint32_t, 2> values{
+                        icccm_wm_state_normal, 0};
+                    xcb_change_property(
+                        x11_connection_.get(), XCB_PROP_MODE_REPLACE,
+                        wine_window_, xcb_wm_state_property_,
+                        xcb_wm_state_property_, 32, 2, values.data());
                     xcb_flush(x11_connection_.get());
                 } break;
                 // Start the XEmbed procedure when the window becomes visible,
