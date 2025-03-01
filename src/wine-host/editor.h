@@ -18,7 +18,6 @@
 
 #include <memory>
 #include <optional>
-#include <string>
 
 #include <windows.h>
 #include <function2/function2.hpp>
@@ -27,7 +26,6 @@
 #pragma push_macro("_WIN32")
 #undef _WIN32
 #include <xcb/xcb.h>
-#include <xcb/xcb_icccm.h>
 #pragma pop_macro("_WIN32")
 
 #include "../common/configuration.h"
