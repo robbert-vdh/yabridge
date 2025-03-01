@@ -97,12 +97,6 @@ Configuration::Configuration(const fs::path& config_path,
                 } else {
                     invalid_options.emplace_back(key);
                 }
-            } else if (key == "editor_coordinate_hack") {
-                if (const auto parsed_value = value.as_boolean()) {
-                    editor_coordinate_hack = parsed_value->get();
-                } else {
-                    invalid_options.emplace_back(key);
-                }
             } else if (key == "editor_disable_host_scaling") {
                 if (const auto parsed_value = value.as_boolean()) {
                     editor_disable_host_scaling = parsed_value->get();
