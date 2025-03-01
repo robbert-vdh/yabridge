@@ -23,6 +23,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Similarly, popups should no longer spuriously appear in the wrong placeo n
   screen. This mostly affected _MeldaProduction_ plugin
 
+### Removed
+
+- The `editor_xembed` compatibility option has been removed. This option hasn't
+  worked properly for the last couple major Wine releases.
+
 ### yabridgectl
 
 - Fixed a regression that caused `yabridgectl set --path-auto` to no longer

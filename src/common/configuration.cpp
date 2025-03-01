@@ -115,12 +115,6 @@ Configuration::Configuration(const fs::path& config_path,
                 } else {
                     invalid_options.emplace_back(key);
                 }
-            } else if (key == "editor_xembed") {
-                if (const auto parsed_value = value.as_boolean()) {
-                    editor_xembed = parsed_value->get();
-                } else {
-                    invalid_options.emplace_back(key);
-                }
             } else if (key == "frame_rate") {
                 if (const auto parsed_value = value.as_floating_point()) {
                     frame_rate = parsed_value->get();

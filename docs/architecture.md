@@ -109,23 +109,14 @@ size or when the plugin resizes its own window. For embedding the Wine window
 into the host's window we support two different implementations:
 
 - The main approach involves reparenting the Wine window to the host window, and
-  then manually sending X11 `ConfigureNotify` events to the corresponding X11
-  window whenever its size or position on the screen changes. This is needed
-  because while the reparented Wine window is located at the (relative)
-  coordinates `(0, 0)`, Wine willl think that these coordinates are absolute
-  screen coordinates and without sending this event a lot of Windows
-  applications will either render in the wrong location or have broken knobs and
-  sliders. By manually sending the event instead of actually reconfiguring the
-  window Wine will think the window is located at its actual screen coordinates
-  and user interaction works as expected.
-- Alternatively there's an option to use Wine's own XEmbed implementation.
-  XEmbed is the usual solution for embedding one application window into
-  approach. However this sadly does have a few quirks, including flickering with
-  some plugins that use VSTGUI and windows that don't properly rendering until
-  they are reopened in some hosts. Because of that the above embedding behaviour
-  that essentially fakes this XEmbed support is the default and XEmbed can be
-  enabled separately on a plugin by plugin basis by setting a flag in a
-  `yabridge.toml` config file.
+  then acting as a minimal X11 window manager that sits between the host window
+  and Wine's window. This is needed because while the reparented Wine window is
+  located at the (relative) coordinates `(0, 0)` in the host's window, Wine will
+  think that these coordinates are absolute screen coordinates and without
+  sending this event a lot of Windows applications will either render in the
+  wrong location or have broken knobs and sliders. We solve this by intercepting
+  window configuration events to let the window know where on screen it is
+  located.
 
 Aside from embedding the window we also manage keyboard focus grabbing. Since
 it's not possible for us to know when the Windows plugin wants keyboard focus,
