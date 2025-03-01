@@ -391,9 +391,13 @@ void Editor::resize(uint16_t width, uint16_t height) {
     const std::array<uint32_t, 2> values{width, height};
     xcb_configure_window(x11_connection_.get(), wrapper_window_.window_,
                          value_mask, values.data());
-    xcb_configure_window(x11_connection_.get(), wine_window_, value_mask,
-                         values.data());
     xcb_flush(x11_connection_.get());
+
+    // This will trigger the `XCB_CONFIGURE_REQUEST` handler in
+    // `handle_x11_events()`
+    SetWindowPos(
+        win32_window_.handle_, nullptr, 0, 0, width, height,
+        SWP_NOREPOSITION | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_DEFERERASE);
 
     // NOTE: This lets us skip resize requests in CLAP plugins when the plugin
     //       tries to resize to its current size. This fixes resize loops when
