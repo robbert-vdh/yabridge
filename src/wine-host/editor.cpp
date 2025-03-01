@@ -77,10 +77,9 @@ constexpr uint32_t parent_event_mask =
  *       slightly when the mouse is already inside of the editor window when
  *       opening it.
  */
-constexpr uint32_t wrapper_event_mask = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
-                                        XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-                                        XCB_EVENT_MASK_KEY_PRESS |
-                                        XCB_EVENT_MASK_KEY_RELEASE;
+constexpr uint32_t wrapper_event_mask =
+    XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY |
+    XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE;
 
 /**
  * The name of the X11 property on the root window used to denote the active
@@ -429,8 +428,8 @@ void Editor::resize(uint16_t width, uint16_t height) {
     const std::array<uint32_t, 2> values{width, height};
     xcb_configure_window(x11_connection_.get(), wrapper_window_.window_,
                          value_mask, values.data());
-    xcb_configure_window(x11_connection_.get(), wine_window_,
-                         value_mask, values.data());
+    xcb_configure_window(x11_connection_.get(), wine_window_, value_mask,
+                         values.data());
     xcb_flush(x11_connection_.get());
 
     // NOTE: This lets us skip resize requests in CLAP plugins when the plugin
@@ -528,13 +527,13 @@ void Editor::handle_x11_events() noexcept {
 
                 } break;
                 // We're listening for `ConfigureNotify` events on the host's
-                //  window (i.e. the window that's actually going to get dragged
-                //  around the by the user). In most cases this is the same as
-                //  `parent_window_`. When either this window gets moved, or
-                //  when the user moves his mouse over our window, the local
-                //  coordinates should be updated. The additional `EnterWindow`
-                //  check is sometimes necessary for using multiple editor
-                //  windows within a single plugin group.
+                // window (i.e. the window that's actually going to get dragged
+                // around the by the user). In most cases this is the same as
+                // `parent_window_`. When either this window gets moved, or when
+                // the user moves his mouse over our window, the local
+                // coordinates should be updated. The additional `EnterWindow`
+                // check is sometimes necessary for using multiple editor
+                // windows within a single plugin group.
                 case XCB_CONFIGURE_NOTIFY: {
                     const auto event =
                         reinterpret_cast<xcb_configure_notify_event_t*>(
@@ -544,29 +543,28 @@ void Editor::handle_x11_events() noexcept {
                                std::to_string(event->window);
                     });
 
-                    // If the host window is different from the parent window then
-                    //  the Wine window is at a non-zero offset from the top-left
-                    //  corner. The host window will always receive absolute position
-                    //  information in its events, sent from the window manager, while
-                    //  the parent window might receive position changes relative to
-                    //  the host window when it is a child window.
-                    if (event->window == host_window_ &&
-                        is_synthetic_event) {
+                    // If the host window is different from the parent window
+                    // then the Wine window is at a non-zero offset from the
+                    // top-left corner. The host window will always receive
+                    // absolute position information in its events, sent from
+                    // the window manager, while the parent window might receive
+                    // position changes relative to the host window when it is a
+                    // child window.
+                    if (event->window == host_window_ && is_synthetic_event) {
                         host_window_config_ = *event;
                     }
                     if (event->window == parent_window_ &&
-                        host_window_ != parent_window_ &&
-                        !is_synthetic_event) {
+                        host_window_ != parent_window_ && !is_synthetic_event) {
                         parent_window_config_ = *event;
                     }
 
                     // Window managers are expected to send ConfigureNotify to
-                    //  their managed windows whenever the window is being moved
-                    //  or resized by the user, so that application don't have to
-                    //  do all the relative positioning computation themselves.
-                    //  Wine also expects this and ignores position changes on its
-                    //  window parents, and its window position would get out of
-                    //  sync without this event.
+                    // their managed windows whenever the window is being moved
+                    // or resized by the user, so that application don't have to
+                    // do all the relative positioning computation themselves.
+                    // Wine also expects this and ignores position changes on
+                    // its window parents, and its window position would get out
+                    // of sync without this event.
                     if (event->window == host_window_ ||
                         event->window == parent_window_) {
                         xcb_configure_notify_event_t translated_event{};
@@ -575,24 +573,26 @@ void Editor::handle_x11_events() noexcept {
                         translated_event.window = wine_window_;
                         translated_event.width = event->width;
                         translated_event.height = event->height;
-                        translated_event.x = host_window_config_.x + parent_window_config_.x;
-                        translated_event.y = host_window_config_.y + parent_window_config_.y;
+                        translated_event.x =
+                            host_window_config_.x + parent_window_config_.x;
+                        translated_event.y =
+                            host_window_config_.y + parent_window_config_.y;
 
                         xcb_send_event(
                             x11_connection_.get(), false, wine_window_,
-                            XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
+                            XCB_EVENT_MASK_STRUCTURE_NOTIFY |
+                                XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,
                             reinterpret_cast<char*>(&translated_event));
                         xcb_flush(x11_connection_.get());
                     }
                 } break;
-                // We're listening for `ConfigureRequest` events on the
-                //  wrapper window. This is received whenever Wine wants
-                //  to configure its window, and we need to adjust the
-                //  configuration so that it stays within our wrapper.
-                //  Here, wwe could translate window position changes by
-                //  moving the wrapper window itself but this isn't really
-                //  necessary. Instead, we prevent Wine from actually moving
-                //  its window.
+                // We're listening for `ConfigureRequest` events on the wrapper
+                // window. This is received whenever Wine wants to configure its
+                // window, and we need to adjust the configuration so that it
+                // stays within our wrapper. Here, wwe could translate window
+                // position changes by moving the wrapper window itself but this
+                // isn't really necessary. Instead, we prevent Wine from
+                // actually moving its window.
                 case XCB_CONFIGURE_REQUEST: {
                     const auto event =
                         reinterpret_cast<xcb_configure_request_event_t*>(
@@ -601,22 +601,22 @@ void Editor::handle_x11_events() noexcept {
                         return "DEBUG: ConfigureRequest for window " +
                                std::to_string(event->window);
                     });
-                    const uint16_t value_mask = XCB_CONFIG_WINDOW_X |
-                                                XCB_CONFIG_WINDOW_Y |
-                                                XCB_CONFIG_WINDOW_WIDTH |
-                                                XCB_CONFIG_WINDOW_HEIGHT;
-                    const std::array<uint32_t, 4> values{0, 0, event->width, event->height};
+                    const uint16_t value_mask =
+                        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                        XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
+                    const std::array<uint32_t, 4> values{0, 0, event->width,
+                                                         event->height};
                     xcb_configure_window(x11_connection_.get(), wine_window_,
                                          value_mask, values.data());
                     xcb_flush(x11_connection_.get());
                 } break;
                 // We're listening for `MapRequest` events on the wrapper
-                //  window. This is received whenever Wine wants to map its
-                //  window, and we need to forward the request to the X server.
-                //  Wine also expects the window manager to change the WM_STATE
-                //  property whenever it has finished mapping the window. We
-                //  effectively implement a sub window manager here, so update
-                //  the property as we should.
+                // window. This is received whenever Wine wants to map its
+                // window, and we need to forward the request to the X server.
+                // Wine also expects the window manager to change the WM_STATE
+                // property whenever it has finished mapping the window. We
+                // effectively implement a sub window manager here, so update
+                // the property as we should.
                 case XCB_MAP_REQUEST: {
                     const auto event =
                         reinterpret_cast<xcb_map_request_event_t*>(
@@ -627,8 +627,8 @@ void Editor::handle_x11_events() noexcept {
                     });
                     xcb_map_window(x11_connection_.get(), wine_window_);
 
-                    const std::array<uint32_t, 2> values{
-                        icccm_wm_state_normal, 0};
+                    const std::array<uint32_t, 2> values{icccm_wm_state_normal,
+                                                         0};
                     xcb_change_property(
                         x11_connection_.get(), XCB_PROP_MODE_REPLACE,
                         wine_window_, xcb_wm_state_property_,
