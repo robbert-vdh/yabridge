@@ -168,11 +168,6 @@ bool is_child_window_or_same(xcb_connection_t& x11_connection,
                              xcb_window_t child,
                              xcb_window_t parent);
 /**
- * Compute the size a window would have to be to be allowed to fullscreened on
- * any of the connected screens.
- */
-Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection) noexcept;
-/**
  * Get the root window for the specified window. The returned root window will
  * depend on the screen the window is on.
  */
@@ -1229,27 +1224,6 @@ xcb_atom_t get_atom_by_name(xcb_connection_t& x11_connection,
     THROW_X11_ERROR(error);
 
     return atom_reply->atom;
-}
-
-Size get_maximum_screen_dimensions(xcb_connection_t& x11_connection) noexcept {
-    xcb_screen_iterator_t iter =
-        xcb_setup_roots_iterator(xcb_get_setup(&x11_connection));
-
-    // Find the maximum dimensions the window would have to be to be able to be
-    // fullscreened on any screen, disregarding the possibility that someone
-    // would try to stretch the window accross all displays (because who would
-    // do such a thing?)
-    Size maximum_screen_size{};
-    while (iter.rem > 0) {
-        maximum_screen_size.width =
-            std::max(maximum_screen_size.width, iter.data->width_in_pixels);
-        maximum_screen_size.height =
-            std::max(maximum_screen_size.height, iter.data->height_in_pixels);
-
-        xcb_screen_next(&iter);
-    }
-
-    return maximum_screen_size;
 }
 
 xcb_window_t get_root_window(xcb_connection_t& x11_connection,
