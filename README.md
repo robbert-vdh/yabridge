@@ -208,7 +208,7 @@ current version of Wine Staging, then you may want to try downgrading to an
 earlier version of Wine. This can be done as follows:
 
 - On Debian, Ubuntu, Linux Mint and other apt-based distros, you can use the
-  command below to install Wine Staging 7.20 after you add the WineHQ
+  command below to install Wine Staging 9.21 after you add the WineHQ
   repositories linked above. This command is a bit cryptic because on these
   distros the Wine package is split up into multiple smaller packages, and the
   package versions include the distros codename (e.g. `focal`, or `buster`) as
@@ -216,7 +216,7 @@ earlier version of Wine. This can be done as follows:
   you want to install, and then run these commands under Bash:
 
   ```shell
-  version=7.20
+  version=9.21
   variant=staging
   codename=$(shopt -s nullglob; awk '/^deb https:\/\/dl\.winehq\.org/ { print $3; exit 0 } END { exit 1 }' /etc/apt/sources.list /etc/apt/sources.list.d/*.list || awk '/^Suites:/ { print $2; exit }' /etc/apt/sources.list /etc/apt/sources.list.d/wine*.sources)
   suffix=$(dpkg --compare-versions "$version" ge 6.1 && ((dpkg --compare-versions "$version" eq 6.17 && echo "-2") || echo "-1"))
@@ -590,10 +590,8 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf). Also check the [known
 issues and fixes](#known-issues-and-fixes) section above for help with
 plugin-specific issues.
 
-- Old versions of yabridge may not work correctly with Wine 7.21, 7.22, and
-  8.0-rc1 because of Wine bug
-  [#53912](https://bugs.winehq.org/show_bug.cgi?id=53912). Either update to
-  yabridge 5.0.3, or [downgrade to Wine Staging 7.20](#downgrading-wine).
+- Wine 9.22 and Wine 10.x currently don't work with yabridge. You will have to
+  [downgrade to Wine 9.21](#downgrading-wine) for the time being.
 
 - Both yabridgectl and yabridge try to diagnose many common issues for you. If
   you're running into crashes or other issues, then try launching your DAW from
