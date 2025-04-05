@@ -554,6 +554,8 @@ include:
   a long standing issue in REAPER's FX window implementation. You can use a
   compatibility option to [force drag-and-drop](#compatibility-options) to work
   around this limitation.
+- Prefixes created with Bottles may have issues related to filesystem access.
+  (#291)
 
 Aside from that, these are some known caveats:
 
