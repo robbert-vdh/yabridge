@@ -42,6 +42,9 @@ while also staying easy to debug and maintain.
 Yabridge has been tested under the following hosts using Wine Staging 9.21.
 **See [#368](https://github.com/robbert-vdh/yabridge/issues/382) for information about GUI problems with Wine 9.22.**.
 
+> [!IMPORTANT]
+> yabridge doesn't work with `flatpak` packages. Please use native packages (.deb, .rpm, AUR etc) of the DAWs listed below.
+
 | Host              | VST2               | VST3                                                        | CLAP                                                 |
 | ----------------- | ------------------ | ----------------------------------------------------------- | ---------------------------------------------------- |
 | Bitwig Studio 5.3 | :heavy_check_mark: | :heavy_check_mark:                                          | :heavy_check_mark:                                   |
@@ -54,10 +57,6 @@ Yabridge has been tested under the following hosts using Wine Staging 9.21.
 | Mixbus 7.0.140    | :heavy_check_mark: | :heavy_check_mark:                                          | Does not support CLAP                                |
 
 Please let me know if there are any issues with other hosts.
-
-<sup>
-  *Bitwig Studio's Flatpak version will not work with yabridge. You'll need to use the .deb found on the release notes page instead.
-</sup>
 
 ## Usage
 
