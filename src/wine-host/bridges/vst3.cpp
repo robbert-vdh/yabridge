@@ -899,8 +899,22 @@ void Vst3Bridge::run() {
                             get_instance(request.owner_instance_id);
                         std::lock_guard lock(instance.get_size_mutex);
 
-                        return instance.plug_view_instance->plug_view->getSize(
-                            &size);
+                        auto result =
+                            instance.plug_view_instance->plug_view->getSize(
+                                &size);
+                        // HACK: Sometimes, due to HiDPI scaling, plugins might
+                        //       end up with a size that is off by one pixel
+                        //       from the requested size. To avoid ending up in
+                        //       an infinite loop, just return the size that the
+                        //       host requested in this case.
+                        if (result == Steinberg::kResultOk &&
+                            abs(size.getWidth() -
+                                instance.last_set_size.getWidth()) <= 1 &&
+                            abs(size.getHeight() -
+                                instance.last_set_size.getHeight()) <= 1) {
+                            size = instance.last_set_size;
+                        }
+                        return result;
                     });
 
                 return YaPlugView::GetSizeResponse{.result = result,
@@ -933,6 +947,8 @@ void Vst3Bridge::run() {
                         instance.editor->resize(request.new_size.getWidth(),
                                                 request.new_size.getHeight());
                     }
+
+                    instance.last_set_size = request.new_size;
 
                     return result;
                 });
