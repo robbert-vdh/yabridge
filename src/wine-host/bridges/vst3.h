@@ -256,6 +256,14 @@ struct Vst3PluginInstance {
      * processing.
      */
     std::optional<Steinberg::Vst::ProcessSetup> process_setup;
+
+    /**
+     * The last size that was set with onSize(). We use this to fudge the
+     * return value of getSize() if it is off by one pixel, which can happen
+     * due to HiDPI rounding. Otherwise, DAWs like Ardour might go into an
+     * infinite loop trying to adjust the size to a specific target.
+     */
+    Steinberg::ViewRect last_set_size;
 };
 
 /**
