@@ -256,12 +256,13 @@ Editor::Editor(MainContext& main_context,
                const Configuration& config,
                Logger& logger,
                const size_t parent_window_handle,
-               std::optional<fu2::unique_function<void()>> timer_proc)
+               std::optional<fu2::unique_function<void()>> timer_proc,
+               std::optional<Size> initial_size)
     : use_force_dnd_(config.editor_force_dnd),
       logger_(logger),
       x11_connection_(xcb_connect(nullptr, nullptr), xcb_disconnect),
       dnd_proxy_handle_(WineXdndProxy::get_handle()),
-      wrapper_window_size_({128, 128}),
+      wrapper_window_size_(initial_size.value_or(Size(128, 128))),
       host_window_config_({}),
       parent_window_config_({}),
       // Create a window without any decoratiosn for easy embedding. The

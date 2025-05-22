@@ -194,7 +194,8 @@ class Editor {
         const Configuration& config,
         Logger& logger,
         const size_t parent_window_handle,
-        std::optional<fu2::unique_function<void()>> timer_proc = std::nullopt);
+        std::optional<fu2::unique_function<void()>> timer_proc = std::nullopt,
+        std::optional<Size> initial_size = std::nullopt);
 
     /**
      * Resize the `wrapper_window_` to this new size. We need to manually call

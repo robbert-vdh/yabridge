@@ -799,9 +799,16 @@ void Vst3Bridge::run() {
                 // be done in the main UI thread
                 return main_context_
                     .run_in_context([&, &instance = instance]() -> tresult {
+                        Steinberg::ViewRect size;
+                        std::optional<Size> initial_size;
+                        if (instance.plug_view_instance->plug_view->getSize(
+                                &size) == Steinberg::kResultOk) {
+                            initial_size.emplace(size.getWidth(),
+                                                 size.getHeight());
+                        }
                         Editor& editor_instance = instance.editor.emplace(
-                            main_context_, config_, generic_logger_,
-                            x11_handle);
+                            main_context_, config_, generic_logger_, x11_handle,
+                            std::nullopt, initial_size);
                         const tresult result =
                             instance.plug_view_instance->plug_view->attached(
                                 editor_instance.win32_handle(), type.c_str());
