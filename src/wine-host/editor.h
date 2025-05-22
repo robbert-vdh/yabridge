@@ -375,6 +375,11 @@ class Editor {
     xcb_atom_t xcb_wm_state_property_;
 
     /**
+     * The atom corresponding to `WM_WINDOW_ROLE`.
+     */
+    xcb_atom_t xcb_wm_window_role_property_;
+
+    /**
      * The window handle of the editor window created by the DAW.
      */
     const xcb_window_t parent_window_;

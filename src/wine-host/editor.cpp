@@ -87,12 +87,17 @@ constexpr uint32_t wrapper_event_mask =
 constexpr char active_window_property_name[] = "_NET_ACTIVE_WINDOW";
 
 /**
- * We'll use this property to filter windows for `host_window_`. Like `xprop`
- * and `xwininfo`, we'll only consider windows with this property set, although
- * we won't filter on whether or not the window is actually visible because it
- * may be minimalized when the plugin's GUI is being opened.
+ * We'll set this property on the Wine window to emulate the behavior of
+ * a minimal window manager.
  */
 constexpr char icccm_wm_state_property_name[] = "WM_STATE";
+
+/**
+ * We'll use this property to filter windows for `host_window_`. WM_STATE
+ * can end up being set too late during window initialization, so we miss
+ * identifying the host window.
+ */
+constexpr char icccm_wm_window_role_property_name[] = "WM_WINDOW_ROLE";
 
 /**
  * This `WM_STATE` property value indicates that a window is a visible top level
@@ -297,6 +302,9 @@ Editor::Editor(MainContext& main_context,
       }),
       xcb_wm_state_property_(
           get_atom_by_name(*x11_connection_, icccm_wm_state_property_name)),
+      xcb_wm_window_role_property_(
+          get_atom_by_name(*x11_connection_,
+                           icccm_wm_window_role_property_name)),
       parent_window_(parent_window_handle),
       wrapper_window_(
           x11_connection_,
@@ -321,7 +329,7 @@ Editor::Editor(MainContext& main_context,
       wine_window_(get_x11_handle(win32_window_.handle_)),
       host_window_(find_host_window(*x11_connection_,
                                     parent_window_,
-                                    xcb_wm_state_property_)
+                                    xcb_wm_window_role_property_)
                        .value_or(parent_window_)) {
     logger.log_editor_trace([&]() {
         return "DEBUG: host_window: " + std::to_string(host_window_);
@@ -936,7 +944,7 @@ bool Editor::is_wine_window_active() const {
 void Editor::redetect_host_window() noexcept {
     const xcb_window_t new_host_window =
         find_host_window(*x11_connection_, parent_window_,
-                         xcb_wm_state_property_)
+                         xcb_wm_window_role_property_)
             .value_or(parent_window_);
     if (new_host_window == host_window_) {
         return;
