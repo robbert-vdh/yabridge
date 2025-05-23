@@ -343,6 +343,7 @@ class Editor {
      */
     xcb_configure_notify_event_t host_window_config_;
     xcb_configure_notify_event_t parent_window_config_;
+    bool parent_window_config_abs_;
 
     /**
      * The handle for the window created through Wine that the plugin uses to

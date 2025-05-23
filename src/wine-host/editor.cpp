@@ -265,6 +265,7 @@ Editor::Editor(MainContext& main_context,
       wrapper_window_size_(initial_size.value_or(Size(128, 128))),
       host_window_config_({}),
       parent_window_config_({}),
+      parent_window_config_abs_(false),
       // Create a window without any decoratiosn for easy embedding. The
       // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to
       // be drawn without any decorations (making resizes behave as you'd
@@ -497,7 +498,12 @@ void Editor::handle_x11_events() noexcept {
                             generic_event.get());
                     logger_.log_editor_trace([&]() {
                         return "DEBUG: ConfigureNotify for window " +
-                               std::to_string(event->window);
+                               std::to_string(event->window) + " : " +
+                               std::to_string(event->width) + "x" +
+                               std::to_string(event->height) + "+" +
+                               std::to_string(event->x) + "+" +
+                               std::to_string(event->y) +
+                               (is_synthetic_event ? " (synthetic)" : "");
                     });
 
                     // If the host window is different from the parent window
@@ -507,12 +513,17 @@ void Editor::handle_x11_events() noexcept {
                     // the window manager, while the parent window might receive
                     // position changes relative to the host window when it is a
                     // child window.
+                    //
+                    // For VST2 plugins in Ardour, there seems to be an
+                    // intermediate wrapper window. However, this window
+                    // receives synthetic (absolute) ConfigureNotify events, so
+                    // in this case we keep track of its position directly.
                     if (event->window == host_window_ && is_synthetic_event) {
                         host_window_config_ = *event;
                     }
-                    if (event->window == parent_window_ &&
-                        host_window_ != parent_window_ && !is_synthetic_event) {
+                    if (event->window == parent_window_) {
                         parent_window_config_ = *event;
+                        parent_window_config_abs_ = is_synthetic_event;
                     }
 
                     // Window managers are expected to send ConfigureNotify to
@@ -528,13 +539,25 @@ void Editor::handle_x11_events() noexcept {
                         translated_event.response_type = XCB_CONFIGURE_NOTIFY;
                         translated_event.event = wine_window_;
                         translated_event.window = wine_window_;
-                        translated_event.width = event->width;
-                        translated_event.height = event->height;
-                        translated_event.x =
-                            host_window_config_.x + parent_window_config_.x;
-                        translated_event.y =
-                            host_window_config_.y + parent_window_config_.y;
-
+                        translated_event.width = parent_window_config_.width;
+                        translated_event.height = parent_window_config_.height;
+                        translated_event.x = parent_window_config_.x;
+                        translated_event.y = parent_window_config_.y;
+                        if (!parent_window_config_abs_ &&
+                            parent_window_ != host_window_) {
+                            translated_event.x += host_window_config_.x;
+                            translated_event.y += host_window_config_.y;
+                        }
+                        logger_.log_editor_trace([&]() {
+                            return "DEBUG: Translated coords: " +
+                                   std::to_string(translated_event.window) +
+                                   " : " +
+                                   std::to_string(translated_event.width) +
+                                   "x" +
+                                   std::to_string(translated_event.height) +
+                                   "+" + std::to_string(translated_event.x) +
+                                   "+" + std::to_string(translated_event.y);
+                        });
                         xcb_send_event(
                             x11_connection_.get(), false, wine_window_,
                             XCB_EVENT_MASK_STRUCTURE_NOTIFY |
