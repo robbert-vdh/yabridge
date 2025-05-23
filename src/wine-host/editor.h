@@ -194,7 +194,8 @@ class Editor {
         const Configuration& config,
         Logger& logger,
         const size_t parent_window_handle,
-        std::optional<fu2::unique_function<void()>> timer_proc = std::nullopt);
+        std::optional<fu2::unique_function<void()>> timer_proc = std::nullopt,
+        std::optional<Size> initial_size = std::nullopt);
 
     /**
      * Resize the `wrapper_window_` to this new size. We need to manually call
@@ -342,6 +343,7 @@ class Editor {
      */
     xcb_configure_notify_event_t host_window_config_;
     xcb_configure_notify_event_t parent_window_config_;
+    bool parent_window_config_abs_;
 
     /**
      * The handle for the window created through Wine that the plugin uses to
@@ -373,6 +375,11 @@ class Editor {
      * The atom corresponding to `WM_STATE`.
      */
     xcb_atom_t xcb_wm_state_property_;
+
+    /**
+     * The atom corresponding to `WM_WINDOW_ROLE`.
+     */
+    xcb_atom_t xcb_wm_window_role_property_;
 
     /**
      * The window handle of the editor window created by the DAW.

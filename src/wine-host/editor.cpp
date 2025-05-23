@@ -87,12 +87,17 @@ constexpr uint32_t wrapper_event_mask =
 constexpr char active_window_property_name[] = "_NET_ACTIVE_WINDOW";
 
 /**
- * We'll use this property to filter windows for `host_window_`. Like `xprop`
- * and `xwininfo`, we'll only consider windows with this property set, although
- * we won't filter on whether or not the window is actually visible because it
- * may be minimalized when the plugin's GUI is being opened.
+ * We'll set this property on the Wine window to emulate the behavior of
+ * a minimal window manager.
  */
 constexpr char icccm_wm_state_property_name[] = "WM_STATE";
+
+/**
+ * We'll use this property to filter windows for `host_window_`. WM_STATE
+ * can end up being set too late during window initialization, so we miss
+ * identifying the host window.
+ */
+constexpr char icccm_wm_window_role_property_name[] = "WM_WINDOW_ROLE";
 
 /**
  * This `WM_STATE` property value indicates that a window is a visible top level
@@ -256,14 +261,16 @@ Editor::Editor(MainContext& main_context,
                const Configuration& config,
                Logger& logger,
                const size_t parent_window_handle,
-               std::optional<fu2::unique_function<void()>> timer_proc)
+               std::optional<fu2::unique_function<void()>> timer_proc,
+               std::optional<Size> initial_size)
     : use_force_dnd_(config.editor_force_dnd),
       logger_(logger),
       x11_connection_(xcb_connect(nullptr, nullptr), xcb_disconnect),
       dnd_proxy_handle_(WineXdndProxy::get_handle()),
-      wrapper_window_size_({128, 128}),
+      wrapper_window_size_(initial_size.value_or(Size(128, 128))),
       host_window_config_({}),
       parent_window_config_({}),
+      parent_window_config_abs_(false),
       // Create a window without any decoratiosn for easy embedding. The
       // combination of `WS_EX_TOOLWINDOW` and `WS_POPUP` causes the window to
       // be drawn without any decorations (making resizes behave as you'd
@@ -297,6 +304,9 @@ Editor::Editor(MainContext& main_context,
       }),
       xcb_wm_state_property_(
           get_atom_by_name(*x11_connection_, icccm_wm_state_property_name)),
+      xcb_wm_window_role_property_(
+          get_atom_by_name(*x11_connection_,
+                           icccm_wm_window_role_property_name)),
       parent_window_(parent_window_handle),
       wrapper_window_(
           x11_connection_,
@@ -321,7 +331,7 @@ Editor::Editor(MainContext& main_context,
       wine_window_(get_x11_handle(win32_window_.handle_)),
       host_window_(find_host_window(*x11_connection_,
                                     parent_window_,
-                                    xcb_wm_state_property_)
+                                    xcb_wm_window_role_property_)
                        .value_or(parent_window_)) {
     logger.log_editor_trace([&]() {
         return "DEBUG: host_window: " + std::to_string(host_window_);
@@ -391,6 +401,8 @@ void Editor::resize(uint16_t width, uint16_t height) {
     const std::array<uint32_t, 2> values{width, height};
     xcb_configure_window(x11_connection_.get(), wrapper_window_.window_,
                          value_mask, values.data());
+    xcb_configure_window(x11_connection_.get(), wine_window_, value_mask,
+                         values.data());
     xcb_flush(x11_connection_.get());
 
     // This will trigger the `XCB_CONFIGURE_REQUEST` handler in
@@ -491,7 +503,12 @@ void Editor::handle_x11_events() noexcept {
                             generic_event.get());
                     logger_.log_editor_trace([&]() {
                         return "DEBUG: ConfigureNotify for window " +
-                               std::to_string(event->window);
+                               std::to_string(event->window) + " : " +
+                               std::to_string(event->width) + "x" +
+                               std::to_string(event->height) + "+" +
+                               std::to_string(event->x) + "+" +
+                               std::to_string(event->y) +
+                               (is_synthetic_event ? " (synthetic)" : "");
                     });
 
                     // If the host window is different from the parent window
@@ -501,12 +518,29 @@ void Editor::handle_x11_events() noexcept {
                     // the window manager, while the parent window might receive
                     // position changes relative to the host window when it is a
                     // child window.
+                    //
+                    // For VST2 plugins in Ardour, there seems to be an
+                    // intermediate wrapper window. However, this window
+                    // receives synthetic (absolute) ConfigureNotify events, so
+                    // in this case we keep track of its position directly.
+                    // If this happens once, we ignore all real ConfigureNotify
+                    // events, as the relative position will not be correct if
+                    // there is another offset window between the parent window
+                    // and the host window (as is the case in Ardour). However,
+                    // we still accept the new dimensions of real
+                    // ConfigureNotify events, as this is necessary for resizing
+                    // to work properly.
                     if (event->window == host_window_ && is_synthetic_event) {
                         host_window_config_ = *event;
                     }
-                    if (event->window == parent_window_ &&
-                        host_window_ != parent_window_ && !is_synthetic_event) {
-                        parent_window_config_ = *event;
+                    if (event->window == parent_window_) {
+                        if (is_synthetic_event || !parent_window_config_abs_) {
+                            parent_window_config_ = *event;
+                            parent_window_config_abs_ = is_synthetic_event;
+                        } else {
+                            parent_window_config_.width = event->width;
+                            parent_window_config_.height = event->height;
+                        }
                     }
 
                     // Window managers are expected to send ConfigureNotify to
@@ -522,13 +556,25 @@ void Editor::handle_x11_events() noexcept {
                         translated_event.response_type = XCB_CONFIGURE_NOTIFY;
                         translated_event.event = wine_window_;
                         translated_event.window = wine_window_;
-                        translated_event.width = event->width;
-                        translated_event.height = event->height;
-                        translated_event.x =
-                            host_window_config_.x + parent_window_config_.x;
-                        translated_event.y =
-                            host_window_config_.y + parent_window_config_.y;
-
+                        translated_event.width = parent_window_config_.width;
+                        translated_event.height = parent_window_config_.height;
+                        translated_event.x = parent_window_config_.x;
+                        translated_event.y = parent_window_config_.y;
+                        if (!parent_window_config_abs_ &&
+                            parent_window_ != host_window_) {
+                            translated_event.x += host_window_config_.x;
+                            translated_event.y += host_window_config_.y;
+                        }
+                        logger_.log_editor_trace([&]() {
+                            return "DEBUG: Translated coords: " +
+                                   std::to_string(translated_event.window) +
+                                   " : " +
+                                   std::to_string(translated_event.width) +
+                                   "x" +
+                                   std::to_string(translated_event.height) +
+                                   "+" + std::to_string(translated_event.x) +
+                                   "+" + std::to_string(translated_event.y);
+                        });
                         xcb_send_event(
                             x11_connection_.get(), false, wine_window_,
                             XCB_EVENT_MASK_STRUCTURE_NOTIFY |
@@ -936,7 +982,7 @@ bool Editor::is_wine_window_active() const {
 void Editor::redetect_host_window() noexcept {
     const xcb_window_t new_host_window =
         find_host_window(*x11_connection_, parent_window_,
-                         xcb_wm_state_property_)
+                         xcb_wm_window_role_property_)
             .value_or(parent_window_);
     if (new_host_window == host_window_) {
         return;
