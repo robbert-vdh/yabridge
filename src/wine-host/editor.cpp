@@ -518,12 +518,24 @@ void Editor::handle_x11_events() noexcept {
                     // intermediate wrapper window. However, this window
                     // receives synthetic (absolute) ConfigureNotify events, so
                     // in this case we keep track of its position directly.
+                    // If this happens once, we ignore all real ConfigureNotify
+                    // events, as the relative position will not be correct if
+                    // there is another offset window between the parent window
+                    // and the host window (as is the case in Ardour). However,
+                    // we still accept the new dimensions of real
+                    // ConfigureNotify events, as this is necessary for resizing
+                    // to work properly.
                     if (event->window == host_window_ && is_synthetic_event) {
                         host_window_config_ = *event;
                     }
                     if (event->window == parent_window_) {
-                        parent_window_config_ = *event;
-                        parent_window_config_abs_ = is_synthetic_event;
+                        if (is_synthetic_event || !parent_window_config_abs_) {
+                            parent_window_config_ = *event;
+                            parent_window_config_abs_ = is_synthetic_event;
+                        } else {
+                            parent_window_config_.width = event->width;
+                            parent_window_config_.height = event->height;
+                        }
                     }
 
                     // Window managers are expected to send ConfigureNotify to
