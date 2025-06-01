@@ -31,6 +31,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Packaging notes
 
+- The `asio` dependency has been updated to version 1.34.2. This fixes a
+  compatibility issue with newer versions of `asio`.
 - The `system-asio` build option has been removed since `asio` added
   `pkg-config` support three years ago in version 1.23.
 

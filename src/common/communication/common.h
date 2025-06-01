@@ -86,9 +86,9 @@ namespace asio {
 // std::size_t)`, since `llvm::SmallVector` is mostly compatible with the STL
 // vector.
 template <typename PodType>
-inline ASIO_MUTABLE_BUFFER buffer(llvm::SmallVectorImpl<PodType>& data)
-    ASIO_NOEXCEPT {
-    return ASIO_MUTABLE_BUFFER(
+ASIO_NODISCARD inline mutable_buffer buffer(
+    llvm::SmallVectorImpl<PodType>& data) ASIO_NOEXCEPT {
+    return mutable_buffer(
         data.size() ? &data[0] : 0, data.size() * sizeof(PodType)
 #if defined(ASIO_ENABLE_BUFFER_DEBUGGING)
                                         ,
@@ -99,9 +99,10 @@ inline ASIO_MUTABLE_BUFFER buffer(llvm::SmallVectorImpl<PodType>& data)
 }
 
 template <typename PodType>
-inline ASIO_MUTABLE_BUFFER buffer(llvm::SmallVectorImpl<PodType>& data,
-                                  std::size_t max_size_in_bytes) ASIO_NOEXCEPT {
-    return ASIO_MUTABLE_BUFFER(
+ASIO_NODISCARD inline mutable_buffer buffer(
+    llvm::SmallVectorImpl<PodType>& data,
+    std::size_t max_size_in_bytes) ASIO_NOEXCEPT {
+    return mutable_buffer(
         data.size() ? &data[0] : 0,
         data.size() * sizeof(PodType) < max_size_in_bytes
             ? data.size() * sizeof(PodType)
