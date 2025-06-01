@@ -6,6 +6,9 @@ project(
   default_options : [
     'warning_level=3',
     'cpp_std=c++2a',
+    # Even though Meson will complain that this option does not exist, without
+    # this Meson will not apply the above option to native targets
+    'build.cpp_std=c++2a',
   ],
 )
 
