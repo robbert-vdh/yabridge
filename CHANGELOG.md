@@ -29,6 +29,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed a regression that caused `yabridgectl set --path-auto` to no longer
   work.
 
+### Packaging notes
+
+- The `system-asio` build option has been removed since `asio` added
+  `pkg-config` support three years ago in version 1.23.
+
 ## [5.1.1] - 2024-12-23
 
 ### Fixed

@@ -13,18 +13,6 @@ option(
 )
 
 option(
-  'system-asio',
-  type : 'boolean',
-  value : false,
-  description : '''If set to true, then <asio.hpp> from the standard include
-                   directories will be used in place of a pkgconfig definition,
-                   CMake dependency, or subproject wrap. The asio library does
-                   not come with any build definitions Meson can use to detect
-                   its installed version and location, so this behavior is
-                   behind an option as it's only relevant for distro packaging.'''
-)
-
-option(
   'vst3',
   type : 'boolean',
   value : true,
