@@ -6,9 +6,6 @@ project(
   default_options : [
     'warning_level=3',
     'cpp_std=c++2a',
-    # Even though Meson will complain that this option does not exist, without
-    # this Meson will not apply the above option to native targets
-    'build.cpp_std=c++2a',
   ],
 )
 
@@ -20,18 +17,11 @@ project(
 # need to pass `-Dbitbridge=true`. We just make sure that we won't build
 # any 64-bit binaries in that situation.
 is_64bit_system = build_machine.cpu_family() not in ['x86', 'arm']
-with_32bit_libraries = (not is_64bit_system) or get_option('build.cpp_args').contains('-m32')
 with_bitbridge = get_option('bitbridge')
 with_clap = get_option('clap')
 with_system_asio = get_option('system-asio')
 with_winedbg = get_option('winedbg')
 with_vst3 = get_option('vst3')
-
-# Cookies can't be stored correctly when the native host is 32-bit and the
-# bridged plugin is 64-bit
-if with_clap and with_32bit_libraries and is_64bit_system
-  error('CLAP support will not work correctly when using 32-bit yabridge libraries together with 64-bit host binaries.')
-endif
 
 #
 # Compiler flags
@@ -225,7 +215,7 @@ winegcc = meson.get_compiler('cpp', native : false)
 if is_64bit_system
   xcb_64bit_dep = dependency('xcb')
 endif
-if with_32bit_libraries or with_bitbridge
+if with_bitbridge
   xcb_32bit_dep = winegcc.find_library('xcb')
 endif
 

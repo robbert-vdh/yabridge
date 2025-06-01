@@ -886,26 +886,6 @@ Yabridge will detect whether the plugin you're trying to load is 32-bit or
 64-bit, and will run either the regular version or the `*-32.exe` variant
 accordingly.
 
-### 32-bit libraries
-
-It also possible to build 32-bit versions of yabridge's libraries, which would
-let you use both 32-bit and 64-bit Windows VST2, VST3, and CLAP plugins from a
-32-bit Linux plugin host. This is mostly untested since 32-bit only Linux
-applications don't really exist anymore, but it should work! The build system
-will still assume you're compiling from a 64-bit system, so if you're compiling
-on an actual 32-bit system you would need to comment out the 64-bit
-`yabridge-host` and `yabridge-group` binaries in `meson.build`:
-
-```shell
-meson setup build --buildtype=release --cross-file=cross-wine.conf --unity=on --unity-size=1000 -Dbitbridge=true -Dbuild.cpp_args='-m32' -Dbuild.cpp_link_args='-m32'
-ninja -C build
-```
-
-Like the above commands, you might need to tweak the unity size based on the
-amount of system memory available. See the CI build definitions for some
-examples on how to add static linking in the mix if you're going to run this
-version of yabridge on some other machine.
-
 ## Debugging
 
 Wine's error messages and warning are usually very helpful whenever a plugin

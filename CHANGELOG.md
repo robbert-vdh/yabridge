@@ -15,6 +15,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   consuming too much memory. This only affected the prebuilt binaries from the
   releases page.
 
+### Removed
+
+- Out of the box support for building a 32-bit version of yabridge for use in
+  64-bit machines has been dropped as part of solving a compatibility issue with
+  newer Meson versions
+  ([#431](https://github.com/robbert-vdh/yabridge/issues/431)). This was only
+  relevant for using 64-bit Windows plugins in the old 32-bit Linux version of
+  **EnergyXT**, and should not affect most users.
+
 ### yabridgectl
 
 - Fixed a regression that caused `yabridgectl set --path-auto` to no longer
