@@ -82,6 +82,13 @@ constexpr uint32_t wrapper_event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY |
                                         XCB_EVENT_MASK_KEY_RELEASE;
 
 /**
+ * The X11 event mask for the wine window. We'll use this for detecting specific
+ * key events that ought to be forwarded to host window (i.e. a REAPER thing).
+ */
+constexpr uint32_t wine_event_mask = XCB_EVENT_MASK_KEY_PRESS |
+                                     XCB_EVENT_MASK_KEY_RELEASE;
+
+/**
  * The name of the X11 property on the root window used to denote the active
  * window in EWMH compliant window managers.
  */
@@ -115,6 +122,31 @@ constexpr uint32_t xembed_focus_first = 1;
  * The default arrow cursor used in Windows.
  */
 static const HCURSOR arrow_cursor = LoadCursor(nullptr, IDC_ARROW);
+
+/**
+ * List of keycodes that shall be forwarded to host (REAPER) when
+ * 'forward_key_events_to_host_' is true.
+ *
+ * NOTE: List needs to be in sorted order to work with binary search.
+ *       'spacebar' and 'function keys' were choosen, because those are what
+ *       is typical for REAPER to receive even when editor (wine) window has
+ *       focus (i.e. native behavior on all OS).
+ */
+const std::vector<int> keycodes_to_forward {
+    65, // spacebar
+    67, // F1
+    68, // F2
+    69, // F3
+    70, // F4
+    71, // F5
+    72, // F6
+    73, // F7
+    74, // F8
+    75, // F9
+    76, // F10
+    95, // F11
+    96  // F12
+};
 
 /**
  * Find the the ancestors for the given window. This returns a list of window
@@ -393,6 +425,8 @@ Editor::Editor(MainContext& main_context,
                                  XCB_CW_EVENT_MASK, &parent_event_mask);
     xcb_change_window_attributes(x11_connection_.get(), wrapper_window_.window_,
                                  XCB_CW_EVENT_MASK, &wrapper_event_mask);
+    xcb_change_window_attributes(x11_connection_.get(), wine_window_,
+                                 XCB_CW_EVENT_MASK, &wine_event_mask);
     xcb_flush(x11_connection_.get());
 
     // First reparent our dumb wrapper window to the host's window, and then
@@ -643,6 +677,16 @@ void Editor::handle_x11_events() noexcept {
                             set_input_focus(true);
                         }
                     }
+
+                    const auto mask = get_active_modifiers().value_or(0);
+                    if (mask == XCB_MOD_MASK_SHIFT) {
+                        forward_key_events_to_host_ = false;
+                    } else if (mask == 0) {
+                        // Only reset on actual mouse hover (not LMB click,
+                        // which is value 256 and itself triggers 'LeaveNotify'
+                        // and 'EnterNotify' in close sucession)
+                        forward_key_events_to_host_ = true;
+                    }
                 } break;
                 // When the user moves their mouse away from the Wine window
                 // _while the window provided by the host it is contained in is
@@ -719,6 +763,14 @@ void Editor::handle_x11_events() noexcept {
                         !is_cursor_in_wine_window(windows_pointer_pos)) {
                         set_input_focus(false);
                     }
+
+                    const auto mask = get_active_modifiers().value_or(0);
+                    if (mask == 0) {
+                        // Only reset on actual mouse hover (not LMB click,
+                        // which is value 256 and itself triggers 'LeaveNotify'
+                        // and 'EnterNotify' in close sucession)
+                        forward_key_events_to_host_ = true;
+                    }
                 } break;
                 // We need to forward synthetic keyboard events sent by the host
                 // from the wrapper window to the Wine window
@@ -762,6 +814,30 @@ void Editor::handle_x11_events() noexcept {
                                        wine_window_, event_mask,
                                        reinterpret_cast<const char*>(event));
                         xcb_flush(x11_connection_.get());
+                    }
+
+                    if ((forward_key_events_to_host_ == true) &&
+                            (is_wine_window_active()) &&
+                            (event->event == wine_window_)) {
+                        // Only forward desired keycodes. Skip all others.
+                        if (std::binary_search(keycodes_to_forward.begin(),
+                                    keycodes_to_forward.end(), event->detail)) {
+                            // NOTE: Deliberately setting
+                            //       XCB_EVENT_MASK_NO_EVENT (opposed to
+                            //       something like XCB_EVENT_MASK_KEY_PRESS)
+                            //       makes REAPER receive the event.
+                            //       Why it behaves like that is not fully clear
+                            //       at this point in time.
+                            const uint32_t event_mask = XCB_EVENT_MASK_NO_EVENT;
+                            event->event = host_window_;
+                            xcb_send_event(
+                                    x11_connection_.get(),
+                                    false, host_window_, event_mask,
+                                    reinterpret_cast<const char*>(event));
+                            xcb_flush(x11_connection_.get());
+                        } else {
+                            //printf("Skip forward keycode: %d\n", event->detail);
+                        }
                     }
                 } break;
                 default: {
