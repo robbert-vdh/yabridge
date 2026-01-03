@@ -437,7 +437,6 @@ std::array<int16_t, 2> Editor::get_parent_window_offset() {
     return {coord_reply->dst_x, coord_reply->dst_y};
 }
 
-
 void Editor::handle_x11_events() noexcept {
     // NOTE: Ardour will unmap the window instead of closing the editor. When
     //       the window is unmapped `wine_window_` doesn't exist and any X11
@@ -475,7 +474,8 @@ void Editor::handle_x11_events() noexcept {
                                ", generated from " +
                                std::to_string(event->event);
                     });
-                    redetect_host_window();
+
+		    redetect_host_window();
 
                     // If the `editor_force_dnd` option is set, we'll strip
                     // `XdndAware` from all of `wine_window_`'s ancestors
