@@ -312,6 +312,11 @@ class Editor {
     void redetect_host_window() noexcept;
 
     /**
+     * Get offset of parent window to fix mouse coordinates.
+     */
+    std::array<int16_t, 2> get_parent_window_offset();
+
+    /**
      * Reparent `child` to `new_parent`. This includes the flush.
      */
     void do_reparent(xcb_window_t child, xcb_window_t new_parent) const;
