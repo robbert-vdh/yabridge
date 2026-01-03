@@ -475,7 +475,7 @@ void Editor::handle_x11_events() noexcept {
                                std::to_string(event->event);
                     });
 
-		    redetect_host_window();
+                    redetect_host_window();
 
                     // If the `editor_force_dnd` option is set, we'll strip
                     // `XdndAware` from all of `wine_window_`'s ancestors
