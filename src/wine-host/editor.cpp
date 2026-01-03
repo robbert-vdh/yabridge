@@ -417,6 +417,27 @@ void Editor::show() noexcept {
     ShowWindow(win32_window_.handle_, SW_SHOWNORMAL);
 }
 
+std::array<int16_t, 2> Editor::get_parent_window_offset() {
+
+    xcb_generic_error_t* error = nullptr;
+    const xcb_window_t root =
+        get_root_window(*x11_connection_, parent_window_);
+    const xcb_translate_coordinates_cookie_t coord_cookie =
+        xcb_translate_coordinates(x11_connection_.get(), parent_window_, root, 0, 0);
+    const std::unique_ptr<xcb_translate_coordinates_reply_t> coord_reply(
+        xcb_translate_coordinates_reply(x11_connection_.get(), coord_cookie, &error));
+    THROW_X11_ERROR(error);
+
+    logger_.log_editor_trace([&]() {
+        return "DEBUG: Parent window offset " +
+        std::to_string(coord_reply->dst_x) +
+        "x" +
+        std::to_string(coord_reply->dst_y);
+    });
+    return {coord_reply->dst_x, coord_reply->dst_y};
+}
+
+
 void Editor::handle_x11_events() noexcept {
     // NOTE: Ardour will unmap the window instead of closing the editor. When
     //       the window is unmapped `wine_window_` doesn't exist and any X11
@@ -454,7 +475,6 @@ void Editor::handle_x11_events() noexcept {
                                ", generated from " +
                                std::to_string(event->event);
                     });
-
                     redetect_host_window();
 
                     // If the `editor_force_dnd` option is set, we'll strip
@@ -559,6 +579,11 @@ void Editor::handle_x11_events() noexcept {
                             parent_window_ != host_window_) {
                             translated_event.x += host_window_config_.x;
                             translated_event.y += host_window_config_.y;
+                        }
+                        if (!is_synthetic_event) {
+                            const std::array<int16_t, 2> offset = get_parent_window_offset();
+                            translated_event.x = offset[0];
+                            translated_event.y = offset[1];
                         }
                         logger_.log_editor_trace([&]() {
                             return "DEBUG: Translated coords: " +
