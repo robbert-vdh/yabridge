@@ -160,6 +160,20 @@ std::optional<xcb_window_t> find_host_window(xcb_connection_t& x11_connection,
                                              xcb_atom_t xcb_wm_state_property);
 
 /**
+ * Uses xcb_query_tree to find out what the parent of the given window is. This
+ * seems to be able to find the host if find_host_window fails.
+ *
+ * @param x11_connection The X11 connection to use.
+ * @param window_id The window we want to know the parent window of.
+ *
+ * @return The host's editor window, or a nullopt if we cannot find a valid
+ *   window.
+ */
+std::optional<xcb_window_t> find_host_window_from_query_tree(
+    xcb_connection_t& x11_connection,
+    xcb_window_t window_id);
+
+/**
  * Check whether `child` is a descendant of `parent` or the same window. Used
  * during focus checks to only grab focus when needed.
  *
@@ -1003,7 +1017,10 @@ void Editor::redetect_host_window() noexcept {
     const xcb_window_t new_host_window =
         find_host_window(*x11_connection_, parent_window_,
                          xcb_wm_window_role_property_)
-            .value_or(parent_window_);
+            .value_or(find_host_window_from_query_tree(*x11_connection_,
+                                                       parent_window_)
+                          .value_or(parent_window_));
+
     if (new_host_window == host_window_) {
         return;
     }
@@ -1251,6 +1268,28 @@ std::optional<xcb_window_t> find_host_window(
         if (property_reply->type != XCB_NONE) {
             return *window;
         }
+    }
+
+    return std::nullopt;
+}
+
+std::optional<xcb_window_t> find_host_window_from_query_tree(
+    xcb_connection_t& x11_connection,
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+    const xcb_window_t window_id) {
+    const xcb_query_tree_cookie_t cookie =
+        xcb_query_tree(&x11_connection, window_id);
+    xcb_generic_error_t* error = nullptr;
+    const std::unique_ptr<xcb_query_tree_reply_t, decltype(&free)> reply(
+        xcb_query_tree_reply(&x11_connection, cookie, &error), free);
+
+    if (!error && reply) {
+        if (const xcb_window_t actual_parent = reply->parent;
+            actual_parent != XCB_NONE) {
+            return actual_parent;
+            }
+    } else {
+        free(error);
     }
 
     return std::nullopt;
