@@ -427,6 +427,34 @@ void Editor::resize(uint16_t width, uint16_t height) {
     wrapper_window_size_.height = height;
 }
 
+std::optional<Size> Editor::check_size_mismatch() {
+    xcb_generic_error_t* error = nullptr;
+    const xcb_get_geometry_cookie_t cookie =
+        xcb_get_geometry(x11_connection_.get(), wrapper_window_.window_);
+    const std::unique_ptr<xcb_get_geometry_reply_t> geom(
+        xcb_get_geometry_reply(x11_connection_.get(), cookie, &error));
+
+    if (error) {
+        free(error);
+        return std::nullopt;
+    }
+
+    if (geom && (geom->width != wrapper_window_size_.width ||
+                 geom->height != wrapper_window_size_.height)) {
+        logger_.log_editor_trace([&]() {
+            return "DEBUG: Size mismatch detected. Actual: " +
+                   std::to_string(geom->width) + "x" +
+                   std::to_string(geom->height) + ", Expected: " +
+                   std::to_string(wrapper_window_size_.width) + "x" +
+                   std::to_string(wrapper_window_size_.height);
+        });
+
+        return wrapper_window_size_;
+    }
+
+    return std::nullopt;
+}
+
 void Editor::show() noexcept {
     ShowWindow(win32_window_.handle_, SW_SHOWNORMAL);
 }
