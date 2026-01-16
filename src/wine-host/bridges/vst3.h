@@ -319,6 +319,14 @@ class Vst3Bridge : public HostBridge {
     bool resize_editor(size_t instance_id, const Steinberg::ViewRect& new_size);
 
     /**
+     * Notify the plugin of its new size by calling `IPlugView::onSize()`.
+     * This is called after `resize_editor()` for hosts that don't call
+     * `onSize()` after accepting a `resizeView()` request (like Carla).
+     */
+    void notify_plugin_on_new_size(size_t instance_id,
+                                   Steinberg::ViewRect& new_size);
+
+    /**
      * Register a context with with `context_menu`'s ID and owner in
      * `object_instances`. This will be called during the constructor of
      * `Vst3ContextMenuProxyImpl` so we can refer to the exact instance later.

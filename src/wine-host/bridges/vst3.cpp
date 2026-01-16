@@ -1388,6 +1388,26 @@ bool Vst3Bridge::resize_editor(size_t instance_id,
     }
 }
 
+void Vst3Bridge::notify_plugin_on_new_size(size_t instance_id,
+                                           Steinberg::ViewRect& new_size) {
+    const auto& [instance, _] = get_instance(instance_id);
+
+    if (instance.plug_view_instance) {
+        // Skip if the host already called onSize() with this size during
+        // resizeView(). This is detected by checking if last_set_size already
+        // matches new_size (the OnSize handler updates last_set_size).
+        if (instance.last_set_size.getWidth() == new_size.getWidth() &&
+            instance.last_set_size.getHeight() == new_size.getHeight()) {
+            return;
+        }
+
+        instance.plug_view_instance->plug_view->onSize(&new_size);
+
+        // Update last_set_size so getSize() returns consistent values
+        instance.last_set_size = new_size;
+    }
+}
+
 void Vst3Bridge::register_context_menu(Vst3ContextMenuProxyImpl& context_menu) {
     const auto& [owner_instance, _] =
         get_instance(context_menu.owner_instance_id());

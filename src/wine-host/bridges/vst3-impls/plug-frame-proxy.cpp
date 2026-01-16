@@ -52,8 +52,18 @@ Vst3PlugFrameProxyImpl::resizeView(Steinberg::IPlugView* /*view*/,
         // We have to use this special sending function here so we can handle
         // calls to `IPlugView::onSize()` from this same thread (the UI thread).
         // See the docstring for more information.
-        return bridge_.send_mutually_recursive_message(YaPlugFrame::ResizeView{
-            .owner_instance_id = owner_instance_id(), .new_size = *newSize});
+        const tresult result =
+            bridge_.send_mutually_recursive_message(YaPlugFrame::ResizeView{
+                .owner_instance_id = owner_instance_id(), .new_size = *newSize});
+
+        // Some hosts (like Carla) don't call onSize() after accepting a
+        // resizeView() request. This causes the plugin to not know about its
+        // new size, so it doesn't draw beyond the original size. Call the
+        // plugin's onSize() ourselves to ensure it knows the new size. If the
+        // host already called onSize(), this will be a harmless duplicate call.
+        bridge_.notify_plugin_on_new_size(owner_instance_id(), *newSize);
+
+        return result;
     } else {
         std::cerr
             << "WARNING: Null pointer passed to 'IPlugFrame::resizeView()'"
