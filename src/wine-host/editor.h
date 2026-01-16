@@ -205,6 +205,15 @@ class Editor {
     void resize(uint16_t width, uint16_t height);
 
     /**
+     * Check if the wrapper window's actual X11 size matches the expected size.
+     * Returns the expected size if there's a mismatch, or nullopt if sizes
+     * match. This is used as a workaround for VST3 plugins where rapid
+     * resizing during mutual recursion can cause the X11 window to get stuck
+     * at an intermediate size.
+     */
+    std::optional<Size> check_size_mismatch();
+
+    /**
      * Show the window, should be called after the plugin has embedded itself.
      * There's absolutely zero reason why this can't be done in the constructor,
      * but it can't be. Thanks Waves.

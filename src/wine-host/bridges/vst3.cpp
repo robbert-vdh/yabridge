@@ -806,9 +806,38 @@ void Vst3Bridge::run() {
                             initial_size.emplace(size.getWidth(),
                                                  size.getHeight());
                         }
+
+                        // HACK: Create a resize watchdog that periodically
+                        // verifies the wrapper window size matches the expected
+                        // size. This works around VST3 resize issues (mostly)
+                        // in Ardour during mutual recursion where X11
+                        // operations may not be applied and the wrapper window
+                        // remains smaller or larger than the wine window. The
+                        // goal here is eventual consistency
+                        auto resize_watchdog = [&instance = instance] {
+                            if (instance.editor) {
+                                if (const auto expected =
+                                        instance.editor
+                                            ->check_size_mismatch()) {
+                                    // Resize the plugin view to propagate the
+                                    // target size everywhere.
+                                    if (instance.plug_view_instance) {
+                                        Steinberg::ViewRect rect{
+                                            0, 0,
+                                            (expected->width),
+                                            (expected->height)};
+                                        instance.plug_frame_proxy->resizeView(
+                                            instance.plug_view_instance
+                                                ->plug_view,
+                                            &rect);
+                                    }
+                                }
+                            }
+                        };
+
                         Editor& editor_instance = instance.editor.emplace(
                             main_context_, config_, generic_logger_, x11_handle,
-                            std::nullopt, initial_size);
+                            std::move(resize_watchdog), initial_size);
                         const tresult result =
                             instance.plug_view_instance->plug_view->attached(
                                 editor_instance.win32_handle(), type.c_str());
