@@ -801,8 +801,13 @@ void Vst3Bridge::run() {
                     .run_in_context([&, &instance = instance]() -> tresult {
                         Steinberg::ViewRect size;
                         std::optional<Size> initial_size;
+                        // Only accept the initial size from the plugin if it's
+                        // valid. Some plugins like Spectrasonics' Omnisphere 2
+                        // return 0x0 for the initial size, which breaks our
+                        // reparenting in the editor.
                         if (instance.plug_view_instance->plug_view->getSize(
-                                &size) == Steinberg::kResultOk) {
+                                &size) == Steinberg::kResultOk &&
+                            size.getWidth() > 0 && size.getHeight() > 0) {
                             initial_size.emplace(size.getWidth(),
                                                  size.getHeight());
                         }
