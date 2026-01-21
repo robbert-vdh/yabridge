@@ -418,7 +418,7 @@ void Editor::resize(uint16_t width, uint16_t height) {
     // `handle_x11_events()`
     SetWindowPos(
         win32_window_.handle_, nullptr, 0, 0, width, height,
-        SWP_NOREPOSITION | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_DEFERERASE);
+        SWP_NOREPOSITION | SWP_NOACTIVATE | SWP_DEFERERASE | SWP_NOMOVE);
 
     // NOTE: This lets us skip resize requests in CLAP plugins when the plugin
     //       tries to resize to its current size. This fixes resize loops when
