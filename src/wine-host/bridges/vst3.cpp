@@ -303,32 +303,45 @@ void Vst3Bridge::run() {
                 // on the Wine side. If we cannot do that, then we'll still go
                 // through the host's connection proxy connection proxy (and
                 // we'll end up proxying the host's connection proxy).
-                return std::visit(
-                    overload{
-                        [&](const native_size_t& other_instance_id) -> tresult {
-                            const auto& [this_instance, _] =
-                                get_instance(request.instance_id);
-                            const auto& [other_instance, _2] =
-                                get_instance(other_instance_id);
+                //
+                // Run on the GUI thread so any threadlocal Win32 timers the
+                // plugin spawns from inside `connect()` (e.g. VSTGUI/VST3 SDK
+                // update pumps registered when the IConnectionPoint pair is
+                // wired up) are bound to the thread that actually pumps Win32
+                // messages. Otherwise the timers stay queued on yabridge's
+                // Asio worker thread which has no message loop, and any UI
+                // that depends on them (e.g. Serum 2's keyboard updating
+                // from the audio thread) never refreshes.
+                return do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                    return std::visit(
+                        overload{
+                            [&](const native_size_t& other_instance_id)
+                                -> tresult {
+                                const auto& [this_instance, _] =
+                                    get_instance(request.instance_id);
+                                const auto& [other_instance, _2] =
+                                    get_instance(other_instance_id);
 
-                            return this_instance.interfaces.connection_point
-                                ->connect(
-                                    other_instance.interfaces.connection_point);
-                        },
-                        [&](Vst3ConnectionPointProxy::ConstructArgs& args)
-                            -> tresult {
-                            const auto& [this_instance, _] =
-                                get_instance(request.instance_id);
+                                return this_instance.interfaces.connection_point
+                                    ->connect(other_instance.interfaces
+                                                  .connection_point);
+                            },
+                            [&](Vst3ConnectionPointProxy::ConstructArgs& args)
+                                -> tresult {
+                                const auto& [this_instance, _] =
+                                    get_instance(request.instance_id);
 
-                            this_instance.connection_point_proxy =
-                                Steinberg::owned(
-                                    new Vst3ConnectionPointProxyImpl(
-                                        *this, std::move(args)));
+                                this_instance.connection_point_proxy =
+                                    Steinberg::owned(
+                                        new Vst3ConnectionPointProxyImpl(
+                                            *this, std::move(args)));
 
-                            return this_instance.interfaces.connection_point
-                                ->connect(this_instance.connection_point_proxy);
-                        }},
-                    request.other);
+                                return this_instance.interfaces.connection_point
+                                    ->connect(
+                                        this_instance.connection_point_proxy);
+                            }},
+                        request.other);
+                });
             },
             [&](const YaConnectionPoint::Disconnect& request)
                 -> YaConnectionPoint::Disconnect::Response {
