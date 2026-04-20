@@ -408,10 +408,17 @@ void Vst3Bridge::run() {
             },
             [&](YaEditController::SetComponentState& request)
                 -> YaEditController::SetComponentState::Response {
-                const auto& [instance, _] = get_instance(request.instance_id);
+                // VST3 spec requires this to run on the UI thread (it's a
+                // plugin-exported function and not in the audio-thread
+                // exception list). See:
+                // https://steinbergmedia.github.io/vst3_dev_portal/pages/Technical+Documentation/API+Documentation/Index.html#vst-3-threading-model
+                return do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                    const auto& [instance, _] =
+                        get_instance(request.instance_id);
 
-                return instance.interfaces.edit_controller->setComponentState(
-                    &request.state);
+                    return instance.interfaces.edit_controller
+                        ->setComponentState(&request.state);
+                });
             },
             [&](const YaEditController::GetParameterInfos& request)
                 -> YaEditController::GetParameterInfos::Response {
@@ -509,23 +516,31 @@ void Vst3Bridge::run() {
             },
             [&](YaEditController::SetComponentHandler& request)
                 -> YaEditController::SetComponentHandler::Response {
-                const auto& [instance, _] = get_instance(request.instance_id);
+                // VST3 spec requires this to run on the UI thread.
+                return do_mutual_recursion_on_gui_thread([&]() -> tresult {
+                    const auto& [instance, _] =
+                        get_instance(request.instance_id);
 
-                // If the host passed a valid component handler, then we'll
-                // create a proxy object for the component handler and pass that
-                // to the initialize function. The lifetime of this object is
-                // tied to that of the actual plugin object we're proxying for.
-                // Otherwise we'll also pass a null pointer. This often happens
-                // just before the host terminates the plugin.
-                instance.component_handler_proxy =
-                    request.component_handler_proxy_args
-                        ? Steinberg::owned(new Vst3ComponentHandlerProxyImpl(
-                              *this,
-                              std::move(*request.component_handler_proxy_args)))
-                        : nullptr;
+                    // If the host passed a valid component handler, then
+                    // we'll create a proxy object for the component handler
+                    // and pass that to the initialize function. The lifetime
+                    // of this object is tied to that of the actual plugin
+                    // object we're proxying for. Otherwise we'll also pass a
+                    // null pointer. This often happens just before the host
+                    // terminates the plugin.
+                    instance.component_handler_proxy =
+                        request.component_handler_proxy_args
+                            ? Steinberg::owned(
+                                  new Vst3ComponentHandlerProxyImpl(
+                                      *this, std::move(
+                                                 *request
+                                                      .component_handler_proxy_args)))
+                            : nullptr;
 
-                return instance.interfaces.edit_controller->setComponentHandler(
-                    instance.component_handler_proxy);
+                    return instance.interfaces.edit_controller
+                        ->setComponentHandler(
+                            instance.component_handler_proxy);
+                });
             },
             [&](const YaEditController::CreateView& request)
                 -> YaEditController::CreateView::Response {
@@ -1203,18 +1218,25 @@ void Vst3Bridge::run() {
             },
             [&](YaPluginFactory3::SetHostContext& request)
                 -> YaPluginFactory3::SetHostContext::Response {
-                plugin_factory_host_context_ =
-                    Steinberg::owned(new Vst3HostContextProxyImpl(
-                        *this, std::move(request.host_context_args)));
+                // VST3 spec requires this to run on the UI thread.
+                return main_context_
+                    .run_in_context([&]() -> tresult {
+                        plugin_factory_host_context_ =
+                            Steinberg::owned(new Vst3HostContextProxyImpl(
+                                *this,
+                                std::move(request.host_context_args)));
 
-                Steinberg::FUnknownPtr<Steinberg::IPluginFactory3> factory_3(
-                    module_->getFactory().get());
-                assert(factory_3);
+                        Steinberg::FUnknownPtr<Steinberg::IPluginFactory3>
+                            factory_3(module_->getFactory().get());
+                        assert(factory_3);
 
-                // This static cast is required to upcast to `FUnknown*`
-                return factory_3->setHostContext(
-                    static_cast<YaHostApplication*>(
-                        plugin_factory_host_context_));
+                        // This static cast is required to upcast to
+                        // `FUnknown*`
+                        return factory_3->setHostContext(
+                            static_cast<YaHostApplication*>(
+                                plugin_factory_host_context_));
+                    })
+                    .get();
             },
             [&](const YaUnitInfo::GetUnitCount& request)
                 -> YaUnitInfo::GetUnitCount::Response {
