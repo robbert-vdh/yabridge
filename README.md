@@ -40,15 +40,16 @@ while also staying easy to debug and maintain.
 
 ## Tested with
 
-Yabridge has been tested under the following hosts using Wine Staging 9.21.
-**See [#368](https://github.com/robbert-vdh/yabridge/issues/382) for information about GUI problems with Wine 9.22.**.
+Yabridge has been tested under the following hosts using Wine Staging 9.21. See
+the [common issues](#troubleshooting-common-issues) section for instructions on
+how to use yabridge with later versions of Wine.
 
 > [!IMPORTANT]
 > yabridge doesn't work with `flatpak` packages. Please use native packages (.deb, .rpm, AUR etc) of the DAWs listed below.
 
 | Host              | VST2               | VST3                                                        | CLAP                                                 |
 | ----------------- | ------------------ | ----------------------------------------------------------- | ---------------------------------------------------- |
-| Bitwig Studio 5.3 | :heavy_check_mark: | :heavy_check_mark:                                          | :heavy_check_mark:                                   |
+| Bitwig Studio 6.0 | :heavy_check_mark: | :heavy_check_mark:                                          | :heavy_check_mark:                                   |
 | REAPER 7.12       | :heavy_check_mark: | :heavy_check_mark:                                          | :heavy_check_mark:                                   |
 | Carla 2.5.5       | :heavy_check_mark: | :heavy_check_mark:                                          | Does not support CLAP                                |
 | Qtractor 0.9.29   | :heavy_check_mark: | :warning: VST3 editor windows may not have the correct size | :warning: Qtractor may not support every CLAP plugin |
@@ -586,8 +587,10 @@ the yabridge [Discord](https://discord.gg/pyNeweqadf). Also check the [known
 issues and fixes](#known-issues-and-fixes) section above for help with
 plugin-specific issues.
 
-- Wine 9.22 and Wine 10.x currently don't work with yabridge. You will have to
-  [downgrade to Wine 9.21](#downgrading-wine) for the time being.
+- Wine 9.22 and Wine 10.x currently don't work with yabridge 5.1.1 or belong.
+  You will either have to [downgrade to Wine 9.21](#downgrading-wine) for the
+  time being, or install a [development build](#installing-a-development-build)
+  of yabridge.
 
 - Both yabridgectl and yabridge try to diagnose many common issues for you. If
   you're running into crashes or other issues, then try launching your DAW from
