@@ -456,7 +456,7 @@ include:
   [DXVK](https://github.com/doitsujin/dxvk). Many recent JUCE-based plugins
   don't redraw anymore when using WineD3D. Make sure you also install Vulkan
   drivers if you don't already have those set up.
-- **Serum** requires you to disable `d2d1.dll` in `winecfg` and to install
+- **Serum 1** requires you to disable `d2d1.dll` in `winecfg` and to install
   `gdiplus` through `winetricks`. You may also want to disable the tooltips by
   going to the global settings tab, unchecking 'Show help tooltips', and
   clicking on the save icon next to 'Preferences'.
