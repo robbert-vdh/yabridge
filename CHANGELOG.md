@@ -20,6 +20,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   **Ardour** that would cause yabridge to hang and eventually crash the host by
   consuming too much memory. This only affected the prebuilt binaries from the
   releases page.
+- A couple more VST3 functions are now called from the UI thread. This should
+  help with compatibility with plugins using modern VSTGUI versions, such as
+  _Serum 2_.
 - As a side effect of the above change, plugin GUIs are now also no longer
   offset when the plugin window is dragged offscreen on the top and/or left
   sides of the screen.
