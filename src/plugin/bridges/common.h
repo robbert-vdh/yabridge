@@ -289,17 +289,11 @@ class PluginBridge {
                 "hack: pipes disabled, plugin output will go to \"" +
                 config_.disable_pipes->string() + "\"");
         }
-        if (config_.editor_coordinate_hack) {
-            other_options.push_back("editor: coordinate hack");
-        }
         if (config_.editor_disable_host_scaling) {
             other_options.push_back("editor: no host DPI scaling");
         }
         if (config_.editor_force_dnd) {
             other_options.push_back("editor: force drag-and-drop");
-        }
-        if (config_.editor_xembed) {
-            other_options.push_back("editor: XEmbed");
         }
         if (config_.frame_rate) {
             std::ostringstream option;

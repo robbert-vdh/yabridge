@@ -256,6 +256,14 @@ struct Vst3PluginInstance {
      * processing.
      */
     std::optional<Steinberg::Vst::ProcessSetup> process_setup;
+
+    /**
+     * The last size that was set with onSize(). We use this to fudge the
+     * return value of getSize() if it is off by one pixel, which can happen
+     * due to HiDPI rounding. Otherwise, DAWs like Ardour might go into an
+     * infinite loop trying to adjust the size to a specific target.
+     */
+    Steinberg::ViewRect last_set_size;
 };
 
 /**
@@ -309,6 +317,14 @@ class Vst3Bridge : public HostBridge {
      * we do the resize before the request gets sent to the host.
      */
     bool resize_editor(size_t instance_id, const Steinberg::ViewRect& new_size);
+
+    /**
+     * Notify the plugin of its new size by calling `IPlugView::onSize()`.
+     * This is called after `resize_editor()` for hosts that don't call
+     * `onSize()` after accepting a `resizeView()` request (like Carla).
+     */
+    void notify_plugin_on_new_size(size_t instance_id,
+                                   Steinberg::ViewRect& new_size);
 
     /**
      * Register a context with with `context_menu`'s ID and owner in

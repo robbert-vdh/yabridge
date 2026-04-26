@@ -18,7 +18,6 @@
 
 #include <memory>
 #include <optional>
-#include <string>
 
 #include <windows.h>
 #include <function2/function2.hpp>
@@ -127,6 +126,9 @@ class DeferredWin32Window {
 };
 
 /**
+ * TODO: This documentation needs to be updated with the recent changes to how
+ *       embedding is handled.
+ *
  * A wrapper around the win32 windowing API to create and destroy editor
  * windows. We can embed this window into the window provided by the host, and a
  * VST plugin can then later embed itself in the window create here.
@@ -192,7 +194,8 @@ class Editor {
         const Configuration& config,
         Logger& logger,
         const size_t parent_window_handle,
-        std::optional<fu2::unique_function<void()>> timer_proc = std::nullopt);
+        std::optional<fu2::unique_function<void()>> timer_proc = std::nullopt,
+        std::optional<Size> initial_size = std::nullopt);
 
     /**
      * Resize the `wrapper_window_` to this new size. We need to manually call
@@ -202,9 +205,18 @@ class Editor {
     void resize(uint16_t width, uint16_t height);
 
     /**
+     * Check if the wrapper window's actual X11 size matches the expected size.
+     * Returns the expected size if there's a mismatch, or nullopt if sizes
+     * match. This is used as a workaround for VST3 plugins where rapid
+     * resizing during mutual recursion can cause the X11 window to get stuck
+     * at an intermediate size.
+     */
+    std::optional<Size> check_size_mismatch();
+
+    /**
      * Show the window, should be called after the plugin has embedded itself.
-     * There's absolutely zero reason why this can't be done in the constructor
-     * or in `do_xembed()`, but it needs to be. Thanks Waves.
+     * There's absolutely zero reason why this can't be done in the constructor,
+     * but it can't be. Thanks Waves.
      */
     void show() noexcept;
 
@@ -229,18 +241,6 @@ class Editor {
      * cached in `supports_ewmh_active_window_cache`.
      */
     bool supports_ewmh_active_window() const;
-
-    /**
-     * Lie to the Wine window about its coordinates on the screen for
-     * reparenting without using XEmbed. See the comment at the top of the
-     * implementation on why this is needed.
-     *
-     * One of the events that trigger this is `ConfigureNotify` messages. Some
-     * WMs may continuously send this message while dragging a window around. To
-     * avoid flickering, the main `handle_x11_events()` function will wait to
-     * call this function until the all mouse buttons have been released.
-     */
-    void fix_local_coordinates() const;
 
     /**
      * Steal or release keyboard focus. This is done whenever the user clicks on
@@ -278,23 +278,10 @@ class Editor {
     inline Size size() const noexcept { return wrapper_window_size_; }
 
     /**
-     * Whether to reposition `win32_window_` to (0, 0) every time the window
-     * resizes. This can help with buggy plugins that use the (top level)
-     * window's screen coordinates when drawing their GUI.
-     */
-    const bool use_coordinate_hack_;
-
-    /**
      * Whether the `editor_force_dnd` workaround for REAPER should be activated.
      * See the implementation in `editor.cpp` for more details.
      */
     const bool use_force_dnd_;
-
-    /**
-     * Whether to use XEmbed instead of yabridge's normal window embedded. Wine
-     * with XEmbed tends to cause rendering issues, so it's disabled by default.
-     */
-    const bool use_xembed_;
 
    private:
     /**
@@ -318,12 +305,6 @@ class Editor {
     std::optional<POINT> get_current_pointer_position() const noexcept;
 
     /**
-     * Checks whether any mouse button is held. Used to defer calling
-     * `fix_local_coordinates()` when dragging windows around.
-     */
-    bool is_mouse_button_held() const;
-
-    /**
      * Returns `true` if the currently active window (as per
      * `_NET_ACTIVE_WINDOW`) contains `wine_window_`. If the window manager does
      * not support this hint, this will always return false.
@@ -340,27 +321,14 @@ class Editor {
     void redetect_host_window() noexcept;
 
     /**
-     * Send an XEmbed message to a window. This does not include a flush. See
-     * the spec for more information:
-     *
-     * https://specifications.freedesktop.org/xembed-spec/xembed-spec-latest.html#lifecycle
+     * Get offset of parent window to fix mouse coordinates.
      */
-    void send_xembed_message(xcb_window_t window,
-                             uint32_t message,
-                             uint32_t detail,
-                             uint32_t data1,
-                             uint32_t data2) const noexcept;
+    std::array<int16_t, 2> get_parent_window_offset();
 
     /**
      * Reparent `child` to `new_parent`. This includes the flush.
      */
     void do_reparent(xcb_window_t child, xcb_window_t new_parent) const;
-
-    /**
-     * Start the XEmbed procedure when `use_xembed_` is enabled. This should be
-     * rerun whenever visibility changes.
-     */
-    void do_xembed() const;
 
     /**
      * The logger instance we will print debug tracing information to.
@@ -379,20 +347,17 @@ class Editor {
     WineXdndProxy::Handle dnd_proxy_handle_;
 
     /**
-     * The Wine window's client area, or the maximum size of that window. This
-     * will be set to a size that's large enough to be able to enter full screen
-     * on a single display. This is more of a theoretical maximum size, as the
-     * plugin will only use a portion of this window to draw to. Because we're
-     * not changing the size of the Wine window and only resize the wrapper
-     * window it's been embedded in, resizing will feel smooth and native.
-     */
-    const Size client_area_;
-
-    /**
      * The size of the wrapper window. We'll prevent CLAP resize requests when
      * the wrapper window is already at the correct size.
      */
     Size wrapper_window_size_;
+
+    /**
+     * Last received configurations for the host and parent windows.
+     */
+    xcb_configure_notify_event_t host_window_config_;
+    xcb_configure_notify_event_t parent_window_config_;
+    bool parent_window_config_abs_;
 
     /**
      * The handle for the window created through Wine that the plugin uses to
@@ -424,6 +389,11 @@ class Editor {
      * The atom corresponding to `WM_STATE`.
      */
     xcb_atom_t xcb_wm_state_property_;
+
+    /**
+     * The atom corresponding to `WM_WINDOW_ROLE`.
+     */
+    xcb_atom_t xcb_wm_window_role_property_;
 
     /**
      * The window handle of the editor window created by the DAW.
@@ -463,15 +433,6 @@ class Editor {
     xcb_window_t host_window_;
 
     /**
-     * Used to delay calling `fix_local_coordinates()` when dragging windows
-     * around with the mouse. Some WMs will continuously send `ConfigureNotify`
-     * messages when dragging windows around, and the `fix_local_coordinates()`
-     * function may cause the window to blink. This becomes a but jarring if it
-     * happens 60 times per second while dragging windows around.
-     */
-    bool should_fix_local_coordinates_ = false;
-
-    /**
      * The atom corresponding to `_NET_ACTIVE_WINDOW`.
      */
     xcb_atom_t active_window_property_;
@@ -481,9 +442,4 @@ class Editor {
      * `supports_ewmh_active_window()`.
      */
     mutable std::optional<bool> supports_ewmh_active_window_cache_;
-
-    /**
-     * The atom corresponding to `_XEMBED`.
-     */
-    xcb_atom_t xcb_xembed_message_;
 };

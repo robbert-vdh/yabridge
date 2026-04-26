@@ -799,9 +799,50 @@ void Vst3Bridge::run() {
                 // be done in the main UI thread
                 return main_context_
                     .run_in_context([&, &instance = instance]() -> tresult {
+                        Steinberg::ViewRect size;
+                        std::optional<Size> initial_size;
+                        // Only accept the initial size from the plugin if it's
+                        // valid. Some plugins like Spectrasonics' Omnisphere 2
+                        // return 0x0 for the initial size, which breaks our
+                        // reparenting in the editor.
+                        if (instance.plug_view_instance->plug_view->getSize(
+                                &size) == Steinberg::kResultOk &&
+                            size.getWidth() > 0 && size.getHeight() > 0) {
+                            initial_size.emplace(size.getWidth(),
+                                                 size.getHeight());
+                        }
+
+                        // HACK: Create a resize watchdog that periodically
+                        // verifies the wrapper window size matches the expected
+                        // size. This works around VST3 resize issues (mostly)
+                        // in Ardour during mutual recursion where X11
+                        // operations may not be applied and the wrapper window
+                        // remains smaller or larger than the wine window. The
+                        // goal here is eventual consistency
+                        auto resize_watchdog = [&instance = instance] {
+                            if (instance.editor) {
+                                if (const auto expected =
+                                        instance.editor
+                                            ->check_size_mismatch()) {
+                                    // Resize the plugin view to propagate the
+                                    // target size everywhere.
+                                    if (instance.plug_view_instance) {
+                                        Steinberg::ViewRect rect{
+                                            0, 0,
+                                            (expected->width),
+                                            (expected->height)};
+                                        instance.plug_frame_proxy->resizeView(
+                                            instance.plug_view_instance
+                                                ->plug_view,
+                                            &rect);
+                                    }
+                                }
+                            }
+                        };
+
                         Editor& editor_instance = instance.editor.emplace(
-                            main_context_, config_, generic_logger_,
-                            x11_handle);
+                            main_context_, config_, generic_logger_, x11_handle,
+                            std::move(resize_watchdog), initial_size);
                         const tresult result =
                             instance.plug_view_instance->plug_view->attached(
                                 editor_instance.win32_handle(), type.c_str());
@@ -899,8 +940,22 @@ void Vst3Bridge::run() {
                             get_instance(request.owner_instance_id);
                         std::lock_guard lock(instance.get_size_mutex);
 
-                        return instance.plug_view_instance->plug_view->getSize(
-                            &size);
+                        auto result =
+                            instance.plug_view_instance->plug_view->getSize(
+                                &size);
+                        // HACK: Sometimes, due to HiDPI scaling, plugins might
+                        //       end up with a size that is off by one pixel
+                        //       from the requested size. To avoid ending up in
+                        //       an infinite loop, just return the size that the
+                        //       host requested in this case.
+                        if (result == Steinberg::kResultOk &&
+                            abs(size.getWidth() -
+                                instance.last_set_size.getWidth()) <= 1 &&
+                            abs(size.getHeight() -
+                                instance.last_set_size.getHeight()) <= 1) {
+                            size = instance.last_set_size;
+                        }
+                        return result;
                     });
 
                 return YaPlugView::GetSizeResponse{.result = result,
@@ -933,6 +988,8 @@ void Vst3Bridge::run() {
                         instance.editor->resize(request.new_size.getWidth(),
                                                 request.new_size.getHeight());
                     }
+
+                    instance.last_set_size = request.new_size;
 
                     return result;
                 });
@@ -1333,6 +1390,26 @@ bool Vst3Bridge::resize_editor(size_t instance_id,
         return true;
     } else {
         return false;
+    }
+}
+
+void Vst3Bridge::notify_plugin_on_new_size(size_t instance_id,
+                                           Steinberg::ViewRect& new_size) {
+    const auto& [instance, _] = get_instance(instance_id);
+
+    if (instance.plug_view_instance) {
+        // Skip if the host already called onSize() with this size during
+        // resizeView(). This is detected by checking if last_set_size already
+        // matches new_size (the OnSize handler updates last_set_size).
+        if (instance.last_set_size.getWidth() == new_size.getWidth() &&
+            instance.last_set_size.getHeight() == new_size.getHeight()) {
+            return;
+        }
+
+        instance.plug_view_instance->plug_view->onSize(&new_size);
+
+        // Update last_set_size so getSize() returns consistent values
+        instance.last_set_size = new_size;
     }
 }
 

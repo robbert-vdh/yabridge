@@ -10,13 +10,26 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed a compatibility issue with **Wine 9.22** and above that caused mouse
+  clicks in plugin GUIs to not register properly. A massive thanks to Rémi
+  Bernon for looking into this!
 - Worked around an interaction between **Ubuntu 24.10** and certain hosts like
   **Ardour** that would cause yabridge to hang and eventually crash the host by
   consuming too much memory. This only affected the prebuilt binaries from the
   releases page.
+- As a side effect of the Wine 9.22 fix, plugin GUIs are now also no longer
+  offset when the plugin window is dragged offscreen on the top and/or left
+  sides of the screen.
+- Similarly, popups should no longer spuriously appear in the wrong placeo n
+  screen. This mostly affected _MeldaProduction_ plugin
 
 ### Removed
 
+- The `editor_xembed` compatibility option has been removed. This option hasn't
+  worked properly for the last couple major Wine releases.
+- The `editor_coordinate_hack` compatibility option has been removed. This was a
+  very specific option to work around a very specific problem, and its existence
+  resulted in more confusion than it solved problems.
 - Out of the box support for building a 32-bit version of yabridge for use in
   64-bit machines has been dropped as part of solving a compatibility issue with
   newer Meson versions

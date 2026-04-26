@@ -92,18 +92,6 @@ class Configuration {
     std::optional<ghc::filesystem::path> disable_pipes;
 
     /**
-     * If this is set to `true`, then the after every resize we will move the
-     * embedded Wine window back to `(0, 0)` and then do the coordinate fixing
-     * trick again. This may be useful with buggy plugins that draw their GUI
-     * based on the (top level) window's position. Otherwise those GUIs will be
-     * offset by the window's actual position on screen. The only plugins I've
-     * encountered where this was necessary were PSPaudioware E27 and Soundtoys
-     * Crystallizer. This is not enabled by default, because it also interferes
-     * with resize handles.
-     */
-    bool editor_coordinate_hack = false;
-
-    /**
      * If set to `true`, we'll remove the `XdndAware` property all ancestor
      * windows in `editor.cpp`. This is needed for REAPER as REAPER implements
      * (but doesn't use) drag-and-drop support on all of its windows. This
@@ -111,14 +99,6 @@ class Configuration {
      * drag files onto plugin editors, native or otherwise.
      */
     bool editor_force_dnd = false;
-
-    /**
-     * Use XEmbed instead of yabridge's normal editor embedding method. Wine's
-     * XEmbed support is not very polished yet and tends to lead to rendering
-     * issues, so this is disabled by default. Also, editor resizing won't work
-     * reliably when XEmbed is enabled.
-     */
-    bool editor_xembed = false;
 
     /**
      * The number of times per second we'll handle the event loop. In most
@@ -197,9 +177,7 @@ class Configuration {
 
         s.ext(disable_pipes, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.ext(v, bitsery::ext::GhcPath{}); });
-        s.value1b(editor_coordinate_hack);
         s.value1b(editor_force_dnd);
-        s.value1b(editor_xembed);
         s.ext(frame_rate, bitsery::ext::InPlaceOptional(),
               [](S& s, auto& v) { s.value4b(v); });
         s.value1b(hide_daw);
