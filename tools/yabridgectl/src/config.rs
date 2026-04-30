@@ -364,22 +364,60 @@ pub fn yabridgectl_directories() -> Result<BaseDirectories> {
 
 /// Get the path where bridged VST2 plugin files should be placed when using the centralized
 /// installation location setting. This is a subdirectory of `~/.vst` so we can easily clean up
-/// leftover files without interfering with other native plugins.
+/// leftover files without interfering with other native plugins. Unless `$VST_PATH` is set, in which case this is a subdirectory if the
+/// first directory in `$VST_PATH`.
 pub fn yabridge_vst2_home() -> PathBuf {
-    Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_VST2_HOME)
+    // Noone's going to be running yabridgectl on Windows, but this would need to be a semicolon
+    // there
+    #[cfg(unix)]
+    const PATH_SEPARATOR: char = ':';
+
+    let vst2_path = env::var("VST_PATH").ok();
+    let vst2_path: Option<PathBuf> = vst2_path
+        .as_ref()
+        .map(|path| {
+            path.split_once(PATH_SEPARATOR)
+                .map(|(first_path, _)| first_path)
+                .unwrap_or(path)
+        })
+        .map(|path| Path::new(path).join(YABRIDGE_PREFIX));
+
+    // If `$VST_PATH` is not set, then we'll fall back to `~/.vst`
+    vst2_path.unwrap_or_else(|| {
+        Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_VST2_HOME)
+    })
 }
 
 /// Get the path where VST3 modules bridged by yabridgectl should be placed in. This is a
 /// subdirectory of `~/.vst3` so we can easily clean up leftover files without interfering with
-/// other native plugins.
+/// other native plugins. Unless `$VST3_PATH` is set, in which case this is a subdirectory if the
+/// first directory in `$VST3_PATH`.
 pub fn yabridge_vst3_home() -> PathBuf {
-    Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_VST3_HOME)
+    // Noone's going to be running yabridgectl on Windows, but this would need to be a semicolon
+    // there
+    #[cfg(unix)]
+    const PATH_SEPARATOR: char = ':';
+
+    let vst3_path = env::var("VST3_PATH").ok();
+    let vst3_path: Option<PathBuf> = vst3_path
+        .as_ref()
+        .map(|path| {
+            path.split_once(PATH_SEPARATOR)
+                .map(|(first_path, _)| first_path)
+                .unwrap_or(path)
+        })
+        .map(|path| Path::new(path).join(YABRIDGE_PREFIX));
+
+    // If `$VST3_PATH` is not set, then we'll fall back to `~/.vst3`
+    vst3_path.unwrap_or_else(|| {
+        Path::new(&env::var("HOME").expect("$HOME is not set")).join(YABRIDGE_VST3_HOME)
+    })
 }
 
 /// Get the path where CLAP modules bridged by yabridgectl should be placed in. This is a
 /// subdirectory of `~/.clap` so we can easily clean up leftover files without interfering with
 /// other native plugins. Unless `$CLAP_PATH` is set, in which case this is a subdirectory if the
-/// first direcotry in `$CLAP_PATH`.
+/// first directory in `$CLAP_PATH`.
 pub fn yabridge_clap_home() -> PathBuf {
     // Noone's going to be running yabridgectl on Windows, but this would need to be a semicolon
     // there
