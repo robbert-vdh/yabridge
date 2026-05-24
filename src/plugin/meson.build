@@ -120,6 +120,7 @@ if with_vst3
     '../common/serialization/vst3/plug-view/plug-view.cpp',
     '../common/serialization/vst3/plug-view/plug-view-content-scale-support.cpp',
     '../common/serialization/vst3/plug-frame/plug-frame.cpp',
+    '../common/serialization/vst3/plugin/ara-plugin-entry.cpp',
     '../common/serialization/vst3/plugin/audio-presentation-latency.cpp',
     '../common/serialization/vst3/plugin/audio-processor.cpp',
     '../common/serialization/vst3/plugin/automation-state.cpp',
