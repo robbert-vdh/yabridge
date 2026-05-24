@@ -80,19 +80,19 @@ class Vst3PluginProxyImpl : public Vst3PluginProxy {
     // NOTE: Not yet proxied across the bridge. `queryInterface()` will not
     // expose this interface until a full implementation is in place. These
     // stubs exist solely to satisfy the abstract base class.
-    const ARAFactory* PLUGIN_API getFactory() override;
+    const ARA::ARAFactory* PLUGIN_API getFactory() override;
     ARA_DEPRECATED(2_0_Draft)
-    const ARAPlugInExtensionInstance* PLUGIN_API
+    const ARA::ARAPlugInExtensionInstance* PLUGIN_API
     bindToDocumentController(
-        ARADocumentControllerRef documentControllerRef) override;
+        ARA::ARADocumentControllerRef documentControllerRef) override;
 
     // From `ARA::IPlugInEntryPoint2`
     // NOTE: Same as above — detection only, not yet proxied.
-    const ARAPlugInExtensionInstance* PLUGIN_API
+    const ARA::ARAPlugInExtensionInstance* PLUGIN_API
     bindToDocumentControllerWithRoles(
-        ARADocumentControllerRef documentControllerRef,
-        ARAPlugInInstanceRoleFlags knownRoles,
-        ARAPlugInInstanceRoleFlags assignedRoles) override;
+        ARA::ARADocumentControllerRef documentControllerRef,
+        ARA::ARAPlugInInstanceRoleFlags knownRoles,
+        ARA::ARAPlugInInstanceRoleFlags assignedRoles) override;
 
     // From `IAudioPresentationLatency`
     tresult PLUGIN_API

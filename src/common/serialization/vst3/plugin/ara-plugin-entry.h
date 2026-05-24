@@ -92,11 +92,11 @@ class YaARAPlugInEntryPoint : public ARA::IPlugInEntryPoint {
     // These must be declared to satisfy the abstract base class, but they will
     // never be called because `queryInterface()` in `plugin-proxy.cpp` will
     // not return this interface until it is fully proxied.
-    virtual const ARAFactory* PLUGIN_API getFactory() override = 0;
+    virtual const ARA::ARAFactory* PLUGIN_API getFactory() override = 0;
     ARA_DEPRECATED(2_0_Draft)
-    virtual const ARAPlugInExtensionInstance* PLUGIN_API
+    virtual const ARA::ARAPlugInExtensionInstance* PLUGIN_API
     bindToDocumentController(
-        ARADocumentControllerRef documentControllerRef) override = 0;
+        ARA::ARADocumentControllerRef documentControllerRef) override = 0;
 
    protected:
     ConstructArgs arguments_;
@@ -150,11 +150,11 @@ class YaARAPlugInEntryPoint2 : public ARA::IPlugInEntryPoint2 {
     inline bool supported() const noexcept { return arguments_.supported; }
 
     // ARA::IPlugInEntryPoint2 pure virtual method — not yet implemented.
-    virtual const ARAPlugInExtensionInstance* PLUGIN_API
+    virtual const ARA::ARAPlugInExtensionInstance* PLUGIN_API
     bindToDocumentControllerWithRoles(
-        ARADocumentControllerRef documentControllerRef,
-        ARAPlugInInstanceRoleFlags knownRoles,
-        ARAPlugInInstanceRoleFlags assignedRoles) override = 0;
+        ARA::ARADocumentControllerRef documentControllerRef,
+        ARA::ARAPlugInInstanceRoleFlags knownRoles,
+        ARA::ARAPlugInInstanceRoleFlags assignedRoles) override = 0;
 
    protected:
     ConstructArgs arguments_;

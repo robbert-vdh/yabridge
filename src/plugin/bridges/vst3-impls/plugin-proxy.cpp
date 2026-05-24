@@ -98,7 +98,7 @@ void Vst3PluginProxyImpl::clear_caches() noexcept {
 // abstract base class requirements of `YaARAPlugInEntryPoint` and
 // `YaARAPlugInEntryPoint2`.
 
-const ARAFactory* PLUGIN_API Vst3PluginProxyImpl::getFactory() {
+const ARA::ARAFactory* PLUGIN_API Vst3PluginProxyImpl::getFactory() {
     bridge_.logger_.log(
         "WARNING: Unexpected call to 'ARA::IPlugInEntryPoint::getFactory()' — "
         "ARA is not yet proxied");
@@ -107,9 +107,9 @@ const ARAFactory* PLUGIN_API Vst3PluginProxyImpl::getFactory() {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-const ARAPlugInExtensionInstance* PLUGIN_API
+const ARA::ARAPlugInExtensionInstance* PLUGIN_API
 Vst3PluginProxyImpl::bindToDocumentController(
-    ARADocumentControllerRef /*documentControllerRef*/) {
+    ARA::ARADocumentControllerRef /*documentControllerRef*/) {
     bridge_.logger_.log(
         "WARNING: Unexpected call to "
         "'ARA::IPlugInEntryPoint::bindToDocumentController()' — "
@@ -119,11 +119,11 @@ Vst3PluginProxyImpl::bindToDocumentController(
 #pragma GCC diagnostic pop
 
 // From `ARA::IPlugInEntryPoint2`
-const ARAPlugInExtensionInstance* PLUGIN_API
+const ARA::ARAPlugInExtensionInstance* PLUGIN_API
 Vst3PluginProxyImpl::bindToDocumentControllerWithRoles(
-    ARADocumentControllerRef /*documentControllerRef*/,
-    ARAPlugInInstanceRoleFlags /*knownRoles*/,
-    ARAPlugInInstanceRoleFlags /*assignedRoles*/) {
+    ARA::ARADocumentControllerRef /*documentControllerRef*/,
+    ARA::ARAPlugInInstanceRoleFlags /*knownRoles*/,
+    ARA::ARAPlugInInstanceRoleFlags /*assignedRoles*/) {
     bridge_.logger_.log(
         "WARNING: Unexpected call to "
         "'ARA::IPlugInEntryPoint2::bindToDocumentControllerWithRoles()' — "
