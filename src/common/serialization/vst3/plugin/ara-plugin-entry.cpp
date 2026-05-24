@@ -19,8 +19,8 @@
 #include "../../../logging/common.h"
 
 namespace ARA {
-DEF_CLASS_IID(IPlugInEntryPoint, 0x12814E54, 0xA1CE4076, 0x82B96813, 0x16950BD6)
-DEF_CLASS_IID(IPlugInEntryPoint2, 0xCD9A5913, 0xC9EB46D7, 0x96CA53AD, 0xD1DB89F5)
+DEF_CLASS_IID(IPlugInEntryPoint)
+DEF_CLASS_IID(IPlugInEntryPoint2)
 }  // namespace ARA
 
 YaARAPlugInEntryPoint::ConstructArgs::ConstructArgs() noexcept : supported(false) {}
