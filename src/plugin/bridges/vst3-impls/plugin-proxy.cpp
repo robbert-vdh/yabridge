@@ -92,6 +92,45 @@ void Vst3PluginProxyImpl::clear_caches() noexcept {
     function_result_cache_ = FunctionResultCache{};
 }
 
+// From `ARA::IPlugInEntryPoint`
+// These stubs are never reached because `queryInterface()` does not expose the
+// ARA interfaces until they are fully proxied. They exist only to satisfy the
+// abstract base class requirements of `YaARAPlugInEntryPoint` and
+// `YaARAPlugInEntryPoint2`.
+
+const ARAFactory* PLUGIN_API Vst3PluginProxyImpl::getFactory() {
+    bridge_.logger_.log(
+        "WARNING: Unexpected call to 'ARA::IPlugInEntryPoint::getFactory()' — "
+        "ARA is not yet proxied");
+    return nullptr;
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+const ARAPlugInExtensionInstance* PLUGIN_API
+Vst3PluginProxyImpl::bindToDocumentController(
+    ARADocumentControllerRef /*documentControllerRef*/) {
+    bridge_.logger_.log(
+        "WARNING: Unexpected call to "
+        "'ARA::IPlugInEntryPoint::bindToDocumentController()' — "
+        "ARA is not yet proxied");
+    return nullptr;
+}
+#pragma GCC diagnostic pop
+
+// From `ARA::IPlugInEntryPoint2`
+const ARAPlugInExtensionInstance* PLUGIN_API
+Vst3PluginProxyImpl::bindToDocumentControllerWithRoles(
+    ARADocumentControllerRef /*documentControllerRef*/,
+    ARAPlugInInstanceRoleFlags /*knownRoles*/,
+    ARAPlugInInstanceRoleFlags /*assignedRoles*/) {
+    bridge_.logger_.log(
+        "WARNING: Unexpected call to "
+        "'ARA::IPlugInEntryPoint2::bindToDocumentControllerWithRoles()' — "
+        "ARA is not yet proxied");
+    return nullptr;
+}
+
 tresult PLUGIN_API Vst3PluginProxyImpl::setAudioPresentationLatencySamples(
     Steinberg::Vst::BusDirection dir,
     int32 busIndex,

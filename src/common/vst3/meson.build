@@ -4,6 +4,14 @@
 
 vst3 = subproject('vst3', version : '3.7.7')
 
+# The ARA SDK is a plain git submodule with no meson.build, so we expose its
+# headers directly via include_directories(). is_system suppresses the ARA
+# SDK's own warnings from appearing in yabridge's build output. This dependency
+# is folded into every vst3_sdk_*_dep below so no other meson.build needs
+# to reference it explicitly.
+ara_sdk_inc = include_directories('../../../subprojects/ara-sdk', is_system : true)
+ara_sdk_dep = declare_dependency(include_directories : ara_sdk_inc)
+
 # Also include our normal compiler options so symbols are hidden by default
 vst3_compiler_options = compiler_options + vst3.get_variable('compiler_options')
 vst3_include_dir = vst3.get_variable('include_dir')
@@ -107,14 +115,14 @@ endif
 
 vst3_sdk_native_dep = declare_dependency(
   link_with : vst3_sdk_native,
-  include_directories : vst3_include_dir,
+  include_directories : [vst3_include_dir, ara_sdk_inc],
   compile_args : vst3_compiler_options,
 )
 
 if is_64bit_system
   vst3_sdk_hosting_wine_64bit_dep = declare_dependency(
     link_with : vst3_sdk_hosting_wine_64bit,
-    include_directories : vst3_include_dir,
+    include_directories : [vst3_include_dir, ara_sdk_inc],
     # This does mean that we now have a lot of defines in our code, but the
     # alternative would be patching every location in the SDK where they include
     # `windows.h`
@@ -125,7 +133,7 @@ endif
 if with_bitbridge
   vst3_sdk_hosting_wine_32bit_dep = declare_dependency(
     link_with : vst3_sdk_hosting_wine_32bit,
-    include_directories : vst3_include_dir,
+    include_directories : [vst3_include_dir, ara_sdk_inc],
     # This does mean that we now have a lot of defines in our code, but the
     # alternative would be patching every location in the SDK where they include
     # `windows.h`
