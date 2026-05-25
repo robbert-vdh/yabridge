@@ -490,12 +490,73 @@ void Vst3Bridge::run() {
                             return PrimitiveResponse<native_size_t>(0);
                         }
 
+                        // request.document_controller_ref is a Linux-side
+                        // ARADocumentControllerRef — invalid in Wine. We must
+                        // first call createDocumentControllerWithDocument on
+                        // the Windows plugin's factory to get a valid Wine-side
+                        // ARADocumentControllerRef, then pass that to
+                        // bindToDocumentController.
+                        if (!instance.ara_document_controller_host_instance) {
+                            const ARA::ARAFactory* factory =
+                                entry_point->getFactory();
+                            if (!factory ||
+                                !factory->createDocumentControllerWithDocument) {
+                                logger_.log(
+                                    "WARNING: BindToDocumentController: "
+                                    "factory has no "
+                                    "createDocumentControllerWithDocument");
+                                return PrimitiveResponse<native_size_t>(0);
+                            }
+
+                            // Build a Wine-side host instance proxy. We use
+                            // the Linux-side ref as an opaque identifier for
+                            // IPC callbacks back to Carla.
+                            const auto* linux_host_instance =
+                                reinterpret_cast<
+                                    const ARA::ARADocumentControllerHostInstance*>(
+                                    static_cast<uintptr_t>(
+                                        request.document_controller_ref));
+
+                            instance.ara_document_controller_host_instance =
+                                std::make_unique<
+                                    WineARADocumentControllerHostInstance>(
+                                    linux_host_instance,
+                                    request.instance_id,
+                                    *this);
+
+                            ARA::ARADocumentProperties props{};
+                            props.structSize = static_cast<ARA::ARASize>(
+                                ARA_IMPLEMENTED_STRUCT_SIZE(
+                                    ARADocumentProperties, name));
+                            props.name = nullptr;
+
+                            const ARA::ARADocumentControllerInstance* ctrl =
+                                factory->createDocumentControllerWithDocument(
+                                    instance.ara_document_controller_host_instance
+                                        ->get(),
+                                    &props);
+
+                            if (!ctrl) {
+                                logger_.log(
+                                    "WARNING: BindToDocumentController: "
+                                    "Windows plugin factory returned null "
+                                    "ARADocumentControllerInstance");
+                                instance.ara_document_controller_host_instance
+                                    .reset();
+                                return PrimitiveResponse<native_size_t>(0);
+                            }
+
+                            instance.ara_document_controller_instance = ctrl;
+                        }
+
+                        const ARA::ARADocumentControllerRef wine_ref =
+                            instance.ara_document_controller_instance
+                                ->documentControllerRef;
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
                         const ARA::ARAPlugInExtensionInstance* ext =
-                            entry_point->bindToDocumentController(
-                                reinterpret_cast<ARA::ARADocumentControllerRef>(
-                                    request.document_controller_ref));
+                            entry_point->bindToDocumentController(wine_ref);
 #pragma GCC diagnostic pop
 
                         if (!ext) {
@@ -520,11 +581,70 @@ void Vst3Bridge::run() {
                         const auto& [instance, _] =
                             get_instance(request.instance_id);
 
+                        // Same on-demand document controller creation as above.
+                        // We need a Wine-side ARADocumentControllerRef before
+                        // we can call bindToDocumentController[WithRoles].
+                        auto ensure_wine_doc_ctrl =
+                            [&]() -> bool {
+                            if (instance.ara_document_controller_instance) {
+                                return true;
+                            }
+
+                            Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                                ep(instance.object);
+                            if (!ep) {
+                                return false;
+                            }
+                            const ARA::ARAFactory* factory = ep->getFactory();
+                            if (!factory ||
+                                !factory->createDocumentControllerWithDocument) {
+                                return false;
+                            }
+
+                            const auto* linux_host_instance =
+                                reinterpret_cast<
+                                    const ARA::ARADocumentControllerHostInstance*>(
+                                    static_cast<uintptr_t>(
+                                        request.document_controller_ref));
+
+                            instance.ara_document_controller_host_instance =
+                                std::make_unique<
+                                    WineARADocumentControllerHostInstance>(
+                                    linux_host_instance,
+                                    request.instance_id,
+                                    *this);
+
+                            ARA::ARADocumentProperties props{};
+                            props.structSize = static_cast<ARA::ARASize>(
+                                ARA_IMPLEMENTED_STRUCT_SIZE(
+                                    ARADocumentProperties, name));
+                            props.name = nullptr;
+
+                            const ARA::ARADocumentControllerInstance* ctrl =
+                                factory->createDocumentControllerWithDocument(
+                                    instance.ara_document_controller_host_instance
+                                        ->get(),
+                                    &props);
+
+                            if (!ctrl) {
+                                logger_.log(
+                                    "WARNING: "
+                                    "BindToDocumentControllerWithRoles: "
+                                    "Windows plugin factory returned null "
+                                    "ARADocumentControllerInstance");
+                                instance.ara_document_controller_host_instance
+                                    .reset();
+                                return false;
+                            }
+
+                            instance.ara_document_controller_instance = ctrl;
+                            return true;
+                        };
+
                         Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint2>
                             entry_point2(instance.object);
                         if (!entry_point2) {
-                            // Fall back to ARA 1 IPlugInEntryPoint if the
-                            // plugin only supports the older interface.
+                            // Fall back to ARA 1 IPlugInEntryPoint.
                             Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
                                 entry_point(instance.object);
                             if (!entry_point) {
@@ -536,13 +656,19 @@ void Vst3Bridge::run() {
                                 return PrimitiveResponse<native_size_t>(0);
                             }
 
+                            if (!ensure_wine_doc_ctrl()) {
+                                return PrimitiveResponse<native_size_t>(0);
+                            }
+
+                            const ARA::ARADocumentControllerRef wine_ref =
+                                instance.ara_document_controller_instance
+                                    ->documentControllerRef;
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
                             const ARA::ARAPlugInExtensionInstance* ext =
                                 entry_point->bindToDocumentController(
-                                    reinterpret_cast<
-                                        ARA::ARADocumentControllerRef>(
-                                        request.document_controller_ref));
+                                    wine_ref);
 #pragma GCC diagnostic pop
 
                             if (!ext) {
@@ -558,10 +684,17 @@ void Vst3Bridge::run() {
                             return PrimitiveResponse<native_size_t>(1);
                         }
 
+                        if (!ensure_wine_doc_ctrl()) {
+                            return PrimitiveResponse<native_size_t>(0);
+                        }
+
+                        const ARA::ARADocumentControllerRef wine_ref =
+                            instance.ara_document_controller_instance
+                                ->documentControllerRef;
+
                         const ARA::ARAPlugInExtensionInstance* ext =
                             entry_point2->bindToDocumentControllerWithRoles(
-                                reinterpret_cast<ARA::ARADocumentControllerRef>(
-                                    request.document_controller_ref),
+                                wine_ref,
                                 request.known_roles,
                                 request.assigned_roles);
 

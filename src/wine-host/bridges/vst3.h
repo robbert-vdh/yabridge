@@ -311,6 +311,16 @@ struct Vst3PluginInstance {
     const ARA::ARAPlugInExtensionInstance* ara_plug_in_extension = nullptr;
 
     /**
+     * The `ARADocumentControllerInstance` returned by the Windows plugin's
+     * factory when `createDocumentControllerWithDocument()` was called. Kept
+     * alive for the lifetime of the plugin instance. The
+     * `documentControllerRef` inside is the valid Wine-side handle passed to
+     * `bindToDocumentController[WithRoles]()`.
+     */
+    const ARA::ARADocumentControllerInstance* ara_document_controller_instance =
+        nullptr;
+
+    /**
      * The Wine-side proxy for the host's `ARADocumentControllerHostInstance`.
      * Carla passes a Linux-side struct pointer to
      * `createDocumentControllerWithDocument()`; that pointer is invalid in the
