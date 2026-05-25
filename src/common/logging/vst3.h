@@ -76,6 +76,26 @@ class Vst3Logger {
         const YaARAPlugInEntryPoint2::BindToDocumentControllerWithRoles&);
     bool log_request(bool is_host_plugin, const YaARAFactory::Initialize&);
     bool log_request(bool is_host_plugin, const YaARAFactory::Uninitialize&);
+    bool log_request(bool is_host_plugin,
+                     const YaARAFactory::CreateDocumentController&);
+    // ARA host callbacks (wine-host → plugin)
+    bool log_request(bool is_host_plugin,
+                     const YaARAHostCallbacks::CreateAudioReaderForSource&);
+    bool log_request(bool is_host_plugin,
+                     const YaARAHostCallbacks::ReadAudioSamples&);
+    bool log_request(bool is_host_plugin,
+                     const YaARAHostCallbacks::DestroyAudioReader&);
+    bool log_request(bool is_host_plugin,
+                     const YaARAHostCallbacks::GetArchiveSize&);
+    bool log_request(bool is_host_plugin,
+                     const YaARAHostCallbacks::ReadBytesFromArchive&);
+    bool log_request(bool is_host_plugin,
+                     const YaARAHostCallbacks::WriteBytesToArchive&);
+    bool log_request(bool is_host_plugin,
+                     const YaARAHostCallbacks::NotifyDocumentArchivingProgress&);
+    bool log_request(
+        bool is_host_plugin,
+        const YaARAHostCallbacks::NotifyDocumentUnarchivingProgress&);
     bool log_request(bool is_host_plugin, const Vst3PluginProxy::SetState&);
     bool log_request(bool is_host_plugin, const Vst3PluginProxy::GetState&);
     bool log_request(

@@ -717,49 +717,6 @@ void Vst3Bridge::run() {
                             reinterpret_cast<native_size_t>(ctrl));
                     });
             },
-            // ---------------------------------------------------------------
-            // YaARAHostCallbacks — these messages travel wine-host → plugin
-            // (via bridge_->send_message / plugin_host_callback_) and are
-            // handled on the plugin side in plugin_host_callback_.receive_messages.
-            // They should never arrive on this host_plugin_control_ socket,
-            // but the variant requires exhaustive handling.
-            // ---------------------------------------------------------------
-            [&](const YaARAHostCallbacks::CreateAudioReaderForSource&)
-                -> YaARAHostCallbacks::CreateAudioReaderForSource::Response {
-                logger_.log("WARNING: unexpected CreateAudioReaderForSource on "
-                            "host_plugin_control_");
-                return PrimitiveResponse<native_size_t>(0);
-            },
-            [&](const YaARAHostCallbacks::ReadAudioSamples&)
-                -> YaARAHostCallbacks::ReadAudioSamples::Response {
-                return PrimitiveResponse<ARA::ARABool>(ARA::kARAFalse);
-            },
-            [&](const YaARAHostCallbacks::DestroyAudioReader&)
-                -> YaARAHostCallbacks::DestroyAudioReader::Response {
-                return Ack{};
-            },
-            [&](const YaARAHostCallbacks::GetArchiveSize&)
-                -> YaARAHostCallbacks::GetArchiveSize::Response {
-                return PrimitiveResponse<uint64_t>(0);
-            },
-            [&](const YaARAHostCallbacks::ReadBytesFromArchive&)
-                -> YaARAHostCallbacks::ReadBytesFromArchive::Response {
-                return PrimitiveResponse<ARA::ARABool>(ARA::kARAFalse);
-            },
-            [&](const YaARAHostCallbacks::WriteBytesToArchive&)
-                -> YaARAHostCallbacks::WriteBytesToArchive::Response {
-                return PrimitiveResponse<ARA::ARABool>(ARA::kARAFalse);
-            },
-            [&](const YaARAHostCallbacks::NotifyDocumentArchivingProgress&)
-                -> YaARAHostCallbacks::NotifyDocumentArchivingProgress::
-                    Response {
-                return Ack{};
-            },
-            [&](const YaARAHostCallbacks::NotifyDocumentUnarchivingProgress&)
-                -> YaARAHostCallbacks::NotifyDocumentUnarchivingProgress::
-                    Response {
-                return Ack{};
-            },
             [&](const Vst3PluginProxy::Destruct& request)
                 -> Vst3PluginProxy::Destruct::Response {
                 unregister_object_instance(request.instance_id);

@@ -750,6 +750,96 @@ bool Vst3Logger::log_request(bool is_host_plugin,
     });
 }
 
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaARAFactory::CreateDocumentController& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARAFactory::createDocumentControllerWithDocument(\""
+                << request.document_name << "\")";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaARAHostCallbacks::CreateAudioReaderForSource& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARAAudioAccessController::createAudioReaderForSource("
+                << "use64Bit=" << request.use_64bit_samples << ')';
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaARAHostCallbacks::ReadAudioSamples& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARAAudioAccessController::readAudioSamples("
+                << "samplePos=" << request.sample_position
+                << ", count=" << request.samples_per_channel << ')';
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaARAHostCallbacks::DestroyAudioReader& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARAAudioAccessController::destroyAudioReader()";
+    });
+}
+
+bool Vst3Logger::log_request(bool is_host_plugin,
+                             const YaARAHostCallbacks::GetArchiveSize& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARAArchivingController::getArchiveSize()";
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaARAHostCallbacks::ReadBytesFromArchive& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARAArchivingController::readBytesFromArchive("
+                << "pos=" << request.position
+                << ", len=" << request.length << ')';
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaARAHostCallbacks::WriteBytesToArchive& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARAArchivingController::writeBytesToArchive("
+                << "pos=" << request.position
+                << ", len=" << request.buffer.size() << ')';
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaARAHostCallbacks::NotifyDocumentArchivingProgress& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARAArchivingController::notifyDocumentArchivingProgress("
+                << request.value << ')';
+    });
+}
+
+bool Vst3Logger::log_request(
+    bool is_host_plugin,
+    const YaARAHostCallbacks::NotifyDocumentUnarchivingProgress& request) {
+    return log_request_base(is_host_plugin, [&](auto& message) {
+        message << request.instance_id
+                << ": ARAArchivingController::notifyDocumentUnarchivingProgress("
+                << request.value << ')';
+    });
+}
+
 bool Vst3Logger::log_request(bool is_host_plugin,
                              const YaPluginBase::Terminate& request) {
     return log_request_base(is_host_plugin, [&](auto& message) {
