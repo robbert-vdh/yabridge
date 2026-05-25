@@ -17,6 +17,7 @@
 #include "vst3.h"
 
 #include <bitset>
+#include <future>
 
 #include "vst3-impls/component-handler-proxy.h"
 #include "vst3-impls/connection-point-proxy.h"
@@ -470,93 +471,93 @@ void Vst3Bridge::run() {
             [&](const YaARAPlugInEntryPoint::BindToDocumentController& request)
                 -> YaARAPlugInEntryPoint::BindToDocumentController::Response {
                 // Step 1: If we haven't yet created a Wine-side document
-                // controller, do it now in a separate GUI-thread dispatch
-                // BEFORE calling bindToDocumentController. This is critical:
-                // createDocumentControllerWithDocument may trigger IPC
-                // callbacks back to the plugin side (e.g. audio reader
-                // creation), which must not happen while we're already inside
-                // the mutual-recursion context for bindToDocumentController.
+                // controller, do it now on a dedicated Win32Thread BEFORE
+                // calling bindToDocumentController.
+                //
+                // IMPORTANT: We must NOT use run_in_context() / the GUI thread
+                // for createDocumentControllerWithDocument. The GUI thread in
+                // Wine runs on the main Win32 message loop thread which has a
+                // very small stack (~8KB guard page). Melodyne's factory init
+                // path is deep enough to overflow it immediately.
+                //
+                // Win32Thread spawns a fresh Windows thread with a full 1MB
+                // default stack, giving Melodyne the room it needs.
                 if (!get_instance(request.instance_id)
                          .first.ara_document_controller_instance) {
-                    const bool created =
-                        main_context_
-                            .run_in_context([&]() -> bool {
-                                const auto& [instance, _] =
-                                    get_instance(request.instance_id);
+                    std::promise<bool> created_promise;
+                    auto created_future = created_promise.get_future();
 
-                                Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
-                                    entry_point(instance.object);
-                                if (!entry_point) {
-                                    return false;
-                                }
+                    Win32Thread create_thread([&]() {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
 
-                                const ARA::ARAFactory* factory =
-                                    entry_point->getFactory();
-                                if (!factory ||
-                                    !factory
-                                         ->createDocumentControllerWithDocument) {
-                                    logger_.log(
-                                        "WARNING: BindToDocumentController: "
-                                        "factory has no "
-                                        "createDocumentControllerWithDocument");
-                                    return false;
-                                }
+                        Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                            entry_point(instance.object);
+                        if (!entry_point) {
+                            created_promise.set_value(false);
+                            return;
+                        }
 
-                                const auto* linux_host_instance =
-                                    reinterpret_cast<
-                                        const ARA::
-                                            ARADocumentControllerHostInstance*>(
-                                        static_cast<uintptr_t>(
-                                            request.document_controller_ref));
+                        const ARA::ARAFactory* factory =
+                            entry_point->getFactory();
+                        if (!factory ||
+                            !factory->createDocumentControllerWithDocument) {
+                            logger_.log(
+                                "WARNING: BindToDocumentController: "
+                                "factory has no "
+                                "createDocumentControllerWithDocument");
+                            created_promise.set_value(false);
+                            return;
+                        }
 
-                                instance
-                                    .ara_document_controller_host_instance =
-                                    std::make_unique<
-                                        WineARADocumentControllerHostInstance>(
-                                        linux_host_instance,
-                                        request.instance_id,
-                                        *this);
+                        const auto* linux_host_instance =
+                            reinterpret_cast<
+                                const ARA::ARADocumentControllerHostInstance*>(
+                                static_cast<uintptr_t>(
+                                    request.document_controller_ref));
 
-                                ARA::ARADocumentProperties props{};
-                                props.structSize = static_cast<ARA::ARASize>(
-                                    ARA_IMPLEMENTED_STRUCT_SIZE(
-                                        ARADocumentProperties, name));
-                                props.name = nullptr;
+                        instance.ara_document_controller_host_instance =
+                            std::make_unique<
+                                WineARADocumentControllerHostInstance>(
+                                linux_host_instance,
+                                request.instance_id,
+                                *this);
 
-                                const ARA::ARADocumentControllerInstance*
-                                    ctrl =
-                                        factory
-                                            ->createDocumentControllerWithDocument(
-                                                instance
-                                                    .ara_document_controller_host_instance
-                                                    ->get(),
-                                                &props);
+                        ARA::ARADocumentProperties props{};
+                        props.structSize = static_cast<ARA::ARASize>(
+                            ARA_IMPLEMENTED_STRUCT_SIZE(ARADocumentProperties,
+                                                        name));
+                        props.name = nullptr;
 
-                                if (!ctrl) {
-                                    logger_.log(
-                                        "WARNING: BindToDocumentController: "
-                                        "Windows plugin factory returned null "
-                                        "ARADocumentControllerInstance");
-                                    instance
-                                        .ara_document_controller_host_instance
-                                        .reset();
-                                    return false;
-                                }
+                        const ARA::ARADocumentControllerInstance* ctrl =
+                            factory->createDocumentControllerWithDocument(
+                                instance.ara_document_controller_host_instance
+                                    ->get(),
+                                &props);
 
-                                instance.ara_document_controller_instance =
-                                    ctrl;
-                                return true;
-                            })
-                            .get();
+                        if (!ctrl) {
+                            logger_.log(
+                                "WARNING: BindToDocumentController: "
+                                "Windows plugin factory returned null "
+                                "ARADocumentControllerInstance");
+                            instance.ara_document_controller_host_instance
+                                .reset();
+                            created_promise.set_value(false);
+                            return;
+                        }
 
-                    if (!created) {
+                        instance.ara_document_controller_instance = ctrl;
+                        created_promise.set_value(true);
+                    });
+
+                    if (!created_future.get()) {
                         return PrimitiveResponse<native_size_t>(0);
                     }
                 }
 
                 // Step 2: Now call bindToDocumentController with the Wine-side
-                // ref in a separate mutual-recursion context. Any callbacks
-                // the plugin makes during bind will be handled correctly.
+                // ref in a mutual-recursion context. Any callbacks the plugin
+                // makes during bind will be handled correctly.
                 return do_mutual_recursion_on_gui_thread(
                     [&]() -> PrimitiveResponse<native_size_t> {
                         const auto& [instance, _] =
@@ -597,81 +598,76 @@ void Vst3Bridge::run() {
                     request)
                 -> YaARAPlugInEntryPoint2::
                     BindToDocumentControllerWithRoles::Response {
-                // Same two-step pattern: create document controller first in
-                // a plain run_in_context, then bind in do_mutual_recursion.
+                // Same two-step pattern: create document controller first on
+                // a dedicated Win32Thread (full stack), then bind with
+                // mutual-recursion support.
                 if (!get_instance(request.instance_id)
                          .first.ara_document_controller_instance) {
-                    const bool created =
-                        main_context_
-                            .run_in_context([&]() -> bool {
-                                const auto& [instance, _] =
-                                    get_instance(request.instance_id);
+                    std::promise<bool> created_promise;
+                    auto created_future = created_promise.get_future();
 
-                                // Try IPlugInEntryPoint first to get the
-                                // factory (both ARA1 and ARA2 share it).
-                                Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
-                                    ep(instance.object);
-                                if (!ep) {
-                                    return false;
-                                }
+                    Win32Thread create_thread([&]() {
+                        const auto& [instance, _] =
+                            get_instance(request.instance_id);
 
-                                const ARA::ARAFactory* factory =
-                                    ep->getFactory();
-                                if (!factory ||
-                                    !factory
-                                         ->createDocumentControllerWithDocument) {
-                                    return false;
-                                }
+                        // Try IPlugInEntryPoint first to get the factory
+                        // (both ARA1 and ARA2 share it).
+                        Steinberg::FUnknownPtr<ARA::IPlugInEntryPoint>
+                            ep(instance.object);
+                        if (!ep) {
+                            created_promise.set_value(false);
+                            return;
+                        }
 
-                                const auto* linux_host_instance =
-                                    reinterpret_cast<
-                                        const ARA::
-                                            ARADocumentControllerHostInstance*>(
-                                        static_cast<uintptr_t>(
-                                            request.document_controller_ref));
+                        const ARA::ARAFactory* factory = ep->getFactory();
+                        if (!factory ||
+                            !factory->createDocumentControllerWithDocument) {
+                            created_promise.set_value(false);
+                            return;
+                        }
 
-                                instance
-                                    .ara_document_controller_host_instance =
-                                    std::make_unique<
-                                        WineARADocumentControllerHostInstance>(
-                                        linux_host_instance,
-                                        request.instance_id,
-                                        *this);
+                        const auto* linux_host_instance =
+                            reinterpret_cast<
+                                const ARA::ARADocumentControllerHostInstance*>(
+                                static_cast<uintptr_t>(
+                                    request.document_controller_ref));
 
-                                ARA::ARADocumentProperties props{};
-                                props.structSize = static_cast<ARA::ARASize>(
-                                    ARA_IMPLEMENTED_STRUCT_SIZE(
-                                        ARADocumentProperties, name));
-                                props.name = nullptr;
+                        instance.ara_document_controller_host_instance =
+                            std::make_unique<
+                                WineARADocumentControllerHostInstance>(
+                                linux_host_instance,
+                                request.instance_id,
+                                *this);
 
-                                const ARA::ARADocumentControllerInstance*
-                                    ctrl =
-                                        factory
-                                            ->createDocumentControllerWithDocument(
-                                                instance
-                                                    .ara_document_controller_host_instance
-                                                    ->get(),
-                                                &props);
+                        ARA::ARADocumentProperties props{};
+                        props.structSize = static_cast<ARA::ARASize>(
+                            ARA_IMPLEMENTED_STRUCT_SIZE(ARADocumentProperties,
+                                                        name));
+                        props.name = nullptr;
 
-                                if (!ctrl) {
-                                    logger_.log(
-                                        "WARNING: "
-                                        "BindToDocumentControllerWithRoles: "
-                                        "Windows plugin factory returned null "
-                                        "ARADocumentControllerInstance");
-                                    instance
-                                        .ara_document_controller_host_instance
-                                        .reset();
-                                    return false;
-                                }
+                        const ARA::ARADocumentControllerInstance* ctrl =
+                            factory->createDocumentControllerWithDocument(
+                                instance.ara_document_controller_host_instance
+                                    ->get(),
+                                &props);
 
-                                instance.ara_document_controller_instance =
-                                    ctrl;
-                                return true;
-                            })
-                            .get();
+                        if (!ctrl) {
+                            logger_.log(
+                                "WARNING: "
+                                "BindToDocumentControllerWithRoles: "
+                                "Windows plugin factory returned null "
+                                "ARADocumentControllerInstance");
+                            instance.ara_document_controller_host_instance
+                                .reset();
+                            created_promise.set_value(false);
+                            return;
+                        }
 
-                    if (!created) {
+                        instance.ara_document_controller_instance = ctrl;
+                        created_promise.set_value(true);
+                    });
+
+                    if (!created_future.get()) {
                         return PrimitiveResponse<native_size_t>(0);
                     }
                 }
