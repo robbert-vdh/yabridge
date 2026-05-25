@@ -31,7 +31,7 @@ YaARAFactorySnapshot::YaARAFactorySnapshot(
         return;
     }
 
-    struct_size = factory->structSize;
+    struct_size = static_cast<uint64_t>(factory->structSize);
     lowest_supported_api_generation = factory->lowestSupportedApiGeneration;
     highest_supported_api_generation = factory->highestSupportedApiGeneration;
 
@@ -98,7 +98,7 @@ YaARAFactoryConfig::YaARAFactoryConfig(
     }
 
     has_config = true;
-    struct_size = config->structSize;
+    struct_size = static_cast<uint64_t>(config->structSize);
     desired_api_generation = config->desiredApiGeneration;
     has_assert_function = config->assertFunctionAddress != nullptr;
 }

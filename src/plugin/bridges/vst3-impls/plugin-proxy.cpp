@@ -37,7 +37,6 @@ constexpr char other_instance_message_id[] = "yabridge_other_instance";
  */
 constexpr char other_instance_pointer_attribute[] = "other_proxy_ptr";
 
-namespace {
 class AraFactoryProxy {
    public:
     AraFactoryProxy(Vst3PluginBridge& bridge,
@@ -46,7 +45,7 @@ class AraFactoryProxy {
         : bridge_(bridge),
           instance_id_(instance_id),
           snapshot_(std::move(snapshot)) {
-        factory_.structSize = snapshot_.struct_size ? snapshot_.struct_size
+        factory_.structSize = snapshot_.struct_size ? static_cast<ARA::ARASize>(snapshot_.struct_size)
                                  : ARA::kARAFactoryMinSize;
         factory_.lowestSupportedApiGeneration =
             snapshot_.lowest_supported_api_generation;
@@ -154,7 +153,6 @@ class AraFactoryProxy {
     std::vector<ARA::ARAContentType> analyzeable_content_types_;
     ARA::ARAFactory factory_{};
 };
-}  // namespace
 
 Vst3PluginProxyImpl::ContextMenu::ContextMenu(
     Steinberg::IPtr<Steinberg::Vst::IContextMenu> menu)

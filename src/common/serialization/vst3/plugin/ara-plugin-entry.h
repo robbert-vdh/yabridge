@@ -48,7 +48,7 @@ struct YaARAFactorySnapshot {
     YaARAFactorySnapshot() noexcept;
     explicit YaARAFactorySnapshot(const ARA::ARAFactory* factory) noexcept;
 
-    ARA::ARASize struct_size = 0;
+    uint64_t struct_size = 0;
     ARA::ARAAPIGeneration lowest_supported_api_generation =
         static_cast<ARA::ARAAPIGeneration>(0);
     ARA::ARAAPIGeneration highest_supported_api_generation =
@@ -106,7 +106,7 @@ struct YaARAFactoryConfig {
         const ARA::ARAInterfaceConfiguration* config) noexcept;
 
     bool has_config = false;
-    ARA::ARASize struct_size = 0;
+    uint64_t struct_size = 0;
     ARA::ARAAPIGeneration desired_api_generation =
         static_cast<ARA::ARAAPIGeneration>(0);
     bool has_assert_function = false;
