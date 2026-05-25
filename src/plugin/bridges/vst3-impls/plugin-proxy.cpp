@@ -16,6 +16,9 @@
 
 #include "plugin-proxy.h"
 
+#include <atomic>
+#include <cstring>
+
 #include <pluginterfaces/vst/ivstmidicontrollers.h>
 
 #include "plug-view-proxy.h"
@@ -36,6 +39,21 @@ constexpr char other_instance_message_id[] = "yabridge_other_instance";
  * then just connect the two objects directly.
  */
 constexpr char other_instance_pointer_attribute[] = "other_proxy_ptr";
+
+namespace {
+const Steinberg::FUID kAraPlugInEntryPointLegacyIid(
+    0x3D4BD6B5, 0x913A4FD2, 0xA886E768, 0xA5EB92C1);
+const Steinberg::FUID kAraPlugInEntryPoint2AgreementsIid(
+    0x0F194781, 0x8D984ADA, 0xBBA0C1EF, 0xC011D8D0);
+const Steinberg::FUID kAraPlugInEntryPoint2AltIid(
+    0x8683B01F, 0x7B354F70, 0xA2651DEC, 0x353AF4FF);
+
+bool iid_matches(const Steinberg::TUID iid, const Steinberg::FUID& uid) {
+    Steinberg::TUID uid_tuid{};
+    uid.toTUID(uid_tuid);
+    return std::memcmp(iid, uid_tuid, sizeof(Steinberg::TUID)) == 0;
+}
+}  // namespace
 
 Vst3PluginProxyImpl::ContextMenu::ContextMenu(
     Steinberg::IPtr<Steinberg::Vst::IContextMenu> menu)
@@ -58,6 +76,32 @@ Vst3PluginProxyImpl::~Vst3PluginProxyImpl() noexcept {
 
 tresult PLUGIN_API
 Vst3PluginProxyImpl::queryInterface(const Steinberg::TUID _iid, void** obj) {
+    static std::atomic_bool logged_ara_entry_point_legacy{false};
+    static std::atomic_bool logged_ara_entry_point2_agreements{false};
+    static std::atomic_bool logged_ara_entry_point2_alt{false};
+
+    if (!logged_ara_entry_point_legacy.load(std::memory_order_relaxed) &&
+        iid_matches(_iid, kAraPlugInEntryPointLegacyIid) &&
+        !logged_ara_entry_point_legacy.exchange(true,
+                                                std::memory_order_relaxed)) {
+        bridge_.logger_.log(
+            "DEBUG: Host queried ARA::IPlugInEntryPoint legacy IID");
+    }
+    if (!logged_ara_entry_point2_agreements.load(std::memory_order_relaxed) &&
+        iid_matches(_iid, kAraPlugInEntryPoint2AgreementsIid) &&
+        !logged_ara_entry_point2_agreements.exchange(
+            true, std::memory_order_relaxed)) {
+        bridge_.logger_.log(
+            "DEBUG: Host queried ARA::IPlugInEntryPoint2 agreements IID");
+    }
+    if (!logged_ara_entry_point2_alt.load(std::memory_order_relaxed) &&
+        iid_matches(_iid, kAraPlugInEntryPoint2AltIid) &&
+        !logged_ara_entry_point2_alt.exchange(true,
+                                              std::memory_order_relaxed)) {
+        bridge_.logger_.log(
+            "DEBUG: Host queried ARA::IPlugInEntryPoint2 alternate IID");
+    }
+
     const tresult result = Vst3PluginProxy::queryInterface(_iid, obj);
     bridge_.logger_.log_query_interface("In FUnknown::queryInterface()", result,
                                         Steinberg::FUID::fromTUID(_iid));

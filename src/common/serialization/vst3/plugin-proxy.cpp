@@ -16,6 +16,15 @@
 
 #include "plugin-proxy.h"
 
+namespace {
+const Steinberg::FUID kAraPlugInEntryPointLegacyIid(
+    0x3D4BD6B5, 0x913A4FD2, 0xA886E768, 0xA5EB92C1);
+const Steinberg::FUID kAraPlugInEntryPoint2AgreementsIid(
+    0x0F194781, 0x8D984ADA, 0xBBA0C1EF, 0xC011D8D0);
+const Steinberg::FUID kAraPlugInEntryPoint2AltIid(
+    0x8683B01F, 0x7B354F70, 0xA2651DEC, 0x353AF4FF);
+}  // namespace
+
 Vst3PluginProxy::ConstructArgs::ConstructArgs() noexcept {}
 
 Vst3PluginProxy::ConstructArgs::ConstructArgs(
@@ -109,10 +118,16 @@ Vst3PluginProxy::Vst3PluginProxy(ConstructArgs&& args) noexcept
         }
     }
     if (YaARAPlugInEntryPoint::supported()) {
+        QUERY_INTERFACE(_iid, obj, kAraPlugInEntryPointLegacyIid,
+                        ARA::IPlugInEntryPoint)
         QUERY_INTERFACE(_iid, obj, ARA::IPlugInEntryPoint::iid,
                         ARA::IPlugInEntryPoint)
     }
     if (YaARAPlugInEntryPoint2::supported()) {
+        QUERY_INTERFACE(_iid, obj, kAraPlugInEntryPoint2AgreementsIid,
+                        ARA::IPlugInEntryPoint2)
+        QUERY_INTERFACE(_iid, obj, kAraPlugInEntryPoint2AltIid,
+                        ARA::IPlugInEntryPoint2)
         QUERY_INTERFACE(_iid, obj, ARA::IPlugInEntryPoint2::iid,
                         ARA::IPlugInEntryPoint2)
     }
