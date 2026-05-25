@@ -184,9 +184,12 @@ class AraFactoryProxy {
     std::vector<const char*> compatible_document_archive_ids_;
     std::vector<ARA::ARAContentType> analyzeable_content_types_;
     ARA::ARAFactory factory_{};
+
+   public:
     // The ARADocumentControllerInstance returned by the Windows plugin's
     // factory. This is a Wine-side pointer and remains valid for the lifetime
-    // of the document controller.
+    // of the document controller. Accessed by Vst3PluginProxyImpl and the
+    // YaARAHostCallbacks handlers.
     const ARA::ARADocumentControllerInstance* document_controller_instance_ =
         nullptr;
     // The Linux-side ARADocumentControllerHostInstance pointer passed by Carla.
